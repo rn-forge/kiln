@@ -1,0 +1,31 @@
+# Seeded by kiln — this file is yours to extend.
+#
+# kiln writes it once and never touches it again (kiln ADR-0006, D44): a repo
+# that needs an area kiln has never heard of adds it here, and the docs scripts
+# validate the tree against this file rather than against a list baked into
+# them. Order is nav order; re-run `task docs:nav` after editing.
+version: 1
+areas:
+  - key: architecture
+    title: Architecture
+    nav: children
+  - key: guides
+    title: Guides
+    nav: children
+  - key: runbooks
+    title: Runbooks
+    nav: children
+    optional: true
+  - key: reference
+    title: Reference
+    nav: children
+    generated: true
+  - key: releases
+    title: Releases
+    nav: index-only
+  - key: specs
+    title: Specs
+    nav: index-only
+  - key: adr
+    title: Decisions
+    nav: index-only

@@ -1,0 +1,30 @@
+[project]
+name = "golden-beta"
+version = "0.1.0"
+description = "Trivial workspace package beta — the python-lib golden repo's product."
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Rohit Narayanan", email = "rohit.nn@gmail.com" }]
+requires-python = ">=3.14"
+dependencies = ["rn-forge-commons>=0.2.2"]
+
+[build-system]
+requires = ["uv_build>=0.11.28,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "golden_beta"
+source-exclude = ["**/.DS_Store"]
+
+[tool.pyright]
+typeCheckingMode = "strict"
+ignore = ["tests"]
+reportMissingTypeStubs = false
+venvPath = "../.."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ALL"]

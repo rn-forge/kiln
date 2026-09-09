@@ -1,0 +1,22 @@
+# The one hand-authored input kiln reads (kiln ADR-0005). Edit this, then run
+# `kiln apply`. Everything else under .rn-forge/kiln/ is kiln's.
+schema_version = 1
+
+[repository]
+name = "golden-lib"
+archetype = "python-lib"
+
+[docs]
+profile = "mkdocs"
+site_dir = ".docs-site"
+
+[ci]
+provider = "github"
+sonar = true
+release = "tag-exists"
+
+[tasks]
+includes = []
+
+[archetype.python-lib]
+packages = ["packages/golden-alpha", "packages/golden-beta"]

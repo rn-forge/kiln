@@ -1,0 +1,29 @@
+# system files
+.DS_Store
+
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.pytest_cache/
+.ruff_cache/
+.import_linter_cache/
+.uv-cache/
+
+# Virtual environments
+.venv
+
+# generated files/folders
+.docs-site/
+# mkdocs's own default output dir, for when someone runs it directly by mistake
+site/
+.coverage
+coverage.xml
+
+# BEGIN rn-forge kiln
+.rn-forge/kiln/backups/
+.rn-forge/kiln/rendered/
+# END rn-forge kiln

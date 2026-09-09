@@ -1,0 +1,23 @@
+# The one hand-authored input kiln reads (kiln ADR-0005). Edit this, then run
+# `kiln apply`. Everything else under .rn-forge/kiln/ is kiln's.
+#
+# kiln's own config. It is not self-hosting yet: this file, and the state.json
+# beside it, are hand-authored in Phase B and become real output in Phase D,
+# when kiln regenerates its own skeleton.
+schema_version = 1
+
+[repository]
+name = "kiln"
+archetype = "python-cli"
+
+[docs]
+profile = "mkdocs"
+site_dir = ".docs-site"
+
+[ci]
+provider = "github"
+sonar = true
+release = "tag-exists"
+
+[tasks]
+includes = []
