@@ -6,7 +6,7 @@ its packages are interesting. Two of them is the smallest number that proves the
 CI matrix is a matrix.
 
 Each package depends on `rn-forge-commons` and uses it, because every rn-forge
-repo is built on the component libraries (kiln ADR-0009) and a dependency a
+repo is built on the component libraries (kiln ADR-0005) and a dependency a
 package never exercises proves nothing about the archetype.
 """
 

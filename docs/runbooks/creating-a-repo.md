@@ -14,24 +14,28 @@ to do when the repo does not fit.
 Ask what the repo *publishes*, not what it contains.
 
 | If it publishes… | Archetype |
-| --- | --- |
+| -- | -- |
 | one console script or one library from one package | `python-cli` |
 | several independently versioned packages | `python-lib` |
-| a running service, with or without a frontend | `python-web` |
+| a running Django service, with an Nx frontend | `python-django-ng` |
+| a running FastAPI service, with an Nx frontend | `python-fastapi-ng` |
 
 Two rules of thumb for the awkward cases:
 
-- **One package that also has a web UI is still `python-web`** if the service is
-  the deliverable. The archetype follows the pipeline, and a service's pipeline
-  has a frontend build in it.
+- **One package that also has a web UI is still an `-ng` archetype** if the
+  service is the deliverable. The archetype follows the pipeline, and a
+  service's pipeline has a frontend build in it.
+- **`-ng` means a pnpm-managed Nx workspace**, which is Nx's own documented
+  shape. A service with no frontend at all, or one that refuses Nx, has no
+  archetype today — that is a new archetype and a new golden repo, not a flag.
 - **A workspace whose packages are never released separately is `python-cli`,
-  not `python-lib`.** The whole difference between them is per-package versions
-  and per-package release tags. If there is one version number, there is one
-  package as far as the standard is concerned.
+  not `python-lib`.** The whole difference between them is per-package
+  versions and per-package release tags. If there is one version number, there
+  is one package as far as the standard is concerned.
 
-If neither fits, stop and write an ADR in the new repo before generating
-anything. A fourth archetype is a template set plus a golden repo — real work,
-but bounded. Bending an archetype is neither.
+If none fits, stop and write an ADR in the new repo before generating anything.
+A fifth archetype is a template set plus a golden repo — real work, but bounded
+and reviewable. Bending an existing archetype is neither.
 
 ## 2. Generate
 
@@ -44,9 +48,10 @@ the same command is what an agent runs unattended. `kiln new` refuses a
 non-empty directory.
 
 What it does, in order, is the apply sequence in
-[the workspace architecture](../architecture/workspace.md#apply-sequence). Step 2
-shells out to `uv init` (and `pnpm create` / `nx g` for `python-web`) and then
-reconciles the result; kiln never templates another tool's scaffold output.
+[the workspace architecture](../architecture/workspace.md#apply-sequence). Step
+2 shells out to `uv init` (and `pnpm create` / `nx g` for the `-ng` archetypes)
+and then reconciles the result; kiln never templates another tool's scaffold
+output.
 
 ## 3. Wire in what is genuinely this repo's
 

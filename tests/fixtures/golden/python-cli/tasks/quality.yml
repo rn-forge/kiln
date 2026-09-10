@@ -7,10 +7,17 @@ version: "3"
 
 tasks:
   lint:python:
-    desc: Lint src/, tests/ and scripts/ with ruff.
+    desc: Lint src/, tests/ and scripts/ with ruff, and check formatting.
     internal: true
     cmds:
       - uv run ruff check src tests scripts
+      - uv run ruff format --check src tests scripts
+
+  lint:markdown:
+    desc: Check that every Markdown file in the tree is mdformat-clean.
+    internal: true
+    cmds:
+      - uv run --group docs mdformat --check .
 
   lint:generated:
     desc: Fail if a kiln-generated file or block has drifted from the committed state.
@@ -63,11 +70,21 @@ tasks:
           CLI_ARGS: --check
 
   format:python:
-    desc: Format src/, tests/ and scripts/ in place with ruff.
+    desc: Fix and format src/, tests/ and scripts/ in place with ruff.
+    internal: true
+    # `check --fix` first, then `format`: the linter's fixes are edits, and an
+    # unused-import removal or a comprehension rewrite lands unformatted unless
+    # the formatter runs after it. `lint:python` asserts the same pair in the
+    # same order.
+    cmds:
+      - uv run ruff check --fix src tests scripts
+      - uv run ruff format src tests scripts
+
+  format:markdown:
+    desc: Format every Markdown file in the tree with mdformat.
     internal: true
     cmds:
-      - uv run ruff format src tests scripts
-      - uv run ruff check --fix src tests scripts
+      - uv run --group docs mdformat .
 
   typecheck:python:
     desc: Type-check src/ with pyright in strict mode.

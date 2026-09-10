@@ -11,10 +11,10 @@ agent's — they are not copies of each other.
 
 ## Does not belong here
 
-| Instead of                                | Put it in                       |
-| ----------------------------------------- | ------------------------------- |
+| Instead of | Put it in |
+| -- | -- |
 | A statement about one area's admission rules | that area's own `_structure.md` |
-| Page content                              | the area itself                 |
+| Page content | the area itself |
 
 ## Naming and shape
 

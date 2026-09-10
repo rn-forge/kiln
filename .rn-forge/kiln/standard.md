@@ -68,7 +68,7 @@ To change a managed file, change `.rn-forge/kiln/config.toml` and run
 
 ## 3. The dependency set
 
-An archetype is a shape *and* a set of component libraries (kiln ADR-0009). For
+An archetype is a shape *and* a set of component libraries (kiln ADR-0005). For
 `python-cli` that is `rn-forge-commons` and `rn-forge-tooling`, both runtime
 dependencies.
 
@@ -77,7 +77,8 @@ code yet and a dependency nothing imports is decoration. The entry lands with
 the code. The list is config precisely so this is expressible.
 
 rn-forge distributions are git sources — pykit publishes GitHub Releases, not to
-PyPI — and must be pinned to a tag or a rev, never a branch.
+PyPI — declared as pinned direct URLs in `dependencies`, never as
+`[tool.uv.sources]` overrides, which do not survive into a built wheel.
 `scripts/standards/check_rn_forge_deps.py` enforces required, allowed and
 pinned.
 
@@ -99,7 +100,7 @@ is a subprocess or nothing.
 CI installs go-task and the pinned interpreter, then runs committed code only.
 It never installs kiln.
 
-`task validate` proves, without kiln: ruff is clean; the archetype's dependency
+`task validate` proves, without kiln: ruff is clean and formatted; the archetype's dependency
 set is present, allowed and pinned; the import contracts hold;
 the task layout and validate gate are intact; no workflow step invokes a wrapped
 tool; the docs tree matches `docs/_areas.yml`; the nav block is current; no link

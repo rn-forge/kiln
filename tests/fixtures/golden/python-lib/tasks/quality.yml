@@ -16,12 +16,21 @@ vars:
 
 tasks:
   lint:python:
-    desc: Lint every workspace package and scripts/ with ruff.
+    desc: Lint every workspace package and scripts/ with ruff, and check formatting.
     internal: true
     cmds:
       - for: { var: PACKAGES, split: " " }
         cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff check
+      - for: { var: PACKAGES, split: " " }
+        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff format --check
       - uv run ruff check scripts
+      - uv run ruff format --check scripts
+
+  lint:markdown:
+    desc: Check that every Markdown file in the tree is mdformat-clean.
+    internal: true
+    cmds:
+      - uv run --group docs mdformat --check .
 
   lint:generated:
     desc: Fail if a kiln-generated file or block has drifted from the committed state.
@@ -74,15 +83,25 @@ tasks:
           CLI_ARGS: --check
 
   format:python:
-    desc: Format every workspace package and scripts/ in place with ruff.
+    desc: Fix and format every workspace package and scripts/ in place with ruff.
     internal: true
+    # `check --fix` first, then `format`: the linter's fixes are edits, and an
+    # unused-import removal or a comprehension rewrite lands unformatted unless
+    # the formatter runs after it. `lint:python` asserts the same pair in the
+    # same order.
     cmds:
       - for: { var: PACKAGES, split: " " }
-        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff format
-      - for: { var: PACKAGES, split: " " }
         cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff check --fix
-      - uv run ruff format scripts
+      - for: { var: PACKAGES, split: " " }
+        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff format
       - uv run ruff check --fix scripts
+      - uv run ruff format scripts
+
+  format:markdown:
+    desc: Format every Markdown file in the tree with mdformat.
+    internal: true
+    cmds:
+      - uv run --group docs mdformat .
 
   typecheck:python:
     desc: Type-check every workspace package with pyright in strict mode.
@@ -99,7 +118,20 @@ tasks:
         cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} pytest -q
 
   test:coverage:
-    desc: Run the whole workspace's tests with an XML coverage report for Sonar.
+    desc: Run each package's tests with coverage, then combine into one XML report.
     internal: true
+    # Coverage runs the way tests do — once per package, from that package's own
+    # directory — so a member's pytest settings apply to its coverage run too.
+    # Each run writes its own data file under the repo root (COVERAGE_FILE is
+    # absolute, because the run's cwd is not the root), and `combine` merges
+    # them. Paths stay absolute so Sonar can map a line back to
+    # packages/<member>/src/... rather than to a `src/` that exists twice.
     cmds:
-      - uv run pytest -q --cov=golden_alpha --cov=golden_beta --cov-report=xml:coverage.xml
+      - rm -f "{{.ROOT_DIR}}/.coverage" "{{.ROOT_DIR}}/.coverage."* coverage.xml
+      - for: { var: PACKAGES, split: " " }
+        cmd: >-
+          COVERAGE_FILE="{{.ROOT_DIR}}/.coverage.{{.ITEM}}"
+          uv run --directory packages/{{.ITEM}} --package {{.ITEM}}
+          coverage run --rcfile "{{.ROOT_DIR}}/pyproject.toml" --source src -m pytest -q
+      - uv run coverage combine
+      - uv run coverage xml -o coverage.xml

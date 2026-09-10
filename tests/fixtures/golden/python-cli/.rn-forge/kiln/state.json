@@ -2,7 +2,7 @@
   "schema_version": 1,
   "metadata": {
     "kiln_version": "golden",
-    "config_hash": "sha256:14aeb720e04731a8834b99c65e891e14e92c5d098220e1348877c31e5bd21db7"
+    "config_hash": "sha256:764be65681185c671189c45303a93ad03c8e9d540af049c9785006f8fe035f84"
   },
   "entries": {
     ".editorconfig": {
@@ -10,15 +10,20 @@
       "kind": "managed",
       "content_hash": "sha256:5e430f1266f0e380161887b15f9cbc77d80ed73f904e3b4a2762fbd045b83bfd"
     },
+    ".github/actions/setup/action.yml": {
+      "path": ".github/actions/setup/action.yml",
+      "kind": "managed",
+      "content_hash": "sha256:6d1daf7e89d51646806d505a201aaf90f8c526e1d47e66840cbdf29e9b742fcd"
+    },
     ".github/workflows/ci.yml": {
       "path": ".github/workflows/ci.yml",
       "kind": "managed",
-      "content_hash": "sha256:8fd437870aaa7014a61e7cd70d67a1d53b29fa9225a84ab521d627245b78c3a6"
+      "content_hash": "sha256:64344204468b78144a42c95255c8c4e51ed44db5c25324af100a0a3957ce07ca"
     },
     ".github/workflows/docs.yml": {
       "path": ".github/workflows/docs.yml",
       "kind": "managed",
-      "content_hash": "sha256:32e2e40c8cb884e9abcfc42d52aeddbecb9fafbc3c3a8b2914967716cac421b1"
+      "content_hash": "sha256:c4531984d1e8d741f78da0212de73d9cedecdf495b436eff3c59038d187a5fdd"
     },
     ".gitignore::kiln": {
       "path": ".gitignore",
@@ -30,31 +35,24 @@
     ".importlinter": {
       "path": ".importlinter",
       "kind": "managed",
-      "content_hash": "sha256:47b7274831d43a34ca4b5f1f2a6c6ac8905bedf8af66204bf5141cbcfec5680b"
+      "content_hash": "sha256:bf7c7b00c80287b192a1563ad0573de3ba64c8aa7feeb03ec76da4517fb06e77"
     },
     ".rn-forge/kiln/standard.md": {
       "path": ".rn-forge/kiln/standard.md",
       "kind": "managed",
-      "content_hash": "sha256:8bd2b09a7cea9586490c4d0f5821f2c3c8d87faf0d5ea8c7223d3632208b30bc"
-    },
-    "AGENTS.md::kiln": {
-      "path": "AGENTS.md",
-      "kind": "block",
-      "begin_marker": "<!-- BEGIN rn-forge kiln -->",
-      "end_marker": "<!-- END rn-forge kiln -->",
-      "content_hash": "sha256:853aa398d29c24824abb1b9cb39fc5d8908fcf4f29d9771a0516f3b25af2fbb2"
+      "content_hash": "sha256:4441c1fcf43d81c8e9eba16e9ef743a025cb8c8fdffaf7967fb75132148d3cdf"
     },
     "CLAUDE.md::kiln": {
       "path": "CLAUDE.md",
       "kind": "block",
       "begin_marker": "<!-- BEGIN rn-forge kiln -->",
       "end_marker": "<!-- END rn-forge kiln -->",
-      "content_hash": "sha256:853aa398d29c24824abb1b9cb39fc5d8908fcf4f29d9771a0516f3b25af2fbb2"
+      "content_hash": "sha256:e13783d97ede5beed549628cb50576d866982e447dbe8b30f9b1f448d9e7696b"
     },
     "Taskfile.yml": {
       "path": "Taskfile.yml",
       "kind": "managed",
-      "content_hash": "sha256:f4a8bc6cbe20c5cb089a573127ffa7d2ba5898f845452a444e77311a4e0af7c5"
+      "content_hash": "sha256:65bf447d2ee8c63bbf5a64970276f971e77e289582731deea30f871aa53dd827"
     },
     "docs/_areas.yml": {
       "path": "docs/_areas.yml",
@@ -131,7 +129,7 @@
     "scripts/docs/_common.py": {
       "path": "scripts/docs/_common.py",
       "kind": "managed",
-      "content_hash": "sha256:196a2d29ef76216a7521d19b9a3925324a1654aad2e8e03df757fe8427b3e3a5"
+      "content_hash": "sha256:1a5538185cd8f29d7435f69b8da7906a04f12865e1556f9675c9054d3913dfb6"
     },
     "scripts/docs/check_docs.py": {
       "path": "scripts/docs/check_docs.py",
@@ -141,12 +139,12 @@
     "scripts/docs/check_structure.py": {
       "path": "scripts/docs/check_structure.py",
       "kind": "managed",
-      "content_hash": "sha256:9b047904b088a5d657caa1b240d6063ae3488ccf0c478a49eb4d1c74d4d6cea2"
+      "content_hash": "sha256:2cd7b14ab31e7396f144c10a88a4ff2088316372aad846cb58818c1b10fcc78d"
     },
     "scripts/docs/gen_nav.py": {
       "path": "scripts/docs/gen_nav.py",
       "kind": "managed",
-      "content_hash": "sha256:40a2a94a544208fccd374da31d5ecd90b888cc6254dd29eecefc4c72c438a52f"
+      "content_hash": "sha256:1ff5eb29b79e6cf17e9d5e58b5d828e1a32e45b683b5d053b179df2b16cd9e46"
     },
     "scripts/standards/check_generated.py": {
       "path": "scripts/standards/check_generated.py",
@@ -156,12 +154,12 @@
     "scripts/standards/check_rn_forge_deps.py": {
       "path": "scripts/standards/check_rn_forge_deps.py",
       "kind": "managed",
-      "content_hash": "sha256:468879b61ec30d792b791d7701699b3c468886280f48ab2f31197413d878ab3d"
+      "content_hash": "sha256:28b30ccfe3c8dbb5d2ac73fbbea54b7253e1750d012a3d184f57951d55bc30ba"
     },
     "scripts/task/check_task_layout.py": {
       "path": "scripts/task/check_task_layout.py",
       "kind": "managed",
-      "content_hash": "sha256:fba88567e7fb6b91a155beb553f14544c3d996a4bde4baf0c6b1aaefe58e3532"
+      "content_hash": "sha256:a01124177d8a170979f1d514d0ae4091ecd69ee8b26829bd6020bb6fac665eca"
     },
     "sonar-project.properties": {
       "path": "sonar-project.properties",
@@ -171,12 +169,12 @@
     "tasks/docs.yml": {
       "path": "tasks/docs.yml",
       "kind": "managed",
-      "content_hash": "sha256:b30c962bef93464a22cf54e92d8358f533f75a32d601581d7dc598d4de66a636"
+      "content_hash": "sha256:9c98b119e1abe1011263c7f9fb3ba395942bbdff70826aa57b0176e6c4254a7a"
     },
     "tasks/quality.yml": {
       "path": "tasks/quality.yml",
       "kind": "managed",
-      "content_hash": "sha256:90a0cb81dbf0535035d7ba41a6b0b6a8b7bb722b7159ce4106b0cb84b9131572"
+      "content_hash": "sha256:9d6a03cfc89a3e18bfe029f5a84321eda05db81aa7e2ea88a2a53949ab3b5767"
     },
     "tasks/workspace.yml": {
       "path": "tasks/workspace.yml",

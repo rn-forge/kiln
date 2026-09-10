@@ -10,10 +10,10 @@
 
 ## Does not belong here
 
-| Instead of                         | Put it in       |
-| ---------------------------------- | --------------- |
-| How something works now            | `architecture/` |
-| A plan                             | `specs/`        |
+| Instead of | Put it in |
+| -- | -- |
+| How something works now | `architecture/` |
+| A plan | `specs/` |
 
 ## Naming and shape
 

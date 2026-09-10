@@ -34,6 +34,7 @@ REQUIRED_VALIDATE = [
     "quality:lint:docs",
     "quality:lint:docs-structure",
     "quality:lint:docs-nav",
+    "quality:lint:markdown",
     "quality:typecheck:python",
     "quality:test:python",
     "docs:build",

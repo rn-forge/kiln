@@ -7,10 +7,10 @@
 
 ## Does not belong here
 
-| Instead of                         | Put it in         |
-| ---------------------------------- | ----------------- |
-| How the repo is built              | `architecture/`   |
-| A procedure with a decision in it  | `runbooks/`       |
+| Instead of | Put it in |
+| -- | -- |
+| How the repo is built | `architecture/` |
+| A procedure with a decision in it | `runbooks/` |
 
 ## Naming and shape
 

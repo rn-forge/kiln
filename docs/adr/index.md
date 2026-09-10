@@ -1,17 +1,22 @@
 # Decisions
 
-kiln's decision log. ADRs 0001–0009 *are* the repository standard — the
-normative statement of it is [the standard-repo
-reference](../reference/standard-repo.md), and kiln renders that into every repo
-it generates as `.rn-forge/kiln/standard.md`. Anything after 0009 is a decision
-about kiln itself.
+kiln's decision log. ADRs 0001–0008 *are* the repository standard: they carry
+the choices and the alternatives rejected, while the specification those choices
+produced — the verb list, the ownership table, the dependency sets, the config
+schema — lives in [the standard-repo reference](../reference/standard-repo.md),
+which kiln renders into every repo it generates as `.rn-forge/kiln/standard.md`.
 
-- [ADR-0001 — One owner per managed file, or per fenced block](0001-one-owner-per-file-or-block.md)
-- [ADR-0002 — The ownership table is normative](0002-the-ownership-table.md)
-- [ADR-0003 — Two dependency graphs, and an executable boundary](0003-the-dependency-graphs.md)
-- [ADR-0004 — CI runs committed code; kiln is a developer tool](0004-ci-runs-committed-code.md)
-- [ADR-0005 — The `.rn-forge/` umbrella, the config schema, the state schema](0005-the-rn-forge-umbrella.md)
-- [ADR-0006 — Archetypes, golden repos, and the docs profile](0006-archetypes-and-golden-repos.md)
-- [ADR-0007 — Judgement is a runbook; repos are created, not migrated](0007-runbooks-not-skills.md)
-- [ADR-0008 — The task vocabulary](0008-task-vocabulary.md)
-- [ADR-0009 — An archetype carries a dependency set, and it is enforced](0009-archetype-dependency-defaults.md)
+An ADR states a decision that should outlive the spec built on it. If a page
+here starts listing things, it has become a spec and belongs in the reference.
+
+- [ADR-0001 — One owner per managed file, or per fenced block](0001-ownership.md)
+- [ADR-0002 — Two dependency graphs, and an executable boundary](0002-the-dependency-graphs.md)
+- [ADR-0003 — CI runs committed code; kiln is a developer tool](0003-ci-runs-committed-code.md)
+- [ADR-0004 — The `.rn-forge/` umbrella, and asserted configuration](0004-the-rn-forge-umbrella.md)
+- [ADR-0005 — An archetype is a shape, a library set, and a golden repo](0005-archetypes.md)
+- [ADR-0006 — Judgement is a runbook; repos are created, not migrated](0006-runbooks-not-skills.md)
+- [ADR-0007 — The task vocabulary is closed, and the gate cannot shrink](0007-task-vocabulary.md)
+- [ADR-0008 — Type-check with pyright in strict mode, not mypy](0008-pyright-strict-not-mypy.md)
+- [ADR-0009 — Tooling owns the boilerplate; the CLI is declared, not written](0009-tooling-owns-the-boilerplate.md)
+  *(proposed)*
+- [ADR-0010 — The checkers become a versioned package; only their inputs stay committed](0010-checkers-are-a-package.md)

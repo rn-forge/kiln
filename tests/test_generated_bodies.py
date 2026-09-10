@@ -39,7 +39,13 @@ def test_one_body_per_generated_script(relative_path: str):
     repos = golden_repos()
     assert len(repos) >= 2, "need at least two golden repos to compare"
     result = subprocess.run(
-        [sys.executable, str(ASSERT), "--relative-path", relative_path, *map(str, repos)],
+        [
+            sys.executable,
+            str(ASSERT),
+            "--relative-path",
+            relative_path,
+            *map(str, repos),
+        ],
         capture_output=True,
         text=True,
     )
@@ -49,4 +55,6 @@ def test_one_body_per_generated_script(relative_path: str):
 def test_every_golden_repo_has_every_generated_script():
     for repo in golden_repos():
         for relative_path in GENERATED_SCRIPTS:
-            assert (repo / relative_path).is_file(), f"{repo.name} is missing {relative_path}"
+            assert (repo / relative_path).is_file(), (
+                f"{repo.name} is missing {relative_path}"
+            )

@@ -6,7 +6,14 @@ readme = "README.md"
 license = "MIT"
 authors = [{ name = "Rohit Narayanan", email = "rohit.nn@gmail.com" }]
 requires-python = ">=3.14"
-dependencies = ["rn-forge-commons>=0.2.2"]
+# pykit publishes GitHub Releases rather than to PyPI, so rn-forge libraries are
+# git sources. The URL lives in `dependencies`, not in [tool.uv.sources]: a
+# source override is local and does not survive into a built wheel, so a
+# consumer of this package's release could not resolve commons at all
+# (kiln ADR-0005).
+dependencies = [
+  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@rn-forge-commons-v0.2.2#subdirectory=packages/rn-forge-commons",
+]
 
 [build-system]
 requires = ["uv_build>=0.11.28,<0.12.0"]
@@ -24,7 +31,7 @@ venvPath = "../.."
 venv = ".venv"
 
 [tool.pytest.ini_options]
-addopts = "-ra"
+addopts = "-ra --import-mode=importlib"
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["ALL"]
+"tests/*" = ["S101", "D", "ANN", "PLR2004"]

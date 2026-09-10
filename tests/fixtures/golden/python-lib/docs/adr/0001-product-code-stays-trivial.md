@@ -4,10 +4,11 @@
 
 ## Context
 
-A golden repo is the byte-exact oracle for kiln's templates (kiln ADR-0006):
-`render(golden config) == golden bytes`. It is also a *runnable* repo — `uv
-sync` and `task validate` pass in it standalone — because a template that only
-type-checks in the abstract has never been proven to produce a working repo.
+A golden repo is the byte-exact oracle for kiln's templates (kiln ADR-0005):
+`render(golden config) == golden bytes`. It is also a *runnable* repo —
+`uv sync` and `task validate` pass in it standalone — because a template that
+only type-checks in the abstract has never been proven to produce a working
+repo.
 
 Those two jobs pull in opposite directions the moment the product grows. Real
 product code brings dependencies, which bring lockfile churn, which makes the

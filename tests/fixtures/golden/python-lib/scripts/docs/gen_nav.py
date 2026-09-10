@@ -7,7 +7,7 @@ Rewrites the block between `# BEGIN generated nav` and `# END generated nav`.
 `--check` exits non-zero when the generated block differs from what is on disk
 without writing anything — that is the form `task lint` runs. Content outside
 the markers is preserved byte for byte, because `mkdocs.yml` is a repo-owned
-file with one kiln-owned block in it (kiln ADR-0002).
+file with one kiln-owned block in it (kiln ADR-0001).
 
 Page order inside an area is: the area's `index.md` first, then the pages its
 `index.md` links to in the order it links them, then everything else

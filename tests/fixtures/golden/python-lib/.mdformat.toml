@@ -1,0 +1,28 @@
+# Seeded by kiln — this file is yours.
+#
+# Its presence is what opts this repo into Markdown formatting at all
+# (agentkit ADR-0014): the task exists in every repo, the style is each repo's
+# own. kiln writes this once and never touches it again.
+#
+# `exclude` is authoritative — `task lint` runs mdformat over the tree rather
+# than over a file list, so this is the single place a path is exempted.
+# `.rn-forge/kiln/standard.md` is not a style exemption: it is a file kiln owns
+# whole, and a formatter rewriting it would be a second owner writing the same
+# bytes (kiln ADR-0001). Files kiln owns only a *block* of are formatted
+# normally; kiln renders those block bodies already mdformat-clean.
+wrap = 80
+exclude = [
+  ".venv/**",
+  ".docs-site/**",
+  "site/**",
+  "node_modules/**",
+  ".rn-forge/kiln/standard.md",
+]
+
+[plugin.tables]
+compact_tables = true
+
+[plugin.mkdocs]
+align_semantic_breaks_in_lists = true
+ignore_missing_references = true
+no_mkdocs_math = true

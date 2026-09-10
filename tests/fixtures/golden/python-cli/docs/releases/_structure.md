@@ -6,10 +6,10 @@
 
 ## Does not belong here
 
-| Instead of                 | Put it in              |
-| -------------------------- | ---------------------- |
-| Work not shipped yet       | an epic under `specs/` |
-| Why a choice was made      | an ADR under `adr/`    |
+| Instead of | Put it in |
+| -- | -- |
+| Work not shipped yet | an epic under `specs/` |
+| Why a choice was made | an ADR under `adr/` |
 
 ## Naming and shape
 

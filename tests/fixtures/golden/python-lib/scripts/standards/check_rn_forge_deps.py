@@ -2,8 +2,9 @@
 """Enforce the archetype's rn-forge dependency contract.
 
 An archetype is not only a repo shape — it is also the set of shared libraries a
-repo of that shape is built on (kiln ADR-0009). A `python-cli` repo gets commons
-and tooling; a `python-web` repo gets its backend framework package as well.
+repo of that shape is built on (kiln ADR-0005). A `python-cli` repo gets commons
+and tooling; a `python-django-ng` or `python-fastapi-ng` repo gets its framework
+package as well.
 That is the whole point of naming archetypes: the boilerplate a repo does not
 write is the boilerplate it takes from the component libraries.
 
@@ -14,13 +15,23 @@ a cold clone can run this with the pinned interpreter alone:
    least one distributable in this repo.
 2. **Allowed.** No `rn-forge-*` distribution outside ALLOWED appears anywhere —
    dependencies, optional dependencies or dependency groups. This is the
-   dependency-level form of the import boundary (kiln ADR-0003): import-linter
+   dependency-level form of the import boundary (kiln ADR-0002): import-linter
    cannot express "this external subpackage but not that one", and the honest
    place to draw the line is where the dependency is declared.
-3. **Pinned.** Every rn-forge `[tool.uv.sources]` entry resolves to a tag or a
-   rev, never a bare branch. pykit publishes GitHub Releases rather than to
-   PyPI, so a git source is normal here — a *moving* git source is not, because
-   it makes a build unreproducible without changing a single tracked byte.
+3. **Pinned, and in the published metadata.** Every rn-forge requirement is a
+   PEP 508 direct URL naming a tag or a rev:
+
+       rn-forge-commons @ git+https://github.com/rn-forge/pykit@rn-forge-commons-v0.2.2#subdirectory=packages/rn-forge-commons
+
+   `[tool.uv.sources]` would be simpler to read, and it is what a workspace
+   reaches for first — but it is a *local* override that does not survive into a
+   built wheel. A consumer installing this repo's release would then be told to
+   find `rn-forge-commons` on an index it is not published to. The URL in
+   `dependencies` is the only form that ships with the package.
+
+   The trade is deliberate: a distribution with a direct reference cannot be
+   uploaded to PyPI, and the version floor is gone because a requirement cannot
+   carry both a URL and a specifier. The tag *is* the version.
 
 Usage: check_rn_forge_deps.py [repo-root]   (default: current directory)
 """
@@ -49,6 +60,9 @@ RN_FORGE_PREFIX = "rn-forge-"
 # A PEP 508 requirement's distribution name: everything before the first extra,
 # specifier, marker or whitespace. `rn-forge-django[codegen]>=0.2` → `rn-forge-django`.
 REQUIREMENT_NAME = re.compile(r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)")
+# A git URL carrying a ref: `git+https://host/org/repo@<ref>`, with the ref
+# ending at the `#subdirectory=` fragment if there is one.
+PINNED_GIT_URL = re.compile(r"^git\+[^@\s]+@[^#\s]+")
 
 
 def distribution(requirement: str) -> str:
@@ -61,14 +75,18 @@ def runtime_dependencies(document: dict[str, object]) -> list[str]:
     if not isinstance(project, dict):
         return []
     dependencies = project.get("dependencies")
-    return [d for d in dependencies if isinstance(d, str)] if isinstance(dependencies, list) else []
+    return (
+        [d for d in dependencies if isinstance(d, str)]
+        if isinstance(dependencies, list)
+        else []
+    )
 
 
 def every_dependency(document: dict[str, object]) -> list[str]:
     """Runtime, optional and dependency-group requirements, flattened.
 
     A dependency group is still a dependency: a kit that a repo installs only to
-    develop with is exactly the coupling ADR-0003 is about.
+    develop with is exactly the coupling ADR-0002 is about.
     """
     found = list(runtime_dependencies(document))
 
@@ -113,19 +131,41 @@ def check_allowed(label: str, document: dict[str, object]) -> list[str]:
     ]
 
 
-def check_pinned(label: str, document: dict[str, object]) -> list[str]:
+def check_direct_url(label: str, document: dict[str, object]) -> list[str]:
+    """Every rn-forge requirement carries its own pinned source."""
     errors: list[str] = []
-    for name, source in uv_sources(document).items():
-        if not name.lower().startswith(RN_FORGE_PREFIX) or not isinstance(source, dict):
+    for requirement in every_dependency(document):
+        name = distribution(requirement)
+        if not name.startswith(RN_FORGE_PREFIX):
             continue
-        if "git" not in source:
-            continue  # a workspace or path source is pinned by definition
-        if "tag" not in source and "rev" not in source:
+        url = requirement.partition(" @ ")[2].strip()
+        if not url:
             errors.append(
-                f"{label}: [tool.uv.sources.{name}] is a git source with no `tag` or "
-                f"`rev` — pin it, or the build changes without the repo changing"
+                f"{label}: `{name}` is declared without a direct URL — a "
+                f"[tool.uv.sources] override does not survive into a built wheel, "
+                f"so a consumer of this package could not resolve it"
+            )
+            continue
+        if not PINNED_GIT_URL.match(url):
+            errors.append(
+                f"{label}: `{name}` resolves to {url!r}, which names no tag or rev — "
+                f"pin it, or the build changes without the repo changing"
             )
     return errors
+
+
+def check_no_shadowing_source(label: str, document: dict[str, object]) -> list[str]:
+    """A [tool.uv.sources] entry for an rn-forge package hides the real one.
+
+    It would resolve locally and silently disagree with what the wheel says, which
+    is the failure this whole rule exists to prevent.
+    """
+    return [
+        f"{label}: [tool.uv.sources.{name}] overrides an rn-forge dependency — "
+        f"remove it and pin the URL in `dependencies` instead"
+        for name in uv_sources(document)
+        if name.lower().startswith(RN_FORGE_PREFIX)
+    ]
 
 
 def main() -> int:
@@ -141,7 +181,8 @@ def main() -> int:
             continue
         document = tomllib.loads(path.read_text(encoding="utf-8"))
         errors.extend(check_allowed(relative, document))
-        errors.extend(check_pinned(relative, document))
+        errors.extend(check_direct_url(relative, document))
+        errors.extend(check_no_shadowing_source(relative, document))
         declared.update(distribution(r) for r in runtime_dependencies(document))
 
     errors.extend(

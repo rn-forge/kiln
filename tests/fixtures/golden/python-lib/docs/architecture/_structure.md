@@ -8,11 +8,11 @@
 
 ## Does not belong here
 
-| Instead of                        | Put it in                 |
-| --------------------------------- | ------------------------- |
-| A choice between real alternatives | an ADR under `adr/`       |
-| How to run something              | `guides/` or `runbooks/`  |
-| Work not done yet                 | an epic under `specs/`    |
+| Instead of | Put it in |
+| -- | -- |
+| A choice between real alternatives | an ADR under `adr/` |
+| How to run something | `guides/` or `runbooks/` |
+| Work not done yet | an epic under `specs/` |
 
 ## Naming and shape
 

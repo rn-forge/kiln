@@ -17,14 +17,12 @@ package = false
 [tool.uv.workspace]
 members = ["packages/golden-alpha", "packages/golden-beta"]
 
-# pykit publishes GitHub Releases rather than to PyPI, so rn-forge libraries are
-# git sources. The tag is what makes that reproducible: a branch source changes
-# what this repo builds without changing a tracked byte in it (kiln ADR-0009).
-# A workspace declares the source once; each member declares the dependency.
+# Workspace members resolve to each other; rn-forge libraries do not appear here
+# at all. Their URLs live in each member's `dependencies`, because a source
+# override is local and does not survive into a built wheel (kiln ADR-0005).
 [tool.uv.sources]
 golden-alpha = { workspace = true }
 golden-beta = { workspace = true }
-rn-forge-commons = { git = "https://github.com/rn-forge/pykit", subdirectory = "packages/rn-forge-commons", tag = "rn-forge-commons-v0.2.2" }
 
 [tool.pyright]
 typeCheckingMode = "strict"
@@ -35,11 +33,25 @@ venvPath = "."
 venv = ".venv"
 
 [tool.pytest.ini_options]
-addopts = "-ra"
+# importlib mode keeps same-named test modules in different packages from
+# colliding — two `test_utils.py` under a workspace is normal, not a mistake.
+addopts = "-ra --import-mode=importlib"
 testpaths = ["packages"]
 
+[tool.coverage.run]
+# `source` is passed per run instead: each package covers its own src/, and a
+# repo-wide list would warn about every module the current run did not import.
+relative_files = false
+
 [tool.ruff.lint.per-file-ignores]
-"**/tests/*" = ["ALL"]
+# Not a blanket exemption: tests are code. These are the rules that fight the
+# way a test is written, and nothing else.
+"**/tests/*" = [
+  "S101",    # assert is the point
+  "D",       # a test name is its docstring
+  "ANN",     # annotations on a test add nothing
+  "PLR2004", # a literal in an assertion is the expected value
+]
 
 [dependency-groups]
 workspace = ["golden-alpha", "golden-beta"]
@@ -48,11 +60,16 @@ dev = [
   "import-linter>=2.3",
   "pyright>=1.1.411",
   "pytest>=9.1.1",
+  "coverage[toml]>=7.6",
   "pytest-cov>=7.1.0",
   "pyyaml>=6.0",
   "ruff>=0.15.21",
 ]
 docs = [
+  "mdformat>=1.0.0",
+  "mdformat-gfm>=0.4",
+  "mdformat-front-matters>=2.0.0",
+  "mdformat-mkdocs>=5.3.0",
   "mkdocs-material>=9.6",
   "mkdocstrings[python]>=0.30",
 ]

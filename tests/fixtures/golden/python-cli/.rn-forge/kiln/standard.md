@@ -67,7 +67,7 @@ To change a managed file, change `.rn-forge/kiln/config.toml` and run
 
 ## 3. The dependency set
 
-An archetype is a shape *and* a set of component libraries (kiln ADR-0009). For
+An archetype is a shape *and* a set of component libraries (kiln ADR-0005). For
 `python-cli` that is `rn-forge-commons` and `rn-forge-tooling`, both runtime
 dependencies: tooling is called the development-layer package because of what it
 holds — console and Typer conventions, local state, templates — not because of
@@ -78,16 +78,18 @@ Phase C extracts it, as one entry in the checker's header and one line in
 `pyproject.toml`.
 
 rn-forge distributions are git sources — pykit publishes GitHub Releases, not to
-PyPI — pinned to a tag:
+PyPI — declared as pinned direct URLs in `dependencies`, never as
+`[tool.uv.sources]` overrides, which do not survive into a built wheel:
 
 ```toml
-[tool.uv.sources]
-rn-forge-commons = { git = "https://github.com/rn-forge/pykit", subdirectory = "packages/rn-forge-commons", tag = "rn-forge-commons-v0.2.2" }
+dependencies = [
+  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@rn-forge-commons-v0.2.2#subdirectory=packages/rn-forge-commons",
+]
 ```
 
 `scripts/standards/check_rn_forge_deps.py` enforces three rules — every REQUIRED
 distribution is depended on, no rn-forge distribution outside ALLOWED appears
-anywhere, and no rn-forge git source is a bare branch. Bumping the tag is a kiln
+anywhere, and no rn-forge requirement resolves without a pinned URL. Bumping the tag is a kiln
 release, not a per-repo decision.
 
 ## 4. The import boundary
@@ -108,7 +110,7 @@ is a subprocess or nothing.
 CI installs go-task and the pinned interpreter, then runs committed code only.
 It never installs kiln.
 
-`task validate` proves, without kiln: ruff is clean; the archetype's dependency
+`task validate` proves, without kiln: ruff is clean and formatted; the archetype's dependency
 set is present, allowed and pinned; the import contracts hold;
 the task layout and validate gate are intact; no workflow step invokes a wrapped
 tool; the docs tree matches `docs/_areas.yml`; the nav block is current; no link

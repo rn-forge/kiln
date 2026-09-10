@@ -10,7 +10,7 @@ the docs extras.
 
 The area *keys* are deliberately not a fixed list. `docs/_areas.yml` is seeded
 by kiln and then owned by the repo, so a repo can add an area kiln has never
-heard of (kiln ADR-0006) and these scripts validate the tree against whatever
+heard of (kiln ADR-0005) and these scripts validate the tree against whatever
 the repo declares.
 """
 

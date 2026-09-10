@@ -7,10 +7,10 @@
 
 ## Does not belong here
 
-| Instead of                   | Put it in         |
-| ---------------------------- | ----------------- |
-| Behaviour that already exists | `architecture/`   |
-| A decision                    | an ADR under `adr/` |
+| Instead of | Put it in |
+| -- | -- |
+| Behaviour that already exists | `architecture/` |
+| A decision | an ADR under `adr/` |
 
 ## Naming and shape
 

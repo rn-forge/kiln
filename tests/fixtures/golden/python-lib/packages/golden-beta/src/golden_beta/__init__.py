@@ -6,7 +6,7 @@ packages separately releasable, and a fixture that wired its own packages
 together would be testing uv's workspace resolution rather than the standard.
 
 It does depend on `rn-forge-commons`, like every rn-forge distributable
-(kiln ADR-0009).
+(kiln ADR-0005).
 """
 
 from __future__ import annotations

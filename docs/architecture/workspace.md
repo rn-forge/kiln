@@ -7,7 +7,7 @@ page rather than repeating it.
 ## Components
 
 | Component | Kind | Owns |
-| --- | --- | --- |
+| -- | -- | -- |
 | **commons** (`rn-forge-commons`, in pykit) | library | runtime-neutral Python, data and filesystem mechanisms, and integration protocols |
 | **tooling** (`rn-forge-tooling`, in pykit) | dev library | shared console/CLI conventions, local state, templates, the generation engine, installer mechanics |
 | **kiln** (`rn-forge/kiln`, binary `kiln`) | CLI + canon | the canon (ADRs, the standard-repo spec, runbooks); archetypes and golden repos; the `.rn-forge/` umbrella; `Taskfile.yml` + `tasks/**`; the docs tree + MkDocs; CI; `doctor` |
@@ -33,12 +33,12 @@ The **library graph is acyclic**: commons and tooling are the only rn-forge
 packages that may be a build dependency of a kit, and commons never imports
 tooling. The **tooling graph is free**: kiln and agentkit never import each
 other, and pykit adopting kiln as dev tooling is not a cycle because nothing is
-imported. See [ADR-0003](../adr/0003-the-dependency-graphs.md).
+imported. See [ADR-0002](../adr/0002-the-dependency-graphs.md).
 
 ## Where a thing belongs
 
 | It is… | It lives in |
-| --- | --- |
+| -- | -- |
 | runtime-neutral, and a Django app could use it | commons |
 | a local-development mechanism shared by kits | tooling |
 | rn-forge policy: what a repo looks like, what CI does | kiln |

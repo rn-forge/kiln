@@ -1,4 +1,4 @@
-# The one hand-authored input kiln reads (kiln ADR-0005). Edit this, then run
+# The one hand-authored input kiln reads (kiln ADR-0004). Edit this, then run
 # `kiln apply`. Everything else under .rn-forge/kiln/ is kiln's.
 schema_version = 1
 

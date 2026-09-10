@@ -21,6 +21,7 @@ wheels/
 # mkdocs's own default output dir, for when someone runs it directly by mistake
 site/
 .coverage
+.coverage.*
 coverage.xml
 
 # BEGIN rn-forge kiln

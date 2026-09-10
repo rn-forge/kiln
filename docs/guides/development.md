@@ -15,8 +15,8 @@ task docs:serve  # live docs on http://127.0.0.1:8080
 
 kiln's skeleton is a hand-copy of `tests/fixtures/golden/python-cli`, with the
 names changed. It regenerates itself once the generator exists
-([ADR-0006](../adr/0006-archetypes-and-golden-repos.md)); until then, a change to
-the golden repo's skeleton is a change kiln should make here too, by hand.
+([ADR-0005](../adr/0005-archetypes.md)); until then, a change to the golden
+repo's skeleton is a change kiln should make here too, by hand.
 
 ## Changing a golden repo
 
@@ -24,21 +24,43 @@ The golden repos are the source of truth for the templates, so this is the only
 place a standard change starts.
 
 1. Make the change in `tests/fixtures/golden/python-cli`, in real files.
-2. Run that repo's own gate, from inside it — this is the proof that the change
+
+1. Run that repo's own gate, from inside it — this is the proof that the change
    produces a working repo, and nothing else is:
 
-   ```bash
-   cd tests/fixtures/golden/python-cli
-   uv sync && task validate
-   ```
+    ```bash
+    cd tests/fixtures/golden/python-cli
+    uv sync && task validate
+    ```
 
-3. If the change touches a generated script's *body*, copy it byte-identically
+1. If the change touches a generated script's *body*, copy it byte-identically
    into every other golden repo. If it touches only the list in the
    `# BEGIN kiln config` header, change only that repo's header.
-4. Run kiln's own tests: `task test` asserts every generated script has one body
+
+1. Run kiln's own tests: `task test` asserts every generated script has one body
    across every golden repo.
-5. Once the generator exists, the snapshot test fails until the template agrees.
+
+1. Once the generator exists, the snapshot test fails until the template agrees.
    Update the template, never the snapshot.
+
+## The gate, in full
+
+`task validate` runs, in order: ruff lint, ruff format check, the generated-file
+baseline, the rn-forge dependency contract, the import contracts, the task
+layout and gate-shrink check, the CI entrypoint check, the docs link/structure/
+nav checks, mdformat, pyright strict, pytest, and a strict MkDocs build. A cold
+clone with go-task and the pinned interpreter passes all of it without kiln
+installed.
+
+Two of those are easy to trip by accident:
+
+- **`quality:lint:generated`** compares every managed file against
+  `.rn-forge/kiln/state.json`. Until `kiln apply` exists that baseline is
+  hand-written, so re-seed it after editing a managed file.
+- **`quality:lint:markdown`** runs mdformat over the tree, with
+  `.mdformat.toml`'s `exclude` as the single authority for exemptions.
+  `.rn-forge/kiln/standard.md` is excluded on ownership grounds, not style: a
+  formatter rewriting a kiln-owned file is two owners writing the same bytes.
 
 ## The tests
 

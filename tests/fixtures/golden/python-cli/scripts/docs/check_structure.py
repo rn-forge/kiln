@@ -7,10 +7,10 @@ Checks only what is mechanically decidable: area scaffolding, file naming, ADR
 numbering and status, link and anchor resolution, that no `_*.md` file is
 referenced from a page that ships, and that the root instruction file points at
 the docs rules. It does not judge prose, page length, or whether content sits in
-the right area — that is review, and review is a runbook (kiln ADR-0007).
+the right area — that is review, and review is a runbook (kiln ADR-0006).
 
 The area list comes from `docs/_areas.yml`, which kiln seeds and the repo then
-owns (kiln ADR-0006). An area kiln has never heard of is valid here.
+owns (kiln ADR-0005). An area kiln has never heard of is valid here.
 """
 
 from __future__ import annotations
@@ -213,34 +213,67 @@ def check_no_underscore_refs(docs_root: Path) -> list[Finding]:
     return findings
 
 
+INSTRUCTION_FILES = ("CLAUDE.md", "AGENTS.md")
+
+
+def resolved_links(path: Path) -> set[Path]:
+    return {
+        (path.parent / link.partition("#")[0]).resolve()
+        for link in links(path.read_text(encoding="utf-8"))
+        if not is_external(link)
+    }
+
+
 def check_instruction_pointer(repo_root: Path, docs_root: Path) -> list[Finding]:
-    """The root instruction file must link both `docs/_structure.md` and
-    `docs/index.md` — the only route into the rules for a session that has read
-    neither kiln nor this script (agentkit ADR-0018)."""
-    findings: list[Finding] = []
-    for name in ("CLAUDE.md", "AGENTS.md"):
-        instruction_path = repo_root / name
-        if not instruction_path.exists():
-            findings.append(
-                Finding(str(instruction_path), "missing-instruction-file", f"no {name}")
+    """Some instruction file must link both `docs/_structure.md` and
+    `docs/index.md`, and every other one must reach it.
+
+    That is the only route into the rules for a session that has read neither
+    kiln nor this script (agentkit ADR-0018). It is deliberately not "every
+    instruction file links both": instructions are single-sourced (agentkit
+    ADR-0011), so `AGENTS.md` is a pointer at `CLAUDE.md` rather than a second
+    copy that can drift. What matters is that following the links from whichever
+    file an agent opened first arrives at the rules.
+    """
+    present = [
+        repo_root / name for name in INSTRUCTION_FILES if (repo_root / name).exists()
+    ]
+    if not present:
+        return [
+            Finding(
+                str(repo_root),
+                "missing-instruction-file",
+                f"no instruction file: expected one of {', '.join(INSTRUCTION_FILES)}",
             )
-            continue
-        resolved_links = {
-            (instruction_path.parent / link.partition("#")[0]).resolve()
-            for link in links(instruction_path.read_text(encoding="utf-8"))
-            if not is_external(link)
-        }
-        for target in ("_structure.md", "index.md"):
-            wanted = (docs_root / target).resolve()
-            if wanted not in resolved_links:
-                findings.append(
-                    Finding(
-                        str(instruction_path),
-                        "missing-docs-pointer",
-                        f"no link to {docs_root.name}/{target}",
-                    )
-                )
-    return findings
+        ]
+
+    wanted = {
+        (docs_root / target).resolve() for target in ("_structure.md", "index.md")
+    }
+    carriers = [path for path in present if wanted <= resolved_links(path)]
+    if not carriers:
+        return [
+            Finding(
+                str(path),
+                "missing-docs-pointer",
+                f"no instruction file links both {docs_root.name}/_structure.md "
+                f"and {docs_root.name}/index.md",
+            )
+            for path in present
+        ]
+
+    carrier_paths = {path.resolve() for path in carriers}
+    return [
+        Finding(
+            str(path),
+            "missing-docs-pointer",
+            f"neither links the docs rules nor points at "
+            f"{', '.join(sorted(p.name for p in carrier_paths))}",
+        )
+        for path in present
+        if path.resolve() not in carrier_paths
+        and not (resolved_links(path) & carrier_paths)
+    ]
 
 
 def run_all(repo_root: Path, docs_root: Path) -> list[Finding]:

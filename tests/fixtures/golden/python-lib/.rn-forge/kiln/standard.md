@@ -77,22 +77,26 @@ To change a managed file, change `.rn-forge/kiln/config.toml` and run
 
 ## 3. The dependency set
 
-An archetype is a shape *and* a set of component libraries (kiln ADR-0009).
-Every rn-forge distributable depends on `rn-forge-commons`, so each workspace
-package declares it; the workspace root declares the *source* once.
+An archetype is a shape *and* a set of component libraries (kiln ADR-0005).
+Every rn-forge distributable depends on `rn-forge-commons`, and each workspace
+package declares the full pinned URL itself. The root declares no rn-forge
+source at all: a member is published on its own, so its dependency has to be
+resolvable from its own metadata.
 
 rn-forge distributions are git sources — pykit publishes GitHub Releases, not to
-PyPI — pinned to a tag:
+PyPI — declared as pinned direct URLs in `dependencies`, never as
+`[tool.uv.sources]` overrides, which do not survive into a built wheel:
 
 ```toml
-[tool.uv.sources]
-rn-forge-commons = { git = "https://github.com/rn-forge/pykit", subdirectory = "packages/rn-forge-commons", tag = "rn-forge-commons-v0.2.2" }
+dependencies = [
+  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@rn-forge-commons-v0.2.2#subdirectory=packages/rn-forge-commons",
+]
 ```
 
 `scripts/standards/check_rn_forge_deps.py` reads the root pyproject and every
 member's, and enforces three rules — every REQUIRED distribution is depended on
 by at least one distributable, no rn-forge distribution outside ALLOWED appears
-anywhere, and no rn-forge git source is a bare branch. Bumping the tag is a kiln
+anywhere, and no rn-forge requirement resolves without a pinned URL. Bumping the tag is a kiln
 release, not a per-repo decision.
 
 A `python-lib` repo that *contains* one of these libraries — pykit — renders an
@@ -119,7 +123,7 @@ contracts and `task lint` runs them.
 CI installs go-task and the pinned interpreter, then runs committed code only.
 It never installs kiln.
 
-`task validate` proves, without kiln: ruff is clean in every package; the archetype's dependency set is present,
+`task validate` proves, without kiln: ruff is clean and formatted in every package; the archetype's dependency set is present,
 allowed and pinned; the import contracts hold; the task layout and validate gate are intact; no workflow step
 invokes a wrapped tool; the docs tree matches `docs/_areas.yml`; the nav block is
 current; no link or anchor is broken; **every managed file and block still hashes

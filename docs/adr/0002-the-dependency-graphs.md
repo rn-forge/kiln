@@ -1,4 +1,4 @@
-# ADR-0003 — Two dependency graphs, and an executable boundary
+# ADR-0002 — Two dependency graphs, and an executable boundary
 
 **Status:** accepted
 
@@ -13,6 +13,19 @@ landed in a runtime-neutral library (F17).
 
 Left alone, that ends one of two ways: a repo takes a build dependency on a CLI
 kit, or a runtime library grows a dependency on Typer.
+
+### Alternatives considered
+
+- **One `forge-core` package for everything shared.** Specified in revision 3
+  and dropped: it would have to depend on Typer to be useful to the kits,
+  which makes Typer a transitive dependency of every Django application that
+  imports it.
+- **One graph, enforced by convention.** The drifting Typer floors are what
+  convention produced.
+- **Framework generators as separate provider packages**
+  (`rn-forge-django-gen`). Rejected because a generator must be co-versioned
+  with the runtime whose code it emits, and two distributions cannot be
+  co-versioned by wishing.
 
 ## Decision
 
@@ -42,12 +55,23 @@ register under the `rn_forge.kiln.generators` entry-point group and are
 Python-callable without Typer; kiln supplies the command surface. Co-versioning
 with the runtime is the reason they ship together.
 
-**The boundary is executable.** Every repo carries an `.importlinter` contract
-that kiln owns, `import-linter` is a dev dependency, an internal
-`quality:lint:imports` task runs `lint-imports`, root `lint` calls it, and CI
-reaches it through `task validate`. In pykit the contract additionally forbids
-`rn_forge.django` minus `rn_forge.django.codegen` from importing
-`rn_forge.tooling`, `typer` or `jinja2`.
+**The boundary is executable, in two halves**, because one tool cannot express
+both:
+
+- **At the dependency**, by `scripts/standards/check_rn_forge_deps.py`: which
+  rn-forge distributions a repo may depend on at all
+  ([ADR-0005](0005-archetypes.md)). import-linter rejects subpackages of
+  external packages, so `rn_forge.kiln` cannot be named as a forbidden module
+  — verified, with and without `rn_forge` installed.
+- **At the import**, by `.importlinter`: no direct import of a framework or CLI
+  toolkit that an rn-forge library already owns, plus each archetype's
+  internal boundaries. In pykit it also forbids `rn_forge.django` minus
+  `rn_forge.django.codegen` from importing `rn_forge.tooling`, `typer` or
+  `jinja2`.
+
+`import-linter` is a dev dependency, an internal `quality:lint:imports` task
+runs `lint-imports`, root `lint` calls it, and CI reaches it through
+`task validate`.
 
 ## Consequences
 
@@ -55,4 +79,6 @@ reaches it through `task validate`. In pykit the contract additionally forbids
   dependencies at all, and `import rn_forge.django` succeeds with no extras.
 - "Which package does this belong in?" has a mechanical answer: runtime-neutral
   → commons, shared local-development → tooling, rn-forge policy → kiln.
-- The contract fails in the developer's own `task lint`, not in review.
+- The boundary fails in the developer's own `task lint`, not in review.
+- Two enforcement mechanisms instead of one is a real cost. It is the price of
+  the rule being true rather than merely written down.
