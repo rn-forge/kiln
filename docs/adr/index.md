@@ -1,6 +1,6 @@
 # Decisions
 
-kiln's decision log. ADRs 0001–0008 *are* the repository standard: they carry
+kiln's decision log. ADRs 0001–0010 *are* the repository standard: they carry
 the choices and the alternatives rejected, while the specification those choices
 produced — the verb list, the ownership table, the dependency sets, the config
 schema — lives in [the standard-repo reference](../reference/standard-repo.md),
@@ -17,6 +17,6 @@ here starts listing things, it has become a spec and belongs in the reference.
 - [ADR-0006 — Judgement is a runbook; repos are created, not migrated](0006-runbooks-not-skills.md)
 - [ADR-0007 — The task vocabulary is closed, and the gate cannot shrink](0007-task-vocabulary.md)
 - [ADR-0008 — Type-check with pyright in strict mode, not mypy](0008-pyright-strict-not-mypy.md)
-- [ADR-0009 — Tooling owns the boilerplate; the CLI is declared, not written](0009-tooling-owns-the-boilerplate.md)
+- [ADR-0009 — The libraries own the boilerplate; the CLI is declared, not written](0009-tooling-owns-the-boilerplate.md)
   *(proposed)*
 - [ADR-0010 — The checkers become a versioned package; only their inputs stay committed](0010-checkers-are-a-package.md)

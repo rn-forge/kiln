@@ -6,7 +6,7 @@
 
 Promoted from agentkit ADR-0008, which decided this for one repo. It is a fleet
 decision in practice — no repo in `rn-forge` or `rn-tools` runs mypy, and the
-`python-cli` and `python-lib` templates both generate a `pyright` task — but it
+`python-app` and `python-lib` templates both generate a `pyright` task — but it
 had never been written down anywhere a new repo would find it. A standard that
 lives only in the repos that already follow it is not a standard.
 

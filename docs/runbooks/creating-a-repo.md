@@ -11,36 +11,45 @@ to do when the repo does not fit.
 
 ## 1. Choose the archetype
 
-Ask what the repo *publishes*, not what it contains.
+Ask what the repo *ships*, not what it contains.
 
-| If it publishes… | Archetype |
+| If it ships… | Archetype |
 | -- | -- |
-| one console script or one library from one package | `python-cli` |
+| a batch, a scheduled job or an ML pipeline behind a command line | `python-app` |
+| a tool people install, that owns files and keeps local state | `python-tool` |
 | several independently versioned packages | `python-lib` |
-| a running Django service, with an Nx frontend | `python-django-ng` |
-| a running FastAPI service, with an Nx frontend | `python-fastapi-ng` |
+| an API service with no separate frontend package | `python-web-api` |
+| an API service plus an Nx frontend app | `python-web-app` |
+| several independently versioned UI libraries | `node-lib` *(deferred)* |
+| a standalone Nx frontend against remote APIs | `node-web-app` *(deferred)* |
 
-Two rules of thumb for the awkward cases:
+Then choose the flags: `--framework django|fastapi` for the web archetypes,
+`--frontend angular|react|svelte` for `python-web-app`. A flag value with no
+golden repo is `untested` and `kiln new` refuses it.
 
-- **One package that also has a web UI is still an `-ng` archetype** if the
-  service is the deliverable. The archetype follows the pipeline, and a
-  service's pipeline has a frontend build in it.
-- **`-ng` means a pnpm-managed Nx workspace**, which is Nx's own documented
-  shape. A service with no frontend at all, or one that refuses Nx, has no
-  archetype today — that is a new archetype and a new golden repo, not a flag.
-- **A workspace whose packages are never released separately is `python-cli`,
+Rules of thumb for the awkward cases:
+
+- **`python-app` versus `python-tool`: does it own files outside its own
+  directory?** A batch that reads a database and writes a report is
+  `python-app`. Anything with self-install, `$RNF_HOME`, local state or
+  plugins is `python-tool`, and only `python-tool` takes `rn-forge-tooling`.
+- **A service with a thin built-in admin surface — Django admin, an actuator
+  page — is still `python-web-api`.** `python-web-app` is for a separate,
+  independently built frontend package.
+- **A workspace whose packages are never released separately is `python-app`,
   not `python-lib`.** The whole difference between them is per-package
   versions and per-package release tags. If there is one version number, there
-  is one package as far as the standard is concerned.
+  is one package as far as the standard is concerned. "Is it a monorepo" does
+  not decide anything: every archetype here can be one.
 
 If none fits, stop and write an ADR in the new repo before generating anything.
-A fifth archetype is a template set plus a golden repo — real work, but bounded
-and reviewable. Bending an existing archetype is neither.
+A new archetype — or a new flag value — is a template set plus a golden repo:
+real work, but bounded and reviewable. Bending an existing archetype is neither.
 
 ## 2. Generate
 
 ```bash
-kiln new ../my-repo --archetype python-cli --docs mkdocs --yes
+kiln new ../my-repo --archetype python-app --docs mkdocs --yes
 ```
 
 Without `--yes` this previews and writes nothing. Every prompt has a flag, so

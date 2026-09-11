@@ -33,7 +33,7 @@ repositories. Read one as if it were the finished product, because that is
 exactly what the templates will be derived from:
 
 ```bash
-cd tests/fixtures/golden/python-cli
+cd tests/fixtures/golden/python-tool
 uv sync && task validate
 ```
 

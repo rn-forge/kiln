@@ -14,6 +14,20 @@ landed in a runtime-neutral library (F17).
 Left alone, that ends one of two ways: a repo takes a build dependency on a CLI
 kit, or a runtime library grows a dependency on Typer.
 
+The first revision of this ADR drew one line, between *runtime-neutral* and
+*development-time*, and put everything on the development side into one package.
+The Phase C review showed that line is in the wrong place. A business batch or a
+scheduled ML job is a CLI: it wants the Typer app factory, the console, the
+standard flag set and the error-to-exit-code mapping that
+[ADR-0009](0009-tooling-owns-the-boilerplate.md) says a repo should never write.
+It does not want the generation engine, the template engine, the local state
+store or the installer. Under one package it had to take all of them, from a
+distribution whose own contract told deployed code not to depend on it — so it
+wrote its own `main()` instead, which is the outcome ADR-0009 exists to prevent.
+
+The seam is not workstation-versus-runtime. It is *every CLI* versus *tools that
+install, generate and own files*.
+
 ### Alternatives considered
 
 - **One `forge-core` package for everything shared.** Specified in revision 3
@@ -22,6 +36,15 @@ kit, or a runtime library grows a dependency on Typer.
   imports it.
 - **One graph, enforced by convention.** The drifting Typer floors are what
   convention produced.
+- **One `rn-forge-tooling` with a `[gen]` extra.** The cheaper split. Rejected:
+  an extra adds dependencies, it does not conditionally exclude modules or
+  prevent an eager package initializer from importing them. Making it work
+  needs lazy `__getattr__` exports plus a discipline nothing checks, and the
+  distribution still carries a name that tells a business batch not to use it.
+- **Renaming tooling to `devtools`, `automation` or `core`.** Considered in the
+  Phase C review and rejected there: none of them changes an architectural
+  property, and `core`/`foundation` would create a second vaguely defined
+  common package beside commons.
 - **Framework generators as separate provider packages**
   (`rn-forge-django-gen`). Rejected because a generator must be co-versioned
   with the runtime whose code it emits, and two distributions cannot be
@@ -29,20 +52,42 @@ kit, or a runtime library grows a dependency on Typer.
 
 ## Decision
 
-Two graphs, with different rules.
+### Three library layers
 
 ```text
-commons (pykit) ──► tooling (pykit) ──► kiln
-                          │       └───► agentkit
-                          └───► rn-forge-django[codegen]
+commons ──► cli ──► tooling ──► kiln
+   │         │         │    └─► agentkit
+   │         │         └──────► rn-forge-django[codegen]
+   │         └────────────────► every python-app repo
+   └──────────────────────────► rn-forge-django, rn-forge-fastapi
 
 kiln ──subprocess──► agentkit          (never the reverse)
 kiln ──entry points─► *[codegen]       (kiln never imports a framework)
 ```
 
-**The library graph is acyclic.** `rn-forge-commons` and `rn-forge-tooling` are
-the only rn-forge packages that may be a build dependency of a kit. Tooling
-depends on commons; commons never imports tooling.
+| Layer | Distribution | Holds | Depends on |
+| -- | -- | -- | -- |
+| **runtime** | `rn-forge-commons` | runtime-neutral mechanisms: collections, dataclasses, documents, configuration, logging, filesystem and text-file primitives, hashing, entry-point discovery, `Finding`, the integration protocols | — |
+| **application** | `rn-forge-cli` | the Typer app factory, `AppConsole`, the standard option set, logging wiring, error-to-exit-code mapping, and the declared `[cli]` surface | commons, typer, rich |
+| **developer tool** | `rn-forge-tooling` | the generation engine, the template engine, local state, installer mechanics, docs mechanics | commons, cli, jinja2 |
+
+The layers are ordered by what a consumer gives up. A library gives up nothing
+and takes commons. Any application with a command line takes `rn-forge-cli` and
+gains a process shape it did not write. A tool that installs itself, owns files
+in someone else's repo, or renders templates takes `rn-forge-tooling`.
+
+**The library graph is acyclic**, and it is the whole set: commons, cli and
+tooling are the only rn-forge packages that may be a build dependency of a kit.
+Each layer depends only downward; commons never imports cli, and cli never
+imports tooling.
+
+**Test for placement.** Not "who calls it today" — the only current callers are
+developer tools, so that test returns the same answer for everything. The test
+is what the API's *signature* contains. A directory lock and an atomic symlink
+carry no installer policy, so they are commons. An archive extractor that
+requires exactly one root directory encodes a release-bundle convention, so it
+is tooling. A template engine that hardcodes `autoescape=False` and adds TOML
+and YAML filters targets generated configuration, so it is tooling.
 
 **The tooling graph is free.** kiln and agentkit never import each other; kiln
 calls agentkit as a subprocess. pykit adopting kiln as dev tooling is not a
@@ -67,7 +112,9 @@ both:
   toolkit that an rn-forge library already owns, plus each archetype's
   internal boundaries. In pykit it also forbids `rn_forge.django` minus
   `rn_forge.django.codegen` from importing `rn_forge.tooling`, `typer` or
-  `jinja2`.
+  `jinja2`, and holds the layering itself as a contract: `rn_forge.commons`
+  may not import `rn_forge.cli` or `rn_forge.tooling`, and `rn_forge.cli` may
+  not import `rn_forge.tooling`.
 
 `import-linter` is a dev dependency, an internal `quality:lint:imports` task
 runs `lint-imports`, root `lint` calls it, and CI reaches it through
@@ -77,8 +124,14 @@ runs `lint-imports`, root `lint` calls it, and CI reaches it through
 
 - A framework package can be installed by an application with no generator
   dependencies at all, and `import rn_forge.django` succeeds with no extras.
-- "Which package does this belong in?" has a mechanical answer: runtime-neutral
-  → commons, shared local-development → tooling, rn-forge policy → kiln.
+- "Which package does this belong in?" has a mechanical answer read off the
+  signature: runtime-neutral mechanism → commons, process and command-line
+  shape → cli, owns-files/installs/renders → tooling, rn-forge policy → kiln.
+- A batch or ML repo gets ADR-0009's zero-boilerplate `main()` without
+  installing Jinja2 or a generation engine, and without depending on a package
+  that tells it not to.
+- One more distribution to release, pin and document. Accepted: the alternative
+  is a name that lies to most of the fleet.
 - The boundary fails in the developer's own `task lint`, not in review.
 - Two enforcement mechanisms instead of one is a real cost. It is the price of
   the rule being true rather than merely written down.

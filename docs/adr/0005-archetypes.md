@@ -22,16 +22,33 @@ of placeholders, which is exactly the form in which a missing gate or a wrong
 pin is hardest to see — and the fleet's four divergent pipelines were each
 reviewed that way at some point.
 
+A third failure surfaced in the Phase C review. `python-cli` was one name for
+two different repos: a business batch or ML job that exposes a command line to a
+scheduler, and an installable developer tool that owns `$RNF_HOME`, installs and
+updates itself, keeps local state and loads plugins. They have the same file
+shape and completely different library sets, and collapsing them is what forced
+`rn-forge-tooling` to be a package that most of the fleet was told not to use
+([ADR-0002](0002-the-dependency-graphs.md)).
+
 ### Alternatives considered
 
 - **One `python-web` archetype with `backend` and `web_runner` config keys.**
   The revision-7 design. Two config keys that between them select four
-  template sets is four archetypes wearing a trench coat, and the archetype
+  *topologies* is four archetypes wearing a trench coat, and the archetype
   name — the thing a human reads in `config.toml` — stops saying what the repo
-  is.
+  is. The rule below keeps that rejection while allowing the narrower kind of
+  flag that only swaps an implementation library.
 - **Six archetypes, frontend runner in the name.** Rejected: `-ng` already means
   a pnpm-managed Nx workspace, which is Nx's own documented shape. A non-Nx
   pnpm variant is not a different archetype until a repo needs one.
+- **One `python-cli` archetype, with the tool capabilities as an opt-in
+  dependency.** Rejected: an archetype *is* a library set, and the checker
+  that enforces it (`check_rn_forge_deps.py`) needs one answer for `REQUIRED`.
+  An archetype whose required set is a matter of taste enforces nothing.
+- **"Is it a monorepo" as the axis.** It does not discriminate: `python-lib`,
+  `python-app`, `python-web-app` and `node-lib` can all be workspaces. What
+  separates them is whether the workspace *publishes* — per-package release
+  tags and a per-package CI matrix — or ships one version.
 - **Templates as the source of truth, golden repos as tests generated from
   them.** The normal direction, and the reason four pipelines diverged: the
   reviewer never sees a whole repo.
@@ -48,18 +65,63 @@ reviewed that way at some point.
 
 ### The catalogue
 
-Four archetypes, asserted in config:
+Seven archetypes, asserted in config. The name states the repo's **shape** and
+its **release/CI topology**; nothing else selects those.
 
-| Archetype | Shape | Prior art | Release tag |
-| -- | -- | -- | -- |
-| `python-cli` | one uv package, `src/` layout, pytest/ruff/pyright at root | agentkit | `v<version>` |
-| `python-lib` | uv workspace of published packages; per-package verify and release | pykit | `<package>-v<version>` |
-| `python-django-ng` | uv workspace + Django API + a pnpm-managed Nx workspace for the frontend, one MkDocs site over both | apollo | `v<version>` |
-| `python-fastapi-ng` | as above with FastAPI | intellibench | `v<version>` |
+| Archetype | Shape | Publishes | Prior art | Release tag |
+| -- | -- | -- | -- | -- |
+| `python-app` | one uv package, `src/` layout, optional internal-only workspace packages | no | intellibuild batches | `v<version>` |
+| `python-tool` | as `python-app`, plus self-install, `$RNF_HOME`, local state, plugins, doctor | no | agentkit, kiln | `v<version>` |
+| `python-lib` | uv workspace of published packages; per-package verify and release | yes | pykit | `<package>-v<version>` |
+| `python-web-api` | uv workspace, one API service, no separate frontend package; may ship a thin self-contained admin UI | no | — | `v<version>` |
+| `python-web-app` | uv workspace + API + a pnpm-managed Nx workspace for the frontend, one MkDocs site over both | no | apollo, intellibench | `v<version>` |
+| `node-lib` | pnpm/Nx workspace of published UI libraries | yes | ngkit | `<package>-v<version>` |
+| `node-web-app` | standalone pnpm-managed Nx frontend consuming remote APIs | no | — | `v<version>` |
 
-`-ng` means a **pnpm-managed Nx workspace** — Nx's own documented shape — so
-there is no `web_runner` key. Whether that workspace uses Nx Cloud is a config
-option, because it is an account decision rather than a repo shape.
+`python-app` and `python-tool` are the split of the former `python-cli`. Both
+are command-line programs; only `python-tool` owns files outside its own
+directory, and only it takes `rn-forge-tooling`.
+
+`python-web-api` and `python-web-app` replace `python-django-ng` and
+`python-fastapi-ng`. The framework moved out of the name because it does not
+change the topology; the frontend's presence did not, because it does.
+
+The two node archetypes are **named and deferred**: they need a second toolchain
+— pnpm release, node CI, no uv — and nothing in scope for v1 uses them. Naming
+them now fixes the taxonomy so `ui-lib` does not arrive later as a one-off.
+
+### When a config flag is allowed
+
+> **The archetype name states the repo's shape and its release/CI topology. A
+> config flag may select an implementation library only when it changes neither
+> the file topology nor the task graph.**
+
+`framework = "django" | "fastapi"` passes: it changes `tasks/api.yml` primitives
+and adds `manage.py`, but the uv workspace, the release model and the CI matrix
+are identical. `frontend = "angular" | "react" | "svelte"` passes: it changes
+which `nx g` runs; the task graph is `pnpm nx run-many` either way. The rejected
+`backend` + `web_runner` pair failed because *together* they selected four
+topologies.
+
+**Every flag value that ships has a golden repo.** A value without one is
+`untested = true` in `archetype.toml` and `kiln new` refuses it without an
+explicit override. That is what stops the flag freedom from reintroducing the
+combinatorial explosion this ADR was written to avoid: the catalogue can only
+grow as fast as someone is willing to hand-author and run a repo.
+
+For v1 the shipped values are `python-web-app` with **`django + angular`** and
+**`fastapi + angular`** — django because `rn-forge-django` already exists and is
+the batteries-included path, fastapi because intellibuild needs it — and
+`python-web-api` with **`fastapi`**. `react`, `svelte`, and
+`python-web-api --framework django` are named and `untested`; the django API
+tree is nonetheless exercised inside the django `python-web-app` golden, so
+promoting it later is a golden repo, not a design.
+
+`-ng` is gone from archetype names. A pnpm-managed Nx workspace — Nx's own
+documented shape — is what `python-web-app`, `node-lib` and `node-web-app` mean,
+so there is still no `web_runner` key. Whether that workspace uses Nx Cloud
+stays a config option, because it is an account decision rather than a repo
+shape.
 
 **Docs profile is orthogonal**: `mkdocs` seeds the full area model (from
 agentkit's `_areas.yml`, E17); `external` generates nothing and records
@@ -75,15 +137,16 @@ archetype, and the exact rules, live in
 [the standard-repo reference](../reference/standard-repo.md#3-the-dependency-set);
 the decisions behind them are:
 
-- **Every repo depends on `rn-forge-commons`**; a `python-cli` repo also on
-  `rn-forge-tooling`; an `-ng` repo also on its framework package, with that
-  package's `[codegen]` extra as a *dev* dependency, since kiln discovers
-  generators through an entry-point group in the environment kiln runs in and
-  never in the one the application ships.
-- **`tooling` is a runtime dependency of a CLI**, not a dev one. It is the
-  development-*layer* package because of what it holds — console and Typer
-  conventions, local state, templates — not because of when it is installed.
-  For a CLI, that layer is the runtime.
+- **Every repo depends on `rn-forge-commons`**; every repo with a command line
+  also on `rn-forge-cli`; a `python-tool` repo also on `rn-forge-tooling`; a
+  web repo also on its framework package, with that package's `[codegen]`
+  extra as a *dev* dependency, since kiln discovers generators through an
+  entry-point group in the environment kiln runs in and never in the one the
+  application ships.
+- **`rn-forge-cli` and `rn-forge-tooling` are runtime dependencies**, not dev
+  ones. They are named for what they hold — the process shape, and the
+  file-owning machinery — not for when they are installed. For a CLI, that
+  layer is the runtime.
 - **The dependency is a pinned PEP 508 direct URL in `dependencies`**, never a
   `[tool.uv.sources]` override, because only the former survives into a built
   wheel. Two consequences are accepted deliberately: such a distribution
@@ -124,7 +187,13 @@ then reconciles the result. kiln never templates another tool's scaffold output.
   credential is needed, and the pinned tag keeps resolution reproducible.
 - Bumping a pin is a kiln release, not a per-repo decision — a fleet on one
   commons version is worth more than each repo tracking main.
-- Adding an archetype is a template set plus a golden repo: real work, bounded,
-  and reviewable the same way. Bending an existing one is none of those.
+- Adding an archetype, *or a flag value*, is a template set plus a golden repo:
+  real work, bounded, and reviewable the same way. Bending an existing one is
+  none of those.
+- Seven archetypes and two flags is a bigger catalogue than four with none. The
+  golden-repo-per-shipped-value rule is what keeps it from being a bigger
+  *surface*: six golden repos exist at v1 — `golden-app`, `golden-tool`,
+  `golden-lib`, `golden-api`, and the two `golden-web` variants — not the
+  fourteen the flag matrix could name.
 - Snapshot tests are byte-exact, so a whitespace change in a template is a
   failing test until the golden repo agrees.

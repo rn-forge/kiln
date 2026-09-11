@@ -101,7 +101,7 @@ An `.importlinter` contract forbids `rn_forge.kiln.checks` from importing
 `rn_forge.kiln`, so the split cannot quietly collapse.
 
 **Both distributions live in the kiln repository**, which is therefore a
-`python-lib` workspace with two packages rather than the `python-cli` single
+`python-lib` workspace with two packages rather than the `python-tool` single
 package it is a hand-copy of today. Two repositories would put a repo boundary
 where a package boundary is what is needed, and the import contract above holds
 inside one workspace at least as well as across two.
@@ -151,7 +151,7 @@ of what Phase C extracts into tooling, or they are not.
 - **kiln's own repo becomes `python-lib`**, since it ships two distributions.
   That is a real change to its skeleton and to which golden repo it is a copy
   of; it lands in Phase D, when kiln regenerates itself, and until then the
-  hand-copied `python-cli` skeleton stays as it is.
+  hand-copied `python-tool` skeleton stays as it is.
 - The bootstrap problem is the same one kiln already has: the checks package
   cannot check itself against a version that does not exist yet. It is solved
   the same way — an empty required list until the release exists.

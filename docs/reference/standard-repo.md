@@ -124,11 +124,21 @@ An archetype carries the libraries a repo of that shape is built on
 
 | Archetype | Runtime | Dev |
 | -- | -- | -- |
-| every repo | `rn-forge-commons` | — |
-| `python-cli` | + `rn-forge-tooling` | — |
+| every python repo | `rn-forge-commons` | — |
+| `python-app` | + `rn-forge-cli` | — |
+| `python-tool` | + `rn-forge-cli`, `rn-forge-tooling` | — |
 | `python-lib` | `rn-forge-commons` in each distributable | — |
-| `python-django-ng` | + `rn-forge-django` | + `rn-forge-django[codegen]` |
-| `python-fastapi-ng` | + `rn-forge-fastapi`, when that package exists | + `rn-forge-fastapi[codegen]` |
+| `python-web-api` · `python-web-app`, `framework = "django"` | + `rn-forge-cli`, `rn-forge-django` | + `rn-forge-django[codegen]` |
+| `python-web-api` · `python-web-app`, `framework = "fastapi"` | + `rn-forge-cli`, `rn-forge-fastapi`, when that package exists | + `rn-forge-fastapi[codegen]` |
+| `node-lib` · `node-web-app` | — (deferred) | — |
+
+The three python libraries are layered
+([ADR-0002](../adr/0002-the-dependency-graphs.md)): `rn-forge-commons` holds
+runtime-neutral mechanisms, `rn-forge-cli` holds the process and command-line
+shape, `rn-forge-tooling` holds the machinery for a program that installs
+itself, owns files in someone else's repo, or renders templates. A repo takes
+the highest layer it actually needs; `check_rn_forge_deps.py`'s `REQUIRED` list
+is what makes that a rule rather than a preference.
 
 Every rn-forge requirement is a **pinned PEP 508 direct URL** in `dependencies`:
 
@@ -151,18 +161,21 @@ needing an exemption.
 
 ## 4. The import boundary
 
-`rn-forge-commons` and `rn-forge-tooling` are the only rn-forge packages a repo
-may import. Every other rn-forge component — kiln and agentkit included — is a
-subprocess or nothing. That rule is enforced at the dependency declaration, in
-§3: import-linter rejects subpackages of external packages, so it cannot express
-it.
+`rn-forge-commons`, `rn-forge-cli` and `rn-forge-tooling` are the only rn-forge
+packages a repo may import (plus its own framework runtime package). Every other
+rn-forge component — kiln and agentkit included — is a subprocess or nothing.
+That rule is enforced at the dependency declaration, in §3: import-linter
+rejects subpackages of external packages, so it cannot express it.
 
 What `.importlinter` enforces is the complement — product code imports no
 framework or CLI toolkit *directly* (`typer`, `jinja2`, `click`, `django`,
 `fastapi`); those arrive through the rn-forge library that owns them — plus each
 archetype's internal boundaries, such as a workspace's packages being
-independent of each other. `quality:lint:imports` runs it; `task validate`
-reaches it. ([ADR-0002](../adr/0002-the-dependency-graphs.md))
+independent of each other, and — inside pykit — the library layering itself:
+`rn_forge.commons` may not import `rn_forge.cli` or `rn_forge.tooling`, and
+`rn_forge.cli` may not import `rn_forge.tooling`. `quality:lint:imports` runs
+it; `task validate` reaches it.
+([ADR-0002](../adr/0002-the-dependency-graphs.md))
 
 ## 5. What `task validate` proves without kiln
 
@@ -267,7 +280,9 @@ schema_version = 1
 
 [repository]
 name = "agentkit"
-archetype = "python-cli"   # python-cli | python-lib | python-django-ng | python-fastapi-ng
+archetype = "python-tool"  # python-app | python-tool | python-lib
+                           # python-web-api | python-web-app
+                           # node-lib | node-web-app   (deferred)
 
 [docs]
 profile = "mkdocs"         # mkdocs | external | none
@@ -291,12 +306,30 @@ lint = ["self:check:dist"]
 [archetype.python-lib]
 packages = ["packages/rn-forge-commons", "packages/rn-forge-django"]
 
-[archetype.python-django-ng]     # or [archetype.python-fastapi-ng]
+[archetype.python-app]           # or [archetype.python-tool]
+packages = []                    # internal-only; never published
+
+[archetype.python-web-api]
+framework = "fastapi"            # fastapi (shipped) | django (untested)
+api_dir = "apps/api"
+admin_ui = false                 # a thin self-contained management surface
+
+[archetype.python-web-app]
+framework = "django"             # django | fastapi   (both shipped)
+frontend = "angular"             # angular (shipped) | react | svelte (untested)
 api_dir = "apps/api"
 web_dir = "apps/web"
 nx_cloud = false                 # an account decision, not a repo shape
+
+[cli]                            # ADR-0009; read by rn-forge-cli, not by kiln
+name = "agentkit"
+options = ["json", "dry-run", "yes", "log-level"]
 ```
 
-There is no `backend` key and no `web_runner` key: the archetype name says which
-framework, and `-ng` means a pnpm-managed Nx workspace — Nx's own documented
-shape.
+There is no `backend` key and no `web_runner` key. `framework` and `frontend`
+select an implementation library, never a topology
+([ADR-0005](../adr/0005-archetypes.md)): a pnpm-managed Nx workspace — Nx's own
+documented shape — is what the `-app` archetypes mean, and the presence of a
+separate frontend package is what separates `python-web-app` from
+`python-web-api`. A flag value without a golden repo is `untested` and
+`kiln new` refuses it.

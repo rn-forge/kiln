@@ -13,7 +13,7 @@ task docs:serve  # live docs on http://127.0.0.1:8080
 
 ## This repo's own skeleton
 
-kiln's skeleton is a hand-copy of `tests/fixtures/golden/python-cli`, with the
+kiln's skeleton is a hand-copy of `tests/fixtures/golden/python-tool`, with the
 names changed. It regenerates itself once the generator exists
 ([ADR-0005](../adr/0005-archetypes.md)); until then, a change to the golden
 repo's skeleton is a change kiln should make here too, by hand.
@@ -23,13 +23,13 @@ repo's skeleton is a change kiln should make here too, by hand.
 The golden repos are the source of truth for the templates, so this is the only
 place a standard change starts.
 
-1. Make the change in `tests/fixtures/golden/python-cli`, in real files.
+1. Make the change in `tests/fixtures/golden/python-tool`, in real files.
 
 1. Run that repo's own gate, from inside it — this is the proof that the change
    produces a working repo, and nothing else is:
 
     ```bash
-    cd tests/fixtures/golden/python-cli
+    cd tests/fixtures/golden/python-tool
     uv sync && task validate
     ```
 

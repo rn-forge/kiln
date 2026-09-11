@@ -1,9 +1,21 @@
 # rn-forge repo standardization — plan of action
 
-**Date:** 2026-09-09 · **Revision:** 8 **Repos in scope:** `rn-forge/pykit`,
+**Date:** 2026-09-10 · **Revision:** 9 **Repos in scope:** `rn-forge/pykit`,
 `rn-forge/kiln` (new), `rn-forge/agentkit` (rebuilt), `walgreens/intellibuild`
 (new; successor to `intellibench`) **Parked:** `rn-tools/apollo`, `ngkit`,
 `shkit` · **Retired:** `rn-forge/taskkit`
+
+**Revision 9 changes (after the Phase C review):** the development layer is
+**split in two** — `rn-forge-cli` for the process and command-line shape,
+`rn-forge-tooling` for the file-owning machinery (D52, ADR-0002) · the archetype
+catalogue becomes **seven names plus two implementation flags** (D53, ADR-0005),
+replacing `python-cli` with `python-app`/`python-tool` and the `-ng` pair with
+`python-web-api`/`python-web-app` · a config flag is allowed only when it
+changes neither topology nor task graph, and **every shipped flag value has a
+golden repo** (D54) · commons, cli and tooling are **re-laid-out into
+sub-packages** (D55) · `kiln generate package` is in scope; framework code
+generators stay deferred (D56) · fourteen implementation defects from the review
+are tracked as **Phase C.2** (§0.8).
 
 **Revision 8 changes (after the Phase B review):** Phases A and B are
 **executed** — see §0.1 · archetypes are renamed to `python-cli`, `python-lib`,
@@ -61,16 +73,27 @@ the tree is left for review). It contains:
 - **Review outcomes** — `docs/plans/reviews/phase-b-owner.md` and
   `phase-b-codex.md`, and everything in them is addressed. See §0.6.
 
-**Next: Phase C** (§3), with the addendum recorded at the end of that phase.
-ADR-0010 is settled (D51), so the docs checkers are in scope for the extraction.
+**Phase C: first pass landed in pykit, reviewed, and revised.** pykit commit
+`4624bfe` extracted `rn-forge-tooling`. Both reviews are in
+`docs/plans/reviews/phase-c-codex.md` and `phase-c-owner.md`, and both landed on
+the same conclusion from opposite directions: the commons/tooling seam is in the
+wrong place. §0.8 is the outcome.
+
+**Next: Phase C.2** (§3) — the layer split, the package re-layout, the fourteen
+defect fixes, and the consumer wiring Phase C's own addendum required and never
+got. **Nothing in Phase D starts until C.2 lands**, because kiln's templates
+derive from the golden repos and the golden repo set changes here.
+
+`docs/plans/commons-upgrade-plan.md` in pykit carries the executable form of
+C.2, starting at its **"Part D — resume here"** marker.
 
 Repo state; verify with `git status` before acting, these will be stale:
 
 | Repo | Branch | State | Note |
 | -- | -- | -- | -- |
-| `rn-forge/kiln` | `main` (no commits) | ~380 files, untracked | **Phase B output; review then commit** |
-| `rn-forge/pykit` | `feature/upgrade` | clean | Phase A landed; **Phase C splits commons/tooling here** |
-| `rn-forge/agentkit` | `feature/v0.6.0` | clean | the `python-cli` model repo; **rebuilt from scratch in Phase F** |
+| `rn-forge/kiln` | `feature/v1` | canon revised for revision 9 | golden fixtures still carry the **old archetype names**; renamed in C.2 |
+| `rn-forge/pykit` | `feature/upgrade` | clean at `4624bfe` | Phase C first pass landed; **Phase C.2 re-splits into commons/cli/tooling here** |
+| `rn-forge/agentkit` | `feature/v0.6.0` | clean | the `python-tool` model repo; **rebuilt from scratch in Phase F** |
 | `rn-forge/taskkit` | `feature/v1` | 34 staged | **retired (D23)** — donor for `validator.py` and test fixtures only |
 | `rn-tools/apollo` | `feature/initial` | 13 dirty | **parked (D40)** — broken working tree left as-is |
 | `walgreens/intellibench` | `feature/iteration-2` | 13 dirty | **superseded by intellibuild (D41)** — `docs2/` is the new repo's docs; `tools/` is a donor |
@@ -79,8 +102,9 @@ Repo state; verify with `git status` before acting, these will be stale:
 
 | Component | Kind | Owns | Status |
 | -- | -- | -- | -- |
-| **commons** (`rn-forge-commons` in pykit) | library | runtime-neutral Python/data/filesystem mechanisms and integration protocols | exists; Part C uncommitted, Part D new |
-| **tooling** (`rn-forge-tooling` in pykit) | dev library | shared console/CLI conventions, local state, templates, the generator engine, installer mechanics | **new; extracted in Phase C** |
+| **commons** (`rn-forge-commons` in pykit) | library | runtime-neutral Python/data/filesystem mechanisms and integration protocols | exists; re-laid-out in Phase C.2 |
+| **cli** (`rn-forge-cli` in pykit) | app library | the Typer app factory, `AppConsole`, the standard option set, logging wiring, error-to-exit-code, the declared `[cli]` surface | **new; split out in Phase C.2 (D52)** |
+| **tooling** (`rn-forge-tooling` in pykit) | dev-tool library | the generation engine, templates, local state, installer mechanics, docs mechanics | extracted in Phase C; **narrowed in Phase C.2** |
 | **kiln** (`rn-forge/kiln`, binary `kiln`) | CLI + canon | the **canon** (ADRs, standard-repo spec, runbooks); archetypes and golden repos; `.rn-forge/` umbrella; `Taskfile.yml` + `tasks/**`; docs tree + MkDocs; CI; `doctor` | **new** |
 | **agentkit** | CLI | `.claude/**`, `.codex/**`, `CLAUDE.md`/`AGENTS.md` body, generic skills | exists; **rebuilt on tooling in Phase F** |
 | `rn-forge-django[codegen]` (later `rn-forge-fastapi[codegen]`) | extra | framework templates, option schemas, generator entry points | later (D2); boundary fixed now (D37) |
@@ -154,6 +178,79 @@ exemption for tests; fork pull requests ran a scan whose secret they cannot see.
 | Will the golden repo's `ADR-0001` be seeded into every repo? | **No.** Only `docs/adr/index.md` and `docs/adr/_structure.md` are seeded; the golden repo's own ADR is fixture content and is not in `state.json`. A new repo gets an empty, structured `adr/` area and writes its own first decision — the runbook covers that. |
 | `scripts/` is a good candidate to package and add as a dev dependency | **Agreed, and settled as kiln ADR-0010 (accepted; D51).** 1,454 lines per repo, four of the seven checkers with no per-repo variation at all, and the remaining three varying only by lists already present in `config.toml`. Splitting `rn-forge-kiln-checks` from `rn-forge-kiln` keeps ADR-0003's real rule — CI never *renders* — while removing the duplication. The docs checkers move into tooling in Phase C; the four policy checkers become `rn-forge-kiln-checks` in Phase D, in the kiln repo alongside the CLI. |
 
+### 0.8 What the Phase C review changed
+
+Both reviews are in `docs/plans/reviews/`. This is the list, so a later session
+does not re-derive it. Nothing here is a failure to follow the plan — the plan
+said the wrong thing, and F8/F9 are the separate completion gap.
+
+**The one conclusion both reviews reached.** Codex A1: the workstation/runtime
+distinction is too absolute — a business batch has maintenance commands, and
+Typer, filesystem access and a console are not inherently unsafe in deployed
+software. Owner: `python-cli` is really two archetypes, and *"these apps will
+not need install, update, home directory, doctor, state, plugins… those
+capabilities are needed by a specific class of apps, which are installable
+tools."* Same seam, named from both ends. The resolution is D52 (three library
+layers) and D53 (`python-app` / `python-tool`), and the two are the same change:
+the archetype split is what gives the package split a consumer.
+
+**Architecture (from codex)**
+
+| Item | Outcome |
+| -- | -- |
+| A1 — the workstation/runtime line is in the wrong place | **Accepted, and generalized.** Split the development layer into `rn-forge-cli` and `rn-forge-tooling` (D52). `DirectoryLock` and `atomic_symlink` move back to commons; `extract_archive`, `StateStore`, `TemplateEngine` and the generation engine stay in tooling; the residual `utils.py` stays in commons — all four for codex's own reason, which is what the signature contains. |
+| A1 — move `ManagedBlock` to tooling | **Rejected.** The argument is "its current examples are gitignore, instructions and MkDocs", but the only current *consumers* are developer tools, so that test returns the same answer for everything. `ManagedBlock` is a byte-preserving fenced-span edit with no generator policy in its signature — the same test that moved the lock and the symlink back to commons keeps it there. F6 fixes it in place. |
+| A1 — this revises D29/D35/D51 | **Overstated, and worth being precise about.** Codex's own table leaves generation, templates, state, install, CLI and docs mechanics on the development side. The genuine relocations are the lock and the symlink. D35 is *refined* by D52, not reopened. |
+| A2 — docs extraction carried kiln policy into tooling | **Accepted in full; the cleanest finding in the review.** `docs/structure.py` hardcoding ADR numbering, epic/release naming and instruction filenames puts rn-forge policy inside a general-purpose library, contradicting ADR-0001 outright. Tooling keeps link, Markdown and nav *mechanics* and takes an explicit policy object; `rn-forge-kiln-checks` supplies it (Phase D). No generic validation framework. |
+| A3 — the package contract bundles every consumer with the whole CLI stack | **Accepted; the eager `__init__` is the real defect.** Under D52 it largely evaporates: a batch importing `rn_forge.cli` cannot reach Jinja2, because it is in another distribution. Codex is right that extras add dependencies rather than excluding modules — which is why the split is packages, not extras. |
+| Rename tooling to `devtools` / `automation` / `core` | **Rejected, as codex recommended.** None changes an architectural property. `rn-forge-cli` was rejected as a rename of the *whole* package for being too narrow, and adopted as the name of the application layer specifically, where it is exactly right. |
+
+**Archetypes (from the owner)**
+
+| Comment | Outcome |
+| -- | -- |
+| `python-cli` conflates business batches with installable tools | **Done (D53).** `python-app` and `python-tool`. Same shape, different library set, different `REQUIRED` list, one golden repo each. |
+| `python-lib` is a monorepo publishing several packages; `python-app` may also carry internal packages | **Done, and the axis is corrected.** "Is it a monorepo" does not discriminate — every archetype here can be one. *Publishing* does: per-package release tags and a per-package CI matrix, versus one version. Written into ADR-0005 and the runbook. |
+| Web repos are microservice-or-full-app, with django/fastapi and angular/react/svelte as choices | **Done (D53).** `python-web-api` and `python-web-app`, with `framework` and `frontend` flags. This reverses D47's blanket rejection of flags, so D54 restates the rule that makes both positions coherent rather than leaving it as a reversal. |
+| An API with no separate frontend may still ship a thin admin UI | **Accepted** — `admin_ui` on `python-web-api`. Django admin and actuator-style pages do not make a repo `python-web-app`; a separately built frontend package does. |
+| `ui-lib` and `node-web-app`, angular first | **Named in the catalogue, deferred to post-v1.** They need a second toolchain — pnpm release, node CI, no uv — and nothing in v1 scope uses them. Naming them now fixes the taxonomy so `ui-lib` does not arrive later as a one-off. |
+| kiln should generate new library packages, models, api, serializers, UI boilerplate | **Split (D56).** `kiln generate package` emits *repo structure* into a workspace, which is already kiln's job — in scope for Phase D. Framework code generators stay D2/D37: they ship in `rn-forge-django[codegen]`, register under `rn_forge.kiln.generators`, and kiln only supplies the command surface. |
+| commons' layout is not intuitive | **Done (D55).** Sub-packages by kind of mechanism, applied to commons, cli and tooling. §2.11. |
+
+**Implementation defects.** Codex's F1–F14, verified where verification was
+cheap. F1 (multi-block staging overwrites, and the repeated backup that breaks
+rollback), F2 (`except Exception` lets Ctrl-C skip rollback), F3 (`Severity` is
+a `StrEnum` compared with `is`, so a JSON round trip silently demotes an error)
+and F4 (artifact paths escape the root and are written *before* any backup
+exists) were each confirmed against `4624bfe`. They are scheduled as Phase C.2,
+in §3.
+
+Two are worth more than codex's framing:
+
+- **F3 is not a `Finding` bug.** `DataclassMixin` does not reconstruct enums on
+  deserialization, so every dataclass in the fleet with an enum field has the
+  same latent defect. Fix the mixin and audit the set; patching `Finding`
+  alone leaves it.
+- **F9 is not a stale sentence.** Under D46 the pinned-direct-URL rule applies
+  to tooling's own dependency on commons, not only to consumer repos. The
+  installation guide's `uv add rn-forge-tooling` describes a distribution
+  model this plan rejected; the fix is the release contract.
+
+**F12** is accepted with a simpler fix than codex proposed and a lower priority:
+the anchor checker should stop reimplementing Python-Markdown's slug and
+unique-id logic and call it. The reference-link and fenced-code gaps are
+separately real.
+
+**What neither review said.** Phase C broke ADR-0005's own rule — *a template
+change not first made in a golden repo is a bug*. It invented `rn-forge-tooling`
+and ADR-0009's declared `[cli]` surface, and no golden repo demonstrates either:
+golden-cli still pins commons `v0.2.2` and does not use tooling at all (which is
+F8, read as a plan gap rather than a defect). The missing acceptance test is
+that **`golden-app` contains a working CLI with zero hand-written app
+construction**. If that repo cannot be written, ADR-0009 is not ready to be
+accepted, and that is better discovered now than after kiln's templates derive
+from it.
+
 ### 0.5 Not covered
 
 Product code, test strategy, runtime architecture. This is repo structure,
@@ -192,19 +289,29 @@ ______________________________________________________________________
 ### 2.1 Components and their dependency graphs
 
 ```
-commons (pykit) ──► tooling (pykit) ──► kiln
-                          │       └───► agentkit
-                          └───► rn-forge-django[codegen]   (extra; never the runtime surface)
+commons ──► cli ──► tooling ──► kiln
+   │         │         │    └─► agentkit
+   │         │         └──────► rn-forge-django[codegen]   (extra; never the runtime surface)
+   │         └────────────────► every python-app / python-web-* repo
+   └──────────────────────────► rn-forge-django, rn-forge-fastapi
 
 kiln ──subprocess──► agentkit       (kiln may call agentkit; never the reverse)
 kiln ──entry points─► *[codegen]    (kiln discovers generators; never imports a framework)
 ```
 
-> **Library graph acyclic, tooling graph free.** `rn-forge-commons` and
-> `rn-forge-tooling` are the only rn-forge packages that are build dependencies
-> of a kit. Tooling depends on commons; commons never imports tooling. kiln and
-> agentkit never import each other. pykit adopting kiln as dev tooling is not a
-> cycle — nothing is imported.
+> **Library graph acyclic, tooling graph free.** `rn-forge-commons`,
+> `rn-forge-cli` and `rn-forge-tooling` are the only rn-forge packages that are
+> build dependencies of a kit, and each depends only downward. kiln and agentkit
+> never import each other. pykit adopting kiln as dev tooling is not a cycle —
+> nothing is imported.
+>
+> **Three layers, not two (D52).** commons is what a library, a service and a
+> batch can all take. `rn-forge-cli` is what any program with a command line
+> takes — including business batches and ML jobs, which is the case the first
+> two-package split got wrong. `rn-forge-tooling` is what a program that
+> installs itself, owns files in someone else's repo, or renders templates
+> takes. The placement test is what an API's *signature* contains, not who
+> happens to call it today ([ADR-0002](../adr/0002-the-dependency-graphs.md)).
 
 **Codegen boundary (D37).** A framework's generators ship inside its runtime
 package as an extra: `rn-forge-django[codegen]` installs `rn-forge-tooling`,
@@ -333,10 +440,12 @@ rn-forge/kiln/
       docs.py
     archetypes/
       _shared/pins.toml
-      python_cli/  python_lib/  python_web/     # templates + archetype.toml (defaults, forbidden_tools, required_validate)
+      python_app/  python_tool/  python_lib/    # templates + archetype.toml
+      python_web_api/  python_web_app/               # (defaults, flags, forbidden_tools, required_validate)
   tests/
     fixtures/golden/       # one complete rendered repo per archetype (§2.6) — the snapshot oracle
-      python-cli/  python-lib/  python-django-ng/  python-fastapi-ng/
+      python-app/  python-tool/  python-lib/
+      python-web-api/  python-web-app-django/  python-web-app-fastapi/
     fixtures/repos/        # moved from taskkit/tests/fixtures/repos (web archetype inputs)
 ```
 
@@ -353,7 +462,9 @@ schema_version = 1
 
 [repository]
 name = "agentkit"                 # used in provenance headers, release tags
-archetype = "python-cli"          # python-cli | python-lib | python-django-ng | python-fastapi-ng
+archetype = "python-tool"         # python-app | python-tool | python-lib
+                                  # python-web-api | python-web-app
+                                  # node-lib | node-web-app  (deferred)
 
 [docs]
 profile = "mkdocs"                # mkdocs | external | none
@@ -379,11 +490,28 @@ build = ["self:build:check-dist"]
 [archetype.python-lib]            # archetype-specific tables; one per archetype
 packages = ["packages/rn-forge-commons", "packages/rn-forge-django"]
 
-[archetype.python-django-ng]      # or [archetype.python-fastapi-ng]
+[archetype.python-app]            # or [archetype.python-tool]
+packages = []                     # internal-only; never published
+
+[archetype.python-web-api]
+framework = "fastapi"             # fastapi (shipped) | django (untested)
+api_dir = "apps/api"
+admin_ui = false                  # a thin self-contained management surface
+
+[archetype.python-web-app]
+framework = "django"              # django | fastapi   (both shipped)
+frontend = "angular"              # angular (shipped) | react | svelte (untested)
 api_dir = "apps/api"
 web_dir = "apps/web"
 nx_cloud = false                  # an account decision, not a repo shape
+
+[cli]                             # ADR-0009; rendered by kiln, read by rn-forge-cli
+name = "agentkit"
+options = ["json", "dry-run", "yes", "log-level"]
 ```
+
+`framework` and `frontend` select an implementation library, never a topology
+(D54). A value without a golden repo is `untested` and `kiln new` refuses it.
 
 Validation: pydantic strict model; every failure reported with its dotted path
 (taskkit's `parse_config` pattern), never just the first.
@@ -392,7 +520,7 @@ Validation: pydantic strict model; every failure reported with its dotted path
 
 | Command | Behaviour |
 | -- | -- |
-| `kiln new <dir> --archetype A [--docs P] [--backend B] [--web-runner R] [--dry-run] [--yes] [--json]` | collect config in memory for a new repo; preview and write nothing unless `--yes`, which writes `config.toml` and runs scaffold + apply. Refuses a non-empty `<dir>`. |
+| `kiln new <dir> --archetype A [--docs P] [--framework F] [--frontend W] [--dry-run] [--yes] [--json]` | collect config in memory for a new repo; preview and write nothing unless `--yes`, which writes `config.toml` and runs scaffold + apply. Refuses a non-empty `<dir>`. |
 | `kiln apply [--dry-run] [--json] [--force <artifact>]…` | the full sequence (§2.5.5); idempotent and non-interactive; re-run after editing `config.toml` or upgrading kiln; each forced path must name a reported conflict, drift, or missing managed artifact |
 | `kiln doctor [--json] [--all <path>…]` | every check in §2.5.6; exit 1 on any error-severity finding |
 | `kiln diff [<artifact>]` | unified diff of on-disk vs fresh render |
@@ -499,10 +627,22 @@ table (F11).
 
 | Archetype | Shape | Model repo (prior art) | Golden fixture | Release tag |
 | -- | -- | -- | -- | -- |
-| `python-cli` | uv single package, src layout, pytest/ruff/pyright at root, GH Actions | agentkit | `golden/python-cli` | `v<version>` |
+| `python-app` | uv single package, src layout, optional internal-only workspace packages | intellibuild batches | `golden/python-app` | `v<version>` |
+| `python-tool` | as `python-app` + self-install, `$RNF_HOME`, local state, plugins, doctor | agentkit, kiln | `golden/python-tool` | `v<version>` |
 | `python-lib` | uv workspace of published library packages; per-package verify + release | pykit | `golden/python-lib` | `<package>-v<version>` |
-| `python-django-ng` | uv workspace + Django API + a pnpm-managed Nx workspace for the frontend, one MkDocs site over both | apollo | `golden/python-django-ng` | `v<version>` |
-| `python-fastapi-ng` | as above with FastAPI | intellibench `docs2/` | `golden/python-fastapi-ng` | `v<version>` |
+| `python-web-api` | uv workspace, one API service, no separate frontend package; optional thin admin UI | — | `golden/python-web-api` (fastapi) | `v<version>` |
+| `python-web-app` | uv workspace + API + pnpm-managed Nx frontend, one MkDocs site over both | apollo, intellibench `docs2/` | `golden/python-web-app-django`, `golden/python-web-app-fastapi` | `v<version>` |
+| `node-lib` | pnpm/Nx workspace of published UI libraries | ngkit | *deferred* | `<package>-v<version>` |
+| `node-web-app` | standalone pnpm-managed Nx frontend against remote APIs | — | *deferred* | `v<version>` |
+
+**Flags, not archetypes, for the implementation library (D54).**
+`--framework django|fastapi` on the web archetypes and
+`--frontend angular|react|svelte` on `python-web-app` change neither the file
+topology nor the task graph, which is the whole rule. Every shipped value has a
+golden repo; a value without one is `untested = true` and `kiln new` refuses it.
+v1 ships `python-web-app` with `django + angular` and `fastapi + angular`, and
+`python-web-api` with `fastapi`. Six golden repos, not the fourteen the matrix
+could name.
 
 **Golden repos are the source of truth for templates (D43).** Each golden
 fixture is a complete, hand-authored, *runnable* repo: `uv sync` and
@@ -523,22 +663,22 @@ in the instructions block; `none` generates nothing. Repos extend the seeded
 **Template inventory** (✔ = generated for that archetype; d = only when
 `docs.profile = mkdocs`; s = only when `ci.sonar`):
 
-| Artifact | cli | lib | web |
-| -- | -- | -- | -- |
-| `.editorconfig`, `.gitignore` block, instructions block, `.rn-forge/kiln/standard.md` | ✔ | ✔ | ✔ |
-| `Taskfile.yml` (10 root wrappers: `setup validate lint format typecheck test test:coverage build clean version`; public `docs:build docs:serve docs:nav docs:structure` only for `mkdocs`) | ✔ | ✔ | ✔ |
-| `tasks/workspace.yml` (`install`, `build`, `version`, `clean`) | ✔ | ✔ | ✔ |
-| `tasks/quality.yml` (internal `lint:python lint:generated lint:imports lint:task-layout lint:ci-entrypoint lint:docs* format:python typecheck:python test:python test:coverage`) | ✔ | ✔ (per-package `uv run --package`) | ✔ (api side) |
-| `tasks/web.yml` (`lint test build dev` via `pnpm nx run-many -t …` or `pnpm run …`) |  |  | ✔ |
-| `tasks/docs.yml` (`build serve nav structure`) | d | d | d |
-| `.importlinter` contracts; `scripts/standards/check_generated.py` | ✔ | ✔ | ✔ |
-| `scripts/task/check_task_layout.py` — header list: the archetype's `required_validate` | ✔ | ✔ | ✔ |
-| `scripts/ci/check_ci_entrypoint.py` — header list: cli/lib `uv pytest ruff pyright mkdocs lint-imports kiln`; web adds `pnpm npx nx` | ✔ | ✔ | ✔ |
-| `scripts/docs/{_common,check_docs,gen_nav,check_structure}.py` | d | d | d |
-| `docs/_areas.yml`, `docs/_structure.md`, `docs/adr/_structure.md`, seeded index pages, `mkdocs.yml` nav block | d | d | d |
-| `.github/workflows/ci.yml` (validate → sonar → check-version → build → publish) | ✔ | ✔ (matrix over `packages`) | ✔ (+ pnpm/node setup) |
-| `.github/workflows/docs.yml` (Pages deploy on main) | d | d | d |
-| `sonar-project.properties` | s | s | s |
+| Artifact | app | tool | lib | web |
+| -- | -- | -- | -- | -- |
+| `.editorconfig`, `.gitignore` block, instructions block, `.rn-forge/kiln/standard.md` | ✔ | ✔ | ✔ | ✔ |
+| `Taskfile.yml` (10 root wrappers: `setup validate lint format typecheck test test:coverage build clean version`; public `docs:build docs:serve docs:nav docs:structure` only for `mkdocs`) | ✔ | ✔ | ✔ | ✔ |
+| `tasks/workspace.yml` (`install`, `build`, `version`, `clean`) | ✔ | ✔ | ✔ | ✔ |
+| `tasks/quality.yml` (internal `lint:python lint:generated lint:imports lint:task-layout lint:ci-entrypoint lint:docs* format:python typecheck:python test:python test:coverage`) | ✔ | ✔ | ✔ (per-package `uv run --package`) | ✔ (api side) |
+| `tasks/web.yml` (`lint test build dev` via `pnpm nx run-many -t …` or `pnpm run …`) |  |  |  | ✔ |
+| `tasks/docs.yml` (`build serve nav structure`) | d | d | d | d |
+| `.importlinter` contracts; `scripts/standards/check_generated.py` | ✔ | ✔ | ✔ | ✔ |
+| `scripts/task/check_task_layout.py` — header list: the archetype's `required_validate` | ✔ | ✔ | ✔ | ✔ |
+| `scripts/ci/check_ci_entrypoint.py` — header list: app/tool/lib `uv pytest ruff pyright mkdocs lint-imports kiln`; web adds `pnpm npx nx` | ✔ | ✔ | ✔ | ✔ |
+| `scripts/docs/{_common,check_docs,gen_nav,check_structure}.py` | d | d | d | d |
+| `docs/_areas.yml`, `docs/_structure.md`, `docs/adr/_structure.md`, seeded index pages, `mkdocs.yml` nav block | d | d | d | d |
+| `.github/workflows/ci.yml` (validate → sonar → check-version → build → publish) | ✔ | ✔ | ✔ (matrix over `packages`) | ✔ (+ pnpm/node setup) |
+| `.github/workflows/docs.yml` (Pages deploy on main) | d | d | d | d |
+| `sonar-project.properties` | s | s | s | s |
 
 CI templates bake in the F5 fixes: SHA-pinned actions with version comments,
 least-privilege `permissions:` per job, `concurrency:` per ref, tag-exists
@@ -573,11 +713,22 @@ small shared capabilities below to their correct owners:
 | `StateStore(..., metadata: Mapping[str, JsonValue] \| None)` written beside `schema_version`/`entries`; `metadata` property on load; canonical JSON output with sorted mapping keys | tooling `state.py` | taskkit's `taskkit_version`/`config_hash` envelope fields |
 | `generation.py` — artifact kinds, the §2.5.4 classification, staged/backed-up/atomic transactional execution, Typer-free generator protocol | tooling `generation.py` | agentkit `project_command` apply loop, taskkit `planner` write path |
 
-**Extract from commons into tooling:** `AppConsole`, Typer helpers,
-`StateStore`, `TemplateEngine`, `DirectoryLock`, `atomic_symlink` and
-`extract_archive`. Keep `PathUtils.atomic_write`, `ContentHash`, path guards,
-documents, integration protocols, resilience and generic `EntryPointLoader` in
-commons. Do not leave commons-to-tooling compatibility re-exports.
+**The boundary, as corrected by the Phase C review (D52).** The first pass moved
+one set out of commons; C.2 moves it into two packages and moves two things
+back:
+
+| API | Home | Reason |
+| -- | -- | -- |
+| Typer helpers, `AppConsole`, standard options, logging wiring, error-to-exit-code, the `[cli]` surface | **`rn-forge-cli`** | the process and command-line shape; every CLI wants it, including batches |
+| `generation`, `TemplateEngine`, `StateStore`, `install`, `extract_archive`, docs *mechanics* | **`rn-forge-tooling`** | owns files, installs, or renders; only `python-tool` and kiln/agentkit need it |
+| `DirectoryLock`, `atomic_symlink` | **back to commons** (`fs/locks.py`) | no installer policy in the signature; a local worker can serialize filesystem work or publish a snapshot atomically |
+| `ManagedBlock` | **stays in commons** (`fs/blocks.py`) | a byte-preserving fenced-span edit; the current callers are all dev tools because they are the only current callers |
+| `Finding`, `Severity`, `JsonValue`, `utils.py`, `EntryPointLoader`, `PathUtils`, `ContentHash`, documents, integration protocols, resilience | **commons** | unchanged; generalize `Finding`'s wording so paths need not be repo-relative and severity need not dictate exit policy |
+| ADR numbering, epic/feature/release naming, instruction filenames in `docs/structure.py` | **`rn-forge-kiln-checks`** (Phase D) | rn-forge policy, which ADR-0001 says is kiln's; tooling takes an explicit policy object instead (A2) |
+
+Do not leave compatibility re-exports in either direction: commons must never
+import cli or tooling, and cli must never import tooling. `.importlinter` holds
+all three contracts.
 
 **Kiln-owned:** `$RNF_HOME`, the `.rn-forge/` layout, `config.toml` schemas,
 archetypes, golden repos and product policy. The generic template and generator
@@ -595,14 +746,15 @@ this plan builds a generator (D2); it only fixes where one will live.
 
 ### 2.9 agentkit after this plan
 
-Rebuilt from scratch in Phase F.3 by `kiln new agentkit --archetype python-cli`,
-with its source rewritten on commons and tooling. Unchanged in *scope*: global
-and project agent configuration, hooks, adapters, instruction-file seeding,
-generic skills (`gh-fix`, `python-simplify`, `sonar-cleanup`). Carried: ADRs
-0001–0021 as decisions, E17's area model (now owned by kiln's `docs` module),
-its tests as the behavioural spec. Not carried: `core/**` (tooling), the four
-setup skills and their assets, `scripts/**` (generated), `feedback.md`. The
-skill entry-point distribution mechanism (revision 3 §2.9) is **not built**.
+Rebuilt from scratch in Phase F.3 by
+`kiln new agentkit --archetype python-tool`, with its source rewritten on
+commons and tooling. Unchanged in *scope*: global and project agent
+configuration, hooks, adapters, instruction-file seeding, generic skills
+(`gh-fix`, `python-simplify`, `sonar-cleanup`). Carried: ADRs 0001–0021 as
+decisions, E17's area model (now owned by kiln's `docs` module), its tests as
+the behavioural spec. Not carried: `core/**` (tooling), the four setup skills
+and their assets, `scripts/**` (generated), `feedback.md`. The skill entry-point
+distribution mechanism (revision 3 §2.9) is **not built**.
 
 ### 2.10 The canon inside kiln (D36)
 
@@ -632,6 +784,67 @@ principles, the component map (§0.2), the two dependency graphs — lives in
 `kiln/docs/architecture/workspace.md` and is referenced, not repeated, from
 pykit and agentkit. Runbook: `docs/runbooks/creating-a-repo.md` (`kiln new`,
 choosing an archetype for an odd repo, wiring `extra_refs`).
+
+### 2.11 Package layout inside the three libraries (D55)
+
+Commons is 7,274 lines across 23 flat modules, and the flatness is the problem:
+`utils.py`, `objects.py`, `tasks.py` and `collections.py` sit at the same level
+and mean four unrelated things. Grouping by *kind of mechanism* makes the answer
+to "where does this go" readable off the tree.
+
+**Rule: modules are grouped; public class names do not move.** `PathUtils`,
+`DictUtils`, `AppLogger`, `Finding` and the rest keep their names and stay
+re-exported from the package facade, so `from rn_forge.commons import PathUtils`
+is unaffected. What changes is the submodule path. There are no compatibility
+shims — pre-v1, three consumers, and D39 already says rebuild rather than
+migrate.
+
+```text
+rn_forge/commons/
+  __init__.py        facade — the cheap, always-available symbols
+  exceptions.py      AppException
+  findings.py        Finding, Severity
+  config.py          Config
+  testing.py         assert_that, soft_assertions, output_path
+  lang/              collections.py  dataclasses.py  reflection.py
+                     types.py (was _typing)  utils.py (AppUtils, Base64)
+  fs/                paths.py (PathUtils)  hashing.py (ContentHash)
+                     locks.py (DirectoryLock, atomic_symlink)  ← back from tooling
+                     blocks.py (ManagedBlock)  documents.py
+  data/              pandas.py  excel.py
+  logging/           __init__.py (AppLogger, LoggingConfig, TRACE)  structlog.py
+  runtime/           environment.py  subprocess.py (Process)  tasks.py (Task, TaskPool)
+                     plugins.py (EntryPointLoader)
+  integration/       messaging.py  objects.py  secrets.py  resilience.py
+
+rn_forge/cli/
+  __init__.py        facade
+  app.py             build_app — the Typer application factory
+  options.py         --json --dry-run --yes --log-level; command_options
+  console.py         AppConsole
+  errors.py          error → exit code
+  declare.py         reads the [cli] surface (ADR-0009)
+
+rn_forge/tooling/
+  __init__.py        lazy facade — no eager import of jinja2
+  generation/        artifacts.py  plan.py  apply.py
+  templates.py       TemplateEngine
+  state.py           StateStore
+  install/           archive.py (extract_archive)  home.py ($RNF_HOME)  install.py
+  docs/              markdown.py  links.py  nav.py  areas.py  site.py
+                     policy.py    ← the injected policy protocol (A2)
+                     structure.py ← mechanics only
+  cli/               tooling's own command surfaces (rn-forge-docs)
+```
+
+Two things this layout does not pretend to fix. `AppUtils` remains a genuine
+grab bag (`parse_bool`, `is_empty`, `get_or_default`, `import_string`,
+`null_safe_attrgetter`, `join_string`, `unified_diff`); splitting it would break
+a public class name for little gain, so it stays whole in `lang/utils.py` and
+new helpers must justify not going into a named module instead. And several
+submodule names shadow stdlib ones — `collections`, `dataclasses`, `logging`,
+`subprocess`, `pandas` — which the flat layout already did; Python 3's absolute
+imports handle it, and the intuitive name is worth more than the shadow costs.
 
 ______________________________________________________________________
 
@@ -669,7 +882,12 @@ grep -q 'tooling-bound' packages/rn-forge-commons/src/rn_forge/commons/__init__.
 git status --porcelain | wc -l        # 0 after the commit
 ```
 
-### Phase B — kiln repo: canon and golden repos, no generator code *(1 week)*
+### Phase B — kiln repo: canon and golden repos, no generator code *(1 week)* — **done**
+
+> Executed. The archetype names below are the revision-8 ones;
+> `golden/python-cli` is renamed to `golden/python-tool` and joined by
+> `golden/python-app` in Phase C.2 (D53). Left as written, as the record of what
+> was built.
 
 New repo `rn-forge/kiln`. Bootstrap its own skeleton by **hand-copying the
 `python-cli` golden repo** once it exists (step 3); kiln regenerates itself in
@@ -718,7 +936,11 @@ uv run python tests/support/assert_generated_bodies.py --relative-path scripts/s
 actionlint tests/fixtures/golden/*/.github/workflows/*.yml
 ```
 
-### Phase C — tooling extraction, Part D, generation engine *(1 week)*
+### Phase C — tooling extraction, Part D, generation engine *(1 week)* — **first pass landed, revised**
+
+> pykit `4624bfe`. Reviewed; §0.8 is the outcome. The boundary this section
+> describes is corrected by D52 and the addendum below is completed by **Phase
+> C.2**, which follows. Left as written, as the record of what was attempted.
 
 Repo `rn-forge/pykit`, branch `feature/upgrade`. Follows
 `commons-upgrade-plan.md` → "Final package boundary" and Phase 18.4. Scope the
@@ -756,6 +978,103 @@ wired because it does not exist yet. This phase must therefore also:
 1. Cut the first `rn-forge-tooling` release tag before any of the above, since
    every consumer pins to a tag.
 
+### Phase C.2 — the layer split, the re-layout, and the defect fixes *(1 week)*
+
+Repos `rn-forge/pykit` (`feature/upgrade`) and `rn-forge/kiln` (`feature/v1`).
+This is what the Phase C review produced (§0.8). The executable form lives in
+pykit's `docs/plans/commons-upgrade-plan.md`, at the **"Part D — resume here"**
+marker; that document is the one an implementer follows. This section is the
+scope and the acceptance.
+
+**Order matters.** Correctness first, because the defects are in the code that
+is about to be moved and a move makes them harder to attribute; then the split;
+then the re-layout; then the consumers.
+
+1. **Defect fixes, in pykit, before anything moves.**
+    - **F1 + F6 together** — group staged changes by destination, compose block
+      edits against one evolving buffer, back up and write each file once,
+      reject incompatible whole-file and block ownership of one path, and
+      preserve the unowned prefix, suffix and newline sequences. They share an
+      implementation; fixing one without the other is rework.
+    - **F2** — roll back on `BaseException`, then re-raise interruption without
+      converting it to an application failure.
+    - **F3** — fix `DataclassMixin` so deserialization reconstructs and validates
+      enum fields, then audit every dataclass with an enum field. Not a
+      `Finding` patch.
+    - **F4** — normalize and validate artifact and stale-state paths under the
+      repo, staging and backup roots *before* any mutation, using the existing
+      path guards.
+    - **F5** — keep the intended deletion separate from the blocking drift
+      classification, and execute it once approved.
+    - Tests for each: two inserts, two updates, removal-plus-update, CRLF and
+      absent terminal newline, interruption after a replacement, JSON round
+      trip with an unknown severity, absolute and `..` and symlink artifact
+      paths.
+1. **Split the development layer (D52).** New package `rn-forge-cli`, module
+   `rn_forge.cli`: `build_app`, `AppConsole`, the standard options, logging
+   wiring, error-to-exit-code, `declare.py`. `rn-forge-tooling` keeps
+   generation, templates, state, install and docs mechanics and gains a
+   dependency on `rn-forge-cli`. `DirectoryLock` and `atomic_symlink` go back
+   to commons. `ManagedBlock` stays. Three `.importlinter` contracts hold the
+   layering.
+1. **Extract the docs policy (A2).** `docs/structure.py` keeps link, Markdown
+   and nav mechanics and takes a policy object; the ADR numbering, epic /
+   feature / release naming and instruction filenames become the caller's.
+   kiln supplies them from `rn-forge-kiln-checks` in Phase D; until then a
+   default policy lives in kiln's fixtures, not in tooling.
+1. **Re-layout all three packages (§2.11, D55).** Modules move; public class
+   names do not; no compatibility re-exports.
+1. **F10, F11, F12, F13 while the code is open.** Diagnostic logging to stderr
+   from initialization so `--json` is parseable wherever the flag sits; nav
+   values serialized with the YAML library; the anchor checker calling
+   Python-Markdown's own slug and unique-id logic instead of reimplementing
+   it, plus reference links and fenced-code awareness; `docs nav --json`
+   emitting a result.
+1. **F7 — CI.** Add `rn-forge-cli` and `rn-forge-tooling` to package
+   verification, build, release and coverage in pykit's `main.yml`, and run
+   `lint-imports` as a required gate. Necessary now even though Phase F
+   regenerates the skeleton: an unenforced import contract is not a contract.
+1. **F9 + F14 — the release contract and the instructions.** `rn-forge-cli` and
+   `rn-forge-tooling` declare their commons dependency as a pinned direct URL
+   under D46, and the installation guides describe that model rather than
+   `uv add`. Smoke-test an install outside the workspace. Reconcile pykit's
+   `AGENTS.md` to be a pointer to `CLAUDE.md`, per §0.6.
+1. **Rename the golden repos and add the missing ones (D53).**
+   `golden/python-cli` → `golden/python-tool`; a new `golden/python-app`.
+   `golden/python-lib` is unchanged. Update kiln's own
+   `.rn-forge/kiln/config.toml` to `python-tool`, re-render
+   `.rn-forge/kiln/standard.md`, and **re-seed `state.json`**.
+1. **Close Phase C's addendum (F8).** Cut the first `rn-forge-cli` and
+   `rn-forge-tooling` releases; point `golden/python-app` at `rn-forge-cli`
+   and `golden/python-tool` at both; re-point every commons pin at the release
+   cut after the boundary change; update each `check_rn_forge_deps.py`
+   `REQUIRED` header; re-seed every `state.json`.
+1. **The acceptance test ADR-0009 never had.** `golden/python-app` contains a
+   working CLI with **zero hand-written app construction** — a `main()`, its
+   commands, its tests, and nothing else. If that repo cannot be written,
+   ADR-0009 is not ready and D49 stays proposed.
+
+**Acceptance**
+
+```bash
+cd rn-forge/pykit
+uv sync --all-extras
+uv run pytest -q                      # including the new tests for F1–F6
+uv run ruff check . && uv run ruff format --check . && uv run pyright
+uv run lint-imports                   # commons ⊅ cli ⊅ tooling, + the codegen fence
+! rg -q 'rn_forge\.(cli|tooling)' packages/rn-forge-commons/src
+! rg -q 'rn_forge\.tooling' packages/rn-forge-cli/src
+! rg -q "'adr'|'releases'|specs/epics" packages/rn-forge-tooling/src/rn_forge/tooling/docs/structure.py
+
+cd ../kiln
+for g in tests/fixtures/golden/python-app tests/fixtures/golden/python-tool tests/fixtures/golden/python-lib; do
+  (cd "$g" && uv sync && task validate) || echo "FAIL $g"
+done
+rg -q 'rn-forge-cli' tests/fixtures/golden/python-app/pyproject.toml
+rg -q 'rn-forge-tooling' tests/fixtures/golden/python-tool/pyproject.toml
+task lint                             # state baseline agrees after the re-seed
+```
+
 ### Phase D — kiln: config, engine adapter, CLI, doctor, self-hosting *(2 weeks)*
 
 Repo `rn-forge/kiln`. Package `rn-forge-kiln`, module `rn_forge.kiln`, depends
@@ -767,8 +1086,9 @@ on `rn-forge-commons>=0.4.0`, `rn-forge-tooling>=0.1.0`, `pydantic`, `typer`;
 1. `umbrella.py` — `find_root` with markers `.rn-forge/kiln/config.toml`,
    `.git`; `rnf_home()`; gitignore block via `ManagedBlock`;
    `legacy.kiln-state` detection (§0.4).
-1. `archetypes/python_cli/`, `python_lib/` — templates derived from the golden
-   repos; `archetype.toml` with `forbidden_tools` and `required_validate`.
+1. `archetypes/python_app/`, `python_tool/`, `python_lib/` — templates derived
+   from the golden repos; `archetype.toml` with `forbidden_tools` and
+   `required_validate`.
 1. `artifacts.py`, `cycle.py` — kiln provider and thin adapter over tooling
    `generation`. **Snapshot tests:** for each golden fixture, load its
    `config.toml`, render with `kiln_version="golden"`, assert every artifact
@@ -782,7 +1102,7 @@ on `rn-forge-commons>=0.4.0`, `rn-forge-tooling>=0.1.0`, `pydantic`, `typer`;
 1. `.importlinter` for `rn_forge.kiln` forbidding `rn_forge.agentkit`,
    `rn_forge.django`, `rn_forge.taskkit`.
 1. **Self-hosting.** Write `.rn-forge/kiln/config.toml` for kiln itself
-   (`python-cli`, `mkdocs`), run `kiln apply --force` over the hand-copied
+   (`python-tool`, `mkdocs`), run `kiln apply --force` over the hand-copied
    skeleton from Phase B, then a second apply reports all `UNCHANGED`.
 
 **Acceptance**
@@ -792,9 +1112,9 @@ cd rn-forge/kiln
 uv run pytest -q && uv run lint-imports && uv run pyright && uv run ruff check .
 kiln_root=$PWD
 scratch=$(mktemp -d)
-kiln new "$scratch/demo" --archetype python-cli --docs mkdocs --yes --json </dev/null | jq -e '.artifacts | length > 0'
+kiln new "$scratch/demo" --archetype python-tool --docs mkdocs --yes --json </dev/null | jq -e '.artifacts | length > 0'
 cd "$scratch/demo"
-diff -r --exclude=.git --exclude=.venv --exclude=uv.lock . "$kiln_root/tests/fixtures/golden/python-cli" | grep -v 'kiln golden\|kiln [0-9]' ; true   # only name and version lines differ
+diff -r --exclude=.git --exclude=.venv --exclude=uv.lock . "$kiln_root/tests/fixtures/golden/python-tool" | grep -v 'kiln golden\|kiln [0-9]' ; true   # only name and version lines differ
 uv run --project "$kiln_root" kiln apply --dry-run --json | jq -e 'all(.artifacts[]; .action == "unchanged")'
 uv sync && task validate
 printf '\n# edit\n' >> Taskfile.yml
@@ -809,17 +1129,20 @@ cd "$kiln_root" && kiln doctor && kiln apply --dry-run --json | jq -e 'all(.arti
 
 Repo `rn-forge/kiln`.
 
-1. Golden repos `python-django-ng` and `python-fastapi-ng` (deferred from Phase
-   B); review loop.
-1. `archetypes/python_web/` — `tasks/api.yml`, `tasks/web.yml`
-   (`web_runner = nx`: `pnpm nx run-many -t lint|test|build`; `pnpm`:
-   `pnpm run lint|test|build`), CI with pnpm/node setup, `forbidden_tools`
-   adds `pnpm npx nx`.
-1. `--backend fastapi|django` affects only `tasks/api.yml` primitives
+1. Golden repos `python-web-api` (fastapi) and `python-web-app` in both shipped
+   flag combinations — `django + angular` and `fastapi + angular` (deferred
+   from Phase B); review loop. `react`, `svelte` and
+   `python-web-api --framework django` stay `untested = true` (D54).
+1. `archetypes/python_web_api/`, `python_web_app/` — `tasks/api.yml`,
+   `tasks/web.yml` (`pnpm nx run-many -t lint|test|build`), CI with pnpm/node
+   setup, `forbidden_tools` adds `pnpm npx nx`. `python-web-api` generates no
+   `tasks/web.yml`; its optional `admin_ui` is served by the API itself.
+1. `--framework fastapi|django` affects only `tasks/api.yml` primitives
    (`fastapi dev` vs `manage.py runserver`, `pytest` markers) and the
-   `uv init` reconcile step. Django is templated from `rn-forge-django`'s
-   conventions and marked `untested = true` in `archetype.toml` until a repo
-   uses it.
+   `uv init` reconcile step — never the topology or the task graph, which is
+   the rule that makes it a flag rather than an archetype (D54). Django is
+   templated from `rn-forge-django`'s conventions and, for `python-web-app`,
+   is a shipped value with its own golden repo.
 1. `kiln new` end-to-end with `nx g` for the frontend; reconcile moves output to
    `web_dir`.
 1. Move taskkit's
@@ -831,9 +1154,9 @@ Repo `rn-forge/kiln`.
 ```bash
 cd rn-forge/kiln && uv run pytest -q tests/test_snapshot.py -k web
 scratch=$(mktemp -d)
-kiln new "$scratch/web-fastapi" --archetype python-fastapi-ng --docs mkdocs --yes </dev/null
+kiln new "$scratch/web-fastapi" --archetype python-web-app --framework fastapi --frontend angular --docs mkdocs --yes </dev/null
 (cd "$scratch/web-nx" && uv sync && pnpm install && kiln doctor && uv run python scripts/standards/check_generated.py . && task validate && kiln apply --dry-run --json | jq -e 'all(.artifacts[]; .action == "unchanged")')
-kiln new "$scratch/web-django" --archetype python-django-ng --docs mkdocs --yes </dev/null
+kiln new "$scratch/web-django" --archetype python-web-app --framework django --frontend angular --docs mkdocs --yes </dev/null
 (cd "$scratch/web-pnpm" && uv sync && pnpm install && kiln doctor && task validate)
 ```
 
@@ -851,8 +1174,8 @@ in any meaningful way and that is accepted (D39).
    anything the generated matrix does not cover. `_package-ci.yml` is deleted.
    pykit's package source is untouched.
 1. **kiln** is already self-hosted (Phase D.8).
-1. **agentkit** from scratch (`python-cli`).
-   `kiln new agentkit-fresh --archetype python-cli --docs mkdocs`; rewrite
+1. **agentkit** from scratch (`python-tool`).
+   `kiln new agentkit-fresh --archetype python-tool --docs mkdocs`; rewrite
    `src/rn_forge/agentkit` on commons and tooling following the donor mapping
    in `commons-upgrade-plan.md` → "Not in this plan" → agentkit bullet
    (`AppConsole`, `DocumentUtils`, `DictUtils.merge_layers`, `TemplateEngine`,
@@ -862,18 +1185,19 @@ in any meaningful way and that is accepted (D39).
    skills, `scripts/**`, `feedback.md`. Supersede ADR-0001's claim that `kiln`
    is retired while keeping the product-name decision. `.importlinter` forbids
    `rn_forge.kiln` and `rn_forge.taskkit`.
-1. **intellibuild** (`python-fastapi-ng`). Gated on `docs2/REFACTOR_PLAN.md`
-   reporting complete. `kiln new intellibuild …`; `docs2/` lands as `docs/`
-   and `_areas.yml` gains `context`; universal lints come from kiln;
-   `check_brand`, `check_vocabulary`, `check_endpoints`, `check_e2e_budget`,
-   `check_gate_tags`, `check_db_url` are repo-local via `extra_refs` (D34).
-   First CI the product has ever had. `ci.provider = ado` is open question 4.
+1. **intellibuild** (`python-web-app`, `fastapi + angular`). Gated on
+   `docs2/REFACTOR_PLAN.md` reporting complete. `kiln new intellibuild …`;
+   `docs2/` lands as `docs/` and `_areas.yml` gains `context`; universal lints
+   come from kiln; `check_brand`, `check_vocabulary`, `check_endpoints`,
+   `check_e2e_budget`, `check_gate_tags`, `check_db_url` are repo-local via
+   `extra_refs` (D34). First CI the product has ever had. `ci.provider = ado`
+   is open question 4.
 1. **taskkit** — archive: README banner pointing at kiln and this document, tag
    `archived/v0.2.0`, GitHub repo archived. Not deleted; `validator.py`
    history is referenced from kiln.
 1. **intellibench** — archived once intellibuild's first release ships.
    **apollo** — stays parked; when unparked it is
-   `kiln new … --web-runner pnpm` plus a port, never an adoption.
+   `kiln new … --archetype python-web-app` plus a port, never an adoption.
 
 **Acceptance**
 
@@ -984,17 +1308,22 @@ sessions do not re-litigate.
 | **D38** | **`kiln adopt` is not built.** No ADOPT/ADOPT_CONFLICT classification, no closure capture, no gate-shrink preflight, no model-delta harness. `gate.shrunk` compares against the archetype's `required_validate` list. | **Confirmed** |
 | **D39** | **Repos are rebuilt from scratch, not migrated.** Git history of pre-v1 repos is not preserved. Decisions, specs, tests and fixtures are harvested; files are not. pykit's package source is the one exception (split, not rebuilt). | **Confirmed** |
 | **D40** | **apollo is parked.** Its broken working tree is not repaired; when it returns it is `kiln new` + port. | **Confirmed** |
-| **D41** | **intellibench is superseded by intellibuild**, a fresh `python-fastapi-ng` repo whose docs are intellibench's `docs2/`. intellibench is a donor, never an adopt target. | **Confirmed** |
+| **D41** | **intellibench is superseded by intellibuild**, a fresh `python-web-app` repo (`fastapi + angular`) whose docs are intellibench's `docs2/`. intellibench is a donor, never an adopt target. | **Confirmed** |
 | **D42** | The tool keeps the name **kiln**; `canon` was considered and rejected because a tool needs a verb-shaped name and canon is the noun for the rules it carries. | **Confirmed** |
 | **D43** | **Golden repos are the source of truth for templates.** Hand-authored, runnable, reviewed before generator code exists; templates are derived from them; snapshot tests are byte-exact. | **Confirmed** |
 | D44 | `docs/_areas.yml` and `_structure.md` are seeded, not managed, so a repo can extend its areas (intellibuild's `context`). Doctor validates against the repo's copy. | **Confirmed** — the generated docs scripts now depend on it: `_common.load_areas` has no fixed key list, and kiln's own tree adds a `plans` area |
 | **D45** | **CI stays generated and committed; no reusable-workflow devops repo.** Pinned reusable workflows cost the same per-repo commit to propagate a fix as `kiln apply` does, and add an external repo dependency at CI time; floating the ref removes that churn but makes CI unpinned — apollo's `branch = "main"` failure in another form. The reviewability win is taken instead via a committed composite action, `.github/actions/setup`. Revisit only if per-repo churn measurably hurts. | **Confirmed** |
 | **D46** | **rn-forge dependencies are pinned PEP 508 direct URLs in `dependencies`**, never `[tool.uv.sources]` — a source override does not survive into a built wheel, so a consumer of a published package could not resolve commons at all. Accepted: such a distribution cannot be uploaded to PyPI, and the tag *is* the version. Publishing to PyPI later relaxes this rule rather than breaking it. | **Confirmed** |
-| **D47** | **Four archetypes: `python-cli`, `python-lib`, `python-django-ng`, `python-fastapi-ng`.** `-ng` means a pnpm-managed Nx workspace (Nx's own documented shape); `nx_cloud` is a config key, being an account decision rather than a repo shape. The `backend` and `web_runner` keys are removed: the archetype name says what the repo is. Supersedes D7. | **Confirmed** |
+| **D47** | ~~**Four archetypes: `python-cli`, `python-lib`, `python-django-ng`, `python-fastapi-ng`.**~~ `-ng` means a pnpm-managed Nx workspace (Nx's own documented shape); `nx_cloud` is a config key, being an account decision rather than a repo shape. The `backend` and `web_runner` keys are removed: the archetype name says what the repo is. Supersedes D7. | **Superseded by D53/D54** — the catalogue and the flag rule both changed; the underlying principle (the name states the topology) survives |
 | **D48** | **ADRs carry decisions; the reference carries specifications.** kiln's ADRs are restructured to nine, each with an *Alternatives considered* section; the verb list, ownership table, dependency sets, doctor codes, CI shape and config schema all live in `docs/reference/standard-repo.md`. An ADR that starts enumerating has become a spec. | **Confirmed** |
 | **D50** | **`ruff check --fix` runs before `ruff format`, and `lint:python` mirrors `format:python`.** The linter's fixes are edits; running the formatter first leaves them unformatted. `lint:format` is removed as a separate task. | **Confirmed** |
 | **D51** | **The checkers become a versioned package** (`rn-forge-kiln-checks`), split from the kiln CLI, with the docs checkers going to tooling; only `state.json`, `config.toml` and `standard.md` stay committed (kiln ADR-0010). Preserves ADR-0003's actual rule — CI never renders — while removing 1,454 duplicated lines per repo. Both distributions live in the kiln repo, which becomes a `python-lib` workspace in Phase D. The name is `checks`, not `devops`: `checks` names a role that excludes rendering, `devops` names a domain that excludes nothing. | **Confirmed** |
-| **D49** | **Tooling owns the CLI, logging and state boilerplate, and a repo declares its CLI surface rather than writing it** (kiln ADR-0009). Not an application generator — D2 is unchanged. Phase C's package split is made against this target. | **Proposed** |
+| **D49** | **The libraries own the CLI, logging and state boilerplate, and a repo declares its CLI surface rather than writing it** (kiln ADR-0009). Not an application generator — D2 is unchanged. Phase C's package split is made against this target. | **Proposed** — revised by D52: the CLI boilerplate is `rn-forge-cli`, not tooling. Stays proposed until `golden/python-app` demonstrates a CLI with zero hand-written app construction |
+| **D52** | **Three library layers, not two: `rn-forge-commons` → `rn-forge-cli` → `rn-forge-tooling`** (kiln ADR-0002). The seam is not workstation-versus-runtime but *every CLI* versus *tools that install, generate and own files*. A business batch or ML job takes `rn-forge-cli` and gets ADR-0009's zero-boilerplate `main()` without Jinja2, a generation engine, or a package whose contract tells deployed code not to depend on it. Placement is decided by what an API's **signature** contains, not by who calls it today: `DirectoryLock` and `atomic_symlink` return to commons, `extract_archive`/`StateStore`/`TemplateEngine` stay in tooling, `ManagedBlock` stays in commons. Rejected: a `[gen]` extra (an extra adds dependencies, it does not exclude modules or stop an eager initializer) and renaming tooling to `devtools`/`automation`/`core` (no architectural property changes). Refines D29/D35. | **Confirmed** |
+| **D53** | **Seven archetypes: `python-app`, `python-tool`, `python-lib`, `python-web-api`, `python-web-app`, `node-lib`, `node-web-app`** (kiln ADR-0005). `python-cli` was two repos under one name — a batch behind a command line, and an installable tool that owns `$RNF_HOME`, state and plugins — with different library sets, which is what forced tooling to be a package most of the fleet was told not to use. The `-ng` pair collapses into `python-web-api`/`python-web-app`: the framework does not change the topology, a separate frontend package does. The two node archetypes are named and deferred to post-v1 — a second toolchain, and nothing in v1 scope uses them. "Is it a monorepo" is not the axis; **publishing** is. Supersedes D47. | **Confirmed** |
+| **D54** | **A config flag may select an implementation library only when it changes neither the file topology nor the task graph, and every shipped value has a golden repo.** `framework = django\|fastapi` and `frontend = angular\|react\|svelte` pass; the rejected `backend` + `web_runner` pair failed because together they selected four topologies. The golden-repo rule is what stops flag freedom from reintroducing the combinatorial explosion D47 avoided: v1 ships six golden repos, not the fourteen the matrix could name. A value without one is `untested = true` and `kiln new` refuses it. | **Confirmed** |
+| **D55** | **commons, cli and tooling are laid out as sub-packages by kind of mechanism** (§2.11): `lang/`, `fs/`, `data/`, `logging/`, `runtime/`, `integration/` in commons, and equivalents in the other two. **Public class names do not move** and the package facade keeps re-exporting them, so only submodule paths change; no compatibility shims, because D39 already says rebuild rather than migrate. `AppUtils` stays an acknowledged grab bag rather than breaking a public name for tidiness. | **Confirmed** |
+| **D56** | **kiln generates repo structure; frameworks generate their own code.** `kiln generate package <name>` — adding a package to a workspace — is in scope for Phase D, because it emits the same repo structure kiln already owns. Application code generators (django model/serializer/api, UI wrappers) stay D2/D37: they ship in `rn-forge-django[codegen]`, register under `rn_forge.kiln.generators`, and kiln supplies only the command surface. The line is whether the output is repo shape or application logic. | **Confirmed** |
 
 ______________________________________________________________________
 
@@ -1003,8 +1332,8 @@ ______________________________________________________________________
 Ordered by when an answer is needed. Nothing blocks Phase A or B.
 
 **Answered by the Phase B review (§0.6):** 3. D44 is confirmed — the docs
-scripts now depend on a seeded `_areas.yml`. 4. `python-web --backend django` is
-its own archetype (D47).
+scripts now depend on a seeded `_areas.yml`. 4.
+~~`python-web --backend django`~~ is its own archetype (D47).
 
 **Before Phase B is committed:** 1. Is Sonar on by default (`ci.sonar = true`)
 for every archetype, or opt-in? The golden repos assume default on. 2. Are these
@@ -1012,11 +1341,12 @@ repos public or private? SHA-pinning and `permissions:` are generated
 regardless; confirm there is no reason to relax. 3. D44 — seeded `_areas.yml`:
 confirm, or keep it managed and add a `[docs] extra_areas` config key instead.
 
-**Before Phase E:** 4. ~~`python-web --backend django`~~ — answered by D47: it
-is its own archetype, `python-django-ng`. Templated from `rn-forge-django`'s
-conventions and marked untested until a repo uses it — confirm. 5. Does
-intellibuild need `ci.provider = ado` from day one, or does it start on GitHub
-Actions and move? This decides whether Phase E or Phase G unparks D4.
+**Before Phase E:** 4. ~~`python-web --backend django`~~ — answered by D47 and
+then by D53/D54: it is `python-web-app --framework django`, a shipped flag value
+with its own golden repo. Templated from `rn-forge-django`'s conventions and
+marked untested until a repo uses it — confirm. 5. Does intellibuild need
+`ci.provider = ado` from day one, or does it start on GitHub Actions and move?
+This decides whether Phase E or Phase G unparks D4.
 
 **Before Phase F:** 6. `ngkit` (Nx + Angular library monorepo): a fourth
 archetype `ng-lib`, or hand-managed? 7. Does the rebuilt agentkit keep its
