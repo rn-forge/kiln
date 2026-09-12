@@ -2,9 +2,9 @@
 """Enforce the archetype's rn-forge dependency contract.
 
 An archetype is not only a repo shape — it is also the set of shared libraries a
-repo of that shape is built on (kiln ADR-0005). A `python-cli` repo gets commons
-and tooling; a `python-django-ng` or `python-fastapi-ng` repo gets its framework
-package as well.
+repo of that shape is built on (kiln ADR-0005). A `python-app` repo gets commons
+and cli; a `python-tool` repo gets tooling as well; a `python-web-api` or
+`python-web-app` repo gets its framework package on top.
 That is the whole point of naming archetypes: the boilerplate a repo does not
 write is the boilerplate it takes from the component libraries.
 
@@ -47,10 +47,11 @@ from pathlib import Path
 # Distributions this repo must depend on, from its archetype's defaults.
 # Empty until kiln has source: Phase B ships the canon and the golden repos, and
 # a dependency nothing imports is exactly the decoration ADR-0005 argues against.
-# Phase D adds "rn-forge-commons" and "rn-forge-tooling" here with the code.
+# Phase D adds "rn-forge-commons", "rn-forge-cli" and "rn-forge-tooling" here
+# with the code.
 REQUIRED = []
 # Every rn-forge distribution this repo may depend on, for any purpose.
-ALLOWED = ["rn-forge-commons", "rn-forge-tooling"]
+ALLOWED = ["rn-forge-commons", "rn-forge-cli", "rn-forge-tooling"]
 # Every pyproject.toml in the repo: the root, plus each workspace member.
 PYPROJECT_PATHS = ["pyproject.toml"]
 # END kiln config

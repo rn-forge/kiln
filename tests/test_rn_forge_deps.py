@@ -20,26 +20,39 @@ CHECKER = (
     / "tests"
     / "fixtures"
     / "golden"
-    / "python-cli"
+    / "python-tool"
     / "scripts"
     / "standards"
     / "check_rn_forge_deps.py"
 )
 
-PINNED_URL = (
-    "rn-forge-commons @ git+https://github.com/rn-forge/pykit"
-    "@rn-forge-commons-v0.2.2#subdirectory=packages/rn-forge-commons"
-)
+BASE_URL = "git+https://github.com/rn-forge/pykit@feature/upgrade"
+
+
+def pinned(distribution: str) -> str:
+    return f"{distribution} @ {BASE_URL}#subdirectory=packages/{distribution}"
+
+
+# The python-tool archetype's whole REQUIRED set — the checker under test is
+# that archetype's copy, so a fixture missing any one of the three is testing
+# the `required` rule rather than the one it means to.
+REQUIRED_URLS = [
+    pinned("rn-forge-commons"),
+    pinned("rn-forge-cli"),
+    pinned("rn-forge-tooling"),
+]
+PINNED_URL = REQUIRED_URLS[0]
 UNPINNED_URL = (
     "rn-forge-commons @ git+https://github.com/rn-forge/pykit"
     "#subdirectory=packages/rn-forge-commons"
 )
+REQUIRED_BLOCK = ", ".join(f'"{url}"' for url in REQUIRED_URLS)
 
 COMPLIANT = f"""
 [project]
 name = "example"
 version = "0.1.0"
-dependencies = ["{PINNED_URL}"]
+dependencies = [{REQUIRED_BLOCK}]
 """
 
 MISSING_REQUIRED = """
@@ -53,7 +66,7 @@ FORBIDDEN_KIT = f"""
 [project]
 name = "example"
 version = "0.1.0"
-dependencies = ["{PINNED_URL}"]
+dependencies = [{REQUIRED_BLOCK}]
 
 [dependency-groups]
 dev = ["rn-forge-agentkit>=0.6.0"]
@@ -63,26 +76,30 @@ UNPINNED = f"""
 [project]
 name = "example"
 version = "0.1.0"
-dependencies = ["{UNPINNED_URL}"]
+dependencies = ["{UNPINNED_URL}", "{REQUIRED_URLS[1]}", "{REQUIRED_URLS[2]}"]
 """
 
 # The exact shape ADR-0005 rejects: resolvable in the workspace, unresolvable
 # for anyone who installs the built wheel.
-SOURCE_OVERRIDE_ONLY = """
+SOURCE_OVERRIDE_ONLY = f"""
 [project]
 name = "example"
 version = "0.1.0"
-dependencies = ["rn-forge-commons>=0.2.2"]
+dependencies = ["rn-forge-commons>=0.2.2", "{REQUIRED_URLS[1]}", "{REQUIRED_URLS[2]}"]
 
 [tool.uv.sources]
-rn-forge-commons = { git = "https://github.com/rn-forge/pykit", subdirectory = "packages/rn-forge-commons", tag = "rn-forge-commons-v0.2.2" }
+rn-forge-commons = {{ git = "https://github.com/rn-forge/pykit", subdirectory = "packages/rn-forge-commons", tag = "rn-forge-commons-v0.2.2" }}
 """
 
 EXTRA_ON_ALLOWED = f"""
 [project]
 name = "example"
 version = "0.1.0"
-dependencies = ["rn-forge-commons[excel] @ {PINNED_URL.partition(" @ ")[2]}"]
+dependencies = [
+  "rn-forge-commons[excel] @ {PINNED_URL.partition(" @ ")[2]}",
+  "{REQUIRED_URLS[1]}",
+  "{REQUIRED_URLS[2]}",
+]
 """
 
 

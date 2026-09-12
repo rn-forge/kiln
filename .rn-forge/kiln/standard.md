@@ -8,8 +8,9 @@ renders into every other repo. It is the normative
 text for anyone — human or agent — working here. The reasoning behind each rule
 is a kiln ADR; this file states the rule.
 
-- **Archetype:** `python-cli` — one uv package, `src/` layout, pytest, ruff and
-  pyright at the root, GitHub Actions.
+- **Archetype:** `python-tool` — one uv package, `src/` layout, pytest, ruff and
+  pyright at the root, GitHub Actions, self-install and local state under
+  `$RNF_HOME`.
 - **Docs profile:** `mkdocs` — the full area model, a generated nav block, and a
   strict site build inside `task validate`.
 - **CI:** GitHub Actions, Sonar on, release by tag-exists check.
@@ -69,11 +70,14 @@ To change a managed file, change `.rn-forge/kiln/config.toml` and run
 ## 3. The dependency set
 
 An archetype is a shape *and* a set of component libraries (kiln ADR-0005). For
-`python-cli` that is `rn-forge-commons` and `rn-forge-tooling`, both runtime
-dependencies.
+`python-tool` that is all three python libraries — `rn-forge-commons` for
+runtime-neutral mechanisms, `rn-forge-cli` for the process and command-line
+shape, and `rn-forge-tooling` for the machinery of a program that installs
+itself, owns files in someone else's repo, or renders templates. All three are
+runtime dependencies: a tool's development layer *is* its runtime.
 
 kiln's own REQUIRED list is empty until Phase D, because kiln ships no generator
-code yet and a dependency nothing imports is decoration. The entry lands with
+code yet and a dependency nothing imports is decoration. The entries land with
 the code. The list is config precisely so this is expressible.
 
 rn-forge distributions are git sources — pykit publishes GitHub Releases, not to
@@ -91,8 +95,8 @@ product code imports no framework or CLI toolkit directly (`typer`, `jinja2`,
 `click`, `django`, `fastapi`), because those arrive through the rn-forge library
 that owns them.
 
-`rn-forge-commons` and `rn-forge-tooling` remain the only rn-forge packages this
-repo may import. Every other rn-forge component — kiln and agentkit included —
+`rn-forge-commons`, `rn-forge-cli` and `rn-forge-tooling` remain the only
+rn-forge packages this repo may import. Every other rn-forge component — kiln and agentkit included —
 is a subprocess or nothing.
 
 ## 5. What CI checks, and what it does not

@@ -1,18 +1,13 @@
 # golden-lib
 
-The golden repo for the `python-lib` archetype. The product is two functions in
-two workspace packages; everything else is the repository standard, which is
-what you are here to read.
+This repository keeps a single prose home, in [README.md](README.md).
 
-## Working here
+**Read `README.md` now and follow it as if its contents appeared here.** It says
+what this repo is, how to work in it, and what the conventions are.
 
-- Run everything through `task`. `task validate` is the gate.
-- The packages live in `packages/golden-alpha/` and `packages/golden-beta/`,
-  each with its own `pyproject.toml`, `src/` and `tests/`.
-- `task build` and `task version` take a package:
-  `task version -- golden-alpha`.
-- Do not edit a file whose first line says it was generated. See the kiln block
-  below for what that means and what to do instead.
+Do not add guidance to this file — it would drift out of sync with `README.md`,
+and one of the two copies would then be wrong with nothing to detect it. The
+only thing that belongs here is the generated block below.
 
 <!-- BEGIN rn-forge kiln -->
 
@@ -42,12 +37,3 @@ changing anything structural.
   `.rn-forge/kiln/state.json` baseline through `task validate`.
 
 <!-- END rn-forge kiln -->
-
-## Conventions
-
-- Python 3.14, `src/` layout per package, pyright strict, ruff for lint and
-  format.
-- Each package is published on its own `<package>-v<version>` tag. Adding a
-  package means adding it to `.rn-forge/kiln/config.toml` and re-applying, not
-  editing the workflow.
-- Packages do not import each other; `.importlinter` enforces it.

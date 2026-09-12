@@ -46,7 +46,7 @@ an implementer who has not read the chat history. Read §0 → §2 → §3. §5 
 decision log; do not re-open a **Confirmed** decision without new information.
 §1 is the evidence behind the design; skim it, do not act on it.
 
-### 0.1 Where we are now — 2026-09-09
+### 0.1 Where we are now — 2026-09-10
 
 **Phase A: done.** pykit's Part C is committed on `feature/upgrade`; the working
 tree is clean and `commons/__init__.py` carries the `tooling-bound (Phase C)`
@@ -62,11 +62,12 @@ the tree is left for review). It contains:
   schema, doctor codes, CI shape). This document lives at
   `docs/plans/standardization-plan.md`, with a one-line pointer left at
   `rn-forge/STANDARDIZATION-PLAN.md`.
-- **Two golden repos** — `tests/fixtures/golden/python-cli` (`golden-cli`) and
-  `python-lib` (`golden-lib`, two independent packages). Both are complete and
-  runnable: `uv sync && task validate` passes standalone in each, workflows
-  pass `actionlint`, and the docs sites build `--strict`. The `-ng` fixtures
-  are deferred to Phase E as the plan allows.
+- **Three golden repos** — `tests/fixtures/golden/python-app` (`golden-app`),
+  `python-tool` (`golden-tool`) and `python-lib` (`golden-lib`, two
+  independent packages). All three are complete and runnable:
+  `uv sync && task validate` passes standalone in each, workflows pass
+  `actionlint`, and the docs sites build `--strict`. The `-ng` fixtures are
+  deferred to Phase E as the plan allows.
 - **`docs/plans/harvest.md`** — the donor inventory: what each of agentkit,
   taskkit, intellibench and apollo contributed, and what was deliberately
   dropped.
@@ -79,10 +80,23 @@ the tree is left for review). It contains:
 the same conclusion from opposite directions: the commons/tooling seam is in the
 wrong place. §0.8 is the outcome.
 
-**Next: Phase C.2** (§3) — the layer split, the package re-layout, the fourteen
-defect fixes, and the consumer wiring Phase C's own addendum required and never
-got. **Nothing in Phase D starts until C.2 lands**, because kiln's templates
-derive from the golden repos and the golden repo set changes here.
+**Phase C.2: steps 1–8 and 10 done; step 9 deliberately open.** The layer split,
+the re-layout and the defect fixes landed in pykit on `feature/upgrade`. In
+kiln, `golden/python-cli` is now `golden/python-tool`, `golden/python-app` is
+new, and both take their whole command line from the declared `[cli]` surface —
+the acceptance test ADR-0009 never had (step 10). kiln's own config is
+`python-tool`, and every `state.json` is re-seeded.
+
+**Step 9 (F8 — the release contract) stays open on purpose.** No `rn-forge-cli`
+/ `rn-forge-tooling` tag is cut yet: every golden repo pins pykit's published
+`feature/upgrade` branch instead, so that upgrades found while exercising the
+golden repos can land without re-cutting releases. Closing step 9 is one edit
+per `pyproject.toml` — swap `@feature/upgrade` for the release tag — plus
+`uv lock` and a `state.json` re-seed where a pin appears in a managed file.
+
+**Nothing in Phase D starts until step 9 lands**, because kiln's templates
+derive from the golden repos and a template that renders a branch pin would ship
+one into every generated repo.
 
 `docs/plans/commons-upgrade-plan.md` in pykit carries the executable form of
 C.2, starting at its **"Part D — resume here"** marker.
@@ -91,7 +105,7 @@ Repo state; verify with `git status` before acting, these will be stale:
 
 | Repo | Branch | State | Note |
 | -- | -- | -- | -- |
-| `rn-forge/kiln` | `feature/v1` | canon revised for revision 9 | golden fixtures still carry the **old archetype names**; renamed in C.2 |
+| `rn-forge/kiln` | `feature/v1` | canon revised for revision 9; golden set renamed and extended | `python-app`, `python-tool`, `python-lib`; rn-forge pins point at pykit's `feature/upgrade` branch until C.2 step 9 |
 | `rn-forge/pykit` | `feature/upgrade` | clean at `4624bfe` | Phase C first pass landed; **Phase C.2 re-splits into commons/cli/tooling here** |
 | `rn-forge/agentkit` | `feature/v0.6.0` | clean | the `python-tool` model repo; **rebuilt from scratch in Phase F** |
 | `rn-forge/taskkit` | `feature/v1` | 34 staged | **retired (D23)** — donor for `validator.py` and test fixtures only |
@@ -991,6 +1005,7 @@ is about to be moved and a move makes them harder to attribute; then the split;
 then the re-layout; then the consumers.
 
 1. **Defect fixes, in pykit, before anything moves.**
+
     - **F1 + F6 together** — group staged changes by destination, compose block
       edits against one evolving buffer, back up and write each file once,
       reject incompatible whole-file and block ownership of one path, and
@@ -1010,6 +1025,7 @@ then the re-layout; then the consumers.
       absent terminal newline, interruption after a replacement, JSON round
       trip with an unknown severity, absolute and `..` and symlink artifact
       paths.
+
 1. **Split the development layer (D52).** New package `rn-forge-cli`, module
    `rn_forge.cli`: `build_app`, `AppConsole`, the standard options, logging
    wiring, error-to-exit-code, `declare.py`. `rn-forge-tooling` keeps
@@ -1017,42 +1033,68 @@ then the re-layout; then the consumers.
    dependency on `rn-forge-cli`. `DirectoryLock` and `atomic_symlink` go back
    to commons. `ManagedBlock` stays. Three `.importlinter` contracts hold the
    layering.
+
 1. **Extract the docs policy (A2).** `docs/structure.py` keeps link, Markdown
    and nav mechanics and takes a policy object; the ADR numbering, epic /
    feature / release naming and instruction filenames become the caller's.
    kiln supplies them from `rn-forge-kiln-checks` in Phase D; until then a
    default policy lives in kiln's fixtures, not in tooling.
+
 1. **Re-layout all three packages (§2.11, D55).** Modules move; public class
    names do not; no compatibility re-exports.
+
 1. **F10, F11, F12, F13 while the code is open.** Diagnostic logging to stderr
    from initialization so `--json` is parseable wherever the flag sits; nav
    values serialized with the YAML library; the anchor checker calling
    Python-Markdown's own slug and unique-id logic instead of reimplementing
    it, plus reference links and fenced-code awareness; `docs nav --json`
    emitting a result.
+
 1. **F7 — CI.** Add `rn-forge-cli` and `rn-forge-tooling` to package
    verification, build, release and coverage in pykit's `main.yml`, and run
    `lint-imports` as a required gate. Necessary now even though Phase F
    regenerates the skeleton: an unenforced import contract is not a contract.
+
 1. **F9 + F14 — the release contract and the instructions.** `rn-forge-cli` and
    `rn-forge-tooling` declare their commons dependency as a pinned direct URL
    under D46, and the installation guides describe that model rather than
    `uv add`. Smoke-test an install outside the workspace. Reconcile pykit's
    `AGENTS.md` to be a pointer to `CLAUDE.md`, per §0.6.
-1. **Rename the golden repos and add the missing ones (D53).**
+
+1. **Rename the golden repos and add the missing ones (D53).** — **done.**
    `golden/python-cli` → `golden/python-tool`; a new `golden/python-app`.
    `golden/python-lib` is unchanged. Update kiln's own
    `.rn-forge/kiln/config.toml` to `python-tool`, re-render
    `.rn-forge/kiln/standard.md`, and **re-seed `state.json`**.
-1. **Close Phase C's addendum (F8).** Cut the first `rn-forge-cli` and
-   `rn-forge-tooling` releases; point `golden/python-app` at `rn-forge-cli`
-   and `golden/python-tool` at both; re-point every commons pin at the release
-   cut after the boundary change; update each `check_rn_forge_deps.py`
-   `REQUIRED` header; re-seed every `state.json`.
-1. **The acceptance test ADR-0009 never had.** `golden/python-app` contains a
-   working CLI with **zero hand-written app construction** — a `main()`, its
-   commands, its tests, and nothing else. If that repo cannot be written,
-   ADR-0009 is not ready and D49 stays proposed.
+
+1. **Close Phase C's addendum (F8).** — **open, deliberately.** Cut the first
+   `rn-forge-cli` and `rn-forge-tooling` releases; point `golden/python-app`
+   at `rn-forge-cli` and `golden/python-tool` at both; re-point every commons
+   pin at the release cut after the boundary change; update each
+   `check_rn_forge_deps.py` `REQUIRED` header; re-seed every `state.json`.
+
+    The `REQUIRED`/`ALLOWED` headers and the dependency lines are already in
+    place, and the golden repos already exercise all three libraries. What is
+    not done, and is held back on purpose, is the *pin*: every rn-forge
+    requirement names pykit's published `feature/upgrade` branch rather than a
+    tag, so that upgrades found while exercising the golden repos land without
+    re-cutting a release. A branch pin satisfies `check_rn_forge_deps.py` —
+    `git+…@<ref>` is a ref — and `uv.lock` records the resolved commit, so the
+    build is reproducible meanwhile. **kiln's templates must not be written
+    against it**: this is an interim state for a fixture, not the contract.
+
+1. **The acceptance test ADR-0009 never had.** — **done.** `golden/python-app`
+   contains a working CLI with **zero hand-written app construction** — a
+   `main()`, its commands, its tests, and nothing else. If that repo cannot be
+   written, ADR-0009 is not ready and D49 stays proposed.
+
+    `src/golden_app/main.py` is three lines around
+    `rn_forge.cli.declare.declare(...)`; the surface is the `[cli]` table in
+    `.rn-forge/kiln/config.toml`; `commands.py` holds one function with no
+    Typer import, which `.importlinter` enforces. `golden/python-tool` is built
+    the same way, and additionally exercises `rn-forge-tooling` by rendering
+    its greeting through `TemplateEngine`. **D49 is met on the evidence
+    ADR-0009 asked for.**
 
 **Acceptance**
 

@@ -154,7 +154,7 @@
     "scripts/standards/check_rn_forge_deps.py": {
       "path": "scripts/standards/check_rn_forge_deps.py",
       "kind": "managed",
-      "content_hash": "sha256:47f55c37fcf246ac3558b0d220d5707632fc4648e11ed5214c22b209e444a79c"
+      "content_hash": "sha256:1b1bc9419e0017e12e0818fa23feed99fcc96f025b2e383aab8241f3c8f70c3e"
     },
     "scripts/task/check_task_layout.py": {
       "path": "scripts/task/check_task_layout.py",

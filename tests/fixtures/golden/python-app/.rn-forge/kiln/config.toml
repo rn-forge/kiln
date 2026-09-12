@@ -1,0 +1,30 @@
+# The one hand-authored input kiln reads (kiln ADR-0004). Edit this, then run
+# `kiln apply`. Everything else under .rn-forge/kiln/ is kiln's.
+schema_version = 1
+
+[repository]
+name = "golden-app"
+archetype = "python-app"
+
+[docs]
+profile = "mkdocs"
+site_dir = ".docs-site"
+
+[ci]
+provider = "github"
+sonar = true
+release = "tag-exists"
+
+[tasks]
+includes = []
+
+# The command line this repo exposes, built by `rn_forge.cli.declare` rather
+# than assembled by hand (kiln ADR-0009). Adding a command is an entry here and
+# a function in `src/golden_app/commands.py`.
+[cli]
+name = "golden-app"
+help = "The python-app archetype's golden CLI."
+
+[[cli.commands]]
+name = "hello"
+target = "golden_app.commands:hello"

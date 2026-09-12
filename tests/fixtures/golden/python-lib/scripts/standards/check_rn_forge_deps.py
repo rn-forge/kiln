@@ -2,9 +2,9 @@
 """Enforce the archetype's rn-forge dependency contract.
 
 An archetype is not only a repo shape — it is also the set of shared libraries a
-repo of that shape is built on (kiln ADR-0005). A `python-cli` repo gets commons
-and tooling; a `python-django-ng` or `python-fastapi-ng` repo gets its framework
-package as well.
+repo of that shape is built on (kiln ADR-0005). A `python-app` repo gets commons
+and cli; a `python-tool` repo gets tooling as well; a `python-web-api` or
+`python-web-app` repo gets its framework package on top.
 That is the whole point of naming archetypes: the boilerplate a repo does not
 write is the boilerplate it takes from the component libraries.
 

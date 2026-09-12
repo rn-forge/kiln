@@ -2,7 +2,7 @@
   "schema_version": 1,
   "metadata": {
     "kiln_version": "golden",
-    "config_hash": "sha256:80a46a4a3df5515e303fda716af285442b690d11fc6d00927862147b078c9167"
+    "config_hash": "sha256:f5f0360fd02b1bcb65a1a03fea567f1cce5849a4e151f0cdc3fcc1d04bb972e8"
   },
   "entries": {
     ".editorconfig": {
@@ -40,14 +40,14 @@
     ".rn-forge/kiln/standard.md": {
       "path": ".rn-forge/kiln/standard.md",
       "kind": "managed",
-      "content_hash": "sha256:2116e96f8913ddf9565761a5b7c0ff7a6fb617066b0c3dfab7cfe0ad40006a7d"
+      "content_hash": "sha256:dfaca0f168572821609ed9743a41cc04d447d0be4306da0e55d559638ef6fe33"
     },
     "CLAUDE.md::kiln": {
       "path": "CLAUDE.md",
       "kind": "block",
       "begin_marker": "<!-- BEGIN rn-forge kiln -->",
       "end_marker": "<!-- END rn-forge kiln -->",
-      "content_hash": "sha256:e13783d97ede5beed549628cb50576d866982e447dbe8b30f9b1f448d9e7696b"
+      "content_hash": "sha256:50ed18f338cff269cbf6a0c977ccbcadab6f9c62dacad584eb5759ec330b11e4"
     },
     "Taskfile.yml": {
       "path": "Taskfile.yml",
@@ -162,7 +162,7 @@
     "scripts/standards/check_rn_forge_deps.py": {
       "path": "scripts/standards/check_rn_forge_deps.py",
       "kind": "managed",
-      "content_hash": "sha256:9fb2a4d506e63175c5a82d3f76d2378e4582d2b1d7071f90827e9b6e220ff941"
+      "content_hash": "sha256:b60efc9339646d1994a4add6ef3b91b22e3a2b5fc8be552b5d1861567527f06d"
     },
     "scripts/task/check_task_layout.py": {
       "path": "scripts/task/check_task_layout.py",

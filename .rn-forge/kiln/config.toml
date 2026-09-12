@@ -8,7 +8,7 @@ schema_version = 1
 
 [repository]
 name = "kiln"
-archetype = "python-cli"
+archetype = "python-tool"
 
 [docs]
 profile = "mkdocs"

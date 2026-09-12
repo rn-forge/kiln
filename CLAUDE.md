@@ -1,36 +1,16 @@
 # kiln
 
-The rn-forge repository generator and the canon it generates against. Read
-[the standard repository](docs/reference/standard-repo.md) before changing
-anything structural — in this repo or in any repo kiln generates.
+This repository keeps a single prose home, in [README.md](README.md).
 
-## Start here in a new session
+**Read `README.md` now and follow it as if its contents appeared here.** It says
+what kiln is, where the work stands, how to work in this repo, and what the
+conventions are. Start with
+[§0.1 of the plan](docs/plans/standardization-plan.md) for status and §0.9 for
+what the last review changed.
 
-[§0.1 of the plan](docs/plans/standardization-plan.md) is the status — what is
-done, what is next. §0.6 is what the last review changed and why, so you do not
-re-derive it. [The standard repository](docs/reference/standard-repo.md) is the
-normative text; the [decision log](docs/adr/index.md) is why.
-
-## Working here
-
-- Run everything through `task`. `task validate` is the gate.
-- **The golden repos under `tests/fixtures/golden/` are the source of truth for
-  the templates.** A standard change starts there, in real files, and is
-  proven by running that repo's own `uv sync && task validate` from inside it.
-  A template change not first made in a golden repo is a bug
-  ([ADR-0005](docs/adr/0005-archetypes.md)).
-- A generated script's body is byte-identical across every golden repo; only the
-  `# BEGIN kiln config` header differs. `task test` enforces it.
-- This repo's own skeleton is a hand-copy of the `python-cli` golden repo. It
-  regenerates itself once the generator exists; until then, keep them in step
-  by hand — a change to a golden repo's skeleton is usually a change here too.
-- **After changing any managed file, re-seed the state baseline.** There is no
-  `kiln apply` yet, so `.rn-forge/kiln/state.json` is written by hand;
-  `task lint` fails with `has drifted from the committed state` until it
-  agrees.
-- An ADR carries a decision and the alternatives rejected. The moment it starts
-  enumerating — verbs, paths, dependency sets — it has become a spec and
-  belongs in `docs/reference/standard-repo.md` (D48).
+Do not add guidance to this file — it would drift out of sync with `README.md`,
+and one of the two copies would then be wrong with nothing to detect it (D57).
+The only thing that belongs here is the generated block below.
 
 <!-- BEGIN rn-forge kiln -->
 
@@ -43,7 +23,7 @@ The standard, rendered for this repo's archetype and docs profile, is
 [.rn-forge/kiln/standard.md](.rn-forge/kiln/standard.md). Read it before
 changing anything structural.
 
-- **Archetype:** `python-cli` · **Docs profile:** `mkdocs` · **CI:** GitHub
+- **Archetype:** `python-tool` · **Docs profile:** `mkdocs` · **CI:** GitHub
   Actions, Sonar on
 - **Entrypoint:** `task`. Never invoke `uv`, `pytest`, `ruff`, `pyright`,
   `mkdocs` or `kiln` directly, in a workflow or in a document — the ten root
@@ -60,13 +40,3 @@ changing anything structural.
   `.rn-forge/kiln/state.json` baseline through `task validate`.
 
 <!-- END rn-forge kiln -->
-
-## Conventions
-
-- Python 3.14, `src/` layout under the `rn_forge` namespace, pyright strict,
-  ruff for lint and format.
-- `tests/fixtures/**` is excluded from this repo's ruff, pyright and pytest:
-  each golden repo is held to its own archetype's configuration, by its own
-  gate.
-- This repo has a `plans/` docs area that kiln's seeded model does not — which
-  is the point of the model being seeded (D44).

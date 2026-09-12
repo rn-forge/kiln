@@ -1,0 +1,68 @@
+[project]
+name = "golden-app"
+version = "0.1.0"
+description = "The python-app archetype's golden repo — the byte-exact oracle for kiln's templates."
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Rohit Narayanan", email = "rohit.nn@gmail.com" }]
+requires-python = ">=3.14"
+# pykit publishes GitHub Releases rather than to PyPI, so rn-forge libraries are
+# git sources. The URL lives in `dependencies`, not in [tool.uv.sources]: a
+# source override is local and does not survive into a built wheel, so a
+# consumer of this package's release could not resolve commons at all
+# (kiln ADR-0005).
+dependencies = [
+  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-commons",
+  "rn-forge-cli @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-cli",
+]
+
+[project.scripts]
+golden-app = "golden_app.main:main"
+
+[build-system]
+requires = ["uv_build>=0.11.28,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.pyright]
+typeCheckingMode = "strict"
+ignore = ["tests"]
+reportMissingTypeStubs = false
+venvPath = "."
+venv = ".venv"
+
+[tool.pytest.ini_options]
+# importlib mode keeps same-named test modules in different directories from
+# colliding, and needs no __init__.py in tests/.
+addopts = "-ra --import-mode=importlib"
+
+[tool.ruff.lint.per-file-ignores]
+# Not a blanket exemption: tests are code. These are the rules that fight the
+# way a test is written, and nothing else.
+"tests/*" = [
+  "S101",    # assert is the point
+  "D",       # a test name is its docstring
+  "ANN",     # annotations on a test add nothing
+  "PLR2004", # a literal in an assertion is the expected value
+]
+
+[tool.uv.build-backend]
+module-name = "golden_app"
+source-exclude = ["**/.DS_Store"]
+
+[dependency-groups]
+dev = [
+  "import-linter>=2.3",
+  "pyright>=1.1.411",
+  "pytest>=9.1.1",
+  "pytest-cov>=7.1.0",
+  "pyyaml>=6.0",
+  "ruff>=0.15.21",
+]
+docs = [
+  "mdformat>=1.0.0",
+  "mdformat-gfm>=0.4",
+  "mdformat-front-matters>=2.0.0",
+  "mdformat-mkdocs>=5.3.0",
+  "mkdocs-material>=9.6",
+  "mkdocstrings[python]>=0.30",
+]
