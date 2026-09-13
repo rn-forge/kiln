@@ -96,7 +96,7 @@ product code imports no framework or CLI toolkit directly (`typer`, `jinja2`,
 that owns them.
 
 `rn-forge-commons`, `rn-forge-cli` and `rn-forge-tooling` remain the only
-rn-forge packages this repo may import. Every other rn-forge component — kiln and agentkit included —
+rn-forge packages this repo may import. Every other rn-forge component — kiln included —
 is a subprocess or nothing.
 
 ## 5. What CI checks, and what it does not

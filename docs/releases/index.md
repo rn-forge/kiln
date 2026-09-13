@@ -1,4 +1,7 @@
 # Releases
 
-Nothing has shipped. `0.1.0` is the canon and the golden repos; the CLI lands in
-Phase D of the [standardization plan](../plans/standardization-plan.md).
+Nothing has shipped yet.
+
+- [Release 2 — the web archetypes](release-2/index.md) — planned
+- [Release 1 — kiln generates and self-hosts the Python archetypes](release-1/index.md)
+  — planned

@@ -1,0 +1,75 @@
+# E3 — Realign the goldens and the canon with pykit
+
+**Status:** planned · **Release:**
+[release-1](../../../releases/release-1/index.md) · **Phase:** C.4 ·
+**Estimate:** 3 days
+
+Repo `rn-forge/kiln`, branch `feature/v1`. The hand-authored goldens are the
+reference [E4](../E4-generator/index.md) writes templates from
+([ADR-0005](../../../adr/0005-archetypes.md)), so they must match pykit as it
+is, not as it was. F3.2 and S3.4.1 can start now. F3.1 follows F3.2, and F3.3
+follows F3.1 and pykit's lifecycle work. S3.4.4 waits on E4's checks-shape
+decision (S4.1.4), which is a decision only and waits on nothing in E3.
+
+## Features
+
+| ID | Feature | Depends on |
+| -- | -- | -- |
+| [F3.1](F3.1-goldens-on-part-e-api.md) | Port `golden/python-app` and `golden/python-tool` to the Part E API | F3.2 |
+| [F3.2](F3.2-branch-pins.md) | Pins, per ADR-0005 | — |
+| [F3.3](F3.3-python-tool-is-a-tool.md) | Make `golden/python-tool` a tool | F3.1; pykit C.3 (lifecycle surface) |
+| [F3.4](F3.4-canon-catches-up.md) | The canon catches up; re-seed state; README | S3.4.1: —; S3.4.4: [S4.1.4](../E4-generator/F4.1-checks-by-module.md#s414-the-ci-shape-is-decided) (decision); S3.4.2: F3.1–F3.3, S3.4.1, S3.4.4 |
+
+The instruction-file split (the old C.3 step 4, D57) is the one piece already
+done.
+
+## Starting state (verified 2026-09-12)
+
+What is true on disk that the older ADRs and the reference do not say. Verify
+with `git status` before acting; it goes stale.
+
+- **The goldens are behind pykit.** `golden/python-app` and `golden/python-tool`
+  still import `rn_forge.cli.declare` (deleted in pykit Part E) and
+  `from rn_forge.cli import console` (moved to `rn_forge.commons`), and still
+  define `main()`. Their `uv.lock` pins an older `feature/upgrade` commit,
+  which is the only reason they still pass. The same stale names appear in
+  their `README.md`, `docs/architecture/repository-shape.md`,
+  `docs/adr/0001-product-code-stays-trivial.md` and `config.toml` comments.
+- **`golden/python-lib`'s two packages pin `rn-forge-commons-v0.2.2`**, a tag
+  from before the layer split; the other goldens pin `@feature/upgrade`.
+- **`docs/reference/standard-repo.md`'s dependency-set table omits
+  `rn-forge-web`** beneath django and fastapi, and its ownership table still
+  lists `scripts/**` as generated.
+- **pykit gained `rn-forge-web`** (framework-free inbound HTTP primitives,
+  depends on commons only) and is building **`rn-forge-fastapi`** over it.
+  `rn-forge-django` does not depend on web yet; pykit's django plan aligns it.
+- kiln itself has no generator source (`src/rn_forge/kiln/` is an empty package)
+  and still carries a hand-copied `scripts/**`.
+
+| Repo | Branch | State (2026-09-12) |
+| -- | -- | -- |
+| `rn-forge/kiln` | `feature/v1` | three hand-authored goldens; kiln's own config is `python-tool` |
+| `rn-forge/pykit` | `feature/upgrade` | commons, cli, tooling, web, django; fastapi in progress. Executable form: `docs/plans/commons-upgrade-plan.md`, `web-library-plan.md`, `fastapi-library-plan.md`, indexed by `docs/plans/README.md` |
+
+## Acceptance
+
+E3 is done when every feature's acceptance block passes. This block re-proves
+the epic as a whole afterwards.
+
+```bash
+set -euo pipefail
+absent() { local rc=0; rg -q --hidden --glob '!.git' "$@" || rc=$?; [ "$rc" -eq 1 ]; }
+cd rn-forge/kiln
+G=tests/fixtures/golden
+absent 'rn_forge\.cli\.declare|build_app|from rn_forge\.cli import console' "$G"      # F3.1
+absent 'def main' "$G/python-app/src" "$G/python-tool/src"                            # F3.1
+absent 'rn-forge-commons-v0\.2\.2' "$G"                                               # F3.2
+for g in "$G/python-app" "$G/python-tool" "$G/python-lib"; do
+  (cd "$g" && uv sync && task validate) || { echo "FAIL $g" >&2; exit 1; }
+done
+(cd "$G/python-tool" && uv run golden-tool doctor)                                    # F3.3
+(cd "$G/python-tool" && uv run golden-tool status --json) | jq -e '.version'          # F3.3
+absent 'RNF_HOME|lifecycle' "$G/python-app"                                           # F3.3
+rg -q 'rn-forge-web' docs/reference/standard-repo.md                                  # F3.4
+task lint                                                                             # F3.4
+```

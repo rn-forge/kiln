@@ -4,11 +4,11 @@
 
 ## Context
 
-Promoted from agentkit ADR-0008, which decided this for one repo. It is a fleet
-decision in practice — no repo in `rn-forge` or `rn-tools` runs mypy, and the
-`python-app` and `python-lib` templates both generate a `pyright` task — but it
-had never been written down anywhere a new repo would find it. A standard that
-lives only in the repos that already follow it is not a standard.
+Promoted from a donor kit's own ADR, which decided this for one repo. It is a
+fleet decision in practice — no repo in `rn-forge` or `rn-tools` runs mypy, and
+the `python-app` and `python-lib` templates both generate a `pyright` task — but
+it had never been written down anywhere a new repo would find it. A standard
+that lives only in the repos that already follow it is not a standard.
 
 The codebases lean on untyped libraries (`tomlkit`, `ruamel.yaml`, Jinja) at a
 handful of choke points, which is where the strict/basic distinction bites.
@@ -17,7 +17,7 @@ handful of choke points, which is where the strict/basic distinction bites.
 
 - **mypy**, as several original specs named. Diverges from what every repo
   actually does, for no gain in these codebases.
-- **pyright at `basic`.** Would have accepted the 84 errors agentkit found
+- **pyright at `basic`.** Would have accepted the 84 errors that repo found
   rather than forcing them to be typed at the boundary — which is where the
   untyped libraries are, and therefore where the types are worth having.
 - **Both.** Two type checkers disagreeing is a standing tax on every repo.

@@ -87,8 +87,7 @@ Two owners never write the same bytes. The assignment is normative:
 | `.rn-forge/kiln/state.json` | kiln | managed; the CI baseline; never hashes itself |
 | `.rn-forge/kiln/standard.md` | kiln | managed — the rendered canon |
 | `.rn-forge/kiln/backups/`, `rendered/` | kiln | gitignored derived data |
-| `.rn-forge/agentkit/**` | agentkit | as today |
-| `.gitignore` | repo body; `# BEGIN rn-forge kiln` → kiln; `# BEGIN rn-forge agentkit` → agentkit | block |
+| `.gitignore` | repo body; `# BEGIN rn-forge kiln` → kiln | block |
 | `.editorconfig` | kiln | managed |
 | `.importlinter` | kiln | managed |
 | `.mdformat.toml` | kiln | **seeded** — its presence opts the repo in; the style is the repo's |
@@ -102,9 +101,10 @@ Two owners never write the same bytes. The assignment is normative:
 | `docs/_areas.yml`, `docs/_structure.md`, `docs/<area>/_structure.md` | kiln | **seeded** — repos extend their areas |
 | `docs/index.md`, `docs/<area>/index.md` | kiln | **seeded** — written if absent, never touched again |
 | `mkdocs.yml` | repo body; `# BEGIN generated nav` → kiln | block |
-| `CLAUDE.md` | body seeded by agentkit; `<!-- BEGIN rn-forge kiln -->` → kiln; agentkit's own block → agentkit | block |
-| `AGENTS.md` | agentkit | seeded — a static pointer at `CLAUDE.md`, so there is one file to keep current |
-| `.claude/**`, `.codex/**`, installed skills | agentkit | as today |
+| `README.md` | kiln | **seeded** — the single prose home |
+| `CLAUDE.md` | body seeded by kiln — a pointer to `README.md`; `<!-- BEGIN rn-forge kiln -->` → kiln | seeded body + block |
+| `AGENTS.md` | kiln | seeded — a static pointer at `CLAUDE.md`, so there is one file to keep current |
+| `.claude/**`, `.codex/**`, installed skills | not kiln's | — |
 | `pyproject.toml`, `src/**`, `tests/**` | repo | not kiln's after the scaffold — but its rn-forge dependencies are constrained by §3 |
 | Repo-specific lints (`check_brand.py`, …) | repo, wired via `[tasks.extra_refs]` | repo |
 
@@ -163,9 +163,9 @@ needing an exemption.
 
 `rn-forge-commons`, `rn-forge-cli` and `rn-forge-tooling` are the only rn-forge
 packages a repo may import (plus its own framework runtime package). Every other
-rn-forge component — kiln and agentkit included — is a subprocess or nothing.
-That rule is enforced at the dependency declaration, in §3: import-linter
-rejects subpackages of external packages, so it cannot express it.
+rn-forge component — kiln included — is a subprocess or nothing. That rule is
+enforced at the dependency declaration, in §3: import-linter rejects subpackages
+of external packages, so it cannot express it.
 
 What `.importlinter` enforces is the complement — product code imports no
 framework or CLI toolkit *directly* (`typer`, `jinja2`, `click`, `django`,
@@ -180,7 +180,7 @@ it; `task validate` reaches it.
 ## 5. What `task validate` proves without kiln
 
 A cold clone with go-task and the pinned language toolchain — no kiln, no
-agentkit, no `$RNF_HOME`, no bootstrap script — proves all of this:
+`$RNF_HOME`, no bootstrap script — proves all of this:
 
 - ruff is clean and everything is ruff-formatted — `lint:python` asserts both,
   and `format:python` applies them in the order that makes them agree
@@ -279,7 +279,7 @@ model; every failure is reported with its dotted path, never just the first.
 schema_version = 1
 
 [repository]
-name = "agentkit"
+name = "my-tool"
 archetype = "python-tool"  # python-app | python-tool | python-lib
                            # python-web-api | python-web-app
                            # node-lib | node-web-app   (deferred)
@@ -322,7 +322,7 @@ web_dir = "apps/web"
 nx_cloud = false                 # an account decision, not a repo shape
 
 [cli]                            # ADR-0009; read by rn-forge-cli, not by kiln
-name = "agentkit"
+name = "my-tool"
 options = ["json", "dry-run", "yes", "log-level"]
 ```
 

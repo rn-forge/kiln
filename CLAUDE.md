@@ -4,13 +4,14 @@ This repository keeps a single prose home, in [README.md](README.md).
 
 **Read `README.md` now and follow it as if its contents appeared here.** It says
 what kiln is, where the work stands, how to work in this repo, and what the
-conventions are. Start with
-[§0.1 of the plan](docs/plans/standardization-plan.md) for status and §0.9 for
-what the last review changed.
+conventions are. Start with [the spec board](docs/specs/index.md) for status,
+and read it before adding an epic or cutting a release; the
+[decision log](docs/adr/index.md) is why.
 
 Do not add guidance to this file — it would drift out of sync with `README.md`,
-and one of the two copies would then be wrong with nothing to detect it (D57).
-The only thing that belongs here is the generated block below.
+and one of the two copies would then be wrong with nothing to detect it
+([ADR-0001](docs/adr/0001-ownership.md)). The only thing that belongs here is
+the generated block below.
 
 <!-- BEGIN rn-forge kiln -->
 

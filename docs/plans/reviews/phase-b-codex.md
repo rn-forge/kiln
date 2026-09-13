@@ -3,7 +3,7 @@
 > Kept verbatim. The only change is that the file citations, which pointed at
 > absolute paths on the reviewer's machine, are rendered as plain references
 > rather than as links — the wording is untouched. What was done about each item
-> is in [§0.6 of the plan](../standardization-plan.md).
+> is in [context §7](../context.md), which carries the plan's §0.6.
 
 1. **[P1] Released packages lose the Git dependency source.** Both members
    declare `rn-forge-commons>=0.2.2`, but its Git location exists only in the

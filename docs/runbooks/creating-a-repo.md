@@ -4,10 +4,11 @@
 it cannot decide for you: which archetype, what stays repository-owned, and what
 to do when the repo does not fit.
 
-> Phase B of the [standardization plan](../plans/standardization-plan.md) ships
-> the canon and the golden repos; `kiln new` itself lands in Phase D. Until then
-> the procedure below is what a human follows by hand, using
-> `tests/fixtures/golden/<archetype>/` as the reference repo.
+> [E1](../specs/epics/E1-canon-and-golden-repos/index.md) shipped the canon and
+> the golden repos; `kiln new` itself lands in
+> [E4](../specs/epics/E4-generator/index.md). Until then the procedure below is
+> what a human follows by hand, using `tests/fixtures/golden/<archetype>/` as
+> the reference repo.
 
 ## 1. Choose the archetype
 

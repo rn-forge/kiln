@@ -1,4 +1,4 @@
-# ADR-0004 — The `.rn-forge/` umbrella, and asserted configuration
+# ADR-0004 — The `.rn-forge/` umbrella, and asserted, committed configuration
 
 **Status:** accepted
 
@@ -11,6 +11,13 @@ happens when a tool infers rather than reads: tool config at the root
 `pyproject.toml`, tasks emitted with `dir: apps/api`, and a detection layer that
 got it wrong (F13).
 
+Org-level configurability then needed config shared above the repo — kiln
+defaults, org, project. The first proposal discovered it at `~/.rn-forge/kiln/`
+or the working directory. If home-level config affects rendering, `kiln apply`
+produces different bytes on different machines, `check_generated` goes red for
+whoever did not render last, and the committed `state.json` baseline becomes
+machine-dependent — CI red on a clean checkout with no diff to explain it.
+
 ### Alternatives considered
 
 - **Detect the repo's shape.** taskkit did. Discovery, planner and adapters were
@@ -19,7 +26,15 @@ got it wrong (F13).
 - **An umbrella-level manifest** listing every kit's config. A second registry
   to keep in step with the directory it describes.
 - **Config in `pyproject.toml`.** Couples repo policy to a Python packaging file
-  that a `python-*-ng` repo's frontend half has no reason to contain.
+  that a web repo's frontend half has no reason to contain.
+- **Implicit machine-local config discovery at apply time.** The reproducibility
+  bug above.
+- **A published config package** as the shared source. A release per org-profile
+  edit, for no property a pinned commit lacks.
+- **List append on deep merge.** Removing an inherited entry then needs a second
+  syntax.
+- **Tag-or-SHA-only remote sources, with `kiln doctor` re-reading them.**
+  Committing the resolved result already buys what those were for.
 
 ## Decision
 
@@ -28,7 +43,7 @@ got it wrong (F13).
 
 ```text
 .rn-forge/kiln/
-  config.toml     hand-authored input — the only one
+  config.toml     the merged, committed input — the only one rendering reads
   state.json      generated, committed; the CI baseline
   standard.md     generated; the canon rendered for this repo
   backups/        gitignored
@@ -40,6 +55,17 @@ strict model; every failure is reported with its dotted path, never just the
 first. Its schema is documented in
 [the standard-repo reference](../reference/standard-repo.md#9-configuration),
 which is where it changes as options are added.
+
+**Layered configuration is resolved once and committed.** Sources are a local
+path or a git URL (a branch is allowed; the resolved commit is recorded). Layers
+deep-merge kiln defaults → sources → flags, and **lists replace**. `kiln new`
+writes the merged `config.toml` with a `[source]` table; `apply`, `doctor` and
+`diff` read only that file and never fetch the source. Re-resolution is
+explicit: `kiln config update` (the source changed) and `kiln config upgrade`
+(kiln changed), each applying only with `--apply`. The config manager validates
+against the running kiln's schema on every load, and keys whose committed value
+differs from what their layer last supplied — known from per-key provenance in
+state — survive re-resolution as repo overrides.
 
 **State records what was written, not how.** A managed entry stores `path`,
 `kind` and `content_hash`; a block entry adds its exact fence markers and hashes
@@ -55,8 +81,12 @@ retired predecessor that once held this name; kiln refuses and reports
 ## Consequences
 
 - One file to hand-edit, one to commit as the baseline, and two gitignored.
+- `kiln apply` remains a pure function of the checkout.
 - A repo whose shape defeats inference is *described* rather than detected, so
   its failure mode becomes "the config is wrong" — which a human can read.
 - Asserting the archetype means a new repo shape needs a config option or a new
   archetype, not a smarter detector. That is the intended pressure.
+- Drift from an org profile is `kiln config update --dry-run`, a developer
+  action, not a doctor finding. The command table is in
+  [E4's design](../specs/epics/E4-generator/design.md#the-config-lifecycle).
 - Reassigning the `kiln` name costs exactly one doctor rule.

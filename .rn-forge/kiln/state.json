@@ -40,7 +40,7 @@
     ".rn-forge/kiln/standard.md": {
       "path": ".rn-forge/kiln/standard.md",
       "kind": "managed",
-      "content_hash": "sha256:dfaca0f168572821609ed9743a41cc04d447d0be4306da0e55d559638ef6fe33"
+      "content_hash": "sha256:0a3e1ad9d4ba5e797e7f0c4647c92fe2e0ce6db888f2438f32a2e4df2f7b502c"
     },
     "CLAUDE.md::kiln": {
       "path": "CLAUDE.md",
@@ -127,7 +127,7 @@
       "kind": "block",
       "begin_marker": "# BEGIN generated nav",
       "end_marker": "# END generated nav",
-      "content_hash": "sha256:e90f8b7b3cb7284ee316e2c9a36191b41761abd59483d1854c4ab41401f636fd"
+      "content_hash": "sha256:eaf5c0f47996694ac7e1eedf39499b3ef7387e619545f63ecca20a3b205b9da0"
     },
     "scripts/ci/check_ci_entrypoint.py": {
       "path": "scripts/ci/check_ci_entrypoint.py",

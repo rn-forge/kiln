@@ -12,22 +12,41 @@ dropped five lint gates, while CI still called a task that no longer existed
 four forks (F2, F3), and each kit wrote its own `.gitignore` block with no
 agreement about who owned the file (F14).
 
-agentkit ADR-0021 already said "install only what CI runs", which is the same
-instinct one step short: it says what gets written, not who owns it afterwards.
+Prose had the same problem. The kiln repo and all three golden repos opened
+`README.md` and `CLAUDE.md` with the same sentence and repeated the same status
+pointers — two copies with nothing to detect when one goes stale — and in
+practice every line of agent-specific guidance in `CLAUDE.md` was
+developer-facing.
+
+`pyproject.toml` was the one near-identical file with no way to share it: every
+archetype's `[tool.ruff*]`, `[tool.pyright]`, `[tool.pytest.ini_options]` and
+`[dependency-groups]` tables match, but pytest and coverage have no config
+inheritance, pyright's `extends` is not available in the `[tool.pyright]` form,
+and ruff's `extend` takes a filesystem path that would have to reach inside
+`.venv`.
 
 ### Alternatives considered
 
 - **kiln owns everything in the repo.** Simplest rule to state, and it is what
   the ownership table looks like at a glance. It fails on the first real repo:
-  agentkit owns `.claude/**` and the instruction body, the repository owns its
-  `pyproject.toml`, its source, its tests and its own lints, and intellibuild
-  needs a docs area kiln has never heard of. A rule that has to be broken on
-  day one is not a rule.
+  the repository owns its `pyproject.toml`, its source, its tests and its own
+  lints, agent configuration (`.claude/**`) is not kiln's, and a repo may need
+  a docs area kiln has never heard of. A rule that has to be broken on day one
+  is not a rule.
 - **Ownership per tool, not per file.** "The task tool owns tasks" reads well
   until two tools both have a legitimate claim on `.gitignore` — which is
   exactly what happened.
 - **Advisory ownership, enforced by review.** This is the status quo that
   produced F1–F3.
+- **kiln calls another tool as a subprocess to write the instruction files.**
+  Rejected: the plan would describe a consumer that does not exist, and apply
+  would depend on a binary on `PATH`.
+- **`CLAUDE.md` as a pure stub.** Rejected: the kiln block has to live somewhere
+  a tool can fence.
+- **Generate `pyproject.toml`'s tool tables.** Buys propagation and drift
+  detection, not deduplication — the bytes are duplicated on disk whoever
+  writes them — and costs a config round trip every time someone adds a dev
+  dependency.
 
 ## Decision
 
@@ -42,7 +61,18 @@ inside a shared file — has exactly one owner.**
 1. Two owners never write the same bytes. Shared files are partitioned into
    fenced blocks; each block has one owner; the file body belongs to whoever
    seeded it.
-1. kiln may invoke agentkit as a subprocess. agentkit never knows kiln exists.
+1. **One prose home per repo: `README.md`.** `CLAUDE.md` is a pointer to it plus
+   the fenced blocks; `AGENTS.md` is a pointer to `CLAUDE.md`. kiln seeds all
+   three bodies and owns its block in the latter two.
+1. **kiln invokes no other kit.** No apply step shells out to another rn-forge
+   kit or to any tool that writes a file this table assigns to an owner. The
+   one exception is scaffolding: `kiln new` runs a third-party scaffolder
+   once, into an empty directory, before the first apply
+   ([ADR-0005](0005-archetypes.md)).
+1. **`pyproject.toml` stays repo-owned and is verified, not generated.** doctor
+   compares its tool tables — ruff's included — against the archetype's
+   expected values and warns. Verification and generation are different
+   powers.
 1. Judgement is not automated. Where a human or agent must decide, kiln's docs
    hold a runbook, not a skill ([ADR-0006](0006-runbooks-not-skills.md)).
 
@@ -65,3 +95,8 @@ that changes weekly is not a decision record.
 - The **seeded** kind is what lets a repo diverge on purpose — its docs areas,
   its index pages — without leaving the standard. Removing it would make the
   rule simpler and the standard unusable.
+- `.claude/**`, `.codex/**` and machine-level agent config are unowned by kiln.
+  The fenced-block model is what makes a future agent-config tool cheap to
+  add: it adds its own fence to files kiln already seeds.
+- A silently diverged `pyproject.toml` surfaces as a doctor warning, not a CI
+  failure. Revisit if that proves too weak.

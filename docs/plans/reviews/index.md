@@ -2,7 +2,7 @@
 
 Review passes over a phase's output, kept verbatim. They are not corrected after
 the fact: what a reviewer actually said is the useful record, and what was done
-about it is in the plan's own §0.6/§0.8 and decision log.
+about it is in [context §7](../context.md#7-review-outcomes) and the ADRs.
 
 ## Phase B — the canon and the golden repos
 
@@ -14,7 +14,8 @@ about it is in the plan's own §0.6/§0.8 and decision log.
   that could never be retried.
 
 All items from both are addressed. The outcome table is
-[§0.6 of the plan](../standardization-plan.md).
+[context §7.1](../context.md#71-what-the-phase-b-review-changed), and the work
+was [E1](../../specs/epics/E1-canon-and-golden-repos/index.md).
 
 ## Phase C — the package boundary
 
@@ -26,4 +27,5 @@ All items from both are addressed. The outcome table is
   findings.
 
 Both landed on the same seam from opposite directions. The outcome table is
-[§0.8 of the plan](../standardization-plan.md), and the work is Phase C.2.
+[context §7.3](../context.md#73-what-the-phase-c-review-changed), and the work
+was [E2](../../specs/epics/E2-layer-split-and-golden-rename/index.md).

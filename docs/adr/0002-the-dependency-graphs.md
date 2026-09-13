@@ -4,7 +4,7 @@
 
 ## Context
 
-Both kits had grown their own `core/{state,config,paths,io}.py` with overlapping
+Two kits had grown their own `core/{state,config,paths,io}.py` with overlapping
 mechanisms and drifting dependency floors — `typer>=0.26.8` in one,
 `typer>=0.12` in the other (F12). Meanwhile pykit's commons already held most of
 what a shared core would provide, but at the wrong package boundary: local
@@ -56,12 +56,10 @@ install, generate and own files*.
 
 ```text
 commons ──► cli ──► tooling ──► kiln
-   │         │         │    └─► agentkit
    │         │         └──────► rn-forge-django[codegen]
    │         └────────────────► every python-app repo
    └──────────────────────────► rn-forge-django, rn-forge-fastapi
 
-kiln ──subprocess──► agentkit          (never the reverse)
 kiln ──entry points─► *[codegen]       (kiln never imports a framework)
 ```
 
@@ -89,8 +87,8 @@ requires exactly one root directory encodes a release-bundle convention, so it
 is tooling. A template engine that hardcodes `autoescape=False` and adds TOML
 and YAML filters targets generated configuration, so it is tooling.
 
-**The tooling graph is free.** kiln and agentkit never import each other; kiln
-calls agentkit as a subprocess. pykit adopting kiln as dev tooling is not a
+**The tooling graph is free.** kiln imports no other kit and invokes none
+([ADR-0001](0001-ownership.md)). pykit adopting kiln as dev tooling is not a
 cycle, because nothing is imported.
 
 **Framework generators are `[codegen]` extras of their runtime package.**

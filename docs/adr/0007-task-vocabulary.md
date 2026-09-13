@@ -6,7 +6,7 @@
 
 `task` is the single entrypoint, but "single entrypoint" is worth nothing if the
 verbs differ per repo. apollo's vocabulary had `format-check`, `dev` and `docs`;
-agentkit's had `test:coverage`, `docs:build` and no `dev`. An agent that must
+another kit's had `test:coverage`, `docs:build` and no `dev`. An agent that must
 read a Taskfile before it can run the gate does not have a vocabulary, it has a
 lookup table.
 

@@ -1,27 +1,30 @@
 # plans/ — what belongs here
 
-This area is kiln's own extension to the seeded model (D44). It exists because
-this repo's work arrives as multi-phase plans with acceptance commands, which
-are neither epics nor decisions.
+This area is kiln's own extension to the seeded model (D44). It holds the record
+kiln's work grew out of — not the work itself, which is epics under `specs/`.
 
 ## Belongs here
 
-- A plan: phases, each with steps and an acceptance block that is a command plus
-  its expected result. Written to be executed by someone who has not read the
-  conversation it came out of.
-- A harvest inventory: what was carried over from a donor repo, and what was
-  deliberately dropped.
+- `context.md`: the evidence, the harvest inventory, what each review changed,
+  the reasoning behind the later ADRs, what was rejected, and the map from the
+  frozen plan to its new homes.
+- A frozen plan, kept unedited as the baseline for checking the move out of it
+  for drift.
+- A standalone plan for work kiln's releases do not carry — agent configuration,
+  intellibuild — built on its own schedule.
+- `reviews/`: review passes over a phase's output, kept verbatim.
 
 ## Does not belong here
 
 | Instead of | Put it in |
 | -- | -- |
+| Work to do, steps, acceptance commands | an epic under `specs/` |
 | A choice between real alternatives | an ADR under `adr/` |
 | The standard itself | `reference/` |
 | How something already works | `architecture/` |
 
 ## Naming and shape
 
-- One kebab-case `.md` per plan; `index.md` lists them, newest first.
-- A plan states its revision and its decision log, and is superseded rather than
-  edited in place once a phase has been executed against it.
+- One kebab-case `.md` per document; `index.md` lists them.
+- A frozen plan is never edited — not even its links. Corrections go in
+  `context.md`.

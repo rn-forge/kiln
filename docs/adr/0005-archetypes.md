@@ -1,4 +1,4 @@
-# ADR-0005 — An archetype is a shape, a library set, and a golden repo
+# ADR-0005 — An archetype is a shape, a library set, and a rendered, approved template set
 
 **Status:** accepted
 
@@ -10,9 +10,9 @@ publishes a docs site. But shape is only half of what makes a repo *ours*. The
 other half is what it is built on — the component libraries that mean it does
 not write the boilerplate again. The fleet showed both halves failing:
 
-- agentkit depends on `jinja2`, `pydantic`, `rich`, `ruamel-yaml`, `tomlkit` and
-  `typer` directly and grew its own `core/{state,config,paths,io}.py`, while
-  pykit's commons already held most of it (F12, F17).
+- A CLI kit depended on `jinja2`, `pydantic`, `rich`, `ruamel-yaml`, `tomlkit`
+  and `typer` directly and grew its own `core/{state,config,paths,io}.py`,
+  while pykit's commons already held most of it (F12, F17).
 - apollo *did* reuse commons, via `{ git = "…/pykit", branch = "main" }` — a
   declaration it invented alone, and an unpinned one: what apollo builds
   changes when pykit's main moves, without a tracked byte in apollo changing.
@@ -28,7 +28,16 @@ scheduler, and an installable developer tool that owns `$RNF_HOME`, installs and
 updates itself, keeps local state and loads plugins. They have the same file
 shape and completely different library sets, and collapsing them is what forced
 `rn-forge-tooling` to be a package that most of the fleet was told not to use
-([ADR-0002](0002-the-dependency-graphs.md)).
+([ADR-0002](0002-the-dependency-graphs.md)). After the split, the two golden
+repos still differed by a package name and one dependency line, and
+`rn-forge-tooling/install/` held only `archive.py` — and kiln itself, an
+installable tool, ships two distributions and so is a `python-lib`.
+
+Then the owner's target moved from *one standard, rendered per archetype* to *a
+standard parameterized by the team's landscape*: org identity, Sonar hosting,
+GitHub vs ADO, per-org conventions. Under a rule of one hand-authored golden
+repo per shipped flag value, enough knobs means no golden covers any real
+combination.
 
 ### Alternatives considered
 
@@ -45,13 +54,26 @@ shape and completely different library sets, and collapsing them is what forced
   dependency.** Rejected: an archetype *is* a library set, and the checker
   that enforces it (`check_rn_forge_deps.py`) needs one answer for `REQUIRED`.
   An archetype whose required set is a matter of taste enforces nothing.
+- **Letting only `python-lib` opt in to the lifecycle surface**, or **making
+  kiln a special case** with hand-written lifecycle wiring, or **moving
+  `rn-forge-kiln-checks` out of the kiln repo** so kiln ships one
+  distribution. Each answers *kiln today* and leaves the question to resurface
+  at the first `python-lib` that ships a command.
 - **"Is it a monorepo" as the axis.** It does not discriminate: `python-lib`,
   `python-app`, `python-web-app` and `node-lib` can all be workspaces. What
   separates them is whether the workspace *publishes* — per-package release
   tags and a per-package CI matrix — or ships one version.
-- **Templates as the source of truth, golden repos as tests generated from
-  them.** The normal direction, and the reason four pipelines diverged: the
-  reviewer never sees a whole repo.
+- **Templates as the source of truth, with nothing reviewed as a whole repo.**
+  The normal direction, and the reason four pipelines diverged: the reviewer
+  never sees a whole repo.
+- **Hand-authored golden repos as the permanent source of truth**, with
+  byte-exact snapshot tests. Held through Phase C; does not survive
+  parameterization.
+- **Committing rendered goldens** as snapshots, all or a representative subset.
+  Rejected: rendered output is regenerable and does not belong in git.
+- **Policy knobs** — naming rules and package prefixes enforced by kiln.
+  Refused: ruff and `.importlinter` already implement them, and a scaffolder
+  that grows its own static-analysis engine maintains it forever.
 - **Publish rn-forge libraries to PyPI.** Would make dependency declaration
   trivial. Deferred, not rejected — the release pipeline publishes GitHub
   Releases today, and this decision is written so that adding PyPI later
@@ -60,74 +82,79 @@ shape and completely different library sets, and collapsing them is what forced
   first, and what apollo used. It is a *local* override that does not survive
   into a built wheel, so a consumer of a published package could not resolve
   the dependency at all.
+- **Cut pykit tags now and pin every repo to them.** Every pykit change found
+  while building kiln would then need a release first.
 
 ## Decision
 
 ### The catalogue
 
-Seven archetypes, asserted in config. The name states the repo's **shape** and
-its **release/CI topology**; nothing else selects those.
+Seven archetype names, asserted in config. The name states the repo's **shape**
+and its **release/CI topology**; nothing else selects those.
 
 | Archetype | Shape | Publishes | Prior art | Release tag |
 | -- | -- | -- | -- | -- |
 | `python-app` | one uv package, `src/` layout, optional internal-only workspace packages | no | intellibuild batches | `v<version>` |
-| `python-tool` | as `python-app`, plus self-install, `$RNF_HOME`, local state, plugins, doctor | no | agentkit, kiln | `v<version>` |
+| `python-tool` | **alias for `python-app` + `lifecycle = true`** — self-install, `$RNF_HOME`, local state, plugins, doctor | no | kiln | `v<version>` |
 | `python-lib` | uv workspace of published packages; per-package verify and release | yes | pykit | `<package>-v<version>` |
 | `python-web-api` | uv workspace, one API service, no separate frontend package; may ship a thin self-contained admin UI | no | — | `v<version>` |
 | `python-web-app` | uv workspace + API + a pnpm-managed Nx workspace for the frontend, one MkDocs site over both | no | apollo, intellibench | `v<version>` |
 | `node-lib` | pnpm/Nx workspace of published UI libraries | yes | ngkit | `<package>-v<version>` |
 | `node-web-app` | standalone pnpm-managed Nx frontend consuming remote APIs | no | — | `v<version>` |
 
-`python-app` and `python-tool` are the split of the former `python-cli`. Both
-are command-line programs; only `python-tool` owns files outside its own
-directory, and only it takes `rn-forge-tooling`.
-
 `python-web-api` and `python-web-app` replace `python-django-ng` and
 `python-fastapi-ng`. The framework moved out of the name because it does not
 change the topology; the frontend's presence did not, because it does.
 
-The two node archetypes are **named and deferred**: they need a second toolchain
-— pnpm release, node CI, no uv — and nothing in scope for v1 uses them. Naming
-them now fixes the taxonomy so `ui-lib` does not arrive later as a one-off.
+**The tool lifecycle surface is a capability flag, not an archetype.**
+`lifecycle = true` may be set by any Python archetype. It is built in
+`rn-forge-tooling` behind a defaulted `ToolProduct` adapter — tooling owns
+`$RNF_HOME`, the versioned install tree and the
+`install`/`upgrade`/`uninstall`/`cleanup`/`status`/`doctor` algorithms; a
+product supplies `artifacts()`, `checks()` and `migrate()`, all defaulted — and
+the verbs are mounted by `CliApp.from_config` from a `[cli.lifecycle]` table.
+`python-tool` survives as a **CLI alias**, normalized in `state.json`, so the
+catalogue keeps seven names for humans and six shapes internally.
 
-### When a config flag is allowed
+The two node archetypes are **named and deferred**: they need a second toolchain
+— pnpm release, node CI, no uv — and nothing in scope for v1 uses them.
+
+### Knobs, and when a config flag is allowed
 
 > **The archetype name states the repo's shape and its release/CI topology. A
 > config flag may select an implementation library only when it changes neither
 > the file topology nor the task graph.**
 
-`framework = "django" | "fastapi"` passes: it changes `tasks/api.yml` primitives
-and adds `manage.py`, but the uv workspace, the release model and the CI matrix
-are identical. `frontend = "angular" | "react" | "svelte"` passes: it changes
-which `nx g` runs; the task graph is `pnpm nx run-many` either way. The rejected
-`backend` + `web_runner` pair failed because *together* they selected four
-topologies.
+Every knob has a stated price:
 
-**Every flag value that ships has a golden repo.** A value without one is
-`untested = true` in `archetype.toml` and `kiln new` refuses it without an
-explicit override. That is what stops the flag freedom from reintroducing the
-combinatorial explosion this ADR was written to avoid: the catalogue can only
-grow as fast as someone is willing to hand-author and run a repo.
+| Tier | What it changes | Cost | Examples |
+| -- | -- | -- | -- |
+| **1 — Values** | bytes inside files that exist either way | none | org/group name, author, license, Sonar host + organization, project-key pattern, package prefix, the rn-forge dependency source |
+| **2 — Toggles** | a known fragment present or absent | one template fragment | `ci.sonar`, publish step, docs deploy, coverage upload, `lifecycle` |
+| **3 — Topology** | which files exist | a render-matrix cell | `archetype`, `ci.provider = github\|ado` |
+| **4 — Policy** | what code is legal | unbounded — **not built** | class naming, package prefixes as *rules* |
 
-For v1 the shipped values are `python-web-app` with **`django + angular`** and
-**`fastapi + angular`** — django because `rn-forge-django` already exists and is
-the batteries-included path, fastapi because intellibuild needs it — and
-`python-web-api` with **`fastapi`**. `react`, `svelte`, and
-`python-web-api --framework django` are named and `untested`; the django API
-tree is nonetheless exercised inside the django `python-web-app` golden, so
-promoting it later is a golden repo, not a design.
+kiln **expresses policy as ruff and import-linter configuration derived from
+declarative config, and never implements a matcher**. `.importlinter` is a
+managed file kiln generates. Ruff's tables live in the repo-owned
+`pyproject.toml`, so kiln renders their expected values and doctor verifies
+them, but kiln never writes them ([ADR-0001](0001-ownership.md)).
+`framework = "django" | "fastapi"` passes the flag rule: it changes
+`tasks/api.yml` primitives and adds `manage.py`, but the uv workspace, the
+release model and the CI matrix are identical.
+`frontend = "angular" | "react" | "svelte"` passes: it changes which `nx g`
+runs. The rejected `backend` + `web_runner` pair failed because *together* they
+selected four topologies.
 
-`-ng` is gone from archetype names. A pnpm-managed Nx workspace — Nx's own
-documented shape — is what `python-web-app`, `node-lib` and `node-web-app` mean,
-so there is still no `web_runner` key. Whether that workspace uses Nx Cloud
-stays a config option, because it is an account decision rather than a repo
-shape.
+For v1 the shipped web cells are `python-web-app` with **`django + angular`**
+and **`fastapi + angular`**, and `python-web-api` with **`fastapi`**. `react`,
+`svelte`, and `python-web-api --framework django` are named and `untested`;
+`kiln new` refuses an untested value without an explicit override.
 
-**Docs profile is orthogonal**: `mkdocs` seeds the full area model (from
-agentkit's `_areas.yml`, E17); `external` generates nothing and records
-`external_url` in the instructions block; `none` generates nothing. Repos extend
-their own `_areas.yml`, which is why it is seeded rather than managed
-([ADR-0001](0001-ownership.md)).
+**Docs profile is orthogonal**: `mkdocs` seeds the full area model; `external`
+generates nothing and records `external_url` in the instructions block; `none`
+generates nothing. Repos extend their own `_areas.yml`, which is why it is
+seeded rather than managed ([ADR-0001](0001-ownership.md)).
 
 ### The library set
 
@@ -138,62 +165,67 @@ archetype, and the exact rules, live in
 the decisions behind them are:
 
 - **Every repo depends on `rn-forge-commons`**; every repo with a command line
-  also on `rn-forge-cli`; a `python-tool` repo also on `rn-forge-tooling`; a
-  web repo also on its framework package, with that package's `[codegen]`
+  also on `rn-forge-cli`; a repo with `lifecycle` also on `rn-forge-tooling`;
+  a web repo also on its framework package, with that package's `[codegen]`
   extra as a *dev* dependency, since kiln discovers generators through an
   entry-point group in the environment kiln runs in and never in the one the
   application ships.
 - **`rn-forge-cli` and `rn-forge-tooling` are runtime dependencies**, not dev
   ones. They are named for what they hold — the process shape, and the
-  file-owning machinery — not for when they are installed. For a CLI, that
-  layer is the runtime.
-- **The dependency is a pinned PEP 508 direct URL in `dependencies`**, never a
-  `[tool.uv.sources]` override, because only the former survives into a built
-  wheel. Two consequences are accepted deliberately: such a distribution
-  cannot be uploaded to PyPI, and the version floor disappears because a
-  requirement cannot hold both a URL and a specifier. **The tag is the
-  version.**
-- **The required list is config**, in the checker's own header, so pykit — which
-  *contains* commons and cannot depend on it — renders an empty list rather
-  than needing an exemption.
+  file-owning machinery — not for when they are installed.
+- **The release contract is a pinned PEP 508 direct URL in `dependencies`**,
+  never a `[tool.uv.sources]` override, because only the former survives into
+  a built wheel. Such a distribution cannot be uploaded to PyPI, and the tag
+  is the version.
+- **Until the owner declares pykit stable, repos consume it from its branch or a
+  local path.** The dependency source is a Tier 1 value every template
+  renders: `git` + ref (the default, CI-capable) or `path` (local only). The
+  checker accepts a branch or path source with a warning and refuses one in a
+  publish job; goldens and repos that run CI use `git`. Flipping to tags is
+  `kiln config upgrade --apply` per repo, not a template change.
+- **The required list is config**, so pykit — which *contains* commons and
+  cannot depend on it — renders an empty list rather than needing an
+  exemption.
 
-### Golden repos
+### Templates, and how they are reviewed
 
-**Golden repos are the source of truth for the templates.** Each is a complete,
-hand-authored, *runnable* repo: `uv sync` and `task validate` pass in it
-standalone, its workflows lint, its docs site builds `--strict`, and its
-committed checkers run. They are reviewed as if they were the finished product
-*before* any generator code exists. The templates are then the golden output
-parameterized, and the snapshot tests assert
-`render(golden config) == golden bytes`, with the provenance version rendered as
-the literal `golden`.
+**Jinja templates are the authored source.** A rendered repo is reviewed as a
+whole repo, but it is never committed:
 
-**A template change that is not first made in the golden repo is a bug.**
+1. `task self:golden:render` renders every shipped archetype × flag combination
+   into gitignored `.goldens/<ref>/`; `task self:golden:validate` runs each
+   cell's gate (`uv sync && task validate`, `actionlint`, `mkdocs --strict`).
+1. The **owner reviews and approves the rendered output** before a template
+   change is done. kiln's CI renders every cell per pull request.
+1. The hand-authored goldens under `tests/fixtures/golden/` are the bootstrap
+   reference for writing the first templates, and leave git once the rendered
+   cells reproduce them. Until then they are the only runnable standard, and a
+   standard change starts there.
 
 **Scaffolding shells out.** `kiln new` runs `uv init`, `pnpm create`, `nx g` and
-then reconciles the result. kiln never templates another tool's scaffold output.
+then reconciles the result. This runs once, from `kiln new`, before the first
+apply. It is the only subprocess kiln starts, and `apply` never starts one
+([ADR-0001](0001-ownership.md)). kiln never templates another tool's scaffold
+output.
 
 ## Consequences
 
 - The archetype name says what the repo is, and there is no config key whose
   value silently selects a different template set.
-- Review happens on real files, in a repo a reviewer can run — at the cost of a
-  `uv sync` per fixture in kiln's own CI. That cost is the point: it is the
-  only proof that the templates produce a working repo.
+- Review happens on whole, runnable repos — rendered on request rather than
+  committed. A change's byte impact over time is seen by rendering two refs
+  and diffing them.
+- The risk is a template change reaching repos unreviewed, since no diff appears
+  in the pull request. The guard is owner approval of the rendered cells, and
+  CI rendering every cell so a broken template cannot merge.
+- kiln's own tests are idempotence (a second apply is all `UNCHANGED`), fresh-
+  directory classification and per-module rendering on small inputs — not
+  byte-exact snapshots.
 - A generated repo starts with the component libraries wired in, which is the
-  point of naming archetypes at all. Both golden repos depend on commons and
-  *use* it, so the fixture proves the wiring rather than asserting it.
-- Every golden repo's `uv sync` fetches from GitHub. pykit is public, so no CI
-  credential is needed, and the pinned tag keeps resolution reproducible.
-- Bumping a pin is a kiln release, not a per-repo decision — a fleet on one
-  commons version is worth more than each repo tracking main.
-- Adding an archetype, *or a flag value*, is a template set plus a golden repo:
-  real work, bounded, and reviewable the same way. Bending an existing one is
-  none of those.
-- Seven archetypes and two flags is a bigger catalogue than four with none. The
-  golden-repo-per-shipped-value rule is what keeps it from being a bigger
-  *surface*: six golden repos exist at v1 — `golden-app`, `golden-tool`,
-  `golden-lib`, `golden-api`, and the two `golden-web` variants — not the
-  fourteen the flag matrix could name.
-- Snapshot tests are byte-exact, so a whitespace change in a template is a
-  failing test until the golden repo agrees.
+  point of naming archetypes at all.
+- kiln self-hosts as `python-lib` + `lifecycle` with no special case, and any
+  `python-lib` that ships a command takes the same flag.
+- Adding an archetype, *or a flag value*, is a template set plus a matrix cell
+  the owner has approved: real work, bounded, and reviewable the same way.
+- While pykit is branch-consumed, a published distribution cannot carry a branch
+  pin, which is why the publish job refuses one.

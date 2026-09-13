@@ -22,8 +22,8 @@ generated repo to contain no boilerplate at all.
 
 The evidence for what that is comes from the two kits that wrote it twice:
 
-- **CLI construction.** agentkit and taskkit each built their own Typer app
-  factory, their own `--json` / `--dry-run` / `--yes` flag set, their own
+- **CLI construction.** Two kits, taskkit among them, each built their own Typer
+  app factory, their own `--json` / `--dry-run` / `--yes` flag set, their own
   console wrapper and their own error-to-exit-code mapping. They drifted to
   `typer>=0.26.8` and `typer>=0.12` (F12).
 - **Logging.** Each kit configured logging its own way; commons had `AppLogger`
@@ -68,11 +68,13 @@ Three levels, in increasing order of how much a repo gives up:
    instead of inventing a second.
 
 1. **Declared, by default.** A `[cli]` section in `.rn-forge/kiln/config.toml`
-   describes the application's *surface* — name, help text, which standard
-   option groups it takes, which subcommand namespaces exist and where their
-   implementations live. `rn-forge-cli` builds the Typer app from that at
-   import time. The repo writes command functions; it never writes app
-   construction, flag plumbing, or exit-code handling.
+   describes the application's *surface* — name, help text, which subcommand
+   namespaces exist and where their implementations live. `CliApp.from_config`
+   builds the Typer app from that at import time, validating the table as it
+   goes: the surface is a `StrictDataclassMixin`, so a wrong type names the
+   offending key rather than failing later as an attribute error. The repo
+   writes command functions; it never writes app construction, flag plumbing,
+   or exit-code handling.
 
 1. **Escape hatch, always available.** A repo that needs an app the library
    cannot describe drops to level 1 and constructs its own, using the same
@@ -93,23 +95,32 @@ surface without installing Jinja2 or the generation engine.
 
 ## Consequences
 
-- A generated `python-app` or `python-tool` repo contains a `main()`, its
-  commands, and its tests. Everything else that a CLI needs is a dependency.
+- A generated `python-app` or `python-tool` repo contains its commands and its
+  tests. Everything else that a CLI needs is a dependency — including
+  `main()`, which turned out not to be needed at all: `rn_forge.cli.CliApp` is
+  a `typer.Typer` subclass whose `__call__` returns an exit code, and a
+  generated console script is `sys.exit(app())`, so `[project.scripts]` points
+  straight at the app object and the repo writes no entry point.
 - Fixing the flag plumbing is a tooling release, not N commits — the propagation
   property that [ADR-0003](0003-ci-runs-committed-code.md) deliberately gives
   up for CI is available here, because a library is versioned and a workflow
   is not.
 - Phase C's package split must be made against this target. The Typer helpers
-  and `AppConsole` move to `rn-forge-cli` as one coherent surface;
-  `StateStore`, `TemplateEngine` and the generation engine move to
-  `rn-forge-tooling`. (The first revision of this ADR put all four in tooling;
-  that is what the Phase C review corrected.)
+  move to `rn-forge-cli`; `StateStore`, `TemplateEngine` and the generation
+  engine move to `rn-forge-tooling`. (The first revision of this ADR put all
+  four in tooling; that is what the Phase C review corrected. A later pass —
+  pykit plan Part E — moved `AppConsole` on again, to `rn-forge-commons`:
+  console output is a property of the process, Rich was already a commons
+  dependency for the log handler, and `rn_forge.django` is forbidden from
+  importing `rn_forge.cli`, so a console living there was unreachable from the
+  framework packages that want one. `rn-forge-cli` is now exactly the Typer
+  layer.)
 - A declarative surface is a schema, and schemas grow. The mitigation is level
   3: the moment describing an app is harder than writing it, writing it is
   supported and unremarkable.
 - This ADR is a target, not a specification. What `[cli]` actually contains is
-  settled when the libraries are extracted and the first repos — kiln,
-  agentkit, and a `python-app` — are built on them.
+  settled when the libraries are extracted and the first repos — kiln and a
+  `python-app` — are built on them.
 - **The acceptance test is a golden repo.** Under
   [ADR-0005](0005-archetypes.md), a claim not demonstrated in a runnable
   golden repo is not demonstrated. `golden-app` must contain a working CLI

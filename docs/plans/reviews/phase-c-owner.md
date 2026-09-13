@@ -1,7 +1,8 @@
 # review
 
-Phase C from 'docs/plans/standardization-plan.md' was implemented and codex has
-provided review comments at 'docs/plans/reviews/phase-c-codex.md'
+Phase C from the standardization plan (retired; see [context](../context.md))
+was implemented and codex has provided review comments at
+'docs/plans/reviews/phase-c-codex.md'
 
 ## archetypes
 
