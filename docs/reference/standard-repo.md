@@ -34,7 +34,7 @@ docs:build  docs:serve  docs:nav  docs:structure
 Every other task is `internal: true`. The root `Taskfile.yml` holds wrappers
 only: each of its `cmds:` entries is a `task:` call into a `tasks/*.yml`
 namespace. Every task carries a non-empty `desc:`.
-([ADR-0007](../adr/0007-task-vocabulary.md))
+([ADR-0007](../adr/ADR-0007.md))
 
 In a workspace archetype, `build` and `version` take a package name after `--`
 (`task version -- rn-forge-commons`); given none, they act on every member.
@@ -71,7 +71,7 @@ editing a managed file:
 ## 2. One owner per file, or per block
 
 Three artifact kinds, and they are the whole model
-([ADR-0001](../adr/0001-ownership.md)):
+([ADR-0001](../adr/ADR-0001.md)):
 
 | Kind | Meaning | What CI checks |
 | -- | -- | -- |
@@ -114,13 +114,12 @@ kiln's own tree has a `plans` area. `doctor` validates against the repo's copy.
 
 To change a managed file: change `.rn-forge/kiln/config.toml`, run `kiln apply`.
 To change what kiln renders: change the golden repo in kiln, let the snapshot
-test fail, update the template until it passes
-([ADR-0005](../adr/0005-archetypes.md)).
+test fail, update the template until it passes ([ADR-0005](../adr/ADR-0005.md)).
 
 ## 3. The dependency set
 
 An archetype carries the libraries a repo of that shape is built on
-([ADR-0005](../adr/0005-archetypes.md)):
+([ADR-0005](../adr/ADR-0005.md)):
 
 | Archetype | Runtime | Dev |
 | -- | -- | -- |
@@ -132,13 +131,13 @@ An archetype carries the libraries a repo of that shape is built on
 | `python-web-api` · `python-web-app`, `framework = "fastapi"` | + `rn-forge-cli`, `rn-forge-fastapi`, when that package exists | + `rn-forge-fastapi[codegen]` |
 | `node-lib` · `node-web-app` | — (deferred) | — |
 
-The three python libraries are layered
-([ADR-0002](../adr/0002-the-dependency-graphs.md)): `rn-forge-commons` holds
-runtime-neutral mechanisms, `rn-forge-cli` holds the process and command-line
-shape, `rn-forge-tooling` holds the machinery for a program that installs
-itself, owns files in someone else's repo, or renders templates. A repo takes
-the highest layer it actually needs; `check_rn_forge_deps.py`'s `REQUIRED` list
-is what makes that a rule rather than a preference.
+The three python libraries are layered ([ADR-0002](../adr/ADR-0002.md)):
+`rn-forge-commons` holds runtime-neutral mechanisms, `rn-forge-cli` holds the
+process and command-line shape, `rn-forge-tooling` holds the machinery for a
+program that installs itself, owns files in someone else's repo, or renders
+templates. A repo takes the highest layer it actually needs;
+`check_rn_forge_deps.py`'s `REQUIRED` list is what makes that a rule rather than
+a preference.
 
 Every rn-forge requirement is a **pinned PEP 508 direct URL** in `dependencies`:
 
@@ -174,8 +173,7 @@ archetype's internal boundaries, such as a workspace's packages being
 independent of each other, and — inside pykit — the library layering itself:
 `rn_forge.commons` may not import `rn_forge.cli` or `rn_forge.tooling`, and
 `rn_forge.cli` may not import `rn_forge.tooling`. `quality:lint:imports` runs
-it; `task validate` reaches it.
-([ADR-0002](../adr/0002-the-dependency-graphs.md))
+it; `task validate` reaches it. ([ADR-0002](../adr/ADR-0002.md))
 
 ## 5. What `task validate` proves without kiln
 
@@ -195,8 +193,7 @@ A cold clone with go-task and the pinned language toolchain — no kiln, no
   broken (`mkdocs` profile);
 - **every managed file and every managed block still hashes to the value
   committed in `.rn-forge/kiln/state.json`**;
-- pyright is clean in strict mode
-  ([ADR-0008](../adr/0008-pyright-strict-not-mypy.md));
+- pyright is clean in strict mode ([ADR-0008](../adr/ADR-0008.md));
 - the tests pass;
 - the docs site builds `--strict` (`mkdocs` profile).
 
@@ -246,7 +243,7 @@ one table.
 
 It never contains an entry for itself. `scripts/standards/check_generated.py`
 reads it with the standard library alone, so a cold clone can run it.
-([ADR-0003](../adr/0003-ci-runs-committed-code.md))
+([ADR-0003](../adr/ADR-0003.md))
 
 ## 8. CI shape
 
@@ -272,8 +269,8 @@ members for `python-lib`. The rules:
 ## 9. Configuration
 
 `.rn-forge/kiln/config.toml` is the one hand-authored input
-([ADR-0004](../adr/0004-the-rn-forge-umbrella.md)). It is a pydantic strict
-model; every failure is reported with its dotted path, never just the first.
+([ADR-0004](../adr/ADR-0004.md)). It is a pydantic strict model; every failure
+is reported with its dotted path, never just the first.
 
 ```toml
 schema_version = 1
@@ -328,7 +325,7 @@ options = ["json", "dry-run", "yes", "log-level"]
 
 There is no `backend` key and no `web_runner` key. `framework` and `frontend`
 select an implementation library, never a topology
-([ADR-0005](../adr/0005-archetypes.md)): a pnpm-managed Nx workspace — Nx's own
+([ADR-0005](../adr/ADR-0005.md)): a pnpm-managed Nx workspace — Nx's own
 documented shape — is what the `-app` archetypes mean, and the presence of a
 separate frontend package is what separates `python-web-app` from
 `python-web-api`. A flag value without a golden repo is `untested` and

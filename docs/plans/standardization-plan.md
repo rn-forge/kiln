@@ -139,7 +139,7 @@ table with `git status` before acting; it goes stale.
   define `main()`. Their `uv.lock` pins an older `feature/upgrade` commit,
   which is the only reason they still pass. The same stale names appear in
   their `README.md`, `docs/architecture/repository-shape.md`,
-  `docs/adr/0001-product-code-stays-trivial.md` and `config.toml` comments.
+  `docs/adr/ADR-0001.md` and `config.toml` comments.
 - **`golden/python-lib`'s two packages pin `rn-forge-commons-v0.2.2`**, a tag
   from before the layer split; the other goldens pin `@feature/upgrade`.
 - **`docs/reference/standard-repo.md` still names agentkit** as an owner
@@ -335,7 +335,7 @@ the list, so a later session does not re-derive it.
 | Root `README.md` and `CLAUDE.md` only name `python-tool` — example, or stale? | **Neither.** It is kiln's own archetype, read from its `config.toml` and rendered into the block. It *is* scheduled to change: ADR-0010 makes kiln a two-distribution repo, so it becomes `python-lib` at Phase D.8. The one genuine example — `cd tests/fixtures/golden/python-tool` in the README — now names all three. |
 | Those two files overlap; use README for developer-facing content and refer to it from CLAUDE.md | **Done, and promoted to a rule (D57).** Both files opened with the same sentence and repeated the same status pointers. §2.3 already forbids two owners writing the same bytes; D57 is that rule applied to prose. Applied to kiln and all three golden repos in Phase C.3. |
 | Same in each golden repo | **Same fix, same phase.** It is a standard change, so it lands in the golden repos first (ADR-0005) and reaches generated repos as a template. |
-| `scripts/` is repetitive; we discussed a devopskit and it is not in the plan | **It was decided and never scheduled.** [ADR-0010](../adr/0010-checkers-are-a-package.md) is accepted and D51 confirmed — including rejecting the `devopskit` name, because `checks` names a role that excludes rendering while `devops` names a domain that excludes nothing. What was missing is execution: §2.4, §2.5.5, §2.6 and Phase D all still generated `scripts/**`. Now a numbered Phase D step, with the golden repos losing 1,454 lines each before any template derives from them. |
+| `scripts/` is repetitive; we discussed a devopskit and it is not in the plan | **It was decided and never scheduled.** [ADR-0010](../adr/ADR-0010.md) is accepted and D51 confirmed — including rejecting the `devopskit` name, because `checks` names a role that excludes rendering while `devops` names a domain that excludes nothing. What was missing is execution: §2.4, §2.5.5, §2.6 and Phase D all still generated `scripts/**`. Now a numbered Phase D step, with the golden repos losing 1,454 lines each before any template derives from them. |
 | Can the near-identical `pyproject.toml` tool config become a reusable pykit component? | **No mechanism exists, and generating it would not deduplicate anything (D60).** pytest and coverage have no config inheritance; pyright's `extends` is not available in the `[tool.pyright]` form; ruff's `extend` is a filesystem path that would have to reach into `.venv`. The bytes are duplicated either way. So pyproject stays repo-owned and gains doctor check 8a, which warns on divergence — verification without the apply round trip. |
 | taskkit is dead and agentkit will be re-ideated from scratch; take the content out | **Done (D58).** Everything agent-config — the rebuild scope, the prior art worth reading, taskkit's retirement record — is in [agent-config-future.md](agent-config-future.md). The structural consequence is the real change: kiln no longer shells out to agentkit and seeds the instruction files itself, so `.claude/**` is unowned until the rethink happens. |
 | Global config management has to rethink its role now kiln exists | **Recorded as the question that comes first**, in [agent-config-future.md](agent-config-future.md) §2. agentkit's *project* scope existed largely because nothing else owned repo files; kiln owns them now. Do not answer it by porting the old shape. |
@@ -620,7 +620,7 @@ CI ──► kiln-checks + tooling        (verification only; CI never installs 
 > two-package split got wrong. `rn-forge-tooling` is what a program that
 > installs itself, owns files in someone else's repo, or renders templates
 > takes. The placement test is what an API's *signature* contains, not who
-> happens to call it today ([ADR-0002](../adr/0002-the-dependency-graphs.md)).
+> happens to call it today ([ADR-0002](../adr/ADR-0002.md)).
 
 **Codegen boundary (D37).** A framework's generators ship inside its runtime
 package as an extra: `rn-forge-django[codegen]` installs `rn-forge-tooling`,
@@ -1296,7 +1296,7 @@ Phase D. Two deliverables, both reviewed by the owner before Phase C starts.
 ```bash
 cd rn-forge/kiln
 uv run --group docs mkdocs build --strict
-test -f docs/adr/0007-task-vocabulary.md && test -f docs/reference/standard-repo.md && test -f docs/plans/harvest.md
+test -f docs/adr/ADR-0007.md && test -f docs/reference/standard-repo.md && test -f docs/plans/harvest.md
 for g in tests/fixtures/golden/python-cli tests/fixtures/golden/python-lib; do
   (cd "$g" && uv sync && task validate && uv run python scripts/standards/check_generated.py . \
      && python scripts/ci/check_ci_entrypoint.py . && python scripts/task/check_task_layout.py . \
@@ -1521,9 +1521,9 @@ for it.
    `commands.py` imports `console` from `rn_forge.commons`. Fix every prose
    reference to `rn_forge.cli.declare` / `build_app` in both goldens'
    `README.md`, `docs/architecture/repository-shape.md`,
-   `docs/adr/0001-product-code-stays-trivial.md` and the `config.toml`
-   comment. Confirm neither `[cli]` table carries a key Part E deleted
-   (`log_options`, `output_options`).
+   `docs/adr/ADR-0001.md` and the `config.toml` comment. Confirm neither
+   `[cli]` table carries a key Part E deleted (`log_options`,
+   `output_options`).
 1. **Pins, per D73.** Every rn-forge requirement in every golden — including
    `python-lib/packages/golden-{alpha,beta}`, which still pin
    `rn-forge-commons-v0.2.2` — names `@feature/upgrade`. `uv lock --upgrade`

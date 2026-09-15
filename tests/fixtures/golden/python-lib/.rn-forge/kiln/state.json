@@ -139,7 +139,7 @@
     "scripts/docs/check_structure.py": {
       "path": "scripts/docs/check_structure.py",
       "kind": "managed",
-      "content_hash": "sha256:2cd7b14ab31e7396f144c10a88a4ff2088316372aad846cb58818c1b10fcc78d"
+      "content_hash": "sha256:739965b64ecb6850dce355cd3b81e876617e5faaa7027e6cf39b9410de096de0"
     },
     "scripts/docs/gen_nav.py": {
       "path": "scripts/docs/gen_nav.py",

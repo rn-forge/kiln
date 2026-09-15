@@ -127,7 +127,7 @@
       "kind": "block",
       "begin_marker": "# BEGIN generated nav",
       "end_marker": "# END generated nav",
-      "content_hash": "sha256:eaf5c0f47996694ac7e1eedf39499b3ef7387e619545f63ecca20a3b205b9da0"
+      "content_hash": "sha256:a9f52fe8b90005c8ee3b618c1ade3f7aec2640f0f2c09f9e475534109559dedc"
     },
     "scripts/ci/check_ci_entrypoint.py": {
       "path": "scripts/ci/check_ci_entrypoint.py",
@@ -147,7 +147,7 @@
     "scripts/docs/check_structure.py": {
       "path": "scripts/docs/check_structure.py",
       "kind": "managed",
-      "content_hash": "sha256:2cd7b14ab31e7396f144c10a88a4ff2088316372aad846cb58818c1b10fcc78d"
+      "content_hash": "sha256:739965b64ecb6850dce355cd3b81e876617e5faaa7027e6cf39b9410de096de0"
     },
     "scripts/docs/gen_nav.py": {
       "path": "scripts/docs/gen_nav.py",

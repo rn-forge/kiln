@@ -9,15 +9,15 @@ it, so the work can start without re-deriving it.
 ## What it is
 
 intellibench is superseded by **intellibuild**, a fresh repo rather than a
-migration (D41; [ADR-0006](../adr/0006-runbooks-not-skills.md)). intellibench is
-a donor, never an adopt target.
+migration (D41; [ADR-0006](../adr/ADR-0006.md)). intellibench is a donor, never
+an adopt target.
 
 **Archetype: `python-web-app`, `framework = fastapi`, `frontend = angular`** —
 decided 2026-09-12 (was open question 16). It carries a separately built
 frontend package, which is what separates it from `python-web-api`
-([ADR-0005](../adr/0005-archetypes.md)). pykit's `fastapi-library-plan.md` and
-its plan index still say `python-web-api`; they need aligning, and kiln's pykit
-handoff says so.
+([ADR-0005](../adr/ADR-0005.md)). pykit's `fastapi-library-plan.md` and its plan
+index still say `python-web-api`; they need aligning, and kiln's pykit handoff
+says so.
 
 ## Prerequisites
 

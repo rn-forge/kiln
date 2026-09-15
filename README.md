@@ -8,9 +8,10 @@ and the bodies of `README.md`, `CLAUDE.md` and `AGENTS.md`. Every managed file �
 or every fenced block inside a shared file — has exactly one owner, and kiln is
 it.
 
-**kiln is a developer tool. It never runs in CI.** What CI checks is the
-committed `.rn-forge/kiln/state.json` baseline, through `task validate`, against
-pinned dev dependencies. It never runs a generator.
+**kiln is a developer tool, and a pinned dev dependency of every repo it
+generates.** CI runs that pinned kiln through `task validate` to check the
+committed `.rn-forge/kiln/state.json` baseline. It never writes a generated file
+([ADR-0010](docs/adr/ADR-0010.md)).
 
 ```bash
 kiln new ../my-repo --archetype python-tool --yes
@@ -47,11 +48,11 @@ text.
   proven by running that repo's own `uv sync && task validate` from inside it.
   A template change not first made in a golden repo is a bug. This holds until
   the rendered templates reproduce the goldens and they leave git
-  ([ADR-0005](docs/adr/0005-archetypes.md)).
+  ([ADR-0005](docs/adr/ADR-0005.md)).
 - A generated script's body is byte-identical across every golden repo; only the
   `# BEGIN kiln config` header differs. `task test` enforces it. This goes
-  away in E4, when the checkers become a pinned package
-  ([ADR-0010](docs/adr/0010-checkers-are-a-package.md)).
+  away in E4, when the checks move into kiln
+  ([ADR-0010](docs/adr/ADR-0010.md)).
 - This repo's own skeleton is a hand-copy of the `python-tool` golden repo. It
   regenerates itself once the generator exists; until then, keep them in step
   by hand — a change to a golden repo's skeleton is usually a change here too.
@@ -67,7 +68,7 @@ text.
   Nothing new goes into `docs/plans/`.
 - Prose has one home: this file. `CLAUDE.md` points here and carries the fenced
   blocks; `AGENTS.md` points at `CLAUDE.md`. Do not restate a paragraph in two
-  of them ([ADR-0001](docs/adr/0001-ownership.md)).
+  of them ([ADR-0001](docs/adr/ADR-0001.md)).
 
 ## Conventions
 
@@ -82,12 +83,19 @@ text.
 ## Documentation
 
 - [Where the work stands](docs/specs/index.md) — the spec board and releases
+
 - [The standard repository](docs/reference/standard-repo.md) — the normative
   text
+
 - [Decisions](docs/adr/index.md) — the ADR log
+
 - [Context](docs/plans/context.md) — how kiln got here
+
 - [The rn-forge workspace](docs/architecture/workspace.md) — components and
   graphs
+
 - [Creating a repository](docs/runbooks/creating-a-repo.md)
+
 - [Agent configuration after kiln](docs/plans/agent-config-future.md) — parked
+
 - [docs/\_structure.md](docs/_structure.md) — what belongs where in this tree

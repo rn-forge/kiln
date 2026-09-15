@@ -32,15 +32,39 @@ agent's — they are not copies of each other.
 
 - Behaviour as it is now → `architecture/`, or `guides/` if it is about using
   the tool. Never duplicated into a spec.
-- A choice between real alternatives → a new ADR under `adr/`.
+- A choice between real alternatives → a new ADR under `adr/`; a change to one →
+  that ADR, revised in place.
 - Work to do, or a record of work done → an epic under `specs/epics/`.
 - What ships when → `releases/`.
 - An operational procedure → `runbooks/`.
+- An open question → the epic or feature it blocks, until it becomes an ADR or a
+  rejected option recorded there.
 
 ## Checks
 
 `scripts/docs/check_structure.py` enforces: every non-optional area in
 `docs/_areas.yml` exists and has both a `_structure.md` and an `index.md`; ADRs
-are numbered without gaps and carry a valid `**Status:**` line; every relative
-link resolves, including anchors; no shipped page links to a `_*.md` file; and
-`CLAUDE.md`/`AGENTS.md` both point at this file and at `docs/index.md`.
+are named `ADR-<nnnn>.md`, numbered without gaps, and carry a valid
+`**Status:**` line; every relative link resolves, including anchors; no shipped
+page links to a `_*.md` file; and `CLAUDE.md`/`AGENTS.md` both point at this
+file and at `docs/index.md`.
+
+## Keeping it honest
+
+Check for these when changing the tree, and report what you find rather than
+fixing it silently — some of it is deliberate:
+
+- A release names a story ID that does not exist, or a planned story is in no
+  release.
+- An epic's status contradicts its stories, or its board row is in the wrong
+  group, or in two.
+- Two ADRs decide the same topic, or an ADR's Decision changed
+  (`git log --follow docs/adr/ADR-<nnnn>.md`) with no History entry saying so.
+- Design prose collecting in a top-level page instead of under its feature.
+- A `progress.md`, `backlog.md`, `decisions.md` or `overview.md` has appeared;
+  each restates what the epics, deferred epics, ADRs or README already own.
+- `README.md`, `CLAUDE.md` or `AGENTS.md` describing the tree instead of linking
+  to it. `CLAUDE.md` links to the specs board and the ADR log and says what
+  each is for; `AGENTS.md` points at `CLAUDE.md`.
+- A `README.md` inside `docs/`: MkDocs drops one that sits beside an `index.md`,
+  and the strict build fails.

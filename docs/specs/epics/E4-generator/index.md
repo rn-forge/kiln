@@ -4,36 +4,33 @@
 [release-1](../../../releases/release-1/index.md) · **Phase:** D · **Estimate:**
 2–3 weeks
 
-Repo `rn-forge/kiln`, which becomes a **`python-lib` workspace of two
-distributions**: `rn-forge-kiln` (module `rn_forge.kiln`) and
-`rn-forge-kiln-checks` (module `rn_forge.kiln.checks`) — the second subject to
-[S4.1.4](F4.1-checks-by-module.md#s414-the-ci-shape-is-decided). rn-forge
-dependencies are branch-pinned ([ADR-0005](../../../adr/0005-archetypes.md)).
+Repo `rn-forge/kiln`, **one distribution**: `rn-forge-kiln` (module
+`rn_forge.kiln`), which every generated repo takes as a pinned dev dependency
+([ADR-0010](../../../adr/ADR-0010.md)). rn-forge dependencies are branch-pinned
+([ADR-0005](../../../adr/ADR-0005.md)).
 
-**Dependencies.** S4.1.4 is the checks-shape decision. It depends on nothing and
-should run first, because E3's S3.4.4 waits on it. Every other story depends on
-[E3](../E3-realign-goldens-and-canon/index.md), and S4.5.5 also on pykit's
-lifecycle surface. Features follow the column below, and each ends green on
-`task validate` and its own acceptance block.
+**Dependencies.** S4.1.4, the checks-shape decision, is done. Every other story
+depends on [E3](../E3-realign-goldens-and-canon/index.md), and S4.5.5 also on
+pykit's lifecycle surface. Features follow the column below, and each ends green
+on `task validate` and its own acceptance block.
 
-Decisions this epic builds on: [ADR-0005](../../../adr/0005-archetypes.md),
-[ADR-0004](../../../adr/0004-the-rn-forge-umbrella.md),
-[ADR-0011](../../../adr/0011-kiln-is-modules-under-one-contract.md),
-[ADR-0003](../../../adr/0003-ci-runs-committed-code.md). The design shared
-across features — layout, commands, the artifact cycle, apply order, doctor
-checks, template inventory, config lifecycle, module contract — is
+Decisions this epic builds on: [ADR-0005](../../../adr/ADR-0005.md),
+[ADR-0004](../../../adr/ADR-0004.md), [ADR-0011](../../../adr/ADR-0011.md),
+[ADR-0003](../../../adr/ADR-0003.md), [ADR-0010](../../../adr/ADR-0010.md). The
+design shared across features — layout, commands, the artifact cycle, apply
+order, doctor checks, template inventory, config lifecycle, module contract — is
 [design.md](design.md).
 
 ## Features
 
 | ID | Feature | Phase step | Depends on |
 | -- | -- | -- | -- |
-| [F4.1](F4.1-checks-by-module.md) | The checks, organized by module — **shape decided by S4.1.4** | D.1 | S4.1.4: —; the rest: S4.1.4, E3 |
+| [F4.1](F4.1-checks-by-module.md) | The checks, organized by module | D.1 | S4.1.4: done; the rest: E3 |
 | [F4.2](F4.2-core-module.md) | The `core` module, the config manager and the module contract | D.2 | F4.1 |
 | [F4.3](F4.3-concern-modules.md) | The concern modules, with templates | D.3 | F4.2; E3 goldens |
 | [F4.4](F4.4-render-matrix.md) | The render matrix, and the goldens leave git | D.4 | F4.3 |
 | [F4.5](F4.5-cli.md) | CLI | D.5 | F4.3; S4.5.5 also pykit C.3 and its open question |
-| [F4.6](F4.6-doctor.md) | doctor | D.6 | F4.3, S4.5.1; 8b on S4.1.4 |
+| [F4.6](F4.6-doctor.md) | doctor | D.6 | F4.3, S4.5.1 |
 | [F4.7](F4.7-import-contracts.md) | Import contracts | D.7 | F4.3, S4.1.2 |
 | [F4.8](F4.8-self-hosting.md) | Self-hosting | D.8 | F4.4, F4.5, F4.6, F4.7 |
 
@@ -81,10 +78,10 @@ task validate
 uv run --project "$kiln_dir" kiln apply --dry-run --json \
   | jq -e '(.artifacts | length > 0) and all(.artifacts[]; .action == "unchanged")'
 printf '\n# edit\n' >> Taskfile.yml
-fails_with Taskfile.yml uv run check-generated .
+fails_with Taskfile.yml uv run kiln check .
 fails_with Taskfile.yml uv run --project "$kiln_dir" kiln apply
 uv run --project "$kiln_dir" kiln apply --force Taskfile.yml
-uv run check-generated .
+uv run kiln check .
 cd "$kiln_dir"
 uv run kiln doctor
 uv run kiln apply --dry-run --json \

@@ -25,7 +25,7 @@ written (kiln ADR-0009). Everything else is the standard, stated in
 - Run everything through `task`. `task validate` is the gate.
 - The product lives in `src/golden_app/`; its tests live in `tests/`. The CLI is
   *declared* in the `[cli]` table of `.rn-forge/kiln/config.toml` and built by
-  `rn_forge.cli.declare` — `main.py` constructs nothing (kiln ADR-0009).
+  `CliApp.from_config` — `main.py` constructs nothing (kiln ADR-0009).
 - Do not edit a file whose first line says it was generated. The kiln block in
   [CLAUDE.md](CLAUDE.md) says what that means and what to do instead.
 

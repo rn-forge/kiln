@@ -38,10 +38,9 @@ into the other.
 ## Where kiln is
 
 The canon and the hand-authored golden repos exist and are green; there is no
-generator code yet. That order is deliberate — see
-[ADR-0005](adr/0005-archetypes.md). Next is
-[E3](specs/epics/E3-realign-goldens-and-canon/index.md), bringing the goldens
-and the canon up to date with pykit, then the generator itself.
+generator code yet. That order is deliberate — see [ADR-0005](adr/ADR-0005.md).
+Next is [E3](specs/epics/E3-realign-goldens-and-canon/index.md), bringing the
+goldens and the canon up to date with pykit, then the generator itself.
 
 The golden repos under `tests/fixtures/golden/` are complete, runnable
 repositories. Read one as if it were the finished product, because that is

@@ -7,7 +7,7 @@
 Repo `rn-forge/kiln`. **Gated on `rn-forge-fastapi`** reaching its plan's
 acceptance in pykit; `rn-forge-web` already exists. There are no hand-authored
 goldens: templates are written directly and approved through the render matrix
-([ADR-0005](../../../adr/0005-archetypes.md)).
+([ADR-0005](../../../adr/ADR-0005.md)).
 
 ## Features
 

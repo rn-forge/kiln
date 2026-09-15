@@ -23,14 +23,12 @@ from pathlib import Path
 from _common import Area, Finding, headings, is_external, links, load_areas
 
 KEBAB_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*\.md$")
-ADR_RE = re.compile(r"^(\d{4})-[a-z0-9-]+\.md$")
+ADR_RE = re.compile(r"^ADR-(\d{4})\.md$")
 EPIC_DIR_RE = re.compile(r"^E(\d+)-[a-z0-9-]+$")
 FEATURE_FILE_RE = re.compile(r"^F(\d+)\.(\d+)-[a-z0-9-]+\.md$")
 RELEASE_DIR_RE = re.compile(r"^release-(\d+)$")
 STATUS_RE = re.compile(r"^\*\*Status:\*\*\s*(.+)$", re.MULTILINE)
-ALLOWED_ADR_STATUS = re.compile(
-    r"^(proposed|accepted|deprecated|superseded by ADR-\d{4})"
-)
+ALLOWED_ADR_STATUS = re.compile(r"^(proposed|accepted|deprecated)")
 
 
 def clean_status(value: str) -> str:
@@ -89,7 +87,7 @@ def check_naming(areas: list[Area], docs_root: Path) -> list[Finding]:
             match = ADR_RE.match(path.name)
             if not match:
                 findings.append(
-                    Finding(str(path), "adr-naming", "does not match <nnnn>-<slug>.md")
+                    Finding(str(path), "adr-naming", "does not match ADR-<nnnn>.md")
                 )
                 continue
             numbers.append(int(match.group(1)))

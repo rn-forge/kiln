@@ -43,22 +43,22 @@ configuration ([plan](agent-config-future.md)). Parked: `rn-tools/apollo`,
 | §0.1 phase board | [specs/index.md](../specs/index.md) board |
 | §0.1 on-disk state, repo state | [E3](../specs/epics/E3-realign-goldens-and-canon/index.md) starting state; §1 above |
 | §0.2 component map | [architecture/workspace.md](../architecture/workspace.md#components) |
-| §0.3 rebuild, not migrate | §3; decision in [ADR-0006](../adr/0006-runbooks-not-skills.md) |
-| §0.4 name reassignment | §4; legacy-tree rule in [ADR-0004](../adr/0004-the-rn-forge-umbrella.md) |
+| §0.3 rebuild, not migrate | §3; decision in [ADR-0006](../adr/ADR-0006.md) |
+| §0.4 name reassignment | §4; legacy-tree rule in [ADR-0004](../adr/ADR-0004.md) |
 | §0.5 not covered | §1 |
 | §0.6–§0.9 review outcomes | §7 |
 | §0.10–§0.11 scope-expansion thread | §8; decisions folded into ADR-0003 to ADR-0005, and ADR-0011 |
 | §1 findings | §5 |
-| §2.1 dependency graphs | [ADR-0002](../adr/0002-the-dependency-graphs.md); current graph in [architecture/workspace.md](../architecture/workspace.md#the-graphs) |
-| §2.2 CI model | already covered by [ADR-0003](../adr/0003-ci-runs-committed-code.md), [ADR-0010](../adr/0010-checkers-are-a-package.md) and [reference §5](../reference/standard-repo.md#5-what-task-validate-proves-without-kiln) |
-| §2.3 ownership rule | [ADR-0001](../adr/0001-ownership.md) |
+| §2.1 dependency graphs | [ADR-0002](../adr/ADR-0002.md); current graph in [architecture/workspace.md](../architecture/workspace.md#the-graphs) |
+| §2.2 CI model | already covered by [ADR-0003](../adr/ADR-0003.md), [ADR-0010](../adr/ADR-0010.md) and [reference §5](../reference/standard-repo.md#5-what-task-validate-proves-without-kiln) |
+| §2.3 ownership rule | [ADR-0001](../adr/ADR-0001.md) |
 | §2.4 ownership table | [F3.4 design](../specs/epics/E3-realign-goldens-and-canon/F3.4-canon-catches-up.md#ownership-table-normative-replaces-the-reference-2-table) (replaces the stale reference §2 table) |
 | §2.5.1 package layout; §2.5.3 commands; §2.5.4 cycle; §2.5.5 apply sequence; §2.5.6 doctor checks | [E4 design](../specs/epics/E4-generator/design.md) |
 | §2.5.2 config schema | already covered by [reference §9](../reference/standard-repo.md#9-configuration) |
-| §2.6 archetypes, goldens, docs profile | [ADR-0005](../adr/0005-archetypes.md); template inventory in [E4 design](../specs/epics/E4-generator/design.md#template-inventory) |
-| §2.7 no docs migration | [ADR-0006](../adr/0006-runbooks-not-skills.md); the doctor note in [E4 design](../specs/epics/E4-generator/design.md#doctor-checks) |
+| §2.6 archetypes, goldens, docs profile | [ADR-0005](../adr/ADR-0005.md); template inventory in [E4 design](../specs/epics/E4-generator/design.md#template-inventory) |
+| §2.7 no docs migration | [ADR-0006](../adr/ADR-0006.md); the doctor note in [E4 design](../specs/epics/E4-generator/design.md#doctor-checks) |
 | §2.8 pykit Part D and tooling extraction | pykit handoff (`rn-forge/pykit: docs/plans/kiln-dependencies.md`) |
-| §2.9 tool lifecycle surface | [ADR-0005](../adr/0005-archetypes.md); mechanism in the pykit handoff |
+| §2.9 tool lifecycle surface | [ADR-0005](../adr/ADR-0005.md); mechanism in the pykit handoff |
 | §2.10 the canon inside kiln | already covered by [the ADR log's intro](../adr/index.md) and [the reference](../reference/standard-repo.md); its revision-6 ADR numbering table is historical and dropped |
 | §2.11 package layout of the three libraries | pykit handoff |
 | §3 Phase A, Phase C, Phase C.3 | pykit handoff; summarized on [the board](../specs/index.md#upstream-work-owned-by-pykit) |
@@ -79,80 +79,80 @@ configuration ([plan](agent-config-future.md)). Parked: `rn-tools/apollo`,
 
 | # | Decision (short) | Now |
 | -- | -- | -- |
-| D1 | only pykit libraries are build dependencies; library graph acyclic | [ADR-0002](../adr/0002-the-dependency-graphs.md) |
-| D2 | generator scope is repo shape only for v1 | [ADR-0009](../adr/0009-tooling-owns-the-boilerplate.md) alternatives; [E10](../specs/epics/E10-kiln-generators/index.md) |
-| D3 | no kit installs in CI; CI logic generated and committed | [ADR-0003](../adr/0003-ci-runs-committed-code.md) |
+| D1 | only pykit libraries are build dependencies; library graph acyclic | [ADR-0002](../adr/ADR-0002.md) |
+| D2 | generator scope is repo shape only for v1 | [ADR-0009](../adr/ADR-0009.md) alternatives; [E10](../specs/epics/E10-kiln-generators/index.md) |
+| D3 | no kit installs in CI; CI logic generated and committed | [ADR-0003](../adr/ADR-0003.md) |
 | D4 | ADO parked | [E8](../specs/epics/E8-ado-provider/index.md) |
 | D5 | ~~standards repo separate~~ | superseded by D36 |
-| D6 | Nx via `pnpm nx run-many`; shkit and macsetup parked | [ADR-0005](../adr/0005-archetypes.md); §1 |
+| D6 | Nx via `pnpm nx run-many`; shkit and macsetup parked | [ADR-0005](../adr/ADR-0005.md); §1 |
 | D7 | ~~three v1 archetypes~~ | superseded by D47, then D53 |
 | D8 | interactive CLI in the style of `uv`/`nx` | [E4 design](../specs/epics/E4-generator/design.md#commands) |
 | D9 | ~~taskkit local-only~~ | superseded by D23 |
-| D10 | forge-ci merged into the generator | [ADR-0003](../adr/0003-ci-runs-committed-code.md) alternatives |
-| D11 | `check_ci_entrypoint` tool list from the archetype | [ADR-0010](../adr/0010-checkers-are-a-package.md); [F4.1](../specs/epics/E4-generator/F4.1-checks-by-module.md) |
+| D10 | forge-ci merged into the generator | [ADR-0003](../adr/ADR-0003.md) alternatives |
+| D11 | `check_ci_entrypoint` tool list from the archetype | [ADR-0010](../adr/ADR-0010.md); [F4.1](../specs/epics/E4-generator/F4.1-checks-by-module.md) |
 | D12 | ~~contributions protocol~~ | superseded by D26 |
 | D13 | ~~`forge-core` six modules~~ | superseded by D29 |
 | D14 | `config.toml` the only durable input; preview, `--yes`, idempotent apply, flag parity | [E4 design](../specs/epics/E4-generator/design.md#commands) |
 | D15 | apply sequence | revised by D58; [E4 design](../specs/epics/E4-generator/design.md#apply-sequence) |
-| D16 | scaffolding shells out and reconciles | [ADR-0005](../adr/0005-archetypes.md); [E4 design](../specs/epics/E4-generator/design.md#apply-sequence) |
+| D16 | scaffolding shells out and reconciles | [ADR-0005](../adr/ADR-0005.md); [E4 design](../specs/epics/E4-generator/design.md#apply-sequence) |
 | D17 | ~~adopt-and-diff migration~~ | superseded by D39 |
 | D18 | ~~canon precedes commons and kiln~~ | superseded by D36 |
 | D19 | ~~skills authored in kits~~ | superseded by D30 |
 | D20 | ~~docskit its own repo~~ | superseded by D24 |
-| D21 | Dependabot watches kiln only | [ADR-0003](../adr/0003-ci-runs-committed-code.md) |
+| D21 | Dependabot watches kiln only | [ADR-0003](../adr/ADR-0003.md) |
 | D22 | one release strategy: tag-exists check | [reference §8](../reference/standard-repo.md#8-ci-shape) |
-| D23 | taskkit retired; go-task stays the entrypoint | [ADR-0004](../adr/0004-the-rn-forge-umbrella.md) alternatives; [agent-config-future.md §4](agent-config-future.md) |
-| D24 | docskit folded into kiln as the `docs` module | [ADR-0005](../adr/0005-archetypes.md) docs profile |
-| D25 | the generator is named kiln; legacy state never overwritten | §4; [ADR-0004](../adr/0004-the-rn-forge-umbrella.md) |
+| D23 | taskkit retired; go-task stays the entrypoint | [ADR-0004](../adr/ADR-0004.md) alternatives; [agent-config-future.md §4](agent-config-future.md) |
+| D24 | docskit folded into kiln as the `docs` module | [ADR-0005](../adr/ADR-0005.md) docs profile |
+| D25 | the generator is named kiln; legacy state never overwritten | §4; [ADR-0004](../adr/ADR-0004.md) |
 | D26 | no contributions protocol | §9 |
-| D27 | ownership per file or per fenced block | [ADR-0001](../adr/0001-ownership.md) |
-| D28 | no umbrella manifest; kiln owns the umbrella | [ADR-0004](../adr/0004-the-rn-forge-umbrella.md) |
-| D29 | `forge-core` not built | [ADR-0002](../adr/0002-the-dependency-graphs.md) alternatives |
-| D30 | kiln ships no skills; judgement in runbooks | [ADR-0006](../adr/0006-runbooks-not-skills.md) |
-| D31 | `python-lib` is an archetype | [ADR-0005](../adr/0005-archetypes.md) |
+| D27 | ownership per file or per fenced block | [ADR-0001](../adr/ADR-0001.md) |
+| D28 | no umbrella manifest; kiln owns the umbrella | [ADR-0004](../adr/ADR-0004.md) |
+| D29 | `forge-core` not built | [ADR-0002](../adr/ADR-0002.md) alternatives |
+| D30 | kiln ships no skills; one-time judgement as kiln prompts | [ADR-0006](../adr/ADR-0006.md) |
+| D31 | `python-lib` is an archetype | [ADR-0005](../adr/ADR-0005.md) |
 | D32 | ~~standards repo named canon~~ | superseded by D36 |
 | D33 | ~~canon hand-managed MkDocs~~ | superseded by D36 |
 | D34 | intellibench's lints stay repo-local in intellibuild | [intellibuild plan](intellibuild.md) |
-| D35 | `rn-forge-tooling` is the development layer | revised by D37 and D52; [ADR-0002](../adr/0002-the-dependency-graphs.md) |
+| D35 | `rn-forge-tooling` is the development layer | revised by D37 and D52; [ADR-0002](../adr/ADR-0002.md) |
 | D36 | canon folded into kiln, rendered as `standard.md` | [ADR log intro](../adr/index.md); [reference](../reference/standard-repo.md) |
-| D37 | codegen as `[codegen]` extras | [ADR-0002](../adr/0002-the-dependency-graphs.md); [E10](../specs/epics/E10-kiln-generators/index.md) |
-| D38 | `kiln adopt` not built | [ADR-0006](../adr/0006-runbooks-not-skills.md) |
-| D39 | repos rebuilt, not migrated | [ADR-0006](../adr/0006-runbooks-not-skills.md) |
+| D37 | codegen as `[codegen]` extras | [ADR-0002](../adr/ADR-0002.md); [E10](../specs/epics/E10-kiln-generators/index.md) |
+| D38 | `kiln adopt` not built | [ADR-0006](../adr/ADR-0006.md) |
+| D39 | repos rebuilt, not migrated | [ADR-0006](../adr/ADR-0006.md) |
 | D40 | apollo parked | [E6](../specs/epics/E6-rebuild-the-repos/index.md) out of scope |
 | D41 | intellibench superseded by intellibuild | [intellibuild plan](intellibuild.md) |
 | D42 | the tool keeps the name kiln, not canon | §4 |
-| D43 | golden repos are the source of truth | revised by D63, D69 — folded into [ADR-0005](../adr/0005-archetypes.md) |
-| D44 | `_areas.yml` and `_structure.md` seeded | [ADR-0001](../adr/0001-ownership.md), [ADR-0005](../adr/0005-archetypes.md); [F3.4 design](../specs/epics/E3-realign-goldens-and-canon/F3.4-canon-catches-up.md) |
-| D45 | CI generated and committed; no reusable-workflow repo | [ADR-0003](../adr/0003-ci-runs-committed-code.md) |
-| D46 | rn-forge deps are pinned PEP 508 direct URLs | [ADR-0005](../adr/0005-archetypes.md), suspended until pykit is stable |
+| D43 | golden repos are the source of truth | revised by D63, D69 — folded into [ADR-0005](../adr/ADR-0005.md) |
+| D44 | `_areas.yml` and `_structure.md` seeded | [ADR-0001](../adr/ADR-0001.md), [ADR-0005](../adr/ADR-0005.md); [F3.4 design](../specs/epics/E3-realign-goldens-and-canon/F3.4-canon-catches-up.md) |
+| D45 | CI generated and committed; no reusable-workflow repo | [ADR-0003](../adr/ADR-0003.md) |
+| D46 | rn-forge deps are pinned PEP 508 direct URLs | [ADR-0005](../adr/ADR-0005.md), suspended until pykit is stable |
 | D47 | ~~four `-ng` archetypes~~ | superseded by D53/D54 |
 | D48 | ADRs carry decisions; the reference carries specs | [ADR log intro](../adr/index.md) |
-| D49 | libraries own the boilerplate (proposed) | [ADR-0009](../adr/0009-tooling-owns-the-boilerplate.md); acceptance open on [F3.4](../specs/epics/E3-realign-goldens-and-canon/F3.4-canon-catches-up.md) |
+| D49 | libraries own the boilerplate (proposed) | [ADR-0009](../adr/ADR-0009.md); acceptance open on [F3.4](../specs/epics/E3-realign-goldens-and-canon/F3.4-canon-catches-up.md) |
 | D50 | `ruff check --fix` before `ruff format` | [reference §5](../reference/standard-repo.md#5-what-task-validate-proves-without-kiln); §7.2 |
-| D51 | checkers become a versioned package | [ADR-0010](../adr/0010-checkers-are-a-package.md) |
-| D52 | three library layers | [ADR-0002](../adr/0002-the-dependency-graphs.md) |
-| D53 | seven archetypes | [ADR-0005](../adr/0005-archetypes.md) |
-| D54 | a flag selects a library only; every shipped value has a golden | [ADR-0005](../adr/0005-archetypes.md) |
+| D51 | checkers become a versioned package | [ADR-0010](../adr/ADR-0010.md) (revised 2026-09-13: one pinned kiln; the package decision is its History) |
+| D52 | three library layers | [ADR-0002](../adr/ADR-0002.md) |
+| D53 | seven archetypes | [ADR-0005](../adr/ADR-0005.md) |
+| D54 | a flag selects a library only; every shipped value has a golden | [ADR-0005](../adr/ADR-0005.md) |
 | D55 | sub-packages by kind of mechanism | pykit handoff |
-| D56 | kiln generates repo structure; frameworks generate code | [ADR-0011](../adr/0011-kiln-is-modules-under-one-contract.md); backlog [E10](../specs/epics/E10-kiln-generators/index.md). **Rescheduled:** D56 put `kiln generate package` in Phase D, but E10 defers it until after release-1. The scope is unchanged and the timing is not. |
-| D57 | README is the single prose home | [ADR-0001](../adr/0001-ownership.md) |
-| D58 | kiln seeds the instruction files and invokes nothing | [ADR-0001](../adr/0001-ownership.md) |
-| D59 | lifecycle surface built in tooling | [ADR-0005](../adr/0005-archetypes.md); pykit handoff |
-| D60 | `pyproject.toml` verified, not generated | [ADR-0001](../adr/0001-ownership.md) |
-| D61 | lifecycle is a capability flag | [ADR-0005](../adr/0005-archetypes.md) |
-| D62 | knobs are tiered | [ADR-0005](../adr/0005-archetypes.md) |
-| D63 | templates authored; goldens as committed snapshots | revised by D69; [ADR-0005](../adr/0005-archetypes.md) |
-| D64 | layered config resolved once and committed | revised by D70; [ADR-0004](../adr/0004-the-rn-forge-umbrella.md) |
-| D65 | `cicd`, not `devops` | [ADR-0003](../adr/0003-ci-runs-committed-code.md) |
-| D66 | committed workflows + local composite actions | [ADR-0003](../adr/0003-ci-runs-committed-code.md) |
-| D67 | modules, not distributions | [ADR-0011](../adr/0011-kiln-is-modules-under-one-contract.md) |
-| D68 | `Generator` protocol is the module contract | [ADR-0011](../adr/0011-kiln-is-modules-under-one-contract.md) |
-| D69 | no rendered golden committed | [ADR-0005](../adr/0005-archetypes.md) |
-| D70 | config sources, list replace, committed merged config | [ADR-0004](../adr/0004-the-rn-forge-umbrella.md) |
-| D71 | no internal module published | [ADR-0011](../adr/0011-kiln-is-modules-under-one-contract.md) |
-| D72 | modules declare their config; kiln composes | [ADR-0011](../adr/0011-kiln-is-modules-under-one-contract.md) |
-| D73 | pykit consumed from its branch until stable | [ADR-0005](../adr/0005-archetypes.md) |
-| D74 | checks by module, `core` module (proposed) | **open** on [F4.1](../specs/epics/E4-generator/F4.1-checks-by-module.md) |
+| D56 | kiln generates repo structure; frameworks generate code | [ADR-0011](../adr/ADR-0011.md); backlog [E10](../specs/epics/E10-kiln-generators/index.md). **Rescheduled:** D56 put `kiln generate package` in Phase D, but E10 defers it until after release-1. The scope is unchanged and the timing is not. |
+| D57 | README is the single prose home | [ADR-0001](../adr/ADR-0001.md) |
+| D58 | kiln seeds the instruction files and invokes nothing | [ADR-0001](../adr/ADR-0001.md) |
+| D59 | lifecycle surface built in tooling | [ADR-0005](../adr/ADR-0005.md); pykit handoff |
+| D60 | `pyproject.toml` verified, not generated | [ADR-0001](../adr/ADR-0001.md) |
+| D61 | lifecycle is a capability flag | [ADR-0005](../adr/ADR-0005.md) |
+| D62 | knobs are tiered | [ADR-0005](../adr/ADR-0005.md) |
+| D63 | templates authored; goldens as committed snapshots | revised by D69; [ADR-0005](../adr/ADR-0005.md) |
+| D64 | layered config resolved once and committed | revised by D70; [ADR-0004](../adr/ADR-0004.md) |
+| D65 | `cicd`, not `devops` | [ADR-0003](../adr/ADR-0003.md) |
+| D66 | committed workflows + local composite actions | [ADR-0003](../adr/ADR-0003.md) |
+| D67 | modules, not distributions | [ADR-0011](../adr/ADR-0011.md) |
+| D68 | `Generator` protocol is the module contract | [ADR-0011](../adr/ADR-0011.md) |
+| D69 | no rendered golden committed | [ADR-0005](../adr/ADR-0005.md) |
+| D70 | config sources, list replace, committed merged config | [ADR-0004](../adr/ADR-0004.md) |
+| D71 | no internal module published | [ADR-0011](../adr/ADR-0011.md) |
+| D72 | modules declare their config; kiln composes | [ADR-0011](../adr/ADR-0011.md) |
+| D73 | pykit consumed from its branch until stable | [ADR-0005](../adr/ADR-0005.md) |
+| D74 | checks by module, `core` module (proposed) | checks by module kept as `kiln check`; the separate package rejected by [ADR-0010](../adr/ADR-0010.md) |
 
 ### 2.3 Open questions
 
@@ -168,13 +168,13 @@ configuration ([plan](agent-config-future.md)). Parked: `rn-tools/apollo`,
 | 8 | ADO provider | parked — [E8](../specs/epics/E8-ado-provider/index.md) |
 | 9 | an agent-tool docs command | parked — [agent-config plan](agent-config-future.md) |
 | 10 | apollo's return | parked — [E6](../specs/epics/E6-rebuild-the-repos/index.md) out of scope |
-| 11 | is lifecycle orthogonal to the archetype? | answered — [ADR-0005](../adr/0005-archetypes.md) |
-| 12 | which rendered trees are committed? | answered — [ADR-0005](../adr/0005-archetypes.md) |
-| 13 | config source format and merge semantics | answered — [ADR-0004](../adr/0004-the-rn-forge-umbrella.md) |
-| 14 | is `cicd` published? | answered — [ADR-0011](../adr/0011-kiln-is-modules-under-one-contract.md) |
-| 15 | how an archetype declares its modules | answered — [ADR-0011](../adr/0011-kiln-is-modules-under-one-contract.md) |
+| 11 | is lifecycle orthogonal to the archetype? | answered — [ADR-0005](../adr/ADR-0005.md) |
+| 12 | which rendered trees are committed? | answered — [ADR-0005](../adr/ADR-0005.md) |
+| 13 | config source format and merge semantics | answered — [ADR-0004](../adr/ADR-0004.md) |
+| 14 | is `cicd` published? | answered — [ADR-0011](../adr/ADR-0011.md) |
+| 15 | how an archetype declares its modules | answered — [ADR-0011](../adr/ADR-0011.md) |
 | 16 | intellibuild's archetype | answered 2026-09-12: `python-web-app` — [intellibuild plan](intellibuild.md) |
-| — | confirm D74 | open on [F4.1](../specs/epics/E4-generator/F4.1-checks-by-module.md), with the owner's alternatives |
+| — | confirm D74 | answered 2026-09-13: kiln is a pinned dev dependency — [ADR-0010](../adr/ADR-0010.md) |
 
 ## 3. Rebuild, not migrate — the donors
 
@@ -236,13 +236,12 @@ carries. "Canon" is the name of the docs section inside kiln that holds them.
 What was carried into the golden repos from the donor repos, what was
 deliberately dropped, and where each thing landed. This is the review artifact
 for "everything common and worth carrying over" — the counterpart to
-[ADR-0006](../adr/0006-runbooks-not-skills.md)'s rule that repos are rebuilt
-rather than migrated. Behaviour is harvested; files are not.
+[ADR-0006](../adr/ADR-0006.md)'s rule that repos are rebuilt rather than
+migrated. Behaviour is harvested; files are not.
 
 Donor paths are relative to their repo root. Target paths are relative to a
 golden repo, and therefore to every generated repo. The targets are as of E1;
-`scripts/**` leaves generated repos under
-[ADR-0010](../adr/0010-checkers-are-a-package.md).
+`scripts/**` leaves generated repos under [ADR-0010](../adr/ADR-0010.md).
 
 ### Task layout and the vocabulary
 
@@ -252,7 +251,7 @@ golden repo, and therefore to every generated repo. The targets are as of E1;
 | `agentkit/tasks/workspace.yml` | `install`, `version`, `build`, `clean`; the separate packaging cache dir and its rationale | `scripts/check_dist_contents.py` as a build step — a repo-specific lint, wired through `[tasks.extra_refs]` instead | `tasks/workspace.yml` |
 | `agentkit/tasks/quality.yml` | every `internal: true` primitive; `lint:docs-structure` and `lint:docs-nav` delegating to `:docs:*` | `lint:markdown`, `format:markdown`, the docformatter step in `format:python` | `tasks/quality.yml` |
 | `agentkit/tasks/docs.yml` | `build`, `serve`, `nav`, `structure`; `MKDOCS_SITE_DIR` with a `CLI_ARGS` override so CI can target a temp dir | serve port 8083 (arbitrary; now 8080) | `tasks/docs.yml` |
-| `apollo/docs/guides/task-vocabulary.md` | the idea of a written vocabulary, as input to [ADR-0007](../adr/0007-task-vocabulary.md) | the generated prose page itself, and apollo's verbs (`format-check`, `dev`, `docs`) | ADR-0007; the rendered `.rn-forge/kiln/standard.md` |
+| `apollo/docs/guides/task-vocabulary.md` | the idea of a written vocabulary, as input to [ADR-0007](../adr/ADR-0007.md) | the generated prose page itself, and apollo's verbs (`format-check`, `dev`, `docs`) | ADR-0007; the rendered `.rn-forge/kiln/standard.md` |
 | `taskkit` `extra_refs` / repository-owned include model | both mechanisms, as `[tasks.extra_refs]` and `[tasks.includes]` with `ownership = "repository"` | discovery, planner, adapters, the install layer (F16) | `.rn-forge/kiln/config.toml` schema |
 
 ### Checkers
@@ -270,7 +269,7 @@ golden repo, and therefore to every generated repo. The targets are as of E1;
 | `intellibench/tools/lint/{check_brand,check_gate_tags,check_endpoints,check_db_url,check_e2e_budget,check_vocabulary}.py` | nothing | all of them; genuinely repo-specific (D34) | intellibuild, repo-owned |
 | — (new) | — | — | `scripts/standards/check_generated.py`: the committed-state checker. No donor — this is what replaces "trust that the kit ran" |
 | `apollo/pyproject.toml` `[tool.uv.sources]` | the git + `subdirectory` source shape for an rn-forge library, since pykit publishes GitHub Releases rather than to PyPI | `branch = "main"` — an unpinned source changes what a repo builds without changing a tracked byte in it | a pinned PEP 508 direct URL in `dependencies` — an override does not survive into a wheel; `scripts/standards/check_rn_forge_deps.py` rule 3 |
-| `agentkit/pyproject.toml` dependencies | nothing | the direct `jinja2`/`pydantic`/`rich`/`ruamel-yaml`/`tomlkit`/`typer` dependencies — a `python-cli` repo takes that surface from `rn-forge-tooling` (F12) | `.importlinter` `frameworks-come-from-rn-forge`; [ADR-0005](../adr/0005-archetypes.md) |
+| `agentkit/pyproject.toml` dependencies | nothing | the direct `jinja2`/`pydantic`/`rich`/`ruamel-yaml`/`tomlkit`/`typer` dependencies — a `python-cli` repo takes that surface from `rn-forge-tooling` (F12) | `.importlinter` `frameworks-come-from-rn-forge`; [ADR-0005](../adr/ADR-0005.md) |
 
 ### Docs toolchain
 
@@ -282,7 +281,7 @@ golden repo, and therefore to every generated repo. The targets are as of E1;
 | `agentkit/scripts/docs/site/gen_nav.py` | the marker-fenced nav block, `--check`, index-link ordering, the acronym title map | its private 30-line `_areas.yml` parser — a third YAML loader in the same script set | `scripts/docs/gen_nav.py` |
 | `intellibench/tools/docs/{check,_nav,generate_order,check_mermaid}.py` | nothing they did not share with agentkit's versions (F3: four forks of one link checker) | all four implementations | superseded |
 | `agentkit/docs/_areas.yml`, `_structure.md` | both, verbatim in shape: seven areas, nav modes, the "where new material goes" routing rule | their status as generated-and-owned — they are now seeded, so a repo can add an area (D44) | `docs/_areas.yml`, `docs/_structure.md` |
-| `agentkit` E17 docs area model | the model itself | agentkit's ownership of it — it moves to kiln's `docs` module | [ADR-0005](../adr/0005-archetypes.md) |
+| `agentkit` E17 docs area model | the model itself | agentkit's ownership of it — it moves to kiln's `docs` module | [ADR-0005](../adr/ADR-0005.md) |
 | `apollo` ADR-0024 | `.docs-site/` as the rendered-output directory, and the `MKDOCS_SITE_DIR` override | `.apollo/site/` and everything about apollo's app-state root | `tasks/docs.yml`, `.gitignore` |
 
 ### CI
@@ -298,11 +297,11 @@ golden repo, and therefore to every generated repo. The targets are as of E1;
 
 | Donor | Behaviour kept | Behaviour dropped | Target |
 | -- | -- | -- | -- |
-| `agentkit` ADR-0001, ADR-0005 (instructions single-sourced, seeded) | both: one body, seeded once, and `CLAUDE.md` == `AGENTS.md` | — | `CLAUDE.md` / `AGENTS.md` body, agentkit-owned (since superseded by [ADR-0001](../adr/0001-ownership.md)) |
-| `agentkit` ADR-0005 (structure rules live in the repo) | the rule, generalized: the repo's own `_areas.yml` is what the checkers read | — | [ADR-0001](../adr/0001-ownership.md), D44 |
-| `agentkit` ADR-0021 (install only what CI runs) | promoted to [ADR-0003](../adr/0003-ci-runs-committed-code.md) and strengthened: committed, hashed, and checked | — | [ADR-0003](../adr/0003-ci-runs-committed-code.md) |
+| `agentkit` ADR-0001, ADR-0005 (instructions single-sourced, seeded) | both: one body, seeded once, and `CLAUDE.md` == `AGENTS.md` | — | `CLAUDE.md` / `AGENTS.md` body, agentkit-owned (since superseded by [ADR-0001](../adr/ADR-0001.md)) |
+| `agentkit` ADR-0005 (structure rules live in the repo) | the rule, generalized: the repo's own `_areas.yml` is what the checkers read | — | [ADR-0001](../adr/ADR-0001.md), D44 |
+| `agentkit` ADR-0021 (install only what CI runs) | promoted to [ADR-0003](../adr/ADR-0003.md) and strengthened: committed, hashed, and checked | — | [ADR-0003](../adr/ADR-0003.md) |
 | `agentkit/feedback.md`, `apollo/epic-design-docs-handoff.md`, `intellibench/{ADR_REVIEW.md,temp.txt}` | nothing | all of it — tracked session residue (F10) | not carried; `hygiene.stray-root-file` |
-| `agentkit` setup skills (`go-task-setup`, `docs-setup`, `mkdocs-site-setup`, `spec-structure-setup`) | their *outputs*, which are now templates | the skills themselves, and the fact that a skill installed a file CI runs (F8) | [ADR-0006](../adr/0006-runbooks-not-skills.md) |
+| `agentkit` setup skills (`go-task-setup`, `docs-setup`, `mkdocs-site-setup`, `spec-structure-setup`) | their *outputs*, which are now templates | the skills themselves, and the fact that a skill installed a file CI runs (F8) | [ADR-0006](../adr/ADR-0006.md) |
 | `agentkit` generic skills (`gh-fix`, `python-simplify`, `sonar-cleanup`) | all three, unchanged in scope | — | agentkit, rebuilt (out of scope here) |
 | `agentkit/.editorconfig` | the file | `trim_trailing_whitespace = false` and `insert_final_newline = false` globally — both now on, with the Markdown exception where trailing spaces are a hard line break | `.editorconfig` |
 
@@ -312,7 +311,7 @@ The plan said commons and tooling are the only permitted rn-forge peer imports,
 "enforced by import-linter". It is not, and cannot be: import-linter rejects
 subpackages of external packages, so `rn_forge.kiln` is not a legal forbidden
 module — verified empirically, both with `rn_forge` installed and without.
-[ADR-0005](../adr/0005-archetypes.md) moves that rule to
+[ADR-0005](../adr/ADR-0005.md) moves that rule to
 `scripts/standards/check_rn_forge_deps.py`, where it is decidable, and gives
 `.importlinter` the complementary rule it *can* enforce: no direct import of a
 framework or CLI toolkit that an rn-forge library already owns.
@@ -320,14 +319,13 @@ framework or CLI toolkit that an rn-forge library already owns.
 ### Not harvested at all
 
 - `agentkit/core/**` and `taskkit/core/**` — replaced by `rn-forge-tooling`
-  (F12, [ADR-0002](../adr/0002-the-dependency-graphs.md)).
+  (F12, [ADR-0002](../adr/ADR-0002.md)).
 - `taskkit`'s discovery, planner, adapters and install layer — 1,950 of 5,248
   lines, dead weight once the archetype is asserted (F16).
 - `intellibench/docs/` — superseded by its own `docs2/`, which becomes
   intellibuild's `docs/`.
 - Every scaffold-output template: `uv init`, `pnpm create` and `nx g` are
-  shelled out to and their output reconciled
-  ([ADR-0005](../adr/0005-archetypes.md)).
+  shelled out to and their output reconciled ([ADR-0005](../adr/ADR-0005.md)).
 
 ## 7. Review outcomes
 
@@ -444,14 +442,14 @@ construction** — met in E2's F2.10.
 | Comment | Outcome |
 | -- | -- |
 | Root `README.md` and `CLAUDE.md` only name `python-tool` — example, or stale? | **Neither.** It is kiln's own archetype, read from its `config.toml` and rendered into the block. It *is* scheduled to change: ADR-0010 makes kiln a two-distribution repo, so it becomes `python-lib` at [F4.8](../specs/epics/E4-generator/F4.8-self-hosting.md). The one genuine example — `cd tests/fixtures/golden/python-tool` in the README — now names all three. |
-| Those two files overlap; use README for developer-facing content and refer to it from CLAUDE.md | **Done, and promoted to a rule (D57, [ADR-0001](../adr/0001-ownership.md)).** Both files opened with the same sentence and repeated the same status pointers. The ownership rule already forbids two owners writing the same bytes; D57 is that rule applied to prose. |
+| Those two files overlap; use README for developer-facing content and refer to it from CLAUDE.md | **Done, and promoted to a rule (D57, [ADR-0001](../adr/ADR-0001.md)).** Both files opened with the same sentence and repeated the same status pointers. The ownership rule already forbids two owners writing the same bytes; D57 is that rule applied to prose. |
 | Same in each golden repo | **Same fix.** It is a standard change, so it lands in the golden repos first and reaches generated repos as a template. |
-| `scripts/` is repetitive; we discussed a devopskit and it is not in the plan | **It was decided and never scheduled.** [ADR-0010](../adr/0010-checkers-are-a-package.md) is accepted and D51 confirmed — including rejecting the `devopskit` name, because `checks` names a role that excludes rendering while `devops` names a domain that excludes nothing. What was missing was execution; it is now [F4.1](../specs/epics/E4-generator/F4.1-checks-by-module.md), with the golden repos losing 1,454 lines each before any template derives from them. |
-| Can the near-identical `pyproject.toml` tool config become a reusable pykit component? | **No mechanism exists, and generating it would not deduplicate anything (D60, [ADR-0005](../adr/0005-archetypes.md)).** pyproject stays repo-owned and gains doctor check 8a, which warns on divergence — verification without the apply round trip. |
+| `scripts/` is repetitive; we discussed a devopskit and it is not in the plan | **It was decided and never scheduled.** [ADR-0010](../adr/ADR-0010.md) is accepted and D51 confirmed — including rejecting the `devopskit` name, because `checks` names a role that excludes rendering while `devops` names a domain that excludes nothing. What was missing was execution; it is now [F4.1](../specs/epics/E4-generator/F4.1-checks-by-module.md), with the golden repos losing 1,454 lines each before any template derives from them. |
+| Can the near-identical `pyproject.toml` tool config become a reusable pykit component? | **No mechanism exists, and generating it would not deduplicate anything (D60, [ADR-0005](../adr/ADR-0005.md)).** pyproject stays repo-owned and gains doctor check 8a, which warns on divergence — verification without the apply round trip. |
 | taskkit is dead and agentkit will be re-ideated from scratch; take the content out | **Done (D58).** Everything agent-config — the rebuild scope, the prior art worth reading, taskkit's retirement record — is in [agent-config-future.md](agent-config-future.md). The structural consequence is the real change: kiln no longer shells out to agentkit and seeds the instruction files itself, so `.claude/**` is unowned until the rethink happens. |
 | Global config management has to rethink its role now kiln exists | **Recorded as the question that comes first**, in [agent-config-future.md](agent-config-future.md) §2. agentkit's *project* scope existed largely because nothing else owned repo files; kiln owns them now. Do not answer it by porting the old shape. |
 | `rn-forge-cli` is being refactored in a separate session | **Resolved — the refactor landed (pykit plan Part E).** The goldens are to build against `CliApp.from_config()` with no `main.py` and no `log_options`/`output_options` keys — which is [F3.1](../specs/epics/E3-realign-goldens-and-canon/F3.1-goldens-on-part-e-api.md). |
-| `python-app` and `python-tool` look the same; a tool should handle install, uninstall, upgrade, version, doctor — uniformly, via an adapter | **Correct, and measurable: the two `pyproject.toml` files differ by a name and one dependency line, and `install/` contains only `archive.py`.** Built as D59 ([ADR-0005](../adr/0005-archetypes.md)) with exactly the adapter shape suggested. It also exposed open question 11 — kiln itself is an installable tool whose repo shape is `python-lib`. |
+| `python-app` and `python-tool` look the same; a tool should handle install, uninstall, upgrade, version, doctor — uniformly, via an adapter | **Correct, and measurable: the two `pyproject.toml` files differ by a name and one dependency line, and `install/` contains only `archive.py`.** Built as D59 ([ADR-0005](../adr/ADR-0005.md)) with exactly the adapter shape suggested. It also exposed open question 11 — kiln itself is an installable tool whose repo shape is `python-lib`. |
 
 ## 8. The scope-expansion thread (revisions 12–13)
 
@@ -466,14 +464,12 @@ combination, at which point the goldens stop being the source of truth and
 become decoration.
 
 The reasoning and the outcomes are recorded where they now live: the tier model
-in [ADR-0005](../adr/0005-archetypes.md); templates, goldens and the render
-matrix in [ADR-0005](../adr/0005-archetypes.md); layered config in
-[ADR-0004](../adr/0004-the-rn-forge-umbrella.md); modules and their contract in
-[ADR-0011](../adr/0011-kiln-is-modules-under-one-contract.md); `cicd` and the
-GitHub Actions `include:` constraint in
-[ADR-0003](../adr/0003-ci-runs-committed-code.md). The config lifecycle table
-and the `KilnModule` sketch are in
-[E4's design](../specs/epics/E4-generator/design.md).
+in [ADR-0005](../adr/ADR-0005.md); templates, goldens and the render matrix in
+[ADR-0005](../adr/ADR-0005.md); layered config in
+[ADR-0004](../adr/ADR-0004.md); modules and their contract in
+[ADR-0011](../adr/ADR-0011.md); `cicd` and the GitHub Actions `include:`
+constraint in [ADR-0003](../adr/ADR-0003.md). The config lifecycle table and the
+`KilnModule` sketch are in [E4's design](../specs/epics/E4-generator/design.md).
 
 ### Counters recorded against proposals that were dropped or changed
 

@@ -34,6 +34,7 @@ nav:
   - Runbooks:
       - Overview: runbooks/index.md
       - Creating A Repo: runbooks/creating-a-repo.md
+      - Carrying Specs And Decisions: runbooks/carrying-specs-and-decisions.md
   - Reference:
       - Python API: reference/python-api.md
       - Standard Repo: reference/standard-repo.md

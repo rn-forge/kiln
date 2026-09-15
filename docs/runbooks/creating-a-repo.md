@@ -92,6 +92,9 @@ For a primitive whose shell line is wrong for this repo — and only then:
 If you find yourself wanting a third override, the archetype is probably wrong.
 That is a judgement call, and it is yours.
 
+If the new repo replaces a pre-v1 one, carry its specs and decisions over now,
+following [carrying specs and decisions](carrying-specs-and-decisions.md).
+
 ## 4. Check it
 
 ```bash

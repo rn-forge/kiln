@@ -15,8 +15,8 @@ task docs:serve  # live docs on http://127.0.0.1:8080
 
 kiln's skeleton is a hand-copy of `tests/fixtures/golden/python-tool`, with the
 names changed. It regenerates itself once the generator exists
-([ADR-0005](../adr/0005-archetypes.md)); until then, a change to the golden
-repo's skeleton is a change kiln should make here too, by hand.
+([ADR-0005](../adr/ADR-0005.md)); until then, a change to the golden repo's
+skeleton is a change kiln should make here too, by hand.
 
 ## Changing a golden repo
 

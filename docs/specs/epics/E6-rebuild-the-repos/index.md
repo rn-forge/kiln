@@ -7,7 +7,7 @@
 Per repo: `kiln new` into a fresh directory, port source and docs by hand,
 `kiln doctor` and `task validate` green, then the fresh tree replaces the repo's
 working tree on a branch. History before the replacement is not preserved
-([ADR-0006](../../../adr/0006-runbooks-not-skills.md)).
+([ADR-0006](../../../adr/ADR-0006.md)).
 
 ## Features
 

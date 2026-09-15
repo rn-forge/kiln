@@ -42,7 +42,7 @@ the owner review gate was explicit on the critical path.
 ```bash
 cd rn-forge/kiln
 uv run --group docs mkdocs build --strict
-test -f docs/adr/0007-task-vocabulary.md && test -f docs/reference/standard-repo.md && test -f docs/plans/harvest.md
+test -f docs/adr/ADR-0007.md && test -f docs/reference/standard-repo.md && test -f docs/plans/harvest.md
 for g in tests/fixtures/golden/python-cli tests/fixtures/golden/python-lib; do
   (cd "$g" && uv sync && task validate && uv run python scripts/standards/check_generated.py . \
      && python scripts/ci/check_ci_entrypoint.py . && python scripts/task/check_task_layout.py . \

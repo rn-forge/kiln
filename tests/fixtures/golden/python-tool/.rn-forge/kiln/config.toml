@@ -18,7 +18,7 @@ release = "tag-exists"
 [tasks]
 includes = []
 
-# The command line this repo exposes, built by `rn_forge.cli.declare` rather
+# The command line this repo exposes, built by `CliApp.from_config` rather
 # than assembled by hand (kiln ADR-0009). Adding a command is an entry here and
 # a function in `src/golden_tool/commands.py`.
 [cli]

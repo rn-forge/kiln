@@ -8,14 +8,15 @@ board says what is next; the epic says how; its ADRs say why.
 
 ### In progress
 
-Nothing in flight.
+| Epic | Release | Next step |
+| -- | -- | -- |
+| [E3 — Realign the goldens and the canon](epics/E3-realign-goldens-and-canon/index.md) | [release-1](../releases/release-1/index.md) | **start here** — F3.2 and F3.1 done; S3.4.1 and S3.4.4 can begin now; F3.3 waits on pykit C.3 |
 
 ### Scheduled
 
 | Epic | Release | Next step |
 | -- | -- | -- |
-| [E3 — Realign the goldens and the canon](epics/E3-realign-goldens-and-canon/index.md) | [release-1](../releases/release-1/index.md) | **start here** — F3.2 and S3.4.1 can begin now; F3.1 follows F3.2; F3.3 waits on pykit; S3.4.4 waits on S4.1.4 |
-| [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | **start here too** — S4.1.4, the checks-shape decision, can begin now; the rest waits on E3 |
+| [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | S4.1.4 done — kiln is a pinned dev dependency ([ADR-0010](../adr/ADR-0010.md)); the rest waits on E3 |
 | [E6 — Rebuild the repos](epics/E6-rebuild-the-repos/index.md) | F6.1 [release-1](../releases/release-1/index.md); F6.2 [release-2](../releases/release-2/index.md) | after E4 |
 | [E5 — The web archetypes](epics/E5-web-archetypes/index.md) | [release-2](../releases/release-2/index.md) | gated on `rn-forge-fastapi` |
 
@@ -60,7 +61,7 @@ pykit owns its own spec. What kiln needs from it is handed off in pykit's
 
 ```text
 done:  E1 ─→ E2                                         (pykit: A ─→ C ─→ C.2)
-now:   S4.1.4 checks-shape decision ─→ S3.4.4 ─────┐
+now:   S4.1.4 done (ADR-0010) ─→ S3.4.4 ───────────┐
        S3.4.1 reference ───────────────────────────┤
        F3.2 pins ─→ F3.1 port ─→ F3.3 tool ────────┴─→ S3.4.2 re-seed ─→ E3 done
                                   ↑ pykit C.3 (lifecycle)
@@ -73,12 +74,12 @@ then:  E3 ─→ F4.1 ─→ F4.2 ─→ F4.3 ─┬─→ F4.4 matrix (goldens 
 triggered: E7 pykit releases (owner) · E8 ADO · backlog: E10 generators
 ```
 
-F3.2, S3.4.1 and S4.1.4 can start immediately, alongside pykit C.3. The
-**Depends on** column on each epic and line on each feature are normative; this
-diagram summarizes them. Nothing in E4 waits on a pykit release
-([ADR-0005](../adr/0005-archetypes.md)), but every template renders the rn-forge
-dependency source from config, so flipping to tags later is a config change, not
-a template change.
+F3.2, F3.1 and S4.1.4 are done; S3.4.1 and S3.4.4 can start immediately,
+alongside pykit C.3. The **Depends on** column on each epic and line on each
+feature are normative; this diagram summarizes them. Nothing in E4 waits on a
+pykit release ([ADR-0005](../adr/ADR-0005.md)), but every template renders the
+rn-forge dependency source from config, so flipping to tags later is a config
+change, not a template change.
 
 ## Conventions
 
@@ -114,6 +115,8 @@ a template change.
   epic's `design.md`. Current behaviour belongs in
   [architecture](../architecture/index.md), the normative standard in
   [the reference](../reference/standard-repo.md).
+- **Decisions are ADRs**, one file per topic, revised in place with a
+  `## History` when they change — see [the log](../adr/index.md).
 - **Open questions live on the feature or epic they block.** Answered, a
   question becomes an [ADR](../adr/index.md), or a rejected option recorded on
   the feature; it is not left open on the page.

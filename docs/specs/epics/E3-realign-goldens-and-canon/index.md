@@ -1,15 +1,15 @@
 # E3 — Realign the goldens and the canon with pykit
 
-**Status:** planned · **Release:**
+**Status:** in progress · **Release:**
 [release-1](../../../releases/release-1/index.md) · **Phase:** C.4 ·
 **Estimate:** 3 days
 
 Repo `rn-forge/kiln`, branch `feature/v1`. The hand-authored goldens are the
 reference [E4](../E4-generator/index.md) writes templates from
-([ADR-0005](../../../adr/0005-archetypes.md)), so they must match pykit as it
-is, not as it was. F3.2 and S3.4.1 can start now. F3.1 follows F3.2, and F3.3
-follows F3.1 and pykit's lifecycle work. S3.4.4 waits on E4's checks-shape
-decision (S4.1.4), which is a decision only and waits on nothing in E3.
+([ADR-0005](../../../adr/ADR-0005.md)), so they must match pykit as it is, not
+as it was. F3.2 and S3.4.1 can start now. F3.1 follows F3.2, and F3.3 follows
+F3.1 and pykit's lifecycle work. S3.4.4 waits on E4's checks-shape decision
+(S4.1.4), which is a decision only and waits on nothing in E3.
 
 ## Features
 
@@ -34,7 +34,7 @@ with `git status` before acting; it goes stale.
   define `main()`. Their `uv.lock` pins an older `feature/upgrade` commit,
   which is the only reason they still pass. The same stale names appear in
   their `README.md`, `docs/architecture/repository-shape.md`,
-  `docs/adr/0001-product-code-stays-trivial.md` and `config.toml` comments.
+  `docs/adr/ADR-0001.md` and `config.toml` comments.
 - **`golden/python-lib`'s two packages pin `rn-forge-commons-v0.2.2`**, a tag
   from before the layer split; the other goldens pin `@feature/upgrade`.
 - **`docs/reference/standard-repo.md`'s dependency-set table omits

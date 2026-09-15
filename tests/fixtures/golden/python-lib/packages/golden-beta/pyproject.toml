@@ -12,7 +12,7 @@ requires-python = ">=3.14"
 # consumer of this package's release could not resolve commons at all
 # (kiln ADR-0005).
 dependencies = [
-  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@rn-forge-commons-v0.2.2#subdirectory=packages/rn-forge-commons",
+  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-commons",
 ]
 
 [build-system]

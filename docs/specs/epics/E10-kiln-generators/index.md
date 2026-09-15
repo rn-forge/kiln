@@ -19,9 +19,9 @@ elaboration.
   `rn_forge.kiln.generators`; kiln supplies only the command surface (D2,
   D37).
 
-Both follow [ADR-0011](../../../adr/0011-kiln-is-modules-under-one-contract.md):
-kiln generates repo structure, frameworks generate their own code, and kiln
-generates nothing inside `src/` or `tests/` itself.
+Both follow [ADR-0011](../../../adr/ADR-0011.md): kiln generates repo structure,
+frameworks generate their own code, and kiln generates nothing inside `src/` or
+`tests/` itself.
 
 Risk carried into this epic, and its guard: the codegen extra leaking into the
 runtime surface — pykit's import-linter contract exists before the first codegen

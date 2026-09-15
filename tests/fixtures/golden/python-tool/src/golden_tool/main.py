@@ -2,8 +2,10 @@
 
 There is no app construction here, and that is the point of kiln ADR-0009: the
 command line is *declared* in `.rn-forge/kiln/config.toml` under `[cli]` and
-built from that declaration. A repository writes command functions and this
-three-line module, and nothing else.
+built from that declaration by `CliApp.from_config`. A repository writes
+command functions and this three-line module, and nothing else. There is no
+`main()`: `[project.scripts]` points at `app` itself, and `CliApp.__call__`
+returns the mapped exit code.
 
 The config document is found relative to this file because a golden repo runs
 from its checkout; a tool installed into `$RNF_HOME` resolves its own root
@@ -14,14 +16,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from rn_forge.cli import run
-from rn_forge.cli.declare import declare
+from rn_forge.cli import CliApp
 
 CONFIG = Path(__file__).resolve().parents[2] / ".rn-forge" / "kiln" / "config.toml"
 
-app = declare(CONFIG)
-
-
-def main() -> int:
-    """Run the declared application and return its exit code."""
-    return run(app)
+app = CliApp.from_config(CONFIG)
