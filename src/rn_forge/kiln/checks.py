@@ -18,7 +18,7 @@ from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd.checks import entrypoint
 from rn_forge.kiln.modules.core.checks import generated
 from rn_forge.kiln.modules.docs.checks import nav, site, structure
-from rn_forge.kiln.modules.python.checks import rn_forge_deps
+from rn_forge.kiln.modules.python.checks import pyproject, rn_forge_deps
 from rn_forge.kiln.modules.tasks.checks import layout
 
 __all__ = ["CHECKS", "Check", "names", "run"]
@@ -38,6 +38,7 @@ class Check:
 CHECKS: tuple[Check, ...] = (
     Check(generated.NAME, "core", generated.check),
     Check(rn_forge_deps.NAME, "python", rn_forge_deps.check),
+    Check(pyproject.NAME, "python", pyproject.check),
     Check(layout.NAME, "tasks", layout.check),
     Check(entrypoint.NAME, "cicd", entrypoint.check),
     Check(structure.NAME, "docs", structure.check),

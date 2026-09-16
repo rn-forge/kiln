@@ -17,6 +17,7 @@ def test_every_check_is_named_by_its_module() -> None:
     assert checks.names() == (
         "generated",
         "rn-forge-deps",
+        "pyproject-tool-config",
         "task-layout",
         "ci-entrypoint",
         "docs-structure",

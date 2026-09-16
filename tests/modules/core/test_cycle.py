@@ -56,9 +56,15 @@ def test_s4_2_3_applying_core_into_an_empty_directory_only_creates_and_inserts(
     assert actions(root, home) == {
         ".editorconfig": Action.CREATE,
         ".gitignore#rn-forge kiln": Action.INSERT,
+        ".importlinter": Action.CREATE,
     }
     cycle.apply(root, home=home)
-    for path in (".editorconfig", ".gitignore", ".rn-forge/kiln/state.json"):
+    for path in (
+        ".editorconfig",
+        ".gitignore",
+        ".importlinter",
+        ".rn-forge/kiln/state.json",
+    ):
         assert (root / path).is_file(), path
     assert ".rn-forge/kiln/backups/" in (root / ".gitignore").read_text(
         encoding="utf-8"
