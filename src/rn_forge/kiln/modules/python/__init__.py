@@ -30,16 +30,18 @@ class PythonModule:
         return ()
 
     def artifacts(self, config: KilnConfig) -> Sequence[Artifact]:
-        """No artifacts."""
-        del config
-        return ()
+        """Render `.importlinter` for *config*."""
+        # Imported here so importing a module object never loads jinja2.
+        from rn_forge.kiln.modules.python import artifacts
+
+        return artifacts.render(config)
 
     def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:
         """This module's render-free checks."""
         # Imported here so importing a module object never loads its checks.
-        from rn_forge.kiln.modules.python.checks import rn_forge_deps
+        from rn_forge.kiln.modules.python.checks import pyproject, rn_forge_deps
 
-        return rn_forge_deps.check(config, root)
+        return [*rn_forge_deps.check(config, root), *pyproject.check(config, root)]
 
 
 PYTHON = PythonModule()
