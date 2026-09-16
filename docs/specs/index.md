@@ -10,7 +10,7 @@ board says what is next; the epic says how; its ADRs say why.
 
 | Epic | Release | Next step |
 | -- | -- | -- |
-| [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | **start here** — F4.1 and F4.2 done: `kiln doctor` runs the render-free checks; the module contract, the archetype manifests, the config manager and `core`'s apply cycle exist. Next is F4.3, the concern modules and their templates |
+| [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | **start here** — F4.1 and F4.2 done: `kiln doctor` runs the render-free checks; the module contract, the archetype manifests, the config manager and `core`'s apply cycle exist. F4.3 under way: `python` and `docs` done (S4.3.1–S4.3.2). Next is S4.3.3, `tasks` |
 
 ### Scheduled
 

@@ -43,7 +43,7 @@ ModuleRegistry([Stub()])
 """
 
 ARTIFACTS = """
-    def artifacts(self, config: KilnConfig) -> Sequence[Artifact]:
+    def artifacts(self, config: KilnConfig, root: Path) -> Sequence[Artifact]:
         return ()
 """
 
@@ -58,7 +58,7 @@ class Stub:
     def options(self) -> Sequence[Option]:
         return tuple(Option(flag, f"{self.name}.{flag}", "") for flag in self._flags)
 
-    def artifacts(self, config):
+    def artifacts(self, config, root):
         return ()
 
     def checks(self, config, root):

@@ -1,5 +1,5 @@
-site_name: golden-app
-site_description: The python-app archetype's golden repo — architecture, guides, and API reference.
+site_name: {{ name }}
+site_description: {{ name }} — architecture, guides, and API reference.
 docs_dir: docs
 exclude_docs: "_*"
 strict: true
@@ -27,7 +27,7 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          paths: [src]
+          paths: [{{ source_paths }}]
           options:
             docstring_style: google
             show_source: true
@@ -43,21 +43,3 @@ markdown_extensions:
 # a page. `task lint` fails on a stale block. kiln inserts the block at the end
 # of this file, so `nav:` stays the last key.
 nav:
-
-  # BEGIN generated nav
-  - Home: index.md
-  - Architecture:
-    - Overview: architecture/index.md
-    - Repository Shape: architecture/repository-shape.md
-  - Guides:
-    - Overview: guides/index.md
-    - Development: guides/development.md
-  - Runbooks:
-    - Overview: runbooks/index.md
-    - Recovering From Drift: runbooks/recovering-from-drift.md
-  - Reference:
-    - Python API: reference/python-api.md
-  - Releases: releases/index.md
-  - Specs: specs/index.md
-  - Decisions: adr/index.md
-  # END generated nav

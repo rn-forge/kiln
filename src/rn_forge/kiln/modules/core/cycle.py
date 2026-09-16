@@ -114,7 +114,7 @@ def _prepare(
     artifacts = [
         artifact
         for module in manager.modules_for(config)
-        for artifact in module.artifacts(config)
+        for artifact in module.artifacts(config, root)
     ]
 
     state_path = root / umbrella.STATE_PATH

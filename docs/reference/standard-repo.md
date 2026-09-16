@@ -98,7 +98,7 @@ Two owners never write the same bytes. The assignment is normative:
 | `README.md` | kiln body | **seeded** — the single prose home |
 | `docs/_areas.yml`, `docs/_structure.md`, `docs/adr/_structure.md` | kiln | **seeded** — repos may extend areas |
 | `docs/index.md`, `docs/<area>/index.md` | kiln | **seeded** — written if absent, never touched again |
-| `mkdocs.yml` | repo body; `# BEGIN generated nav` block → kiln | block |
+| `mkdocs.yml` | repo body, written once by `kiln new` with `nav:` as its last key; `# BEGIN generated nav` block → kiln, inserted at the end | block |
 | `.github/workflows/ci.yml`, `docs.yml`; `.github/actions/setup`; `sonar-project.properties` | kiln (`cicd`) | managed |
 | `CLAUDE.md`, `AGENTS.md` | body **seeded by kiln**; `<!-- BEGIN rn-forge kiln -->` block → kiln | seeded body + block |
 | `.claude/**`, `.codex/**`, installed skills | not kiln's | — |

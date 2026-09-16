@@ -63,8 +63,8 @@ class KilnModule(Protocol):
         """The `kiln new` flags this module adds."""
         ...
 
-    def artifacts(self, config: KilnConfig) -> Sequence[Artifact]:
-        """Render every artifact this module owns for *config*, writing nothing."""
+    def artifacts(self, config: KilnConfig, root: Path) -> Sequence[Artifact]:
+        """Render every artifact this module owns for *config* at *root*, writing nothing."""
         ...
 
     def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:

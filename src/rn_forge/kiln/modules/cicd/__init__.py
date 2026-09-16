@@ -29,9 +29,9 @@ class CicdModule:
         """The `kiln new` flags this module adds."""
         return ()
 
-    def artifacts(self, config: KilnConfig) -> Sequence[Artifact]:
+    def artifacts(self, config: KilnConfig, root: Path) -> Sequence[Artifact]:
         """No artifacts."""
-        del config
+        del config, root
         return ()
 
     def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:

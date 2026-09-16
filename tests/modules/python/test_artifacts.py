@@ -55,7 +55,7 @@ def test_s4_3_1_property1_renders_exactly_the_module_s_template_inventory_row(
 ) -> None:
     """The template inventory lists only `.importlinter` for `python`."""
     config = KilnConfig.load(_root(tmp_path, archetype))
-    artifacts = PYTHON.artifacts(config)
+    artifacts = PYTHON.artifacts(config, tmp_path)
     assert [a.path for a in artifacts] == [".importlinter"]
     assert artifacts[0].kind is ArtifactKind.MANAGED
 
@@ -98,7 +98,7 @@ def test_s4_3_1_property4_matches_its_golden_apart_from_the_provenance_line(
     archetype: str,
 ) -> None:
     config = KilnConfig.load(GOLDEN / archetype)
-    [artifact] = PYTHON.artifacts(config)
+    [artifact] = PYTHON.artifacts(config, GOLDEN / archetype)
     rendered = _normalized(artifact.content)
     golden = _normalized(
         (GOLDEN / archetype / ".importlinter").read_text(encoding="utf-8")
@@ -115,7 +115,7 @@ def test_s4_3_1_3_lint_imports_passes_on_the_rendered_importlinter(
 
     source = GOLDEN / archetype
     config = KilnConfig.load(source)
-    [artifact] = PYTHON.artifacts(config)
+    [artifact] = PYTHON.artifacts(config, source)
     (tmp_path / ".importlinter").write_text(artifact.content, encoding="utf-8")
 
     src_dirs = (

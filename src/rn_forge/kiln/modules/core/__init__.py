@@ -32,8 +32,9 @@ class CoreModule:
             ),
         )
 
-    def artifacts(self, config: KilnConfig) -> Sequence[Artifact]:
+    def artifacts(self, config: KilnConfig, root: Path) -> Sequence[Artifact]:
         """`.editorconfig` and the `.gitignore` block."""
+        del root
         # Imported here: rendering loads Jinja, which `kiln doctor` must not.
         from rn_forge.kiln.modules.core import artifacts
 

@@ -33,10 +33,12 @@ class DocsModule:
             ),
         )
 
-    def artifacts(self, config: KilnConfig) -> Sequence[Artifact]:
-        """No artifacts."""
-        del config
-        return ()
+    def artifacts(self, config: KilnConfig, root: Path) -> Sequence[Artifact]:
+        """The seeded docs tree and `mkdocs.yml`'s nav block, for an `mkdocs` repo."""
+        # Imported here: rendering loads Jinja, which `kiln doctor` must not.
+        from rn_forge.kiln.modules.docs import artifacts
+
+        return artifacts.render(config, root)
 
     def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:
         """This module's render-free checks."""

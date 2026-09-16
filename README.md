@@ -26,11 +26,11 @@ hand-authored golden repos exist and match pykit's `feature/upgrade` branch,
 tool lifecycle surface included (E1–E3, done 2026-09-15).
 [ADR-0009](docs/adr/ADR-0009.md) is accepted. E4, the generator, is under way —
 `kiln doctor`'s render-free checks exist (F4.1), and so do the module contract,
-the config manager and `core`'s apply cycle (F4.2); the concern modules'
-templates do not yet. The order is deliberate — templates reviewed as templates
-are how the fleet ended up with four divergent pipelines, so the standard is
-reviewed first, as complete runnable repositories under
-`tests/fixtures/golden/`.
+the config manager and `core`'s apply cycle (F4.2). Of the concern modules
+(F4.3), `python` and `docs` render their templates; the rest do not yet. The
+order is deliberate — templates reviewed as templates are how the fleet ended up
+with four divergent pipelines, so the standard is reviewed first, as complete
+runnable repositories under `tests/fixtures/golden/`.
 
 ```bash
 cd tests/fixtures/golden/python-app     # or python-tool, or python-lib

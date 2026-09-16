@@ -29,8 +29,9 @@ class PythonModule:
         """The `kiln new` flags this module adds."""
         return ()
 
-    def artifacts(self, config: KilnConfig) -> Sequence[Artifact]:
+    def artifacts(self, config: KilnConfig, root: Path) -> Sequence[Artifact]:
         """Render `.importlinter` for *config*."""
+        del root
         # Imported here so importing a module object never loads jinja2.
         from rn_forge.kiln.modules.python import artifacts
 

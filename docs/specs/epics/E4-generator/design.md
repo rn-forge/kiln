@@ -40,7 +40,7 @@ rn-forge/kiln/
 ```
 
 Every module exposes the same two functions:
-`artifacts(config) -> list[Artifact]` and
+`artifacts(config, root) -> list[Artifact]` and
 `checks(config, root) -> list[Finding]`. That is the whole internal contract,
 and it is what keeps kiln from becoming a god-kit: a module is a template set
 plus a doctor check, nothing more.
@@ -53,7 +53,7 @@ class KilnModule(Protocol):
     section: str | None                               # the config table it owns: [docs]; cicd owns [ci]
     config_model: type[StrictModel] | None            # commons[pydantic], strict; defaults are kiln's layer
     def options(self) -> Sequence[Option]: ...        # the `kiln new` flags this module adds
-    def artifacts(self, config: KilnConfig) -> Sequence[Artifact]: ...
+    def artifacts(self, config: KilnConfig, root: Path) -> Sequence[Artifact]: ...
     def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]: ...
 ```
 
@@ -178,7 +178,7 @@ begin and end markers; seeded entries store presence but no content hash.
 ```
 1. core         .rn-forge/kiln/, gitignore block, .editorconfig
 2. python       (new only) uv init / pnpm create / nx g, then reconcile to archetype; .importlinter
-3. docs         tree, _areas.yml, _structure.md, mkdocs.yml block
+3. docs         (new only) the mkdocs.yml body; tree, _areas.yml, _structure.md, mkdocs.yml block
 4. tasks        Taskfile.yml, tasks/*.yml
 5. cicd         workflows, sonar-project.properties
 6. instructions README.md / CLAUDE.md / AGENTS.md bodies (seeded), the kiln block in
