@@ -10,11 +10,17 @@
 ; The rn-forge half of that rule is not here and cannot be: import-linter
 ; rejects subpackages of external packages, so `rn_forge.agentkit` is not a
 ; legal forbidden module. It is enforced at the dependency declaration instead,
-; by scripts/standards/check_rn_forge_deps.py (kiln ADR-0005).
+; by `kiln doctor`'s rn-forge-deps rule (kiln ADR-0005).
 ;
-; kiln has no source to constrain yet — Phase B ships the canon and the golden
-; repos, not the generator. The contract is written now so it is in place
-; before the first import is.
+; The second contract is kiln ADR-0010's: `kiln doctor` runs on every CI run, so
+; it must not drag the generator in. A module's `checks/` package is the
+; render-free half of that module. It names Jinja only, for the same reason as
+; above — `rn_forge.tooling.generation` is a subpackage of an external package
+; and cannot be a forbidden module. The engine half of the rule is
+; tests/test_checks_are_render_free.py, which imports the checks and asserts
+; the engine never loaded. Contract 1 forbids Jinja everywhere today; it has to
+; relax for `kiln doctor --full`, which renders, and this contract is what survives
+; that.
 
 [importlinter]
 root_package = rn_forge.kiln
@@ -31,4 +37,18 @@ forbidden_modules =
     click
     django
     fastapi
+allow_indirect_imports = False
+
+[importlinter:contract:render-free-checks]
+name = the render-free checks import no rendering
+type = forbidden
+source_modules =
+    rn_forge.kiln.checks
+    rn_forge.kiln.modules.core.checks
+    rn_forge.kiln.modules.python.checks
+    rn_forge.kiln.modules.tasks.checks
+    rn_forge.kiln.modules.cicd.checks
+    rn_forge.kiln.modules.docs.checks
+forbidden_modules =
+    jinja2
 allow_indirect_imports = False

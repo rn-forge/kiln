@@ -1,0 +1,20 @@
+# kiln's declared command line, shipped inside the wheel.
+#
+# Every other rn-forge repo declares its `[cli]` table once, in
+# `.rn-forge/kiln/config.toml`, and resolves it relative to its checkout — a
+# repo runs from where it lives. kiln does not: it is a pinned dev dependency
+# of every repo it generates (kiln ADR-0010), so an installed kiln has no
+# checkout to look beside. The declaration therefore ships in the package, and
+# `tests/test_cli_surface.py` fails if it and `.rn-forge/kiln/config.toml`
+# disagree. F4.8 makes one render the other and the test goes away.
+[cli]
+name = "kiln"
+help = "The rn-forge repository generator, and the canon it generates against."
+
+[[cli.commands]]
+name = "doctor"
+target = "rn_forge.kiln.commands:doctor"
+
+[[cli.commands]]
+name = "docs-nav"
+target = "rn_forge.kiln.commands:docs_nav"

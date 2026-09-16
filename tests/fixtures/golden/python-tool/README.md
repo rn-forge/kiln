@@ -15,7 +15,9 @@ task validate
 ```
 
 The product is one function, one command and a three-line `main` in
-`src/golden_tool/`. Everything else is the standard, stated in
+`src/golden_tool/`, and the command line around them is declared rather than
+written (kiln ADR-0009); `lifecycle = true` mounts the install verbs over it.
+Everything else is the standard, stated in
 [.rn-forge/kiln/standard.md](.rn-forge/kiln/standard.md) and documented in
 [docs/](docs/index.md).
 
@@ -25,6 +27,9 @@ The product is one function, one command and a three-line `main` in
 - The product lives in `src/golden_tool/`; its tests live in `tests/`. The CLI
   is *declared* in the `[cli]` table of `.rn-forge/kiln/config.toml` and built
   by `CliApp.from_config` — `main.py` constructs nothing (kiln ADR-0009).
+- What the lifecycle verbs install and check is `src/golden_tool/product.py`,
+  named by `[cli.lifecycle]`. That module is the whole of the difference
+  between this repo and `golden/python-app`.
 - Do not edit a file whose first line says it was generated. The kiln block in
   [CLAUDE.md](CLAUDE.md) says what that means and what to do instead.
 

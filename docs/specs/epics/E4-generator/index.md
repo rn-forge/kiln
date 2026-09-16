@@ -1,6 +1,6 @@
 # E4 — The generator
 
-**Status:** planned · **Release:**
+**Status:** in progress · **Release:**
 [release-1](../../../releases/release-1/index.md) · **Phase:** D · **Estimate:**
 2–3 weeks
 
@@ -78,12 +78,12 @@ task validate
 uv run --project "$kiln_dir" kiln apply --dry-run --json \
   | jq -e '(.artifacts | length > 0) and all(.artifacts[]; .action == "unchanged")'
 printf '\n# edit\n' >> Taskfile.yml
-fails_with Taskfile.yml uv run kiln check .
+fails_with Taskfile.yml uv run kiln doctor .
 fails_with Taskfile.yml uv run --project "$kiln_dir" kiln apply
 uv run --project "$kiln_dir" kiln apply --force Taskfile.yml
-uv run kiln check .
+uv run kiln doctor .
 cd "$kiln_dir"
-uv run kiln doctor
+uv run kiln doctor --full
 uv run kiln apply --dry-run --json \
   | jq -e '(.artifacts | length > 0) and all(.artifacts[]; .action == "unchanged")'
 ```

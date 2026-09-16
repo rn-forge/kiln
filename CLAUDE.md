@@ -37,7 +37,8 @@ changing anything structural.
 - **Docs rules:** [docs/\_structure.md](docs/_structure.md) says what belongs
   where; [docs/index.md](docs/index.md) is the reader's entry point. Run
   `task docs:nav` after adding a page.
-- **kiln is a developer tool.** It never runs in CI: CI checks the committed
-  `.rn-forge/kiln/state.json` baseline through `task validate`.
+- **kiln is a pinned dev dependency.** CI runs it read-only through
+  `task validate` — `kiln doctor` on every run, `kiln doctor --full` where the
+  workflow asks — and never runs `kiln apply`.
 
 <!-- END rn-forge kiln -->

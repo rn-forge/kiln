@@ -1,12 +1,8 @@
 """The second of two trivial workspace packages.
 
 It depends on nothing in this workspace, including golden-alpha: the
-independence contract in `.importlinter` is what keeps two separately released
-packages separately releasable, and a fixture that wired its own packages
-together would be testing uv's workspace resolution rather than the standard.
-
-It does depend on `rn-forge-commons`, like every rn-forge distributable
-(kiln ADR-0005).
+independence contract in `.importlinter` keeps the two packages separately
+releasable.
 """
 
 from __future__ import annotations

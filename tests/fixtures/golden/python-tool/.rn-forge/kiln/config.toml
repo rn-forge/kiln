@@ -4,7 +4,8 @@ schema_version = 1
 
 [repository]
 name = "golden-tool"
-archetype = "python-tool"
+archetype = "python-app"
+lifecycle = true
 
 [docs]
 profile = "mkdocs"
@@ -28,3 +29,7 @@ help = "The python-tool archetype's golden CLI."
 [[cli.commands]]
 name = "hello"
 target = "golden_tool.commands:hello"
+
+[cli.lifecycle]
+product = "golden_tool.product:PRODUCT"
+target = "rn_forge.tooling.cli.lifecycle:lifecycle_commands"

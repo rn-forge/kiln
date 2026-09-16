@@ -7,7 +7,7 @@ name: CI
 # which is also what a developer runs. The release half is, because a python-lib
 # repo publishes each package on its own `<package>-v<version>` tag.
 #
-# Every step goes through `task`; scripts/ci/check_ci_entrypoint.py fails the
+# Every step goes through `task`; `kiln doctor`'s ci-entrypoint rule fails the
 # build if a step invokes uv/pytest/ruff/pyright/mkdocs/kiln directly. kiln is
 # not installed here and never will be: what CI checks is the committed
 # .rn-forge/kiln/state.json baseline, through `task validate` (kiln ADR-0003).

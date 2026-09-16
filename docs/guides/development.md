@@ -2,7 +2,7 @@
 
 Everything goes through `task`. Nobody — human, agent or CI — invokes `uv`,
 `pytest`, `ruff`, `pyright`, `mkdocs` or `kiln` directly;
-`scripts/ci/check_ci_entrypoint.py` fails the build if a workflow step does.
+`kiln doctor --only ci-entrypoint` fails the build if a workflow step does.
 
 ```bash
 task setup       # sync the venv with the dev and docs groups
@@ -33,12 +33,8 @@ place a standard change starts.
     uv sync && task validate
     ```
 
-1. If the change touches a generated script's *body*, copy it byte-identically
-   into every other golden repo. If it touches only the list in the
-   `# BEGIN kiln config` header, change only that repo's header.
-
-1. Run kiln's own tests: `task test` asserts every generated script has one body
-   across every golden repo.
+1. Make the same change in every other golden repo it applies to, and re-seed
+   each one's `.rn-forge/kiln/state.json`.
 
 1. Once the generator exists, the snapshot test fails until the template agrees.
    Update the template, never the snapshot.
@@ -48,9 +44,9 @@ place a standard change starts.
 `task validate` runs, in order: ruff lint, ruff format check, the generated-file
 baseline, the rn-forge dependency contract, the import contracts, the task
 layout and gate-shrink check, the CI entrypoint check, the docs link/structure/
-nav checks, mdformat, pyright strict, pytest, and a strict MkDocs build. A cold
-clone with go-task and the pinned interpreter passes all of it without kiln
-installed.
+nav checks, mdformat, pyright strict, pytest, and a strict MkDocs build. The
+policy and docs checks are `kiln doctor`, which comes from the dev group, so
+`task setup` is all a cold clone needs.
 
 Two of those are easy to trip by accident:
 
@@ -61,11 +57,3 @@ Two of those are easy to trip by accident:
   `.mdformat.toml`'s `exclude` as the single authority for exemptions.
   `.rn-forge/kiln/standard.md` is excluded on ownership grounds, not style: a
   formatter rewriting a kiln-owned file is two owners writing the same bytes.
-
-## The tests
-
-`tests/test_generated_bodies.py` is the executable form of F2: the four forks of
-`check_ci_entrypoint.py` that started this work differed only in a list literal.
-`tests/support/assert_generated_bodies.py` strips the provenance line and the
-config header and compares what is left, so a drifted comment fails just as
-loudly as drifted code.

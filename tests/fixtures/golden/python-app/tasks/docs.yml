@@ -20,11 +20,11 @@ tasks:
       - uv run --group docs mkdocs serve -a 127.0.0.1:8080
 
   nav:
-    desc: Regenerate mkdocs.yml's nav block from docs/_areas.yml and the tree (pass -- --check to verify only).
+    desc: Regenerate mkdocs.yml's nav block from docs/_areas.yml and the tree.
     cmds:
-      - uv run python scripts/docs/gen_nav.py {{.CLI_ARGS}}
+      - uv run kiln docs-nav .
 
   structure:
     desc: Check the docs tree matches the area model declared in docs/_areas.yml.
     cmds:
-      - uv run python scripts/docs/check_structure.py --docs-root docs
+      - uv run kiln doctor . --only docs-structure

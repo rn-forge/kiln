@@ -15,7 +15,24 @@ classifiers = [
     "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Build Tools",
 ]
-dependencies = []
+# pykit publishes GitHub Releases rather than to PyPI, so rn-forge libraries are
+# git sources. The URL lives in `dependencies`, not in [tool.uv.sources]: a
+# source override is local and does not survive into a built wheel, so a
+# consumer of this package's release could not resolve commons at all
+# (kiln ADR-0005). A pykit workspace that takes kiln overrides these
+# (kiln ADR-0010).
+dependencies = [
+  "rn-forge-commons[pydantic] @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-commons",
+  "rn-forge-cli @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-cli",
+  "rn-forge-tooling @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-tooling",
+  # The docs checks ask Python-Markdown what anchor a heading gets rather than
+  # guessing; mkdocs already brings it, but a check that only works inside a
+  # docs build is not a check.
+  "markdown>=3.7",
+]
+
+[project.scripts]
+kiln = "rn_forge.kiln.main:app"
 
 [project.urls]
 Homepage = "https://github.com/rn-forge/kiln"
@@ -45,7 +62,9 @@ venvPath = "."
 venv = ".venv"
 
 [tool.pytest.ini_options]
-addopts = "-ra"
+# importlib mode keeps same-named test modules in different directories from
+# colliding, and needs no __init__.py in tests/.
+addopts = "-ra --import-mode=importlib"
 testpaths = ["tests"]
 # Same reason: a golden repo's tests are run by that repo's own `task test`.
 norecursedirs = ["fixtures"]

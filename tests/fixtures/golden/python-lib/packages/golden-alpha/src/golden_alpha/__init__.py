@@ -1,14 +1,4 @@
-"""The first of two trivial workspace packages.
-
-`python-lib` exists as a separate archetype because a workspace of published
-packages needs a per-package verify and a per-package release tag, not because
-its packages are interesting. Two of them is the smallest number that proves the
-CI matrix is a matrix.
-
-Each package depends on `rn-forge-commons` and uses it, because every rn-forge
-repo is built on the component libraries (kiln ADR-0005) and a dependency a
-package never exercises proves nothing about the archetype.
-"""
+"""The first of two trivial workspace packages."""
 
 from __future__ import annotations
 

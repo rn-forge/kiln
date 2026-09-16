@@ -22,11 +22,15 @@ kiln doctor
 ## Where kiln is
 
 Working towards [release 1](docs/releases/release-1/index.md). The canon and the
-hand-authored golden repos exist (E1, E2); there is no generator code yet, and
-the goldens trail pykit's current `rn-forge-cli` API until E3. The order is
-deliberate — templates reviewed as templates are how the fleet ended up with
-four divergent pipelines, so the standard is reviewed first, as complete
-runnable repositories under `tests/fixtures/golden/`.
+hand-authored golden repos exist and match pykit's `feature/upgrade` branch,
+tool lifecycle surface included (E1–E3, done 2026-09-15).
+[ADR-0009](docs/adr/ADR-0009.md) is accepted. E4, the generator, is under way —
+`kiln doctor`'s render-free checks exist (F4.1), and so do the module contract,
+the config manager and `core`'s apply cycle (F4.2); the concern modules'
+templates do not yet. The order is deliberate — templates reviewed as templates
+are how the fleet ended up with four divergent pipelines, so the standard is
+reviewed first, as complete runnable repositories under
+`tests/fixtures/golden/`.
 
 ```bash
 cd tests/fixtures/golden/python-app     # or python-tool, or python-lib
@@ -49,10 +53,11 @@ text.
   A template change not first made in a golden repo is a bug. This holds until
   the rendered templates reproduce the goldens and they leave git
   ([ADR-0005](docs/adr/ADR-0005.md)).
-- A generated script's body is byte-identical across every golden repo; only the
-  `# BEGIN kiln config` header differs. `task test` enforces it. This goes
-  away in E4, when the checks move into kiln
-  ([ADR-0010](docs/adr/ADR-0010.md)).
+- The policy and docs checks are `kiln doctor`, and `kiln docs-nav` writes the
+  nav; no repo carries `scripts/**` for them
+  ([ADR-0010](docs/adr/ADR-0010.md)). The goldens take `rn-forge-kiln` from a
+  path source to this checkout, so a change under `src/` reaches their gates
+  directly.
 - This repo's own skeleton is a hand-copy of the `python-tool` golden repo. It
   regenerates itself once the generator exists; until then, keep them in step
   by hand — a change to a golden repo's skeleton is usually a change here too.
@@ -79,6 +84,12 @@ text.
   gate.
 - This repo has a `plans/` docs area that kiln's seeded model does not — which
   is the point of the model being seeded (D44).
+- Docstrings describe the contract only (what, args, return, raises); no design
+  justification, history, or ADR references — those belong in `docs/guides/`
+  or `docs/plans/`. Code comments explain a non-obvious *why* (an ordering
+  that matters, a library quirk, a rejected alternative), stay shorter than
+  the code they sit beside, and are fixed or deleted in the same edit that
+  changes the code they describe. Straightforward code gets no comment at all.
 
 ## Documentation
 

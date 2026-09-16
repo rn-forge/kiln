@@ -2,7 +2,7 @@
 
 Everything goes through `task`. Nobody — human, agent or CI — invokes `uv`,
 `pytest`, `ruff`, `pyright`, `mkdocs` or `kiln` directly;
-`scripts/ci/check_ci_entrypoint.py` fails the build if a workflow step does.
+`kiln doctor --only ci-entrypoint` fails the build if a workflow step does.
 
 ```bash
 task setup                    # sync the whole workspace with dev and docs
@@ -24,7 +24,7 @@ at the root.
 `build`, `clean`, `version` — plus the public `docs:build`, `docs:serve`,
 `docs:nav`, `docs:structure`. Every other task is `internal: true` and exists to
 be composed by a wrapper. That list is fixed by kiln ADR-0007, and
-`scripts/task/check_task_layout.py` fails if a gate stops being reachable from
+`kiln doctor --only task-layout` fails if a gate stops being reachable from
 `validate`.
 
 ## After changing a generated file

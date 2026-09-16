@@ -15,8 +15,8 @@ never has to find kiln to read the rules.
 
 `task` is the only entrypoint. Nobody — human, agent, or CI — invokes `uv`,
 `pytest`, `ruff`, `pyright`, `mkdocs`, `pnpm`, `nx` or `kiln` directly.
-`scripts/ci/check_ci_entrypoint.py` enforces that for every workflow file; the
-forbidden list is the archetype's, carried in the script's config header.
+`kiln doctor`'s `ci-entrypoint` check enforces that for every workflow file; the
+forbidden list is the archetype's, read from `.rn-forge/kiln/config.toml`.
 
 The public surface is ten root verbs:
 
@@ -40,7 +40,7 @@ In a workspace archetype, `build` and `version` take a package name after `--`
 (`task version -- rn-forge-commons`); given none, they act on every member.
 
 **`required_validate`**, per archetype — the tasks that must stay reachable from
-`validate`, enforced by `scripts/task/check_task_layout.py` and by
+`validate`, enforced by `kiln doctor`'s `task-layout` check and by
 `kiln doctor`'s `gate.shrunk`:
 
 ```text
@@ -81,40 +81,50 @@ Three artifact kinds, and they are the whole model
 
 Two owners never write the same bytes. The assignment is normative:
 
-| File / tree | Owner | Kind |
+| File / tree | Owner | Artifact kind |
 | -- | -- | -- |
-| `.rn-forge/kiln/config.toml` | repo (hand-edited input) | input |
-| `.rn-forge/kiln/state.json` | kiln | managed; the CI baseline; never hashes itself |
+| `.rn-forge/kiln/config.toml` | repo (merged, committed input) | input |
+| `.rn-forge/kiln/state.json` | kiln | generated, committed CI baseline; never hashes itself |
 | `.rn-forge/kiln/standard.md` | kiln | managed — the rendered canon |
-| `.rn-forge/kiln/backups/`, `rendered/` | kiln | gitignored derived data |
-| `.gitignore` | repo body; `# BEGIN rn-forge kiln` → kiln | block |
+| `.rn-forge/kiln/backups/`, `rendered/`, `state.lock` | kiln | gitignored derived data |
+| `.gitignore` | repo body; `# BEGIN rn-forge kiln` block → kiln | block |
+| `pyproject.toml` | **repo** — verified, not generated ([ADR-0001](../adr/ADR-0001.md)) | input; doctor check `pyproject.tool-config` |
 | `.editorconfig` | kiln | managed |
-| `.importlinter` | kiln | managed |
-| `.mdformat.toml` | kiln | **seeded** — its presence opts the repo in; the style is the repo's |
-| `Taskfile.yml`, `tasks/workspace.yml`, `tasks/quality.yml`, `tasks/docs.yml`, archetype namespace files | kiln | managed |
-| `tasks/self.yml`, and any include declared `ownership = "repository"` | repo | seeded once, never rewritten |
-| `scripts/task/check_task_layout.py`, `scripts/ci/check_ci_entrypoint.py` | kiln | managed (config header) |
-| `scripts/standards/check_generated.py`, `scripts/standards/check_rn_forge_deps.py` | kiln | managed; stdlib-only CI checkers |
-| `scripts/docs/{_common,check_docs,gen_nav,check_structure}.py` | kiln (`mkdocs` profile) | managed |
-| `.github/actions/setup/action.yml` | kiln | managed |
-| `.github/workflows/ci.yml`, `docs.yml`; `sonar-project.properties` | kiln | managed |
-| `docs/_areas.yml`, `docs/_structure.md`, `docs/<area>/_structure.md` | kiln | **seeded** — repos extend their areas |
+| `.importlinter` | kiln | managed import-boundary contracts |
+| `Taskfile.yml`, `tasks/workspace.yml`, `tasks/quality.yml`, `tasks/docs.yml`, archetype namespace files (`tasks/api.yml`, `tasks/web.yml`) | kiln | managed |
+| `tasks/self.yml` and any include declared `ownership = "repository"` | repo | seeded once, never rewritten |
+| `scripts/**` | **repo only** — a repo's own lints, wired via `[tasks.extra_refs]`. kiln and `cicd` generate nothing here ([ADR-0010](../adr/ADR-0010.md), [ADR-0003](../adr/ADR-0003.md)) | repo |
+| `src/**`, `tests/**` | **repo** — kiln verifies *structure* (src layout, package directory naming, test tree shape) and generates nothing ([ADR-0011](../adr/ADR-0011.md)) | input; doctor only |
+| `README.md` | kiln body | **seeded** — the single prose home |
+| `docs/_areas.yml`, `docs/_structure.md`, `docs/adr/_structure.md` | kiln | **seeded** — repos may extend areas |
 | `docs/index.md`, `docs/<area>/index.md` | kiln | **seeded** — written if absent, never touched again |
-| `mkdocs.yml` | repo body; `# BEGIN generated nav` → kiln | block |
-| `README.md` | kiln | **seeded** — the single prose home |
-| `CLAUDE.md` | body seeded by kiln — a pointer to `README.md`; `<!-- BEGIN rn-forge kiln -->` → kiln | seeded body + block |
-| `AGENTS.md` | kiln | seeded — a static pointer at `CLAUDE.md`, so there is one file to keep current |
+| `mkdocs.yml` | repo body; `# BEGIN generated nav` block → kiln | block |
+| `.github/workflows/ci.yml`, `docs.yml`; `.github/actions/setup`; `sonar-project.properties` | kiln (`cicd`) | managed |
+| `CLAUDE.md`, `AGENTS.md` | body **seeded by kiln**; `<!-- BEGIN rn-forge kiln -->` block → kiln | seeded body + block |
 | `.claude/**`, `.codex/**`, installed skills | not kiln's | — |
-| `pyproject.toml`, `src/**`, `tests/**` | repo | not kiln's after the scaffold — but its rn-forge dependencies are constrained by §3 |
-| Repo-specific lints (`check_brand.py`, …) | repo, wired via `[tasks.extra_refs]` | repo |
+| Repo-specific lints (`check_brand.py`, `check_gate_tags.py`, …) | repo, wired via `[tasks.extra_refs]` | repo |
 
 `docs/_areas.yml` and `_structure.md` are **seeded, not managed**, so a repo can
 add an area kiln has never heard of — intellibuild needs a `context` area, and
 kiln's own tree has a `plans` area. `doctor` validates against the repo's copy.
 
 To change a managed file: change `.rn-forge/kiln/config.toml`, run `kiln apply`.
-To change what kiln renders: change the golden repo in kiln, let the snapshot
-test fail, update the template until it passes ([ADR-0005](../adr/ADR-0005.md)).
+
+### The render matrix
+
+To change what kiln renders: change its Jinja templates, which are the authored
+source ([ADR-0005](../adr/ADR-0005.md)). A rendered repo is reviewed whole but
+never committed:
+
+1. `task self:golden:render` renders every shipped archetype × flag cell into
+   gitignored `.goldens/<ref>/`; `task self:golden:validate` runs each cell's
+   gate (`uv sync && task validate`, `actionlint`, `mkdocs build --strict`).
+1. The owner reviews and approves the rendered output before a template change
+   is done. kiln's CI renders every cell on every pull request.
+1. The hand-authored goldens under `tests/fixtures/golden/` are the bootstrap
+   reference for the first templates. Until the rendered cells reproduce them
+   they are the only runnable standard, and a standard change starts there;
+   then they leave git.
 
 ## 3. The dependency set
 
@@ -127,44 +137,58 @@ An archetype carries the libraries a repo of that shape is built on
 | `python-app` | + `rn-forge-cli` | — |
 | `python-tool` | + `rn-forge-cli`, `rn-forge-tooling` | — |
 | `python-lib` | `rn-forge-commons` in each distributable | — |
-| `python-web-api` · `python-web-app`, `framework = "django"` | + `rn-forge-cli`, `rn-forge-django` | + `rn-forge-django[codegen]` |
-| `python-web-api` · `python-web-app`, `framework = "fastapi"` | + `rn-forge-cli`, `rn-forge-fastapi`, when that package exists | + `rn-forge-fastapi[codegen]` |
+| `python-web-api` · `python-web-app`, `framework = "django"` | + `rn-forge-cli`, `rn-forge-web`, `rn-forge-django` | + `rn-forge-django[codegen]` |
+| `python-web-api` · `python-web-app`, `framework = "fastapi"` | + `rn-forge-cli`, `rn-forge-web`, `rn-forge-fastapi`, when that package exists | + `rn-forge-fastapi[codegen]` |
 | `node-lib` · `node-web-app` | — (deferred) | — |
 
 The three python libraries are layered ([ADR-0002](../adr/ADR-0002.md)):
 `rn-forge-commons` holds runtime-neutral mechanisms, `rn-forge-cli` holds the
 process and command-line shape, `rn-forge-tooling` holds the machinery for a
 program that installs itself, owns files in someone else's repo, or renders
-templates. A repo takes the highest layer it actually needs;
-`check_rn_forge_deps.py`'s `REQUIRED` list is what makes that a rule rather than
-a preference.
+templates. `rn-forge-web` holds framework-free inbound HTTP wire semantics on
+commons alone, and sits beneath `rn-forge-django` and `rn-forge-fastapi`. A repo
+takes the highest layer it actually needs; `check_rn_forge_deps.py`'s `REQUIRED`
+list is what makes that a rule rather than a preference.
 
-Every rn-forge requirement is a **pinned PEP 508 direct URL** in `dependencies`:
+Every rn-forge requirement is a **PEP 508 direct URL** in `dependencies`:
 
 ```toml
 dependencies = [
-  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@rn-forge-commons-v0.2.2#subdirectory=packages/rn-forge-commons",
+  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-commons",
 ]
 ```
 
 Never `[tool.uv.sources]` — that is a *local* override which does not survive
 into a built wheel, so a consumer of a published package could not resolve the
 dependency at all. An `[tool.uv.sources]` entry for an rn-forge package is
-rejected outright. The tag is the version; there is no separate specifier.
+rejected outright.
 
-`scripts/standards/check_rn_forge_deps.py` enforces three rules — **required**,
-**allowed**, **pinned-and-direct**. Its `REQUIRED`, `ALLOWED` and
-`PYPROJECT_PATHS` lists are config in its header, so pykit — which *contains*
-commons and cannot depend on it — renders an empty `REQUIRED` rather than
-needing an exemption.
+**Until the owner declares pykit stable, repos consume it from its branch**
+([ADR-0005](../adr/ADR-0005.md)). The dependency source is a Tier 1 value every
+template renders from config: `git` + ref (the default, CI-capable) or `path`
+(local only). The checker accepts a branch or path source with a warning and
+refuses one in a publish job; goldens and every repo that runs CI use `git`.
+Once pykit is tagged, the tag is the version and there is no separate specifier;
+flipping a repo to tags is `kiln config upgrade --apply`, not a template change.
+
+`kiln doctor`'s `rn-forge-deps` check enforces three rules — **required**,
+**allowed**, **pinned-and-direct**. Its required and allowed lists are config,
+so pykit — which *contains* commons and cannot depend on it — renders an empty
+required list rather than needing an exemption.
+
+kiln itself is a **dev** dependency of every generated repo, `rn-forge-kiln`
+pinned the same way ([ADR-0010](../adr/ADR-0010.md)). A pykit workspace that
+takes kiln lists every pykit member kiln reaches in
+`[tool.uv] override-dependencies`, so kiln resolves to the workspace copies.
 
 ## 4. The import boundary
 
 `rn-forge-commons`, `rn-forge-cli` and `rn-forge-tooling` are the only rn-forge
 packages a repo may import (plus its own framework runtime package). Every other
-rn-forge component — kiln included — is a subprocess or nothing. That rule is
-enforced at the dependency declaration, in §3: import-linter rejects subpackages
-of external packages, so it cannot express it.
+rn-forge component — kiln included, although it is a dev dependency — is a
+subprocess or nothing. That rule is enforced at the dependency declaration, in
+§3: import-linter rejects subpackages of external packages, so it cannot express
+it.
 
 What `.importlinter` enforces is the complement — product code imports no
 framework or CLI toolkit *directly* (`typer`, `jinja2`, `click`, `django`,
@@ -175,10 +199,19 @@ independent of each other, and — inside pykit — the library layering itself:
 `rn_forge.cli` may not import `rn_forge.tooling`. `quality:lint:imports` runs
 it; `task validate` reaches it. ([ADR-0002](../adr/ADR-0002.md))
 
-## 5. What `task validate` proves without kiln
+## 5. What `task validate` proves
 
-A cold clone with go-task and the pinned language toolchain — no kiln, no
-`$RNF_HOME`, no bootstrap script — proves all of this:
+CI runs the pinned kiln read-only ([ADR-0010](../adr/ADR-0010.md)): it never
+runs `kiln apply` and never writes a generated file. `task validate` runs
+`kiln doctor` — the render-free checks, `generated`, `rn-forge-deps`,
+`task-layout`, `ci-entrypoint`, `docs-structure`, `docs-nav` and `docs-site` —
+on every run. `kiln doctor --full`, which adds a full render and diff, runs
+where the workflow asks for it: `lint` runs it when the `KILN_DOCTOR_FULL` task
+variable is set, by default on pushes to the default branch and on manual
+dispatch.
+
+A cold clone with go-task and the pinned language toolchain — `uv sync`, but no
+installed kiln, no `$RNF_HOME`, no bootstrap script — proves all of this:
 
 - ruff is clean and everything is ruff-formatted — `lint:python` asserts both,
   and `format:python` applies them in the order that makes them agree
@@ -197,11 +230,17 @@ A cold clone with go-task and the pinned language toolchain — no kiln, no
 - the tests pass;
 - the docs site builds `--strict` (`mkdocs` profile).
 
-## 6. What `kiln doctor` adds
+## 6. What `kiln doctor --full` adds
 
-Exactly one question CI cannot ask: whether a newer kiln, or an edited config,
-would now render something different from what is committed. Everything else it
-reports, CI reports too.
+Exactly one question `kiln doctor` cannot ask without `--full`: whether a newer
+kiln, or an edited config, would now render something different from what is
+committed. Everything else `--full` reports, `kiln doctor` reports too.
+
+kiln is modules under one contract ([ADR-0011](../adr/ADR-0011.md)): `core`,
+`python`, `docs`, `tasks`, `cicd` and `instructions`, each owning its config
+section, its `kiln new` options, its `artifacts()` and its `checks()`.
+`kiln doctor` collects every module's `Finding` rows into one report; a module's
+render-free checks are the ones `kiln doctor` runs by default.
 
 | Code prefix | Check |
 | -- | -- |
@@ -213,6 +252,8 @@ reports, CI reports too.
 | `taskgraph.unresolved-ref` | every `task <name>` in `.github/workflows/**`, `CLAUDE.md`, `AGENTS.md` resolves |
 | `ci.entrypoint` | no forbidden tool, `kiln` included, invoked directly in a workflow |
 | `gate.shrunk` | tasks reachable from `validate` ⊇ the archetype's `required_validate` |
+| `pyproject.tool-config` (warning) | the `[tool.ruff*]`, `[tool.pyright]`, `[tool.pytest.ini_options]` and `[dependency-groups]` tables, and the `[project]` identity fields, match the archetype's expected values — verified, never written |
+| `kiln.pin` | `rn-forge-kiln` is in the dev group with a pinned source, and the running kiln is the version `uv.lock` records |
 | `ci.unpinned` / `ci.permissions` | every `uses:` SHA-pinned with a version comment; every job has `permissions:` |
 | `deps.*` | the §3 contract, re-checked against a fresh render of the archetype's list |
 | `docs.structure` / `.nav` / `.links` | tree matches `_areas.yml`; nav current; no broken links, anchors or orphans |
@@ -228,22 +269,25 @@ one table.
 
 ```json
 {
-  "schema_version": 1,
-  "metadata": { "kiln_version": "…", "config_hash": "sha256:…" },
+  "schema_version": "1",
+  "metadata": { "kiln_version": "…", "config_hash": "…" },
   "entries": {
-    "Taskfile.yml":      { "path": "Taskfile.yml", "kind": "managed", "content_hash": "sha256:…" },
-    ".gitignore::kiln":  { "path": ".gitignore", "kind": "block",
+    "Taskfile.yml":      { "path": "Taskfile.yml", "kind": "managed", "content_hash": "…" },
+    ".gitignore#rn-forge kiln": { "path": ".gitignore", "kind": "block",
                            "begin_marker": "# BEGIN rn-forge kiln",
                            "end_marker": "# END rn-forge kiln",
-                           "content_hash": "sha256:…" },
+                           "content_hash": "…" },
     "docs/index.md":     { "path": "docs/index.md", "kind": "seeded" }
   }
 }
 ```
 
-It never contains an entry for itself. `scripts/standards/check_generated.py`
-reads it with the standard library alone, so a cold clone can run it.
-([ADR-0003](../adr/ADR-0003.md))
+It is written by tooling's generation engine, in that engine's format: a
+`content_hash` is the SHA-256 hex digest of the file — of a block's body, as
+read between its markers — and a block's key is its path and block name. It
+never contains an entry for itself. `kiln doctor`'s `generated` check reads it
+without rendering anything ([ADR-0003](../adr/ADR-0003.md),
+[ADR-0010](../adr/ADR-0010.md)).
 
 ## 8. CI shape
 
@@ -268,18 +312,25 @@ members for `python-lib`. The rules:
 
 ## 9. Configuration
 
-`.rn-forge/kiln/config.toml` is the one hand-authored input
+`.rn-forge/kiln/config.toml` is the one committed input
 ([ADR-0004](../adr/ADR-0004.md)). It is a pydantic strict model; every failure
 is reported with its dotted path, never just the first.
 
 ```toml
 schema_version = 1
 
+[source]                         # written by kiln new; absent without --config
+location = "git+https://github.com/my-org/kiln-profile"  # or a local path
+ref = "main"                     # a branch is allowed
+commit = "…"                     # the resolved commit
+
 [repository]
 name = "my-tool"
 archetype = "python-tool"  # python-app | python-tool | python-lib
                            # python-web-api | python-web-app
                            # node-lib | node-web-app   (deferred)
+lifecycle = false          # any python archetype; python-tool is the alias
+                           # for python-app + lifecycle = true (ADR-0005)
 
 [docs]
 profile = "mkdocs"         # mkdocs | external | none
@@ -330,3 +381,24 @@ documented shape — is what the `-app` archetypes mean, and the presence of a
 separate frontend package is what separates `python-web-app` from
 `python-web-api`. A flag value without a golden repo is `untested` and
 `kiln new` refuses it.
+
+### Layered configuration
+
+Configuration is resolved once and committed.
+`kiln new --config <path|git-url[@ref]>` deep-merges kiln defaults → each source
+layer → flags, and writes the merged result with a `[source]` table recording
+the location, the ref and the resolved commit. **Lists replace**: a layer that
+sets a list owns the whole list, so removing an inherited entry needs no second
+syntax.
+
+| Command | Reads | Writes |
+| -- | -- | -- |
+| `kiln apply`, `kiln doctor`, `kiln diff` | only the committed `config.toml`; never the source | — |
+| `kiln config update [--dry-run] [--apply]` | the recorded source, with the running kiln's defaults | re-merged `config.toml`; prints the artifacts that would change, and `--apply` runs `kiln apply` |
+| `kiln config upgrade [--dry-run] [--apply]` | the recorded source, with a newer kiln's defaults and schema | migrated and re-merged `config.toml`; as `update` |
+
+Every load validates against the running kiln's schema; a config written by a
+newer kiln is refused with the version it needs. Local edits survive
+re-resolution: `state.json` records per-key provenance, and a key whose
+committed value differs from what its layer last supplied is a repo override
+that `update` and `upgrade` keep and list.

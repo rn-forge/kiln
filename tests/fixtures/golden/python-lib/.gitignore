@@ -27,4 +27,5 @@ coverage.xml
 # BEGIN rn-forge kiln
 .rn-forge/kiln/backups/
 .rn-forge/kiln/rendered/
+.rn-forge/kiln/state.lock
 # END rn-forge kiln

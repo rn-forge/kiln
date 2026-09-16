@@ -1,7 +1,7 @@
 # Seeded by kiln — this file is yours to extend.
 #
 # kiln writes it once and never touches it again (kiln ADR-0005, D44): a repo
-# that needs an area kiln has never heard of adds it here, and the docs scripts
+# that needs an area kiln has never heard of adds it here, and the docs checkers
 # validate the tree against this file rather than against a list baked into
 # them. Order is nav order; re-run `task docs:nav` after editing.
 version: 1

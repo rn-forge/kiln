@@ -10,7 +10,7 @@ repeating it.
 | -- | -- | -- |
 | **commons** (`rn-forge-commons`, in pykit) | library | runtime-neutral Python, data and filesystem mechanisms, integration protocols, `AppConsole` |
 | **cli** (`rn-forge-cli`, in pykit) | app library | the Typer layer: `CliApp` (`from_config`, exit codes), `CliOptions`, the declared `[cli]` surface |
-| **tooling** (`rn-forge-tooling`, in pykit) | dev-tool library | the generation engine, templates, local state, docs mechanics, the lifecycle surface |
+| **tooling** (`rn-forge-tooling`, in pykit) | dev-tool library | the generation engine, templates, local state, the lifecycle surface |
 | **web** (`rn-forge-web`, in pykit) | library | framework-free inbound HTTP wire semantics; depends on commons only |
 | **django** / **fastapi** (`rn-forge-django`, `rn-forge-fastapi`, in pykit) | framework libraries | adapters over web; `[codegen]` extras later |
 | **kiln** (`rn-forge/kiln`, binary `kiln`) | CLI + canon; a pinned dev dependency of every generated repo | the canon (ADRs, the standard-repo spec, runbooks); archetypes; the `core` module and the concern modules `python`, `docs`, `tasks`, `cicd`, `instructions`; `check` and `doctor` |
@@ -29,7 +29,7 @@ commons ──► cli ──► tooling ──► kiln
    └───────────────────────────► rn-forge-web ──► rn-forge-django, rn-forge-fastapi
 
 kiln ──entry points─► *[codegen]    (kiln discovers generators; never imports a framework)
-CI ──► pinned kiln + tooling        (kiln check always, kiln doctor where asked; never apply — ADR-0010)
+CI ──► pinned kiln + tooling        (kiln doctor always, kiln doctor --full where asked; never apply — ADR-0010)
 ```
 
 The **library graph is acyclic**: commons, cli and tooling are the only rn-forge

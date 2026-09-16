@@ -1,0 +1,20 @@
+# The python-tool archetype (kiln ADR-0005): python-app with `lifecycle = true`.
+name = "python-tool"
+modules = ["core", "python", "docs", "tasks", "cicd", "instructions"]
+# kiln itself is on the list: CI reaches it only through a committed `task` entrypoint.
+forbidden_tools = ["uv", "pytest", "ruff", "pyright", "mkdocs", "lint-imports", "kiln"]
+required_validate = [
+  "quality:lint:python",
+  "quality:lint:generated",
+  "quality:lint:rn-forge-deps",
+  "quality:lint:imports",
+  "quality:lint:task-layout",
+  "quality:lint:ci-entrypoint",
+  "quality:lint:markdown",
+  "quality:typecheck:python",
+  "quality:test:python",
+]
+
+[dependencies]
+required = ["rn-forge-commons", "rn-forge-cli", "rn-forge-tooling"]
+allowed = ["rn-forge-commons", "rn-forge-cli", "rn-forge-tooling"]

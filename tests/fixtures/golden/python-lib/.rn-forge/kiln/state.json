@@ -1,185 +1,212 @@
 {
-  "schema_version": 1,
-  "metadata": {
-    "kiln_version": "golden",
-    "config_hash": "sha256:413aa000308d7be283d554ac052601115fd8edd700fe8ba2ce6cbc20ba6e3e75"
-  },
   "entries": {
     ".editorconfig": {
-      "path": ".editorconfig",
+      "begin_marker": null,
+      "content_hash": "5e430f1266f0e380161887b15f9cbc77d80ed73f904e3b4a2762fbd045b83bfd",
+      "end_marker": null,
       "kind": "managed",
-      "content_hash": "sha256:5e430f1266f0e380161887b15f9cbc77d80ed73f904e3b4a2762fbd045b83bfd"
+      "path": ".editorconfig"
     },
     ".github/actions/setup/action.yml": {
-      "path": ".github/actions/setup/action.yml",
+      "begin_marker": null,
+      "content_hash": "6d1daf7e89d51646806d505a201aaf90f8c526e1d47e66840cbdf29e9b742fcd",
+      "end_marker": null,
       "kind": "managed",
-      "content_hash": "sha256:6d1daf7e89d51646806d505a201aaf90f8c526e1d47e66840cbdf29e9b742fcd"
+      "path": ".github/actions/setup/action.yml"
     },
     ".github/workflows/ci.yml": {
-      "path": ".github/workflows/ci.yml",
+      "begin_marker": null,
+      "content_hash": "428861155bfcf5aa63d02e286a8353e6ea374dcb7c8d1266b6e0cf508b89cf6f",
+      "end_marker": null,
       "kind": "managed",
-      "content_hash": "sha256:00054464190b7c1d6bfd231bb2f22af161920291445dfd49c3f45b6368c82047"
+      "path": ".github/workflows/ci.yml"
     },
     ".github/workflows/docs.yml": {
-      "path": ".github/workflows/docs.yml",
+      "begin_marker": null,
+      "content_hash": "c4531984d1e8d741f78da0212de73d9cedecdf495b436eff3c59038d187a5fdd",
+      "end_marker": null,
       "kind": "managed",
-      "content_hash": "sha256:c4531984d1e8d741f78da0212de73d9cedecdf495b436eff3c59038d187a5fdd"
+      "path": ".github/workflows/docs.yml"
     },
-    ".gitignore::kiln": {
-      "path": ".gitignore",
-      "kind": "block",
+    ".gitignore#rn-forge kiln": {
       "begin_marker": "# BEGIN rn-forge kiln",
+      "content_hash": "2bee6b1447e0d87f424ad65898307223f695152a8a917bc6ece9e625d06606d4",
       "end_marker": "# END rn-forge kiln",
-      "content_hash": "sha256:8404d536024c17f707df946c329dd274ea5c3eb0a83327d6c8c2ec7f6f50818f"
+      "kind": "block",
+      "path": ".gitignore"
     },
     ".importlinter": {
-      "path": ".importlinter",
+      "begin_marker": null,
+      "content_hash": "2e84d4cc424342557cfc4bbe78763518a37b4cf8211d152513881a1aac70af31",
+      "end_marker": null,
       "kind": "managed",
-      "content_hash": "sha256:ada9fe49f0b6b41d6f8b30bb44e76b8e44311677d94b6349989604bd6dc1e8b2"
+      "path": ".importlinter"
     },
     ".rn-forge/kiln/standard.md": {
-      "path": ".rn-forge/kiln/standard.md",
+      "begin_marker": null,
+      "content_hash": "dd2e1c95c1fa74f206aa0bce26b2b3ebe30f8a71830d520a291a727d35854241",
+      "end_marker": null,
       "kind": "managed",
-      "content_hash": "sha256:cb8d2064d820fa5d5f11dde93833b8f281a395e60a50c3ee6b807a98c3f44cbe"
+      "path": ".rn-forge/kiln/standard.md"
     },
-    "CLAUDE.md::kiln": {
-      "path": "CLAUDE.md",
-      "kind": "block",
+    "CLAUDE.md#rn-forge kiln": {
       "begin_marker": "<!-- BEGIN rn-forge kiln -->",
+      "content_hash": "83743c70d7d8747a29a22b2b9d2f585dd04709aa20c9d9acdc2e5fc447350429",
       "end_marker": "<!-- END rn-forge kiln -->",
-      "content_hash": "sha256:21d7bd6839d0435d46a8820ddd0b35a34b36439c2fb66c04594545aaffba95ec"
+      "kind": "block",
+      "path": "CLAUDE.md"
     },
     "Taskfile.yml": {
-      "path": "Taskfile.yml",
+      "begin_marker": null,
+      "content_hash": "79ebee26f1eae266c68cd434dcc1b1eaad2ccac8d5d25e8c8495d50511dd32db",
+      "end_marker": null,
       "kind": "managed",
-      "content_hash": "sha256:f4957ec09adfe37a6067a211e6018b0787d87b08a45b2c2524d99c99bfd9cc36"
+      "path": "Taskfile.yml"
     },
     "docs/_areas.yml": {
-      "path": "docs/_areas.yml",
-      "kind": "seeded"
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/_areas.yml"
     },
     "docs/_structure.md": {
-      "path": "docs/_structure.md",
-      "kind": "seeded"
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/_structure.md"
     },
     "docs/adr/_structure.md": {
-      "path": "docs/adr/_structure.md",
-      "kind": "seeded"
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/adr/_structure.md"
     },
     "docs/adr/index.md": {
-      "path": "docs/adr/index.md",
-      "kind": "seeded"
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/adr/index.md"
     },
     "docs/architecture/_structure.md": {
-      "path": "docs/architecture/_structure.md",
-      "kind": "seeded"
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/architecture/_structure.md"
     },
     "docs/architecture/index.md": {
-      "path": "docs/architecture/index.md",
-      "kind": "seeded"
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/architecture/index.md"
     },
     "docs/guides/_structure.md": {
-      "path": "docs/guides/_structure.md",
-      "kind": "seeded"
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/guides/_structure.md"
     },
     "docs/guides/index.md": {
-      "path": "docs/guides/index.md",
-      "kind": "seeded"
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/guides/index.md"
     },
     "docs/index.md": {
-      "path": "docs/index.md",
-      "kind": "seeded"
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/index.md"
     },
     "docs/releases/_structure.md": {
-      "path": "docs/releases/_structure.md",
-      "kind": "seeded"
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/releases/_structure.md"
     },
     "docs/releases/index.md": {
-      "path": "docs/releases/index.md",
-      "kind": "seeded"
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/releases/index.md"
     },
     "docs/runbooks/_structure.md": {
-      "path": "docs/runbooks/_structure.md",
-      "kind": "seeded"
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/runbooks/_structure.md"
     },
     "docs/runbooks/index.md": {
-      "path": "docs/runbooks/index.md",
-      "kind": "seeded"
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/runbooks/index.md"
     },
     "docs/specs/_structure.md": {
-      "path": "docs/specs/_structure.md",
-      "kind": "seeded"
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/specs/_structure.md"
     },
     "docs/specs/index.md": {
-      "path": "docs/specs/index.md",
-      "kind": "seeded"
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/specs/index.md"
     },
-    "mkdocs.yml::kiln": {
-      "path": "mkdocs.yml",
-      "kind": "block",
+    "mkdocs.yml#generated nav": {
       "begin_marker": "# BEGIN generated nav",
+      "content_hash": "8f026217c848095e9ea779491a658b13abb68b3a9e1b467158fd29d8ac22c9c2",
       "end_marker": "# END generated nav",
-      "content_hash": "sha256:9e3576c6a76aedd5503e1d3c9c7f0147d4fc991dcf6838df92c0f703e2bb2aec"
-    },
-    "scripts/ci/check_ci_entrypoint.py": {
-      "path": "scripts/ci/check_ci_entrypoint.py",
-      "kind": "managed",
-      "content_hash": "sha256:93e3ff4abb67a0930726ad6336bf8881e0e89a0509da9baa559cb0df2861c5c3"
-    },
-    "scripts/docs/_common.py": {
-      "path": "scripts/docs/_common.py",
-      "kind": "managed",
-      "content_hash": "sha256:1a5538185cd8f29d7435f69b8da7906a04f12865e1556f9675c9054d3913dfb6"
-    },
-    "scripts/docs/check_docs.py": {
-      "path": "scripts/docs/check_docs.py",
-      "kind": "managed",
-      "content_hash": "sha256:05c735c304e661c6ad0b5c8061da7412d5c8e380da624ab8fb80c865a4a701bd"
-    },
-    "scripts/docs/check_structure.py": {
-      "path": "scripts/docs/check_structure.py",
-      "kind": "managed",
-      "content_hash": "sha256:739965b64ecb6850dce355cd3b81e876617e5faaa7027e6cf39b9410de096de0"
-    },
-    "scripts/docs/gen_nav.py": {
-      "path": "scripts/docs/gen_nav.py",
-      "kind": "managed",
-      "content_hash": "sha256:1ff5eb29b79e6cf17e9d5e58b5d828e1a32e45b683b5d053b179df2b16cd9e46"
-    },
-    "scripts/standards/check_generated.py": {
-      "path": "scripts/standards/check_generated.py",
-      "kind": "managed",
-      "content_hash": "sha256:babb79253cf48223f25aa9ad182ad839a9317667db8f506093630b1e9493a66a"
-    },
-    "scripts/standards/check_rn_forge_deps.py": {
-      "path": "scripts/standards/check_rn_forge_deps.py",
-      "kind": "managed",
-      "content_hash": "sha256:1b1bc9419e0017e12e0818fa23feed99fcc96f025b2e383aab8241f3c8f70c3e"
-    },
-    "scripts/task/check_task_layout.py": {
-      "path": "scripts/task/check_task_layout.py",
-      "kind": "managed",
-      "content_hash": "sha256:a01124177d8a170979f1d514d0ae4091ecd69ee8b26829bd6020bb6fac665eca"
+      "kind": "block",
+      "path": "mkdocs.yml"
     },
     "sonar-project.properties": {
-      "path": "sonar-project.properties",
+      "begin_marker": null,
+      "content_hash": "0cb76d78414455c688dc41d1e8d0f10b336b0b168b07436499f54748827b8380",
+      "end_marker": null,
       "kind": "managed",
-      "content_hash": "sha256:29c240dbfa755101b103e35bab15f5d03df724382e65058333497227b6d3307a"
+      "path": "sonar-project.properties"
     },
     "tasks/docs.yml": {
-      "path": "tasks/docs.yml",
+      "begin_marker": null,
+      "content_hash": "bd835e83323beaece02c8bcb40f31350105d4e30515cc79be774a80fc3e09785",
+      "end_marker": null,
       "kind": "managed",
-      "content_hash": "sha256:9c98b119e1abe1011263c7f9fb3ba395942bbdff70826aa57b0176e6c4254a7a"
+      "path": "tasks/docs.yml"
     },
     "tasks/quality.yml": {
-      "path": "tasks/quality.yml",
+      "begin_marker": null,
+      "content_hash": "199a24b69ed6546193a0b11644f2103e8fd922bf4b6962e0d57d62b1ddb2779c",
+      "end_marker": null,
       "kind": "managed",
-      "content_hash": "sha256:776510ec24b03d72e28f01e73e666ffb275c702dc74eab29756c994123d6df24"
+      "path": "tasks/quality.yml"
     },
     "tasks/workspace.yml": {
-      "path": "tasks/workspace.yml",
+      "begin_marker": null,
+      "content_hash": "23e771eaef2423b2b47c2b160c8bc1eae911500d208e0b926466f55217637244",
+      "end_marker": null,
       "kind": "managed",
-      "content_hash": "sha256:23e771eaef2423b2b47c2b160c8bc1eae911500d208e0b926466f55217637244"
+      "path": "tasks/workspace.yml"
     }
-  }
+  },
+  "metadata": {
+    "config_hash": "413aa000308d7be283d554ac052601115fd8edd700fe8ba2ce6cbc20ba6e3e75",
+    "kiln_version": "golden"
+  },
+  "schema_version": "1"
 }

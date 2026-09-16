@@ -41,7 +41,7 @@ The public surface for this repo is exactly:
 
 Every other task is `internal: true`. The root `Taskfile.yml` holds wrappers
 only: each of its commands is a `task:` call into a `tasks/*.yml` namespace.
-`scripts/task/check_task_layout.py` enforces both halves of that, and fails if
+`kiln doctor`'s `task-layout` check enforces both halves of that, and fails if
 any gate stops being reachable from `validate`.
 
 ## 2. One owner per file, or per block
@@ -52,20 +52,27 @@ any gate stops being reachable from `validate`.
 | **block**   | kiln owns a fenced region inside a repo-owned file.            |
 | **seeded**  | kiln wrote it once, and will never write it again.             |
 
-Managed here: `Taskfile.yml`, `tasks/*.yml`, `scripts/**`, `.editorconfig`,
-`.importlinter`, `.github/workflows/*.yml`, `sonar-project.properties`, this
-file, and `.rn-forge/kiln/state.json`.
+Managed here: `Taskfile.yml`, `tasks/*.yml`, `.editorconfig`, `.importlinter`,
+`.github/workflows/*.yml`, `.github/actions/setup`, `sonar-project.properties`
+and this file. `.rn-forge/kiln/state.json` is generated and committed, and
+never hashes itself.
 
 Blocks here: the `# BEGIN rn-forge kiln` region in `.gitignore`, the
 `# BEGIN generated nav` region in `mkdocs.yml`, and the
 `<!-- BEGIN rn-forge kiln -->` region in `CLAUDE.md` and `AGENTS.md`.
 
-Seeded here: `docs/_areas.yml`, `docs/_structure.md`, each area's
+Seeded here: `README.md`, `docs/_areas.yml`, `docs/_structure.md`, each area's
 `_structure.md` and `index.md`, and `docs/index.md`.
 
+Repo-owned: `pyproject.toml` — verified by doctor check `pyproject.tool-config`,
+never written — `src/` and `tests/`, whose structure kiln verifies and whose
+contents it never generates (kiln ADR-0011), and `scripts/**`, which holds only
+this repo's own lints, wired through `[tasks.extra_refs]` (kiln ADR-0010).
+
 To change a managed file, change `.rn-forge/kiln/config.toml` and run
-`kiln apply`. To change what kiln renders, change the golden repo in
-`rn-forge/kiln` and let the snapshot test fail.
+`kiln apply`. To change what kiln renders, change kiln's templates: every
+shipped archetype × flag cell is rendered, validated, and approved by the owner
+before the change is done (kiln ADR-0005).
 
 ## 3. The dependency set
 
@@ -80,11 +87,30 @@ kiln's own REQUIRED list is empty until Phase D, because kiln ships no generator
 code yet and a dependency nothing imports is decoration. The entries land with
 the code. The list is config precisely so this is expressible.
 
+The web archetypes add `rn-forge-web` — framework-free inbound HTTP, on commons
+alone — beneath `rn-forge-django` or `rn-forge-fastapi`.
+
 rn-forge distributions are git sources — pykit publishes GitHub Releases, not to
-PyPI — declared as pinned direct URLs in `dependencies`, never as
-`[tool.uv.sources]` overrides, which do not survive into a built wheel.
-`scripts/standards/check_rn_forge_deps.py` enforces required, allowed and
-pinned.
+PyPI — declared as direct URLs in `dependencies`, never as `[tool.uv.sources]`
+overrides, which do not survive into a built wheel. Until the owner declares
+pykit stable, they name its branch:
+
+```toml
+dependencies = [
+  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-commons",
+  "rn-forge-cli @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-cli",
+  "rn-forge-tooling @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-tooling",
+]
+```
+
+The dependency source is config: `git` + ref, which is CI-capable, or a local
+`path`, which is not. `kiln doctor`'s `rn-forge-deps` check enforces required,
+allowed and pinned-and-direct, accepts a branch or path source with a warning,
+and refuses one in a publish job. Flipping to tags is
+`kiln config upgrade --apply`, not a template change.
+
+kiln itself is a dev dependency, `rn-forge-kiln`, pinned the same way (kiln
+ADR-0010).
 
 ## 4. The import boundary
 
@@ -96,26 +122,37 @@ product code imports no framework or CLI toolkit directly (`typer`, `jinja2`,
 that owns them.
 
 `rn-forge-commons`, `rn-forge-cli` and `rn-forge-tooling` remain the only
-rn-forge packages this repo may import. Every other rn-forge component — kiln included —
-is a subprocess or nothing.
+rn-forge packages this repo may import. Every other rn-forge component is a
+subprocess or nothing.
 
 ## 5. What CI checks, and what it does not
 
-CI installs go-task and the pinned interpreter, then runs committed code only.
-It never installs kiln.
+CI runs the pinned kiln read-only (kiln ADR-0010): it never runs `kiln apply`
+and never writes a generated file. `task validate` runs `kiln doctor` on every
+run; `kiln doctor --full` runs where the workflow asks, through `lint` with
+the `KILN_DOCTOR_FULL` task variable set.
 
-`task validate` proves, without kiln: ruff is clean and formatted; the archetype's dependency
-set is present, allowed and pinned; the import contracts hold;
-the task layout and validate gate are intact; no workflow step invokes a wrapped
+`task validate` proves: ruff is clean and formatted; the archetype's
+dependency set is present, allowed and pinned; the import contracts hold; the
+task layout and validate gate are intact; no workflow step invokes a wrapped
 tool; the docs tree matches `docs/_areas.yml`; the nav block is current; no link
 or anchor is broken; **every managed file and block still hashes to the value
 committed in `.rn-forge/kiln/state.json`**; pyright is clean; the tests pass;
 and the docs site builds `--strict`.
 
-`kiln doctor` adds exactly one question CI cannot ask: whether a newer kiln, or
-an edited config, would now render something different from what is committed.
+## 6. What `kiln doctor --full` adds
 
-## 6. The state baseline
+Exactly one question `kiln doctor` cannot ask without `--full`: whether a newer kiln, or an edited
+config, would now render something different from what is committed. kiln is
+modules under one contract (kiln ADR-0011) — each owns its config section, its
+`artifacts()` and its `checks()` — and `kiln doctor` collects every module's
+findings into one report. Beyond what `kiln doctor` reports by default,
+`--full` warns on
+`pyproject.tool-config` when `pyproject.toml`'s tool tables drift from the
+archetype's expected values, and errors on `kiln.pin` when `rn-forge-kiln` is
+unpinned or the running kiln is not the one `uv.lock` records.
+
+## 7. The state baseline
 
 `.rn-forge/kiln/state.json` is generated and committed. It holds, per artifact,
 the repo-relative path, the kind, and a SHA-256 — of the whole file for managed
@@ -123,4 +160,19 @@ artifacts, of the body for blocks — plus the exact fence markers for blocks, a
 presence only for seeded artifacts. It records `kiln_version` and `config_hash`
 in its metadata, and it never contains an entry for itself.
 
-`scripts/standards/check_generated.py` reads it with the standard library alone.
+`kiln doctor`'s `generated` check reads it without rendering anything.
+
+## 8. Configuration
+
+`.rn-forge/kiln/config.toml` is the one committed input (kiln ADR-0004).
+Configuration is resolved once: `kiln new --config <path|git-url[@ref]>`
+deep-merges kiln defaults, each source layer and flags — lists replace — and
+records the source in a `[source]` table. `kiln apply` and `kiln doctor` read
+only the committed file. `kiln config update` re-resolves the source with the
+running kiln, `kiln config upgrade` with a newer one; each changes nothing
+without `--apply`, and keeps a key edited here as a repo override.
+
+`lifecycle = true` — which is what the `python-tool` alias means — mounts the
+`install`/`upgrade`/`uninstall`/`cleanup`/`status`/`doctor` verbs from
+`[cli.lifecycle]`; the product supplies `artifacts()`, `checks()` and
+`migrate()` through `rn-forge-tooling`'s `ToolProduct` adapter (kiln ADR-0005).

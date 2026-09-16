@@ -10,13 +10,12 @@ board says what is next; the epic says how; its ADRs say why.
 
 | Epic | Release | Next step |
 | -- | -- | -- |
-| [E3 — Realign the goldens and the canon](epics/E3-realign-goldens-and-canon/index.md) | [release-1](../releases/release-1/index.md) | **start here** — F3.2 and F3.1 done; S3.4.1 and S3.4.4 can begin now; F3.3 waits on pykit C.3 |
+| [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | **start here** — F4.1 and F4.2 done: `kiln doctor` runs the render-free checks; the module contract, the archetype manifests, the config manager and `core`'s apply cycle exist. Next is F4.3, the concern modules and their templates |
 
 ### Scheduled
 
 | Epic | Release | Next step |
 | -- | -- | -- |
-| [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | S4.1.4 done — kiln is a pinned dev dependency ([ADR-0010](../adr/ADR-0010.md)); the rest waits on E3 |
 | [E6 — Rebuild the repos](epics/E6-rebuild-the-repos/index.md) | F6.1 [release-1](../releases/release-1/index.md); F6.2 [release-2](../releases/release-2/index.md) | after E4 |
 | [E5 — The web archetypes](epics/E5-web-archetypes/index.md) | [release-2](../releases/release-2/index.md) | gated on `rn-forge-fastapi` |
 
@@ -42,6 +41,7 @@ configuration and intellibuild — see [plans](../plans/index.md).
 | -- | -- |
 | [E1 — The canon and the hand-authored golden repos](epics/E1-canon-and-golden-repos/index.md) | 2026-09-09 |
 | [E2 — The layer split lands in the goldens](epics/E2-layer-split-and-golden-rename/index.md) | 2026-09-12 |
+| [E3 — Realign the goldens and the canon](epics/E3-realign-goldens-and-canon/index.md) | 2026-09-15 |
 
 ## Upstream work owned by pykit
 
@@ -53,33 +53,31 @@ pykit owns its own spec. What kiln needs from it is handed off in pykit's
 | Phase A — stabilize commons Part C | done | — |
 | Phase C — first tooling extraction (`4624bfe`) | done, revised by C.2 | — |
 | Phase C.2, pykit half — defect fixes, the cli/tooling split, re-layout (`f59c40f`) | done | — |
-| Phase C.3 — the tool lifecycle surface (`install/` + `[cli.lifecycle]`) | **not started** | [F3.3](epics/E3-realign-goldens-and-canon/F3.3-python-tool-is-a-tool.md), and through it E4 |
+| Phase C.3 — the tool lifecycle surface (`install/` + `[cli.lifecycle]`, `757908e`) | done | — |
+| commons Part G — strict pydantic models as the `pydantic` extra | done | — |
 | `rn-forge-fastapi` | in progress | [E5](epics/E5-web-archetypes/index.md) |
 | Release tags | triggered by the owner | [E7](epics/E7-pykit-release-pin-flip/index.md) |
 
 ## Order
 
 ```text
-done:  E1 ─→ E2                                         (pykit: A ─→ C ─→ C.2)
-now:   S4.1.4 done (ADR-0010) ─→ S3.4.4 ───────────┐
-       S3.4.1 reference ───────────────────────────┤
-       F3.2 pins ─→ F3.1 port ─→ F3.3 tool ────────┴─→ S3.4.2 re-seed ─→ E3 done
-                                  ↑ pykit C.3 (lifecycle)
-then:  E3 ─→ F4.1 ─→ F4.2 ─→ F4.3 ─┬─→ F4.4 matrix (goldens leave git) ─┐
+done:  E1 ─→ E2 ─→ E3                            (pykit: A ─→ C ─→ C.2 ─→ C.3)
+now:   E3 ─→ F4.1 ─→ F4.2 ─→ F4.3 ─┬─→ F4.4 matrix (goldens leave git) ─┐
                                    ├─→ F4.5 CLI ─→ F4.6 doctor ─────────┼─→ F4.8 self-host ─→ F6.1 pykit skeleton
                                    └─→ F4.7 contracts ──────────────────┘
                                        (S4.5.5 also needs pykit C.3)
-       E4 + rn-forge-fastapi (pykit) ─→ F5.1 ─→ F5.2 ─┬─→ F5.3 ─→ E5 done
+then:  E4 + rn-forge-fastapi (pykit) ─→ F5.1 ─→ F5.2 ─┬─→ F5.3 ─→ E5 done
                                                       └─→ F6.2 retire taskkit
 triggered: E7 pykit releases (owner) · E8 ADO · backlog: E10 generators
 ```
 
-F3.2, F3.1 and S4.1.4 are done; S3.4.1 and S3.4.4 can start immediately,
-alongside pykit C.3. The **Depends on** column on each epic and line on each
-feature are normative; this diagram summarizes them. Nothing in E4 waits on a
-pykit release ([ADR-0005](../adr/ADR-0005.md)), but every template renders the
-rn-forge dependency source from config, so flipping to tags later is a config
-change, not a template change.
+E3 shipped on 2026-09-15: every feature's acceptance block passes, S3.3.2's
+normalized golden diff was reviewed, and the epic block re-proves the whole. E4
+is next, and S4.1.4 is already decided. The **Depends on** column on each epic
+and line on each feature are normative; this diagram summarizes them. Nothing in
+E4 waits on a pykit release ([ADR-0005](../adr/ADR-0005.md)), but every template
+renders the rn-forge dependency source from config, so flipping to tags later is
+a config change, not a template change.
 
 ## Conventions
 
@@ -104,7 +102,11 @@ change, not a template change.
   failure is never turned into output (`|| echo`). A negative check uses the
   `absent` or `fails_with` helper defined at the top of the block, never a
   bare `! cmd`: `set -e` ignores a negated command, and `!` also turns an
-  error in `cmd` itself — a missing path, say — into a pass.
+  error in `cmd` itself — a missing path, say — into a pass. A line that greps
+  a command's output never pipes into `grep -q` or `rg -q`: those exit on the
+  first match, the writer takes a SIGPIPE, and `pipefail` then fails the line
+  although the check passed. Let the grep read to the end and send its own
+  output to `/dev/null`.
 - **One home per story; releases link.** A release page names its scope by story
   ID and links here. Moving a story between releases edits only release pages.
 - **Shipped work still has an epic**, marked `done` with its ship date and its

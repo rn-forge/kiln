@@ -57,6 +57,7 @@ dev = [
   "pytest>=9.1.1",
   "pytest-cov>=7.1.0",
   "pyyaml>=6.0",
+  "rn-forge-kiln",
   "ruff>=0.15.21",
 ]
 docs = [
@@ -67,3 +68,9 @@ docs = [
   "mkdocs-material>=9.6",
   "mkdocstrings[python]>=0.30",
 ]
+
+# kiln is a pinned dev dependency (kiln ADR-0010). The goldens live inside the
+# kiln checkout and are validated by its CI, so they take kiln from that
+# checkout; the path source goes when the goldens leave git (kiln F4.4).
+[tool.uv.sources]
+rn-forge-kiln = { path = "../../../..", editable = true }

@@ -50,7 +50,7 @@ configuration ([plan](agent-config-future.md)). Parked: `rn-tools/apollo`,
 | §0.10–§0.11 scope-expansion thread | §8; decisions folded into ADR-0003 to ADR-0005, and ADR-0011 |
 | §1 findings | §5 |
 | §2.1 dependency graphs | [ADR-0002](../adr/ADR-0002.md); current graph in [architecture/workspace.md](../architecture/workspace.md#the-graphs) |
-| §2.2 CI model | already covered by [ADR-0003](../adr/ADR-0003.md), [ADR-0010](../adr/ADR-0010.md) and [reference §5](../reference/standard-repo.md#5-what-task-validate-proves-without-kiln) |
+| §2.2 CI model | already covered by [ADR-0003](../adr/ADR-0003.md), [ADR-0010](../adr/ADR-0010.md) and [reference §5](../reference/standard-repo.md#5-what-task-validate-proves) |
 | §2.3 ownership rule | [ADR-0001](../adr/ADR-0001.md) |
 | §2.4 ownership table | [F3.4 design](../specs/epics/E3-realign-goldens-and-canon/F3.4-canon-catches-up.md#ownership-table-normative-replaces-the-reference-2-table) (replaces the stale reference §2 table) |
 | §2.5.1 package layout; §2.5.3 commands; §2.5.4 cycle; §2.5.5 apply sequence; §2.5.6 doctor checks | [E4 design](../specs/epics/E4-generator/design.md) |
@@ -128,7 +128,7 @@ configuration ([plan](agent-config-future.md)). Parked: `rn-tools/apollo`,
 | D47 | ~~four `-ng` archetypes~~ | superseded by D53/D54 |
 | D48 | ADRs carry decisions; the reference carries specs | [ADR log intro](../adr/index.md) |
 | D49 | libraries own the boilerplate (proposed) | [ADR-0009](../adr/ADR-0009.md); acceptance open on [F3.4](../specs/epics/E3-realign-goldens-and-canon/F3.4-canon-catches-up.md) |
-| D50 | `ruff check --fix` before `ruff format` | [reference §5](../reference/standard-repo.md#5-what-task-validate-proves-without-kiln); §7.2 |
+| D50 | `ruff check --fix` before `ruff format` | [reference §5](../reference/standard-repo.md#5-what-task-validate-proves); §7.2 |
 | D51 | checkers become a versioned package | [ADR-0010](../adr/ADR-0010.md) (revised 2026-09-13: one pinned kiln; the package decision is its History) |
 | D52 | three library layers | [ADR-0002](../adr/ADR-0002.md) |
 | D53 | seven archetypes | [ADR-0005](../adr/ADR-0005.md) |

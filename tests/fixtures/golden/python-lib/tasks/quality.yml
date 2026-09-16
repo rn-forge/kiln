@@ -16,15 +16,13 @@ vars:
 
 tasks:
   lint:python:
-    desc: Lint every workspace package and scripts/ with ruff, and check formatting.
+    desc: Lint every workspace package with ruff, and check formatting.
     internal: true
     cmds:
       - for: { var: PACKAGES, split: " " }
         cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff check
       - for: { var: PACKAGES, split: " " }
         cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff format --check
-      - uv run ruff check scripts
-      - uv run ruff format --check scripts
 
   lint:markdown:
     desc: Check that every Markdown file in the tree is mdformat-clean.
@@ -36,13 +34,13 @@ tasks:
     desc: Fail if a kiln-generated file or block has drifted from the committed state.
     internal: true
     cmds:
-      - uv run python scripts/standards/check_generated.py .
+      - uv run kiln doctor . --only generated
 
   lint:rn-forge-deps:
     desc: Enforce the archetype's rn-forge dependency contract — required, allowed, pinned.
     internal: true
     cmds:
-      - uv run python scripts/standards/check_rn_forge_deps.py .
+      - uv run kiln doctor . --only rn-forge-deps
 
   lint:imports:
     desc: Enforce the import-boundary contracts in .importlinter.
@@ -54,19 +52,19 @@ tasks:
     desc: Enforce the wrapper/inner split, non-empty desc, and the validate gate.
     internal: true
     cmds:
-      - uv run python scripts/task/check_task_layout.py .
+      - uv run kiln doctor . --only task-layout
 
   lint:ci-entrypoint:
     desc: Fail if a CI step invokes a wrapped tool instead of `task`.
     internal: true
     cmds:
-      - uv run python scripts/ci/check_ci_entrypoint.py .
+      - uv run kiln doctor . --only ci-entrypoint
 
   lint:docs:
     desc: Check the docs site for broken links, bad anchors, and orphan pages.
     internal: true
     cmds:
-      - uv run python scripts/docs/check_docs.py .
+      - uv run kiln doctor . --only docs-site
 
   lint:docs-structure:
     desc: Check the docs tree matches the area model.
@@ -78,12 +76,10 @@ tasks:
     desc: Check mkdocs.yml's generated nav block is up to date.
     internal: true
     cmds:
-      - task: :docs:nav
-        vars:
-          CLI_ARGS: --check
+      - uv run kiln doctor . --only docs-nav
 
   format:python:
-    desc: Fix and format every workspace package and scripts/ in place with ruff.
+    desc: Fix and format every workspace package in place with ruff.
     internal: true
     # `check --fix` first, then `format`: the linter's fixes are edits, and an
     # unused-import removal or a comprehension rewrite lands unformatted unless
@@ -94,8 +90,6 @@ tasks:
         cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff check --fix
       - for: { var: PACKAGES, split: " " }
         cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff format
-      - uv run ruff check --fix scripts
-      - uv run ruff format scripts
 
   format:markdown:
     desc: Format every Markdown file in the tree with mdformat.

@@ -1,0 +1,21 @@
+# The python-lib archetype (kiln ADR-0005): a uv workspace of published libraries.
+name = "python-lib"
+modules = ["core", "python", "docs", "tasks", "cicd", "instructions"]
+# kiln itself is on the list: CI reaches it only through a committed `task` entrypoint.
+forbidden_tools = ["uv", "pytest", "ruff", "pyright", "mkdocs", "lint-imports", "kiln"]
+required_validate = [
+  "quality:lint:python",
+  "quality:lint:generated",
+  "quality:lint:rn-forge-deps",
+  "quality:lint:imports",
+  "quality:lint:task-layout",
+  "quality:lint:ci-entrypoint",
+  "quality:lint:markdown",
+  "quality:typecheck:python",
+  "quality:test:python",
+]
+
+[dependencies]
+# No CLI layer: a library is imported, not run.
+required = ["rn-forge-commons"]
+allowed = ["rn-forge-commons", "rn-forge-tooling"]

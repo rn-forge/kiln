@@ -1,6 +1,6 @@
 # E3 — Realign the goldens and the canon with pykit
 
-**Status:** in progress · **Release:**
+**Status:** done · **Shipped:** 2026-09-15 · **Release:**
 [release-1](../../../releases/release-1/index.md) · **Phase:** C.4 ·
 **Estimate:** 3 days
 
@@ -68,8 +68,17 @@ for g in "$G/python-app" "$G/python-tool" "$G/python-lib"; do
   (cd "$g" && uv sync && task validate) || { echo "FAIL $g" >&2; exit 1; }
 done
 (cd "$G/python-tool" && uv run golden-tool doctor)                                    # F3.3
-(cd "$G/python-tool" && uv run golden-tool status --json) | jq -e '.version'          # F3.3
+(cd "$G/python-tool" && uv run golden-tool --json status) | jq -e '.version'          # F3.3
 absent 'RNF_HOME|lifecycle' "$G/python-app"                                           # F3.3
 rg -q 'rn-forge-web' docs/reference/standard-repo.md                                  # F3.4
 task lint                                                                             # F3.4
 ```
+
+Run on 2026-09-15 against `feature/v1`: every feature block passes (F3.1, F3.2,
+F3.3, F3.4) and this block passes after them. Two things it caught and that were
+fixed rather than waived: S3.3.2's normalized diff carried a `TemplateEngine`
+render, an `$RNF_HOME` docstring aside and a dropped ADR-0009 sentence, none on
+the approved list; and `scripts/standards/check_rn_forge_deps.py` illustrated a
+pin with the pre-layer-split `rn-forge-commons-v0.2.2` tag, which the F3.2 line
+reads as a stale pin — the example now shows the branch pin ADR-0005 mandates,
+in kiln and in all three goldens, with `state.json` re-seeded for each.

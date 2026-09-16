@@ -23,6 +23,9 @@ members = ["packages/golden-alpha", "packages/golden-beta"]
 [tool.uv.sources]
 golden-alpha = { workspace = true }
 golden-beta = { workspace = true }
+# kiln is a pinned dev dependency (kiln ADR-0010), taken from the kiln checkout
+# these goldens live in; the path goes when the goldens leave git (kiln F4.4).
+rn-forge-kiln = { path = "../../../..", editable = true }
 
 [tool.pyright]
 typeCheckingMode = "strict"
@@ -63,6 +66,7 @@ dev = [
   "coverage[toml]>=7.6",
   "pytest-cov>=7.1.0",
   "pyyaml>=6.0",
+  "rn-forge-kiln",
   "ruff>=0.15.21",
 ]
 docs = [

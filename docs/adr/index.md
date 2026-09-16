@@ -27,6 +27,5 @@ answered. The plan's `D<n>` decision numbers map to these ADRs in
 - [ADR-0007 — The task vocabulary is closed, and the gate cannot shrink](ADR-0007.md)
 - [ADR-0008 — Type-check with pyright in strict mode, not mypy](ADR-0008.md)
 - [ADR-0009 — The libraries own the boilerplate; the CLI is declared, not written](ADR-0009.md)
-  *(proposed)*
 - [ADR-0010 — kiln is a pinned dev dependency, and CI runs it read-only](ADR-0010.md)
 - [ADR-0011 — kiln is one distribution of modules under one contract](ADR-0011.md)

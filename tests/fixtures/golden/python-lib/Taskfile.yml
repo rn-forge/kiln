@@ -2,7 +2,7 @@
 version: "3"
 
 # The only entrypoint. Nobody — human, agent or CI — invokes `uv`, `pytest`,
-# `ruff`, `pyright`, `mkdocs` or `kiln` directly; scripts/ci/check_ci_entrypoint.py
+# `ruff`, `pyright`, `mkdocs` or `kiln` directly; `kiln doctor --only ci-entrypoint`
 # enforces that for every workflow file.
 #
 # This file holds wrappers only: every task below is a list of calls into
