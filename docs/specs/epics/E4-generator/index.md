@@ -12,7 +12,9 @@ Repo `rn-forge/kiln`, **one distribution**: `rn-forge-kiln` (module
 **Dependencies.** S4.1.4, the checks-shape decision, is done. Every other story
 depends on [E3](../E3-realign-goldens-and-canon/index.md), and S4.5.5 also on
 pykit's lifecycle surface. Features follow the column below, and each ends green
-on `task validate` and its own acceptance block.
+on `task validate` and its own acceptance block — except that
+[E5](../E5-web-archetypes/index.md)'s F5.1 and F5.2 are built after S4.5.2 and
+before F4.4 ([board](../../index.md#order)).
 
 Decisions this epic builds on: [ADR-0005](../../../adr/ADR-0005.md),
 [ADR-0004](../../../adr/ADR-0004.md), [ADR-0011](../../../adr/ADR-0011.md),

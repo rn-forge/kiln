@@ -30,15 +30,18 @@ class CicdModule:
         return ()
 
     def artifacts(self, config: KilnConfig, root: Path) -> Sequence[Artifact]:
-        """No artifacts."""
-        del config, root
-        return ()
+        """Render the workflows, the setup action and `sonar-project.properties`."""
+        del root
+        # Imported here so importing a module object never loads jinja2.
+        from rn_forge.kiln.modules.cicd import artifacts
+
+        return artifacts.render(config)
 
     def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:
         """This module's render-free checks."""
-        from rn_forge.kiln.modules.cicd.checks import entrypoint
+        from rn_forge.kiln.modules.cicd.checks import entrypoint, pins
 
-        return entrypoint.check(config, root)
+        return [*entrypoint.check(config, root), *pins.check(config, root)]
 
 
 CICD = CicdModule()

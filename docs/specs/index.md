@@ -10,14 +10,14 @@ board says what is next; the epic says how; its ADRs say why.
 
 | Epic | Release | Next step |
 | -- | -- | -- |
-| [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | **start here** — F4.1 and F4.2 done: `kiln doctor` runs the render-free checks; the module contract, the archetype manifests, the config manager and `core`'s apply cycle exist. F4.3 under way: `python` and `docs` done (S4.3.1–S4.3.2). Next is S4.3.3, `tasks` |
+| [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | **start here** — F4.1 and F4.2 done; F4.3 under way: `python`, `docs`, `tasks`, `cicd` and `instructions` done (S4.3.1–S4.3.5). Next is S4.3.7 (the scaffold's dependency lines), then the thin CLI S4.5.1–S4.5.2. **Then E5's F5.1 and F5.2**, before F4.4–F4.8 |
 
 ### Scheduled
 
 | Epic | Release | Next step |
 | -- | -- | -- |
 | [E6 — Rebuild the repos](epics/E6-rebuild-the-repos/index.md) | F6.1 [release-1](../releases/release-1/index.md); F6.2 [release-2](../releases/release-2/index.md) | after E4 |
-| [E5 — The web archetypes](epics/E5-web-archetypes/index.md) | [release-2](../releases/release-2/index.md) | gated on `rn-forge-fastapi` |
+| [E5 — The web archetypes](epics/E5-web-archetypes/index.md) | [release-2](../releases/release-2/index.md) | after S4.3.7 and S4.5.2, before the rest of E4 — the owner's next repos are `fastapi` + `angular`. Needs resolvable pykit pins (below) |
 
 ### To elaborate
 
@@ -55,29 +55,67 @@ pykit owns its own spec. What kiln needs from it is handed off in pykit's
 | Phase C.2, pykit half — defect fixes, the cli/tooling split, re-layout (`f59c40f`) | done | — |
 | Phase C.3 — the tool lifecycle surface (`install/` + `[cli.lifecycle]`, `757908e`) | done | — |
 | commons Part G — strict pydantic models as the `pydantic` extra | done | — |
-| `rn-forge-fastapi` | in progress | [E5](epics/E5-web-archetypes/index.md) |
+| `rn-forge-fastapi` | implemented (`3e80dbd`); its Phase 8 is a wired app, repo-owned | — |
+| Resolvable web pins: tags `rn-forge-commons-v0.5.0` and `rn-forge-web-v0.1.0`, or `feature/upgrade` pins on web, django and fastapi | not done (2026-09-16) | [E5](epics/E5-web-archetypes/index.md): `uv sync` of any web cell |
 | Release tags | triggered by the owner | [E7](epics/E7-pykit-release-pin-flip/index.md) |
 
 ## Order
 
 ```text
-done:  E1 ─→ E2 ─→ E3                            (pykit: A ─→ C ─→ C.2 ─→ C.3)
-now:   E3 ─→ F4.1 ─→ F4.2 ─→ F4.3 ─┬─→ F4.4 matrix (goldens leave git) ─┐
-                                   ├─→ F4.5 CLI ─→ F4.6 doctor ─────────┼─→ F4.8 self-host ─→ F6.1 pykit skeleton
-                                   └─→ F4.7 contracts ──────────────────┘
-                                       (S4.5.5 also needs pykit C.3)
-then:  E4 + rn-forge-fastapi (pykit) ─→ F5.1 ─→ F5.2 ─┬─→ F5.3 ─→ E5 done
-                                                      └─→ F6.2 retire taskkit
+done:  E1 ─→ E2 ─→ E3 ─→ F4.1 ─→ F4.2 ─→ S4.3.1–S4.3.5        (pykit: A ─→ C ─→ C.2 ─→ C.3)
+now:   S4.3.7 ─→ S4.5.1 ─→ S4.5.2 ─→ F5.1 ─→ F5.2   (owner reviews the first web repo)
+                                                     (F5.1 also needs pykit's web pins to resolve)
+then:  F4.4 matrix (goldens leave git) ─┬─→ F5.3 ─→ E5 done
+       S4.5.3–S4.5.7 ─→ F4.6 doctor ────┼─→ F4.8 self-host ─→ F6.1 pykit skeleton
+       F4.7 contracts ──────────────────┘   F6.2 retire taskkit (after S4.6.2, S5.2.2)
+       (S4.5.5 also needs pykit C.3)
 triggered: E7 pykit releases (owner) · E8 ADO · backlog: E10 generators
 ```
 
 E3 shipped on 2026-09-15: every feature's acceptance block passes, S3.3.2's
 normalized golden diff was reviewed, and the epic block re-proves the whole. E4
-is next, and S4.1.4 is already decided. The **Depends on** column on each epic
-and line on each feature are normative; this diagram summarizes them. Nothing in
-E4 waits on a pykit release ([ADR-0005](../adr/ADR-0005.md)), but every template
-renders the rn-forge dependency source from config, so flipping to tags later is
-a config change, not a template change.
+is under way. **Build order is not release order:** E5's first two features are
+built between S4.5.2 and F4.4, because the owner's next repositories are web
+repositories and nothing in F5.1 or F5.2 needs the render matrix, the full
+doctor or self-hosting; release-1 still ships before release-2. The **Depends
+on** column on each epic and line on each feature are normative; this diagram
+summarizes them. Nothing in E4 waits on a pykit release
+([ADR-0005](../adr/ADR-0005.md)): the rn-forge dependency source is one constant
+([S4.3.7](epics/E4-generator/F4.3-concern-modules.md#s437-the-scaffold-completes-pyprojecttoml)),
+so flipping to tags later is a one-line change, not a template change.
+
+## Building a story
+
+One story per session, from a fresh context. The story is the whole brief;
+nothing outside it and the files it names is assumed. This is written for
+whoever builds the story — a person, or an agent of any size.
+
+1. Read `README.md`, then this page's conventions, then the feature page top to
+   bottom. Read every file the story's **Build** list names, and every golden
+   file it says to diff — with `diff`, never by eye. Read the tests of the
+   nearest `done` story in the same feature: they are the shape to copy.
+1. Write the tests first, in the file the story names, named
+   `test_<story id with underscores>_<what>` — `test_s4_3_3_property1_…` for
+   the shared properties, `test_s4_3_3_2_…` for the story's second acceptance
+   bullet. Every acceptance bullet has at least one test, or is listed as not
+   scriptable.
+1. Build exactly what the **Build** list says. Where it names a file, a
+   function, a constant, a code, a template or a context key, use that name
+   verbatim. Where it is silent, do the simplest thing that makes the tests
+   pass, and write the choice down.
+1. Do not: edit a golden repo unless the story says so; add a dependency; change
+   another module; change the module contract; shell out from anything but a
+   `scaffold` function; add a check, a flag, an option or a config key the
+   story does not list; skip a test the story does not allow to skip.
+1. Run `task validate`. It passes, with no failure and no skip the story did not
+   allow. If a golden had to change, re-seed its `state.json` as `README.md`
+   says.
+1. Record under the story, as *What the build settled that the story did not
+   say*, every choice from step 3 and every place the build had to depart from
+   the list — and flip its **Status** to `done (<date>)`. Leave the feature's
+   `## Acceptance` block for the owner.
+1. Commit nothing. The owner reviews the diff and the tests, runs the acceptance
+   block, and commits.
 
 ## Conventions
 

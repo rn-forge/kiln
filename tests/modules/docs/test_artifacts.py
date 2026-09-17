@@ -18,6 +18,9 @@ from rn_forge.kiln.modules.docs import DOCS
 from rn_forge.kiln.modules.docs.artifacts import SEEDS
 from rn_forge.kiln.modules.docs.nav import NAV_BLOCK
 from rn_forge.kiln.modules.docs.scaffold import scaffold
+from rn_forge.kiln.modules.instructions.scaffold import (
+    scaffold as instructions_scaffold,
+)
 
 GOLDEN = Path(__file__).resolve().parents[2] / "fixtures" / "golden"
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
@@ -38,8 +41,6 @@ PACKAGES = """
 [archetype."python-lib"]
 packages = ["packages/alpha", "packages/beta"]
 """
-
-CLAUDE_MD = "# demo\n\n- [rules](docs/_structure.md)\n- [docs](docs/index.md)\n"
 
 GROWN = {
     "docs/index.md",
@@ -66,9 +67,10 @@ def _root(
 def _new(tmp_path: Path, archetype: str = "python-tool") -> Path:
     """Scaffold and apply into an empty directory, as `kiln new` will."""
     root = _root(tmp_path, archetype)
-    scaffold(root, KilnConfig.load(root))
+    config = KilnConfig.load(root)
+    scaffold(root, config)
+    instructions_scaffold(root, config)
     cycle.apply(root, home=tmp_path / "home")
-    (root / "CLAUDE.md").write_text(CLAUDE_MD, encoding="utf-8")
     return root
 
 

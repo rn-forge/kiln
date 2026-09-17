@@ -18,3 +18,11 @@ target = "rn_forge.kiln.commands:doctor"
 [[cli.commands]]
 name = "docs-nav"
 target = "rn_forge.kiln.commands:docs_nav"
+
+[[cli.commands]]
+name = "new"
+target = "rn_forge.kiln.commands:new"
+
+[[cli.commands]]
+name = "apply"
+target = "rn_forge.kiln.commands:apply"

@@ -29,14 +29,18 @@ class InstructionsModule:
         return ()
 
     def artifacts(self, config: KilnConfig, root: Path) -> Sequence[Artifact]:
-        """No artifacts."""
-        del config, root
-        return ()
+        """Render the kiln block in `CLAUDE.md` and `.rn-forge/kiln/standard.md`."""
+        del root
+        # Imported here so importing a module object never loads jinja2.
+        from rn_forge.kiln.modules.instructions import artifacts
+
+        return artifacts.render(config)
 
     def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:
         """This module's render-free checks."""
-        del config, root
-        return ()
+        from rn_forge.kiln.modules.instructions.checks import hygiene
+
+        return hygiene.check(config, root)
 
 
 INSTRUCTIONS = InstructionsModule()

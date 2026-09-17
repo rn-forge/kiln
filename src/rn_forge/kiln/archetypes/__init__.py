@@ -19,10 +19,26 @@ from rn_forge.commons.lang.models import StrictModel
 if TYPE_CHECKING:
     from rn_forge.kiln.config import KilnConfig
 
-__all__ = ["Archetype", "Dependencies", "for_config", "load", "shipped"]
+__all__ = [
+    "KILN_SOURCE",
+    "RN_FORGE_PREFIX",
+    "RN_FORGE_SOURCE",
+    "Archetype",
+    "Dependencies",
+    "for_config",
+    "load",
+    "pyproject_paths",
+    "requirement",
+    "shipped",
+]
 
 RN_FORGE_PREFIX = "rn-forge-"
 """Every distribution the dependency contract governs starts with this."""
+
+RN_FORGE_SOURCE = "git+https://github.com/rn-forge/pykit@feature/upgrade"
+"""pykit's git source. Flipping to tags (E7) is a change to this constant alone."""
+KILN_SOURCE = "git+https://github.com/rn-forge/kiln@feature/v1"
+"""kiln's own git source, for the `rn-forge-kiln` dev dependency it scaffolds."""
 
 _MANIFEST = "archetype.toml"
 _TOOLING = "rn-forge-tooling"
@@ -55,6 +71,8 @@ class Archetype(StrictModel):
     """Tools a CI step may never invoke directly."""
     required_validate: list[str]
     """Tasks that must stay reachable from `validate` — the `gate.shrunk` rule."""
+    untested: dict[str, list[str]] = Field(default_factory=dict)
+    """`kiln new` flag name to the values of it this kiln has not exercised yet."""
 
 
 def shipped() -> tuple[str, ...]:
@@ -110,6 +128,11 @@ def for_config(config: KilnConfig) -> Archetype:
             "required_validate": required_validate,
         }
     )
+
+
+def requirement(distribution: str) -> str:
+    """The pinned PEP 508 requirement line pykit's *distribution* resolves to."""
+    return f"{distribution} @ {RN_FORGE_SOURCE}#subdirectory=packages/{distribution}"
 
 
 def pyproject_paths(config: KilnConfig) -> tuple[Path, ...]:

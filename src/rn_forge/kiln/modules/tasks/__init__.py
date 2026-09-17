@@ -30,9 +30,12 @@ class TasksModule:
         return ()
 
     def artifacts(self, config: KilnConfig, root: Path) -> Sequence[Artifact]:
-        """No artifacts."""
-        del config, root
-        return ()
+        """Render `Taskfile.yml`, `tasks/*.yml`, and any repo-owned includes."""
+        del root
+        # Imported here so importing a module object never loads jinja2.
+        from rn_forge.kiln.modules.tasks import artifacts
+
+        return artifacts.render(config)
 
     def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:
         """This module's render-free checks."""

@@ -20,9 +20,11 @@ def test_every_check_is_named_by_its_module() -> None:
         "pyproject-tool-config",
         "task-layout",
         "ci-entrypoint",
+        "ci-pins",
         "docs-structure",
         "docs-nav",
         "docs-site",
+        "root-hygiene",
     )
 
 

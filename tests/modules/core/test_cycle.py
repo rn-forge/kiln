@@ -57,12 +57,28 @@ def test_s4_2_3_applying_core_into_an_empty_directory_only_creates_and_inserts(
         ".editorconfig": Action.CREATE,
         ".gitignore#rn-forge kiln": Action.INSERT,
         ".importlinter": Action.CREATE,
+        "Taskfile.yml": Action.CREATE,
+        "tasks/workspace.yml": Action.CREATE,
+        "tasks/quality.yml": Action.CREATE,
+        ".github/actions/setup/action.yml": Action.CREATE,
+        ".github/workflows/ci.yml": Action.CREATE,
+        "sonar-project.properties": Action.CREATE,
+        "CLAUDE.md#rn-forge kiln": Action.INSERT,
+        ".rn-forge/kiln/standard.md": Action.CREATE,
     }
     cycle.apply(root, home=home)
     for path in (
         ".editorconfig",
         ".gitignore",
         ".importlinter",
+        "Taskfile.yml",
+        "tasks/workspace.yml",
+        "tasks/quality.yml",
+        ".github/actions/setup/action.yml",
+        ".github/workflows/ci.yml",
+        "sonar-project.properties",
+        "CLAUDE.md",
+        ".rn-forge/kiln/standard.md",
         ".rn-forge/kiln/state.json",
     ):
         assert (root / path).is_file(), path

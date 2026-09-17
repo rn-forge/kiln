@@ -9,7 +9,9 @@ sections check 8a verifies, using the same expected values that check reads.
 from __future__ import annotations
 
 import os
+import tomllib
 from pathlib import Path
+from typing import cast
 
 from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.runtime.subprocess import Process
@@ -30,6 +32,16 @@ _DEV_GROUP = ["import-linter", "pyright", "pytest", "pytest-cov", "pyyaml", "ruf
 added separately since its distribution name differs from its PyPI-style
 default and it is the one the dependency check itself excludes from the
 rn-forge contract."""
+
+_DOCS_GROUP = [
+    "mdformat>=1.0.0",
+    "mdformat-gfm>=0.4",
+    "mdformat-front-matters>=2.0.0",
+    "mdformat-mkdocs>=5.3.0",
+]
+"""The `docs` dependency group's shared entries, present for every docs profile."""
+_DOCS_GROUP_MKDOCS = ["mkdocs-material>=9.6", "mkdocstrings[python]>=0.30"]
+"""Added to the `docs` group only when `docs.profile == "mkdocs"`."""
 
 
 def scaffold(root: Path, config: KilnConfig) -> None:
@@ -64,14 +76,21 @@ def scaffold(root: Path, config: KilnConfig) -> None:
     else:
         _uv_init(root, name=config.name, bare=False)
 
+    required = archetypes.for_config(config).dependencies.required
     for relative in archetypes.pyproject_paths(config):
         path = root / relative
+        is_root = path.parent == root
+        is_workspace_root = workspace and is_root
         _reconcile(
             path,
             name=path.parent.name if path.parent != root else config.name,
             venv_path=os.path.relpath(root, path.parent) or ".",
-            is_root=path.parent == root,
-            is_workspace_root=workspace and path.parent == root,
+            is_root=is_root,
+            is_workspace_root=is_workspace_root,
+            dependencies=()
+            if is_workspace_root
+            else tuple(archetypes.requirement(d) for d in required),
+            mkdocs=config.docs_profile == "mkdocs",
         )
 
 
@@ -82,7 +101,14 @@ def _uv_init(target: Path, *, name: str, bare: bool) -> None:
 
 
 def _reconcile(
-    path: Path, *, name: str, venv_path: str, is_root: bool, is_workspace_root: bool
+    path: Path,
+    *,
+    name: str,
+    venv_path: str,
+    is_root: bool,
+    is_workspace_root: bool,
+    dependencies: tuple[str, ...],
+    mkdocs: bool,
 ) -> None:
     test_glob = "**/tests/*" if is_workspace_root else "tests/*"
     tool: dict[str, object] = {
@@ -97,10 +123,34 @@ def _reconcile(
                 "source-exclude": ["**/.DS_Store"],
             }
         }
-    updates: dict[str, object] = {
-        "project": {"requires-python": REQUIRES_PYTHON},
-        "tool": tool,
-    }
+    project: dict[str, object] = {"requires-python": REQUIRES_PYTHON}
+    if dependencies:
+        existing = _existing_list(path, "project", "dependencies")
+        project["dependencies"] = [*existing, *dependencies]
+    updates: dict[str, object] = {"project": project, "tool": tool}
     if is_root:
-        updates["dependency-groups"] = {"dev": [*_DEV_GROUP, "rn-forge-kiln"]}
+        dev = [*_DEV_GROUP, f"rn-forge-kiln @ {archetypes.KILN_SOURCE}"]
+        docs = [*_DOCS_GROUP, *(_DOCS_GROUP_MKDOCS if mkdocs else [])]
+        updates["dependency-groups"] = {
+            "dev": [*_existing_list(path, "dependency-groups", "dev"), *dev],
+            "docs": [*_existing_list(path, "dependency-groups", "docs"), *docs],
+        }
     DocumentUtils.update(path, updates)
+
+
+def _existing_list(path: Path, *keys: str) -> list[str]:
+    """The list already at *keys* in *path*'s document, or `[]`.
+
+    `DocumentUtils.update` deep-merges tables but replaces lists wholesale, so
+    callers that mean to extend a list read it first.
+    """
+    if not path.is_file():
+        return []
+    value: object = tomllib.loads(path.read_text(encoding="utf-8"))
+    for key in keys:
+        value = (
+            cast("dict[str, object]", value).get(key)
+            if isinstance(value, dict)
+            else None
+        )
+    return cast("list[str]", value) if isinstance(value, list) else []

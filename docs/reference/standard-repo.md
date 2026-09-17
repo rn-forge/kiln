@@ -95,12 +95,12 @@ Two owners never write the same bytes. The assignment is normative:
 | `tasks/self.yml` and any include declared `ownership = "repository"` | repo | seeded once, never rewritten |
 | `scripts/**` | **repo only** — a repo's own lints, wired via `[tasks.extra_refs]`. kiln and `cicd` generate nothing here ([ADR-0010](../adr/ADR-0010.md), [ADR-0003](../adr/ADR-0003.md)) | repo |
 | `src/**`, `tests/**` | **repo** — kiln verifies *structure* (src layout, package directory naming, test tree shape) and generates nothing ([ADR-0011](../adr/ADR-0011.md)) | input; doctor only |
-| `README.md` | kiln body | **seeded** — the single prose home |
+| `README.md` | written once by `kiln new`, then repo | the single prose home; never rewritten |
 | `docs/_areas.yml`, `docs/_structure.md`, `docs/adr/_structure.md` | kiln | **seeded** — repos may extend areas |
 | `docs/index.md`, `docs/<area>/index.md` | kiln | **seeded** — written if absent, never touched again |
 | `mkdocs.yml` | repo body, written once by `kiln new` with `nav:` as its last key; `# BEGIN generated nav` block → kiln, inserted at the end | block |
 | `.github/workflows/ci.yml`, `docs.yml`; `.github/actions/setup`; `sonar-project.properties` | kiln (`cicd`) | managed |
-| `CLAUDE.md`, `AGENTS.md` | body **seeded by kiln**; `<!-- BEGIN rn-forge kiln -->` block → kiln | seeded body + block |
+| `CLAUDE.md`, `AGENTS.md` | bodies written once by `kiln new`, then repo; the `<!-- BEGIN rn-forge kiln -->` block in `CLAUDE.md` → kiln | block (`CLAUDE.md` only; `AGENTS.md` points at it) |
 | `.claude/**`, `.codex/**`, installed skills | not kiln's | — |
 | Repo-specific lints (`check_brand.py`, `check_gate_tags.py`, …) | repo, wired via `[tasks.extra_refs]` | repo |
 

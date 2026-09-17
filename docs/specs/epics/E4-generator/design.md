@@ -11,32 +11,25 @@ decisions are ADR-0005 to ADR-0003.
 rn-forge/kiln/
   docs/                    # the canon: adr/, reference/standard-repo.md, architecture/, runbooks/, specs/
   src/rn_forge/kiln/       # the one distribution, rn-forge-kiln (ADR-0010)
-    cli.py                 # rn_forge.cli.CliApp + --dry-run/--yes/--json
-    config.py              # pydantic schema for config.toml, load/validate
-    umbrella.py            # .rn-forge/ discovery ($RNF_HOME, find_root markers), gitignore block
-    artifacts.py           # kiln provider: repo-standardization artifacts and render inputs
-    cycle.py               # thin adapter from kiln config to the tooling generation engine
-    modules/               # each a KilnModule — config model, options, artifacts, checks/ (render-free: kiln doctor)
-      base.py              # KilnModule protocol + registry
-      core/                # umbrella, config manager, state, cycle adapter, .gitignore block, .editorconfig, standard.md
-      python/              # uv init + reconcile, .importlinter, pyproject check 8a, rn-forge dependency set
-      docs/                # docs tree, _areas.yml, _structure.md, mkdocs.yml nav block
+    main.py cli.toml       # CliApp.from_config over the packaged declaration (ADR-0009); never a hand-built app
+    commands.py            # one function per command; F4.5 adds them
+    config.py              # KilnConfig: the validated config, typed reads
+    checks.py              # the render-free check registry `kiln doctor` runs
+    archetypes/            # one archetype.toml per archetype: modules, dependency set, forbidden tools, gate, untested values
+      python_app/  python_tool/  python_lib/  python_web_api/  python_web_app/
+    modules/               # each a KilnModule — config model, options, artifacts, checks/ (render-free), templates/, scaffold
+      base.py registry.py  # KilnModule protocol + registry
+      core/                # umbrella, config manager, state, cycle adapter, .gitignore block, .editorconfig
+      python/              # uv init + reconcile, the frontend scaffold, .importlinter, check 8a, rn-forge dependency set
+      docs/                # docs tree, _areas.yml, _structure.md, mkdocs.yml body (scaffold) + nav block
       tasks/               # Taskfile.yml + tasks/*.yml
-      cicd/                # workflows, .github/actions/setup, sonar-project.properties, pin set
-      instructions/        # README/CLAUDE/AGENTS seeds + kiln block
-    doctor/                # renders: kiln doctor --full; no module's checks/ imports it
-      artifacts.py         # drift / stale / missing
-      taskgraph.py         # ported from taskkit validator.py (checks 5, 6, 8)
-      ci_entrypoint.py
-      docs.py
-    archetypes/            # templates are kiln's; checks never import them
-      _shared/pins.toml
-      python_app/  python_tool/  python_lib/    # templates + archetype.toml
-      python_web_api/  python_web_app/          # (defaults, flags, forbidden_tools, required_validate)
+      cicd/                # workflows, .github/actions/setup, sonar-project.properties, pins.toml
+      instructions/        # README/CLAUDE/AGENTS bodies (scaffold), the kiln block in CLAUDE.md, standard.md
+    doctor/                # F4.6: the report across modules, taskgraph.py (ported from taskkit), --all
   tests/
     fixtures/golden/       # hand-authored bootstrap references; deleted by F4.4
       python-app/  python-tool/  python-lib/
-    fixtures/repos/        # moved from taskkit/tests/fixtures/repos (web archetype inputs)
+    fixtures/scaffold/     # captured scaffolder output, the reconcile's test input (S5.2.2)
 ```
 
 Every module exposes the same two functions:
@@ -181,16 +174,20 @@ begin and end markers; seeded entries store presence but no content hash.
 3. docs         (new only) the mkdocs.yml body; tree, _areas.yml, _structure.md, mkdocs.yml block
 4. tasks        Taskfile.yml, tasks/*.yml
 5. cicd         workflows, sonar-project.properties
-6. instructions README.md / CLAUDE.md / AGENTS.md bodies (seeded), the kiln block in
-                the latter two, .rn-forge/kiln/standard.md
+6. instructions (new only) README.md / CLAUDE.md / AGENTS.md bodies; the kiln block in
+                CLAUDE.md, .rn-forge/kiln/standard.md
 7. doctor       run every check; apply exits non-zero if any error remains
 ```
 
 No apply step shells out ([ADR-0001](../../../adr/ADR-0001.md)). `scripts/**` is
 gone from steps 3 and 4 under ADR-0010: the checks ship in kiln, a pinned dev
 dependency, not in generated files. **Scaffolding shells out.** `kiln new` runs
-`uv init`, `pnpm create`, `nx g` and then reconciles the result (move files, fix
-pyproject sections). It never templates another tool's scaffold output (D16).
+`uv init` and `create-nx-workspace`, then reconciles the result (move files, fix
+pyproject sections); each module's `scaffold(root, config)` runs once, before
+the first apply, in module order. It never templates another tool's scaffold
+output (D16), and a body a scaffold writes (`mkdocs.yml`, `CLAUDE.md`) is never
+also an artifact: the engine refuses a whole-file write and a block write to one
+path.
 
 ## Doctor checks
 
@@ -203,7 +200,7 @@ numbering is what [F4.6](F4.6-doctor.md) builds against.
 | 2 | `artifact.missing` / `.drift` / `.stale` | every managed artifact present; disk hash == committed last-applied; last-applied == fresh render |
 | 3 | `artifact.seed-missing` | every seeded artifact present |
 | 4 | `block.missing` / `.stale` | every fenced block present and current |
-| 5 | `taskgraph.*` | ported from taskkit `validator.py`: exact public surface, root file holds wrappers only, inner tasks are internal except `docs:*`, every task has `desc`, every include exists, every `task:` ref resolves, no cycles, no reserved-namespace collision |
+| 5 | `taskgraph.*` | ported from taskkit `validator.py`: exact public surface, root file holds wrappers only, inner tasks are internal except `docs:*` (and `api:*`, `web:*` on the web archetypes), every task has `desc`, every include exists, every `task:` ref resolves, no cycles, no reserved-namespace collision |
 | 6 | `taskgraph.unresolved-ref` | every `task <name>` in `.github/workflows/**`, `CLAUDE.md`, `AGENTS.md` resolves against `task --list-all` |
 | 7 | `ci.entrypoint` | no forbidden tool, including `kiln`, invoked directly in any workflow (list from `archetype.toml`) |
 | 8 | `gate.shrunk` | the set of tasks reachable from `validate` ⊇ the archetype's `required_validate` list; `kiln doctor` enforces the same list in CI, reading it from `config.toml` |
@@ -230,10 +227,11 @@ only when `ci.sonar`.
 | `Taskfile.yml` (10 root wrappers: `setup validate lint format typecheck test test:coverage build clean version`; public `docs:build docs:serve docs:nav docs:structure` only for `mkdocs`) | ✔ | ✔ | ✔ | ✔ |
 | `tasks/workspace.yml` (`install`, `build`, `version`, `clean`) | ✔ | ✔ | ✔ | ✔ |
 | `tasks/quality.yml` (internal `lint:python lint:generated lint:imports lint:task-layout lint:ci-entrypoint lint:docs* format:python typecheck:python test:python test:coverage`) | ✔ | ✔ | ✔ (per-package `uv run --package`) | ✔ (api side) |
-| `tasks/web.yml` (`lint test build dev` via `pnpm nx run-many -t …` or `pnpm run …`) |  |  |  | ✔ |
+| `tasks/api.yml` (public `api:dev`; `api:migrate` for django) |  |  |  | ✔ |
+| `tasks/web.yml` (public `web:lint web:test web:build web:dev` via `pnpm nx …`) |  |  |  | ✔ (`-app` only) |
 | `tasks/docs.yml` (`build serve nav structure`) | d | d | d | d |
 | `.importlinter` contracts | ✔ | ✔ | ✔ | ✔ |
-| `README.md`, `CLAUDE.md`, `AGENTS.md` bodies (seeded); the kiln block in the latter two | ✔ | ✔ | ✔ | ✔ |
+| `README.md`, `CLAUDE.md`, `AGENTS.md` bodies (written once by `kiln new`); the kiln block in `CLAUDE.md` | ✔ | ✔ | ✔ | ✔ |
 | `docs/_areas.yml`, `docs/_structure.md`, `docs/adr/_structure.md`, seeded index pages, `mkdocs.yml` nav block | d | d | d | d |
 | `.github/workflows/ci.yml` (validate → sonar → check-version → build → publish) | ✔ | ✔ | ✔ (matrix over `packages`) | ✔ (+ pnpm/node setup) |
 | `.github/workflows/docs.yml` (Pages deploy on main) | d | d | d | d |
@@ -248,8 +246,8 @@ unless it writes its own lints.
 
 CI templates bake in the F5 fixes: SHA-pinned actions with version comments,
 least-privilege `permissions:` per job, `concurrency:` per ref, tag-exists
-release check (D22). The pin set lives in `archetypes/_shared/pins.toml`;
-Dependabot watches kiln, not the generated workflows (D21).
+release check (D22). The pin set lives in `modules/cicd/pins.toml`; Dependabot
+watches kiln, not the generated workflows (D21).
 
 ## Steady state after release-1
 
