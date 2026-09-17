@@ -25,6 +25,9 @@ exclude = [
   "site/**",
   "node_modules/**",
   ".rn-forge/kiln/standard.md",
+  # tests/fixtures/**: each fixture is held to its own gate (README.md), not
+  # this repo's — a captured frontend scaffold's README is its own prose.
+  "tests/fixtures/**",
 ]
 
 [plugin.tables]

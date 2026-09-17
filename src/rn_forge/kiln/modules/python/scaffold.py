@@ -24,6 +24,7 @@ from rn_forge.kiln.modules.python.checks.pyproject import (
     REQUIRES_PYTHON,
     RUFF_TEST_IGNORES,
 )
+from rn_forge.kiln.modules.python.frontend import scaffold_frontend
 
 __all__ = ["scaffold"]
 
@@ -51,6 +52,8 @@ def scaffold(root: Path, config: KilnConfig) -> None:
     `config.packages` and wires the workspace table at the root. `uv init`
     itself refuses a directory that already holds a `pyproject.toml`, so this
     is meant to run once, into an empty directory, before the first `apply`.
+    For `python-web-app`, also scaffolds the frontend
+    (`frontend.scaffold_frontend`) once the uv steps are done.
 
     Raises:
         AppException: `uv` is not on `PATH`, or exits non-zero.
@@ -98,6 +101,8 @@ def scaffold(root: Path, config: KilnConfig) -> None:
             mkdocs=config.docs_profile == "mkdocs",
             extra_dev=extra_dev,
         )
+
+    scaffold_frontend(root, config)
 
 
 def _member_name(
