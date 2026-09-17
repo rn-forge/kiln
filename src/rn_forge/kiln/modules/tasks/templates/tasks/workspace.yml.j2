@@ -14,15 +14,19 @@ vars:
 tasks:
   install:
 {% if workspace %}    desc: Sync the whole workspace with the dev and docs dependency groups.
+{% elif web %}    desc: Sync the workspace with the dev and docs dependency groups.
 {% else %}    desc: Sync the virtualenv with the dev and docs dependency groups.
 {% endif %}    internal: true
     cmds:
 {% if overrides.get("workspace:install") %}      - [[ overrides["workspace:install"] ]]
 {% elif workspace %}      - uv sync --all-packages --group dev --group docs
-{% else %}      - uv sync --group dev --group docs
+{% elif web %}      - uv sync --all-packages --group dev --group docs
+{% if web_app %}      - pnpm install --frozen-lockfile
+{% endif %}{% else %}      - uv sync --group dev --group docs
 {% endif %}
   version:
 {% if workspace %}    desc: Print one package's version, or every package's when given no argument.
+{% elif web %}    desc: Print the API package's version from pyproject.toml.
 {% else %}    desc: Print the package version from pyproject.toml.
 {% endif %}    internal: true
     silent: true
@@ -36,10 +40,12 @@ tasks:
             printf '%s %s\n' "$package" "$(uv version --short --package "$package")"
           done
         fi
+{% elif web %}      - uv version --short --package [[ api_package ]]
 {% else %}      - uv version --short
 {% endif %}
   build:
 {% if workspace %}    desc: Build one package's wheel and sdist into dist/, or every package's.
+{% elif web %}    desc: Build the API package's wheel and sdist into dist/.
 {% else %}    desc: Build the wheel and sdist into dist/.
 {% endif %}    internal: true
     env:
@@ -52,6 +58,7 @@ tasks:
         for package in {{.CLI_ARGS | default .PACKAGES}}; do
           uv build --package "$package" --out-dir dist
         done
+{% elif web %}      - uv build --package [[ api_package ]] --out-dir dist
 {% else %}      - uv build
 {% endif %}
   clean:
@@ -61,4 +68,5 @@ tasks:
 {% if overrides.get("workspace:clean") %}      - [[ overrides["workspace:clean"] ]]
 {% else %}      - rm -rf dist build [[ site_dir ]] .pytest_cache .ruff_cache .uv-cache .import_linter_cache coverage.xml
       - find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
-{% endif -%}
+{% if web_app %}      - rm -rf .nx [[ web_dir ]]/dist
+{% endif %}{% endif -%}

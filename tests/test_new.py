@@ -118,6 +118,49 @@ def test_s4_5_1_missing_archetype_is_refused(tmp_path: Path, value: str | None) 
         commands.new(tmp_path / "repo", **kwargs)
 
 
+def test_s5_1_1_4_backend_is_rejected_for_a_non_web_archetype(tmp_path: Path) -> None:
+    directory = tmp_path / "repo"
+    with pytest.raises(AppException, match="backend"):
+        commands.new(directory, archetype="python-app", docs="none", backend="fastapi")
+    assert not directory.exists() or not any(directory.iterdir())
+
+
+def test_s5_1_1_4_frontend_is_rejected_for_python_web_api(tmp_path: Path) -> None:
+    directory = tmp_path / "repo"
+    with pytest.raises(AppException, match="frontend"):
+        commands.new(
+            directory,
+            archetype="python-web-api",
+            docs="none",
+            backend="fastapi",
+            frontend="angular",
+            allow_untested=True,
+        )
+    assert not directory.exists() or not any(directory.iterdir())
+
+
+def test_s5_1_1_4_frontend_is_rejected_for_a_non_web_archetype(tmp_path: Path) -> None:
+    directory = tmp_path / "repo"
+    with pytest.raises(AppException, match="frontend"):
+        commands.new(directory, archetype="python-app", docs="none", frontend="angular")
+    assert not directory.exists() or not any(directory.iterdir())
+
+
+def test_s5_1_1_5_an_unsupported_backend_is_rejected_before_writing(
+    tmp_path: Path,
+) -> None:
+    directory = tmp_path / "repo"
+    with pytest.raises(AppException, match="backend"):
+        commands.new(
+            directory,
+            archetype="python-web-api",
+            docs="none",
+            backend="spring-boot",
+            allow_untested=True,
+        )
+    assert not directory.exists() or not any(directory.iterdir())
+
+
 def test_s4_5_1_yes_creates_and_passes_every_check(tmp_path: Path) -> None:
     """The slow path: `uv init` through the python scaffold, then a full apply."""
     directory = tmp_path / "demo"

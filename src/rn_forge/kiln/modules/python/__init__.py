@@ -27,7 +27,18 @@ class PythonModule:
 
     def options(self) -> Sequence[Option]:
         """The `kiln new` flags this module adds."""
-        return ()
+        return (
+            Option(
+                "backend",
+                "archetype.<archetype>.backend",
+                "The backend framework: fastapi or django (web archetypes only).",
+            ),
+            Option(
+                "frontend",
+                "archetype.<archetype>.frontend",
+                "The frontend: angular, react or svelte (python-web-app only).",
+            ),
+        )
 
     def artifacts(self, config: KilnConfig, root: Path) -> Sequence[Artifact]:
         """Render `.importlinter` for *config*."""

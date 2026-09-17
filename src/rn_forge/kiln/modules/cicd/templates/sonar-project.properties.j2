@@ -3,7 +3,9 @@ sonar.projectKey=rn-forge_[[ name ]]
 sonar.projectName=[[ name ]]
 sonar.organization=[[ organization ]]
 
-{% if workspace %}sonar.sources={% for package in packages %}packages/[[ package ]]/src{% if not loop.last %},{% endif %}{% endfor %}
+{% if web %}sonar.sources=[[ api_dir ]]/src{% if web_app %},[[ web_dir ]]/src{% endif %}
+sonar.tests=[[ api_dir ]]/tests
+{% elif workspace %}sonar.sources={% for package in packages %}packages/[[ package ]]/src{% if not loop.last %},{% endif %}{% endfor %}
 sonar.tests={% for package in packages %}packages/[[ package ]]/tests{% if not loop.last %},{% endif %}{% endfor %}
 {% else %}sonar.sources=src
 sonar.tests=tests

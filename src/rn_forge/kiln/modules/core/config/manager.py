@@ -151,6 +151,14 @@ class ConfigManager:
                     for module in disabled
                 ),
             )
+        foreign = [key for key in documents.table(document, "archetype") if key != name]
+        if foreign:
+            raise AppException(
+                "{}: [archetype.{}] belongs to a different archetype than {!r}",
+                source,
+                foreign[0],
+                name,
+            )
         return KilnConfig(compose(enabled).parse(document, source=source))
 
     def resolve(

@@ -10,6 +10,13 @@ is a kiln ADR; this file states the rule.
 {% if workspace %}- **Archetype:** `python-lib` — a uv workspace of published library packages
   ({% for package in packages %}`packages/{{ package }}`{% if not loop.last %}, {% endif %}{% endfor %}), each with its own `src/`
   layout, per-package verify, and a `<package>-v<version>` release tag.
+{% elif web_app %}- **Archetype:** `python-web-app` — a uv workspace with one API member at
+  `{{ api_dir }}` (backend `{{ backend }}`) plus a pnpm-managed Nx frontend
+  workspace whose one application is `{{ web_dir }}` (`{{ frontend }}`), `src/`
+  layout, pytest, ruff and pyright, GitHub Actions.
+{% elif web %}- **Archetype:** `python-web-api` — a uv workspace with one API member at
+  `{{ api_dir }}` (backend `{{ backend }}`), `src/` layout, pytest, ruff and
+  pyright, GitHub Actions.
 {% elif lifecycle %}- **Archetype:** `python-tool` — `python-app` with `lifecycle = true`: one uv
   package, `src/` layout, pytest, ruff and pyright at the root, GitHub Actions,
   a command line declared in `.rn-forge/kiln/config.toml` rather than assembled
@@ -61,8 +68,19 @@ The public surface for this repo is exactly:
 {% endif %}{% if docs %}| `task docs:serve`   | live-reload docs on `127.0.0.1:8080`                |
 {% endif %}{% if docs %}| `task docs:nav`     | regenerate `mkdocs.yml`'s nav block                 |
 {% endif %}{% if docs %}| `task docs:structure` | check the tree against `docs/_areas.yml`          |
+{% endif %}{% if web %}| `task api:dev`      | run the API dev server on port 8000                 |
+{% endif %}{% if web and backend == "django" %}| `task api:migrate`  | apply the API's Django migrations                   |
+{% endif %}{% if web_app %}| `task web:lint`     | lint the frontend workspace with Nx                 |
+{% endif %}{% if web_app %}| `task web:test`     | test the frontend workspace with Nx                 |
+{% endif %}{% if web_app %}| `task web:build`    | build the frontend workspace with Nx                |
+{% endif %}{% if web_app %}| `task web:dev`      | run the frontend dev server via Nx                  |
 {% endif %}{% endif %}
-{% if workspace %}`build` and `version` take a package name after `--`
+{% if web_app %}**Frontend:** `{{ frontend }}`, managed by pnpm + Nx. Its one application is the
+Nx project at `{{ web_dir }}` (project `{{ web_project }}`). Every file the
+frontend scaffold wrote is repo-owned; kiln renders nothing under
+`{{ web_dir }}`.
+
+{% endif %}{% if workspace %}`build` and `version` take a package name after `--`
 (`task version -- {{ packages[0] }}`); given none, they act on every member.
 
 {% endif %}Every other task is `internal: true`. The root `Taskfile.yml` holds wrappers

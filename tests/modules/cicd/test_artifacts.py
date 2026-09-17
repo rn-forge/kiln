@@ -250,3 +250,91 @@ def test_s4_3_4_5_python_lib_matrix_lists_every_package_basename(
     rendered = _rendered(_root(tmp_path, "python-lib"))
     jobs = yaml.safe_load(rendered[".github/workflows/ci.yml"])["jobs"]
     assert jobs["release"]["strategy"]["matrix"]["package"] == ["alpha", "beta"]
+
+
+WEB_CONFIG = """
+schema_version = 1
+
+[repository]
+name = "demo"
+archetype = "{archetype}"
+
+[docs]
+profile = "none"
+
+[archetype."{archetype}"]
+backend = "fastapi"
+{extra}
+"""
+
+
+def _web_root(tmp_path: Path, archetype: str, extra: str = "") -> Path:
+    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(
+        WEB_CONFIG.format(archetype=archetype, extra=extra), encoding="utf-8"
+    )
+    return tmp_path
+
+
+def test_s5_1_2_only_python_web_app_s_setup_action_sets_up_pnpm_and_node(
+    tmp_path: Path,
+) -> None:
+    api = _rendered(_web_root(tmp_path / "api", "python-web-api"))
+    app = _rendered(
+        _web_root(tmp_path / "app", "python-web-app", extra='frontend = "angular"')
+    )
+    api_action = api[".github/actions/setup/action.yml"]
+    app_action = app[".github/actions/setup/action.yml"]
+    assert "pnpm/action-setup" not in api_action
+    assert "actions/setup-node" not in api_action
+    assert "pnpm/action-setup" in app_action
+    assert "actions/setup-node" in app_action
+    assert "cache: pnpm" in app_action
+
+
+def test_s5_1_2_sonar_properties_web_api_uses_api_dir(tmp_path: Path) -> None:
+    rendered = _rendered(_web_root(tmp_path, "python-web-api"))
+    properties = rendered["sonar-project.properties"]
+    assert "sonar.sources=apps/api/src" in properties
+    assert "sonar.tests=apps/api/tests" in properties
+
+
+def test_s5_1_2_sonar_properties_web_app_adds_web_dir_to_sources(
+    tmp_path: Path,
+) -> None:
+    rendered = _rendered(
+        _web_root(tmp_path, "python-web-app", extra='frontend = "angular"')
+    )
+    properties = rendered["sonar-project.properties"]
+    assert "sonar.sources=apps/api/src,apps/web/src" in properties
+    assert "sonar.tests=apps/api/tests" in properties
+
+
+def test_s5_1_2_ci_pins_passes_on_the_web_app_setup_action(tmp_path: Path) -> None:
+    root = _web_root(tmp_path, "python-web-app", extra='frontend = "angular"')
+    cycle.apply(root, home=tmp_path / "home")
+    assert not [c for c in _codes(root) if c.startswith("ci.")]
+
+
+@pytest.mark.parametrize("sonar", [True, False])
+def test_s5_1_2_actionlint_passes_on_web_app_workflows(
+    tmp_path: Path, sonar: bool
+) -> None:
+    if shutil.which("actionlint") is None:
+        pytest.skip("actionlint is not on PATH")
+    root = _web_root(tmp_path, "python-web-app", extra='frontend = "angular"')
+    text = root.joinpath(".rn-forge/kiln/config.toml").read_text(encoding="utf-8")
+    text = text.replace(
+        "[repository]", f"[ci]\nsonar = {str(sonar).lower()}\n\n[repository]"
+    )
+    root.joinpath(".rn-forge/kiln/config.toml").write_text(text, encoding="utf-8")
+    cycle.apply(root, home=tmp_path / "home")
+    result = subprocess.run(
+        ["actionlint", ".github/workflows/ci.yml"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

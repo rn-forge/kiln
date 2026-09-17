@@ -27,6 +27,9 @@ def context(config: KilnConfig) -> dict[str, object]:
     ci = getattr(config.document, "ci", None)
     ci = ci if isinstance(ci, CiConfig) else CiConfig()
     lifecycle = config.lifecycle
+    web = config.archetype in {"python-web-api", "python-web-app"}
+    web_app = config.archetype == "python-web-app"
+    web_dir = config.web_dir
     return {
         "kiln_version": __version__,
         "name": config.name,
@@ -43,6 +46,13 @@ def context(config: KilnConfig) -> dict[str, object]:
         "external_url": docs.external_url if isinstance(docs, DocsConfig) else "",
         "sonar": ci.sonar,
         "release": ci.release,
+        "web": web,
+        "web_app": web_app,
+        "backend": config.backend,
+        "frontend": config.frontend,
+        "api_dir": config.api_dir,
+        "web_dir": web_dir,
+        "web_project": Path(web_dir).name if web_dir else None,
     }
 
 

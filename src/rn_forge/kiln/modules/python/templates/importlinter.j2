@@ -48,11 +48,7 @@ type = forbidden
 source_modules =
 {{ members_block }}
 forbidden_modules =
-    typer
-    jinja2
-    click
-    django
-    fastapi
+{{ forbidden_block }}
 allow_indirect_imports = False
 {% if workspace %}
 [importlinter:contract:packages-are-independent]

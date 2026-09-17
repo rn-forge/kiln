@@ -34,3 +34,13 @@ version = "v5.0.0"
 uses = "actions/deploy-pages"
 sha = "cd2ce8fcbc39b97be8ca5fce6e763baed58fa128"
 version = "v5.0.0"
+
+[pnpm-setup]
+uses = "pnpm/action-setup"
+sha = "a7487c7e89a18df4991f7f222e4898a00d66ddda"
+version = "v4.1.0"
+
+[setup-node]
+uses = "actions/setup-node"
+sha = "49933ea5288caeca8642d1e84afbd3f7d6820020"
+version = "v4.4.0"

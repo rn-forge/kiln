@@ -273,3 +273,71 @@ def test_s4_3_5_6_root_hygiene_warns_on_notes_md(repo) -> None:
     assert [(f.code, f.path) for f in findings] == [
         ("hygiene.stray-root-file", "NOTES.md")
     ]
+
+
+WEB_CONFIG = """
+schema_version = 1
+
+[repository]
+name = "demo"
+archetype = "{archetype}"
+
+[docs]
+profile = "none"
+
+[archetype."{archetype}"]
+backend = "{backend}"
+{extra}
+"""
+
+
+def _web_root(tmp_path: Path, archetype: str, backend: str, extra: str = "") -> Path:
+    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(
+        WEB_CONFIG.format(archetype=archetype, backend=backend, extra=extra),
+        encoding="utf-8",
+    )
+    return tmp_path
+
+
+def test_s5_1_2_python_web_api_block_names_the_framework(tmp_path: Path) -> None:
+    root = _web_root(tmp_path, "python-web-api", "fastapi")
+    block = _rendered(root)[BLOCK_KEY]
+    assert "backend: `fastapi`" in block
+    assert "api:dev" in block
+
+
+def test_s5_1_2_python_web_app_block_has_frontend_clause_and_web_verbs(
+    tmp_path: Path,
+) -> None:
+    root = _web_root(tmp_path, "python-web-app", "django", extra='frontend = "angular"')
+    block = _rendered(root)[BLOCK_KEY]
+    assert "backend: `django`" in block
+    assert "frontend: `angular`" in block
+    assert "Frontend:" in block
+    assert "pnpm" in block
+    assert "web:lint web:test web:build web:dev" in block
+    assert "api:migrate" in block
+
+
+def test_s5_1_2_standard_md_web_api_has_api_verb_rows(tmp_path: Path) -> None:
+    root = _web_root(tmp_path, "python-web-api", "fastapi")
+    standard = _rendered(root)[".rn-forge/kiln/standard.md"]
+    assert "task api:dev" in standard
+    assert "task web:lint" not in standard
+
+
+def test_s5_1_2_standard_md_web_app_has_web_verb_rows_and_frontend_clause(
+    tmp_path: Path,
+) -> None:
+    root = _web_root(
+        tmp_path, "python-web-app", "fastapi", extra='frontend = "angular"'
+    )
+    standard = _rendered(root)[".rn-forge/kiln/standard.md"]
+    assert "task api:dev" in standard
+    assert "task web:lint" in standard
+    assert "task web:test" in standard
+    assert "task web:build" in standard
+    assert "task web:dev" in standard
+    assert "**Frontend:** `angular`" in standard

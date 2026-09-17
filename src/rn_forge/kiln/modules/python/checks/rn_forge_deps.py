@@ -38,6 +38,8 @@ REQUIREMENT_NAME = re.compile(r"^\s*([A-Za-z0-9][A-Za-z0-9._-]*)")
 # A git URL carrying a ref: `git+https://host/org/repo@<ref>`, with the ref
 # ending at the `#subdirectory=` fragment if there is one.
 PINNED_GIT_URL = re.compile(r"^git\+[^@\s]+@[^#\s]+")
+# A requirement naming a `[codegen]` extra, among possibly other extras.
+CODEGEN_EXTRA = re.compile(r"^\s*[A-Za-z0-9][A-Za-z0-9._-]*\[[^\]]*\bcodegen\b[^\]]*\]")
 
 KILN = "rn-forge-kiln"
 """The generator itself: a dev dependency the contract does not govern."""
@@ -126,6 +128,25 @@ def _check_direct_url(label: str, document: dict[str, object]) -> list[Finding]:
     return findings
 
 
+def _check_no_codegen_in_runtime(
+    label: str, document: dict[str, object]
+) -> list[Finding]:
+    """A framework's `[codegen]` extra is a dev-only entry-point group, never a
+    runtime dependency: kiln discovers generators in the environment it runs
+    in, never the one the application ships (kiln ADR-0005)."""
+    return [
+        Finding(
+            f"{CODE}.codegen-runtime",
+            Severity.ERROR,
+            f"`{distribution(requirement)}` declares its [codegen] extra in "
+            f"[project] dependencies — move it to a dependency group",
+            path=label,
+        )
+        for requirement in runtime_dependencies(document)
+        if governed(distribution(requirement)) and CODEGEN_EXTRA.match(requirement)
+    ]
+
+
 def _check_no_shadowing_source(
     label: str, document: dict[str, object]
 ) -> list[Finding]:
@@ -173,6 +194,7 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
         )
         findings.extend(_check_direct_url(label, document))
         findings.extend(_check_no_shadowing_source(label, document))
+        findings.extend(_check_no_codegen_in_runtime(label, document))
         declared.update(distribution(r) for r in runtime_dependencies(document))
 
     findings.extend(

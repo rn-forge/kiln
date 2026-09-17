@@ -65,7 +65,7 @@ halves added — still `artifacts()` + `checks()` at its core
 
 | Command | Behaviour |
 | -- | -- |
-| `kiln new <dir> --archetype A [--docs P] [--framework F] [--frontend W] [--config <path\|git-url[@ref]>] [--dry-run] [--yes] [--json]` | collect config in memory for a new repo; preview and write nothing unless `--yes`, which writes `config.toml` and runs scaffold + apply. Refuses a non-empty `<dir>`. |
+| `kiln new <dir> --archetype A [--docs P] [--backend F] [--frontend W] [--config <path\|git-url[@ref]>] [--dry-run] [--yes] [--json]` | collect config in memory for a new repo; preview and write nothing unless `--yes`, which writes `config.toml` and runs scaffold + apply. Refuses a non-empty `<dir>`. |
 | `kiln apply [--dry-run] [--json] [--force <artifact>]…` | the full sequence (below); idempotent and non-interactive; re-run after editing `config.toml` or upgrading kiln; each forced path must name a reported conflict, drift, or missing managed artifact |
 | `kiln doctor [PATH] [--only <name>] [--full] [--json] [--all <path>…]` | by default, the render-free checks over committed files — what `task validate` runs in CI; `--full` opts in to every check below, including a fresh render and diff; exit 1 on any error-severity finding |
 | `kiln docs-nav [PATH]` | regenerate `mkdocs.yml`'s nav block; `kiln doctor --only docs-nav` is its check |

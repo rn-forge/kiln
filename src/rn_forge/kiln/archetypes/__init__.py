@@ -105,7 +105,8 @@ def load(name: str) -> Archetype:
 def for_config(config: KilnConfig) -> Archetype:
     """The archetype *config* names, adjusted by its flags.
 
-    `lifecycle = true` adds `rn-forge-tooling` to the dependency set, and
+    `lifecycle = true` adds `rn-forge-tooling` to the dependency set,
+    `config.backend` (a web archetype only) adds `rn-forge-<backend>`, and
     `docs.profile = "mkdocs"` adds the docs gate to `required_validate`.
 
     Raises:
@@ -114,6 +115,10 @@ def for_config(config: KilnConfig) -> Archetype:
     archetype = load(config.archetype)
     required = list(archetype.dependencies.required)
     allowed = list(archetype.dependencies.allowed)
+    if config.backend:
+        framework = f"{RN_FORGE_PREFIX}{config.backend}"
+        required += [framework] if framework not in required else []
+        allowed += [framework] if framework not in allowed else []
     if config.lifecycle:
         required += [_TOOLING] if _TOOLING not in required else []
         allowed += [_TOOLING] if _TOOLING not in allowed else []

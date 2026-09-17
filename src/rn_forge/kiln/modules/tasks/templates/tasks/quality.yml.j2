@@ -17,6 +17,7 @@ vars:
 tasks:
   lint:python:
 {% if workspace %}    desc: Lint every workspace package with ruff, and check formatting.
+{% elif web %}    desc: Lint the API package with ruff, and check formatting.
 {% else %}    desc: Lint src/ and tests/ with ruff, and check formatting.
 {% endif %}    internal: true
     cmds:
@@ -25,6 +26,8 @@ tasks:
         cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff check
       - for: { var: PACKAGES, split: " " }
         cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff format --check
+{% elif web %}      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff check
+      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff format --check
 {% else %}      - uv run ruff check src tests
       - uv run ruff format --check src tests
 {% endif %}
@@ -93,6 +96,7 @@ tasks:
 {% endif %}{% endif %}
   format:python:
 {% if workspace %}    desc: Fix and format every workspace package in place with ruff.
+{% elif web %}    desc: Fix and format the API package in place with ruff.
 {% else %}    desc: Fix and format src/ and tests/ in place with ruff.
 {% endif %}    internal: true
     # `check --fix` first, then `format`: the linter's fixes are edits, and an
@@ -105,6 +109,8 @@ tasks:
         cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff check --fix
       - for: { var: PACKAGES, split: " " }
         cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff format
+{% elif web %}      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff check --fix
+      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff format
 {% else %}      - uv run ruff check --fix src tests
       - uv run ruff format src tests
 {% endif %}
@@ -117,26 +123,31 @@ tasks:
 {% endif %}
   typecheck:python:
 {% if workspace %}    desc: Type-check every workspace package with pyright in strict mode.
+{% elif web %}    desc: Type-check the API package with pyright in strict mode.
 {% else %}    desc: Type-check src/ with pyright in strict mode.
 {% endif %}    internal: true
     cmds:
 {% if overrides.get("quality:typecheck:python") %}      - [[ overrides["quality:typecheck:python"] ]]
 {% elif workspace %}      - for: { var: PACKAGES, split: " " }
         cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} pyright src
+{% elif web %}      - uv run --directory [[ api_dir ]] --package [[ api_package ]] pyright src
 {% else %}      - uv run pyright src
 {% endif %}
   test:python:
 {% if workspace %}    desc: Run each workspace package's pytest suite.
+{% elif web %}    desc: Run the API package's pytest suite.
 {% else %}    desc: Run the pytest suite quietly.
 {% endif %}    internal: true
     cmds:
 {% if overrides.get("quality:test:python") %}      - [[ overrides["quality:test:python"] ]]
 {% elif workspace %}      - for: { var: PACKAGES, split: " " }
         cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} pytest -q
+{% elif web %}      - uv run --directory [[ api_dir ]] --package [[ api_package ]] pytest -q
 {% else %}      - uv run pytest -q
 {% endif %}
   test:coverage:
 {% if workspace %}    desc: Run each package's tests with coverage, then combine into one XML report.
+{% elif web %}    desc: Run the API package's tests with an XML coverage report for Sonar.
 {% else %}    desc: Run the pytest suite with an XML coverage report for Sonar.
 {% endif %}    internal: true
 {% if workspace %}    # Coverage runs the way tests do — once per package, from that package's own
@@ -145,6 +156,11 @@ tasks:
     # absolute, because the run's cwd is not the root), and `combine` merges
     # them. Paths stay absolute so Sonar can map a line back to
     # packages/<member>/src/... rather than to a `src/` that exists twice.
+{% elif web %}    # Coverage runs from the API package's own directory, same as test:python, so
+    # its pytest settings apply. `combine` is a single-file no-op here, kept for
+    # the same reason the workspace form needs it: paths stay absolute so Sonar
+    # maps a line back to [[ api_dir ]]/src/... rather than a `src/` that exists
+    # under both the API and, for python-web-app, the frontend.
 {% endif %}    cmds:
 {% if overrides.get("quality:test:coverage") %}      - [[ overrides["quality:test:coverage"] ]]
 {% elif workspace %}      - rm -f "{{.ROOT_DIR}}/.coverage" "{{.ROOT_DIR}}/.coverage."* coverage.xml
@@ -152,6 +168,13 @@ tasks:
         cmd: >-
           COVERAGE_FILE="{{.ROOT_DIR}}/.coverage.{{.ITEM}}"
           uv run --directory packages/{{.ITEM}} --package {{.ITEM}}
+          coverage run --rcfile "{{.ROOT_DIR}}/pyproject.toml" --source src -m pytest -q
+      - uv run coverage combine
+      - uv run coverage xml -o coverage.xml
+{% elif web %}      - rm -f "{{.ROOT_DIR}}/.coverage" "{{.ROOT_DIR}}/.coverage."* coverage.xml
+      - >-
+          COVERAGE_FILE="{{.ROOT_DIR}}/.coverage.[[ api_package ]]"
+          uv run --directory [[ api_dir ]] --package [[ api_package ]]
           coverage run --rcfile "{{.ROOT_DIR}}/pyproject.toml" --source src -m pytest -q
       - uv run coverage combine
       - uv run coverage xml -o coverage.xml

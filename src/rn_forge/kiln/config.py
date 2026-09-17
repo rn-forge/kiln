@@ -14,7 +14,7 @@ from typing import Any
 from rn_forge.kiln.modules.cicd.config import CiConfig
 from rn_forge.kiln.modules.core.config.schema import RootConfig
 from rn_forge.kiln.modules.docs.config import DocsConfig
-from rn_forge.kiln.modules.python.config import ArchetypeConfig
+from rn_forge.kiln.modules.python.config import ArchetypeConfig, WebAppConfig
 
 __all__ = ["CONFIG_PATH", "KilnConfig"]
 
@@ -70,11 +70,46 @@ class KilnConfig:
 
     @property
     def packages(self) -> tuple[str, ...]:
-        """Workspace member directories, for a `python-lib`. Empty otherwise."""
+        """Workspace member directories: `packages` for `python-lib`, `(api_dir,)`
+        for a web archetype, empty otherwise — so every per-member code path
+        that already exists applies to a web archetype's one member."""
         section = getattr(self.document, "archetype", None)
         if not isinstance(section, ArchetypeConfig):
             return ()
+        api_dir = self.api_dir
+        if api_dir is not None:
+            return (api_dir,)
         return tuple(section.packages_for(self.archetype))
+
+    def _web_section(self) -> Any:
+        section = getattr(self.document, "archetype", None)
+        if not isinstance(section, ArchetypeConfig):
+            return None
+        return section.web_for(self.archetype)
+
+    @property
+    def backend(self) -> str | None:
+        """The chosen backend framework, for a web archetype. `None` otherwise."""
+        section = self._web_section()
+        return section.backend if section is not None else None
+
+    @property
+    def frontend(self) -> str | None:
+        """The chosen frontend, for `python-web-app`. `None` otherwise."""
+        section = self._web_section()
+        return section.frontend if isinstance(section, WebAppConfig) else None
+
+    @property
+    def api_dir(self) -> str | None:
+        """The API member's directory, for a web archetype. `None` otherwise."""
+        section = self._web_section()
+        return section.api_dir if section is not None else None
+
+    @property
+    def web_dir(self) -> str | None:
+        """The frontend's directory, for `python-web-app`. `None` otherwise."""
+        section = self._web_section()
+        return section.web_dir if isinstance(section, WebAppConfig) else None
 
     def to_document(self) -> dict[str, Any]:
         """The config as a TOML-ready mapping, defaults included."""

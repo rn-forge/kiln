@@ -282,6 +282,146 @@ def test_s4_3_3_4_an_unknown_override_key_raises_naming_it(tmp_path: Path) -> No
         TASKS.artifacts(config, root)
 
 
+WEB_CONFIG = """
+schema_version = 1
+
+[repository]
+name = "demo"
+archetype = "{archetype}"
+
+[docs]
+profile = "none"
+
+[archetype."{archetype}"]
+backend = "{backend}"
+{extra}
+"""
+
+
+def _web_root(tmp_path: Path, archetype: str, backend: str, extra: str = "") -> Path:
+    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(
+        WEB_CONFIG.format(archetype=archetype, backend=backend, extra=extra),
+        encoding="utf-8",
+    )
+    return tmp_path
+
+
+def test_s5_1_2_python_web_api_renders_api_yml_and_no_web_yml(tmp_path: Path) -> None:
+    root = _web_root(tmp_path, "python-web-api", "fastapi")
+    artifacts = TASKS.artifacts(KilnConfig.load(root), root)
+    paths = [a.path for a in artifacts]
+    assert "tasks/api.yml" in paths
+    assert "tasks/web.yml" not in paths
+
+
+def test_s5_1_2_python_web_app_renders_api_yml_and_web_yml(tmp_path: Path) -> None:
+    root = _web_root(
+        tmp_path, "python-web-app", "fastapi", extra='frontend = "angular"'
+    )
+    artifacts = TASKS.artifacts(KilnConfig.load(root), root)
+    paths = [a.path for a in artifacts]
+    assert "tasks/api.yml" in paths
+    assert "tasks/web.yml" in paths
+
+
+def test_s5_1_2_task_list_json_shows_api_and_web_verbs(tmp_path: Path) -> None:
+    root = _web_root(
+        tmp_path, "python-web-app", "fastapi", extra='frontend = "angular"'
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    result = _run_task(root, "--list", "--json")
+    assert result.returncode == 0, result.stderr
+    names = {entry["name"] for entry in json.loads(result.stdout)["tasks"]}
+    assert {"api:dev", "web:lint", "web:test", "web:build", "web:dev"} <= names
+    assert "api:migrate" not in names  # fastapi, not django
+
+
+def test_s5_1_2_django_backend_also_lists_api_migrate(tmp_path: Path) -> None:
+    root = _web_root(tmp_path, "python-web-app", "django", extra='frontend = "angular"')
+    cycle.apply(root, home=tmp_path / "home")
+    result = _run_task(root, "--list", "--json")
+    assert result.returncode == 0, result.stderr
+    names = {entry["name"] for entry in json.loads(result.stdout)["tasks"]}
+    assert "api:migrate" in names
+
+
+def test_s5_1_2_task_layout_passes_on_both_web_archetypes(tmp_path: Path) -> None:
+    for archetype, extra in (
+        ("python-web-api", ""),
+        ("python-web-app", 'frontend = "angular"'),
+    ):
+        root = _web_root(tmp_path / archetype, archetype, "fastapi", extra=extra)
+        cycle.apply(root, home=tmp_path / "home")
+        assert _codes(root) == [], archetype
+
+
+def test_s5_1_2_gate_shrunk_fires_when_web_lint_drops_out_of_lint(
+    tmp_path: Path,
+) -> None:
+    root = _web_root(
+        tmp_path, "python-web-app", "fastapi", extra='frontend = "angular"'
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    taskfile = root / "Taskfile.yml"
+    taskfile.write_text(
+        taskfile.read_text(encoding="utf-8").replace("      - task: web:lint\n", ""),
+        encoding="utf-8",
+    )
+    assert "gate.shrunk" in _codes(root)
+
+
+def test_s5_1_2_a_workflow_calling_pnpm_directly_fails_ci_entrypoint(
+    tmp_path: Path,
+) -> None:
+    from rn_forge.kiln.modules.cicd.checks import entrypoint
+
+    root = _web_root(
+        tmp_path, "python-web-app", "fastapi", extra='frontend = "angular"'
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    workflow = root / ".github" / "workflows" / "ci.yml"
+    text = workflow.read_text(encoding="utf-8")
+    text = text.replace(
+        "      - name: Validate\n        run: task validate\n",
+        "      - name: Validate\n        run: task validate\n"
+        "      - name: Bad\n        run: pnpm install\n",
+    )
+    workflow.write_text(text, encoding="utf-8")
+    findings = entrypoint.check(KilnConfig.load(root), root)
+    assert any(f.code == entrypoint.CODE for f in findings)
+
+
+def test_s5_1_3_backend_flag_changes_only_api_yml_and_not_the_task_graph(
+    tmp_path: Path,
+) -> None:
+    django_root = _web_root(
+        tmp_path / "django", "python-web-app", "django", extra='frontend = "angular"'
+    )
+    fastapi_root = _web_root(
+        tmp_path / "fastapi",
+        "python-web-app",
+        "fastapi",
+        extra='frontend = "angular"',
+    )
+    django_artifacts = {
+        a.path: a.content
+        for a in TASKS.artifacts(KilnConfig.load(django_root), django_root)
+    }
+    fastapi_artifacts = {
+        a.path: a.content
+        for a in TASKS.artifacts(KilnConfig.load(fastapi_root), fastapi_root)
+    }
+    assert set(django_artifacts) == set(fastapi_artifacts)
+    differing = {
+        path
+        for path in django_artifacts
+        if django_artifacts[path] != fastapi_artifacts[path]
+    }
+    assert differing == {"tasks/api.yml"}
+
+
 def test_s4_3_3_5_without_mkdocs_the_rendered_files_carry_no_docs_reference(
     tmp_path: Path,
 ) -> None:

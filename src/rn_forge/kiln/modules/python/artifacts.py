@@ -18,19 +18,26 @@ def root_package(name: str) -> str:
     return name.replace("-", "_")
 
 
+_FORBIDDEN_FRAMEWORKS = ("typer", "jinja2", "click", "django", "fastapi")
+
+
 def render(config: KilnConfig) -> list[Artifact]:
     """Render `.importlinter` for *config*."""
     engine = TemplateEngine(package="rn_forge.kiln.modules.python")
     workspace = config.archetype == "python-lib"
-    members = (
-        [root_package(Path(package).name) for package in config.packages]
-        if workspace
-        else [root_package(config.name)]
-    )
+    web = config.archetype in {"python-web-api", "python-web-app"}
+    if workspace:
+        members = [root_package(Path(package).name) for package in config.packages]
+    elif web:
+        members = [root_package(f"{config.name}-api")]
+    else:
+        members = [root_package(config.name)]
+    forbidden = [m for m in _FORBIDDEN_FRAMEWORKS if m != config.backend]
     context: dict[str, object] = {
         "kiln_version": __version__,
         "workspace": workspace,
         "members_block": "\n".join(f"    {member}" for member in members),
+        "forbidden_block": "\n".join(f"    {module}" for module in forbidden),
     }
     if not workspace:
         context["package"] = members[0]

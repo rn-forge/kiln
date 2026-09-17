@@ -42,11 +42,8 @@ _CONFIG_HEADER = (
 )
 
 # `new`'s config-setting flags: every one of them must be backed by a
-# registered module's `Option`, verified by `tests/test_new.py`. `framework`
-# and `frontend` join this set (and the signature) once F5.1/F5.2 register a
-# module that declares matching options — adding an unclaimed flag now would
-# break that invariant.
-_FLAG_NAMES = ("archetype", "docs")
+# registered module's `Option`, verified by `tests/test_new.py`.
+_FLAG_NAMES = ("archetype", "docs", "backend", "frontend")
 
 
 def doctor(path: Path, only: str | None = None) -> None:
@@ -82,6 +79,8 @@ def new(
     directory: Path,
     archetype: str = "",
     docs: str = "mkdocs",
+    backend: str | None = None,
+    frontend: str | None = None,
     config: str | None = None,
     allow_untested: bool = False,
     dry_run: bool = False,
@@ -93,6 +92,11 @@ def new(
     Without `--yes`, prints the resolved config and the artifacts it would
     produce, and writes nothing. With `--yes`, writes `config.toml`, scaffolds
     the tree and applies it (kiln ADR-0004).
+
+    `--backend` and `--frontend` are omitted (left `None`) unless given, so a
+    config-selected value or the archetype's own default survives; passing
+    either for an archetype that does not declare it is refused, naming the
+    key.
 
     Raises:
         AppException: `--archetype` is missing or unknown, a flag names an
@@ -106,7 +110,12 @@ def new(
 
     manifest = archetypes.load(archetype)
     flags = _flag_layer(
-        archetype=archetype, docs=docs, manifest=manifest, allow_untested=allow_untested
+        archetype=archetype,
+        docs=docs,
+        manifest=manifest,
+        allow_untested=allow_untested,
+        backend=backend,
+        frontend=frontend,
     )
     DictUtils.set(flags, "repository.name", directory.name)
 
@@ -175,18 +184,32 @@ def _flag_layer(
     docs: str,
     manifest: archetypes.Archetype,
     allow_untested: bool,
+    backend: str | None = None,
+    frontend: str | None = None,
 ) -> dict[str, object]:
-    """The dotted-key mapping `new`'s flags set, refusing an untested value."""
+    """The dotted-key mapping `new`'s flags set, refusing an untested value.
+
+    `backend`/`frontend` are omitted from the map entirely when `None`, so a
+    config value or the archetype's own default survives an omitted CLI
+    selector.
+    """
     all_options = {
         option.flag: option
         for module in builtin().modules
         for option in module.options()
     }
-    provided = {"archetype": archetype, "docs": docs}
+    provided: dict[str, str | None] = {
+        "archetype": archetype,
+        "docs": docs,
+        "backend": backend,
+        "frontend": frontend,
+    }
     untested: list[str] = []
     flags: dict[str, object] = {}
     for flag_name in _FLAG_NAMES:
         value = provided[flag_name]
+        if value is None:
+            continue
         if value in manifest.untested.get(flag_name, []) and not allow_untested:
             untested.append(f"--{flag_name}={value}")
             continue

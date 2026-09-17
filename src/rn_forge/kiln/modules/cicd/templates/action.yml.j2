@@ -32,3 +32,12 @@ runs:
       with:
         version: 3.x
         repo-token: ${{ inputs.github-token }}
+{% if web_app %}
+    - name: Install pnpm
+      uses: [[ pins["pnpm-setup"].uses ]]@[[ pins["pnpm-setup"].sha ]] # [[ pins["pnpm-setup"].version ]]
+
+    - name: Install Node
+      uses: [[ pins["setup-node"].uses ]]@[[ pins["setup-node"].sha ]] # [[ pins["setup-node"].version ]]
+      with:
+        cache: pnpm
+{% endif -%}

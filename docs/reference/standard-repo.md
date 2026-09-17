@@ -137,8 +137,8 @@ An archetype carries the libraries a repo of that shape is built on
 | `python-app` | + `rn-forge-cli` | — |
 | `python-tool` | + `rn-forge-cli`, `rn-forge-tooling` | — |
 | `python-lib` | `rn-forge-commons` in each distributable | — |
-| `python-web-api` · `python-web-app`, `framework = "django"` | + `rn-forge-cli`, `rn-forge-web`, `rn-forge-django` | + `rn-forge-django[codegen]` |
-| `python-web-api` · `python-web-app`, `framework = "fastapi"` | + `rn-forge-cli`, `rn-forge-web`, `rn-forge-fastapi`, when that package exists | + `rn-forge-fastapi[codegen]` |
+| `python-web-api` · `python-web-app`, `backend = "django"` | + `rn-forge-cli`, `rn-forge-web`, `rn-forge-django` | + `rn-forge-django[codegen]` |
+| `python-web-api` · `python-web-app`, `backend = "fastapi"` | + `rn-forge-cli`, `rn-forge-web`, `rn-forge-fastapi`, when that package exists | + `rn-forge-fastapi[codegen]` |
 | `node-lib` · `node-web-app` | — (deferred) | — |
 
 The three python libraries are layered ([ADR-0002](../adr/ADR-0002.md)):
@@ -358,12 +358,12 @@ packages = ["packages/rn-forge-commons", "packages/rn-forge-django"]
 packages = []                    # internal-only; never published
 
 [archetype.python-web-api]
-framework = "fastapi"            # fastapi (shipped) | django (untested)
+backend = "fastapi"            # fastapi (shipped) | django (untested)
 api_dir = "apps/api"
 admin_ui = false                 # a thin self-contained management surface
 
 [archetype.python-web-app]
-framework = "django"             # django | fastapi   (both shipped)
+backend = "django"             # django | fastapi   (both shipped)
 frontend = "angular"             # angular (shipped) | react | svelte (untested)
 api_dir = "apps/api"
 web_dir = "apps/web"
@@ -374,13 +374,20 @@ name = "my-tool"
 options = ["json", "dry-run", "yes", "log-level"]
 ```
 
-There is no `backend` key and no `web_runner` key. `framework` and `frontend`
-select an implementation library, never a topology
+`--backend` and `--frontend` map to the matching keys under
+`[archetype.<name>]`. They select an implementation library, never a topology
 ([ADR-0005](../adr/ADR-0005.md)): a pnpm-managed Nx workspace — Nx's own
 documented shape — is what the `-app` archetypes mean, and the presence of a
 separate frontend package is what separates `python-web-app` from
 `python-web-api`. A flag value without a golden repo is `untested` and
 `kiln new` refuses it.
+
+The archetype selects the toolchain and which components exist. Reject a backend
+or frontend selector when that archetype has no corresponding component, and
+reject implementations outside its supported values. `frontend = "none"` cannot
+turn a web app into an API-only repo. There is no `framework` alias,
+`web_runner`, `stack`, or separate `runtime` selector. Additional ecosystems
+such as Java require new archetypes; they are outside E5's scope.
 
 ### Layered configuration
 

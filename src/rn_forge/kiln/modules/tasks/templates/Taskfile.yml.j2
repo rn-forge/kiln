@@ -22,7 +22,9 @@ includes:
   quality: tasks/quality.yml
 {% if docs %}  docs: tasks/docs.yml
 {% endif %}  workspace: tasks/workspace.yml
-{% for include in includes %}  [[ include.namespace ]]: [[ include.taskfile ]]
+{% if web %}  api: tasks/api.yml
+{% endif %}{% if web_app %}  web: tasks/web.yml
+{% endif %}{% for include in includes %}  [[ include.namespace ]]: [[ include.taskfile ]]
 {% endfor %}
 tasks:
   setup:
@@ -53,7 +55,8 @@ tasks:
       - task: quality:lint:docs-structure
       - task: quality:lint:docs-nav
 {% endif %}      - task: quality:lint:markdown
-{% for ref in extra_refs.get("lint", []) %}      - task: [[ ref ]]
+{% if web_app %}      - task: web:lint
+{% endif %}{% for ref in extra_refs.get("lint", []) %}      - task: [[ ref ]]
 {% endfor %}
   format:
     desc: Format Python code and Markdown prose in place.
@@ -72,7 +75,8 @@ tasks:
     desc: Run the pytest suite.
     cmds:
       - task: quality:test:python
-{% for ref in extra_refs.get("test", []) %}      - task: [[ ref ]]
+{% if web_app %}      - task: web:test
+{% endif %}{% for ref in extra_refs.get("test", []) %}      - task: [[ ref ]]
 {% endfor %}
   test:coverage:
     desc: Run the pytest suite with an XML coverage report (used by CI/Sonar).
@@ -85,7 +89,8 @@ tasks:
 {% else %}    desc: Build the wheel and sdist into dist/.
 {% endif %}    cmds:
       - task: workspace:build
-{% for ref in extra_refs.get("build", []) %}      - task: [[ ref ]]
+{% if web_app %}      - task: web:build
+{% endif %}{% for ref in extra_refs.get("build", []) %}      - task: [[ ref ]]
 {% endfor %}
   version:
 {% if workspace %}    desc: Print one package's version (pass -- <package>), or every package's.

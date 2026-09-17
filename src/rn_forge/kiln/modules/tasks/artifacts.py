@@ -57,12 +57,16 @@ def _site_dir(config: KilnConfig) -> str:
 def render(config: KilnConfig) -> list[Artifact]:
     """Render `Taskfile.yml`, `tasks/*.yml`, and one seeded file per include."""
     workspace = config.archetype == "python-lib"
+    web = config.archetype in {"python-web-api", "python-web-app"}
+    web_app = config.archetype == "python-web-app"
     for package in config.packages:
-        if Path(package).parts[:-1] != ("packages",):
+        if not web and Path(package).parts[:-1] != ("packages",):
             raise AppException(
                 "tasks.render: {} is not laid out as packages/<name>", package
             )
     packages = [Path(package).name for package in config.packages]
+    api_package = f"{config.name}-api" if web else None
+    web_dir = config.web_dir
     docs = config.docs_profile == "mkdocs"
     tasks_config = _tasks_config(config)
 
@@ -91,6 +95,14 @@ def render(config: KilnConfig) -> list[Artifact]:
         "includes": tasks_config.includes,
         "extra_refs": tasks_config.extra_refs,
         "overrides": tasks_config.command_overrides,
+        "web": web,
+        "web_app": web_app,
+        "backend": config.backend,
+        "api_dir": config.api_dir,
+        "api_package": api_package,
+        "api_module": root_package(api_package) if api_package else None,
+        "web_dir": web_dir,
+        "web_project": Path(web_dir).name if web_dir else None,
     }
     engine = TemplateEngine(
         package="rn_forge.kiln.modules.tasks",
@@ -120,6 +132,22 @@ def render(config: KilnConfig) -> list[Artifact]:
                 "tasks/docs.yml",
                 ArtifactKind.MANAGED,
                 engine.render("tasks/docs.yml.j2", context),
+            )
+        )
+    if web:
+        artifacts.append(
+            Artifact(
+                "tasks/api.yml",
+                ArtifactKind.MANAGED,
+                engine.render("tasks/api.yml.j2", context),
+            )
+        )
+    if web_app:
+        artifacts.append(
+            Artifact(
+                "tasks/web.yml",
+                ArtifactKind.MANAGED,
+                engine.render("tasks/web.yml.j2", context),
             )
         )
     for include in tasks_config.includes:

@@ -24,7 +24,7 @@ Ask what the repo *ships*, not what it contains.
 | several independently versioned UI libraries | `node-lib` *(deferred)* |
 | a standalone Nx frontend against remote APIs | `node-web-app` *(deferred)* |
 
-Then choose the flags: `--framework django|fastapi` for the web archetypes,
+Then choose the flags: `--backend django|fastapi` for the web archetypes,
 `--frontend angular|react|svelte` for `python-web-app`. A flag value with no
 golden repo is `untested` and `kiln new` refuses it.
 

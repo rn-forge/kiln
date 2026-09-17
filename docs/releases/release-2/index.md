@@ -12,7 +12,7 @@
   resolvable pins for the web packages
   ([board](../../specs/index.md#upstream-work-owned-by-pykit)).
 - [F5.3's open question](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md#open-questions)
-  is answered: `python-web-app --framework django` ships, or is marked
+  is answered: `python-web-app --backend django` ships, or is marked
   `untested`. This is a decision gate, and E5 does not start without it.
 
 ## Scope

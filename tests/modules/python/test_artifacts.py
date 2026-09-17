@@ -133,3 +133,81 @@ def test_s4_3_1_3_lint_imports_passes_on_the_rendered_importlinter(
         importlinter_cli.lint_imports(config_filename=str(tmp_path / ".importlinter"))
         == importlinter_cli.EXIT_STATUS_SUCCESS
     )
+
+
+WEB_CONFIG = """
+schema_version = 1
+
+[repository]
+name = "demo"
+archetype = "{archetype}"
+
+[archetype."{archetype}"]
+backend = "{backend}"
+{extra}
+"""
+
+
+def _web_root(tmp_path: Path, archetype: str, backend: str, extra: str = "") -> Path:
+    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(
+        WEB_CONFIG.format(archetype=archetype, backend=backend, extra=extra),
+        encoding="utf-8",
+    )
+    return tmp_path
+
+
+def test_s5_1_2_python_web_api_root_package_is_the_api_member(tmp_path: Path) -> None:
+    root = _web_root(tmp_path, "python-web-api", "fastapi")
+    config = KilnConfig.load(root)
+    [artifact] = PYTHON.artifacts(config, root)
+    assert "root_package = demo_api" in artifact.content
+
+
+def test_s5_1_2_python_web_api_fastapi_forbids_django_not_fastapi(
+    tmp_path: Path,
+) -> None:
+    root = _web_root(tmp_path, "python-web-api", "fastapi")
+    config = KilnConfig.load(root)
+    [artifact] = PYTHON.artifacts(config, root)
+    forbidden = artifact.content.split("forbidden_modules =")[1].split(
+        "allow_indirect"
+    )[0]
+    assert "django" in forbidden
+    assert "fastapi" not in forbidden
+    assert "typer" in forbidden
+    assert "jinja2" in forbidden
+    assert "click" in forbidden
+
+
+def test_s5_1_2_python_web_app_django_forbids_fastapi_not_django(
+    tmp_path: Path,
+) -> None:
+    root = _web_root(tmp_path, "python-web-app", "django", extra='frontend = "angular"')
+    config = KilnConfig.load(root)
+    [artifact] = PYTHON.artifacts(config, root)
+    forbidden = artifact.content.split("forbidden_modules =")[1].split(
+        "allow_indirect"
+    )[0]
+    assert "fastapi" in forbidden
+    assert "django" not in forbidden
+
+
+def test_s5_1_3_backend_flag_only_changes_the_importlinter_forbidden_list(
+    tmp_path: Path,
+) -> None:
+    """`backend` never changes topology — only .importlinter's forbidden list."""
+    django_root = _web_root(
+        tmp_path / "django", "python-web-app", "django", extra='frontend = "angular"'
+    )
+    fastapi_root = _web_root(
+        tmp_path / "fastapi", "python-web-app", "fastapi", extra='frontend = "angular"'
+    )
+    [django_artifact] = PYTHON.artifacts(KilnConfig.load(django_root), django_root)
+    [fastapi_artifact] = PYTHON.artifacts(KilnConfig.load(fastapi_root), fastapi_root)
+    django_lines = django_artifact.content.splitlines()
+    fastapi_lines = fastapi_artifact.content.splitlines()
+    assert len(django_lines) == len(fastapi_lines)
+    diffs = [(a, b) for a, b in zip(django_lines, fastapi_lines, strict=True) if a != b]
+    assert diffs == [("    fastapi", "    django")]

@@ -56,12 +56,14 @@ def scaffold(root: Path, config: KilnConfig) -> None:
         AppException: `uv` is not on `PATH`, or exits non-zero.
     """
     workspace = config.archetype == "python-lib"
-    if workspace:
+    web = config.archetype in {"python-web-api", "python-web-app"}
+    if workspace or web:
         _uv_init(root, name=config.name, bare=True)
         for package in config.packages:
             member = root / package
             member.mkdir(parents=True, exist_ok=True)
-            _uv_init(member, name=Path(package).name, bare=False)
+            member_name = f"{config.name}-api" if web else Path(package).name
+            _uv_init(member, name=member_name, bare=False)
         DocumentUtils.update(
             root / "pyproject.toml",
             {
@@ -80,10 +82,13 @@ def scaffold(root: Path, config: KilnConfig) -> None:
     for relative in archetypes.pyproject_paths(config):
         path = root / relative
         is_root = path.parent == root
-        is_workspace_root = workspace and is_root
+        is_member = not is_root
+        is_workspace_root = (workspace or web) and is_root
+        name = _member_name(config, path, root, web=web, is_member=is_member)
+        extra_dev = _extra_dev(config, web=web, is_member=is_member)
         _reconcile(
             path,
-            name=path.parent.name if path.parent != root else config.name,
+            name=name,
             venv_path=os.path.relpath(root, path.parent) or ".",
             is_root=is_root,
             is_workspace_root=is_workspace_root,
@@ -91,7 +96,22 @@ def scaffold(root: Path, config: KilnConfig) -> None:
             if is_workspace_root
             else tuple(archetypes.requirement(d) for d in required),
             mkdocs=config.docs_profile == "mkdocs",
+            extra_dev=extra_dev,
         )
+
+
+def _member_name(
+    config: KilnConfig, path: Path, root: Path, *, web: bool, is_member: bool
+) -> str:
+    if web and is_member:
+        return f"{config.name}-api"
+    return path.parent.name if path.parent != root else config.name
+
+
+def _extra_dev(config: KilnConfig, *, web: bool, is_member: bool) -> tuple[str, ...]:
+    if web and is_member and config.backend == "fastapi":
+        return ("uvicorn>=0.30",)
+    return ()
 
 
 def _uv_init(target: Path, *, name: str, bare: bool) -> None:
@@ -109,6 +129,7 @@ def _reconcile(
     is_workspace_root: bool,
     dependencies: tuple[str, ...],
     mkdocs: bool,
+    extra_dev: tuple[str, ...] = (),
 ) -> None:
     test_glob = "**/tests/*" if is_workspace_root else "tests/*"
     tool: dict[str, object] = {
@@ -134,6 +155,10 @@ def _reconcile(
         updates["dependency-groups"] = {
             "dev": [*_existing_list(path, "dependency-groups", "dev"), *dev],
             "docs": [*_existing_list(path, "dependency-groups", "docs"), *docs],
+        }
+    elif extra_dev:
+        updates["dependency-groups"] = {
+            "dev": [*_existing_list(path, "dependency-groups", "dev"), *extra_dev],
         }
     DocumentUtils.update(path, updates)
 

@@ -59,6 +59,6 @@ set -euo pipefail
 cd rn-forge/kiln
 task self:golden:render && task self:golden:validate   # all web cells pass
 scratch=$(mktemp -d)
-uv run kiln new "$scratch/web" --archetype python-web-app --framework fastapi --frontend angular --docs mkdocs --yes </dev/null
+uv run kiln new "$scratch/web" --archetype python-web-app --backend fastapi --frontend angular --docs mkdocs --yes </dev/null
 (cd "$scratch/web" && uv sync && pnpm install --frozen-lockfile && task validate && uv run --project "$OLDPWD" kiln doctor)
 ```

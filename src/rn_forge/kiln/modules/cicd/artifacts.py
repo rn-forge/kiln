@@ -45,6 +45,8 @@ def render(config: KilnConfig) -> list[Artifact]:
             "cicd.render: ci.provider = 'ado' is reserved for E8 and renders nothing yet"
         )
     docs = config.docs_profile == "mkdocs"
+    web = config.archetype in {"python-web-api", "python-web-app"}
+    web_app = config.archetype == "python-web-app"
     context: dict[str, object] = {
         "kiln_version": __version__,
         "name": config.name,
@@ -55,6 +57,10 @@ def render(config: KilnConfig) -> list[Artifact]:
         "release": ci.release,
         "pins": load_pins(),
         "organization": SONAR_ORGANIZATION,
+        "web": web,
+        "web_app": web_app,
+        "api_dir": config.api_dir,
+        "web_dir": config.web_dir,
     }
     # GitHub's own `${{ }}` expressions fill these templates, so Jinja's variables use `[[ ]]`.
     engine = TemplateEngine(
