@@ -13,7 +13,7 @@ working tree on a branch. History before the replacement is not preserved
 
 | ID | Feature | Depends on |
 | -- | -- | -- |
-| [F6.1](F6.1-pykit-skeleton.md) | pykit skeleton | E4 (F4.8) |
+| [F6.1](F6.1-pykit-skeleton.md) | Prove, then replace pykit's `python-lib` skeleton | S6.1.1 on S5.3.1; S6.1.2 on E4 (F4.8) |
 | [F6.2](F6.2-retire-taskkit.md) | Retire taskkit | S4.6.2, S5.2.2 |
 
 **Out of scope here:** kiln itself is already self-hosted by

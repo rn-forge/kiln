@@ -269,6 +269,13 @@ class ConfigManager:
                 defaults[module.section] = module.config_model().model_dump(
                     by_alias=True, exclude_none=True, mode="json"
                 )
+        if name in {"python-web-api", "python-web-app"}:
+            from rn_forge.kiln.modules.python.config import WebApiConfig, WebAppConfig
+
+            model = WebApiConfig if name == "python-web-api" else WebAppConfig
+            defaults["archetype"] = {
+                name: model().model_dump(by_alias=True, exclude_none=True, mode="json")
+            }
         return defaults
 
 

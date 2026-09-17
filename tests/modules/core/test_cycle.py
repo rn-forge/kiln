@@ -55,6 +55,7 @@ def test_s4_2_3_applying_core_into_an_empty_directory_only_creates_and_inserts(
 ) -> None:
     assert actions(root, home) == {
         ".editorconfig": Action.CREATE,
+        ".mdformat.toml": Action.CREATE,
         ".gitignore#rn-forge kiln": Action.INSERT,
         ".importlinter": Action.CREATE,
         "Taskfile.yml": Action.CREATE,
@@ -69,6 +70,7 @@ def test_s4_2_3_applying_core_into_an_empty_directory_only_creates_and_inserts(
     cycle.apply(root, home=home)
     for path in (
         ".editorconfig",
+        ".mdformat.toml",
         ".gitignore",
         ".importlinter",
         "Taskfile.yml",
@@ -87,6 +89,27 @@ def test_s4_2_3_applying_core_into_an_empty_directory_only_creates_and_inserts(
     )
 
 
+def test_s5_3_1_mdformat_config_is_seeded_once(tmp_path: Path, home: Path) -> None:
+    root = tmp_path / "absent"
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(CONFIG, encoding="utf-8")
+    cycle.apply(root, home=home)
+    seeded = root / ".mdformat.toml"
+    assert seeded.is_file()
+    assert ".rn-forge/kiln/rendered/**" in seeded.read_text(encoding="utf-8")
+
+    existing = tmp_path / "present"
+    config = existing / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(CONFIG, encoding="utf-8")
+    expected = "wrap = 100\n"
+    existing_file = existing / ".mdformat.toml"
+    existing_file.write_text(expected, encoding="utf-8")
+    cycle.apply(existing, home=home)
+    assert existing_file.read_text(encoding="utf-8") == expected
+
+
 def test_s4_2_3_a_freshly_applied_repo_passes_the_generated_check(
     root: Path, home: Path
 ) -> None:
@@ -100,7 +123,7 @@ def test_s4_2_3_a_second_apply_is_unchanged_and_leaves_state_byte_identical(
     cycle.apply(root, home=home)
     before = (root / STATE).read_bytes()
 
-    assert set(actions(root, home).values()) == {Action.UNCHANGED}
+    assert set(actions(root, home).values()) <= {Action.UNCHANGED, Action.SKIP}
     cycle.apply(root, home=home)
     assert (root / STATE).read_bytes() == before
 

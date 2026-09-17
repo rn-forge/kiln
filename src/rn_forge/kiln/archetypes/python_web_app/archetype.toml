@@ -35,4 +35,5 @@ required = ["rn-forge-commons", "rn-forge-cli", "rn-forge-web"]
 allowed = ["rn-forge-commons", "rn-forge-cli", "rn-forge-web"]
 
 [untested]
+backend = ["django"]
 frontend = ["react", "svelte"]

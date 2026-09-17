@@ -11,15 +11,14 @@
 - `rn-forge-fastapi` is implemented in pykit; what remains upstream is
   resolvable pins for the web packages
   ([board](../../specs/index.md#upstream-work-owned-by-pykit)).
-- [F5.3's open question](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md#open-questions)
-  is answered: `python-web-app --backend django` ships, or is marked
-  `untested`. This is a decision gate, and E5 does not start without it.
+- Django is deferred for both web archetypes; FastAPI is the default and the
+  only shipped backend ([ADR-0005](../../adr/ADR-0005.md)).
 
 ## Scope
 
 | Epic | Stories |
 | -- | -- |
-| [E5 — The web archetypes](../../specs/epics/E5-web-archetypes/index.md) | [S5.1.1–S5.1.3](../../specs/epics/E5-web-archetypes/F5.1-web-library-sets-and-modules.md), [S5.2.1–S5.2.3](../../specs/epics/E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md), [S5.3.1](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) |
+| [E5 — The web archetypes](../../specs/epics/E5-web-archetypes/index.md) | [S5.1.1–S5.1.3](../../specs/epics/E5-web-archetypes/F5.1-web-library-sets-and-modules.md), [S5.2.1–S5.2.2](../../specs/epics/E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md), [S5.3.1–S5.3.4](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) |
 | [E6 — Rebuild the repos](../../specs/epics/E6-rebuild-the-repos/index.md) | [S6.2.1](../../specs/epics/E6-rebuild-the-repos/F6.2-retire-taskkit.md) |
 
 ## Exit criteria

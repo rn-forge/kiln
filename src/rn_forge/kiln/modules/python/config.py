@@ -27,7 +27,7 @@ class WebApiConfig(StrictModel):
 class WebAppConfig(StrictModel):
     """`[archetype.python-web-app]` — the API + frontend workspace's selectors."""
 
-    backend: Literal["fastapi", "django"] = "django"
+    backend: Literal["fastapi", "django"] = "fastapi"
     frontend: Literal["angular", "react", "svelte"] = "angular"
     api_dir: str = "apps/api"
     web_dir: str = "apps/web"

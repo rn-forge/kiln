@@ -161,6 +161,57 @@ def test_s5_1_1_5_an_unsupported_backend_is_rejected_before_writing(
     assert not directory.exists() or not any(directory.iterdir())
 
 
+@pytest.mark.parametrize("archetype", ["python-web-api", "python-web-app"])
+def test_s5_3_1_web_defaults_select_fastapi(archetype: str) -> None:
+    manifest = archetypes.load(archetype)
+    flags = commands._flag_layer(
+        archetype=archetype,
+        docs="none",
+        manifest=manifest,
+        allow_untested=False,
+    )
+    flags["repository"]["name"] = "demo"
+    resolved = commands.ConfigManager().resolve(flags=flags).config
+    assert resolved.backend == "fastapi"
+    assert resolved.frontend == ("angular" if archetype == "python-web-app" else None)
+
+
+@pytest.mark.parametrize(
+    ("archetype", "selector", "value"),
+    [
+        ("python-web-api", "backend", "django"),
+        ("python-web-app", "frontend", "svelte"),
+    ],
+)
+def test_s5_3_1_explicit_selectors_override_web_defaults(
+    archetype: str, selector: str, value: str
+) -> None:
+    manifest = archetypes.load(archetype)
+    flags = commands._flag_layer(
+        archetype=archetype,
+        docs="none",
+        manifest=manifest,
+        allow_untested=True,
+        **{selector: value},
+    )
+    flags["repository"]["name"] = "demo"
+    resolved = commands.ConfigManager().resolve(flags=flags).config
+    assert getattr(resolved, selector) == value
+
+
+@pytest.mark.parametrize("archetype", ["python-web-api", "python-web-app"])
+def test_s5_3_1_django_remains_untested_for_both_web_archetypes(archetype: str) -> None:
+    manifest = archetypes.load(archetype)
+    with pytest.raises(AppException, match="django"):
+        commands._flag_layer(
+            archetype=archetype,
+            docs="none",
+            backend="django",
+            manifest=manifest,
+            allow_untested=False,
+        )
+
+
 def test_s4_5_1_yes_creates_and_passes_every_check(tmp_path: Path) -> None:
     """The slow path: `uv init` through the python scaffold, then a full apply."""
     directory = tmp_path / "demo"

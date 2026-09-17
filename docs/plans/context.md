@@ -161,7 +161,7 @@ configuration ([plan](agent-config-future.md)). Parked: `rn-tools/apollo`,
 | 1 | Sonar on by default? | parked in the `cicd` story on [F4.3](../specs/epics/E4-generator/F4.3-concern-modules.md) |
 | 2 | public or private repos? | parked in the `cicd` story on [F4.3](../specs/epics/E4-generator/F4.3-concern-modules.md) |
 | 3 | seeded `_areas.yml` | answered by D44 |
-| 4 | `python-web-app --framework django` shipped | open on [F5.3](../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) |
+| 4 | `python-web-app --framework django` shipped | answered: deferred until a real repo needs it; [ADR-0005](../adr/ADR-0005.md) |
 | 5 | intellibuild on ADO from day one? | open on the [intellibuild plan](intellibuild.md) |
 | 6 | ngkit an archetype or hand-managed? | open on [E9](../specs/epics/E9-node-archetypes/index.md) |
 | 7 | the rebuilt agent tool's version line | moot — agent configuration is a standalone plan |

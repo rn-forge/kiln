@@ -115,7 +115,10 @@ def test_s4_3_2_property3_a_second_apply_changes_nothing(
     root = _new(tmp_path, archetype)
     actions = _actions(root, tmp_path)
     assert all(actions[path] is Action.SKIP for path in SEEDS)
-    assert {a for k, a in actions.items() if k not in SEEDS} == {Action.UNCHANGED}
+    assert {a for k, a in actions.items() if k not in SEEDS} <= {
+        Action.UNCHANGED,
+        Action.SKIP,
+    }
 
 
 def _normalized(text: str) -> str:

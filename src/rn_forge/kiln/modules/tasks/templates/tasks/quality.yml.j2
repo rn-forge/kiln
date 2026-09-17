@@ -26,8 +26,8 @@ tasks:
         cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff check
       - for: { var: PACKAGES, split: " " }
         cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff format --check
-{% elif web %}      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff check
-      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff format --check
+{% elif web %}      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff check src tests
+      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff format --check src tests
 {% else %}      - uv run ruff check src tests
       - uv run ruff format --check src tests
 {% endif %}
@@ -109,8 +109,8 @@ tasks:
         cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff check --fix
       - for: { var: PACKAGES, split: " " }
         cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff format
-{% elif web %}      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff check --fix
-      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff format
+{% elif web %}      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff check --fix src tests
+      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff format src tests
 {% else %}      - uv run ruff check --fix src tests
       - uv run ruff format src tests
 {% endif %}

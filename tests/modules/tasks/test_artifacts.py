@@ -326,6 +326,20 @@ def test_s5_1_2_python_web_app_renders_api_yml_and_web_yml(tmp_path: Path) -> No
     assert "tasks/web.yml" in paths
 
 
+@pytest.mark.parametrize("archetype", ["python-web-api", "python-web-app"])
+def test_s5_3_1_web_ruff_commands_are_limited_to_api_src_and_tests(
+    tmp_path: Path, archetype: str
+) -> None:
+    extra = 'frontend = "angular"' if archetype == "python-web-app" else ""
+    root = _web_root(tmp_path, archetype, "fastapi", extra=extra)
+    rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
+    quality = rendered["tasks/quality.yml"]
+    assert "ruff check src tests" in quality
+    assert "ruff format --check src tests" in quality
+    assert "ruff check --fix src tests" in quality
+    assert "ruff format src tests" in quality
+
+
 def test_s5_1_2_task_list_json_shows_api_and_web_verbs(tmp_path: Path) -> None:
     root = _web_root(
         tmp_path, "python-web-app", "fastapi", extra='frontend = "angular"'

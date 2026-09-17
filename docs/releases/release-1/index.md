@@ -26,7 +26,7 @@ pykit's skeleton. The web archetypes are [release-2](../release-2/index.md).
 | -- | -- |
 | [E3 — Realign the goldens and the canon](../../specs/epics/E3-realign-goldens-and-canon/index.md) | [S3.1.1–S3.1.3](../../specs/epics/E3-realign-goldens-and-canon/F3.1-goldens-on-part-e-api.md), [S3.2.1–S3.2.2](../../specs/epics/E3-realign-goldens-and-canon/F3.2-branch-pins.md), [S3.3.1–S3.3.2](../../specs/epics/E3-realign-goldens-and-canon/F3.3-python-tool-is-a-tool.md), [S3.4.1–S3.4.4](../../specs/epics/E3-realign-goldens-and-canon/F3.4-canon-catches-up.md) |
 | [E4 — The generator](../../specs/epics/E4-generator/index.md) | [S4.1.1–S4.1.4](../../specs/epics/E4-generator/F4.1-checks-by-module.md), [S4.2.1–S4.2.3](../../specs/epics/E4-generator/F4.2-core-module.md), [S4.3.1–S4.3.7](../../specs/epics/E4-generator/F4.3-concern-modules.md), [S4.4.1–S4.4.3](../../specs/epics/E4-generator/F4.4-render-matrix.md), [S4.5.1–S4.5.7](../../specs/epics/E4-generator/F4.5-cli.md), [S4.6.1–S4.6.4](../../specs/epics/E4-generator/F4.6-doctor.md), [S4.7.1](../../specs/epics/E4-generator/F4.7-import-contracts.md), [S4.8.1](../../specs/epics/E4-generator/F4.8-self-hosting.md) |
-| [E6 — Rebuild the repos](../../specs/epics/E6-rebuild-the-repos/index.md) | [S6.1.1](../../specs/epics/E6-rebuild-the-repos/F6.1-pykit-skeleton.md) |
+| [E6 — Rebuild the repos](../../specs/epics/E6-rebuild-the-repos/index.md) | [S6.1.1–S6.1.2](../../specs/epics/E6-rebuild-the-repos/F6.1-pykit-skeleton.md) |
 
 ## Exit criteria
 

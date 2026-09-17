@@ -24,6 +24,8 @@ exclude = [
   ".docs-site/**",
   "site/**",
   "node_modules/**",
+  ".nx/**",
+  ".rn-forge/kiln/rendered/**",
   ".rn-forge/kiln/standard.md",
 ]
 

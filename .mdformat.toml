@@ -24,6 +24,8 @@ exclude = [
   ".docs-site/**",
   "site/**",
   "node_modules/**",
+  ".nx/**",
+  ".rn-forge/kiln/rendered/**",
   ".rn-forge/kiln/standard.md",
   # tests/fixtures/**: each fixture is held to its own gate (README.md), not
   # this repo's — a captured frontend scaffold's README is its own prose.

@@ -10,14 +10,14 @@ board says what is next; the epic says how; its ADRs say why.
 
 | Epic | Release | Next step |
 | -- | -- | -- |
-| [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | **start here** — F4.1 and F4.2 done; F4.3 under way: `python`, `docs`, `tasks`, `cicd` and `instructions` done (S4.3.1–S4.3.5). Next is S4.3.7 (the scaffold's dependency lines), then the thin CLI S4.5.1–S4.5.2. **Then E5's F5.1 and F5.2**, before F4.4–F4.8 |
+| [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | F4.1–F4.3 and the thin CLI needed by E5 are done. Resume at F4.4 after S5.3.1, then finish F4.5–F4.8 |
+| [E5 — The web archetypes](epics/E5-web-archetypes/index.md) | [release-2](../releases/release-2/index.md) | F5.1 and FastAPI/Angular scaffolding are done; Django is deferred. Next is S5.3.1's fresh-repo gate fixes, then F4.4 and the two FastAPI cells |
 
 ### Scheduled
 
 | Epic | Release | Next step |
 | -- | -- | -- |
-| [E6 — Rebuild the repos](epics/E6-rebuild-the-repos/index.md) | F6.1 [release-1](../releases/release-1/index.md); F6.2 [release-2](../releases/release-2/index.md) | after E4 |
-| [E5 — The web archetypes](epics/E5-web-archetypes/index.md) | [release-2](../releases/release-2/index.md) | after S4.3.7 and S4.5.2, before the rest of E4 — the owner's next repos are `fastapi` + `angular`. Needs resolvable pykit pins (below) |
+| [E6 — Rebuild the repos](epics/E6-rebuild-the-repos/index.md) | F6.1 [release-1](../releases/release-1/index.md); F6.2 [release-2](../releases/release-2/index.md) | build the pykit candidate after S5.3.1; cut over after F4.8 |
 
 ### To elaborate
 
@@ -63,10 +63,11 @@ pykit owns its own spec. What kiln needs from it is handed off in pykit's
 
 ```text
 done:  E1 ─→ E2 ─→ E3 ─→ F4.1 ─→ F4.2 ─→ S4.3.1–S4.3.5        (pykit: A ─→ C ─→ C.2 ─→ C.3)
-now:   S4.3.7 ─→ S4.5.1 ─→ S4.5.2 ─→ F5.1 ─→ F5.2   (owner reviews the first web repo)
-                                                     (F5.1 also needs pykit's web pins to resolve)
-then:  F4.4 matrix (goldens leave git) ─┬─→ F5.3 ─→ E5 done
-       S4.5.3–S4.5.7 ─→ F4.6 doctor ────┼─→ F4.8 self-host ─→ F6.1 pykit skeleton
+now:   F5.1 done ─→ F5.2 fastapi done ─→ S5.3.1 fresh-repo gate fixes
+       (Django S5.2.3 deferred; live sync still needs resolvable pykit pins)
+then:  F4.4 matrix (goldens leave git) ─┬─→ S5.3.2–S5.3.4 ─→ E5 done
+       S5.3.1 ─→ S6.1.1 pykit candidate │
+       S4.5.3–S4.5.7 ─→ F4.6 doctor ────┼─→ F4.8 self-host ─→ S6.1.2 pykit cutover
        F4.7 contracts ──────────────────┘   F6.2 retire taskkit (after S4.6.2, S5.2.2)
        (S4.5.5 also needs pykit C.3)
 triggered: E7 pykit releases (owner) · E8 ADO · backlog: E10 generators
@@ -74,11 +75,11 @@ triggered: E7 pykit releases (owner) · E8 ADO · backlog: E10 generators
 
 E3 shipped on 2026-09-15: every feature's acceptance block passes, S3.3.2's
 normalized golden diff was reviewed, and the epic block re-proves the whole. E4
-is under way. **Build order is not release order:** E5's first two features are
-built between S4.5.2 and F4.4, because the owner's next repositories are web
-repositories and nothing in F5.1 or F5.2 needs the render matrix, the full
-doctor or self-hosting; release-1 still ships before release-2. The **Depends
-on** column on each epic and line on each feature are normative; this diagram
+is under way. **Build order is not release order:** E5's first two features and
+S5.3.1 are built before F4.4, because the owner's next repositories are web
+repositories and those stories need neither the render matrix, the full doctor
+nor self-hosting; release-1 still ships before release-2. The **Depends on**
+column on each epic and line on each feature are normative; this diagram
 summarizes them. Nothing in E4 waits on a pykit release
 ([ADR-0005](../adr/ADR-0005.md)): the rn-forge dependency source is one constant
 ([S4.3.7](epics/E4-generator/F4.3-concern-modules.md#s437-the-scaffold-completes-pyprojecttoml)),

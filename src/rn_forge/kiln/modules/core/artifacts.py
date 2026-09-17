@@ -27,6 +27,11 @@ def render(config: KilnConfig) -> list[Artifact]:
             engine.render("editorconfig.j2", context),
         ),
         Artifact(
+            ".mdformat.toml",
+            ArtifactKind.SEEDED,
+            engine.render("mdformat.toml.j2", context),
+        ),
+        Artifact(
             ".gitignore",
             ArtifactKind.BLOCK,
             engine.render("gitignore.j2", context),

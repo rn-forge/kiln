@@ -363,7 +363,7 @@ api_dir = "apps/api"
 admin_ui = false                 # a thin self-contained management surface
 
 [archetype.python-web-app]
-backend = "django"             # django | fastapi   (both shipped)
+backend = "fastapi"            # fastapi (shipped) | django (untested)
 frontend = "angular"             # angular (shipped) | react | svelte (untested)
 api_dir = "apps/api"
 web_dir = "apps/web"
