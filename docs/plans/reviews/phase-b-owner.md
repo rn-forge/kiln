@@ -1,26 +1,32 @@
 # review
 
-> Kept verbatim. The only change is that the file citations, which pointed at
-> absolute paths on the reviewer's machine, are rendered as plain references
-> rather than as links — the wording is untouched. What was done about each item
-> is in [context §7](../context.md), which carries the plan's §0.6.
+**Historical record:** proposals and numbered decisions below describe the
+review at that time, not current policy. ADR references use current
+destinations; retired references use topic names. Current scope and decisions
+are in [the spec board](../../specs/index.md) and
+[the decision log](../../adr/index.md).
+
+> File citations use plain references in place of machine-local paths, and
+> retired ADR numbers use topic names. What was done about each item is in
+> [context §7](../context.md), which carries the plan's §0.6.
 
 my questions/feedback:
 
 ## ADRs
 
-- ADR-0001: seems redundant. everything is kiln owned now
-- ADR-0002: same as ADR-0001
-- ADR-0003: needs better/cleaner explanation. I thought CI will use predefined
+- ownership policy: seems redundant. everything is kiln owned now
+- dependency boundary: same as ownership policy
+- CI policy: needs better/cleaner explanation. I thought CI will use predefined
   templates provided by another devops repo. config in kiln will drive wrapper
   type (GitHub / ADO), which will have steps call reusable templates/scripts
   in that devops repo. this helps in not cloning in every repo and then manage
   drift
-- ADR-0008: sounds more like a spec for kiln and design for it, rather than an
-  ADR that will drive future design
-- ADR-0009: archetypes should be 'python-lib', 'python-cli', 'python-django-ng',
-  'python-fastapi-ng'. and this should get folded into ADR-0006. Also, this
-  again sounds more like a spec+design then an ADR
+- Repository-standard proposal: sounds more like a spec for kiln and design for
+  it, rather than an ADR that will drive future design
+- Dependency-defaults proposal: archetypes should be 'python-lib', 'python-cli',
+  'python-django-ng', 'python-fastapi-ng'. and this should get folded into the
+  archetype proposal. Also, this again sounds more like a spec+design then an
+  ADR
 
 ## python-lib
 

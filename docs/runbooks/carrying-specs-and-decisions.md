@@ -1,14 +1,16 @@
 # Carrying specs and decisions into a rebuilt repo
 
-> One-time judgement ships as a kiln prompt ([ADR-0006](../adr/ADR-0006.md)).
+> One-time judgement ships as a kiln prompt
+> ([generator scope](../specs/epics/E4-generator/design.md#scope-and-ownership)).
 > This runbook becomes `kiln prompt port-docs` in
 > [S4.5.6](../specs/epics/E4-generator/F4.5-cli.md), and is deleted then.
 
 A pre-v1 repo is rebuilt with `kiln new`, not migrated
-([ADR-0006](../adr/ADR-0006.md)): its files are not carried over, but its specs
-and decisions are, as prior art. This runbook moves them into the new repo's
-`docs/specs/` and `docs/adr/` so that nothing is lost, nothing is said twice,
-and a second person doing the same move would produce the same tree.
+([generator scope](../specs/epics/E4-generator/design.md#scope-and-ownership)):
+its files are not carried over, but its specs and decisions are, as prior art.
+This runbook moves them into the new repo's `docs/specs/` and `docs/adr/` so
+that nothing is lost, nothing is said twice, and a second person doing the same
+move would produce the same tree.
 
 The target shape is the new repo's own `docs/_structure.md`, each area's
 `_structure.md`, and its specs board conventions. This runbook is only the
@@ -89,8 +91,11 @@ agreement before writing anything in the new repo.
       `the alternative`, `why not` and `deliberately`.
     - Number them in source order: table rows first, then the extracted ones.
     - **A chain of superseding decisions on one topic becomes one ADR.** Its
-      Decision is the latest; the earlier ones become dated entries under its
-      `## History`, newest first.
+      Decision is the latest; what the earlier ones said, and what changed the
+      answer, becomes dated prose under its `## Background`.
+    - Write each one in the shape `adr/_structure.md` sets: decision first, then
+      consequences and what it influences, with alternatives and history below
+      them.
 - **No redirect stubs.** Delete nothing in the new repo that points back at the
   old one; fix the references instead.
 

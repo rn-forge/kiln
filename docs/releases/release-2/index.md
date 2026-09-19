@@ -18,7 +18,7 @@
 
 | Epic | Stories |
 | -- | -- |
-| [E5 — The web archetypes](../../specs/epics/E5-web-archetypes/index.md) | [S5.1.1–S5.1.3](../../specs/epics/E5-web-archetypes/F5.1-web-library-sets-and-modules.md), [S5.2.1–S5.2.2](../../specs/epics/E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md), [S5.3.1–S5.3.4](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) |
+| [E5 — The web archetypes](../../specs/epics/E5-web-archetypes/index.md) | [S5.1.1–S5.1.3](../../specs/epics/E5-web-archetypes/F5.1-web-library-sets-and-modules.md), [S5.2.1–S5.2.2 and S5.2.4](../../specs/epics/E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md), [S5.3.1–S5.3.6](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) |
 | [E6 — Rebuild the repos](../../specs/epics/E6-rebuild-the-repos/index.md) | [S6.2.1](../../specs/epics/E6-rebuild-the-repos/F6.2-retire-taskkit.md) |
 
 ## Exit criteria

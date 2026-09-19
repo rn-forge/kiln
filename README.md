@@ -11,7 +11,7 @@ it.
 **kiln is a developer tool, and a pinned dev dependency of every repo it
 generates.** CI runs that pinned kiln through `task validate` to check the
 committed `.rn-forge/kiln/state.json` baseline. It never writes a generated file
-([ADR-0010](docs/adr/ADR-0010.md)).
+([ADR-0006](docs/adr/ADR-0006.md)).
 
 ```bash
 kiln new ../my-repo --archetype python-tool --yes
@@ -23,14 +23,15 @@ kiln doctor
 
 Working towards [release 1](docs/releases/release-1/index.md). The canon and the
 hand-authored golden repos exist and match pykit's `feature/upgrade` branch,
-tool lifecycle surface included (E1–E3, done 2026-09-15).
-[ADR-0009](docs/adr/ADR-0009.md) is accepted. E4's render-free checks, module
-contract, config manager, apply cycle and concern modules exist. E5's FastAPI
-and Angular scaffold now exists too; the next story makes every fresh generated
-repo pass its own gate before the render matrix and real-project proofs. Django
-is deferred until a real repository needs it. The order is deliberate —
-templates reviewed as templates are how the fleet ended up with four divergent
-pipelines, so the standard is reviewed first as complete runnable repositories.
+tool lifecycle surface included (E1–E3, done 2026-09-15). The
+[shared CLI integration](docs/specs/epics/E3-realign-goldens-and-canon/index.md#shared-cli-design)
+is proven by the goldens. E4's render-free checks, module contract, config
+manager, apply cycle and concern modules exist. E5's FastAPI and Angular
+scaffold now exists too; the next story makes every fresh generated repo pass
+its own gate before the render matrix and real-project proofs. Django is
+deferred until a real repository needs it. The order is deliberate — templates
+reviewed as templates are how the fleet ended up with four divergent pipelines,
+so the standard is reviewed first as complete runnable repositories.
 
 ```bash
 cd tests/fixtures/golden/python-app     # or python-tool, or python-lib
@@ -52,10 +53,10 @@ text.
   proven by running that repo's own `uv sync && task validate` from inside it.
   A template change not first made in a golden repo is a bug. This holds until
   the rendered templates reproduce the goldens and they leave git
-  ([ADR-0005](docs/adr/ADR-0005.md)).
+  ([render-matrix policy](docs/specs/epics/E4-generator/F4.4-render-matrix.md#template-review-policy)).
 - The policy and docs checks are `kiln doctor`, and `kiln docs-nav` writes the
   nav; no repo carries `scripts/**` for them
-  ([ADR-0010](docs/adr/ADR-0010.md)). The goldens take `rn-forge-kiln` from a
+  ([ADR-0006](docs/adr/ADR-0006.md)). The goldens take `rn-forge-kiln` from a
   path source to this checkout, so a change under `src/` reaches their gates
   directly.
 - This repo's own skeleton is a hand-copy of the `python-tool` golden repo. It
@@ -73,7 +74,7 @@ text.
   Nothing new goes into `docs/plans/`.
 - Prose has one home: this file. `CLAUDE.md` points here and carries the fenced
   blocks; `AGENTS.md` points at `CLAUDE.md`. Do not restate a paragraph in two
-  of them ([ADR-0001](docs/adr/ADR-0001.md)).
+  of them.
 
 ## Conventions
 

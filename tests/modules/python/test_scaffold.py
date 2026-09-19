@@ -2,7 +2,7 @@
 
 `uv` is invoked once, into an empty directory, and the reconcile leaves a
 `pyproject.toml` that check 8a passes without kiln ever writing the file
-kiln apply owns nothing of (kiln ADR-0001, ADR-0005). S4.3.7 adds the
+kiln apply owns nothing of (kiln ADR-0003, ADR-0005). S4.3.7 adds the
 rn-forge dependency lines and the `docs` group so `rn-forge-deps` and
 `task setup` pass on a fresh `kiln new` repo too.
 """

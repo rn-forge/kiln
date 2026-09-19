@@ -3,7 +3,7 @@ name: Set up the toolchain
 description: >-
   Install the pinned interpreter and go-task, and nothing else. Every CI job
   starts with these three steps; a composite action is how they stay one copy
-  instead of four (kiln ADR-0003).
+  instead of four.
 
 inputs:
   fetch-depth:

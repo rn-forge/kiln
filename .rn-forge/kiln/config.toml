@@ -23,9 +23,9 @@ release = "tag-exists"
 includes = []
 
 # The command line this repo exposes, built by `CliApp.from_config` rather
-# than assembled by hand (kiln ADR-0009). F4.5 adds the rest of the surface to
+# than assembled by hand (kiln ADR-0002). F4.5 adds the rest of the surface to
 # this table; `check` is here first because it is what CI runs
-# (kiln ADR-0010).
+# (kiln ADR-0006).
 [cli]
 name = "kiln"
 help = "The rn-forge repository generator, and the canon it generates against."

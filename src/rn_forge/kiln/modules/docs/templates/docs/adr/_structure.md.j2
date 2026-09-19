@@ -2,49 +2,59 @@
 
 ## Belongs here
 
-- One decision per topic, `ADR-<nnnn>.md`: a `**Status:**` line, Context (ending
-  with *Alternatives considered*), Decision, Consequences and, once revised, a
-  `## History`.
-- Decisions this repo makes for itself. The decisions about the *standard* live
-  in the kiln repo's ADR log and are rendered here as
-  `.rn-forge/kiln/standard.md`, not copied.
+A durable architectural choice that constrains future implementations. Each ADR
+answers one question: what was chosen, why, and what tradeoff follows. Decisions
+about a dependency's internals belong to that dependency's project.
+
+A feature of the product is not a decision. If the page describes what kiln
+does, it belongs in `specs/`; if it describes a constraint every future
+implementation must respect, it belongs here.
 
 ## Does not belong here
 
 | Instead of | Put it in |
 | -- | -- |
-| How something works now | `architecture/` |
-| A plan | `specs/` |
-| A list of verbs, paths or fields | the reference, or the owning feature's design |
+| Product scope, supported combinations, rollout work | `specs/` |
+| Implementation details and local design choices | the owning feature's design |
+| Exact verbs, paths, fields or dependencies | the reference |
+| How implemented components fit together | `architecture/` |
+| Investigation evidence needed to understand a feature | that feature's context |
+| Review transcripts and obsolete drafts | version history |
 
 ## Naming and shape
 
-- Numbers are contiguous from `0001` and never reused.
-- The filename is the number alone, so a revision never renames the file or
-  moves a link; the title lives in the heading and in `index.md`.
-- `**Status:**` is one of `proposed`, `accepted`, or `deprecated` — the last
-  when the decision no longer applies and nothing replaced it.
-- About a page. An ADR that starts enumerating has become a spec.
+- Use `ADR-<nnnn>.md` and list its title in `index.md`. The title states the
+  decision, not the topic.
+- Open with one line:
+  `**Status:** <proposed|accepted|deprecated> (<date>) · **Scope:** <what the decision binds>`.
+- Then these sections, in this order. The first three are what a reader sees on
+  opening the file, and are read every time:
+    1. `## Decision` — the choice, with only the context needed to state it.
+    1. `## Consequences` — what follows, including the costs accepted.
+    1. `## Influences` — links to the specs, reference sections and architecture
+       this decision constrains.
+    1. `## Alternatives considered` — credible options, each with the named
+       failure that ruled it out.
+    1. `## Background` — the history that still explains the choice. Optional;
+       include it only when a reader would otherwise mistake taste for evidence.
+- Budget the first three sections at 300 words or fewer; that is the part read
+  on every open. `Alternatives considered` and `Background` are as long as the
+  evidence needs, with 600 words a soft total. There is no hard cap — a tight
+  cap is what turns measured costs into abstractions.
+- Name concrete costs. "1,454 lines of committed checker scripts" is a decision
+  record; "duplication" is a summary of one.
+- Keep specifications in their own home and link to them.
 
 ## Changing this area
 
-**A new topic** takes the next number:
+New decisions take the next number. Keep identifiers stable during routine
+revisions; an explicit consolidation may delete or renumber records, but must
+update every reference and the index together.
 
-1. `**Status:**` — `proposed` or `accepted`.
-1. `## Context`, ending with `### Alternatives considered`: each rejected option
-   and why.
-1. `## Decision` — the choice, specific enough to be wrong.
-1. `## Consequences` — what it makes easy, what it rules out.
-1. Add it to `index.md` with its title.
+Rewrite a revised decision to state the current choice, and keep what changed
+under `Background` as a dated sentence with a link to the owning spec's
+evidence. Do not append earlier versions or review narratives.
 
-**A change to an existing decision** revises that ADR in place — never a second
-ADR for the same topic, and never a `superseded` status:
-
-1. Rewrite Context, Decision and Consequences to say what is true now.
-1. Add a dated entry at the top of `## History`, at the end of the file: what
-   the ADR said before, why it changed, and what survived.
-1. Update the title in `index.md` if the heading changed.
-
-A decision that stops applying with nothing to replace it becomes `deprecated`,
-with a History entry saying why. An answered open question becomes an ADR, or a
-rejected option recorded on the feature, and leaves the feature's page.
+Move scope and design material to its owning spec rather than preserving it as
+an ADR. An answered open question becomes a decision here only when it has a
+durable architectural consequence; otherwise record it on the feature.

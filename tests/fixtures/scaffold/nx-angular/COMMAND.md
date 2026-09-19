@@ -6,7 +6,7 @@
 The story's planned one-liner —
 
 ```bash
-pnpm dlx create-nx-workspace@23.2.1 ws --preset=angular-monorepo --appName=web \
+pnpm dlx create-nx-workspace@23.2.1 workspace --preset=angular-monorepo --appName=web \
   --style=scss --bundler=esbuild --ssr=false --e2eTestRunner=none --unitTestRunner=vitest \
   --packageManager=pnpm --nxCloud=skip --ci=skip --interactive=false --skipGit
 ```
@@ -38,9 +38,9 @@ does not reproduce on this release. Two upstream changes broke it:
 `CLAUDE_CODE_ENTRYPOINT` unset:
 
 ```bash
-pnpm dlx create-nx-workspace@23.2.1 ws --preset=apps --packageManager=pnpm \
+pnpm dlx create-nx-workspace@23.2.1 workspace --preset=apps --packageManager=pnpm \
   --nxCloud=skip --ci=skip --interactive=false --skipGit
-cd ws
+cd workspace
 pnpm add -D @nx/angular@23.2.1
 pnpm nx g @nx/angular:application apps/web --name=web --style=scss \
   --bundler=esbuild --ssr=false --e2eTestRunner=none \
@@ -63,7 +63,7 @@ scaffolder command itself set `allowBuilds` (e.g. by pre-seeding the
 temporary workspace's `pnpm-workspace.yaml`) so the recorded command succeeds
 unattended, with stdin closed, on a first `kiln new` run.
 
-**Verified working**, from the finished `ws/`:
+**Verified working**, from the finished `workspace/`:
 
 ```bash
 pnpm nx run-many -t lint test build --projects=web   # all three pass

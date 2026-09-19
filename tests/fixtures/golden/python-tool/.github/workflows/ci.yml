@@ -6,11 +6,11 @@ name: CI
 # Every step goes through `task`; `kiln doctor`'s ci-entrypoint rule fails the
 # build if a step invokes uv/pytest/ruff/pyright/mkdocs/kiln directly. kiln is
 # not installed here and never will be: what CI checks is the committed
-# .rn-forge/kiln/state.json baseline, through `task validate` (kiln ADR-0003).
+# .rn-forge/kiln/state.json baseline, through `task validate`.
 #
 # The repeated toolchain setup lives in .github/actions/setup, committed beside
 # this file. Every `uses:` is pinned to a commit SHA with the version in a
-# trailing comment; Dependabot watches kiln's own repo, not this file (D21).
+# trailing comment; Dependabot watches kiln's own repo, not this file.
 
 on:
   push:
@@ -101,7 +101,7 @@ jobs:
           version="$(task version)"
           printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
 
-      # The *release* is the record of what shipped, not the tag (D22). Checking
+      # The *release* is the record of what shipped, not the tag. Checking
       # the tag instead would make a half-finished publish permanent: the tag
       # would exist, the release would not, and every rerun would skip.
       - name: Check whether this version has been released

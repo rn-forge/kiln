@@ -19,11 +19,11 @@ members = ["packages/golden-alpha", "packages/golden-beta"]
 
 # Workspace members resolve to each other; rn-forge libraries do not appear here
 # at all. Their URLs live in each member's `dependencies`, because a source
-# override is local and does not survive into a built wheel (kiln ADR-0005).
+# override is local and does not survive into a built wheel (the dependency specification).
 [tool.uv.sources]
 golden-alpha = { workspace = true }
 golden-beta = { workspace = true }
-# kiln is a pinned dev dependency (kiln ADR-0010), taken from the kiln checkout
+# kiln is a pinned dev dependency (kiln ADR-0006), taken from the kiln checkout
 # these goldens live in; the path goes when the goldens leave git (kiln F4.4).
 rn-forge-kiln = { path = "../../../..", editable = true }
 

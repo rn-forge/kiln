@@ -3,7 +3,7 @@
 A lint that has never rejected anything is a lint nobody has tested. Ported
 from `tests/test_rn_forge_deps.py`, which ran the golden repo's committed
 `check_rn_forge_deps.py` as a subprocess; the rules and their fixtures are the
-same, and the check is now called directly (kiln ADR-0010).
+same, and the check is now called directly (kiln ADR-0006).
 """
 
 from __future__ import annotations

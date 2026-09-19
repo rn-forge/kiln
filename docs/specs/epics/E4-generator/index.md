@@ -6,8 +6,8 @@
 
 Repo `rn-forge/kiln`, **one distribution**: `rn-forge-kiln` (module
 `rn_forge.kiln`), which every generated repo takes as a pinned dev dependency
-([ADR-0010](../../../adr/ADR-0010.md)). rn-forge dependencies are branch-pinned
-([ADR-0005](../../../adr/ADR-0005.md)).
+([ADR-0006](../../../adr/ADR-0006.md)). rn-forge dependencies are branch-pinned
+([E7](../E7-pykit-release-pin-flip/index.md)).
 
 **Dependencies.** S4.1.4, the checks-shape decision, is done. Every other story
 depends on [E3](../E3-realign-goldens-and-canon/index.md), and S4.5.5 also on
@@ -16,12 +16,12 @@ on `task validate` and its own acceptance block — except that
 [E5](../E5-web-archetypes/index.md)'s F5.1 and F5.2 are built after S4.5.2 and
 before F4.4 ([board](../../index.md#order)).
 
-Decisions this epic builds on: [ADR-0005](../../../adr/ADR-0005.md),
-[ADR-0004](../../../adr/ADR-0004.md), [ADR-0011](../../../adr/ADR-0011.md),
-[ADR-0003](../../../adr/ADR-0003.md), [ADR-0010](../../../adr/ADR-0010.md). The
-design shared across features — layout, commands, the artifact cycle, apply
-order, doctor checks, template inventory, config lifecycle, module contract — is
-[design.md](design.md).
+Decisions this epic builds on: [ADR-0001](../../../adr/ADR-0001.md),
+[ADR-0003](../../../adr/ADR-0003.md), [ADR-0004](../../../adr/ADR-0004.md),
+[ADR-0005](../../../adr/ADR-0005.md), [ADR-0006](../../../adr/ADR-0006.md),
+[ADR-0007](../../../adr/ADR-0007.md). The design shared across features —
+layout, commands, the artifact cycle, apply order, doctor checks, template
+inventory, config lifecycle, module contract — is [design.md](design.md).
 
 ## Features
 
@@ -42,8 +42,9 @@ backlog, [E10](../E10-kiln-generators/index.md).
 ## Risks
 
 - **kiln becoming a god-kit.** Guard: every module is `artifacts()` +
-  `checks()`, nothing else; no detection code anywhere; the archetype is
-  always asserted by config; no adopt.
+  `checks()`, nothing else; `init` preflights only a fixed standard topology,
+  never detects or transforms application code; the archetype is always
+  supplied by config; no general adopt.
 - **A template change reaching repos unreviewed** (no committed goldens means no
   diff in the pull request). Guard: a template change is not done until the
   owner has approved `task self:golden:render` output, and kiln's CI renders

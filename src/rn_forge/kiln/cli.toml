@@ -3,7 +3,7 @@
 # Every other rn-forge repo declares its `[cli]` table once, in
 # `.rn-forge/kiln/config.toml`, and resolves it relative to its checkout — a
 # repo runs from where it lives. kiln does not: it is a pinned dev dependency
-# of every repo it generates (kiln ADR-0010), so an installed kiln has no
+# of every repo it generates (kiln ADR-0006), so an installed kiln has no
 # checkout to look beside. The declaration therefore ships in the package, and
 # `tests/test_cli_surface.py` fails if it and `.rn-forge/kiln/config.toml`
 # disagree. F4.8 makes one render the other and the test goes away.

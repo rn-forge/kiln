@@ -19,8 +19,8 @@ classifiers = [
 # git sources. The URL lives in `dependencies`, not in [tool.uv.sources]: a
 # source override is local and does not survive into a built wheel, so a
 # consumer of this package's release could not resolve commons at all
-# (kiln ADR-0005). A pykit workspace that takes kiln overrides these
-# (kiln ADR-0010).
+# (the dependency specification). A pykit workspace that takes kiln overrides these
+# (kiln ADR-0006).
 dependencies = [
   "rn-forge-commons[pydantic] @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-commons",
   "rn-forge-cli @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-cli",

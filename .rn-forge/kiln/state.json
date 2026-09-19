@@ -9,14 +9,14 @@
     },
     ".github/actions/setup/action.yml": {
       "begin_marker": null,
-      "content_hash": "6d1daf7e89d51646806d505a201aaf90f8c526e1d47e66840cbdf29e9b742fcd",
+      "content_hash": "6f3d7e7041dcee019e576a9325d334aef56dd38ad4f0558007bb92fe999e5b46",
       "end_marker": null,
       "kind": "managed",
       "path": ".github/actions/setup/action.yml"
     },
     ".github/workflows/ci.yml": {
       "begin_marker": null,
-      "content_hash": "b3f2b9059150790e6d33f5ed75e3093e295ec21ffec64d3ab7d1b74c5c6c033a",
+      "content_hash": "91c25dda9c4cecc117179f9c77da95606d3c40ad99c5663daa53fd7010a3d357",
       "end_marker": null,
       "kind": "managed",
       "path": ".github/workflows/ci.yml"
@@ -37,14 +37,14 @@
     },
     ".importlinter": {
       "begin_marker": null,
-      "content_hash": "295d7a96f43defc6f83952564dc9beb99fc83043bb7d2cd350574005e35c41fd",
+      "content_hash": "ae1ad478dfc0425d92e7bd55b63ad181ca61b31aa9e134f6d623829c592c57ac",
       "end_marker": null,
       "kind": "managed",
       "path": ".importlinter"
     },
     ".rn-forge/kiln/standard.md": {
       "begin_marker": null,
-      "content_hash": "a99a709fecccad054c00645a3d1a2cb372cd528b289e8ecc5b7c09b98d458e67",
+      "content_hash": "5842ccb3d5a947900811f0e6a536aa8e3a84807fabb4b7b2c07358c6a37a2cbc",
       "end_marker": null,
       "kind": "managed",
       "path": ".rn-forge/kiln/standard.md"

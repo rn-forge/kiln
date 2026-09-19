@@ -1,6 +1,6 @@
 """`pyproject-tool-config` — doctor check 8a.
 
-`pyproject.toml` is repo-owned; kiln never writes it (kiln ADR-0001). This
+`pyproject.toml` is repo-owned; kiln never writes it (kiln ADR-0003). This
 check only verifies that a defined subset of `[project]` identity fields,
 `[tool.ruff*]`, `[tool.pyright]`, `[tool.pytest.ini_options]` and
 `[dependency-groups]` match what the archetype expects (kiln ADR-0005), and

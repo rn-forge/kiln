@@ -1,31 +1,22 @@
 # Decisions
 
-kiln's decision log: the choices behind the repository standard and behind kiln
-itself, each with the alternatives rejected. The specification those choices
-produced — the verb list, the ownership table, the dependency sets, the config
-schema — lives in [the standard-repo reference](../reference/standard-repo.md),
-which kiln renders into every repo it generates as `.rn-forge/kiln/standard.md`.
+Durable choices that constrain kiln's architecture and the repository standard
+it generates. Each record opens with the decision, what follows from it, and
+what it influences; alternatives and history are at the bottom.
 
-An ADR states a decision that should outlive the spec built on it. If a page
-here starts listing things, it has become a spec and belongs in the reference.
-When a decision changes, the ADR that owns the topic is revised in place: it
-keeps its number, its Decision states what is true now, and what it replaced
-moves under its `## History`. The log stays one clean list, and every link keeps
-pointing at one file. A genuinely new topic gets the next number.
+Scope, supported configurations, implementation details and migration work
+belong in [specs](../specs/index.md); exact rules belong in
+[the reference](../reference/standard-repo.md).
 
-Open questions are not ADRs: they live on the epic or feature they block, under
-[specs](../specs/index.md), and become an ADR — or a change to one — when
-answered. The plan's `D<n>` decision numbers map to these ADRs in
-[context §2.2](../plans/context.md#22-decisions).
+Read in order — the first two set the product's footing, the rest constrain what
+it generates.
 
-- [ADR-0001 — One owner per managed file, or per fenced block](ADR-0001.md)
-- [ADR-0002 — Two dependency graphs, and an executable boundary](ADR-0002.md)
-- [ADR-0003 — CI runs committed code; kiln is a developer tool](ADR-0003.md)
-- [ADR-0004 — The `.rn-forge/` umbrella, and asserted, committed configuration](ADR-0004.md)
-- [ADR-0005 — An archetype is a shape, a library set, and a rendered, approved template set](ADR-0005.md)
-- [ADR-0006 — No skills; one-time judgement is a kiln prompt; repos are created, not migrated](ADR-0006.md)
-- [ADR-0007 — The task vocabulary is closed, and the gate cannot shrink](ADR-0007.md)
-- [ADR-0008 — Type-check with pyright in strict mode, not mypy](ADR-0008.md)
-- [ADR-0009 — The libraries own the boilerplate; the CLI is declared, not written](ADR-0009.md)
-- [ADR-0010 — kiln is a pinned dev dependency, and CI runs it read-only](ADR-0010.md)
-- [ADR-0011 — kiln is one distribution of modules under one contract](ADR-0011.md)
+| # | Decision | Scope |
+| -- | -- | -- |
+| [0001](ADR-0001.md) | Ship kiln as one pinned distribution of modules | kiln and its generated repositories |
+| [0002](ADR-0002.md) | Build on the rn-forge platform; keep repository policy in kiln | the rn-forge workspace |
+| [0003](ADR-0003.md) | Ownership is complete or absent | generated repositories |
+| [0004](ADR-0004.md) | Render only from committed configuration | renders and verification runs |
+| [0005](ADR-0005.md) | Archetypes define topology; flags form independent dimensions | the archetype catalogue |
+| [0006](ADR-0006.md) | Commit generated CI, and run the pinned kiln read-only | CI in generated repositories |
+| [0007](ADR-0007.md) | Compose a declared public task vocabulary from modules | the task surface |

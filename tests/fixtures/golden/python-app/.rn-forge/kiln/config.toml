@@ -19,7 +19,7 @@ release = "tag-exists"
 includes = []
 
 # The command line this repo exposes, built by `CliApp.from_config` rather
-# than assembled by hand (kiln ADR-0009). Adding a command is an entry here and
+# than assembled by hand (kiln ADR-0002). Adding a command is an entry here and
 # a function in `src/golden_app/commands.py`.
 [cli]
 name = "golden-app"

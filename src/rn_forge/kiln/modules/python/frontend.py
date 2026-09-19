@@ -77,7 +77,7 @@ def scaffold_frontend(root: Path, config: KilnConfig) -> None:
             "pnpm",
             "dlx",
             f"create-nx-workspace@{NX_VERSION}",
-            "ws",
+            "workspace",
             "--preset=apps",
             "--packageManager=pnpm",
             "--nxCloud=skip",
@@ -87,7 +87,7 @@ def scaffold_frontend(root: Path, config: KilnConfig) -> None:
             cwd=str(tmp_path),
             env=env,
         )
-        workspace = tmp_path / "ws"
+        workspace = tmp_path / "workspace"
         Process.execute(
             "nx-angular-plugin",
             "pnpm",

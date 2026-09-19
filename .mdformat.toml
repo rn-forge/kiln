@@ -8,7 +8,7 @@
 # than over a file list, so this is the single place a path is exempted.
 # `.rn-forge/kiln/standard.md` is not a style exemption: it is a file kiln owns
 # whole, and a formatter rewriting it would be a second owner writing the same
-# bytes (kiln ADR-0001). Files kiln owns only a *block* of are formatted
+# bytes (kiln ADR-0003). Files kiln owns only a *block* of are formatted
 # normally; kiln renders those block bodies already mdformat-clean.
 wrap = 80
 exclude = [

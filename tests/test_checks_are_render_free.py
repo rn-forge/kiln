@@ -1,6 +1,6 @@
 """`kiln doctor` never loads the generation engine.
 
-`task validate` runs `kiln doctor` on every CI run (kiln ADR-0010), so the
+`task validate` runs `kiln doctor` on every CI run (kiln ADR-0006), so the
 render-free half has to stay cheap: importing it must not drag in Jinja or
 `rn_forge.tooling.generation`. `.importlinter` carries the Jinja half of this;
 it cannot carry the engine half, because import-linter rejects subpackages of

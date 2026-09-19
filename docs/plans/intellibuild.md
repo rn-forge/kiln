@@ -9,8 +9,9 @@ it, so the work can start without re-deriving it.
 ## What it is
 
 intellibench is superseded by **intellibuild**, a fresh repo rather than a
-migration (D41; [ADR-0006](../adr/ADR-0006.md)). intellibench is a donor, never
-an adopt target.
+migration (D41;
+[Scope and ownership](../specs/epics/E4-generator/design.md#scope-and-ownership)).
+intellibench is a donor, never an adopt target.
 
 **Archetype: `python-web-app`, `framework = fastapi`, `frontend = angular`** —
 decided 2026-09-12 (was open question 16). It carries a separately built

@@ -1,5 +1,11 @@
 # rn-forge repo standardization — plan of action
 
+**Historical record:** proposals and numbered decisions below describe the
+review at that time, not current policy. ADR references use current
+destinations; retired references use topic names. Current scope and decisions
+are in [the spec board](../specs/index.md) and
+[the decision log](../adr/index.md).
+
 **Date:** 2026-09-12 · **Revision:** 14 **Repos in scope:** `rn-forge/pykit`,
 `rn-forge/kiln` (new), `walgreens/intellibuild` (new; successor to
 `intellibench`) **Parked:** `rn-tools/apollo`, `ngkit`, `shkit`,
@@ -41,10 +47,10 @@ and running `task validate` in it (D63, revises D43) · **layered external
 config** resolved-then-committed, so rendering stays a pure function of the
 checkout (D64) · the CI concern is named **`cicd`, not `devops`**, and generates
 committed workflows plus local composite actions rather than reusable workflows
-(D65, D66, upholding D45 and ADR-0010's naming rule) · docs/tasks/cicd become
-**modules inside the kiln distribution**, not separate libraries, behind a
-promoted `Generator` protocol that `kiln doctor` orchestrates (D67, D68).
-**§0.10 carries the unfinished thread; resume there.**
+(D65, D66, upholding D45 and verification packaging proposal's naming rule) ·
+docs/tasks/cicd become **modules inside the kiln distribution**, not separate
+libraries, behind a promoted `Generator` protocol that `kiln doctor`
+orchestrates (D67, D68). **§0.10 carries the unfinished thread; resume there.**
 
 **Revision 11 changes:** **open question 11 is answered** — the tool lifecycle
 surface is a **capability flag** any Python archetype may set, and `python-tool`
@@ -63,22 +69,23 @@ loses its subprocess step, and everything agent-config lands in
 [agent-config-future.md](agent-config-future.md) (D58) · the **tool lifecycle
 surface** is built, in a new Phase C.3, because `python-tool` and `python-app`
 are otherwise the same repo and D53 is unproven (D59) · `pyproject.toml` stays
-repo-owned and gains a doctor check instead of a generator (D60) · **ADR-0010
-becomes executable** — `scripts/**` leaves the ownership table, the template
-inventory and the golden repos, and `rn-forge-kiln-checks` is a numbered Phase D
-step rather than a decision with no schedule.
+repo-owned and gains a doctor check instead of a generator (D60) ·
+**verification packaging proposal becomes executable** — `scripts/**` leaves the
+ownership table, the template inventory and the golden repos, and
+`rn-forge-kiln-checks` is a numbered Phase D step rather than a decision with no
+schedule.
 
 **Revision 9 changes (after the Phase C review):** the development layer is
 **split in two** — `rn-forge-cli` for the process and command-line shape,
-`rn-forge-tooling` for the file-owning machinery (D52, ADR-0002) · the archetype
-catalogue becomes **seven names plus two implementation flags** (D53, ADR-0005),
-replacing `python-cli` with `python-app`/`python-tool` and the `-ng` pair with
-`python-web-api`/`python-web-app` · a config flag is allowed only when it
-changes neither topology nor task graph, and **every shipped flag value has a
-golden repo** (D54) · commons, cli and tooling are **re-laid-out into
-sub-packages** (D55) · `kiln generate package` is in scope; framework code
-generators stay deferred (D56) · fourteen implementation defects from the review
-are tracked as **Phase C.2** (§0.8).
+`rn-forge-tooling` for the file-owning machinery (D52, dependency boundary) ·
+the archetype catalogue becomes **seven names plus two implementation flags**
+(D53, archetype design), replacing `python-cli` with `python-app`/`python-tool`
+and the `-ng` pair with `python-web-api`/`python-web-app` · a config flag is
+allowed only when it changes neither topology nor task graph, and **every
+shipped flag value has a golden repo** (D54) · commons, cli and tooling are
+**re-laid-out into sub-packages** (D55) · `kiln generate package` is in scope;
+framework code generators stay deferred (D56) · fourteen implementation defects
+from the review are tracked as **Phase C.2** (§0.8).
 
 **Revision 8 changes (after the Phase B review):** Phases A and B are
 **executed** — see §0.1 · archetypes are renamed to `python-cli`, `python-lib`,
@@ -88,7 +95,7 @@ well as a shape, enforced by a generated checker (D46) · CI stays **generated**
 with a committed composite action rather than reusable workflows from a devops
 repo (D45) · kiln's ADRs are **restructured to nine** and the specifications
 they produced move to `docs/reference/standard-repo.md` (D48) · a proposed
-ADR-0009 targets what `rn-forge-tooling` must expose (D49).
+shared CLI design targets what `rn-forge-tooling` must expose (D49).
 
 **Revision 7 changes:** repos are **rebuilt from scratch**, not migrated — git
 history is irrelevant for pre-v1 repos · **canon is folded into kiln** (kiln's
@@ -156,7 +163,7 @@ table with `git status` before acting; it goes stale.
 
 | Repo | Branch | State | Note |
 | -- | -- | -- | -- |
-| `rn-forge/kiln` | `feature/v1` | plan revisions 12–14, ADR-0009 edit and `agent-config-future.md` uncommitted | three hand-authored goldens; kiln's own config is `python-tool` |
+| `rn-forge/kiln` | `feature/v1` | plan revisions 12–14, shared CLI design edit and `agent-config-future.md` uncommitted | three hand-authored goldens; kiln's own config is `python-tool` |
 | `rn-forge/pykit` | `feature/upgrade` | clean at `f59c40f` | commons, cli, tooling, web, django; fastapi in progress. Executable form: `docs/plans/commons-upgrade-plan.md`, `web-library-plan.md`, `fastapi-library-plan.md`, indexed by `docs/plans/README.md` |
 | `rn-forge/agentkit` | `feature/v0.6.0` | clean | **out of the plan (D58)** — [agent-config-future.md](agent-config-future.md) |
 | `rn-forge/taskkit` | `feature/v1` | 34 staged | **retired (D23)** — donor for `validator.py` and fixtures |
@@ -180,7 +187,7 @@ decision is not re-derived.
 | **web** (`rn-forge-web` in pykit) | library | framework-free inbound HTTP wire semantics; depends on commons only | **exists** |
 | **django** / **fastapi** (`rn-forge-django`, `rn-forge-fastapi` in pykit) | framework libraries | adapters over web; `[codegen]` extras later (D37) | django exists; fastapi **in progress** |
 | **kiln** (`rn-forge/kiln`, binary `kiln`) | CLI + canon | the canon; archetypes; the `core` module and the concern modules `python`, `docs`, `tasks`, `cicd`, `instructions` (D72, D74); `doctor` | Phase D |
-| **checks** (`rn-forge-kiln-checks` in kiln) | dev-dependency library | the **render-free half of each module's checks**, organized by module, as console scripts; what CI runs (D74, ADR-0010) | Phase D.1 |
+| **checks** (`rn-forge-kiln-checks` in kiln) | dev-dependency library | the **render-free half of each module's checks**, organized by module, as console scripts; what CI runs (D74, verification packaging proposal) | Phase D.1 |
 | **agentkit** | — | — | **out of the plan (D58)** — [agent-config-future.md](agent-config-future.md) |
 | canon repo · taskkit · `go-task-setup` · `docs-setup` · `mkdocs-site-setup` · `spec-structure-setup` · `forge-core` · `forge-ci` · `docskit` | — | — | **not built / retired** |
 
@@ -193,10 +200,10 @@ fixtures**, read as prior art:
 
 | Donor | Carry | Do not carry |
 | -- | -- | -- |
-| `agentkit` | **already harvested** — the E17 docs area model, `_areas.yml`/`_structure.md`, the checker behaviours, the verb layout, the CI discipline. ADR-0021 is kiln ADR-0001. Everything still outstanding, including `self_command.py` as prior art for D59, is in [agent-config-future.md](agent-config-future.md) | `core/**` (replaced by tooling); setup skills; `feedback.md`; scripts as files |
+| `agentkit` | **already harvested** — the E17 docs area model, `_areas.yml`/`_structure.md`, the checker behaviours, the verb layout, the CI discipline. ADR-0021 is kiln ownership policy. Everything still outstanding, including `self_command.py` as prior art for D59, is in [agent-config-future.md](agent-config-future.md) | `core/**` (replaced by tooling); setup skills; `feedback.md`; scripts as files |
 | `taskkit` | `core/validator.py` rules and tests; `tests/fixtures/repos/**` for the `-ng` archetypes; the `extra_refs` / repository-owned include model; `Envelope` `--json` shape. Retirement record in [agent-config-future.md](agent-config-future.md) | discovery, planner, adapters, install layer |
 | `intellibench` | `docs2/**` (already in the area model — it becomes intellibuild's `docs/`); the universal lints in `tools/lint/` as *template inputs* (`check_ci_entrypoint`, `check_layout`, `check_locks`, `check_pins`); `tools/docs/{check,_nav,generate_order,check_mermaid}` behaviour | `docs/` (superseded by `docs2/`); `ADR_REVIEW.md`, `temp.txt`; product code paths |
-| `apollo` | ADR-0024 (`.docs-site` output dir); `docs/guides/task-vocabulary.md` as input to kiln ADR-0007 | everything else (parked) |
+| `apollo` | ADR-0024 (`.docs-site` output dir); `docs/guides/task-vocabulary.md` as input to kiln task vocabulary | everything else (parked) |
 | `pykit` | **kept as-is** — package source, tests, docs, plans. Only the repo *skeleton* is regenerated (Phase F.2) | `.github/workflows/_package-ci.yml` (replaced by the generated matrix) |
 
 Commons is the one exception to "rebuild": it is 8k lines with a plan that just
@@ -224,14 +231,14 @@ list, so a later session does not have to re-derive it from the diffs.
 
 | Comment | Outcome |
 | -- | -- |
-| ADR-0001 and ADR-0002 are redundant | Merged into one ownership ADR. "Everything is kiln-owned" was *not* adopted: agentkit, the repo and seeded files all own paths, which is why three artifact kinds exist. |
-| ADR-0003's CI model — reusable templates from a devops repo | Examined and rejected with reasons (D45). Pinned reusable workflows cost the same per-repo churn as generation and add an external CI dependency; floating them means unpinned CI. The reviewability win was bought instead with a committed composite action, `.github/actions/setup`. |
-| ADR-0008 and ADR-0009 read as spec, not decision | Correct. Every enumeration moved to `docs/reference/standard-repo.md`; every ADR gained an **Alternatives considered** section (D48). |
-| Archetypes should be `python-cli`, `python-lib`, `python-django-ng`, `python-fastapi-ng`; fold ADR-0009 into ADR-0006 | Done (D47). `-ng` means a pnpm-managed Nx workspace; `nx_cloud` is a config key; `backend` and `web_runner` are gone. Dependency defaults folded into the archetypes ADR. |
+| ownership policy and dependency boundary are redundant | Merged into one ownership ADR. "Everything is kiln-owned" was *not* adopted: agentkit, the repo and seeded files all own paths, which is why three artifact kinds exist. |
+| CI policy's CI model — reusable templates from a devops repo | Examined and rejected with reasons (D45). Pinned reusable workflows cost the same per-repo churn as generation and add an external CI dependency; floating them means unpinned CI. The reviewability win was bought instead with a committed composite action, `.github/actions/setup`. |
+| type-checking choice and shared CLI design read as spec, not decision | Correct. Every enumeration moved to `docs/reference/standard-repo.md`; every ADR gained an **Alternatives considered** section (D48). |
+| Archetypes should be `python-cli`, `python-lib`, `python-django-ng`, `python-fastapi-ng`; fold shared CLI design into scope policy | Done (D47). `-ng` means a pnpm-managed Nx workspace; `nx_cloud` is a config key; `backend` and `web_runner` are gone. Dependency defaults folded into the archetypes ADR. |
 | `AGENTS.md` should be a static pointer to `CLAUDE.md` | Done in all three repos. `check_structure.py`'s docs-pointer rule was generalized to understand single-sourcing rather than demanding both files carry the links. |
 | Add a Markdown formatting task | Done: `lint:markdown`, `format:markdown`, seeded `.mdformat.toml`. The earlier harvest note misread agentkit ADR-0014 — it makes the mdformat *config* repository-owned, not the task. `.rn-forge/kiln/standard.md` is excluded, because a formatter rewriting a kiln-owned file is two owners writing the same bytes. |
-| Review `pyproject.toml` tool config against pykit/agentkit | Done: `--import-mode=importlib`, targeted test-file ignores instead of `["ALL"]`, `py.typed` markers, `ruff format --check` in the gate. No repo in the fleet uses mypy, and that fleet decision is now kiln ADR-0008. |
-| Is there more standard boilerplate — logging, CLI config, arg parsing? | Yes, and it is the strongest argument for the library set. Written up as **ADR-0009 (proposed)**: tooling owns the boilerplate and the CLI surface is declared in config, not written. Code lands in Phase C/D; D2 still defers application generators. |
+| Review `pyproject.toml` tool config against pykit/agentkit | Done: `--import-mode=importlib`, targeted test-file ignores instead of `["ALL"]`, `py.typed` markers, `ruff format --check` in the gate. No repo in the fleet uses mypy, and that fleet decision is now kiln type-checking choice. |
+| Is there more standard boilerplate — logging, CLI config, arg parsing? | Yes, and it is the strongest argument for the library set. Written up as **shared CLI design (proposed)**: tooling owns the boilerplate and the CLI surface is declared in config, not written. Code lands in Phase C/D; D2 still defers application generators. |
 
 **From the codex review** — all eight, in `docs/plans/reviews/phase-b-codex.md`:
 published packages lost their dependency source (fixed by pinned direct URLs,
@@ -249,8 +256,8 @@ exemption for tests; fork pull requests ran a scan whose secret they cannot see.
 | -- | -- |
 | `format:python` runs `ruff format` before `ruff check --fix`, so lint fixes land unformatted | **Fixed** in all three repos. `check --fix` now runs first, then `format`; `lint:python` asserts the same pair in the same order. This was a real defect, not a style preference. |
 | `lint` calling both `lint:python` and `lint:format` is asymmetric with `format` | **Fixed.** `lint:format` is gone; `lint:python` runs `ruff check` and `ruff format --check`, mirroring `format:python`. `required_validate` drops `quality:lint:format`. |
-| Will the golden repo's `ADR-0001` be seeded into every repo? | **No.** Only `docs/adr/index.md` and `docs/adr/_structure.md` are seeded; the golden repo's own ADR is fixture content and is not in `state.json`. A new repo gets an empty, structured `adr/` area and writes its own first decision — the runbook covers that. |
-| `scripts/` is a good candidate to package and add as a dev dependency | **Agreed, and settled as kiln ADR-0010 (accepted; D51).** 1,454 lines per repo, four of the seven checkers with no per-repo variation at all, and the remaining three varying only by lists already present in `config.toml`. Splitting `rn-forge-kiln-checks` from `rn-forge-kiln` keeps ADR-0003's real rule — CI never *renders* — while removing the duplication. The docs checkers move into tooling in Phase C; the four policy checkers become `rn-forge-kiln-checks` in Phase D, in the kiln repo alongside the CLI. |
+| Will the golden repo's `ownership policy` be seeded into every repo? | **No.** Only `docs/adr/index.md` and `docs/adr/_structure.md` are seeded; the golden repo's own ADR is fixture content and is not in `state.json`. A new repo gets an empty, structured `adr/` area and writes its own first decision — the runbook covers that. |
+| `scripts/` is a good candidate to package and add as a dev dependency | **Agreed, and settled as kiln verification packaging proposal (accepted; D51).** 1,454 lines per repo, four of the seven checkers with no per-repo variation at all, and the remaining three varying only by lists already present in `config.toml`. Splitting `rn-forge-kiln-checks` from `rn-forge-kiln` keeps CI policy's real rule — CI never *renders* — while removing the duplication. The docs checkers move into tooling in Phase C; the four policy checkers become `rn-forge-kiln-checks` in Phase D, in the kiln repo alongside the CLI. |
 
 ### 0.8 What the Phase C review changed
 
@@ -275,7 +282,7 @@ the archetype split is what gives the package split a consumer.
 | A1 — the workstation/runtime line is in the wrong place | **Accepted, and generalized.** Split the development layer into `rn-forge-cli` and `rn-forge-tooling` (D52). `DirectoryLock` and `atomic_symlink` move back to commons; `extract_archive`, `StateStore`, `TemplateEngine` and the generation engine stay in tooling; the residual `utils.py` stays in commons — all four for codex's own reason, which is what the signature contains. |
 | A1 — move `ManagedBlock` to tooling | **Rejected.** The argument is "its current examples are gitignore, instructions and MkDocs", but the only current *consumers* are developer tools, so that test returns the same answer for everything. `ManagedBlock` is a byte-preserving fenced-span edit with no generator policy in its signature — the same test that moved the lock and the symlink back to commons keeps it there. F6 fixes it in place. |
 | A1 — this revises D29/D35/D51 | **Overstated, and worth being precise about.** Codex's own table leaves generation, templates, state, install, CLI and docs mechanics on the development side. The genuine relocations are the lock and the symlink. D35 is *refined* by D52, not reopened. |
-| A2 — docs extraction carried kiln policy into tooling | **Accepted in full; the cleanest finding in the review.** `docs/structure.py` hardcoding ADR numbering, epic/release naming and instruction filenames puts rn-forge policy inside a general-purpose library, contradicting ADR-0001 outright. Tooling keeps link, Markdown and nav *mechanics* and takes an explicit policy object; `rn-forge-kiln-checks` supplies it (Phase D). No generic validation framework. |
+| A2 — docs extraction carried kiln policy into tooling | **Accepted in full; the cleanest finding in the review.** `docs/structure.py` hardcoding ADR numbering, epic/release naming and instruction filenames puts rn-forge policy inside a general-purpose library, contradicting ownership policy outright. Tooling keeps link, Markdown and nav *mechanics* and takes an explicit policy object; `rn-forge-kiln-checks` supplies it (Phase D). No generic validation framework. |
 | A3 — the package contract bundles every consumer with the whole CLI stack | **Accepted; the eager `__init__` is the real defect.** Under D52 it largely evaporates: a batch importing `rn_forge.cli` cannot reach Jinja2, because it is in another distribution. Codex is right that extras add dependencies rather than excluding modules — which is why the split is packages, not extras. |
 | Rename tooling to `devtools` / `automation` / `core` | **Rejected, as codex recommended.** None changes an architectural property. `rn-forge-cli` was rejected as a rename of the *whole* package for being too narrow, and adopted as the name of the application layer specifically, where it is exactly right. |
 
@@ -284,7 +291,7 @@ the archetype split is what gives the package split a consumer.
 | Comment | Outcome |
 | -- | -- |
 | `python-cli` conflates business batches with installable tools | **Done (D53).** `python-app` and `python-tool`. Same shape, different library set, different `REQUIRED` list, one golden repo each. |
-| `python-lib` is a monorepo publishing several packages; `python-app` may also carry internal packages | **Done, and the axis is corrected.** "Is it a monorepo" does not discriminate — every archetype here can be one. *Publishing* does: per-package release tags and a per-package CI matrix, versus one version. Written into ADR-0005 and the runbook. |
+| `python-lib` is a monorepo publishing several packages; `python-app` may also carry internal packages | **Done, and the axis is corrected.** "Is it a monorepo" does not discriminate — every archetype here can be one. *Publishing* does: per-package release tags and a per-package CI matrix, versus one version. Written into archetype design and the runbook. |
 | Web repos are microservice-or-full-app, with django/fastapi and angular/react/svelte as choices | **Done (D53).** `python-web-api` and `python-web-app`, with `framework` and `frontend` flags. This reverses D47's blanket rejection of flags, so D54 restates the rule that makes both positions coherent rather than leaving it as a reversal. |
 | An API with no separate frontend may still ship a thin admin UI | **Accepted** — `admin_ui` on `python-web-api`. Django admin and actuator-style pages do not make a repo `python-web-app`; a separately built frontend package does. |
 | `ui-lib` and `node-web-app`, angular first | **Named in the catalogue, deferred to post-v1.** They need a second toolchain — pnpm release, node CI, no uv — and nothing in v1 scope uses them. Naming them now fixes the taxonomy so `ui-lib` does not arrive later as a one-off. |
@@ -315,15 +322,15 @@ the anchor checker should stop reimplementing Python-Markdown's slug and
 unique-id logic and call it. The reference-link and fenced-code gaps are
 separately real.
 
-**What neither review said.** Phase C broke ADR-0005's own rule — *a template
-change not first made in a golden repo is a bug*. It invented `rn-forge-tooling`
-and ADR-0009's declared `[cli]` surface, and no golden repo demonstrates either:
-golden-cli still pins commons `v0.2.2` and does not use tooling at all (which is
-F8, read as a plan gap rather than a defect). The missing acceptance test is
-that **`golden-app` contains a working CLI with zero hand-written app
-construction**. If that repo cannot be written, ADR-0009 is not ready to be
-accepted, and that is better discovered now than after kiln's templates derive
-from it.
+**What neither review said.** Phase C broke archetype design's own rule — *a
+template change not first made in a golden repo is a bug*. It invented
+`rn-forge-tooling` and shared CLI design's declared `[cli]` surface, and no
+golden repo demonstrates either: golden-cli still pins commons `v0.2.2` and does
+not use tooling at all (which is F8, read as a plan gap rather than a defect).
+The missing acceptance test is that **`golden-app` contains a working CLI with
+zero hand-written app construction**. If that repo cannot be written, shared CLI
+design is not ready to be accepted, and that is better discovered now than after
+kiln's templates derive from it.
 
 ### 0.9 What the Phase C.2 review changed
 
@@ -332,10 +339,10 @@ the list, so a later session does not re-derive it.
 
 | Comment | Outcome |
 | -- | -- |
-| Root `README.md` and `CLAUDE.md` only name `python-tool` — example, or stale? | **Neither.** It is kiln's own archetype, read from its `config.toml` and rendered into the block. It *is* scheduled to change: ADR-0010 makes kiln a two-distribution repo, so it becomes `python-lib` at Phase D.8. The one genuine example — `cd tests/fixtures/golden/python-tool` in the README — now names all three. |
+| Root `README.md` and `CLAUDE.md` only name `python-tool` — example, or stale? | **Neither.** It is kiln's own archetype, read from its `config.toml` and rendered into the block. It *is* scheduled to change: verification packaging proposal makes kiln a two-distribution repo, so it becomes `python-lib` at Phase D.8. The one genuine example — `cd tests/fixtures/golden/python-tool` in the README — now names all three. |
 | Those two files overlap; use README for developer-facing content and refer to it from CLAUDE.md | **Done, and promoted to a rule (D57).** Both files opened with the same sentence and repeated the same status pointers. §2.3 already forbids two owners writing the same bytes; D57 is that rule applied to prose. Applied to kiln and all three golden repos in Phase C.3. |
-| Same in each golden repo | **Same fix, same phase.** It is a standard change, so it lands in the golden repos first (ADR-0005) and reaches generated repos as a template. |
-| `scripts/` is repetitive; we discussed a devopskit and it is not in the plan | **It was decided and never scheduled.** [ADR-0010](../adr/ADR-0010.md) is accepted and D51 confirmed — including rejecting the `devopskit` name, because `checks` names a role that excludes rendering while `devops` names a domain that excludes nothing. What was missing is execution: §2.4, §2.5.5, §2.6 and Phase D all still generated `scripts/**`. Now a numbered Phase D step, with the golden repos losing 1,454 lines each before any template derives from them. |
+| Same in each golden repo | **Same fix, same phase.** It is a standard change, so it lands in the golden repos first (archetype design) and reaches generated repos as a template. |
+| `scripts/` is repetitive; we discussed a devopskit and it is not in the plan | **It was decided and never scheduled.** The former separate-checker proposal was accepted and D51 confirmed — including rejecting the `devopskit` name, because `checks` names a role that excludes rendering while `devops` names a domain that excludes nothing. What was missing is execution: §2.4, §2.5.5, §2.6 and Phase D all still generated `scripts/**`. Now a numbered Phase D step, with the golden repos losing 1,454 lines each before any template derives from them. |
 | Can the near-identical `pyproject.toml` tool config become a reusable pykit component? | **No mechanism exists, and generating it would not deduplicate anything (D60).** pytest and coverage have no config inheritance; pyright's `extends` is not available in the `[tool.pyright]` form; ruff's `extend` is a filesystem path that would have to reach into `.venv`. The bytes are duplicated either way. So pyproject stays repo-owned and gains doctor check 8a, which warns on divergence — verification without the apply round trip. |
 | taskkit is dead and agentkit will be re-ideated from scratch; take the content out | **Done (D58).** Everything agent-config — the rebuild scope, the prior art worth reading, taskkit's retirement record — is in [agent-config-future.md](agent-config-future.md). The structural consequence is the real change: kiln no longer shells out to agentkit and seeds the instruction files itself, so `.claude/**` is unowned until the rethink happens. |
 | Global config management has to rethink its role now kiln exists | **Recorded as the question that comes first**, in [agent-config-future.md](agent-config-future.md) §2. agentkit's *project* scope existed largely because nothing else owned repo files; kiln owns them now. Do not answer it by porting the old shape. |
@@ -407,11 +414,12 @@ seam §2.9 says kiln's own modules already use, and the same shape as
 `ToolProduct` (D59). `kiln doctor` orchestrates them and merges commons
 `Finding` rows into one report.
 
-**`cicd`, not `devops`** — and this *upholds* ADR-0010 rather than reversing it.
-ADR-0010 rejected `devops` because it "names a domain that excludes nothing";
-`cicd` names pipelines and workflows and excludes infra provisioning,
-observability and deployment topology, all of which are out of scope (§0.5). The
-ADR's reasoning stands unamended.
+**`cicd`, not `devops`** — and this *upholds* verification packaging proposal
+rather than reversing it. verification packaging proposal rejected `devops`
+because it "names a domain that excludes nothing"; `cicd` names pipelines and
+workflows and excludes infra provisioning, observability and deployment
+topology, all of which are out of scope (§0.5). The ADR's reasoning stands
+unamended.
 
 **The technical constraint that shaped D66:** GitHub Actions cannot `include:` a
 YAML file from `.venv` or from `.rn-forge/`. Its only reuse mechanisms are
@@ -430,11 +438,11 @@ achieve the same thinness with reuse happening at *generation* time.
 | -- | -- |
 | Make the golden repos themselves Jinja templates | **Changed, not dropped (D63).** Templates are authored in Jinja; goldens stay committed *rendered* trees, as snapshots rather than hand-written sources. The review property is what committed bytes buy. |
 | `kiln doctor` should render a temp repo and compare, rather than diffing a golden | **Already the design — no change.** §2.5.6 and `kiln diff` render fresh and compare against disk; doctor never reads a golden. `check_generated.py` deliberately does neither, comparing disk against committed `state.json` hashes, stdlib-only so a cold clone can run it. Goldens appear only in tests. |
-| Config discovered at `~/.rn-forge/kiln/` or cwd, absence falling back to kiln defaults | **Reproducibility bug, fixed by D64.** If home-level config affects rendering, `kiln apply` produces different bytes on different machines, `check_generated` goes red for whoever did not render last, and the committed `state.json` baseline — which ADR-0004 rests on — becomes machine-dependent. Discovery is kept; it resolves at `kiln new` / `kiln config sync` and the resolved values are committed. |
+| Config discovered at `~/.rn-forge/kiln/` or cwd, absence falling back to kiln defaults | **Reproducibility bug, fixed by D64.** If home-level config affects rendering, `kiln apply` produces different bytes on different machines, `check_generated` goes red for whoever did not render last, and the committed `state.json` baseline — which configuration design rests on — becomes machine-dependent. Discovery is kept; it resolves at `kiln new` / `kiln config sync` and the resolved values are committed. |
 | Workflows as thin wrappers including templates from inside the cicd package | **Not implementable (D66).** See the constraint above. Local composite actions instead. |
-| `scripts/` subdirectories owned by kiln and cicd | **Declined — keeps ADR-0010.** The ADR removed `scripts/**` from kiln's ownership to stop shipping 1,454 lines per repo; the owner's own principle here ("minimal files, maximum reuse from inside the dependency") is that ADR's argument verbatim. Checkers stay console scripts from pinned dev dependencies. |
+| `scripts/` subdirectories owned by kiln and cicd | **Declined — keeps verification packaging proposal.** The ADR removed `scripts/**` from kiln's ownership to stop shipping 1,454 lines per repo; the owner's own principle here ("minimal files, maximum reuse from inside the dependency") is that ADR's argument verbatim. Checkers stay console scripts from pinned dev dependencies. |
 | kiln "owns its surface" inside `src/` and `tests/` | **Narrowed to verification.** If kiln *generates* files there it has become an application code generator and **D56 reopens**. kiln owns structural verification — src layout, package directory naming, test tree shape — and generates nothing. |
-| `docs`/`tasks`/`cicd` as separately published distributions | **Modules, not distributions (D67).** A separate distribution is warranted only when something installs it *without* the others. `checks` has a proven case (CI installs it and must not install kiln); `cicd` has a plausible one; docs and tasks have none. Import-linter already enforces the boundaries inside one distribution — it is what ADR-0003 does today for `rn_forge.kiln.checks`. |
+| `docs`/`tasks`/`cicd` as separately published distributions | **Modules, not distributions (D67).** A separate distribution is warranted only when something installs it *without* the others. `checks` has a proven case (CI installs it and must not install kiln); `cicd` has a plausible one; docs and tasks have none. Import-linter already enforces the boundaries inside one distribution — it is what CI policy does today for `rn_forge.kiln.checks`. |
 | Move `rn-forge-kiln-checks` into pykit to settle open question 11 | **Declined (D61).** It answers *kiln today* and leaves the underlying question to resurface at the first `python-lib` that ships a command. The checkers are also stdlib-only by design and encode kiln's archetype catalogue, which would invert the layering. |
 
 #### Still open — pick up here
@@ -605,7 +613,7 @@ commons ──► cli ──► tooling ──► kiln ──► kiln-checks  (c
    └───────────────────────────► rn-forge-django, rn-forge-fastapi
 
 kiln ──entry points─► *[codegen]    (kiln discovers generators; never imports a framework)
-CI ──► kiln-checks + tooling        (verification only; CI never installs kiln — ADR-0010)
+CI ──► kiln-checks + tooling        (verification only; CI never installs kiln — verification packaging proposal)
 ```
 
 > **Library graph acyclic, tooling graph free.** `rn-forge-commons`,
@@ -652,8 +660,9 @@ task runs `uv run lint-imports`, root `lint` calls it, and CI reaches it through
 - A cold clone builds **without kiln**, without `$RNF_HOME` and without a custom
   bootstrap. It does install pinned dev dependencies — ruff, pyright, pytest,
   mkdocs and, from Phase D, `rn-forge-kiln-checks` — and then runs committed
-  *configuration* against them. It never runs a generator. ADR-0010 states
-  this plainly rather than leaving the older, wider claim standing.
+  *configuration* against them. It never runs a generator. verification
+  packaging proposal states this plainly rather than leaving the older, wider
+  claim standing.
 - Every generated file carries a provenance header:
   `# Generated by kiln <version> from .rn-forge/kiln/config.toml — do not edit; run 'kiln apply'`.
 - Scripts that differ per repo by a list (F2) carry that list in a **config
@@ -695,7 +704,7 @@ task runs `uv run lint-imports`, root `lint` calls it, and CI reaches it through
 1. Judgement is not automated. Where a human or agent must decide, kiln's docs
    hold a **runbook**, not a skill.
 
-### 2.4 Ownership table (normative — kiln ADR-0001)
+### 2.4 Ownership table (normative — kiln ownership policy)
 
 | File / tree | Owner | Artifact kind |
 | -- | -- | -- |
@@ -709,7 +718,7 @@ task runs `uv run lint-imports`, root `lint` calls it, and CI reaches it through
 | `.importlinter` | kiln | managed import-boundary contracts |
 | `Taskfile.yml`, `tasks/workspace.yml`, `tasks/quality.yml`, `tasks/docs.yml`, archetype namespace files (`tasks/api.yml`, `tasks/web.yml`) | kiln | managed |
 | `tasks/self.yml` and any include declared `ownership = "repository"` | repo | seeded once, never rewritten |
-| `scripts/**` | **repo only** — a repo's own lints, wired via `[tasks.extra_refs]`. kiln generates nothing here (ADR-0010, D51); `cicd` generates nothing here either (§0.10) | repo |
+| `scripts/**` | **repo only** — a repo's own lints, wired via `[tasks.extra_refs]`. kiln generates nothing here (verification packaging proposal, D51); `cicd` generates nothing here either (§0.10) | repo |
 | `src/**`, `tests/**` | **repo** — kiln verifies *structure* (src layout, package directory naming, test tree shape) and generates nothing. Generating here would make kiln an application code generator and reopen D56 | input; doctor only |
 | `README.md` | kiln body | **seeded** — the single prose home (D57) |
 | `docs/_areas.yml`, `docs/_structure.md`, `docs/adr/_structure.md` | kiln | **seeded** — repos may extend areas (D44) |
@@ -775,7 +784,7 @@ Every module exposes the same two functions:
 and it is what keeps kiln from becoming a god-kit: a module is a template set
 plus a doctor check, nothing more.
 
-#### 2.5.2 `.rn-forge/kiln/config.toml` (kiln ADR-0004)
+#### 2.5.2 `.rn-forge/kiln/config.toml` (kiln configuration design)
 
 ```toml
 schema_version = 1
@@ -825,7 +834,7 @@ api_dir = "apps/api"
 web_dir = "apps/web"
 nx_cloud = false                  # an account decision, not a repo shape
 
-[cli]                             # ADR-0009; rendered by kiln, read by rn-forge-cli
+[cli]                             # shared CLI design; rendered by kiln, read by rn-forge-cli
 name = "agentkit"
 options = ["json", "dry-run", "yes", "log-level"]
 ```
@@ -922,7 +931,8 @@ markers; seeded entries store presence but no content hash.
 ```
 
 No step shells out to another kit (D58). `scripts/**` is gone from steps 3 and 4
-under ADR-0010: the checkers are a pinned dev dependency, not generated files.
+under verification packaging proposal: the checkers are a pinned dev dependency,
+not generated files.
 
 #### 2.5.6 Doctor checks (each a stable `Finding.code`)
 
@@ -937,7 +947,7 @@ under ADR-0010: the checkers are a pinned dev dependency, not generated files.
 | 7 | `ci.entrypoint` | no forbidden tool, including `kiln`, invoked directly in any workflow (list from `archetype.toml`) |
 | 8 | `gate.shrunk` | the set of tasks reachable from `validate` ⊇ the archetype's `required_validate` list; `rn-forge-kiln-checks`' `check-task-layout` enforces the same list in CI, reading it from `config.toml` |
 | 8a | `pyproject.tool-config` (warning) | the `[tool.ruff*]`, `[tool.pyright]`, `[tool.pytest.ini_options]` and `[dependency-groups]` tables match the archetype's expected values. **Verified, never written** — pyproject stays repo-owned (D60) |
-| 8b | `checks.version` | `rn-forge-kiln-checks` is a dev dependency, pinned, and its `schema_version` understands the committed `state.json` (ADR-0010) |
+| 8b | `checks.version` | `rn-forge-kiln-checks` is a dev dependency, pinned, and its `schema_version` understands the committed `state.json` (verification packaging proposal) |
 | 9 | `ci.unpinned` / `ci.permissions` | every `uses:` is SHA-pinned with a version comment; every job has `permissions:` |
 | 10 | `docs.structure` / `.nav` / `.links` | tree matches the repo's `_areas.yml`; nav block current; no broken links/anchors/orphans |
 | 11 | `hygiene.stray-root-file` (warning) | tracked root-level `*.md` not in the allow-list (`README.md`, `CLAUDE.md`, `AGENTS.md`, `LICENSE`, `CHANGELOG.md`) |
@@ -946,7 +956,7 @@ under ADR-0010: the checkers are a pinned dev dependency, not generated files.
 `kiln doctor --all <paths>` runs the same checks over many repos and prints one
 table (F11).
 
-### 2.6 Archetypes, golden repos and the docs profile (kiln ADR-0005)
+### 2.6 Archetypes, golden repos and the docs profile (kiln archetype design)
 
 | Archetype | Shape | Model repo (prior art) | Golden fixture | Release tag |
 | -- | -- | -- | -- | -- |
@@ -1005,12 +1015,13 @@ in the instructions block; `none` generates nothing. Repos extend the seeded
 | `.github/workflows/docs.yml` (Pages deploy on main) | d | d | d | d |
 | `sonar-project.properties` | s | s | s | s |
 
-**`scripts/**` is not in that table (ADR-0010, D51).** The four policy checkers
-ship in `rn-forge-kiln-checks` and the four docs checkers in `rn-forge-tooling`;
-both are pinned dev dependencies, and `tasks/quality.yml` calls their console
-scripts rather than `python scripts/...`. `pyproject.toml` is not in it either,
-for the opposite reason (D60): it is repo-owned and verified by doctor check 8a.
-A generated repo has no `scripts/` directory unless it writes its own lints.
+**`scripts/**` is not in that table (verification packaging proposal, D51).**
+The four policy checkers ship in `rn-forge-kiln-checks` and the four docs
+checkers in `rn-forge-tooling`; both are pinned dev dependencies, and
+`tasks/quality.yml` calls their console scripts rather than
+`python scripts/...`. `pyproject.toml` is not in it either, for the opposite
+reason (D60): it is repo-owned and verified by doctor check 8a. A generated repo
+has no `scripts/` directory unless it writes its own lints.
 
 CI templates bake in the F5 fixes: SHA-pinned actions with version comments,
 least-privilege `permissions:` per job, `concurrency:` per ref, tag-exists
@@ -1056,7 +1067,7 @@ back:
 | `DirectoryLock`, `atomic_symlink` | **back to commons** (`fs/locks.py`) | no installer policy in the signature; a local worker can serialize filesystem work or publish a snapshot atomically |
 | `ManagedBlock` | **stays in commons** (`fs/blocks.py`) | a byte-preserving fenced-span edit; the current callers are all dev tools because they are the only current callers |
 | `Finding`, `Severity`, `JsonValue`, `utils.py`, `EntryPointLoader`, `PathUtils`, `ContentHash`, documents, integration protocols, resilience | **commons** | unchanged; generalize `Finding`'s wording so paths need not be repo-relative and severity need not dictate exit policy |
-| ADR numbering, epic/feature/release naming, instruction filenames in `docs/structure.py` | **`rn-forge-kiln-checks`** (Phase D) | rn-forge policy, which ADR-0001 says is kiln's; tooling takes an explicit policy object instead (A2) |
+| ADR numbering, epic/feature/release naming, instruction filenames in `docs/structure.py` | **`rn-forge-kiln-checks`** (Phase D) | rn-forge policy, which ownership policy says is kiln's; tooling takes an explicit policy object instead (A2) |
 
 Do not leave compatibility re-exports in either direction: commons must never
 import cli or tooling, and cli must never import tooling. `.importlinter` holds
@@ -1110,14 +1121,14 @@ gets the verbs. Tooling supplies:
 | `install/release.py` | resolve the latest tag, download, verify, extract (`archive.py`) |
 | `install/lifecycle.py` | `install`, `upgrade`, `uninstall`, `cleanup`, `status`, `doctor` as transactional sequences over the protocol |
 
-**The command line stays declared, not written (ADR-0009).** A `[cli.lifecycle]`
-table in `.rn-forge/kiln/config.toml` lists which verbs the tool exposes, and
-`CliApp.from_config` mounts them. **The table is gated by `lifecycle = true`, a
-capability flag orthogonal to the archetype (D61)** — which is why kiln itself,
-a `python-lib`, gets these verbs without being a `python-tool`.
-`golden/python-tool` needs no `main.py` at all and `golden-tool doctor` works —
-which is the acceptance test D53 never had, in the same shape as the one D49 got
-in Phase C.2 step 10.
+**The command line stays declared, not written (shared CLI design).** A
+`[cli.lifecycle]` table in `.rn-forge/kiln/config.toml` lists which verbs the
+tool exposes, and `CliApp.from_config` mounts them. **The table is gated by
+`lifecycle = true`, a capability flag orthogonal to the archetype (D61)** —
+which is why kiln itself, a `python-lib`, gets these verbs without being a
+`python-tool`. `golden/python-tool` needs no `main.py` at all and
+`golden-tool doctor` works — which is the acceptance test D53 never had, in the
+same shape as the one D49 got in Phase C.2 step 10.
 
 Two doctors, deliberately: **`kiln doctor` inspects a repository** (§2.5.6); **a
 tool's `doctor` inspects its own install**. Both emit commons `Finding`, neither
@@ -1133,7 +1144,7 @@ The standard has three forms, all owned by kiln, and one rendering mechanism:
 
 | Form | Where | Audience |
 | -- | -- | -- |
-| **Decisions** — ADR-0001…0008 (revision-6 U001–U008) | `kiln/docs/adr/` | kiln's maintainers; anyone asking *why* |
+| **Decisions** — ownership policy…0008 (revision-6 U001–U008) | `kiln/docs/adr/` | kiln's maintainers; anyone asking *why* |
 | **Spec** — `standard-repo.md`: public task surface, import boundary, committed state/checker contract, what `task validate` proves without kiln, what `kiln doctor` adds | `kiln/docs/reference/standard-repo.md` | the normative text; source for the rendered copy |
 | **Rendered standard** — the spec rendered with the repo's archetype, docs profile and task surface filled in | `.rn-forge/kiln/standard.md` in **every** kiln repo | agents and humans working *in that repo*; linked from the kiln block in `CLAUDE.md`/`AGENTS.md` |
 
@@ -1192,7 +1203,7 @@ rn_forge/cli/
   __init__.py        facade
   app.py             CliApp (typer.Typer subclass) + ExitCode + run
   options.py         --json --dry-run --yes --log-level --set; CliOptions
-  surface.py         the [cli] surface records (ADR-0009)
+  surface.py         the [cli] surface records (shared CLI design)
                      (AppConsole lives in rn_forge.commons.runtime.console)
 
 rn_forge/tooling/
@@ -1296,7 +1307,7 @@ Phase D. Two deliverables, both reviewed by the owner before Phase C starts.
 ```bash
 cd rn-forge/kiln
 uv run --group docs mkdocs build --strict
-test -f docs/adr/ADR-0007.md && test -f docs/reference/standard-repo.md && test -f docs/plans/harvest.md
+test -f docs/adr/ADR-0006.md && test -f docs/reference/standard-repo.md && test -f docs/plans/harvest.md
 for g in tests/fixtures/golden/python-cli tests/fixtures/golden/python-lib; do
   (cd "$g" && uv sync && task validate && uv run python scripts/standards/check_generated.py . \
      && python scripts/ci/check_ci_entrypoint.py . && python scripts/task/check_task_layout.py . \
@@ -1318,20 +1329,21 @@ Repo `rn-forge/pykit`, branch `feature/upgrade`. Follows
 engine to what the golden repos need — every artifact kind and action in §2.5.4
 has a golden example by now, and nothing else exists.
 
-**kiln ADR-0010 is settled (D51).** The four docs checkers (`check_docs`,
-`check_structure`, `gen_nav`, `_common` — 775 lines with no per-repo variation)
-**are** part of what this phase extracts into tooling; the four policy checkers
-go to `rn-forge-kiln-checks` in Phase D. Extract the docs checkers here, not
-later, or they get moved twice.
+**kiln verification packaging proposal is settled (D51).** The four docs
+checkers (`check_docs`, `check_structure`, `gen_nav`, `_common` — 775 lines with
+no per-repo variation) **are** part of what this phase extracts into tooling;
+the four policy checkers go to `rn-forge-kiln-checks` in Phase D. Extract the
+docs checkers here, not later, or they get moved twice.
 
 **Added after the Phase B review.** The golden repos depend on
 `rn-forge-commons` at a pinned tag and use it; `rn-forge-tooling` could not be
 wired because it does not exist yet. This phase must therefore also:
 
-1. **Split commons against ADR-0009's target**, not symbol by symbol. The Typer
-   helpers, `AppConsole`, `StateStore` and `TemplateEngine` move to tooling as
-   one coherent surface, because the point of tooling is that a repo takes its
-   whole CLI/console/state layer from it rather than assembling one.
+1. **Split commons against shared CLI design's target**, not symbol by symbol.
+   The Typer helpers, `AppConsole`, `StateStore` and `TemplateEngine` move to
+   tooling as one coherent surface, because the point of tooling is that a
+   repo takes its whole CLI/console/state layer from it rather than assembling
+   one.
 1. Add `rn-forge-tooling` to `tests/fixtures/golden/python-cli` and to kiln's
    own `pyproject.toml`, as a pinned direct URL in `dependencies` (D46), and
    make golden-cli *use* it — a dependency the fixture does not exercise
@@ -1441,10 +1453,11 @@ then the re-layout; then the consumers.
     build is reproducible meanwhile. **kiln's templates must not be written
     against it**: this is an interim state for a fixture, not the contract.
 
-1. **The acceptance test ADR-0009 never had.** — **done.** `golden/python-app`
-   contains a working CLI with **zero hand-written app construction** — a
-   `main()`, its commands, its tests, and nothing else. If that repo cannot be
-   written, ADR-0009 is not ready and D49 stays proposed.
+1. **The acceptance test shared CLI design never had.** — **done.**
+   `golden/python-app` contains a working CLI with **zero hand-written app
+   construction** — a `main()`, its commands, its tests, and nothing else. If
+   that repo cannot be written, shared CLI design is not ready and D49 stays
+   proposed.
 
     `src/golden_app/cli.py` is one line — `app = CliApp.from_config(...)` — with
     `[project.scripts]` pointing at it and no `main()`; the surface is the
@@ -1452,7 +1465,7 @@ then the re-layout; then the consumers.
     function with no Typer import, which `.importlinter` enforces.
     `golden/python-tool` is built the same way, and additionally exercises
     `rn-forge-tooling` by rendering its greeting through `TemplateEngine`.
-    **D49 is met on the evidence ADR-0009 asked for.**
+    **D49 is met on the evidence shared CLI design asked for.**
 
 **Acceptance**
 
@@ -1541,9 +1554,10 @@ for it.
    dependency-set table; state D69 (no committed goldens, the render matrix),
    D70 (config sources and lifecycle, in §9), D72/D74 (the module contract,
    `core`, and checks as the render-free half) and D73 (branch/path pins until
-   release). ADR-0005 amended for D61, D69 and D72; ADR-0010 amended for D74;
-   ADR-0004 for D70's `[source]` table. A new ADR only if the owner wants the
-   alternatives recorded beyond §5.
+   release). archetype design amended for D61, D69 and D72; verification
+   packaging proposal amended for D74; configuration design for D70's
+   `[source]` table. A new ADR only if the owner wants the alternatives recorded
+   beyond §5.
 1. **Re-seed `state.json`** in every repo touched, and update the kiln
    `README.md` "Where kiln is" paragraph.
 
@@ -1572,7 +1586,7 @@ distributions**: `rn-forge-kiln` (module `rn_forge.kiln`) and
 and C.4. rn-forge dependencies are branch-pinned (D73). Sub-phases are
 sequential; each ends green on `task validate`.
 
-#### D.1 — `rn-forge-kiln-checks`, organized by module (D74, ADR-0010)
+#### D.1 — `rn-forge-kiln-checks`, organized by module (D74, verification packaging proposal)
 
 1. Convert the repo to a uv workspace: `packages/rn-forge-kiln/`,
    `packages/rn-forge-kiln-checks/`. kiln's own `config.toml` stays
@@ -1872,31 +1886,31 @@ sessions do not re-litigate.
 | **D47** | ~~**Four archetypes: `python-cli`, `python-lib`, `python-django-ng`, `python-fastapi-ng`.**~~ `-ng` means a pnpm-managed Nx workspace (Nx's own documented shape); `nx_cloud` is a config key, being an account decision rather than a repo shape. The `backend` and `web_runner` keys are removed: the archetype name says what the repo is. Supersedes D7. | **Superseded by D53/D54** — the catalogue and the flag rule both changed; the underlying principle (the name states the topology) survives |
 | **D48** | **ADRs carry decisions; the reference carries specifications.** kiln's ADRs are restructured to nine, each with an *Alternatives considered* section; the verb list, ownership table, dependency sets, doctor codes, CI shape and config schema all live in `docs/reference/standard-repo.md`. An ADR that starts enumerating has become a spec. | **Confirmed** |
 | **D50** | **`ruff check --fix` runs before `ruff format`, and `lint:python` mirrors `format:python`.** The linter's fixes are edits; running the formatter first leaves them unformatted. `lint:format` is removed as a separate task. | **Confirmed** |
-| **D51** | **The checkers become a versioned package** (`rn-forge-kiln-checks`), split from the kiln CLI, with the docs checkers going to tooling; only `state.json`, `config.toml` and `standard.md` stay committed (kiln ADR-0010). Preserves ADR-0003's actual rule — CI never renders — while removing 1,454 duplicated lines per repo. Both distributions live in the kiln repo, which becomes a `python-lib` workspace in Phase D. The name is `checks`, not `devops`: `checks` names a role that excludes rendering, `devops` names a domain that excludes nothing. | **Confirmed**; reorganized by module by D74 |
-| **D49** | **The libraries own the CLI, logging and state boilerplate, and a repo declares its CLI surface rather than writing it** (kiln ADR-0009). Not an application generator — D2 is unchanged. Phase C's package split is made against this target. | **Proposed** — revised by D52: the CLI boilerplate is `rn-forge-cli`, not tooling. Stays proposed until `golden/python-app` demonstrates a CLI with zero hand-written app construction |
-| **D52** | **Three library layers, not two: `rn-forge-commons` → `rn-forge-cli` → `rn-forge-tooling`** (kiln ADR-0002). The seam is not workstation-versus-runtime but *every CLI* versus *tools that install, generate and own files*. A business batch or ML job takes `rn-forge-cli` and gets ADR-0009's zero-boilerplate `main()` without Jinja2, a generation engine, or a package whose contract tells deployed code not to depend on it. Placement is decided by what an API's **signature** contains, not by who calls it today: `DirectoryLock` and `atomic_symlink` return to commons, `extract_archive`/`StateStore`/`TemplateEngine` stay in tooling, `ManagedBlock` stays in commons. Rejected: a `[gen]` extra (an extra adds dependencies, it does not exclude modules or stop an eager initializer) and renaming tooling to `devtools`/`automation`/`core` (no architectural property changes). Refines D29/D35. | **Confirmed** |
-| **D53** | **Seven archetypes: `python-app`, `python-tool`, `python-lib`, `python-web-api`, `python-web-app`, `node-lib`, `node-web-app`** (kiln ADR-0005). `python-cli` was two repos under one name — a batch behind a command line, and an installable tool that owns `$RNF_HOME`, state and plugins — with different library sets, which is what forced tooling to be a package most of the fleet was told not to use. The `-ng` pair collapses into `python-web-api`/`python-web-app`: the framework does not change the topology, a separate frontend package does. The two node archetypes are named and deferred to post-v1 — a second toolchain, and nothing in v1 scope uses them. "Is it a monorepo" is not the axis; **publishing** is. Supersedes D47. | **Confirmed** |
+| **D51** | **The checkers become a versioned package** (`rn-forge-kiln-checks`), split from the kiln CLI, with the docs checkers going to tooling; only `state.json`, `config.toml` and `standard.md` stay committed (kiln verification packaging proposal). Preserves CI policy's actual rule — CI never renders — while removing 1,454 duplicated lines per repo. Both distributions live in the kiln repo, which becomes a `python-lib` workspace in Phase D. The name is `checks`, not `devops`: `checks` names a role that excludes rendering, `devops` names a domain that excludes nothing. | **Confirmed**; reorganized by module by D74 |
+| **D49** | **The libraries own the CLI, logging and state boilerplate, and a repo declares its CLI surface rather than writing it** (kiln shared CLI design). Not an application generator — D2 is unchanged. Phase C's package split is made against this target. | **Proposed** — revised by D52: the CLI boilerplate is `rn-forge-cli`, not tooling. Stays proposed until `golden/python-app` demonstrates a CLI with zero hand-written app construction |
+| **D52** | **Three library layers, not two: `rn-forge-commons` → `rn-forge-cli` → `rn-forge-tooling`** (kiln dependency boundary). The seam is not workstation-versus-runtime but *every CLI* versus *tools that install, generate and own files*. A business batch or ML job takes `rn-forge-cli` and gets shared CLI design's zero-boilerplate `main()` without Jinja2, a generation engine, or a package whose contract tells deployed code not to depend on it. Placement is decided by what an API's **signature** contains, not by who calls it today: `DirectoryLock` and `atomic_symlink` return to commons, `extract_archive`/`StateStore`/`TemplateEngine` stay in tooling, `ManagedBlock` stays in commons. Rejected: a `[gen]` extra (an extra adds dependencies, it does not exclude modules or stop an eager initializer) and renaming tooling to `devtools`/`automation`/`core` (no architectural property changes). Refines D29/D35. | **Confirmed** |
+| **D53** | **Seven archetypes: `python-app`, `python-tool`, `python-lib`, `python-web-api`, `python-web-app`, `node-lib`, `node-web-app`** (kiln archetype design). `python-cli` was two repos under one name — a batch behind a command line, and an installable tool that owns `$RNF_HOME`, state and plugins — with different library sets, which is what forced tooling to be a package most of the fleet was told not to use. The `-ng` pair collapses into `python-web-api`/`python-web-app`: the framework does not change the topology, a separate frontend package does. The two node archetypes are named and deferred to post-v1 — a second toolchain, and nothing in v1 scope uses them. "Is it a monorepo" is not the axis; **publishing** is. Supersedes D47. | **Confirmed** |
 | **D54** | **A config flag may select an implementation library only when it changes neither the file topology nor the task graph, and every shipped value has a golden repo.** `framework = django\|fastapi` and `frontend = angular\|react\|svelte` pass; the rejected `backend` + `web_runner` pair failed because together they selected four topologies. The golden-repo rule is what stops flag freedom from reintroducing the combinatorial explosion D47 avoided: v1 ships six golden repos, not the fourteen the matrix could name. A value without one is `untested = true` and `kiln new` refuses it. | **Confirmed** |
 | **D55** | **commons, cli and tooling are laid out as sub-packages by kind of mechanism** (§2.11): `lang/`, `fs/`, `data/`, `logging/`, `runtime/`, `integration/` in commons, and equivalents in the other two. **Public class names do not move** and the package facade keeps re-exporting them, so only submodule paths change; no compatibility shims, because D39 already says rebuild rather than migrate. `AppUtils` stays an acknowledged grab bag rather than breaking a public name for tidiness. | **Confirmed** |
 | **D56** | **kiln generates repo structure; frameworks generate their own code.** `kiln generate package <name>` — adding a package to a workspace — is in scope for Phase D, because it emits the same repo structure kiln already owns. Application code generators (django model/serializer/api, UI wrappers) stay D2/D37: they ship in `rn-forge-django[codegen]`, register under `rn_forge.kiln.generators`, and kiln supplies only the command surface. The line is whether the output is repo shape or application logic. | **Confirmed** |
 | **D57** | **README.md is the single prose home.** Developer-facing prose is written once, in the file a human opens first; `CLAUDE.md` is a pointer to it plus the fenced blocks, and `AGENTS.md` is a pointer to `CLAUDE.md`. The kiln repo and all three golden repos currently open `README.md` and `CLAUDE.md` with the same sentence and repeat the same status pointers — two copies with nothing to detect when one goes stale, which is §2.3's own rule applied to prose. Rejected: dropping `CLAUDE.md` to a pure symlink-like stub (the kiln and agent blocks have to live somewhere a tool can fence), and keeping agent-specific guidance in `CLAUDE.md` (in practice every line of it was developer-facing). | **Confirmed** |
 | **D58** | **agentkit leaves the plan; kiln seeds the instruction files itself.** Apply step 6 — the `agentkit project init/update` subprocess — is deleted, and kiln seeds `README.md`, `CLAUDE.md` and `AGENTS.md` bodies while owning its block in the latter two. `.claude/**`, `.codex/**` and machine-level agent config become unowned until an agent-config tool is re-ideated from scratch; the fenced-block model (D27) is what makes re-entry cheap, since a future tool adds its own fence to files kiln already seeds. taskkit's retirement record and agentkit's prior art, outstanding questions and harvest move to `docs/plans/agent-config-future.md`. Revises D15. Rejected: keeping the seam as a documented no-op (the plan would keep describing a consumer that will not exist for v1). | **Confirmed** |
-| **D59** | **The tool lifecycle surface is built, in `rn-forge-tooling`, behind a defaulted `ToolProduct` adapter** (§2.9). `python-app` and `python-tool` differ today by a package name and one dependency line, and `install/` holds only `archive.py` — so D53's split has no evidence. Tooling owns `$RNF_HOME`, the versioned install tree and the `install`/`upgrade`/`uninstall`/`cleanup`/`status`/`doctor` algorithms; a product supplies `artifacts()`, `checks()` and `migrate()`, all defaulted, which is the same seam kiln's own modules use. The verbs are mounted by `CliApp.from_config` from a `[cli.lifecycle]` config table, so ADR-0009's zero-hand-written-construction property holds. Scheduled as Phase C.3, before any template derives from a golden repo. | **Confirmed** |
-| **D60** | **`pyproject.toml` stays repo-owned and is verified, not generated.** Every archetype's `[tool.ruff*]`, `[tool.pyright]`, `[tool.pytest.ini_options]` and `[dependency-groups]` tables are near-identical, but **no import mechanism exists**: pytest and coverage have none, pyright's `extends` is not available in the `[tool.pyright]` form, and ruff's `extend` takes a filesystem path that would have to reach inside `.venv`. So the bytes are duplicated on disk whether kiln writes them or a human does — generating them buys propagation and drift detection, not deduplication, and costs a config round trip every time someone adds a dev dependency. Doctor check 8a compares the tables against the archetype's expected values and warns, which is the propagation signal without the friction; it is also ADR-0010's own line, that verification and generation are different powers. Revisit if a repo's tool config is found to have silently diverged — that is F2 in config rather than code. | **Confirmed** |
-| **D61** | **The tool lifecycle surface is a capability flag, not an archetype.** `lifecycle = true` may be set by any Python archetype; it adds a dependency and mounts `[cli.lifecycle]` verbs at runtime through `declare()`, changing neither the file topology nor the task graph — which is D54's own admission test, already passed by `framework` and `frontend`. `python-tool` survives as a **CLI alias** that expands to `python-app` + `lifecycle = true`, normalized in `state.json`, so the catalogue keeps seven names for humans and carries six shapes internally; `golden/python-tool` is unchanged on disk and becomes the golden repo for the flag value, satisfying D54's every-shipped-value rule at no fixture cost. This is what lets kiln self-host as `python-lib` while still shipping `install`/`upgrade`/`doctor` (ADR-0010), and it generalizes: any `python-lib` that ships a command — pykit, if it ever does — takes the same flag. Rejected: **letting `python-lib` alone opt in** (leaves `python-app` and `python-tool` differing by a flag both could carry, which is the smell D59 raised, and leaves D53 unproven rather than resolved); **making kiln a special case** with hand-written lifecycle wiring (kiln self-hosting on a special case is the one exception the plan can least afford); and **dissolving the question by moving `rn-forge-kiln-checks` out of the kiln repo** so kiln ships one distribution again — that answers *kiln today* and leaves the underlying question to resurface at the first `python-lib` that ships a command. Resolves open question 11. Refines D53 and D54. | **Confirmed** |
+| **D59** | **The tool lifecycle surface is built, in `rn-forge-tooling`, behind a defaulted `ToolProduct` adapter** (§2.9). `python-app` and `python-tool` differ today by a package name and one dependency line, and `install/` holds only `archive.py` — so D53's split has no evidence. Tooling owns `$RNF_HOME`, the versioned install tree and the `install`/`upgrade`/`uninstall`/`cleanup`/`status`/`doctor` algorithms; a product supplies `artifacts()`, `checks()` and `migrate()`, all defaulted, which is the same seam kiln's own modules use. The verbs are mounted by `CliApp.from_config` from a `[cli.lifecycle]` config table, so shared CLI design's zero-hand-written-construction property holds. Scheduled as Phase C.3, before any template derives from a golden repo. | **Confirmed** |
+| **D60** | **`pyproject.toml` stays repo-owned and is verified, not generated.** Every archetype's `[tool.ruff*]`, `[tool.pyright]`, `[tool.pytest.ini_options]` and `[dependency-groups]` tables are near-identical, but **no import mechanism exists**: pytest and coverage have none, pyright's `extends` is not available in the `[tool.pyright]` form, and ruff's `extend` takes a filesystem path that would have to reach inside `.venv`. So the bytes are duplicated on disk whether kiln writes them or a human does — generating them buys propagation and drift detection, not deduplication, and costs a config round trip every time someone adds a dev dependency. Doctor check 8a compares the tables against the archetype's expected values and warns, which is the propagation signal without the friction; it is also verification packaging proposal's own line, that verification and generation are different powers. Revisit if a repo's tool config is found to have silently diverged — that is F2 in config rather than code. | **Confirmed** |
+| **D61** | **The tool lifecycle surface is a capability flag, not an archetype.** `lifecycle = true` may be set by any Python archetype; it adds a dependency and mounts `[cli.lifecycle]` verbs at runtime through `declare()`, changing neither the file topology nor the task graph — which is D54's own admission test, already passed by `framework` and `frontend`. `python-tool` survives as a **CLI alias** that expands to `python-app` + `lifecycle = true`, normalized in `state.json`, so the catalogue keeps seven names for humans and carries six shapes internally; `golden/python-tool` is unchanged on disk and becomes the golden repo for the flag value, satisfying D54's every-shipped-value rule at no fixture cost. This is what lets kiln self-host as `python-lib` while still shipping `install`/`upgrade`/`doctor` (verification packaging proposal), and it generalizes: any `python-lib` that ships a command — pykit, if it ever does — takes the same flag. Rejected: **letting `python-lib` alone opt in** (leaves `python-app` and `python-tool` differing by a flag both could carry, which is the smell D59 raised, and leaves D53 unproven rather than resolved); **making kiln a special case** with hand-written lifecycle wiring (kiln self-hosting on a special case is the one exception the plan can least afford); and **dissolving the question by moving `rn-forge-kiln-checks` out of the kiln repo** so kiln ships one distribution again — that answers *kiln today* and leaves the underlying question to resurface at the first `python-lib` that ships a command. Resolves open question 11. Refines D53 and D54. | **Confirmed** |
 | **D62** | **Config knobs are tiered, and each tier has a stated golden-repo price** (§0.10). Tier 1 *values* substitute into files that exist either way and cost nothing; Tier 2 *toggles* include or remove a known fragment and cost one golden fragment; Tier 3 *topology* changes which files exist and costs a golden repo or matrix cell; Tier 4 *policy* — naming rules, package-prefix enforcement — is **not built**, because kiln would become a configurable static-analysis framework as a side effect of being a scaffolder. kiln instead **generates ruff and import-linter configuration from declarative config and never implements a matcher**. Amends D54, whose "neither topology nor task graph" rule is the Tier 1/2 versus Tier 3 line stated as a binary; making it a priced tier is what lets the catalogue absorb org-level configurability without the combinatorial explosion D47 avoided. Tier 1 identity in `pyproject.toml` extends doctor check 8a and does not reopen D60, whose argument was about tool-config tables with no inheritance mechanism, not about metadata. | **Confirmed** |
 | **D63** | **Jinja templates are the authored source; golden repos become committed rendered snapshots, and a matrix harness validates every shipped combination.** Hand-authoring a golden per archetype × flag combination is real overhead, and this is what D43 got backwards — but a golden supplies two properties, and only *runnable* is replaceable by a harness. *Reviewable as committed bytes* is what makes "a template change not first made in the golden is a bug" detectable, because the byte impact of a template edit appears in a pull-request diff; a tree that exists only in a temp directory cannot be code-reviewed and cannot diff across time. So: **(1)** templates are authored in `archetypes/**`; **(2)** a representative set of rendered trees stays committed under `tests/fixtures/golden/`, regenerated by a command rather than hand-edited, exactly as snapshot fixtures are; **(3)** a matrix harness renders every shipped archetype × flag combination into a temp directory and runs `uv sync && task validate`, `actionlint` and `mkdocs --strict` in it. Revises D43: goldens remain the review artifact and stop being the authorship artifact. Cost: the harness is slow (a `uv sync` per cell), which is what open question 12 prices. | **Revised by D69** — part (1) and (3) stand; part (2) is dropped: no rendered tree is committed |
-| **D64** | **Layered external config is resolved once and committed; rendering is a pure function of the checkout.** The layer order is kiln defaults → org → project → repo, deep-merged, with the source given by `--config-path` (a local path or a pinned remote) rather than by implicit machine-local discovery. **Resolution happens at `kiln new` and `kiln config sync`, never at `kiln apply`**, and the resolved values plus the source reference are committed to the repo. Without this, home-level config makes `kiln apply` produce different bytes on different machines, `check_generated` fails for whoever did not render last, and the committed `state.json` baseline that ADR-0004 rests on becomes machine-dependent — a failure that presents as CI going red on a clean checkout with no diff to explain it. A remote source **must be pinned to a tag or SHA**, never a branch, which is D45's apollo `branch = "main"` lesson applied to configuration. `kiln doctor` re-reads the source and reports drift from the current org profile — the propagation signal without the reproducibility cost, which is the shape D60 chose for `pyproject.toml`. Per-key provenance is recorded in state so doctor can say *which layer* supplied a value. | **Revised by D70** — resolve-once-and-commit stands; a git source may name a branch (the resolved commit is recorded), `kiln doctor` does not fetch the source, and re-resolution is `kiln config update`/`upgrade` rather than `kiln config sync` |
-| **D65** | **The CI concern is named `cicd`, not `devops`, and this upholds ADR-0010 rather than reversing it.** ADR-0010 rejected `devops` because it "names a domain that excludes nothing"; `cicd` names pipelines and workflows and **does** exclude infra provisioning, observability and deployment topology, all out of scope per §0.5. The ADR's naming rule stands unamended and no reversal is recorded. | **Confirmed** |
-| **D66** | **`cicd` generates committed workflows plus local composite actions; it is a generate-time dependency, never a CI-runtime one.** GitHub Actions cannot `include:` a YAML file from `.venv` or `.rn-forge/` — its only reuse mechanisms are reusable workflows fetched from a git repo and composite actions, and ADO's `extends`/`template:` is likewise a git resource. So thin wrappers importing templates from inside a Python package is not implementable, and its nearest implementable form is the reusable-workflow devops repo **D45 already rejected** (CI stops being self-contained; private-repo fetch needs auth; the ref is churn-y when pinned and unpinned when not). Local composite actions under `.github/actions/` — which `golden/python-tool` already carries — give the same thinness with reuse resolved at generation time on the developer's machine. ADR-0004 holds: CI never renders. `cicd` writes `.rn-forge/cicd/state.json` in the **same schema** as kiln's, and the one `check_generated.py` runs over both baselines rather than being forked. | **Confirmed** |
-| **D67** | **docs, tasks and cicd are modules inside the kiln distribution, not separate libraries or distributions.** A separate distribution is warranted only when something installs it *without* the others: `rn-forge-kiln-checks` has a proven case (CI installs it and must not install kiln, ADR-0010) and `cicd` a plausible one (open question 14); docs and tasks have none, and four independently versioned distributions that must agree on one config schema is a release matrix paid on every schema change for no gained independence. Boundaries are enforced by `.importlinter` contracts per module, which is already what ADR-0003 does for `rn_forge.kiln.checks` — a contract does not require a distribution. Escape hatch, per D36's rule: promote a module to a distribution when a non-kiln consumer appears. Rejected: unpublished workspace packages under `libs/` (they buy enforceable boundaries that import-linter already supplies, at the cost of N more `pyproject.toml` files). | **Confirmed**; its open asymmetry is closed by D71 — `cicd` is not published |
+| **D64** | **Layered external config is resolved once and committed; rendering is a pure function of the checkout.** The layer order is kiln defaults → org → project → repo, deep-merged, with the source given by `--config-path` (a local path or a pinned remote) rather than by implicit machine-local discovery. **Resolution happens at `kiln new` and `kiln config sync`, never at `kiln apply`**, and the resolved values plus the source reference are committed to the repo. Without this, home-level config makes `kiln apply` produce different bytes on different machines, `check_generated` fails for whoever did not render last, and the committed `state.json` baseline that configuration design rests on becomes machine-dependent — a failure that presents as CI going red on a clean checkout with no diff to explain it. A remote source **must be pinned to a tag or SHA**, never a branch, which is D45's apollo `branch = "main"` lesson applied to configuration. `kiln doctor` re-reads the source and reports drift from the current org profile — the propagation signal without the reproducibility cost, which is the shape D60 chose for `pyproject.toml`. Per-key provenance is recorded in state so doctor can say *which layer* supplied a value. | **Revised by D70** — resolve-once-and-commit stands; a git source may name a branch (the resolved commit is recorded), `kiln doctor` does not fetch the source, and re-resolution is `kiln config update`/`upgrade` rather than `kiln config sync` |
+| **D65** | **The CI concern is named `cicd`, not `devops`, and this upholds verification packaging proposal rather than reversing it.** verification packaging proposal rejected `devops` because it "names a domain that excludes nothing"; `cicd` names pipelines and workflows and **does** exclude infra provisioning, observability and deployment topology, all out of scope per §0.5. The ADR's naming rule stands unamended and no reversal is recorded. | **Confirmed** |
+| **D66** | **`cicd` generates committed workflows plus local composite actions; it is a generate-time dependency, never a CI-runtime one.** GitHub Actions cannot `include:` a YAML file from `.venv` or `.rn-forge/` — its only reuse mechanisms are reusable workflows fetched from a git repo and composite actions, and ADO's `extends`/`template:` is likewise a git resource. So thin wrappers importing templates from inside a Python package is not implementable, and its nearest implementable form is the reusable-workflow devops repo **D45 already rejected** (CI stops being self-contained; private-repo fetch needs auth; the ref is churn-y when pinned and unpinned when not). Local composite actions under `.github/actions/` — which `golden/python-tool` already carries — give the same thinness with reuse resolved at generation time on the developer's machine. configuration design holds: CI never renders. `cicd` writes `.rn-forge/cicd/state.json` in the **same schema** as kiln's, and the one `check_generated.py` runs over both baselines rather than being forked. | **Confirmed** |
+| **D67** | **docs, tasks and cicd are modules inside the kiln distribution, not separate libraries or distributions.** A separate distribution is warranted only when something installs it *without* the others: `rn-forge-kiln-checks` has a proven case (CI installs it and must not install kiln, verification packaging proposal) and `cicd` a plausible one (open question 14); docs and tasks have none, and four independently versioned distributions that must agree on one config schema is a release matrix paid on every schema change for no gained independence. Boundaries are enforced by `.importlinter` contracts per module, which is already what CI policy does for `rn_forge.kiln.checks` — a contract does not require a distribution. Escape hatch, per D36's rule: promote a module to a distribution when a non-kiln consumer appears. Rejected: unpublished workspace packages under `libs/` (they buy enforceable boundaries that import-linter already supplies, at the cost of N more `pyproject.toml` files). | **Confirmed**; its open asymmetry is closed by D71 — `cicd` is not published |
 | **D68** | **The `Generator` protocol is promoted from an internal seam to kiln's module contract, and `kiln doctor` orchestrates it.** `artifacts()` + `checks()` — the seam §2.9 records kiln's own modules as already using, and structurally the same as `ToolProduct` (D59), which is worth collapsing into one protocol with two registries rather than maintaining two similar ones. Each module registers, `kiln doctor` collects commons `Finding` rows across all of them and prints one unified report, and a module's own doctor (`cicd doctor`) is the same rows reached by a different entry point. This is what makes the concern split structural rather than cosmetic. | **Confirmed**; extended by D72 |
 | **D69** | **No rendered golden is committed.** Rendered output is regenerable and does not belong in git. `task self:golden:render` renders every shipped archetype × flag combination into gitignored `.goldens/<ref>/`; `task self:golden:validate` runs each cell's gate; the **owner reviews and approves the rendered output**, optionally with a parallel review agent. The hand-authored goldens are the bootstrap reference for writing templates and are deleted from git once the rendered cells reproduce them. kiln's CI renders every cell per pull request; the per-cell `uv sync && task validate` is local and on demand. Trade-off accepted knowingly: D63's "reviewable as committed bytes" becomes "reviewable as rendered output on request", and a change's byte impact is seen by rendering two refs and diffing them. Revises D63; retires the byte-exact golden snapshot tests. Closes open question 12. | **Confirmed** |
 | **D70** | **Config sources are a local path or a git URL; deep merge replaces lists; the merged config is committed and is the only input after `kiln new`.** `kiln new --config` resolves kiln defaults → source layers → flags and writes `.rn-forge/kiln/config.toml` with a `[source]` table. `apply`/`doctor`/`diff` read only that file. `kiln config update` re-resolves from the recorded source under the current kiln; `kiln upgrade` (kiln's own lifecycle verb) warns or errors when the committed config no longer matches the new schema; `kiln config upgrade` re-resolves and migrates under the new kiln. Both config commands report the resulting artifact changes and run `kiln apply` only with `--apply`. The config manager validates against the running kiln's schema on every load, and repo overrides — keys whose committed value differs from what their layer last supplied, known from per-key provenance — survive re-resolution. Rejected: a published config package (a release per org-profile edit, for no property a pinned commit lacks) and list append (removing an inherited entry then needs a second syntax). Revises D64. Closes open question 13. | **Confirmed** |
-| **D71** | **No internal kiln module is published.** `docs`, `tasks`, `cicd` and the rest are usable only through a kiln-generated repo, so they carry no public API, no separate version and no compatibility promise. `rn-forge-kiln-checks` is not an internal module in this sense — generated repos' CI installs it and must not install kiln (ADR-0010) — and stays a distribution. Closes open question 14 and D67's asymmetry. | **Confirmed** |
+| **D71** | **No internal kiln module is published.** `docs`, `tasks`, `cicd` and the rest are usable only through a kiln-generated repo, so they carry no public API, no separate version and no compatibility promise. `rn-forge-kiln-checks` is not an internal module in this sense — generated repos' CI installs it and must not install kiln (verification packaging proposal) — and stays a distribution. Closes open question 14 and D67's asymmetry. | **Confirmed** |
 | **D72** | **Each module declares the config it supports, and kiln composes.** A `KilnModule` owns its config section (a strict pydantic model whose defaults are kiln's layer), its `kiln new` options, its `artifacts()` and its `checks()`; kiln owns only composition — the root schema, the union of options (a collision is a startup error), and module iteration for `apply` and `doctor`. `archetype.toml` lists the enabled modules alongside the dependency set, and a section for a disabled module is rejected. Extends D68's protocol with the config and options halves. Closes open question 15. | **Confirmed** |
 | **D73** | **pykit is consumed from its `feature/upgrade` branch or a local path until the owner declares it stable; no release gates kiln.** C.2 step 9's premise — templates must not render a branch pin — is kept by making the rn-forge dependency source a Tier 1 config value (D62) that every template renders, rather than by waiting for tags: `git` + ref (the default, CI-capable) or `path` (a `[tool.uv.sources]` path entry, local only). Flipping to tags later is `kiln config upgrade --apply` per repo, not a template change. Guards: `check-rn-forge-deps` accepts a branch or path source with a warning and refuses one in a publish job; goldens and generated repos that run CI use `git`, never `path`. Suspends, does not reverse, D46 — a tag is still the release contract once releases exist. | **Confirmed** |
-| **D74** | **`rn-forge-kiln-checks` is the render-free half of each module's checks, organized by module, and a `core` module owns what every module shares.** The owner asked whether module doctors make the package redundant. They share code, not packaging: a check that needs only committed files (`state.json` hashes, the task graph, workflow entrypoints, the dependency set) runs in CI; a check that needs a fresh render (`artifact.stale`, `block.stale`) cannot, because CI never renders (ADR-0003). So each module's `checks()` = its functions in `rn_forge.kiln.checks.<module>` + its render-dependent checks, one implementation of each rule, reachable from `kiln doctor` locally and from console scripts in CI. `core` holds the umbrella, config manager, state baseline, `standard.md`, the gitignore block and `check-generated`; `scaffold` becomes `python` (uv init, `.importlinter`, pyproject 8a, rn-forge deps), naming the language rather than the moment. Rejected: **running the module doctors in CI by installing kiln as a dev dependency** — it puts Jinja, the generation engine, pydantic and every template set into every repo's lock and CI environment, makes a kiln upgrade a dependency bump in every repo whether or not an artifact changed, and reopens ADR-0003/ADR-0010 for no check CI can run that the split cannot. Refines D51 and D72. | **Proposed** — recommended; Phase D.1 is written against it. Confirm or override before D.1 starts |
+| **D74** | **`rn-forge-kiln-checks` is the render-free half of each module's checks, organized by module, and a `core` module owns what every module shares.** The owner asked whether module doctors make the package redundant. They share code, not packaging: a check that needs only committed files (`state.json` hashes, the task graph, workflow entrypoints, the dependency set) runs in CI; a check that needs a fresh render (`artifact.stale`, `block.stale`) cannot, because CI never renders (CI policy). So each module's `checks()` = its functions in `rn_forge.kiln.checks.<module>` + its render-dependent checks, one implementation of each rule, reachable from `kiln doctor` locally and from console scripts in CI. `core` holds the umbrella, config manager, state baseline, `standard.md`, the gitignore block and `check-generated`; `scaffold` becomes `python` (uv init, `.importlinter`, pyproject 8a, rn-forge deps), naming the language rather than the moment. Rejected: **running the module doctors in CI by installing kiln as a dev dependency** — it puts Jinja, the generation engine, pydantic and every template set into every repo's lock and CI environment, makes a kiln upgrade a dependency bump in every repo whether or not an artifact changed, and reopens CI policy/verification packaging proposal for no check CI can run that the split cannot. Refines D51 and D72. | **Proposed** — recommended; Phase D.1 is written against it. Confirm or override before D.1 starts |
 
 ______________________________________________________________________
 
@@ -2005,10 +2019,10 @@ apply step 6 (D58); the agent-config material moves to
 `docs/plans/agent-config-future.md`. The tool lifecycle surface is built behind
 a defaulted `ToolProduct` adapter, as new Phase C.3, because `python-app` and
 `python-tool` were otherwise the same repo (D59). `pyproject.toml` stays
-repo-owned and is verified rather than generated (D60). ADR-0010 gets a
-schedule: `scripts/**` leaves the ownership table, the template inventory, the
-apply sequence and the golden repos, and `rn-forge-kiln-checks` becomes Phase D
-step 1.
+repo-owned and is verified rather than generated (D60). verification packaging
+proposal gets a schedule: `scripts/**` leaves the ownership table, the template
+inventory, the apply sequence and the golden repos, and `rn-forge-kiln-checks`
+becomes Phase D step 1.
 
 **Revision 1** — review of four repos; F1–F11; proposed five components incl. a
 separate `forge-ci` of reusable workflows; repo tasks calling kits via
@@ -2027,9 +2041,9 @@ and B executed. Archetypes renamed and reduced to four config-key-free names
 (D47); an archetype gains a library set, enforced by `check_rn_forge_deps.py`
 (D46); CI stays generated, with a composite action (D45); the ADR set
 restructured to nine with the specifications moved into
-`docs/reference/standard-repo.md` (D48); ADR-0009 proposed for the tooling
-boilerplate target (D49). Eight defects from the codex review fixed in the
-golden repos — see §0.6.
+`docs/reference/standard-repo.md` (D48); shared CLI design proposed for the
+tooling boilerplate target (D49). Eight defects from the codex review fixed in
+the golden repos — see §0.6.
 
 **Revision 4** — after code review of commons `feature/upgrade`, taskkit, and
 agentkit. `forge-core` dropped for Part D (F17); taskkit retired (F16);

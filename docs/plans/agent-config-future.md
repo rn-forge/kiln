@@ -68,7 +68,7 @@ In `rn-forge/agentkit` on `feature/v0.6.0`:
 | `core/operations/{apply,capture,init,remove}.py` | the apply loop kiln's `generation` engine replaced |
 | `commands/self_command.py` | install / upgrade / cleanup / uninstall against `$RNF_HOME/<product>/versions/<v>` with a `current` symlink — the prior art for the tool lifecycle surface (D59) |
 | `agents/{claude,codex}/adapter.py`, `agents/registry.py` | the per-agent adapter seam; the closest thing to a design that should survive |
-| `docs/adr/0001`–`0021` | the decisions. ADR-0021 (ownership) was promoted into kiln ADR-0001; ADR-0018 (areas read from the repo) into D44; ADR-0014 (mdformat config is repository-owned) into the golden repos |
+| `docs/adr/0001`–`0021` | the decisions. ADR-0021 (ownership) was promoted into kiln ADR-0003; ADR-0018 (areas read from the repo) into D44; ADR-0014 (mdformat config is repository-owned) into the golden repos |
 | `docs/architecture/lifecycle.md` | why managing *installs* is split from managing *config* |
 
 Carried into kiln already, and **not** to be re-carried: the E17 docs area

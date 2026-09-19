@@ -19,15 +19,15 @@ about to be moved; then the split; then the re-layout; then the consumers.
 | ID | Feature | Owner | Status |
 | -- | -- | -- | -- |
 | F2.1 | Defect fixes F1–F6 in pykit, before anything moves | pykit | done |
-| F2.2 | Split the development layer: `rn-forge-cli` + `rn-forge-tooling` (D52, [ADR-0002](../../../adr/ADR-0002.md)) | pykit | done |
+| F2.2 | Split the development layer: `rn-forge-cli` + `rn-forge-tooling` (D52; [shared CLI integration](../E3-realign-goldens-and-canon/index.md#shared-cli-design)) | pykit | done |
 | F2.3 | Extract the docs policy from tooling (A2) — the policy object is supplied by [F4.1](../E4-generator/F4.1-checks-by-module.md) | pykit | done |
 | F2.4 | Re-layout all three packages (D55) | pykit | done |
 | F2.5 | F10–F13 while the code is open | pykit | done |
 | F2.6 | F7 — CI: cli and tooling in pykit's package verification, `lint-imports` as a required gate | pykit | done |
 | F2.7 | F9 + F14 — release contract and instructions | pykit | done |
 | F2.8 | **Rename the golden repos and add the missing ones (D53).** `golden/python-cli` → `golden/python-tool`; a new `golden/python-app`. `golden/python-lib` unchanged. Update kiln's own `.rn-forge/kiln/config.toml` to `python-tool`, re-render `.rn-forge/kiln/standard.md`, and **re-seed `state.json`**. | kiln | done |
-| F2.9 | **Close Phase C's addendum (F8)** — cut the first `rn-forge-cli` and `rn-forge-tooling` releases and re-point every pin at a tag | kiln + pykit | **deferred** by [ADR-0005](../../../adr/ADR-0005.md); now [E7](../E7-pykit-release-pin-flip/index.md) |
-| F2.10 | **The acceptance test ADR-0009 never had.** `golden/python-app` contains a working CLI with **zero hand-written app construction** | kiln | done |
+| F2.9 | **Close Phase C's addendum (F8)** — cut the first `rn-forge-cli` and `rn-forge-tooling` releases and re-point every pin at a tag | kiln + pykit | **deferred**; now [E7](../E7-pykit-release-pin-flip/index.md) |
+| F2.10 | **Prove declarative CLI construction.** `golden/python-app` contains a working CLI with **zero hand-written app construction** | kiln | done |
 
 ### F2.9 — as it stood when deferred
 
@@ -46,9 +46,9 @@ branch pin satisfies `check_rn_forge_deps.py` — `git+…@<ref>` is a ref — a
 table in `.rn-forge/kiln/config.toml`; `commands.py` holds one function with no
 Typer import, which `.importlinter` enforces. `golden/python-tool` is built the
 same way, and additionally exercises `rn-forge-tooling` by rendering its
-greeting through `TemplateEngine`. **D49 is met on the evidence ADR-0009 asked
-for** — whether to flip ADR-0009 to accepted is open on
-[F3.4](../E3-realign-goldens-and-canon/F3.4-canon-catches-up.md).
+greeting through `TemplateEngine`. This supplied the initial D49 proof;
+[E3](../E3-realign-goldens-and-canon/index.md#shared-cli-design) records the
+subsequent API integration.
 
 Since then pykit plan Part E reshaped `rn-forge-cli` (deleted `declare()`, moved
 `console` to commons), which put the goldens behind pykit — that is

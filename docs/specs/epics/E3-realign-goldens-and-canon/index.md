@@ -6,17 +6,35 @@
 
 Repo `rn-forge/kiln`, branch `feature/v1`. The hand-authored goldens are the
 reference [E4](../E4-generator/index.md) writes templates from
-([ADR-0005](../../../adr/ADR-0005.md)), so they must match pykit as it is, not
-as it was. F3.2 and S3.4.1 can start now. F3.1 follows F3.2, and F3.3 follows
-F3.1 and pykit's lifecycle work. S3.4.4 waits on E4's checks-shape decision
-(S4.1.4), which is a decision only and waits on nothing in E3.
+([F4.4](../E4-generator/F4.4-render-matrix.md)), so they must match pykit as it
+is, not as it was. F3.2 and S3.4.1 can start now. F3.1 follows F3.2, and F3.3
+follows F3.1 and pykit's lifecycle work. S3.4.4 waits on E4's checks-shape
+decision (S4.1.4), which is a decision only and waits on nothing in E3.
+
+## Shared CLI design
+
+The goldens consume pykit's shared CLI implementation instead of generating
+copies of app construction, flag plumbing and exit handling.
+`CliApp.from_config` builds the app from its declaration; repository code
+supplies command functions. The console script targets the app object directly,
+with no handwritten `main()`. [F3.1](F3.1-goldens-on-part-e-api.md) proves this
+integration against pykit's Part E API.
+
+pykit owns this library design and its package boundaries: commons supplies
+process-wide console and logging facilities; cli supplies the Typer layer;
+tooling supplies generation and lifecycle mechanisms. kiln seeds the declaration
+and dependency wiring, but does not own pykit's internal dependency graph.
+Applications may use the library primitives directly when a declarative surface
+does not fit. Generating copies would require a fix in every consumer;
+implementing an application framework in kiln would couple runtime applications
+to their repository generator.
 
 ## Features
 
 | ID | Feature | Depends on |
 | -- | -- | -- |
 | [F3.1](F3.1-goldens-on-part-e-api.md) | Port `golden/python-app` and `golden/python-tool` to the Part E API | F3.2 |
-| [F3.2](F3.2-branch-pins.md) | Pins, per ADR-0005 | — |
+| [F3.2](F3.2-branch-pins.md) | Branch pins during pykit stabilization | — |
 | [F3.3](F3.3-python-tool-is-a-tool.md) | Make `golden/python-tool` a tool | F3.1; pykit C.3 (lifecycle surface) |
 | [F3.4](F3.4-canon-catches-up.md) | The canon catches up; re-seed state; README | S3.4.1: —; S3.4.4: [S4.1.4](../E4-generator/F4.1-checks-by-module.md#s414-the-ci-shape-is-decided) (decision); S3.4.2: F3.1–F3.3, S3.4.1, S3.4.4 |
 
@@ -77,8 +95,9 @@ task lint                                                                       
 Run on 2026-09-15 against `feature/v1`: every feature block passes (F3.1, F3.2,
 F3.3, F3.4) and this block passes after them. Two things it caught and that were
 fixed rather than waived: S3.3.2's normalized diff carried a `TemplateEngine`
-render, an `$RNF_HOME` docstring aside and a dropped ADR-0009 sentence, none on
-the approved list; and `scripts/standards/check_rn_forge_deps.py` illustrated a
-pin with the pre-layer-split `rn-forge-commons-v0.2.2` tag, which the F3.2 line
-reads as a stale pin — the example now shows the branch pin ADR-0005 mandates,
-in kiln and in all three goldens, with `state.json` re-seeded for each.
+render, an `$RNF_HOME` docstring aside and a dropped shared CLI design sentence,
+none on the approved list; and `scripts/standards/check_rn_forge_deps.py`
+illustrated a pin with the pre-layer-split `rn-forge-commons-v0.2.2` tag, which
+the F3.2 line reads as a stale pin — the example now shows the branch pin F3.2
+specifies, in kiln and in all three goldens, with `state.json` re-seeded for
+each.

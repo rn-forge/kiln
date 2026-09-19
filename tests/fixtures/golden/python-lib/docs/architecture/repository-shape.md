@@ -1,6 +1,6 @@
 # Repository shape
 
-Every file in this repo has exactly one owner (kiln ADR-0001). Three kinds:
+Every file in this repo has exactly one owner (kiln ADR-0003). Three kinds:
 
 | Kind | Example | Rule |
 | -- | -- | -- |
@@ -12,7 +12,7 @@ The committed `.rn-forge/kiln/state.json` records a hash for each managed file
 and each block body, and presence for each seeded file.
 `kiln doctor --only generated` compares that baseline against the tree. kiln is
 a pinned dev dependency, and CI runs it read-only: it checks, and never renders
-(kiln ADR-0010).
+(kiln ADR-0006).
 
 ## What `task validate` proves
 

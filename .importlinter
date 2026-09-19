@@ -12,7 +12,7 @@
 ; legal forbidden module. It is enforced at the dependency declaration instead,
 ; by `kiln doctor`'s rn-forge-deps rule (kiln ADR-0005).
 ;
-; The second contract is kiln ADR-0010's: `kiln doctor` runs on every CI run, so
+; The second contract is kiln ADR-0006's: `kiln doctor` runs on every CI run, so
 ; it must not drag the generator in. A module's `checks/` package is the
 ; render-free half of that module. It names Jinja only, for the same reason as
 ; above — `rn_forge.tooling.generation` is a subpackage of an external package

@@ -31,7 +31,7 @@ review changed is
 themselves are in [plans/reviews](../../../plans/reviews/index.md). The ADR set
 was restructured and specifications moved to the reference (D48), archetypes
 renamed (D47, since superseded), CI kept generated with a composite action
-(D45), and ADR-0009 proposed.
+(D45), and shared CLI design proposed.
 
 Risk carried by this epic, and its guard: *golden repos reviewed too lightly
 because they look like fixtures* — the acceptance runs them as real repos, and
@@ -42,7 +42,7 @@ the owner review gate was explicit on the critical path.
 ```bash
 cd rn-forge/kiln
 uv run --group docs mkdocs build --strict
-test -f docs/adr/ADR-0007.md && test -f docs/reference/standard-repo.md && test -f docs/plans/harvest.md
+test -f docs/adr/ADR-0006.md && test -f docs/reference/standard-repo.md && test -f docs/plans/harvest.md
 for g in tests/fixtures/golden/python-cli tests/fixtures/golden/python-lib; do
   (cd "$g" && uv sync && task validate && uv run python scripts/standards/check_generated.py . \
      && python scripts/ci/check_ci_entrypoint.py . && python scripts/task/check_task_layout.py . \

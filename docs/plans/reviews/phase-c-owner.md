@@ -1,5 +1,11 @@
 # review
 
+**Historical record:** proposals and numbered decisions below describe the
+review at that time, not current policy. ADR references use current
+destinations; retired references use topic names. Current scope and decisions
+are in [the spec board](../../specs/index.md) and
+[the decision log](../../adr/index.md).
+
 Phase C from the standardization plan (retired; see [context](../context.md))
 was implemented and codex has provided review comments at
 'docs/plans/reviews/phase-c-codex.md'

@@ -13,11 +13,11 @@ Nx frontend consuming remote APIs; release tag `v<version>`). Both are named in
 the catalogue ([ADR-0005](../../../adr/ADR-0005.md)) so the taxonomy is fixed,
 and deferred to post-v1 because nothing in v1 scope uses them.
 
-Before adding frontend support here, extract the shared frontend configuration
-and scaffolding from E5's Python module rather than duplicating it. Keep
-`--frontend` as the implementation selector, validated against each archetype;
-the archetype selects the toolchain and component topology
-([ADR-0005](../../../adr/ADR-0005.md)).
+Frontend support here builds on E5's shared frontend module
+([S5.2.4](../E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md#s524-frontend-scaffolding-has-its-own-module));
+it is not copied into the node module. Keep `--frontend` as the implementation
+selector, validated against each archetype; the archetype selects the toolchain
+and component topology ([ADR-0005](../../../adr/ADR-0005.md)).
 
 ## Open questions
 

@@ -6,9 +6,9 @@
 
 Repo `rn-forge/kiln`. There are no hand-authored goldens: templates are written
 directly and approved through the render matrix
-([ADR-0005](../../../adr/ADR-0005.md)). The two `fastapi` cells are the shape
-the owner's next repositories take, so E5 is built as soon as its **Depends on**
-lines hold — with S5.3.1 also before
+([F4.4](../E4-generator/F4.4-render-matrix.md)). The two `fastapi` cells are the
+shape the owner's next repositories take, so E5 is built as soon as its
+**Depends on** lines hold — with S5.3.1 also before
 [F4.4](../E4-generator/F4.4-render-matrix.md),
 [F4.6](../E4-generator/F4.6-doctor.md),
 [F4.7](../E4-generator/F4.7-import-contracts.md) and
@@ -27,7 +27,7 @@ stories need the render matrix (F4.4).
 **Upstream.** `rn-forge-fastapi` is implemented in pykit (`3e80dbd`). Its plan's
 Phase 8 acceptance is a *wired application* — problem handlers, a paginated
 route, the health router — which is repo-owned code under `src/**` that kiln
-never renders ([ADR-0011](../../../adr/ADR-0011.md)); the owner's first
+never renders ([E10](../E10-kiln-generators/index.md)); the owner's first
 `python-web-app` + `fastapi` repo is that proof, not a kiln cell. What does gate
 a web cell's `uv sync` is resolvable pins: `rn-forge-web`, `rn-forge-django` and
 `rn-forge-fastapi` pin `rn-forge-commons-v0.5.0` and `rn-forge-web-v0.1.0`, and
@@ -48,8 +48,8 @@ when one appears.
 | ID | Feature | Depends on |
 | -- | -- | -- |
 | [F5.1](F5.1-web-library-sets-and-modules.md) | Library sets, and the modules gain the web shapes | S4.3.3–S4.3.5, S4.3.7, S4.5.1, S4.5.2; resolvable pykit pins |
-| [F5.2](F5.2-kiln-new-web-end-to-end.md) | `kiln new` end to end for the web archetypes | F5.1; S5.2.1 on S5.2.2; Django deferred |
-| [F5.3](F5.3-shipped-web-cells.md) | Prove and ship the FastAPI cells | S5.3.1 on F5.2; S5.3.2–S5.3.3 on F4.4; S5.3.4 on S5.3.3 |
+| [F5.2](F5.2-kiln-new-web-end-to-end.md) | `kiln new` end to end for the web archetypes | F5.1; S5.2.1 on S5.2.2; S5.2.4 on S5.2.1; Django deferred |
+| [F5.3](F5.3-shipped-web-cells.md) | Prove and ship the FastAPI cells | S5.3.1 on F5.2; S5.3.5 on S5.3.1; S5.3.6 on S5.3.5; S5.3.2–S5.3.3 on F4.4, S5.3.5–S5.3.6 and resolvable kiln/pykit pins; S5.3.3 on S4.5.9; S5.3.4 on S5.3.3 |
 
 ## Acceptance
 

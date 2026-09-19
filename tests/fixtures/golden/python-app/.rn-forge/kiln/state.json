@@ -9,14 +9,14 @@
     },
     ".github/actions/setup/action.yml": {
       "begin_marker": null,
-      "content_hash": "6d1daf7e89d51646806d505a201aaf90f8c526e1d47e66840cbdf29e9b742fcd",
+      "content_hash": "4c0b53b527c52b316b846f3048fd4444e7f9b00c80b12df8a1dd7ac5481f2972",
       "end_marker": null,
       "kind": "managed",
       "path": ".github/actions/setup/action.yml"
     },
     ".github/workflows/ci.yml": {
       "begin_marker": null,
-      "content_hash": "b3f2b9059150790e6d33f5ed75e3093e295ec21ffec64d3ab7d1b74c5c6c033a",
+      "content_hash": "465f2a97cdda8f75770991a2fdec54fe893efe3e34bf07b69b93f7fc54254106",
       "end_marker": null,
       "kind": "managed",
       "path": ".github/workflows/ci.yml"
@@ -37,14 +37,14 @@
     },
     ".importlinter": {
       "begin_marker": null,
-      "content_hash": "3df6a13b357b0a0c22e04add70ba330e089b0bc0e309a097a67f83a50ee73d8a",
+      "content_hash": "8b6a3ded0f53506e31a175548329e1996f8c6f121e79c84710bf76a8180a3cbc",
       "end_marker": null,
       "kind": "managed",
       "path": ".importlinter"
     },
     ".rn-forge/kiln/standard.md": {
       "begin_marker": null,
-      "content_hash": "77de14df94629c54751789bc958137afaab1d1915a6fe05906cf89269fadfce3",
+      "content_hash": "ce5b7ab30428ed293148cf909bf9d7553ec5e5c648fbacc34432703421b25b41",
       "end_marker": null,
       "kind": "managed",
       "path": ".rn-forge/kiln/standard.md"
@@ -58,7 +58,7 @@
     },
     "Taskfile.yml": {
       "begin_marker": null,
-      "content_hash": "eba0f7e9ab188f558246e4087bdf5f8df0aafe75e340128fd4ec77325194ec93",
+      "content_hash": "4237e83c353d67c910a941294021c76974640475004ed7edcdf81ad249319c8c",
       "end_marker": null,
       "kind": "managed",
       "path": "Taskfile.yml"
@@ -184,7 +184,7 @@
     },
     "tasks/docs.yml": {
       "begin_marker": null,
-      "content_hash": "bd835e83323beaece02c8bcb40f31350105d4e30515cc79be774a80fc3e09785",
+      "content_hash": "7675c0764e888ca6a0637c065007d41d6be48cfd81dc56998f77244e51431ce5",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/docs.yml"

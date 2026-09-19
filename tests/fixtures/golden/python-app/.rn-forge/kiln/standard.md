@@ -50,7 +50,7 @@ any gate stops being reachable from `validate`.
 | ----------- | -------------------------------------------------------------- |
 | **managed** | kiln owns the whole file. Editing it is drift; CI fails.       |
 | **block**   | kiln owns a fenced region inside a repo-owned file.            |
-| **seeded**  | kiln wrote it once, and will never write it again.             |
+| **seeded**  | repo-owned after scaffolding; doctor ignores it.             |
 
 Managed here: `Taskfile.yml`, `tasks/*.yml`, `.editorconfig`, `.importlinter`,
 `.github/workflows/*.yml`, `.github/actions/setup`, `sonar-project.properties`
@@ -64,19 +64,19 @@ Blocks here: the `# BEGIN rn-forge kiln` region in `.gitignore`, the
 Seeded here: `README.md`, `docs/_areas.yml`, `docs/_structure.md`, each area's
 `_structure.md` and `index.md`, and `docs/index.md`.
 
-Repo-owned: `pyproject.toml` — verified by doctor check `pyproject.tool-config`,
-never written — `src/` and `tests/`, whose structure kiln verifies and whose
-contents it never generates (kiln ADR-0011), and `scripts/**`, which holds only
-this repo's own lints, wired through `[tasks.extra_refs]` (kiln ADR-0010).
+Repo-owned: `pyproject.toml`, `src/`, `tests/` and `scripts/**`. After
+scaffolding, doctor ignores their content and the content and presence of seeded
+files. Repository validation tasks may check these independently. Only managed
+files and fenced blocks remain kiln's responsibility.
 
 To change a managed file, change `.rn-forge/kiln/config.toml` and run
 `kiln apply`. To change what kiln renders, change kiln's templates: every
 shipped archetype × flag cell is rendered, validated, and approved by the owner
-before the change is done (kiln ADR-0005).
+before the change is done.
 
 ## 3. The dependency set
 
-An archetype is a shape *and* a set of component libraries (kiln ADR-0005). For
+The archetype specification supplies its component-library set. For
 `python-app` that is `rn-forge-commons` — runtime-neutral mechanisms — and
 `rn-forge-cli` — the process and command-line shape. Both are runtime
 dependencies.
@@ -108,8 +108,7 @@ allowed and pinned-and-direct, accepts a branch or path source with a warning,
 and refuses one in a publish job. Flipping to tags is
 `kiln config upgrade --apply`, not a template change.
 
-kiln itself is a dev dependency, `rn-forge-kiln`, pinned the same way (kiln
-ADR-0010).
+kiln itself is a dev dependency, `rn-forge-kiln`, pinned the same way.
 
 ## 4. The import boundary
 
@@ -126,7 +125,7 @@ included — is a subprocess or nothing.
 
 ## 5. What CI checks, and what it does not
 
-CI runs the pinned kiln read-only (kiln ADR-0010): it never runs `kiln apply`
+CI runs the pinned kiln read-only: it never runs `kiln apply`
 and never writes a generated file. `task validate` runs `kiln doctor` on every
 run; `kiln doctor --full` runs where the workflow asks, through `lint` with
 the `KILN_DOCTOR_FULL` task variable set.
@@ -143,27 +142,25 @@ and the docs site builds `--strict`.
 
 Exactly one question `kiln doctor` cannot ask without `--full`: whether a newer kiln, or an edited
 config, would now render something different from what is committed. kiln is
-modules under one contract (kiln ADR-0011) — each owns its config section, its
+modules under one contract — each owns its config section, its
 `artifacts()` and its `checks()` — and `kiln doctor` collects every module's
-findings into one report. Beyond what `kiln doctor` reports by default,
-`--full` warns on
-`pyproject.tool-config` when `pyproject.toml`'s tool tables drift from the
-archetype's expected values, and errors on `kiln.pin` when `rn-forge-kiln` is
-unpinned or the running kiln is not the one `uv.lock` records.
+findings into one report. Full verification checks managed artifacts against a
+fresh render; it does not compare repository-owned files with scaffold defaults.
 
 ## 7. The state baseline
 
 `.rn-forge/kiln/state.json` is generated and committed. It holds, per artifact,
 the repo-relative path, the kind, and a SHA-256 — of the whole file for managed
 artifacts, of the body for blocks — plus the exact fence markers for blocks, and
-presence only for seeded artifacts. It records `kiln_version` and `config_hash`
+a creation record for seeded files, whose presence is not enforced. It records `kiln_version` and `config_hash`
 in its metadata, and it never contains an entry for itself.
 
 `kiln doctor`'s `generated` check reads it without rendering anything.
 
 ## 8. Configuration
 
-`.rn-forge/kiln/config.toml` is the one committed input (kiln ADR-0004).
+`.rn-forge/kiln/config.toml` is the one committed input.
+Kiln owns only its `.rn-forge/kiln/` namespace and ignores sibling directories.
 Configuration is resolved once: `kiln new --config <path|git-url[@ref]>`
 deep-merges kiln defaults, each source layer and flags — lists replace — and
 records the source in a `[source]` table. `kiln apply` and `kiln doctor` read

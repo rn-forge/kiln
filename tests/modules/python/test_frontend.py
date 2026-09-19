@@ -53,7 +53,7 @@ def _root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, extra: str = "") -
 
 
 def _workspace(tmp_path: Path) -> Path:
-    workspace = tmp_path / "ws"
+    workspace = tmp_path / "workspace"
     shutil.copytree(FIXTURE, workspace)
     return workspace
 
@@ -70,7 +70,7 @@ def test_s5_2_1_reconcile_moves_fixture_into_root(
     assert (root / "nx.json").is_file()
     assert (root / "package.json").is_file()
     assert (root / "apps" / "web" / "project.json").is_file()
-    assert not (root / "ws").exists()
+    assert not (root / "workspace").exists()
 
 
 def test_s5_2_1_reconcile_appends_scaffolder_gitignore(

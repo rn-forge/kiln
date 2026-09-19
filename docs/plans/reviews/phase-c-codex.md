@@ -1,5 +1,11 @@
 # Phase C review: package boundaries and implementation
 
+**Historical record:** proposals and numbered decisions below describe the
+review at that time, not current policy. ADR references use current
+destinations; retired references use topic names. Current scope and decisions
+are in [the spec board](../../specs/index.md) and
+[the decision log](../../adr/index.md).
+
 Reviewed 2026-09-09 against pykit commit `4624bfe` (`Phase-C`), its parent, and
 the current local kiln standardization plan, revision 8. Scope: the extraction,
 new commons/tooling APIs, tests, packaging, CI integration, and Phase C consumer

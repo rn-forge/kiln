@@ -10,8 +10,8 @@ board says what is next; the epic says how; its ADRs say why.
 
 | Epic | Release | Next step |
 | -- | -- | -- |
-| [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | F4.1–F4.3 and the thin CLI needed by E5 are done. Resume at F4.4 after S5.3.1, then finish F4.5–F4.8 |
-| [E5 — The web archetypes](epics/E5-web-archetypes/index.md) | [release-2](../releases/release-2/index.md) | F5.1 and FastAPI/Angular scaffolding are done; Django is deferred. Next is S5.3.1's fresh-repo gate fixes, then F4.4 and the two FastAPI cells |
+| [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | F4.1–F4.3 and the thin CLI needed by E5 are done. Build S4.5.9 after S5.2.4, then resume at F4.4 and finish F4.5–F4.8, including S4.6.5 ownership alignment |
+| [E5 — The web archetypes](epics/E5-web-archetypes/index.md) | [release-2](../releases/release-2/index.md) | FastAPI/Angular scaffolding exists; the owner trial exposed remaining setup and formatting gaps (S5.3.5–S5.3.6). Next is S5.2.4's frontend-module split, staged generation and those fixes before the two FastAPI cells; Django is deferred |
 
 ### Scheduled
 
@@ -63,9 +63,11 @@ pykit owns its own spec. What kiln needs from it is handed off in pykit's
 
 ```text
 done:  E1 ─→ E2 ─→ E3 ─→ F4.1 ─→ F4.2 ─→ S4.3.1–S4.3.5        (pykit: A ─→ C ─→ C.2 ─→ C.3)
-now:   F5.1 done ─→ F5.2 fastapi done ─→ S5.3.1 fresh-repo gate fixes
+done:  F5.1 ─→ F5.2 fastapi ─→ S5.3.1 fresh-repo gate fixes
        (Django S5.2.3 deferred; live sync still needs resolvable pykit pins)
-then:  F4.4 matrix (goldens leave git) ─┬─→ S5.3.2–S5.3.4 ─→ E5 done
+now:   S5.2.4 frontend module ─→ S4.5.9 staged `new`
+then:  S5.3.5–S5.3.6 owner-trial fixes (before shipped-cell proofs)
+       F4.4 matrix (goldens leave git) ─┬─→ S5.3.2–S5.3.4 ─→ E5 done
        S5.3.1 ─→ S6.1.1 pykit candidate │
        S4.5.3–S4.5.7 ─→ F4.6 doctor ────┼─→ F4.8 self-host ─→ S6.1.2 pykit cutover
        F4.7 contracts ──────────────────┘   F6.2 retire taskkit (after S4.6.2, S5.2.2)
@@ -81,7 +83,8 @@ repositories and those stories need neither the render matrix, the full doctor
 nor self-hosting; release-1 still ships before release-2. The **Depends on**
 column on each epic and line on each feature are normative; this diagram
 summarizes them. Nothing in E4 waits on a pykit release
-([ADR-0005](../adr/ADR-0005.md)): the rn-forge dependency source is one constant
+([E7](epics/E7-pykit-release-pin-flip/index.md)): the rn-forge dependency source
+is one constant
 ([S4.3.7](epics/E4-generator/F4.3-concern-modules.md#s437-the-scaffold-completes-pyprojecttoml)),
 so flipping to tags later is a one-line change, not a template change.
 
@@ -156,8 +159,8 @@ whoever builds the story — a person, or an agent of any size.
   epic's `design.md`. Current behaviour belongs in
   [architecture](../architecture/index.md), the normative standard in
   [the reference](../reference/standard-repo.md).
-- **Decisions are ADRs**, one file per topic, revised in place with a
-  `## History` when they change — see [the log](../adr/index.md).
+- **Decisions are ADRs**, one durable choice per file. Keep delivery history and
+  implementation detail in specs; see [the log](../adr/index.md).
 - **Open questions live on the feature or epic they block.** Answered, a
   question becomes an [ADR](../adr/index.md), or a rejected option recorded on
   the feature; it is not left open on the page.

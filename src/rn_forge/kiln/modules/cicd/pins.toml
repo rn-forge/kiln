@@ -1,4 +1,4 @@
-# The pinned action set every rendered workflow uses (kiln ADR-0003).
+# The pinned action set every rendered workflow uses (kiln ADR-0006).
 
 [checkout]
 uses = "actions/checkout"

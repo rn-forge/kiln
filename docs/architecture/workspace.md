@@ -13,7 +13,7 @@ repeating it.
 | **tooling** (`rn-forge-tooling`, in pykit) | dev-tool library | the generation engine, templates, local state, the lifecycle surface |
 | **web** (`rn-forge-web`, in pykit) | library | framework-free inbound HTTP wire semantics; depends on commons only |
 | **django** / **fastapi** (`rn-forge-django`, `rn-forge-fastapi`, in pykit) | framework libraries | adapters over web; `[codegen]` extras later |
-| **kiln** (`rn-forge/kiln`, binary `kiln`) | CLI + canon; a pinned dev dependency of every generated repo | the canon (ADRs, the standard-repo spec, runbooks); archetypes; the `core` module and the concern modules `python`, `docs`, `tasks`, `cicd`, `instructions`; `check` and `doctor` |
+| **kiln** (`rn-forge/kiln`, binary `kiln`) | CLI + canon; a pinned dev dependency of every generated repo | the canon (ADRs, the standard-repo spec, runbooks); archetypes; the `core` module and the concern modules `python`, `docs`, `tasks`, `cicd`, `instructions`; generation and `doctor` verification |
 
 Not built, or retired: a separate canon repo, taskkit, `go-task-setup`,
 `docs-setup`, `mkdocs-site-setup`, `spec-structure-setup`, `forge-core`,
@@ -29,7 +29,7 @@ commons ──► cli ──► tooling ──► kiln
    └───────────────────────────► rn-forge-web ──► rn-forge-django, rn-forge-fastapi
 
 kiln ──entry points─► *[codegen]    (kiln discovers generators; never imports a framework)
-CI ──► pinned kiln + tooling        (kiln doctor always, kiln doctor --full where asked; never apply — ADR-0010)
+CI ──► pinned kiln + tooling        (kiln doctor always, kiln doctor --full where asked; never apply — ADR-0006)
 ```
 
 The **library graph is acyclic**: commons, cli and tooling are the only rn-forge
@@ -37,7 +37,9 @@ packages that may be a build dependency of a kit, and each depends only
 downward. The **tooling graph is free**: kiln imports no other kit and invokes
 none, and pykit adopting kiln as dev tooling is not a cycle because nothing is
 imported. The placement test is what an API's *signature* contains, not who
-calls it today. See [ADR-0002](../adr/ADR-0002.md).
+calls it today. These are pykit library-design constraints. kiln consumes these
+libraries and owns repository policy; it does not own their internal graph
+([ADR-0002](../adr/ADR-0002.md)).
 
 ## Where a thing belongs
 
@@ -52,19 +54,22 @@ calls it today. See [ADR-0002](../adr/ADR-0002.md).
 ## Apply sequence
 
 `kiln apply` is always this order, and each step is a module exposing its
-`artifacts()` and `checks()` ([ADR-0011](../adr/ADR-0011.md)):
+`artifacts()` and `checks()` ([ADR-0001](../adr/ADR-0001.md)):
 
 ```text
-1. core         .rn-forge/kiln/, the gitignore block, .editorconfig
-2. python       (new repos only) uv init / pnpm create / nx g, then reconcile; .importlinter
-3. docs         the tree, _areas.yml, _structure.md, the mkdocs nav block
+1. core         .rn-forge/kiln/ only (not its siblings), the gitignore block, .editorconfig
+2. python       managed Python artifacts, including .importlinter
+3. docs         the managed mkdocs nav block; docs content is seeded
 4. tasks        Taskfile.yml, tasks/*.yml
 5. cicd         workflows, .github/actions/setup, sonar-project.properties
-6. instructions README.md / CLAUDE.md / AGENTS.md bodies (seeded), the kiln block, .rn-forge/kiln/standard.md
+6. instructions the kiln block, .rn-forge/kiln/standard.md; prose bodies are seeded
 7. doctor       every check; apply exits non-zero if any error remains
 ```
 
+Seeded files belong to the repository after scaffolding; doctor does not enforce
+their presence or contents.
+
 No apply step shells out; only `kiln new` runs a scaffolder, before the first
-apply ([ADR-0001](../adr/ADR-0001.md)). That module contract is what keeps kiln
-from becoming a god-kit: a module is a template set plus a doctor check, and
-nothing else.
+apply. Each module owns its configuration, options, artifacts and checks; kiln
+composes them through the
+[module contract](../specs/epics/E4-generator/design.md#the-module-contract).

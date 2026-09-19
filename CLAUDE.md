@@ -10,7 +10,7 @@ and read it before adding an epic or cutting a release; the
 
 Do not add guidance to this file — it would drift out of sync with `README.md`,
 and one of the two copies would then be wrong with nothing to detect it
-([ADR-0001](docs/adr/ADR-0001.md)). The only thing that belongs here is the
+([ADR-0003](docs/adr/ADR-0003.md)). The only thing that belongs here is the
 generated block below.
 
 <!-- BEGIN rn-forge kiln -->

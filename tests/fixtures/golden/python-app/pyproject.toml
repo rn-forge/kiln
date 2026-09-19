@@ -10,7 +10,7 @@ requires-python = ">=3.14"
 # git sources. The URL lives in `dependencies`, not in [tool.uv.sources]: a
 # source override is local and does not survive into a built wheel, so a
 # consumer of this package's release could not resolve commons at all
-# (kiln ADR-0005).
+# (the dependency specification).
 dependencies = [
   "rn-forge-commons @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-commons",
   "rn-forge-cli @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-cli",
@@ -68,7 +68,7 @@ docs = [
   "mkdocstrings[python]>=0.30",
 ]
 
-# kiln is a pinned dev dependency (kiln ADR-0010). The goldens live inside the
+# kiln is a pinned dev dependency (kiln ADR-0006). The goldens live inside the
 # kiln checkout and are validated by its CI, so they take kiln from that
 # checkout; the path source goes when the goldens leave git (kiln F4.4).
 [tool.uv.sources]

@@ -3,7 +3,7 @@
 ## Belongs here
 
 - A procedure someone follows under pressure, or one where a step needs a
-  judgement call that must not be automated (kiln ADR-0006).
+  judgement call that must not be automated (kiln generator spec).
 
 ## Does not belong here
 

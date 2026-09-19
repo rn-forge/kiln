@@ -3,7 +3,7 @@ version: "3"
 
 # The API service's own dev loop. Unlike the other namespace files, this one is
 # public: `api:dev`{% if backend == "django" %} and `api:migrate` are{% else %} is{% endif %} how a developer runs it, not an internal
-# step a wrapper calls (design, F5.1). `[[ api_module ]].app:app` is the repo's
+# step a wrapper calls. `[[ api_module ]].app:app` is the repo's
 # own module — the standard says so, kiln does not render it.
 
 tasks:
