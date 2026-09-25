@@ -5,7 +5,9 @@
 - One page per release, `release-<n>/index.md`: its `**Status:**` (`planned`,
   `in progress` or `shipped`, with the date), entry criteria, scope, and exit
   criteria.
-- Scope named by story ID, linking to the feature file that holds the story.
+- Scope named by story ID, linking to the feature file that holds the story. An
+  epic that predates the story taxonomy is named by feature ID instead, and
+  the release page says so.
 
 ## Does not belong here
 

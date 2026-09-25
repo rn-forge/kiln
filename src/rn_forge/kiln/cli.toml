@@ -26,3 +26,31 @@ target = "rn_forge.kiln.commands:new"
 [[cli.commands]]
 name = "apply"
 target = "rn_forge.kiln.commands:apply"
+
+[[cli.commands]]
+name = "config-update"
+target = "rn_forge.kiln.commands:config_update"
+
+[[cli.commands]]
+name = "config-upgrade"
+target = "rn_forge.kiln.commands:config_upgrade"
+
+[[cli.commands]]
+name = "diff"
+target = "rn_forge.kiln.commands:diff"
+
+[[cli.commands]]
+name = "version"
+target = "rn_forge.kiln.commands:version"
+
+[[cli.commands]]
+name = "self-doctor"
+target = "rn_forge.kiln.commands:self_doctor"
+
+# `doctor` is excluded: `kiln doctor` already means inspecting a generated
+# repository, and mounting the lifecycle verb's own `doctor` here would
+# collide (S4.5.5). Its install-health check is `kiln self-doctor` instead.
+[cli.lifecycle]
+product = "rn_forge.kiln.product:PRODUCT"
+target = "rn_forge.tooling.cli.lifecycle:lifecycle_commands"
+verbs = ["install", "upgrade", "uninstall", "cleanup", "status"]

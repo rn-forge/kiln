@@ -31,7 +31,7 @@ inventory, config lifecycle, module contract — is [design.md](design.md).
 | [F4.2](F4.2-core-module.md) | The `core` module, the config manager and the module contract | D.2 | F4.1 |
 | [F4.3](F4.3-concern-modules.md) | The concern modules, with templates | D.3 | F4.2; E3 goldens |
 | [F4.4](F4.4-render-matrix.md) | The render matrix, and the goldens leave git | D.4 | F4.3 |
-| [F4.5](F4.5-cli.md) | CLI | D.5 | F4.3; S4.5.5 also pykit C.3 and its open question |
+| [F4.5](F4.5-cli.md) | CLI | D.5 | F4.3; S4.5.5 also pykit C.3 and pykit's lifecycle `namespace` (owner confirms) |
 | [F4.6](F4.6-doctor.md) | doctor | D.6 | F4.3, S4.5.1 |
 | [F4.7](F4.7-import-contracts.md) | Import contracts | D.7 | F4.3, S4.1.2 |
 | [F4.8](F4.8-self-hosting.md) | Self-hosting | D.8 | F4.4, F4.5, F4.6, F4.7 |

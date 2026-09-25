@@ -57,6 +57,7 @@ pykit owns its own spec. What kiln needs from it is handed off in pykit's
 | commons Part G — strict pydantic models as the `pydantic` extra | done | — |
 | `rn-forge-fastapi` | implemented (`3e80dbd`); its Phase 8 is a wired app, repo-owned | — |
 | Resolvable web pins: tags `rn-forge-commons-v0.5.0` and `rn-forge-web-v0.1.0`, or `feature/upgrade` pins on web, django and fastapi | not done (2026-09-16) | [E5](epics/E5-web-archetypes/index.md): `uv sync` of any web cell |
+| `rn-forge-cli` — optional `namespace` on `[cli.lifecycle]` (`docs/plans/cli-lifecycle-namespace-plan.md`) | planned (2026-09-21); the owner confirms when it lands | [S4.5.5](epics/E4-generator/F4.5-cli.md#s455-lifecycle-wiring): mount the verbs as `kiln self …` |
 | Release tags | triggered by the owner | [E7](epics/E7-pykit-release-pin-flip/index.md) |
 
 ## Order

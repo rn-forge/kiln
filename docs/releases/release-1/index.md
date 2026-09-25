@@ -1,6 +1,6 @@
 # Release 1 — kiln generates and self-hosts the Python archetypes
 
-**Status:** planned
+**Status:** in progress
 
 kiln renders `python-app`, `python-app` + `lifecycle` (the `python-tool` alias)
 and `python-lib` from authored templates, regenerates its own repo, and rebuilds
@@ -8,9 +8,8 @@ pykit's skeleton. The web archetypes are [release-2](../release-2/index.md).
 
 ## Entry criteria
 
-- [E1](../../specs/epics/E1-canon-and-golden-repos/index.md) and
-  [E2](../../specs/epics/E2-layer-split-and-golden-rename/index.md) are done —
-  **met** 2026-09-12.
+- [Release 0](../release-0/index.md) ships before this one does — **met**
+  2026-09-12.
 - Before
   [F3.3](../../specs/epics/E3-realign-goldens-and-canon/F3.3-python-tool-is-a-tool.md):
   pykit's lifecycle surface has landed

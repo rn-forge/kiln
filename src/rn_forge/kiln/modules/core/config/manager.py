@@ -17,6 +17,7 @@ from typing import Any, cast
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.lang.collections import DictUtils
 from rn_forge.commons.lang.types import JsonValue
+from rn_forge.commons.runtime.console import console
 
 from rn_forge.kiln import archetypes, documents
 from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
@@ -93,21 +94,62 @@ class ConfigManager:
     def load(self, root: Path) -> KilnConfig:
         """Read and validate *root*'s committed config.
 
+        A `schema_version` older than this kiln's is not refused outright —
+        `kiln upgrade`'s own contract (the config lifecycle) is that the
+        *next* load only **warns**, so long as the document still validates.
+        Only a document that no longer validates is refused. Either way the
+        message names `kiln config-upgrade`. `kiln config-update` keeps
+        refusing a stale schema outright (it calls :meth:`validate` directly,
+        by way of :meth:`reresolve`, with `allow_schema_upgrade` left `False`).
+
         Raises:
-            AppException: The file is missing or unparseable, or fails
-                :meth:`validate`.
+            AppException: The file is missing or unparseable, needs a newer
+                kiln, or (once composed against the current schema) still
+                fails :meth:`validate`.
         """
         label = CONFIG_PATH.as_posix()
-        return self.validate(_read_config(root), source=label)
+        document = _read_config(root)
+        declared = document.get("schema_version")
+        if isinstance(declared, int) and declared < SCHEMA_VERSION:
+            try:
+                config = self.validate(
+                    document, source=label, allow_schema_upgrade=True
+                )
+            except AppException as invalid:
+                raise AppException(
+                    "{} — run `kiln config-upgrade`", invalid
+                ) from invalid
+            console.warning(
+                "{}: schema_version is {}, and this kiln understands {} — "
+                "run `kiln config-upgrade`",
+                label,
+                declared,
+                SCHEMA_VERSION,
+            )
+            return config
+        return self.validate(document, source=label)
 
-    def validate(self, document: Mapping[str, Any], *, source: str) -> KilnConfig:
+    def validate(
+        self,
+        document: Mapping[str, Any],
+        *,
+        source: str,
+        allow_schema_upgrade: bool = False,
+    ) -> KilnConfig:
         """Validate *document* against this kiln's schema for its archetype.
+
+        Args:
+            allow_schema_upgrade: Skip the refusal for a document written for
+                an older `schema_version` than this kiln's — `reresolve`
+                passes this for `kiln config-upgrade`. A newer schema is
+                always refused: there is no downgrading.
 
         Raises:
             AppException: *document* declares a schema version other than this
-                kiln's, names an unknown archetype, carries a section for a
-                module its archetype does not enable, or fails the schema —
-                in which case every failing key is named by its dotted path.
+                kiln's (unless *allow_schema_upgrade* and it is older), names
+                an unknown archetype, carries a section for a module its
+                archetype does not enable, or fails the schema — in which case
+                every failing key is named by its dotted path.
         """
         declared = document.get("schema_version")
         if isinstance(declared, int) and declared != SCHEMA_VERSION:
@@ -119,13 +161,14 @@ class ConfigManager:
                     declared,
                     SCHEMA_VERSION,
                 )
-            raise AppException(
-                "{}: schema_version is {}, and this kiln understands {} — "
-                "run `kiln config upgrade`",
-                source,
-                declared,
-                SCHEMA_VERSION,
-            )
+            if not allow_schema_upgrade:
+                raise AppException(
+                    "{}: schema_version is {}, and this kiln understands {} — "
+                    "run `kiln config-upgrade`",
+                    source,
+                    declared,
+                    SCHEMA_VERSION,
+                )
 
         name = DictUtils.get(dict(document), "repository.archetype")
         if not isinstance(name, str):
@@ -186,7 +229,9 @@ class ConfigManager:
         layers.append((FLAGS_LAYER, flags))
         return self._merge(layers, fetched)
 
-    def reresolve(self, root: Path) -> Resolution:
+    def reresolve(
+        self, root: Path, *, allow_schema_upgrade: bool = False
+    ) -> Resolution:
         """Re-resolve *root*'s committed config from its recorded source.
 
         Values given as flags when the config was created are kept. A key whose
@@ -194,12 +239,25 @@ class ConfigManager:
         layer supplied — is a repo override: its committed value wins, and it
         is listed in :attr:`Resolution.overrides`.
 
+        Args:
+            allow_schema_upgrade: `kiln config-upgrade` passes this to re-merge
+                a config written for an older `schema_version`; `kiln config
+                update` leaves it `False`, so a stale schema is refused
+                (:meth:`validate`'s own message names `config-upgrade`). The
+                re-merged document always carries this kiln's current
+                `schema_version` (:meth:`_defaults`), so no migration step is
+                needed beyond re-resolving.
+
         Raises:
             AppException: The committed config is invalid, or its source cannot
                 be read.
         """
         committed = _read_config(root)
-        self.validate(committed, source=CONFIG_PATH.as_posix())
+        self.validate(
+            committed,
+            source=CONFIG_PATH.as_posix(),
+            allow_schema_upgrade=allow_schema_upgrade,
+        )
         recorded = _recorded_provenance(root)
 
         layers: list[tuple[str, Mapping[str, Any]]] = []

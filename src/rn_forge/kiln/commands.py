@@ -12,7 +12,9 @@ which `CliApp` maps to exit code 1.
 
 from __future__ import annotations
 
+import difflib
 from collections.abc import Sequence
+from importlib import metadata
 from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
@@ -20,6 +22,9 @@ from rn_forge.commons.fs.documents import ConfigFormat, DocumentUtils
 from rn_forge.commons.lang.collections import DictUtils
 from rn_forge.commons.runtime.console import OutputMode, console
 from rn_forge.tooling import generation
+from rn_forge.tooling.generation import StateEntry
+from rn_forge.tooling.install import doctor as lifecycle_doctor
+from rn_forge.tooling.state import StateStore
 
 from rn_forge.kiln import archetypes, checks
 from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
@@ -33,8 +38,21 @@ from rn_forge.kiln.modules.instructions.scaffold import (
 )
 from rn_forge.kiln.modules.python.scaffold import scaffold as python_scaffold
 from rn_forge.kiln.modules.registry import builtin
+from rn_forge.kiln.product import PRODUCT
 
-__all__ = ["apply", "docs_nav", "doctor", "new"]
+__all__ = [
+    "apply",
+    "config_update",
+    "config_upgrade",
+    "diff",
+    "docs_nav",
+    "doctor",
+    "new",
+    "self_doctor",
+    "version",
+]
+
+_DISTRIBUTION = "rn-forge-kiln"
 
 _CONFIG_HEADER = (
     "# The one hand-authored input kiln reads (kiln ADR-0004). Edit this, then run\n"
@@ -59,6 +77,31 @@ def doctor(path: Path, only: str | None = None) -> None:
     errors = [finding for finding in findings if finding.is_error]
     if errors:
         raise AppException("{} check(s) failed in {}", len(errors), path)
+
+
+def self_doctor(json: bool = False) -> None:
+    """Check kiln's own install and health — the lifecycle `doctor` verb.
+
+    `[cli.lifecycle]` excludes `doctor`, since `kiln doctor` already means
+    inspecting a generated repository; this reaches the same install checks
+    `rn_forge.tooling.install.lifecycle.doctor` gives every other lifecycle
+    tool, under a name that does not collide.
+
+    Raises:
+        AppException: Any finding is an error.
+    """
+    if json:
+        console.set_mode(OutputMode.JSON)
+    findings = lifecycle_doctor(PRODUCT)
+    if console.mode is OutputMode.JSON:
+        console.json({"findings": [finding.as_dict() for finding in findings]})
+    else:
+        for finding in findings:
+            console.print(f"{finding.severity}: {finding}", markup=False)
+
+    errors = [finding for finding in findings if finding.is_error]
+    if errors:
+        raise AppException("{} check(s) failed", len(errors))
 
 
 def docs_nav(path: Path) -> None:
@@ -121,7 +164,8 @@ def new(
 
     manager = ConfigManager()
     source = Source.parse(config) if config else None
-    resolved = manager.resolve(flags=flags, source=source).config
+    resolution = manager.resolve(flags=flags, source=source)
+    resolved = resolution.config
 
     if not yes or dry_run:
         rows = _preview_rows(directory, resolved, manager)
@@ -132,18 +176,13 @@ def new(
     if any(directory.iterdir()):
         raise AppException("{} is not empty", directory)
 
-    config_path = directory / CONFIG_PATH
-    config_path.parent.mkdir(parents=True, exist_ok=True)
-    config_path.write_text(
-        _CONFIG_HEADER + DocumentUtils.dumps(resolved.to_document(), ConfigFormat.TOML),
-        encoding="utf-8",
-    )
+    _write_config(directory, resolved)
 
     python_scaffold(directory, resolved)
     docs_scaffold(directory, resolved)
     instructions_scaffold(directory, resolved)
 
-    result = cycle.apply(directory)
+    result = cycle.apply(directory, provenance=resolution.provenance_metadata())
     rows = _change_rows(result.changes)
     _report(directory, resolved, rows)
     _fail_on_errors(directory)
@@ -176,6 +215,121 @@ def apply(
 
     if not dry_run:
         _fail_on_errors(root)
+
+
+def config_update(
+    dry_run: bool = False, apply: bool = False, json: bool = False
+) -> None:
+    """Re-resolve the committed config against this kiln's current defaults.
+
+    Prints the artifacts that would change and writes nothing. `--apply`
+    writes the re-merged `config.toml` and runs the full `kiln apply` (kiln
+    ADR-0004, the config lifecycle).
+
+    Raises:
+        AppException: The committed config was written for a different
+            `schema_version` (naming `kiln config-upgrade`), its recorded
+            `[source]` cannot be read, or (with `--apply`) the apply or check
+            step fails.
+    """
+    _config_reresolve(
+        allow_schema_upgrade=False, dry_run=dry_run, run_apply=apply, json=json
+    )
+
+
+def config_upgrade(
+    dry_run: bool = False, apply: bool = False, json: bool = False
+) -> None:
+    """As `config-update`, also migrating a config from an older `schema_version`.
+
+    Raises:
+        AppException: The committed config needs a newer kiln, its recorded
+            `[source]` cannot be read, or (with `--apply`) the apply or check
+            step fails.
+    """
+    _config_reresolve(
+        allow_schema_upgrade=True, dry_run=dry_run, run_apply=apply, json=json
+    )
+
+
+def diff(artifact: str | None = None, json: bool = False) -> None:
+    """Unified diff of on-disk content against a fresh render, writing nothing.
+
+    With no `--artifact`, every managed and block artifact whose disk content
+    differs from its fresh render is diffed; `--artifact` (a key or a path)
+    limits it to one. A defaulted parameter is always an option in this
+    framework without a `typer.Argument` marker (see `new`'s own
+    `--archetype`), which kiln's commands never import, so this is `--artifact`
+    rather than the design table's bare positional.
+
+    Raises:
+        AppException: ARTIFACT names no known artifact, or a difference was
+            found — `diff(1)`'s own exit-1 convention.
+    """
+    if json:
+        console.set_mode(OutputMode.JSON)
+    root = umbrella.find_root(Path.cwd())
+    changes = cycle.plan(root).changes
+
+    if artifact is not None:
+        changes = [c for c in changes if artifact in (c.key, c.path)]
+        if not changes:
+            raise AppException("{} is not a known artifact", artifact)
+
+    diffs = _diffs(root, changes)
+    if console.mode is OutputMode.JSON:
+        console.json({"diffs": [{"path": path, "diff": text} for path, text in diffs]})
+    else:
+        for _, text in diffs:
+            console.print(text, markup=False)
+
+    if diffs:
+        raise AppException("{} artifact(s) differ from disk", len(diffs))
+
+
+def version(json: bool = False) -> None:
+    """Print kiln's installed distribution version."""
+    installed = metadata.version(_DISTRIBUTION)
+    if json:
+        console.set_mode(OutputMode.JSON)
+    if console.mode is OutputMode.JSON:
+        console.json({"version": installed})
+    else:
+        console.print(installed)
+
+
+def _diffs(root: Path, changes: Sequence[generation.Change]) -> list[tuple[str, str]]:
+    """`(path, unified diff)` for every managed/block change that differs from disk."""
+    results: list[tuple[str, str]] = []
+    for change in changes:
+        artifact = change.artifact
+        if artifact is None or artifact.kind is generation.ArtifactKind.SEEDED:
+            continue
+        disk = _disk_content(root, artifact)
+        fresh = artifact.content
+        if disk == fresh:
+            continue
+        text = "".join(
+            difflib.unified_diff(
+                (disk or "").splitlines(keepends=True),
+                fresh.splitlines(keepends=True),
+                fromfile=artifact.path,
+                tofile=artifact.path,
+            )
+        )
+        results.append((artifact.path, text))
+    return results
+
+
+def _disk_content(root: Path, artifact: generation.Artifact) -> str | None:
+    """*artifact*'s current on-disk content — a block's body, for a block artifact."""
+    path = root / artifact.path
+    if not path.is_file():
+        return None
+    text = path.read_text(encoding="utf-8")
+    if artifact.block is None:
+        return text
+    return artifact.block.extract(text)
 
 
 def _flag_layer(
@@ -254,6 +408,69 @@ def _change_rows(changes: Sequence[generation.Change]) -> list[dict[str, str]]:
         }
         for change in changes
     ]
+
+
+def _write_config(directory: Path, config: KilnConfig) -> None:
+    """Write *config* as `directory`'s committed `config.toml`, with kiln's header."""
+    config_path = directory / CONFIG_PATH
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(
+        _CONFIG_HEADER + DocumentUtils.dumps(config.to_document(), ConfigFormat.TOML),
+        encoding="utf-8",
+    )
+
+
+def _config_reresolve(
+    *, allow_schema_upgrade: bool, dry_run: bool, run_apply: bool, json: bool
+) -> None:
+    """Shared body of `config-update` and `config-upgrade` (kiln ADR-0004)."""
+    if json:
+        console.set_mode(OutputMode.JSON)
+    root = umbrella.find_root(Path.cwd())
+    manager = ConfigManager()
+    resolution = manager.reresolve(root, allow_schema_upgrade=allow_schema_upgrade)
+    rows = _config_change_rows(root, manager, resolution.config)
+    payload = {
+        "root": str(root),
+        "overrides": list(resolution.overrides),
+        "artifacts": rows,
+    }
+    if console.mode is OutputMode.JSON:
+        console.json(payload)
+    else:
+        for path in resolution.overrides:
+            console.info("override {}", path)
+        for row in rows:
+            console.info("{} {} {}", row["key"], row["kind"], row["action"])
+
+    if dry_run or not run_apply:
+        return
+
+    _write_config(root, resolution.config)
+    result = cycle.apply(root, provenance=resolution.provenance_metadata())
+    change_rows = _change_rows(result.changes)
+    _emit({"root": str(root), "artifacts": change_rows}, change_rows)
+    _fail_on_errors(root)
+
+
+def _config_change_rows(
+    root: Path, manager: ConfigManager, config: KilnConfig
+) -> list[dict[str, str]]:
+    """The artifacts a fresh `config.toml` matching *config* would change on apply."""
+    artifacts = [
+        artifact
+        for module in manager.modules_for(config)
+        for artifact in module.artifacts(config, root)
+    ]
+    store = StateStore(
+        root / umbrella.STATE_PATH,
+        entry_type=StateEntry,
+        schema_version=cycle.STATE_SCHEMA_VERSION,
+    )
+    planned = generation.plan(root, artifacts, store.load())
+    settled = (generation.Action.UNCHANGED, generation.Action.SKIP)
+    changed = [c for c in planned.changes if c.action not in settled]
+    return _change_rows(changed)
 
 
 def _report(directory: Path, config: KilnConfig, rows: list[dict[str, str]]) -> None:

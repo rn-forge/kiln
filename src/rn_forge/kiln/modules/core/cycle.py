@@ -6,7 +6,7 @@ engine then stages, backs up and swaps them in, and writes `state.json` last.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
@@ -48,6 +48,7 @@ def plan(
     force: Iterable[str] = (),
     registry: ModuleRegistry | None = None,
     home: Path | None = None,
+    provenance: Mapping[str, JsonValue] | None = None,
 ) -> Plan:
     """Render every enabled module's artifacts and classify them, writing nothing.
 
@@ -57,12 +58,17 @@ def plan(
         registry: The modules to draw from; this kiln's own by default.
         home: `$RNF_HOME`, checked for a legacy tree; resolved from the
             environment by default.
+        provenance: `config_provenance` metadata to record on the next apply,
+            in :meth:`~rn_forge.kiln.modules.core.config.manager.Resolution.provenance_metadata`'s
+            shape — `kiln new` and `kiln config-update`/`config-upgrade` pass their
+            fresh `Resolution`'s, overriding any value carried forward from a
+            previous `state.json`.
 
     Raises:
         CycleRefused: A legacy kiln tree is present.
         AppException: The config is invalid.
     """
-    return _prepare(root, force, registry, home)[1]
+    return _prepare(root, force, registry, home, provenance)[1]
 
 
 def apply(
@@ -73,6 +79,7 @@ def apply(
     registry: ModuleRegistry | None = None,
     home: Path | None = None,
     verify: Callable[[], None] | None = None,
+    provenance: Mapping[str, JsonValue] | None = None,
 ) -> ApplyResult:
     """Plan, then apply transactionally; see :func:`plan` for the arguments.
 
@@ -87,7 +94,7 @@ def apply(
             conflict, drift or missing artifact, or a write failed (after the
             tree and `state.json` were restored).
     """
-    store, planned = _prepare(root, force, registry, home)
+    store, planned = _prepare(root, force, registry, home, provenance)
     return generation.apply(
         root,
         planned,
@@ -104,6 +111,7 @@ def _prepare(
     force: Iterable[str],
     registry: ModuleRegistry | None,
     home: Path | None,
+    provenance: Mapping[str, JsonValue] | None = None,
 ) -> tuple[StateStore[StateEntry], Plan]:
     refused = umbrella.legacy(root / umbrella.UMBRELLA, (home or rnf_home()) / "kiln")
     if refused:
@@ -122,7 +130,9 @@ def _prepare(
         "kiln_version": __version__,
         "config_hash": ContentHash.of((root / CONFIG_PATH).read_text(encoding="utf-8")),
     }
-    if state_path.is_file():
+    if provenance is not None:
+        metadata[PROVENANCE_KEY] = dict(provenance)
+    elif state_path.is_file():
         previous = StateStore(
             state_path, entry_type=StateEntry, schema_version=STATE_SCHEMA_VERSION
         )
