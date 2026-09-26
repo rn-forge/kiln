@@ -26,10 +26,10 @@ Everything else is the standard, stated in
 - Run everything through `task`. `task validate` is the gate.
 - The product lives in `src/golden_tool/`; its tests live in `tests/`. The CLI
   is *declared* in the `[cli]` table of `.rn-forge/kiln/config.toml` and built
-  by `CliApp.from_config` — `main.py` constructs nothing (kiln ADR-0002).
+  by `build_tool_app` — `main.py` constructs nothing (kiln ADR-0002).
 - What the lifecycle verbs install and check is `src/golden_tool/product.py`,
-  named by `[cli.lifecycle]`. That module is the whole of the difference
-  between this repo and `golden/python-app`.
+  named by `[lifecycle]`. That module is the whole of the difference between
+  this repo and `golden/python-app`.
 - Do not edit a file whose first line says it was generated. The kiln block in
   [CLAUDE.md](CLAUDE.md) says what that means and what to do instead.
 

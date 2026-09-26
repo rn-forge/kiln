@@ -1,6 +1,6 @@
 """This tool as the lifecycle verbs see it.
 
-`[cli.lifecycle]` in `.rn-forge/kiln/config.toml` names `PRODUCT`; the verbs
+`[lifecycle]` in `.rn-forge/kiln/config.toml` names `PRODUCT`; the verbs
 themselves — `install`, `upgrade`, `uninstall`, `cleanup`, `status`, `doctor` —
 come from `rn-forge-tooling`.
 """

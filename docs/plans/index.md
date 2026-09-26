@@ -13,6 +13,9 @@ releases do not carry. For kiln's own next steps, read the spec board,
   built with kiln, on its own schedule.
 - [Agent configuration after kiln](agent-config-future.md) — standalone plan,
   parked: the idea of a rebuilt agent-config tool.
+- [pykit docs alignment](pykit-docs-alignment.md) — standalone plan, proposed:
+  what the docs standard needs to host pykit's per-package sites, and the kiln
+  pages that are now wrong about pykit.
 
 An area index's links are its nav order, so this page links only to pages in
 `plans/`.

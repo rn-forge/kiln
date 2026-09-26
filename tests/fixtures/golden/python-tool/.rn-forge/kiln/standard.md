@@ -10,7 +10,7 @@ is a kiln ADR; this file states the rule.
 - **Archetype:** `python-tool` — `python-app` with `lifecycle = true`: one uv
   package, `src/` layout, pytest, ruff and pyright at the root, GitHub Actions,
   a command line declared in `.rn-forge/kiln/config.toml` rather than assembled
-  by hand, and the lifecycle verbs mounted from `[cli.lifecycle]`.
+  by hand, and the lifecycle verbs declared in `[lifecycle]`.
 - **Docs profile:** `mkdocs` — the full area model, a generated nav block, and a
   strict site build inside `task validate`.
 - **CI:** GitHub Actions, Sonar on, release by tag-exists check.
@@ -169,7 +169,10 @@ only the committed file. `kiln config update` re-resolves the source with the
 running kiln, `kiln config upgrade` with a newer one; each changes nothing
 without `--apply`, and keeps a key edited here as a repo override.
 
-`lifecycle = true` — which is what the `python-tool` alias means — mounts the
-`install`/`upgrade`/`uninstall`/`cleanup`/`status`/`doctor` verbs from
-`[cli.lifecycle]`; the product supplies `artifacts()`, `checks()` and
-`migrate()` through `rn-forge-tooling`'s `ToolProduct` adapter.
+`lifecycle = true` — which is what the `python-tool` alias means — adds a
+`[lifecycle]` table beside `[cli]` and builds the app with
+`rn-forge-tooling`'s `build_tool_app`, which mounts the
+`install`/`upgrade`/`uninstall`/`cleanup`/`status`/`doctor` verbs at the
+root, or under `namespace` when one is set; the product supplies
+`artifacts()`, `checks()` and `migrate()` through `rn-forge-tooling`'s
+`ToolProduct` adapter.

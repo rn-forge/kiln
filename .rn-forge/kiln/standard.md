@@ -174,7 +174,10 @@ only the committed file. `kiln config update` re-resolves the source with the
 running kiln, `kiln config upgrade` with a newer one; each changes nothing
 without `--apply`, and keeps a key edited here as a repo override.
 
-`lifecycle = true` — which is what the `python-tool` alias means — mounts the
-`install`/`upgrade`/`uninstall`/`cleanup`/`status`/`doctor` verbs from
-`[cli.lifecycle]`; the product supplies `artifacts()`, `checks()` and
-`migrate()` through `rn-forge-tooling`'s `ToolProduct` adapter (the lifecycle specification).
+`lifecycle = true` — which is what the `python-tool` alias means — adds a
+`[lifecycle]` table beside `[cli]` and builds the app with
+`rn-forge-tooling`'s `build_tool_app`, which mounts the
+`install`/`upgrade`/`uninstall`/`cleanup`/`status`/`doctor` verbs at the
+root, or under `namespace` when one is set; the product supplies
+`artifacts()`, `checks()` and `migrate()` through `rn-forge-tooling`'s
+`ToolProduct` adapter (the lifecycle specification).

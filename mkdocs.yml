@@ -55,7 +55,6 @@ nav:
   - Runbooks:
     - Overview: runbooks/index.md
     - Creating A Repo: runbooks/creating-a-repo.md
-    - Carrying Specs And Decisions: runbooks/carrying-specs-and-decisions.md
   - Reference:
     - Python API: reference/python-api.md
     - Standard Repo: reference/standard-repo.md
@@ -68,5 +67,6 @@ nav:
     - Overview: plans/reviews/index.md
     - Intellibuild: plans/intellibuild.md
     - Agent Config Future: plans/agent-config-future.md
+    - Pykit Docs Alignment: plans/pykit-docs-alignment.md
     - Standardization Plan: plans/standardization-plan.md
   # END generated nav

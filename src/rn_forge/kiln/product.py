@@ -1,11 +1,8 @@
 """kiln, as pykit's lifecycle verbs see it.
 
-`[cli.lifecycle]` in `cli.toml` names `PRODUCT`; `install`, `upgrade`,
-`uninstall`, `cleanup` and `status` come from `rn-forge-tooling` and are
-mounted flat. `doctor` is excluded from that mount — `kiln doctor` already
-means inspecting a generated repository — and the install-health check this
-class declares is reachable instead as `kiln self-doctor`
-(`commands.self_doctor`).
+`[lifecycle]` in `cli.toml` names `PRODUCT`; `rn-forge-tooling` mounts all six verbs
+under `kiln self`, so the install-health check is `kiln self doctor` and
+`kiln doctor` stays the repository check.
 """
 
 from __future__ import annotations

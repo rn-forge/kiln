@@ -1,6 +1,6 @@
 """The commands kiln's CLI exposes.
 
-A command function is all that is written here. `CliApp.from_config` builds
+A command function is all that is written here. `build_tool_app` builds
 the application around it — the root callback, the standard
 `--log-level`/`--json` flags, the error-to-exit-code mapping — from the
 declaration in `cli.toml`.
@@ -15,6 +15,7 @@ from __future__ import annotations
 import difflib
 from collections.abc import Sequence
 from importlib import metadata
+from importlib.resources import files
 from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
@@ -23,7 +24,6 @@ from rn_forge.commons.lang.collections import DictUtils
 from rn_forge.commons.runtime.console import OutputMode, console
 from rn_forge.tooling import generation
 from rn_forge.tooling.generation import StateEntry
-from rn_forge.tooling.install import doctor as lifecycle_doctor
 from rn_forge.tooling.state import StateStore
 
 from rn_forge.kiln import archetypes, checks
@@ -38,7 +38,6 @@ from rn_forge.kiln.modules.instructions.scaffold import (
 )
 from rn_forge.kiln.modules.python.scaffold import scaffold as python_scaffold
 from rn_forge.kiln.modules.registry import builtin
-from rn_forge.kiln.product import PRODUCT
 
 __all__ = [
     "apply",
@@ -48,7 +47,7 @@ __all__ = [
     "docs_nav",
     "doctor",
     "new",
-    "self_doctor",
+    "prompt",
     "version",
 ]
 
@@ -77,31 +76,6 @@ def doctor(path: Path, only: str | None = None) -> None:
     errors = [finding for finding in findings if finding.is_error]
     if errors:
         raise AppException("{} check(s) failed in {}", len(errors), path)
-
-
-def self_doctor(json: bool = False) -> None:
-    """Check kiln's own install and health — the lifecycle `doctor` verb.
-
-    `[cli.lifecycle]` excludes `doctor`, since `kiln doctor` already means
-    inspecting a generated repository; this reaches the same install checks
-    `rn_forge.tooling.install.lifecycle.doctor` gives every other lifecycle
-    tool, under a name that does not collide.
-
-    Raises:
-        AppException: Any finding is an error.
-    """
-    if json:
-        console.set_mode(OutputMode.JSON)
-    findings = lifecycle_doctor(PRODUCT)
-    if console.mode is OutputMode.JSON:
-        console.json({"findings": [finding.as_dict() for finding in findings]})
-    else:
-        for finding in findings:
-            console.print(f"{finding.severity}: {finding}", markup=False)
-
-    errors = [finding for finding in findings if finding.is_error]
-    if errors:
-        raise AppException("{} check(s) failed", len(errors))
 
 
 def docs_nav(path: Path) -> None:
@@ -285,6 +259,50 @@ def diff(artifact: str | None = None, json: bool = False) -> None:
 
     if diffs:
         raise AppException("{} artifact(s) differ from disk", len(diffs))
+
+
+def prompt(name: str = "", json: bool = False) -> None:
+    """Print the shipped prompt NAME, or list the prompts when it is empty.
+
+    A prompt is a one-time procedure shipped in the distribution; printing one
+    reads no repository and writes nothing.
+
+    Raises:
+        AppException: NAME is not a shipped prompt.
+    """
+    if json:
+        console.set_mode(OutputMode.JSON)
+    directory = files("rn_forge.kiln").joinpath("prompts")
+    available = {
+        entry.name.removesuffix(".md"): entry.read_text(encoding="utf-8")
+        for entry in directory.iterdir()
+        if entry.name.endswith(".md")
+    }
+    if not name:
+        rows = [
+            {"name": key, "summary": _prompt_summary(text)}
+            for key, text in sorted(available.items())
+        ]
+        if console.mode is OutputMode.JSON:
+            console.json({"prompts": rows})
+        else:
+            for row in rows:
+                console.print(f"{row['name']}: {row['summary']}", markup=False)
+        return
+    if name not in available:
+        raise AppException(
+            "no prompt named {}; available: {}", name, ", ".join(sorted(available))
+        )
+    if console.mode is OutputMode.JSON:
+        console.json({"name": name, "text": available[name]})
+    else:
+        console.print(available[name], markup=False)
+
+
+def _prompt_summary(text: str) -> str:
+    """The first paragraph after the title, on one line."""
+    paragraphs = [part for part in text.split("\n\n") if part.strip()]
+    return " ".join(paragraphs[1].split())
 
 
 def version(json: bool = False) -> None:

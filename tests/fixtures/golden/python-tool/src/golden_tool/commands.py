@@ -1,6 +1,6 @@
 """The commands this repo's CLI exposes.
 
-A command function is all a repository writes. `CliApp.from_config` builds
+A command function is all a repository writes. `build_tool_app` builds
 the application around it — the root callback, the standard
 `--log-level`/`--json` flags, the error-to-exit-code mapping — from the
 `[cli]` table in `.rn-forge/kiln/config.toml`.

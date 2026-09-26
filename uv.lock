@@ -879,7 +879,7 @@ wheels = [
 [[package]]
 name = "rn-forge-cli"
 version = "0.1.0"
-source = { git = "https://github.com/rn-forge/pykit?subdirectory=packages%2Frn-forge-cli&rev=feature%2Fupgrade#231a68e54df2b93c8e12a742061afcac1674de02" }
+source = { git = "https://github.com/rn-forge/pykit?subdirectory=packages%2Frn-forge-cli&rev=feature%2Fupgrade#1bf575311c5c2c31808826441859923ac43f01ef" }
 dependencies = [
     { name = "rich" },
     { name = "rn-forge-commons" },
@@ -889,7 +889,7 @@ dependencies = [
 [[package]]
 name = "rn-forge-commons"
 version = "0.5.0"
-source = { git = "https://github.com/rn-forge/pykit?subdirectory=packages%2Frn-forge-commons&rev=feature%2Fupgrade#231a68e54df2b93c8e12a742061afcac1674de02" }
+source = { git = "https://github.com/rn-forge/pykit?subdirectory=packages%2Frn-forge-commons&rev=feature%2Fupgrade#1bf575311c5c2c31808826441859923ac43f01ef" }
 dependencies = [
     { name = "dacite" },
     { name = "rich" },
@@ -961,7 +961,7 @@ docs = [
 [[package]]
 name = "rn-forge-tooling"
 version = "0.2.0"
-source = { git = "https://github.com/rn-forge/pykit?subdirectory=packages%2Frn-forge-tooling&rev=feature%2Fupgrade#231a68e54df2b93c8e12a742061afcac1674de02" }
+source = { git = "https://github.com/rn-forge/pykit?subdirectory=packages%2Frn-forge-tooling&rev=feature%2Fupgrade#1bf575311c5c2c31808826441859923ac43f01ef" }
 dependencies = [
     { name = "jinja2" },
     { name = "rn-forge-cli" },

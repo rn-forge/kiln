@@ -93,7 +93,7 @@ If you find yourself wanting a third override, the archetype is probably wrong.
 That is a judgement call, and it is yours.
 
 If the new repo replaces a pre-v1 one, carry its specs and decisions over now,
-following [carrying specs and decisions](carrying-specs-and-decisions.md).
+following `kiln prompt --name port-docs`.
 
 ## 4. Check it
 

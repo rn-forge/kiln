@@ -1,7 +1,7 @@
 """The composed `config.toml` schema.
 
-The root is `schema_version`, `[source]`, `[repository]` and the `[cli]` table
-rn-forge-cli reads; every enabled module adds its own section.
+The root is `schema_version`, `[source]`, `[repository]` and the `[cli]` and
+`[lifecycle]` tables rn-forge-cli and rn-forge-tooling read; every enabled module adds its own section.
 """
 
 from __future__ import annotations
@@ -54,6 +54,8 @@ class RootConfig(StrictModel):
     repository: RepositoryConfig
     cli: dict[str, Any] | None = None
     """rn-forge-cli's declared command line, carried as written."""
+    lifecycle: dict[str, Any] | None = None
+    """rn-forge-tooling's declared lifecycle verbs, carried as written."""
 
 
 def compose(modules: Sequence[KilnModule]) -> type[RootConfig]:

@@ -19,7 +19,7 @@ release = "tag-exists"
 [tasks]
 includes = []
 
-# The command line this repo exposes, built by `CliApp.from_config` rather
+# The command line this repo exposes, built by `build_tool_app` rather
 # than assembled by hand (kiln ADR-0002). Adding a command is an entry here and
 # a function in `src/golden_tool/commands.py`.
 [cli]
@@ -30,6 +30,5 @@ help = "The python-tool archetype's golden CLI."
 name = "hello"
 target = "golden_tool.commands:hello"
 
-[cli.lifecycle]
+[lifecycle]
 product = "golden_tool.product:PRODUCT"
-target = "rn_forge.tooling.cli.lifecycle:lifecycle_commands"

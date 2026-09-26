@@ -1,11 +1,10 @@
 """S4.5.5 — Lifecycle wiring.
 
-`[cli.lifecycle]` mounts `install`/`upgrade`/`uninstall`/`cleanup`/`status`
-flat, from kiln's own real `.rn-forge/kiln/config.toml` — the same
-declaration `src/rn_forge/kiln/cli.toml` ships (`tests/test_cli_surface.py`
-keeps the two equal). `doctor` is excluded from that mount: `kiln doctor`
-already means inspecting a generated repository, so the install-health check
-is `kiln self-doctor` instead (S4.5.5's open question, answered).
+`[lifecycle]` in kiln's own declaration (`src/rn_forge/kiln/cli.toml`, held
+equal to `.rn-forge/kiln/config.toml` by `tests/test_cli_surface.py`) names
+`PRODUCT`; `rn-forge-tooling`'s `build_tool_app` mounts all six verbs under
+`kiln self`, so `kiln self doctor` checks the install and `kiln doctor` stays
+the repository check.
 """
 
 from __future__ import annotations
@@ -16,12 +15,14 @@ from pathlib import Path
 
 import pytest
 
-from rn_forge.cli import CliApp, CliSurface
+from rn_forge.cli import CliApp, ExitCode
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.runtime.console import OutputMode, console
+from rn_forge.tooling.cli.lifecycle import build_tool_app
 
 from rn_forge.kiln import commands
 from rn_forge.kiln.modules.core import cycle
+from rn_forge.kiln.modules.core.config.schema import RootConfig
 
 ROOT = Path(__file__).resolve().parents[1]
 GOLDEN = Path(__file__).resolve().parent / "fixtures" / "golden" / "python-tool"
@@ -47,9 +48,7 @@ def isolated(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
 @pytest.fixture
 def kiln_cli() -> CliApp:
     """kiln's own declared CLI, built the way an installed kiln's is."""
-    return CliApp.from_surface(
-        CliSurface.load(ROOT / "src" / "rn_forge" / "kiln" / "cli.toml")
-    )
+    return build_tool_app(ROOT / "src" / "rn_forge" / "kiln" / "cli.toml")
 
 
 @pytest.fixture
@@ -61,45 +60,62 @@ def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     yield root
 
 
-def test_s4_5_5_help_lists_every_declared_lifecycle_verb(
+_VERBS = ("install", "upgrade", "uninstall", "cleanup", "status", "doctor")
+
+
+def test_s4_5_5_1_help_lists_self(
     kiln_cli: CliApp, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert kiln_cli.run(["--help"]) == 0
+    assert "self" in capsys.readouterr().out
+
+
+def test_s4_5_5_1_self_help_lists_every_verb(
+    kiln_cli: CliApp, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert kiln_cli.run(["self", "--help"]) == 0
     out = capsys.readouterr().out
-    for verb in ("install", "upgrade", "uninstall", "cleanup", "status"):
+    for verb in _VERBS:
         assert verb in out
 
 
-def test_s4_5_5_status_json_has_a_version(
+def test_s4_5_5_1_bare_verbs_are_not_root_commands(kiln_cli: CliApp) -> None:
+    for verb in ("install", "upgrade", "uninstall", "cleanup", "status"):
+        assert kiln_cli.run([verb]) == ExitCode.USAGE
+
+
+def test_s4_5_5_2_self_status_json_has_a_version(
     kiln_cli: CliApp, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    assert kiln_cli.run(["--json", "status"]) == 0
+    assert kiln_cli.run(["--json", "self", "status"]) == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["version"]
 
 
-def test_s4_5_5_doctor_and_self_doctor_are_distinct_and_both_reachable(
-    kiln_cli: CliApp,
+def test_s4_5_5_4_self_doctor_checks_the_install(
+    kiln_cli: CliApp, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    names = {
-        command.name
-        for command in CliSurface.load(
-            ROOT / "src" / "rn_forge" / "kiln" / "cli.toml"
-        ).commands
-    }
-    assert {"doctor", "self-doctor"} <= names
-    # `doctor` is not one of the mounted lifecycle verbs, so no name collides.
-    lifecycle_verbs = CliSurface.load(
-        ROOT / "src" / "rn_forge" / "kiln" / "cli.toml"
-    ).lifecycle.verbs
-    assert "doctor" not in lifecycle_verbs
-
-
-def test_s4_5_5_self_doctor_on_a_dev_checkout_exits_zero(
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    commands.self_doctor()
+    assert kiln_cli.run(["self", "doctor"]) == 0
     assert "kiln.home" in capsys.readouterr().out
+
+
+def test_s4_5_5_4_doctor_checks_the_repository(
+    kiln_cli: CliApp, repo: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert kiln_cli.run(["doctor", str(repo)]) == 0
+    captured = capsys.readouterr()
+    assert "kiln.home" not in captured.out + captured.err
+
+
+def test_s4_5_5_root_config_carries_the_lifecycle_table() -> None:
+    config = RootConfig.model_validate(
+        {
+            "schema_version": 1,
+            "repository": {"name": "x", "archetype": "python-tool"},
+            "lifecycle": {"product": "a:B", "namespace": "self"},
+        }
+    )
+    assert config.lifecycle == {"product": "a:B", "namespace": "self"}
 
 
 def test_s4_5_5_load_warns_on_a_stale_but_still_valid_schema(

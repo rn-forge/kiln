@@ -44,13 +44,13 @@ name = "version"
 target = "rn_forge.kiln.commands:version"
 
 [[cli.commands]]
-name = "self-doctor"
-target = "rn_forge.kiln.commands:self_doctor"
+name = "prompt"
+target = "rn_forge.kiln.commands:prompt"
 
-# `doctor` is excluded: `kiln doctor` already means inspecting a generated
-# repository, and mounting the lifecycle verb's own `doctor` here would
-# collide (S4.5.5). Its install-health check is `kiln self-doctor` instead.
-[cli.lifecycle]
+# The lifecycle verbs, mounted by rn-forge-tooling's `build_tool_app`
+# under `kiln self`: they manage the installed tool, and `kiln doctor`
+# keeps meaning the repository check.
+[lifecycle]
 product = "rn_forge.kiln.product:PRODUCT"
-target = "rn_forge.tooling.cli.lifecycle:lifecycle_commands"
-verbs = ["install", "upgrade", "uninstall", "cleanup", "status"]
+namespace = "self"
+verbs = ["install", "upgrade", "uninstall", "cleanup", "status", "doctor"]

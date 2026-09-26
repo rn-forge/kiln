@@ -44,7 +44,7 @@
     },
     ".rn-forge/kiln/standard.md": {
       "begin_marker": null,
-      "content_hash": "5842ccb3d5a947900811f0e6a536aa8e3a84807fabb4b7b2c07358c6a37a2cbc",
+      "content_hash": "5bc10bd078c590201a2ab5f115ed1a076d8e5644447ff0680c0933675db750cd",
       "end_marker": null,
       "kind": "managed",
       "path": ".rn-forge/kiln/standard.md"
@@ -184,7 +184,7 @@
     },
     "mkdocs.yml#generated nav": {
       "begin_marker": "# BEGIN generated nav",
-      "content_hash": "4d717f09047356f140482db04778ae392c2f8bf8ac02e83f167bc7249f6948bb",
+      "content_hash": "fd37d8a3cf3c6820cc384345ef71b9854fe689154466acbebb120f93837b7486",
       "end_marker": "# END generated nav",
       "kind": "block",
       "path": "mkdocs.yml"

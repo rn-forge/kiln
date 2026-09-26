@@ -1,9 +1,7 @@
 # Carrying specs and decisions into a rebuilt repo
 
-> One-time judgement ships as a kiln prompt
-> ([generator scope](../specs/epics/E4-generator/design.md#scope-and-ownership)).
-> This runbook becomes `kiln prompt port-docs` in
-> [S4.5.6](../specs/epics/E4-generator/F4.5-cli.md), and is deleted then.
+Move a pre-v1 repo's specs and decisions into a `kiln new` repo's `docs/specs/`
+and `docs/adr/` as prior art, losing nothing and saying nothing twice.
 
 A pre-v1 repo is rebuilt with `kiln new`, not migrated
 ([generator scope](../specs/epics/E4-generator/design.md#scope-and-ownership)):

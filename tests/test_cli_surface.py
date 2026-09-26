@@ -15,11 +15,17 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def _cli_table(path: Path) -> dict[str, object]:
-    return tomllib.loads(path.read_text(encoding="utf-8"))["cli"]
+def _table(path: Path, key: str) -> dict[str, object]:
+    return tomllib.loads(path.read_text(encoding="utf-8"))[key]
 
 
 def test_packaged_surface_matches_repo_config() -> None:
-    packaged = _cli_table(ROOT / "src" / "rn_forge" / "kiln" / "cli.toml")
-    declared = _cli_table(ROOT / ".rn-forge" / "kiln" / "config.toml")
+    packaged = _table(ROOT / "src" / "rn_forge" / "kiln" / "cli.toml", "cli")
+    declared = _table(ROOT / ".rn-forge" / "kiln" / "config.toml", "cli")
+    assert packaged == declared
+
+
+def test_s4_5_5_packaged_lifecycle_matches_repo_config() -> None:
+    packaged = _table(ROOT / "src" / "rn_forge" / "kiln" / "cli.toml", "lifecycle")
+    declared = _table(ROOT / ".rn-forge" / "kiln" / "config.toml", "lifecycle")
     assert packaged == declared

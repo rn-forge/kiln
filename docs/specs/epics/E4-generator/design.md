@@ -29,7 +29,7 @@ fleet rebuild and its history policy belong to
 rn-forge/kiln/
   docs/                    # the canon: adr/, reference/standard-repo.md, architecture/, runbooks/, specs/
   src/rn_forge/kiln/       # the one distribution, rn-forge-kiln (ADR-0001)
-    main.py cli.toml       # CliApp.from_config over the packaged declaration (ADR-0002); never a hand-built app
+    main.py cli.toml       # build_tool_app over the packaged declaration (ADR-0002); never a hand-built app
     commands.py            # one function per command; F4.5 adds them
     config.py              # KilnConfig: the validated config, typed reads
     checks.py              # the render-free check registry `kiln doctor` runs
@@ -88,7 +88,7 @@ halves added — still `artifacts()` + `checks()` at its core
 | `kiln docs-nav [PATH]` | regenerate `mkdocs.yml`'s nav block; `kiln doctor --only docs-nav` is its check |
 | `kiln diff [<artifact>]` | unified diff of on-disk vs fresh render |
 | `kiln config update` / `kiln config upgrade` | see the config lifecycle |
-| `kiln version`, and the lifecycle verbs via `[cli.lifecycle]` | — |
+| `kiln version`, and the lifecycle verbs under `kiln self`, via `[lifecycle]` | — |
 | `kiln prompt [<name>]` | print a one-time procedure shipped with kiln, or list them; reads and writes nothing ([scope and ownership](#scope-and-ownership)) |
 
 There is no general `adopt` ([scope and ownership](#scope-and-ownership)).

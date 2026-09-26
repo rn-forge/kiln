@@ -24,10 +24,10 @@ with go-task and the pinned interpreter passes all of it.
 
 `src/golden_tool/main.py` constructs nothing. The `[cli]` table in
 `.rn-forge/kiln/config.toml` names the app, its help text and each command's
-import target; `rn_forge.cli.CliApp.from_config` reads that table and returns
-the built Typer application, with the standard `--log-level`, `--log-file`,
-`--quiet` and `--json` flags and the error-to-exit-code mapping already wired
-(kiln ADR-0002).
+import target; `rn_forge.tooling.cli.lifecycle.build_tool_app` reads that table
+and the `[lifecycle]` table beside it and returns the built Typer application,
+with the standard `--log-level`, `--log-file`, `--quiet` and `--json` flags and
+the error-to-exit-code mapping already wired (kiln ADR-0002).
 
 Adding a command is an entry in that table and a function in `commands.py`. The
 escape hatch is open: a repo whose application the declaration cannot describe
