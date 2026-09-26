@@ -22,7 +22,7 @@ story taxonomy, so their scope is named by feature ID rather than story ID.
 | Epic | Features |
 | -- | -- |
 | [E1 — The canon and the hand-authored golden repos](../../specs/epics/E1-canon-and-golden-repos/index.md) | F1.1–F1.5 |
-| [E2 — The layer split lands in the goldens](../../specs/epics/E2-layer-split-and-golden-rename/index.md) | F2.8 and F2.10, kiln's half; F2.1–F2.7 are pykit's, tracked as [upstream work](../../specs/index.md#upstream-work-owned-by-pykit) |
+| [E2 — The layer split lands in the goldens](../../specs/epics/E2-layer-split-and-golden-rename/index.md) | F2.8 and F2.10, kiln's half; F2.1–F2.7 are pykit's, tracked as [upstream work](../../specs/index.md#upstream-pins) |
 
 F2.9 — the pin flip to released tags — was deferred out of this release and is
 now [E7](../../specs/epics/E7-pykit-release-pin-flip/index.md).

@@ -9,7 +9,7 @@ This is what the Phase C review produced
 The executable form of the pykit half lived in pykit's
 `docs/plans/commons-upgrade-plan.md`, at the **"Part D — resume here"** marker;
 pykit's Phase A, Phase C and the pykit steps of C.2 are pykit's own record — see
-[upstream work owned by pykit](../../index.md#upstream-work-owned-by-pykit).
+[upstream work owned by pykit](../../index.md#upstream-pins).
 
 **Order mattered.** Correctness first, because the defects were in the code
 about to be moved; then the split; then the re-layout; then the consumers.

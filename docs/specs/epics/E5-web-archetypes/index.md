@@ -24,19 +24,13 @@ and the thin CLI ([S4.5.1, S4.5.2](../E4-generator/F4.5-cli.md)) — not the who
 of E4. F5.3's scaffold-gate fixes can follow F5.2 immediately; its shipped-cell
 stories need the render matrix (F4.4).
 
-**Upstream.** `rn-forge-fastapi` is implemented in pykit (`3e80dbd`). Its plan's
-Phase 8 acceptance is a *wired application* — problem handlers, a paginated
-route, the health router — which is repo-owned code under `src/**` that kiln
-never renders ([E10](../E10-kiln-generators/index.md)); the owner's first
-`python-web-app` + `fastapi` repo is that proof, not a kiln cell. What does gate
-a web cell's `uv sync` is resolvable pins: `rn-forge-web`, `rn-forge-django` and
-`rn-forge-fastapi` pin `rn-forge-commons-v0.5.0` and `rn-forge-web-v0.1.0`, and
-neither tag exists (checked 2026-09-16; pykit's tags stop at
-`rn-forge-commons-v0.2.2` and `rn-forge-django-v0.2.2`). Until pykit cuts those
-tags, or pins those three packages to `feature/upgrade` as `rn-forge-cli` and
-`rn-forge-tooling` do, S5.1.1's rendered set cannot be synced outside the pykit
-workspace. This is on the
-[board's upstream table](../../index.md#upstream-work-owned-by-pykit).
+**Upstream.** A web cell's `uv sync` needs every pykit package it renders to
+resolve from `feature/upgrade` outside the pykit workspace; that is a pin on
+[the board](../../index.md#upstream-pins), not pykit work tracked here
+([ADR-0009](../../../adr/ADR-0009.md)). The wired FastAPI application — problem
+handlers, a paginated route, the health router — is repo-owned code under
+`src/**` that kiln never renders ([E10](../E10-kiln-generators/index.md)); the
+owner's first `python-web-app` + `fastapi` repo is that proof, not a kiln cell.
 
 **`[codegen]` is not here.** Neither framework package ships the extra yet (both
 have the import fence and nothing behind it). Nothing in E5 renders it; the

@@ -10,11 +10,18 @@ Repo `rn-forge/kiln`, **one distribution**: `rn-forge-kiln` (module
 ([E7](../E7-pykit-release-pin-flip/index.md)).
 
 **Dependencies.** S4.1.4, the checks-shape decision, is done. Every other story
-depends on [E3](../E3-realign-goldens-and-canon/index.md), and S4.5.5 also on
-pykit's lifecycle surface. Features follow the column below, and each ends green
-on `task validate` and its own acceptance block — except that
-[E5](../E5-web-archetypes/index.md)'s F5.1 and F5.2 are built after S4.5.2 and
-before F4.4 ([board](../../index.md#order)).
+depends on [E3](../E3-realign-goldens-and-canon/index.md). Features follow the
+column below, and each ends green on `task validate` and its own acceptance
+block — except that [E5](../E5-web-archetypes/index.md)'s F5.1 and F5.2 are
+built after S4.5.2 and before F4.4, and [E11](../E11-package-docs/index.md)'s
+F11.1–F11.3 before F4.4, whose `python-lib` cell needs `kiln generate package`
+([board](../../index.md#order)).
+
+**Where it stands (2026-09-26).** F4.1 and F4.2 are done. F4.3 is done apart
+from S4.3.6, the owner's Sonar decisions. In F4.5, S4.5.1–S4.5.6 are done, and
+S4.5.7–S4.5.9 are planned; S4.5.9 waits on
+[S5.2.4](../E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md). F4.4 and
+F4.6–F4.8 have not started.
 
 Decisions this epic builds on: [ADR-0001](../../../adr/ADR-0001.md),
 [ADR-0003](../../../adr/ADR-0003.md), [ADR-0004](../../../adr/ADR-0004.md),
@@ -30,14 +37,16 @@ inventory, config lifecycle, module contract — is [design.md](design.md).
 | [F4.1](F4.1-checks-by-module.md) | The checks, organized by module | D.1 | S4.1.4: done; the rest: E3 |
 | [F4.2](F4.2-core-module.md) | The `core` module, the config manager and the module contract | D.2 | F4.1 |
 | [F4.3](F4.3-concern-modules.md) | The concern modules, with templates | D.3 | F4.2; E3 goldens |
-| [F4.4](F4.4-render-matrix.md) | The render matrix, and the goldens leave git | D.4 | F4.3 |
-| [F4.5](F4.5-cli.md) | CLI | D.5 | F4.3; S4.5.5 also pykit's `[lifecycle]` table and `build_tool_app` (`1a8241b`, available) |
+| [F4.4](F4.4-render-matrix.md) | The render matrix, and the goldens leave git | D.4 | F4.3; the `python-lib` cell also S11.3.1 |
+| [F4.5](F4.5-cli.md) | CLI | D.5 | F4.3; S4.5.9 also S5.2.4 |
 | [F4.6](F4.6-doctor.md) | doctor | D.6 | F4.3, S4.5.1 |
 | [F4.7](F4.7-import-contracts.md) | Import contracts | D.7 | F4.3, S4.1.2 |
 | [F4.8](F4.8-self-hosting.md) | Self-hosting | D.8 | F4.4, F4.5, F4.6, F4.7 |
 
-**Out of scope:** `kiln generate package` and framework code generators are
-backlog, [E10](../E10-kiln-generators/index.md).
+**Out of scope:** `kiln generate package` is
+[E11](../E11-package-docs/F11.3-generate-package.md) for `python-lib`, and
+[E10](../E10-kiln-generators/index.md) backlog for the application archetypes
+and framework code generators.
 
 ## Risks
 

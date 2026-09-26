@@ -10,14 +10,15 @@ board says what is next; the epic says how; its ADRs say why.
 
 | Epic | Release | Next step |
 | -- | -- | -- |
-| [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | F4.1–F4.3 and the thin CLI needed by E5 are done. S4.5.5 is unblocked by pykit's `[lifecycle]` (`1a8241b`) and is next. Build S4.5.9 after S5.2.4, then resume at F4.4 and finish F4.5–F4.8, including S4.6.5 ownership alignment |
+| [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | F4.1–F4.3 (apart from S4.3.6's Sonar decisions) and S4.5.1–S4.5.6 are done. Next is S4.5.9, after S5.2.4. Then E11's F11.1–F11.3, then F4.4, and the rest of F4.5–F4.8, including S4.6.5's ownership alignment |
 | [E5 — The web archetypes](epics/E5-web-archetypes/index.md) | [release-2](../releases/release-2/index.md) | FastAPI/Angular scaffolding exists; the owner trial exposed remaining setup and formatting gaps (S5.3.5–S5.3.6). Next is S5.2.4's frontend-module split, staged generation and those fixes before the two FastAPI cells; Django is deferred |
 
 ### Scheduled
 
 | Epic | Release | Next step |
 | -- | -- | -- |
-| [E6 — Rebuild the repos](epics/E6-rebuild-the-repos/index.md) | F6.1 [release-1](../releases/release-1/index.md); F6.2 [release-2](../releases/release-2/index.md) | build the pykit candidate after S5.3.1; cut over after F4.8 |
+| [E11 — Package docs sites](epics/E11-package-docs/index.md) | [release-1](../releases/release-1/index.md); S11.2.4 [release-2](../releases/release-2/index.md) | F11.1's check changes, then the `python-lib` golden (S11.2.1); F11.4 any time |
+| [E6 — Rebuild the repos](epics/E6-rebuild-the-repos/index.md) | F6.1 [release-1](../releases/release-1/index.md); F6.2 [release-2](../releases/release-2/index.md) | prove `python-lib` can host pykit after F11.1–F11.3 |
 
 ### To elaborate
 
@@ -27,10 +28,10 @@ Nothing agreed without stories.
 
 | Epic | Entry criteria |
 | -- | -- |
-| [E7 — pykit releases, and the pin flip](epics/E7-pykit-release-pin-flip/index.md) | the owner declares pykit stable |
+| [E7 — pykit releases, and the pin flip](epics/E7-pykit-release-pin-flip/index.md) | pykit's release-1 tags exist |
 | [E8 — The Azure DevOps CI provider](epics/E8-ado-provider/index.md) | a repo needs `ci.provider = "ado"` |
 | [E9 — The node archetypes](epics/E9-node-archetypes/index.md) | a repo in scope needs the node toolchain |
-| [E10 — kiln generators](epics/E10-kiln-generators/index.md) | release-1 has shipped; to be elaborated |
+| [E10 — kiln generators](epics/E10-kiln-generators/index.md) | release-1 has shipped; to be elaborated (`kiln generate package` for `python-lib` moved to E11) |
 
 Work outside kiln's releases is a standalone plan, not an epic: agent
 configuration and intellibuild — see [plans](../plans/index.md).
@@ -43,36 +44,32 @@ configuration and intellibuild — see [plans](../plans/index.md).
 | [E2 — The layer split lands in the goldens](epics/E2-layer-split-and-golden-rename/index.md) | 2026-09-12 |
 | [E3 — Realign the goldens and the canon](epics/E3-realign-goldens-and-canon/index.md) | 2026-09-15 |
 
-## Upstream work owned by pykit
+## Upstream pins
 
-pykit owns its own spec. What kiln needs from it is handed off in pykit's
-`docs/plans/kiln-dependencies.md`; this table is only what kiln is waiting on.
+What kiln needs from other repositories, stated as what kiln can observe from
+outside them ([ADR-0009](../adr/ADR-0009.md)). Their own plans and status are
+theirs.
 
-| Work | pykit status | Blocks in kiln |
+| Pin | Needed by | Observed |
 | -- | -- | -- |
-| Phase A — stabilize commons Part C | done | — |
-| Phase C — first tooling extraction (`4624bfe`) | done, revised by C.2 | — |
-| Phase C.2, pykit half — defect fixes, the cli/tooling split, re-layout (`f59c40f`) | done | — |
-| Phase C.3 — the tool lifecycle surface (`install/` + `[cli.lifecycle]`, `757908e`) | done; `[cli.lifecycle]` retired by the row below | — |
-| commons Part G — strict pydantic models as the `pydantic` extra | done | — |
-| `rn-forge-fastapi` | implemented (`3e80dbd`); its Phase 8 is a wired app, repo-owned | — |
-| Resolvable web pins: tags `rn-forge-commons-v0.5.0` and `rn-forge-web-v0.1.0`, or `feature/upgrade` pins on web, django and fastapi (pykit F9.7) | planned in pykit (2026-09-25) | [E5](epics/E5-web-archetypes/index.md): `uv sync` of any web cell |
-| Lifecycle composition moves to `rn-forge-tooling`: a `[lifecycle]` table with `namespace`, built by `build_tool_app` (pykit ADR-0005, `1a8241b`) | done (2026-09-22) | — ([S4.5.5](epics/E4-generator/F4.5-cli.md#s455-lifecycle-wiring) adopts it) |
-| Release tags | triggered by the owner | [E7](epics/E7-pykit-release-pin-flip/index.md) |
+| Every pykit package kiln renders resolves from `feature/upgrade` outside the pykit workspace | [E5](epics/E5-web-archetypes/index.md): `uv sync` of any web cell | not yet (2026-09-26): a web cell's `uv sync` does not resolve |
+| pykit's release-1 tags exist | [E7](epics/E7-pykit-release-pin-flip/index.md) | not yet |
+| pykit's default branch publishes versioned package sites under `https://rn-forge.github.io/pykit/packages/` | [S11.2.4](epics/E11-package-docs/F11.2-python-lib-package-sites.md#s1124-ci-deploys-versioned-package-sites) | not yet |
 
 ## Order
 
 ```text
-done:  E1 ─→ E2 ─→ E3 ─→ F4.1 ─→ F4.2 ─→ S4.3.1–S4.3.5        (pykit: A ─→ C ─→ C.2 ─→ C.3)
+done:  E1 ─→ E2 ─→ E3 ─→ F4.1 ─→ F4.2 ─→ S4.3.1–S4.3.5 ─→ S4.5.1–S4.5.6
 done:  F5.1 ─→ F5.2 fastapi ─→ S5.3.1 fresh-repo gate fixes
        (Django S5.2.3 deferred; live sync still needs resolvable pykit pins)
-now:   S4.5.5 lifecycle under `kiln self` · S5.2.4 frontend module ─→ S4.5.9 staged `new`
+now:   S5.2.4 frontend module ─→ S4.5.9 staged `new`
 then:  S5.3.5–S5.3.6 owner-trial fixes (before shipped-cell proofs)
-       F4.4 matrix (goldens leave git) ─┬─→ S5.3.2–S5.3.4 ─→ E5 done
-       S5.3.1 ─→ S6.1.1 pykit candidate │
-       S4.5.3–S4.5.7 ─→ F4.6 doctor ────┼─→ F4.8 self-host ─→ S6.1.2 pykit cutover
-       F4.7 contracts ──────────────────┘   F6.2 retire taskkit (after S4.6.2, S5.2.2)
-triggered: E7 pykit releases (owner) · E8 ADO · backlog: E10 generators
+       F11.1 checks ─→ F11.2 python-lib package sites ─→ F11.3 generate package   (F11.4 any time)
+       F4.4 matrix (goldens leave git; python-lib cell needs S11.3.1) ─┬─→ S5.3.2–S5.3.4 ─→ E5 done
+       S5.3.1 + F11.1–F11.3 ─→ S6.1.1 python-lib hosts pykit          │
+       S4.5.3–S4.5.7 ─→ F4.6 doctor ──────────────────────────────────┼─→ F4.8 self-host
+       F4.7 contracts ────────────────────────────────────────────────┘   F6.2 retire taskkit (after S4.6.2, S5.2.2)
+triggered: E7 pykit tags · E8 ADO · S11.2.4 package-site deploy · backlog: E10 generators
 ```
 
 E3 shipped on 2026-09-15: every feature's acceptance block passes, S3.3.2's

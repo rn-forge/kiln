@@ -10,7 +10,7 @@
   and F5.2 need neither the render matrix nor self-hosting.
 - `rn-forge-fastapi` is implemented in pykit; what remains upstream is
   resolvable pins for the web packages
-  ([board](../../specs/index.md#upstream-work-owned-by-pykit)).
+  ([board](../../specs/index.md#upstream-pins)).
 - Django is deferred for both web archetypes; FastAPI is the default and the
   only shipped backend ([ADR-0005](../../adr/ADR-0005.md)).
 
@@ -20,6 +20,7 @@
 | -- | -- |
 | [E5 — The web archetypes](../../specs/epics/E5-web-archetypes/index.md) | [S5.1.1–S5.1.3](../../specs/epics/E5-web-archetypes/F5.1-web-library-sets-and-modules.md), [S5.2.1–S5.2.2 and S5.2.4](../../specs/epics/E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md), [S5.3.1–S5.3.6](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) |
 | [E6 — Rebuild the repos](../../specs/epics/E6-rebuild-the-repos/index.md) | [S6.2.1](../../specs/epics/E6-rebuild-the-repos/F6.2-retire-taskkit.md) |
+| [E11 — Package docs sites](../../specs/epics/E11-package-docs/index.md) | [S11.2.4](../../specs/epics/E11-package-docs/F11.2-python-lib-package-sites.md#s1124-ci-deploys-versioned-package-sites), once its entry criterion holds |
 
 ## Exit criteria
 

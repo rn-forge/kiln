@@ -56,20 +56,20 @@ configuration ([plan](agent-config-future.md)). Parked: `rn-tools/apollo`,
 | §2.5.2 config schema | already covered by [reference §9](../reference/standard-repo.md#9-configuration) |
 | §2.6 archetypes, goldens, docs profile | [archetype catalogue](../reference/standard-repo.md#archetype-catalogue); [F4.4 render matrix](../specs/epics/E4-generator/F4.4-render-matrix.md); template inventory in [E4 design](../specs/epics/E4-generator/design.md#template-inventory) |
 | §2.7 no docs migration | [Scope and ownership](../specs/epics/E4-generator/design.md#scope-and-ownership); the doctor note in [E4 design](../specs/epics/E4-generator/design.md#doctor-checks) |
-| §2.8 pykit Part D and tooling extraction | pykit handoff (`rn-forge/pykit: docs/plans/kiln-dependencies.md`) |
-| §2.9 tool lifecycle surface | [ADR-0005](../adr/ADR-0005.md); mechanism in the pykit handoff |
+| §2.8 pykit Part D and tooling extraction | pykit's retired handoff: pykit deleted it on 2026-09-26, and its original is `git show 12da7f3:docs/plans/kiln-dependencies.md` in pykit ([ADR-0009](../adr/ADR-0009.md)) |
+| §2.9 tool lifecycle surface | [ADR-0005](../adr/ADR-0005.md); the mechanism was in pykit's retired handoff (§2.8 row); the current `ToolProduct` contract is pykit's tooling lifecycle guide |
 | §2.10 the canon inside kiln | already covered by [the ADR log's intro](../adr/index.md) and [the reference](../reference/standard-repo.md); its revision-6 ADR numbering table is historical and dropped |
-| §2.11 package layout of the three libraries | pykit handoff |
-| §3 Phase A, Phase C, Phase C.3 | pykit handoff; summarized on [the board](../specs/index.md#upstream-work-owned-by-pykit) |
+| §2.11 package layout of the three libraries | pykit's retired handoff (§2.8 row) |
+| §3 Phase A, Phase C, Phase C.3 | pykit's retired handoff (§2.8 row); what kiln still needs is [the board's pins](../specs/index.md#upstream-pins) |
 | §3 Phase B | [E1](../specs/epics/E1-canon-and-golden-repos/index.md) |
-| §3 Phase C.2 | [E2](../specs/epics/E2-layer-split-and-golden-rename/index.md) (kiln half) + pykit handoff |
+| §3 Phase C.2 | [E2](../specs/epics/E2-layer-split-and-golden-rename/index.md) (kiln half) + pykit's retired handoff (§2.8 row) |
 | §3 Phase C.4 | [E3](../specs/epics/E3-realign-goldens-and-canon/index.md) |
 | §3 Phase D (D.1–D.8) | [E4](../specs/epics/E4-generator/index.md), F4.1–F4.8 |
 | §3 Phase E | [E5](../specs/epics/E5-web-archetypes/index.md) |
 | §3 Phase F | [E6](../specs/epics/E6-rebuild-the-repos/index.md) |
 | §3 Phase G | [E4 design, steady state](../specs/epics/E4-generator/design.md#steady-state-after-release-1); triggered items [E7](../specs/epics/E7-pykit-release-pin-flip/index.md), [E8](../specs/epics/E8-ado-provider/index.md) |
 | §3 critical path | [specs/index.md](../specs/index.md#order) |
-| §4 risks | E1 (goldens reviewed lightly), E4 (god-kit, unreviewed templates, engine first, interactive CLI, drift), ADR-0005, E10 (codegen leak), agent-config plan (agent tool), F6.2 (taskkit sunk work), pykit handoff (C.3 growth) |
+| §4 risks | E1 (goldens reviewed lightly), E4 (god-kit, unreviewed templates, engine first, interactive CLI, drift), ADR-0005, E10 (codegen leak), agent-config plan (agent tool), F6.2 (taskkit sunk work), pykit's retired handoff (C.3 growth) |
 | §5 decision log | §2.2 |
 | §6 open questions | §2.3 |
 | §7 revision history, rejected list | §9, §10 |
@@ -132,8 +132,8 @@ configuration ([plan](agent-config-future.md)). Parked: `rn-tools/apollo`,
 | D52 | three library layers | [workspace graph](../architecture/workspace.md#the-graphs) |
 | D53 | seven archetypes | [archetype catalogue](../reference/standard-repo.md#archetype-catalogue) |
 | D54 | a flag selects a library only; every shipped value has a golden | [ADR-0005](../adr/ADR-0005.md); [F4.4 render matrix](../specs/epics/E4-generator/F4.4-render-matrix.md) |
-| D55 | sub-packages by kind of mechanism | pykit handoff |
-| D56 | kiln generates repo structure; frameworks generate code | [ADR-0001](../adr/ADR-0001.md); backlog [E10](../specs/epics/E10-kiln-generators/index.md). **Rescheduled:** D56 put `kiln generate package` in Phase D, but E10 defers it until after release-1. The scope is unchanged and the timing is not. |
+| D55 | sub-packages by kind of mechanism | pykit's retired handoff (§2.8 row) |
+| D56 | kiln generates repo structure; frameworks generate code | [ADR-0001](../adr/ADR-0001.md); backlog [E10](../specs/epics/E10-kiln-generators/index.md). **Rescheduled twice:** D56 put `kiln generate package` in Phase D, and E10 deferred it until after release-1. On 2026-09-26 its `python-lib` half moved back into release-1 as [F11.3](../specs/epics/E11-package-docs/F11.3-generate-package.md), because a `python-lib` repository now starts with no packages ([ADR-0008](../adr/ADR-0008.md)). |
 | D57 | README is the single prose home | [ADR-0003](../adr/ADR-0003.md) |
 | D58 | kiln seeds the instruction files and invokes nothing | [ownership specification](../reference/standard-repo.md#2-one-owner-per-file-or-per-block) |
 | D59 | lifecycle surface built in tooling | [shared CLI design](../specs/epics/E3-realign-goldens-and-canon/index.md#shared-cli-design) |

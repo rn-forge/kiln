@@ -4,19 +4,19 @@
 [release-1](../../../releases/release-1/index.md); F6.2 in
 [release-2](../../../releases/release-2/index.md) · **Phase:** F
 
-Per repo: `kiln new` into a fresh directory, port source and docs by hand,
-`kiln doctor` and `task validate` green, then the fresh tree replaces the repo's
-working tree on a branch. History before the replacement is not preserved. These
-pre-v1 rebuilds carry forward decisions, specs, tests and fixtures as prior art
-rather than preserving old scaffolding or building a general migration engine.
-pykit's package source is retained across its package split;
-[F6.1](F6.1-pykit-skeleton.md) replaces its repository skeleton.
+Each repository's cutover onto kiln is that repository's own work, accepted by
+its own specs ([ADR-0009](../../../adr/ADR-0009.md)). kiln's part is to prove,
+inside kiln, that an archetype can host the repository: for pykit, a
+pykit-shaped `python-lib` repository built in a scratch directory
+([F6.1](F6.1-pykit-skeleton.md)). Retiring taskkit
+([F6.2](F6.2-retire-taskkit.md)) is kiln's because taskkit's job moves into
+kiln.
 
 ## Features
 
 | ID | Feature | Depends on |
 | -- | -- | -- |
-| [F6.1](F6.1-pykit-skeleton.md) | Prove, then replace pykit's `python-lib` skeleton | S6.1.1 on S5.3.1; S6.1.2 on E4 (F4.8) |
+| [F6.1](F6.1-pykit-skeleton.md) | `python-lib` can host pykit | S5.3.1; E11's F11.1–F11.3 |
 | [F6.2](F6.2-retire-taskkit.md) | Retire taskkit | S4.6.2, S5.2.2 |
 
 **Out of scope here:** kiln itself is already self-hosted by
@@ -28,12 +28,15 @@ when it returns it is `kiln new` + port (D40, open question 10).
 ## Acceptance
 
 E6 is done when every feature's acceptance block passes. This block re-proves
-the rebuilt repos together afterwards.
+the pykit-shaped repository and kiln together afterwards.
 
 ```bash
 set -euo pipefail
-kiln doctor --all rn-forge/pykit rn-forge/kiln --json | jq -e '.summary.repos == 2 and .summary.errors == 0'
-for r in rn-forge/pykit rn-forge/kiln; do
-  (cd "$r" && task validate && uv run lint-imports) || { echo "FAIL $r" >&2; exit 1; }
-done
+cd rn-forge/kiln
+s=$(mktemp -d)
+tests/e2e/pykit_shape.sh "$s/pykit-shape" "$PWD"
+(cd "$s/pykit-shape" && uv sync && task validate)
+uv run kiln doctor --all "$s/pykit-shape" . --json | jq -e '.summary.repos == 2 and .summary.errors == 0'
+task validate
+uv run lint-imports
 ```

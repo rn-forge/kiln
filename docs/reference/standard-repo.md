@@ -193,7 +193,7 @@ into a built wheel, so a consumer of a published package could not resolve the
 dependency at all. An `[tool.uv.sources]` entry for an rn-forge package is
 rejected outright.
 
-**Until the owner declares pykit stable, repos consume it from its branch**
+**Until pykit's release-1 tags exist, repos consume it from its branch**
 ([E7](../specs/epics/E7-pykit-release-pin-flip/index.md)). The dependency source
 is a value every template renders from config: `git` + ref (the default,
 CI-capable) or `path` (local only). The checker accepts a branch or path source

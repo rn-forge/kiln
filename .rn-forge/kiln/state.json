@@ -184,7 +184,7 @@
     },
     "mkdocs.yml#generated nav": {
       "begin_marker": "# BEGIN generated nav",
-      "content_hash": "fd37d8a3cf3c6820cc384345ef71b9854fe689154466acbebb120f93837b7486",
+      "content_hash": "8f5fde56675fe105c95fd59dcfe58f734e80765af4c39b89a22aa0df9bcbd4cf",
       "end_marker": "# END generated nav",
       "kind": "block",
       "path": "mkdocs.yml"

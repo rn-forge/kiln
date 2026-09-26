@@ -7,12 +7,14 @@ elaboration.
 
 ## Scope, as known today
 
-- **`kiln generate package <name>`** — add a package to a workspace. It emits
-  repo structure kiln already owns (D56), so it is kiln's to build.
-  **Rescheduled:** D56 put this in Phase D, which is now E4 and release-1. The
-  move to the spec tree deferred it to this backlog epic, because release-1
-  ships no `generate` command surface for it to hang on. The scope did not
-  change; only the timing did.
+- **`kiln generate package <name>` for the application archetypes** — adding an
+  internal package to a `python-app` or `python-tool` workspace. D56 put the
+  whole command in Phase D, and this epic deferred it until after release-1.
+  On 2026-09-26 its `python-lib` half moved back into release-1 as
+  [F11.3](../E11-package-docs/F11.3-generate-package.md), because a
+  `python-lib` repository now starts with no packages
+  ([ADR-0008](../../../adr/ADR-0008.md)). What stays here is the internal
+  package: no docs site, no `[project.urls]`, and no remote needed.
 - **Framework code generators** — `kiln generate django app billing` and the
   like. The generators themselves ship as `[codegen]` extras of their runtime
   package, in a subpackage the runtime surface never imports, registered under

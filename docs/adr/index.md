@@ -20,3 +20,5 @@ it generates.
 | [0005](ADR-0005.md) | Archetypes define topology; flags form independent dimensions | the archetype catalogue |
 | [0006](ADR-0006.md) | Commit generated CI, and run the pinned kiln read-only | CI in generated repositories |
 | [0007](ADR-0007.md) | Compose a declared public task vocabulary from modules | the task surface |
+| [0008](ADR-0008.md) | Only published packages get their own docs site | the docs layout of Python repositories |
+| [0009](ADR-0009.md) | A repository's specs are accepted inside that repository | every repository's specs |

@@ -4,7 +4,8 @@
 deferred C.2 step 9
 ([F2.9](../E2-layer-split-and-golden-rename/index.md#f29-as-it-stood-when-deferred))
 
-**Entry criteria:** the owner declares pykit stable.
+**Entry criteria:** pykit's release-1 tags exist. Cutting them, and their order,
+is pykit's work ([ADR-0009](../../../adr/ADR-0009.md)).
 
 Until then, dependencies use `feature/upgrade`, with resolved commits recorded
 in lockfiles. This lets integration fixes land without cutting a new library
@@ -14,8 +15,6 @@ pin alignment.
 
 ## Scope
 
-1. Cut the tags in the order commons → cli → tooling → web → django/fastapi
-   (pykit's commons plan D.8).
 1. Tag an `rn-forge-kiln` release; each repo moves its kiln pin with
    `kiln upgrade` ([ADR-0006](../../../adr/ADR-0006.md)).
 1. Flip the rn-forge source value in kiln's defaults from branch to tag.

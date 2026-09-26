@@ -57,6 +57,15 @@
 
 - Each line is an observable result, and the tests that prove a story belong in
   its acceptance, not in a story of their own.
+- Every acceptance line is checkable inside this repository. When acceptance
+  needs a host, such as an application or a library workspace, a test builds
+  one in a temporary directory.
+- A dependency on another repository is a version pin, plus at most an entry
+  criterion that can be observed from outside it ("pykit's release-1 tags
+  exist"). Another repository's stories, IDs and internal status are not
+  restated.
+- No page here is written for another repository to cite by path, and none cites
+  another repository's pages. These docs describe only this repository.
 - A decision the work needs is its own story, so other work can depend on the
   decision without depending on its implementation.
 - The feature's `## Acceptance` block exercises every story, each line tagged

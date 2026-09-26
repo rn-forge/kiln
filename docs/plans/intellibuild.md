@@ -17,8 +17,7 @@ intellibench is a donor, never an adopt target.
 decided 2026-09-12 (was open question 16). It carries a separately built
 frontend package, which is what separates it from `python-web-api`
 ([ADR-0005](../adr/ADR-0005.md)). pykit's `fastapi-library-plan.md` and its plan
-index still say `python-web-api`; they need aligning, and kiln's pykit handoff
-says so.
+index still say `python-web-api`; they need aligning.
 
 ## Prerequisites
 
