@@ -111,6 +111,7 @@ def test_s4_2_1_every_shipped_module_registers_without_a_collision() -> None:
     assert [module.name for module in builtin().modules] == [
         "core",
         "python",
+        "frontend",
         "docs",
         "tasks",
         "cicd",

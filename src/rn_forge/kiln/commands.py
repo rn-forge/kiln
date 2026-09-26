@@ -33,6 +33,7 @@ from rn_forge.kiln.modules.core.config.manager import ConfigManager
 from rn_forge.kiln.modules.core.config.sources import Source
 from rn_forge.kiln.modules.docs.nav import update_nav
 from rn_forge.kiln.modules.docs.scaffold import scaffold as docs_scaffold
+from rn_forge.kiln.modules.frontend.scaffold import scaffold_frontend
 from rn_forge.kiln.modules.instructions.scaffold import (
     scaffold as instructions_scaffold,
 )
@@ -153,6 +154,7 @@ def new(
     _write_config(directory, resolved)
 
     python_scaffold(directory, resolved)
+    scaffold_frontend(directory, resolved)
     docs_scaffold(directory, resolved)
     instructions_scaffold(directory, resolved)
 

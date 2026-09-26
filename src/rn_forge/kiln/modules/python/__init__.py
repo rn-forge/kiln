@@ -33,11 +33,6 @@ class PythonModule:
                 "archetype.<archetype>.backend",
                 "The backend framework: fastapi or django (web archetypes only).",
             ),
-            Option(
-                "frontend",
-                "archetype.<archetype>.frontend",
-                "The frontend: angular, react or svelte (python-web-app only).",
-            ),
         )
 
     def artifacts(self, config: KilnConfig, root: Path) -> Sequence[Artifact]:

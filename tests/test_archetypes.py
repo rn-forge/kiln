@@ -49,14 +49,10 @@ def test_s4_2_1_every_python_archetype_is_shipped() -> None:
 def test_s4_2_1_every_python_archetype_manifest_loads(name: str) -> None:
     archetype = archetypes.load(name)
     assert archetype.name == name
-    assert archetype.modules == [
-        "core",
-        "python",
-        "docs",
-        "tasks",
-        "cicd",
-        "instructions",
-    ]
+    expected = ["core", "python"]
+    if name == "python-web-app":
+        expected.append("frontend")
+    assert archetype.modules == [*expected, "docs", "tasks", "cicd", "instructions"]
     assert "rn-forge-commons" in archetype.dependencies.required
     assert set(archetype.dependencies.required) <= set(archetype.dependencies.allowed)
     assert "kiln" in archetype.forbidden_tools

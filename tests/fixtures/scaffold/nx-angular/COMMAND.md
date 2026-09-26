@@ -1,7 +1,7 @@
 # How this fixture was captured
 
 **Date:** 2026-09-17 · **`create-nx-workspace` version:** 23.2.1
-(`NX_VERSION` in `modules/python/frontend.py`)
+(`NX_VERSION` in `modules/frontend/angular.py`)
 
 The story's planned one-liner —
 

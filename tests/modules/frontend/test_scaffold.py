@@ -9,6 +9,7 @@ already holds a `python-web-app` scaffold.
 from __future__ import annotations
 
 import shutil
+from unittest import mock
 from pathlib import Path
 
 import pytest
@@ -17,8 +18,12 @@ from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import DocumentUtils
 
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.registry import builtin
 from rn_forge.kiln.modules.python.artifacts import render
-from rn_forge.kiln.modules.python.frontend import reconcile_frontend
+from rn_forge.kiln.modules.frontend.scaffold import (
+    reconcile_frontend,
+    scaffold_frontend,
+)
 from rn_forge.kiln.modules.python.scaffold import scaffold
 
 FIXTURE = Path(__file__).parents[2] / "fixtures" / "scaffold" / "nx-angular"
@@ -32,22 +37,19 @@ archetype = "python-web-app"
 
 [archetype."python-web-app"]
 backend = "fastapi"
-frontend = "angular"
+frontend = "{frontend}"
 {extra}
 """
 
 
-def _root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, extra: str = "") -> Path:
-    """A root with the `python`/uv side of a `python-web-app` scaffold already
-    done, `scaffold_frontend` stubbed out so the setup itself never runs
-    `pnpm`."""
-    monkeypatch.setattr(
-        "rn_forge.kiln.modules.python.scaffold.scaffold_frontend", lambda *a: None
-    )
+def _root(tmp_path: Path, *, extra: str = "", frontend: str = "angular") -> Path:
+    """A root with the `python`/uv side of a `python-web-app` scaffold done."""
     root = tmp_path / "root"
     config = root / ".rn-forge" / "kiln" / "config.toml"
     config.parent.mkdir(parents=True)
-    config.write_text(WEB_CONFIG.format(extra=extra), encoding="utf-8")
+    config.write_text(
+        WEB_CONFIG.format(extra=extra, frontend=frontend), encoding="utf-8"
+    )
     scaffold(root, KilnConfig.load(root))
     return root
 
@@ -58,10 +60,8 @@ def _workspace(tmp_path: Path) -> Path:
     return workspace
 
 
-def test_s5_2_1_reconcile_moves_fixture_into_root(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    root = _root(tmp_path, monkeypatch)
+def test_s5_2_1_reconcile_moves_fixture_into_root(tmp_path: Path) -> None:
+    root = _root(tmp_path)
     workspace = _workspace(tmp_path)
     config = KilnConfig.load(root)
 
@@ -73,10 +73,8 @@ def test_s5_2_1_reconcile_moves_fixture_into_root(
     assert not (root / "workspace").exists()
 
 
-def test_s5_2_1_reconcile_appends_scaffolder_gitignore(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    root = _root(tmp_path, monkeypatch)
+def test_s5_2_1_reconcile_appends_scaffolder_gitignore(tmp_path: Path) -> None:
+    root = _root(tmp_path)
     workspace = _workspace(tmp_path)
     fixture_gitignore = (workspace / ".gitignore").read_text(encoding="utf-8")
     config = KilnConfig.load(root)
@@ -90,9 +88,9 @@ def test_s5_2_1_reconcile_appends_scaffolder_gitignore(
 
 
 def test_s5_2_1_reconcile_renames_web_dir_and_rewrites_project_json(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
 ) -> None:
-    root = _root(tmp_path, monkeypatch, extra='web_dir = "apps/frontend"')
+    root = _root(tmp_path, extra='web_dir = "apps/frontend"')
     workspace = _workspace(tmp_path)
     config = KilnConfig.load(root)
 
@@ -105,9 +103,9 @@ def test_s5_2_1_reconcile_renames_web_dir_and_rewrites_project_json(
 
 
 def test_s5_2_1_reconcile_refuses_a_root_that_already_holds_readme(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
 ) -> None:
-    root = _root(tmp_path, monkeypatch)
+    root = _root(tmp_path)
     (root / "README.md").write_text("existing\n", encoding="utf-8")
     workspace = _workspace(tmp_path)
     config = KilnConfig.load(root)
@@ -116,11 +114,32 @@ def test_s5_2_1_reconcile_refuses_a_root_that_already_holds_readme(
         reconcile_frontend(root, workspace, config)
 
 
-def test_s5_2_1_no_kiln_artifact_lies_under_web_dir(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    root = _root(tmp_path, monkeypatch)
+def test_s5_2_1_no_kiln_artifact_lies_under_web_dir(tmp_path: Path) -> None:
+    root = _root(tmp_path)
     config = KilnConfig.load(root)
 
     for artifact in render(config):
         assert not artifact.key.startswith("apps/web")
+
+
+def test_s5_2_4_dispatch_rejects_a_frontend_with_no_scaffolder(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path, frontend="react")
+    config = KilnConfig.load(root)
+
+    with mock.patch("rn_forge.commons.runtime.subprocess.Process.execute") as run:
+        with pytest.raises(AppException, match="react"):
+            scaffold_frontend(root, config)
+
+    run.assert_not_called()
+
+
+def test_s5_2_4_frontend_module_owns_the_frontend_option() -> None:
+    registry = builtin()
+    owners = [
+        m.name
+        for m in registry.modules
+        if any(o.flag == "frontend" for o in m.options())
+    ]
+    assert owners == ["frontend"]

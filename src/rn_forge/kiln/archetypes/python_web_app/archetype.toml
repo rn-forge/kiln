@@ -1,7 +1,7 @@
 # The python-web-app archetype (kiln ADR-0005): a uv workspace API plus a
 # pnpm-managed Nx frontend workspace.
 name = "python-web-app"
-modules = ["core", "python", "docs", "tasks", "cicd", "instructions"]
+modules = ["core", "python", "frontend", "docs", "tasks", "cicd", "instructions"]
 # kiln itself is on the list: CI reaches it only through a committed `task` entrypoint.
 forbidden_tools = [
   "uv",

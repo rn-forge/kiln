@@ -1,37 +1,35 @@
 """S5.2.1 — the frontend scaffolder, and reconciling its output into the repo.
 
 `scaffold_frontend` is the one part of kiln that runs someone else's
-generator: a pinned `create-nx-workspace` + `@nx/angular:application` sequence
-into a scratch directory, `reconcile_frontend` folds every top-level entry it
+generator: it dispatches on `config.frontend` to that frontend's scaffolder
+(`angular.py`), which builds a workspace in a scratch directory, and
+`reconcile_frontend` folds every top-level entry it
 wrote into the repo at `config.web_dir`. Every file the frontend scaffolder
 writes is repo-owned; kiln templates nothing under `web_dir` (F5.1's design).
 
-`--frontend` values other than `angular` never reach here: `kiln new` refuses
-them as untested before scaffolding starts.
+`--frontend` values other than `angular` normally never reach here: `kiln new`
+refuses them as untested before scaffolding starts. One that does is rejected
+before any subprocess runs.
 """
 
 from __future__ import annotations
 
-import os
 import shutil
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import DocumentUtils
-from rn_forge.commons.runtime.subprocess import Process
 
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.frontend.angular import SCAFFOLD_APP_DIR, scaffold_angular
 
 __all__ = ["reconcile_frontend", "scaffold_frontend"]
 
-NX_VERSION = "23.2.1"
-"""`create-nx-workspace`/`@nx/angular`'s pinned release (recorded 2026-09-17,
-`tests/fixtures/scaffold/nx-angular/COMMAND.md`)."""
-
-_SCAFFOLD_APP_DIR = "apps/web"
-"""Where the pinned command always creates the app; renamed to `web_dir` by
-`reconcile_frontend` when a repo's `web_dir` differs."""
+_SCAFFOLDERS: dict[str, Callable[[Path], Path]] = {"angular": scaffold_angular}
+"""Each implemented frontend: it scaffolds into a scratch directory and returns
+the finished workspace."""
 
 _EXCLUDED_TOP_LEVEL = {".git", "node_modules", ".nx"}
 
@@ -46,92 +44,30 @@ into root would only have `apply` reject it as an unapproved conflict once it
 tries to write its own; dropping it here is a no-op, since `apply` writes the
 real one right after."""
 
-_ALLOW_BUILDS = ("@parcel/watcher", "esbuild", "lmdb", "msgpackr-extract")
-"""Native build scripts pnpm 12 blocks by default (`ERR_PNPM_IGNORED_BUILDS`);
-`create-nx-workspace` stamps `pnpm-workspace.yaml` with an `allowBuilds` stub
-naming exactly these the first time an install is blocked on them."""
-
-_AGENT_ENV_VARS = ("CLAUDECODE", "OPENCODE", "CLAUDE_CODE_ENTRYPOINT")
-"""Unset before scaffolding: their presence reroutes `create-nx-workspace` to
-its AI-agent template flow, which ignores `--appName` (COMMAND.md)."""
-
 
 def scaffold_frontend(root: Path, config: KilnConfig) -> None:
-    """Scaffold the Nx/Angular frontend into *root* at `config.web_dir`.
+    """Scaffold the selected frontend into *root* at `config.web_dir`.
 
     Returns at once unless `config.archetype == "python-web-app"`.
 
     Raises:
-        AppException: a scaffold command is not on `PATH`, `pnpm install`
-            fails after builds are approved, or the reconcile finds a
-            conflicting root file.
+        AppException: the frontend has no scaffolder, a scaffold command is
+            not on `PATH`, `pnpm install` fails after builds are approved, or
+            the reconcile finds a conflicting root file.
     """
     if config.archetype != "python-web-app":
         return
 
-    env = {k: v for k, v in os.environ.items() if k not in _AGENT_ENV_VARS}
+    scaffolder = _SCAFFOLDERS.get(config.frontend or "")
+    if scaffolder is None:
+        raise AppException(
+            "no scaffolder for frontend {!r}; kiln implements {}",
+            config.frontend,
+            ", ".join(sorted(_SCAFFOLDERS)),
+        )
+
     with tempfile.TemporaryDirectory() as tmp:
-        tmp_path = Path(tmp)
-        Process.execute(
-            "nx-workspace",
-            "pnpm",
-            "dlx",
-            f"create-nx-workspace@{NX_VERSION}",
-            "workspace",
-            "--preset=apps",
-            "--packageManager=pnpm",
-            "--nxCloud=skip",
-            "--ci=skip",
-            "--interactive=false",
-            "--skipGit",
-            cwd=str(tmp_path),
-            env=env,
-        )
-        workspace = tmp_path / "workspace"
-        Process.execute(
-            "nx-angular-plugin",
-            "pnpm",
-            "add",
-            "-D",
-            f"@nx/angular@{NX_VERSION}",
-            cwd=str(workspace),
-            env=env,
-        )
-        # This step's own `pnpm install` is expected to fail here: it is the
-        # first time pnpm sees the native builds below, and it stamps
-        # `pnpm-workspace.yaml` with the `allowBuilds` stub this approves
-        # before installing for real (COMMAND.md).
-        Process.execute(
-            "nx-angular-app",
-            "pnpm",
-            "nx",
-            "g",
-            "@nx/angular:application",
-            _SCAFFOLD_APP_DIR,
-            "--name=web",
-            "--style=scss",
-            "--bundler=esbuild",
-            "--ssr=false",
-            "--e2eTestRunner=none",
-            "--unitTestRunner=vitest-angular",
-            "--standalone=true",
-            "--routing=true",
-            "--linter=eslint",
-            "--interactive=false",
-            cwd=str(workspace),
-            env=env,
-            fail_on_error=False,
-        )
-        _approve_pnpm_builds(workspace / "pnpm-workspace.yaml")
-        Process.execute("nx-install", "pnpm", "install", cwd=str(workspace), env=env)
-
-        reconcile_frontend(root, workspace, config)
-
-
-def _approve_pnpm_builds(path: Path) -> None:
-    if not path.is_file():
-        return
-    DocumentUtils.update(path, {"allowBuilds": dict.fromkeys(_ALLOW_BUILDS, True)})
+        reconcile_frontend(root, scaffolder(Path(tmp)), config)
 
 
 def reconcile_frontend(root: Path, workspace: Path, config: KilnConfig) -> None:
@@ -154,7 +90,7 @@ def reconcile_frontend(root: Path, workspace: Path, config: KilnConfig) -> None:
         AppException: a file *workspace* would move already exists at that
             same path under *root*, naming it.
     """
-    web_dir = config.web_dir or _SCAFFOLD_APP_DIR
+    web_dir = config.web_dir or SCAFFOLD_APP_DIR
 
     entries = [
         p
@@ -179,8 +115,8 @@ def reconcile_frontend(root: Path, workspace: Path, config: KilnConfig) -> None:
             continue
         _move_or_merge(entry, root / entry.name)
 
-    if web_dir != _SCAFFOLD_APP_DIR:
-        shutil.move(str(root / _SCAFFOLD_APP_DIR), str(root / web_dir))
+    if web_dir != SCAFFOLD_APP_DIR:
+        shutil.move(str(root / SCAFFOLD_APP_DIR), str(root / web_dir))
         _rewrite_app_dir(root, web_dir)
 
 
@@ -223,7 +159,7 @@ def _rewrite_app_dir(root: Path, web_dir: str) -> None:
         return
     tsconfig = DocumentUtils.read(tsconfig_path)
     paths = tsconfig.get("compilerOptions", {}).get("paths", {})
-    old_prefix = f"{_SCAFFOLD_APP_DIR}/"
+    old_prefix = f"{SCAFFOLD_APP_DIR}/"
     new_prefix = f"{web_dir}/"
     changed = False
     for key, values in paths.items():
