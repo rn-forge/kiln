@@ -7,7 +7,9 @@ marks none of its own `uv init` tests either, so none are marked here.
 
 from __future__ import annotations
 
+import inspect
 import json
+import subprocess
 import tomllib
 from pathlib import Path
 from typing import Any
@@ -19,6 +21,12 @@ from rn_forge.commons.runtime.console import OutputMode, console
 
 from rn_forge.kiln import archetypes, checks, commands
 from rn_forge.kiln.modules.registry import builtin
+
+
+@pytest.fixture(autouse=True)
+def _in_tmp_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`kiln new` stages beneath the current directory; keep that out of the repo."""
+    monkeypatch.chdir(tmp_path)
 
 
 @pytest.fixture(autouse=True)
@@ -256,3 +264,96 @@ def test_s4_5_1_config_layer_merges_beneath_flags_and_records_source(
     )
     assert written["ci"]["sonar"] is False
     assert written["source"]["location"] == str(layer_dir)
+
+
+def _hashes(root: Path) -> dict[str, bytes]:
+    return {
+        str(p.relative_to(root)): p.read_bytes()
+        for p in sorted(root.rglob("*"))
+        if p.is_file()
+    }
+
+
+def test_s4_5_9_1_success_retains_staging_and_target_equals_workspace(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "out" / "demo"
+    commands.new(target, archetype="python-tool", docs="none", yes=True)
+
+    run = tmp_path / ".staging" / "demo"
+    assert all((run / part).is_dir() for part in ("backend", "frontend", "workspace"))
+    assert (run / "backend" / "pyproject.toml").is_file()
+    assert _hashes(run / "workspace") == _hashes(target)
+    assert (tmp_path / ".staging" / ".gitignore").read_text(encoding="utf-8") == "*\n"
+
+
+def test_s4_5_9_2_workspace_holds_only_reconciled_files(tmp_path: Path) -> None:
+    commands.new(tmp_path / "demo", archetype="python-tool", docs="none", yes=True)
+
+    run = tmp_path / ".staging" / "demo"
+    raw = (run / "backend" / "pyproject.toml").read_text(encoding="utf-8")
+    assembled = (run / "workspace" / "pyproject.toml").read_text(encoding="utf-8")
+    assert raw != assembled
+    assert "[tool.pyright]" in assembled
+    assert "[tool.pyright]" not in raw
+    assert not (run / "backend" / ".rn-forge").exists()
+    assert not (run / "backend" / "README.md").exists()
+
+
+def test_s4_5_9_3_staging_is_ignored_inside_a_git_worktree(tmp_path: Path) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    commands.new(tmp_path / "demo", archetype="python-tool", docs="none", yes=True)
+
+    check = subprocess.run(
+        ["git", "check-ignore", ".staging/demo/workspace"], cwd=tmp_path, check=False
+    )
+    assert check.returncode == 0
+    assert not (tmp_path / ".gitignore").exists()
+
+
+@pytest.mark.parametrize("target_exists", [False, True])
+def test_s4_5_9_4_failure_retains_staging_and_writes_no_target(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, target_exists: bool
+) -> None:
+    def boom(*_args: object) -> None:
+        raise AppException("boom")
+
+    monkeypatch.setattr(commands, "instructions_scaffold", boom)
+    target = tmp_path / "demo"
+    if target_exists:
+        target.mkdir()
+
+    with pytest.raises(AppException, match="boom"):
+        commands.new(target, archetype="python-tool", docs="none", yes=True)
+
+    assert (tmp_path / ".staging" / "demo" / "backend" / "pyproject.toml").is_file()
+    assert target.exists() is target_exists
+    assert not target_exists or list(target.iterdir()) == []
+
+
+def test_s4_5_9_5_existing_staging_is_refused_untouched(tmp_path: Path) -> None:
+    run = tmp_path / ".staging" / "demo"
+    run.mkdir(parents=True)
+    (run / "keep").write_text("review state", encoding="utf-8")
+
+    with pytest.raises(AppException, match="already exists"):
+        commands.new(tmp_path / "demo", archetype="python-tool", docs="none", yes=True)
+
+    assert [p.name for p in run.iterdir()] == ["keep"]
+    assert not (tmp_path / "demo").exists()
+
+
+def test_s4_5_9_6_no_retention_or_cleanup_flag_and_no_rnf_home() -> None:
+    assert set(inspect.signature(commands.new).parameters) == {
+        "directory",
+        "archetype",
+        "docs",
+        "backend",
+        "frontend",
+        "config",
+        "allow_untested",
+        "dry_run",
+        "yes",
+        "json",
+    }
+    assert "RNF_HOME" not in inspect.getsource(commands._stage)

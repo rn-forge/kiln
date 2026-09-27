@@ -15,7 +15,6 @@ before any subprocess runs.
 from __future__ import annotations
 
 import shutil
-import tempfile
 from collections.abc import Callable
 from pathlib import Path
 
@@ -28,7 +27,7 @@ from rn_forge.kiln.modules.frontend.angular import SCAFFOLD_APP_DIR, scaffold_an
 __all__ = ["reconcile_frontend", "scaffold_frontend"]
 
 _SCAFFOLDERS: dict[str, Callable[[Path], Path]] = {"angular": scaffold_angular}
-"""Each implemented frontend: it scaffolds into a scratch directory and returns
+"""Each implemented frontend: it scaffolds into a raw directory and returns
 the finished workspace."""
 
 _EXCLUDED_TOP_LEVEL = {".git", "node_modules", ".nx"}
@@ -45,18 +44,18 @@ tries to write its own; dropping it here is a no-op, since `apply` writes the
 real one right after."""
 
 
-def scaffold_frontend(root: Path, config: KilnConfig) -> None:
-    """Scaffold the selected frontend into *root* at `config.web_dir`.
+def scaffold_frontend(raw: Path, config: KilnConfig) -> Path | None:
+    """Run the selected frontend's generator into *raw*; return its workspace.
 
-    Returns at once unless `config.archetype == "python-web-app"`.
+    Returns `None` unless `config.archetype == "python-web-app"`. The output is
+    raw: `reconcile_frontend` folds it into the repo, leaving it untouched.
 
     Raises:
         AppException: the frontend has no scaffolder, a scaffold command is
-            not on `PATH`, `pnpm install` fails after builds are approved, or
-            the reconcile finds a conflicting root file.
+            not on `PATH`, or `pnpm install` fails after builds are approved.
     """
     if config.archetype != "python-web-app":
-        return
+        return None
 
     scaffolder = _SCAFFOLDERS.get(config.frontend or "")
     if scaffolder is None:
@@ -65,15 +64,13 @@ def scaffold_frontend(root: Path, config: KilnConfig) -> None:
             config.frontend,
             ", ".join(sorted(_SCAFFOLDERS)),
         )
-
-    with tempfile.TemporaryDirectory() as tmp:
-        reconcile_frontend(root, scaffolder(Path(tmp)), config)
+    return scaffolder(raw)
 
 
 def reconcile_frontend(root: Path, workspace: Path, config: KilnConfig) -> None:
     """Fold *workspace* (a finished frontend scaffold) into *root*.
 
-    Every top-level entry of *workspace* moves into *root*, except `.git`,
+    Every top-level entry of *workspace* is copied into *root*, except `.git`,
     `node_modules` and `.nx`. The scaffolder's `.gitignore` body is appended
     to `root/.gitignore` (created if absent) rather than moved, since apply's
     own `.gitignore` block still has to land in the same file afterwards. If
@@ -113,7 +110,7 @@ def reconcile_frontend(root: Path, workspace: Path, config: KilnConfig) -> None:
         if entry.name == _GITIGNORE:
             _append_gitignore(root, entry)
             continue
-        _move_or_merge(entry, root / entry.name)
+        _copy_or_merge(entry, root / entry.name)
 
     if web_dir != SCAFFOLD_APP_DIR:
         shutil.move(str(root / SCAFFOLD_APP_DIR), str(root / web_dir))
@@ -130,13 +127,13 @@ def _conflicts(src: Path, dst: Path) -> list[str]:
     return [str(dst)]
 
 
-def _move_or_merge(src: Path, dst: Path) -> None:
-    if not dst.exists():
-        shutil.move(str(src), str(dst))
+def _copy_or_merge(src: Path, dst: Path) -> None:
+    if src.is_dir() and not src.is_symlink():
+        dst.mkdir(exist_ok=True)
+        for child in src.iterdir():
+            _copy_or_merge(child, dst / child.name)
         return
-    for child in src.iterdir():
-        _move_or_merge(child, dst / child.name)
-    src.rmdir()
+    shutil.copy2(src, dst, follow_symlinks=False)
 
 
 def _append_gitignore(root: Path, scaffolded: Path) -> None:

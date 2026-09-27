@@ -18,10 +18,10 @@ F11.1–F11.3 before F4.4, whose `python-lib` cell needs `kiln generate package`
 ([board](../../index.md#order)).
 
 **Where it stands (2026-09-26).** F4.1 and F4.2 are done. F4.3 is done apart
-from S4.3.6, the owner's Sonar decisions. In F4.5, S4.5.1–S4.5.6 are done, and
-S4.5.7–S4.5.9 are planned; S4.5.9 is next, S5.2.4's frontend-module split being
-done ([S5.2.4](../E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md)). F4.4 and
-F4.6–F4.8 have not started.
+from S4.3.6, the owner's Sonar decisions. In F4.5, S4.5.1–S4.5.6 and S4.5.9 are
+done, and S4.5.7–S4.5.8 are planned. S4.5.9 followed
+[S5.2.4](../E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md)'s frontend-module
+split. F4.4 and F4.6–F4.8 have not started.
 
 Decisions this epic builds on: [ADR-0001](../../../adr/ADR-0001.md),
 [ADR-0003](../../../adr/ADR-0003.md), [ADR-0004](../../../adr/ADR-0004.md),

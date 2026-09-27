@@ -13,6 +13,7 @@ which `CliApp` maps to exit code 1.
 from __future__ import annotations
 
 import difflib
+import shutil
 from collections.abc import Sequence
 from importlib import metadata
 from importlib.resources import files
@@ -33,11 +34,14 @@ from rn_forge.kiln.modules.core.config.manager import ConfigManager
 from rn_forge.kiln.modules.core.config.sources import Source
 from rn_forge.kiln.modules.docs.nav import update_nav
 from rn_forge.kiln.modules.docs.scaffold import scaffold as docs_scaffold
-from rn_forge.kiln.modules.frontend.scaffold import scaffold_frontend
+from rn_forge.kiln.modules.frontend.scaffold import (
+    reconcile_frontend,
+    scaffold_frontend,
+)
 from rn_forge.kiln.modules.instructions.scaffold import (
     scaffold as instructions_scaffold,
 )
-from rn_forge.kiln.modules.python.scaffold import scaffold as python_scaffold
+from rn_forge.kiln.modules.python.scaffold import reconcile_backend, scaffold_backend
 from rn_forge.kiln.modules.registry import builtin
 
 __all__ = [
@@ -147,21 +151,29 @@ def new(
         _report(directory, resolved, rows)
         return
 
-    directory.mkdir(parents=True, exist_ok=True)
-    if any(directory.iterdir()):
+    if directory.exists() and any(directory.iterdir()):
         raise AppException("{} is not empty", directory)
 
-    _write_config(directory, resolved)
+    workspace = _stage(directory.name)
+    _write_config(workspace, resolved)
 
-    python_scaffold(directory, resolved)
-    scaffold_frontend(directory, resolved)
-    docs_scaffold(directory, resolved)
-    instructions_scaffold(directory, resolved)
+    raw_backend = workspace.parent / "backend"
+    raw_frontend = workspace.parent / "frontend"
+    scaffold_backend(raw_backend, resolved)
+    frontend_workspace = scaffold_frontend(raw_frontend, resolved)
+    reconcile_backend(raw_backend, workspace, resolved)
+    if frontend_workspace is not None:
+        reconcile_frontend(workspace, frontend_workspace, resolved)
+    docs_scaffold(workspace, resolved)
+    instructions_scaffold(workspace, resolved)
 
-    result = cycle.apply(directory, provenance=resolution.provenance_metadata())
+    result = cycle.apply(workspace, provenance=resolution.provenance_metadata())
+    _fail_on_errors(workspace)
+
+    directory.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(workspace, directory, symlinks=True, dirs_exist_ok=True)
     rows = _change_rows(result.changes)
     _report(directory, resolved, rows)
-    _fail_on_errors(directory)
 
 
 def apply(
@@ -428,6 +440,29 @@ def _change_rows(changes: Sequence[generation.Change]) -> list[dict[str, str]]:
         }
         for change in changes
     ]
+
+
+STAGING = ".staging"
+"""Where `kiln new` builds a repository, beneath the invocation directory."""
+
+
+def _stage(name: str) -> Path:
+    """Create `.staging/<name>/{backend,frontend,workspace}`; return `workspace`.
+
+    Staging is review state: it is never reused, cleaned or moved here.
+
+    Raises:
+        AppException: `.staging/<name>/` already exists.
+    """
+    staging = Path.cwd() / STAGING
+    run = staging / name
+    if run.exists():
+        raise AppException("{} already exists; staging is never reused", run)
+    staging.mkdir(exist_ok=True)
+    (staging / ".gitignore").write_text("*\n", encoding="utf-8")
+    for part in ("backend", "frontend", "workspace"):
+        (run / part).mkdir(parents=True)
+    return run / "workspace"
 
 
 def _write_config(directory: Path, config: KilnConfig) -> None:

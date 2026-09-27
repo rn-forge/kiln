@@ -143,3 +143,18 @@ def test_s5_2_4_frontend_module_owns_the_frontend_option() -> None:
         if any(o.flag == "frontend" for o in m.options())
     ]
     assert owners == ["frontend"]
+
+
+def test_s4_5_9_reconcile_frontend_leaves_the_raw_tree_untouched(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path, extra='web_dir = "apps/frontend"')
+    workspace = _workspace(tmp_path)
+    before = {p: p.read_bytes() for p in sorted(workspace.rglob("*")) if p.is_file()}
+    config = KilnConfig.load(root)
+
+    reconcile_frontend(root, workspace, config)
+
+    after = {p: p.read_bytes() for p in sorted(workspace.rglob("*")) if p.is_file()}
+    assert before == after
+    assert (root / "apps" / "frontend" / "project.json").is_file()

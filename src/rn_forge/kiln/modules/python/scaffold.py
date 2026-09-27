@@ -9,6 +9,7 @@ sections check 8a verifies, using the same expected values that check reads.
 from __future__ import annotations
 
 import os
+import shutil
 import tomllib
 from pathlib import Path
 from typing import cast
@@ -25,7 +26,7 @@ from rn_forge.kiln.modules.python.checks.pyproject import (
     RUFF_TEST_IGNORES,
 )
 
-__all__ = ["scaffold"]
+__all__ = ["reconcile_backend", "scaffold", "scaffold_backend"]
 
 _DEV_GROUP = ["import-linter", "pyright", "pytest", "pytest-cov", "pyyaml", "ruff"]
 """The dev tools every archetype's `pyproject.toml` names; `rn-forge-kiln` too,
@@ -47,10 +48,23 @@ _DOCS_GROUP_MKDOCS = ["mkdocs-material>=9.6", "mkdocstrings[python]>=0.30"]
 def scaffold(root: Path, config: KilnConfig) -> None:
     """Run `uv init` into *root*, then reconcile every `pyproject.toml` it makes.
 
-    For `python-lib`, also runs `uv init` for each workspace member in
-    `config.packages` and wires the workspace table at the root. `uv init`
-    itself refuses a directory that already holds a `pyproject.toml`, so this
-    is meant to run once, into an empty directory, before the first `apply`.
+    `scaffold_backend` and `reconcile_backend` in one place: the output is
+    reconciled where it was written. `kiln new` runs the two halves apart.
+
+    Raises:
+        AppException: `uv` is not on `PATH`, or exits non-zero.
+    """
+    scaffold_backend(root, config)
+    _reconcile_pyprojects(root, config)
+
+
+def scaffold_backend(raw: Path, config: KilnConfig) -> None:
+    """Run `uv init` into *raw*: the raw output, before any reconcile.
+
+    For `python-lib` and the web archetypes, also runs `uv init` for each
+    workspace member in `config.packages` and wires the workspace table at the
+    root. `uv init` itself refuses a directory that already holds a
+    `pyproject.toml`, so *raw* must be empty.
 
     Raises:
         AppException: `uv` is not on `PATH`, or exits non-zero.
@@ -58,14 +72,14 @@ def scaffold(root: Path, config: KilnConfig) -> None:
     workspace = config.archetype == "python-lib"
     web = config.archetype in {"python-web-api", "python-web-app"}
     if workspace or web:
-        _uv_init(root, name=config.name, bare=True)
+        _uv_init(raw, name=config.name, bare=True)
         for package in config.packages:
-            member = root / package
+            member = raw / package
             member.mkdir(parents=True, exist_ok=True)
             member_name = f"{config.name}-api" if web else Path(package).name
             _uv_init(member, name=member_name, bare=False)
         DocumentUtils.update(
-            root / "pyproject.toml",
+            raw / "pyproject.toml",
             {
                 "tool": {
                     "uv": {
@@ -76,8 +90,21 @@ def scaffold(root: Path, config: KilnConfig) -> None:
             },
         )
     else:
-        _uv_init(root, name=config.name, bare=False)
+        _uv_init(raw, name=config.name, bare=False)
 
+
+def reconcile_backend(raw: Path, workspace: Path, config: KilnConfig) -> None:
+    """Copy *raw* into *workspace*, then reconcile its `pyproject.toml` files.
+
+    *raw* is left untouched: the reconcile only ever rewrites the copy.
+    """
+    shutil.copytree(raw, workspace, symlinks=True, dirs_exist_ok=True)
+    _reconcile_pyprojects(workspace, config)
+
+
+def _reconcile_pyprojects(root: Path, config: KilnConfig) -> None:
+    workspace = config.archetype == "python-lib"
+    web = config.archetype in {"python-web-api", "python-web-app"}
     required = archetypes.for_config(config).dependencies.required
     for relative in archetypes.pyproject_paths(config):
         path = root / relative

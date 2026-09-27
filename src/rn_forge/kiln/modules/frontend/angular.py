@@ -32,8 +32,8 @@ _AGENT_ENV_VARS = ("CLAUDECODE", "OPENCODE", "CLAUDE_CODE_ENTRYPOINT")
 its AI-agent template flow, which ignores `--appName` (COMMAND.md)."""
 
 
-def scaffold_angular(tmp_path: Path) -> Path:
-    """Run the Nx/Angular scaffold inside *tmp_path*; return the workspace."""
+def scaffold_angular(raw: Path) -> Path:
+    """Run the Nx/Angular scaffold inside *raw*; return the workspace it made."""
     env = {k: v for k, v in os.environ.items() if k not in _AGENT_ENV_VARS}
     Process.execute(
         "nx-workspace",
@@ -47,10 +47,10 @@ def scaffold_angular(tmp_path: Path) -> Path:
         "--ci=skip",
         "--interactive=false",
         "--skipGit",
-        cwd=str(tmp_path),
+        cwd=str(raw),
         env=env,
     )
-    workspace = tmp_path / "workspace"
+    workspace = raw / "workspace"
     Process.execute(
         "nx-angular-plugin",
         "pnpm",
