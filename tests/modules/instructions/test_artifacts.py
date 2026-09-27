@@ -7,6 +7,8 @@ Also proves the five properties every F4.3 story owes its module
 from __future__ import annotations
 
 import re
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -246,7 +248,7 @@ def test_s4_3_5_4_external_renders_the_url_into_the_block(tmp_path: Path) -> Non
         docs_extra='external_url = "https://docs.example.com/demo"\n',
     )
     block = _rendered(root)[BLOCK_KEY]
-    assert "- **Docs:** external, at <https://docs.example.com/demo>.\n" in block
+    assert "- **Docs:** external, at [docs](https://docs.example.com/demo).\n" in block
     assert "Docs rules" not in block
 
 
@@ -341,3 +343,86 @@ def test_s5_1_2_standard_md_web_app_has_web_verb_rows_and_frontend_clause(
     assert "task web:build" in standard
     assert "task web:dev" in standard
     assert "**Frontend:** `angular`" in standard
+
+
+MDFORMAT_TOML = Path(__file__).resolve().parents[3] / ".mdformat.toml"
+LONG_DIR = "apps/a-frontend-directory-with-a-rather-long-name"
+
+BLOCK_VARIANTS = {
+    "tool-mkdocs": ("python-tool", "mkdocs", ""),
+    "tool-none": ("python-tool", "none", ""),
+    "tool-external": (
+        "python-tool",
+        "external",
+        'external_url = "https://example.org/a/deliberately/long/docs/url/path/x"',
+    ),
+    "web-api-django": ("python-web-api", "mkdocs", 'backend = "django"'),
+    "web-app": ("python-web-app", "mkdocs", 'frontend = "angular"'),
+    "web-app-none": ("python-web-app", "none", 'frontend = "angular"'),
+    "web-app-long-dir": (
+        "python-web-app",
+        "mkdocs",
+        f'frontend = "angular"\nweb_dir = "{LONG_DIR}"',
+    ),
+}
+
+
+def _mdformat_check(directory: Path) -> subprocess.CompletedProcess[str]:
+    (directory / ".mdformat.toml").write_text(
+        MDFORMAT_TOML.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    return subprocess.run(
+        [sys.executable, "-m", "mdformat", "--check", str(directory)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+@pytest.mark.parametrize("variant", BLOCK_VARIANTS)
+@pytest.mark.parametrize("sonar", [True, False])
+def test_s5_3_5_3_the_kiln_block_is_mdformat_clean(
+    tmp_path: Path, variant: str, sonar: bool
+) -> None:
+    archetype, profile, extra = BLOCK_VARIANTS[variant]
+    config = tmp_path / "repo" / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    tables = ""
+    if archetype.startswith("python-web"):
+        tables = f'[archetype."{archetype}"]\n{extra}\n'
+        extra = ""
+    docs_extra = f"{extra}\n" if extra else ""
+    config.write_text(
+        f'schema_version = 1\n\n[repository]\nname = "demo"\narchetype = "{archetype}"\n\n'
+        f'[docs]\nprofile = "{profile}"\n{docs_extra}\n[ci]\nsonar = {str(sonar).lower()}\n\n{tables}',
+        encoding="utf-8",
+    )
+    root = config.parents[2]
+    out = tmp_path / "out"
+    out.mkdir()
+    (out / "CLAUDE.md").write_text(
+        _rendered(root)[BLOCK_KEY].strip() + "\n", encoding="utf-8"
+    )
+
+    result = _mdformat_check(out)
+
+    assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize(
+    "name", ["demo", "a-repository-with-a-name-long-enough-to-matter-in-a-heading"]
+)
+def test_s5_3_5_3_the_scaffolded_bodies_are_mdformat_clean(
+    tmp_path: Path, name: str
+) -> None:
+    root = tmp_path / "repo"
+    (root / ".rn-forge" / "kiln").mkdir(parents=True)
+    (root / ".rn-forge" / "kiln" / "config.toml").write_text(
+        f'schema_version = 1\n\n[repository]\nname = "{name}"\narchetype = "python-tool"\n',
+        encoding="utf-8",
+    )
+    scaffold(root, KilnConfig.load(root))
+
+    result = _mdformat_check(root)
+
+    assert result.returncode == 0, result.stderr

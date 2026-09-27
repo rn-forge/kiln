@@ -10,8 +10,8 @@ board says what is next; the epic says how; its ADRs say why.
 
 | Epic | Release | Next step |
 | -- | -- | -- |
-| [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | F4.1–F4.3 (apart from S4.3.6's Sonar decisions) and S4.5.1–S4.5.6 are done. S4.5.1–S4.5.6 and S4.5.9 are done. Next are E5's S5.3.5–S5.3.6, then E11's F11.1–F11.3, then F4.4, and the rest of F4.5–F4.8, including S4.6.5's ownership alignment |
-| [E5 — The web archetypes](epics/E5-web-archetypes/index.md) | [release-2](../releases/release-2/index.md) | FastAPI/Angular scaffolding exists; the owner trial exposed remaining setup and formatting gaps (S5.3.5–S5.3.6). S5.2.4's frontend-module split and S4.5.9's staged generation are done. Next are those fixes before the two FastAPI cells; Django is deferred |
+| [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | F4.1–F4.3 (apart from S4.3.6's Sonar decisions) and S4.5.1–S4.5.6 and S4.5.9 are done. Next are E5's S5.3.6, then E11's F11.1–F11.3, then F4.4, and the rest of F4.5–F4.8, including S4.6.5's ownership alignment |
+| [E5 — The web archetypes](epics/E5-web-archetypes/index.md) | [release-2](../releases/release-2/index.md) | FastAPI/Angular scaffolding exists; the owner trial exposed remaining setup and formatting gaps (S5.3.5–S5.3.6). S5.2.4, S4.5.9 and S5.3.5 are done. Next is S5.3.6 before the two FastAPI cells; Django is deferred |
 
 ### Scheduled
 
@@ -60,11 +60,10 @@ theirs.
 
 ```text
 done:  E1 ─→ E2 ─→ E3 ─→ F4.1 ─→ F4.2 ─→ S4.3.1–S4.3.5 ─→ S4.5.1–S4.5.6
-done:  F5.1 ─→ F5.2 fastapi ─→ S5.2.4 frontend module ─→ S4.5.9 staged `new` ─→ S5.3.1 fresh-repo gate fixes
+done:  F5.1 ─→ F5.2 fastapi ─→ S5.2.4 frontend module ─→ S4.5.9 staged `new` ─→ S5.3.1 fresh-repo gate fixes ─→ S5.3.5 quality commands
        (Django S5.2.3 deferred; live sync still needs resolvable pykit pins)
-now:   S5.3.5–S5.3.6 owner-trial fixes
-then:  S5.3.5–S5.3.6 owner-trial fixes (before shipped-cell proofs)
-       F11.1 checks ─→ F11.2 python-lib package sites ─→ F11.3 generate package   (F11.4 any time)
+now:   S5.3.6 owner-trial fixes (before shipped-cell proofs)
+then:   F11.1 checks ─→ F11.2 python-lib package sites ─→ F11.3 generate package   (F11.4 any time)
        F4.4 matrix (goldens leave git; python-lib cell needs S11.3.1) ─┬─→ S5.3.2–S5.3.4 ─→ E5 done
        S5.3.1 + F11.1–F11.3 ─→ S6.1.1 python-lib hosts pykit          │
        S4.5.3–S4.5.7 ─→ F4.6 doctor ──────────────────────────────────┼─→ F4.8 self-host

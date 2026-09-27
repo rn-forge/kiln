@@ -191,7 +191,7 @@
     },
     "tasks/quality.yml": {
       "begin_marker": null,
-      "content_hash": "4507e918cb0aa8858e50e3a8ebf31bc8182de240ddde99f126d1f4a230a5eb8f",
+      "content_hash": "77086e3aec40bf47243716df231373d40b3d2c5a8213452d12be6c5f234fa266",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/quality.yml"

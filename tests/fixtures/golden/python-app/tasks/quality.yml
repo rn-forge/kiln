@@ -7,11 +7,11 @@ version: "3"
 
 tasks:
   lint:python:
-    desc: Lint src/ and tests/ with ruff, and check formatting.
+    desc: Lint src/ (and tests/, when present) with ruff, and check formatting.
     internal: true
     cmds:
-      - uv run ruff check src tests
-      - uv run ruff format --check src tests
+      - uv run ruff check src $(test -d tests && echo tests)
+      - uv run ruff format --check src $(test -d tests && echo tests)
 
   lint:markdown:
     desc: Check that every Markdown file in the tree is mdformat-clean.
@@ -68,15 +68,15 @@ tasks:
       - uv run kiln doctor . --only docs-nav
 
   format:python:
-    desc: Fix and format src/ and tests/ in place with ruff.
+    desc: Fix and format src/ (and tests/, when present) in place with ruff.
     internal: true
     # `check --fix` first, then `format`: the linter's fixes are edits, and an
     # unused-import removal or a comprehension rewrite lands unformatted unless
     # the formatter runs after it. `lint:python` asserts the same pair in the
     # same order.
     cmds:
-      - uv run ruff check --fix src tests
-      - uv run ruff format src tests
+      - uv run ruff check --fix src $(test -d tests && echo tests)
+      - uv run ruff format src $(test -d tests && echo tests)
 
   format:markdown:
     desc: Format every Markdown file in the tree with mdformat.

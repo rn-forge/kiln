@@ -18,18 +18,18 @@ tasks:
   lint:python:
 {% if workspace %}    desc: Lint every workspace package with ruff, and check formatting.
 {% elif web %}    desc: Lint the API package with ruff, and check formatting.
-{% else %}    desc: Lint src/ and tests/ with ruff, and check formatting.
+{% else %}    desc: Lint src/ (and tests/, when present) with ruff, and check formatting.
 {% endif %}    internal: true
     cmds:
 {% if overrides.get("quality:lint:python") %}      - [[ overrides["quality:lint:python"] ]]
 {% elif workspace %}      - for: { var: PACKAGES, split: " " }
-        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff check
+        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff check src $(test -d packages/{{.ITEM}}/tests && echo tests)
       - for: { var: PACKAGES, split: " " }
-        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff format --check
-{% elif web %}      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff check src tests
-      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff format --check src tests
-{% else %}      - uv run ruff check src tests
-      - uv run ruff format --check src tests
+        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff format --check src $(test -d packages/{{.ITEM}}/tests && echo tests)
+{% elif web %}      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff check src $(test -d [[ api_dir ]]/tests && echo tests)
+      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff format --check src $(test -d [[ api_dir ]]/tests && echo tests)
+{% else %}      - uv run ruff check src $(test -d tests && echo tests)
+      - uv run ruff format --check src $(test -d tests && echo tests)
 {% endif %}
   lint:markdown:
     desc: Check that every Markdown file in the tree is mdformat-clean.
@@ -97,7 +97,7 @@ tasks:
   format:python:
 {% if workspace %}    desc: Fix and format every workspace package in place with ruff.
 {% elif web %}    desc: Fix and format the API package in place with ruff.
-{% else %}    desc: Fix and format src/ and tests/ in place with ruff.
+{% else %}    desc: Fix and format src/ (and tests/, when present) in place with ruff.
 {% endif %}    internal: true
     # `check --fix` first, then `format`: the linter's fixes are edits, and an
     # unused-import removal or a comprehension rewrite lands unformatted unless
@@ -106,13 +106,13 @@ tasks:
     cmds:
 {% if overrides.get("quality:format:python") %}      - [[ overrides["quality:format:python"] ]]
 {% elif workspace %}      - for: { var: PACKAGES, split: " " }
-        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff check --fix
+        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff check --fix src $(test -d packages/{{.ITEM}}/tests && echo tests)
       - for: { var: PACKAGES, split: " " }
-        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff format
-{% elif web %}      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff check --fix src tests
-      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff format src tests
-{% else %}      - uv run ruff check --fix src tests
-      - uv run ruff format src tests
+        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff format src $(test -d packages/{{.ITEM}}/tests && echo tests)
+{% elif web %}      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff check --fix src $(test -d [[ api_dir ]]/tests && echo tests)
+      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff format src $(test -d [[ api_dir ]]/tests && echo tests)
+{% else %}      - uv run ruff check --fix src $(test -d tests && echo tests)
+      - uv run ruff format src $(test -d tests && echo tests)
 {% endif %}
   format:markdown:
     desc: Format every Markdown file in the tree with mdformat.

@@ -20,9 +20,9 @@ tasks:
     internal: true
     cmds:
       - for: { var: PACKAGES, split: " " }
-        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff check
+        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff check src $(test -d packages/{{.ITEM}}/tests && echo tests)
       - for: { var: PACKAGES, split: " " }
-        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff format --check
+        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff format --check src $(test -d packages/{{.ITEM}}/tests && echo tests)
 
   lint:markdown:
     desc: Check that every Markdown file in the tree is mdformat-clean.
@@ -87,9 +87,9 @@ tasks:
     # same order.
     cmds:
       - for: { var: PACKAGES, split: " " }
-        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff check --fix
+        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff check --fix src $(test -d packages/{{.ITEM}}/tests && echo tests)
       - for: { var: PACKAGES, split: " " }
-        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff format
+        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff format src $(test -d packages/{{.ITEM}}/tests && echo tests)
 
   format:markdown:
     desc: Format every Markdown file in the tree with mdformat.

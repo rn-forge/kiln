@@ -7,11 +7,14 @@ Also proves the five properties every F4.3 story owes its module
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
+import yaml
 from rn_forge.commons.exceptions import AppException
 from rn_forge.tooling.generation import Action, ArtifactKind
 
@@ -326,18 +329,74 @@ def test_s5_1_2_python_web_app_renders_api_yml_and_web_yml(tmp_path: Path) -> No
     assert "tasks/web.yml" in paths
 
 
-@pytest.mark.parametrize("archetype", ["python-web-api", "python-web-app"])
-def test_s5_3_1_web_ruff_commands_are_limited_to_api_src_and_tests(
+# `uv run [--directory D --package P] X` becomes "run X in D"; `test -d` and the
+# command substitution around it run first, at the repo root, as `task` runs them.
+_UV_SHIM = 'uv() { shift; if [ "$1" = --directory ]; then d=$2; shift 2; fi; if [ "$1" = --package ]; then shift 2; fi; (cd "${d:-.}" && "$@"); }'
+
+
+def _ruff_commands(root: Path, task: str, item: str = "alpha") -> list[str]:
+    """The rendered `quality:<task>` commands, workspace loops expanded for *item*."""
+    rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
+    cmds = yaml.safe_load(rendered["tasks/quality.yml"])["tasks"][task]["cmds"]
+    return [
+        (c["cmd"] if isinstance(c, dict) else c).replace("{{.ITEM}}", item)
+        for c in cmds
+    ]
+
+
+def _run_commands(root: Path, commands: list[str]) -> int:
+    bin_dir = str(Path(sys.executable).parent)
+    env = {**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"}
+    script = "\n".join([_UV_SHIM, "set -e", *commands])
+    return subprocess.run(
+        ["sh", "-c", script], cwd=root, env=env, capture_output=True, check=False
+    ).returncode
+
+
+def _quality_root(tmp_path: Path, archetype: str) -> tuple[Path, Path]:
+    """A rendered-config root, and the package directory ruff's inputs live in."""
+    if archetype == "python-tool":
+        root, pkg = _root(tmp_path, "python-tool", "none"), tmp_path
+    elif archetype == "python-lib":
+        root, pkg = _root(tmp_path, "python-lib", "none"), tmp_path / "packages/alpha"
+    else:
+        extra = 'frontend = "angular"' if archetype == "python-web-app" else ""
+        root = _web_root(tmp_path, archetype, "fastapi", extra=extra)
+        pkg = tmp_path / KilnConfig.load(root).api_dir
+    (pkg / "src").mkdir(parents=True)
+    (pkg / "src" / "ok.py").write_text("x = 1\n", encoding="utf-8")
+    return root, pkg
+
+
+QUALITY_ARCHETYPES = ("python-tool", "python-lib", "python-web-api", "python-web-app")
+
+
+@pytest.mark.parametrize("archetype", QUALITY_ARCHETYPES)
+@pytest.mark.parametrize("task", ["lint:python", "format:python"])
+def test_s5_3_5_1_ruff_succeeds_without_tests_and_covers_them_when_present(
+    tmp_path: Path, archetype: str, task: str
+) -> None:
+    root, pkg = _quality_root(tmp_path, archetype)
+    commands = _ruff_commands(root, task)
+
+    assert _run_commands(root, commands) == 0
+
+    tests = pkg / "tests"
+    tests.mkdir()
+    (tests / "test_bad.py").write_text("import os\n", encoding="utf-8")
+    lint = _ruff_commands(root, "lint:python")
+    assert _run_commands(root, lint) != 0
+
+
+@pytest.mark.parametrize("archetype", QUALITY_ARCHETYPES)
+def test_s5_3_5_2_a_member_local_cache_is_outside_ruff_s_inputs(
     tmp_path: Path, archetype: str
 ) -> None:
-    extra = 'frontend = "angular"' if archetype == "python-web-app" else ""
-    root = _web_root(tmp_path, archetype, "fastapi", extra=extra)
-    rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
-    quality = rendered["tasks/quality.yml"]
-    assert "ruff check src tests" in quality
-    assert "ruff format --check src tests" in quality
-    assert "ruff check --fix src tests" in quality
-    assert "ruff format src tests" in quality
+    root, pkg = _quality_root(tmp_path, archetype)
+    (pkg / ".uv-cache").mkdir()
+    (pkg / ".uv-cache" / "bad.py").write_text("def (:\n", encoding="utf-8")
+
+    assert _run_commands(root, _ruff_commands(root, "lint:python")) == 0
 
 
 def test_s5_1_2_task_list_json_shows_api_and_web_verbs(tmp_path: Path) -> None:
