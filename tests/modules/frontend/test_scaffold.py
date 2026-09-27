@@ -27,6 +27,7 @@ from rn_forge.kiln.modules.frontend.scaffold import (
 from rn_forge.kiln.modules.python.scaffold import scaffold
 
 FIXTURE = Path(__file__).parents[2] / "fixtures" / "scaffold" / "nx-angular"
+UV_FIXTURE = Path(__file__).parents[2] / "fixtures" / "scaffold" / "uv" / ".gitignore"
 
 WEB_CONFIG = """
 schema_version = 1
@@ -85,6 +86,20 @@ def test_s5_2_1_reconcile_appends_scaffolder_gitignore(tmp_path: Path) -> None:
     for line in fixture_gitignore.splitlines():
         if line.strip():
             assert line in body
+
+
+def test_s5_3_6_1_reconcile_composes_uv_then_nx_once(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    uv_body = (root / ".gitignore").read_text(encoding="utf-8")
+    workspace = _workspace(tmp_path)
+    nx_body = (workspace / ".gitignore").read_text(encoding="utf-8")
+
+    reconcile_frontend(root, workspace, KilnConfig.load(root))
+
+    assert uv_body == UV_FIXTURE.read_text(encoding="utf-8")
+    assert (root / ".gitignore").read_text(encoding="utf-8") == (
+        uv_body + "\n" + nx_body.rstrip("\n") + "\n"
+    )
 
 
 def test_s5_2_1_reconcile_renames_web_dir_and_rewrites_project_json(

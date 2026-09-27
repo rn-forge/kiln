@@ -93,7 +93,8 @@ The assignment is normative:
 | `.rn-forge/kiln/state.json` | kiln | generated, committed CI baseline; never hashes itself |
 | `.rn-forge/kiln/standard.md` | kiln | managed — the rendered canon |
 | `.rn-forge/kiln/backups/`, `rendered/`, `state.lock` | kiln | gitignored derived data |
-| `.gitignore` | repo body; `# BEGIN rn-forge kiln` block → kiln | block |
+| `.gitignore` | repo body, seeded once by `kiln new` from uv's and (for a frontend) Nx's own ignore bodies, in that order; `# BEGIN rn-forge kiln` block → kiln | block |
+| `<repo-name>.code-workspace` | repo after scaffolding — one relative folder, `{ "path": "." }` | **seeded** |
 | `pyproject.toml` | **repo** — scaffolded once; tool settings are not kiln-owned | repo |
 | `.editorconfig` | kiln | managed |
 | `.importlinter` | kiln | managed import-boundary contracts |

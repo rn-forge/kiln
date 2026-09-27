@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 from pathlib import Path
 
 import pytest
@@ -56,6 +57,7 @@ def test_s4_2_3_applying_core_into_an_empty_directory_only_creates_and_inserts(
     assert actions(root, home) == {
         ".editorconfig": Action.CREATE,
         ".mdformat.toml": Action.CREATE,
+        "demo.code-workspace": Action.CREATE,
         ".gitignore#rn-forge kiln": Action.INSERT,
         ".importlinter": Action.CREATE,
         "Taskfile.yml": Action.CREATE,
@@ -71,6 +73,7 @@ def test_s4_2_3_applying_core_into_an_empty_directory_only_creates_and_inserts(
     for path in (
         ".editorconfig",
         ".mdformat.toml",
+        "demo.code-workspace",
         ".gitignore",
         ".importlinter",
         "Taskfile.yml",
@@ -108,6 +111,34 @@ def test_s5_3_1_mdformat_config_is_seeded_once(tmp_path: Path, home: Path) -> No
     existing_file.write_text(expected, encoding="utf-8")
     cycle.apply(existing, home=home)
     assert existing_file.read_text(encoding="utf-8") == expected
+
+
+def test_s5_3_6_5_workspace_file_is_one_relative_folder(
+    root: Path, home: Path, tmp_path: Path
+) -> None:
+    cycle.apply(root, home=home)
+    text = (root / "demo.code-workspace").read_text(encoding="utf-8")
+    assert json.loads(text) == {"folders": [{"path": "."}]}
+    assert str(root) not in text
+    assert str(Path.home()) not in text
+
+    moved = tmp_path / "elsewhere" / "checkout"
+    shutil.copytree(root, moved)
+    workspace = moved / "demo.code-workspace"
+    (folder,) = json.loads(workspace.read_text(encoding="utf-8"))["folders"]
+    assert (workspace.parent / folder["path"]).resolve() == moved.resolve()
+
+
+def test_s5_3_6_5_apply_preserves_user_edits_to_the_workspace_file(
+    root: Path, home: Path
+) -> None:
+    cycle.apply(root, home=home)
+    workspace = root / "demo.code-workspace"
+    edited = '{"folders": [{"path": "."}], "settings": {"editor.tabSize": 2}}\n'
+    workspace.write_text(edited, encoding="utf-8")
+
+    cycle.apply(root, home=home)
+    assert workspace.read_text(encoding="utf-8") == edited
 
 
 def test_s4_2_3_a_freshly_applied_repo_passes_the_generated_check(

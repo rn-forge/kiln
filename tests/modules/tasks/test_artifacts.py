@@ -508,3 +508,44 @@ def test_s4_3_3_5_without_mkdocs_the_rendered_files_carry_no_docs_reference(
     assert "lint:docs" not in quality
     assert not (root / "tasks" / "docs.yml").exists()
     assert _codes(root) == []
+
+
+@pytest.mark.parametrize(
+    ("extra", "app_path"),
+    [
+        ("", "apps/api/src/demo_api/app.py"),
+        ('api_dir = "services/backend"', "services/backend/src/demo_api/app.py"),
+    ],
+)
+def test_s5_3_6_6_api_dev_names_the_missing_app_file_and_export(
+    tmp_path: Path, extra: str, app_path: str
+) -> None:
+    root = _web_root(tmp_path, "python-web-api", "fastapi", extra=extra)
+    cycle.apply(root, home=tmp_path / "home")
+
+    result = _run_task(root, "api:dev")
+    assert result.returncode != 0
+    output = result.stdout + result.stderr
+    assert app_path in output
+    assert "`app`" in output
+
+    app = root / app_path
+    app.parent.mkdir(parents=True)
+    app.write_text(ASGI_APP, encoding="utf-8")
+    dry = _run_task(root, "--dry", "api:dev")
+    assert dry.returncode == 0, dry.stderr
+    assert "uvicorn demo_api.app:app" in dry.stdout + dry.stderr
+
+
+def test_s5_3_6_6_kiln_writes_nothing_under_src_or_tests(tmp_path: Path) -> None:
+    root = _web_root(tmp_path, "python-web-api", "fastapi")
+    cycle.apply(root, home=tmp_path / "home")
+    written = [p.relative_to(root).parts for p in root.rglob("*") if p.is_file()]
+    assert [p for p in written if "src" in p or "tests" in p] == []
+
+
+ASGI_APP = '''async def app(scope, receive, send):
+    """The minimal repo-owned ASGI application the acceptance fixture supplies."""
+    await send({"type": "http.response.start", "status": 200, "headers": []})
+    await send({"type": "http.response.body", "body": b"ok"})
+'''

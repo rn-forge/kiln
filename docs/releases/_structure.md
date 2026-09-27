@@ -3,20 +3,20 @@
 ## Belongs here
 
 - One page per release, `release-<n>/index.md`, in this order:
-  - `**Status:**`: `planned`, `in progress` or `shipped`, with the date.
-  - **Entry criteria**: what must hold before work on the release starts.
-  - **Scope**: a table of the features picked from the backlog, one row each:
-    the feature linked to its spec, its epic, and its status. Done epics that
-    predate the story taxonomy, and other done work the release carries, go in
-    a `### Done before this release` table under it: epic, what it delivered,
-    and its implemented dates.
-  - **Decisions**: each ADR the release added or updated, linked, with one line
-    on what changed.
-  - **Progress**: a few lines on what is next and what blocks it.
-  - **Commits**: the `git log --grep` command that lists commits naming a scope
-    ID, and its output, refreshed at least at the cut.
-  - **Exit criteria**: what must hold for the release to ship.
-  - **Shipped**: once shipped, the release evidence.
+    - `**Status:**`: `planned`, `in progress` or `shipped`, with the date.
+    - **Entry criteria**: what must hold before work on the release starts.
+    - **Scope**: a table of the features picked from the backlog, one row each:
+      the feature linked to its spec, its epic, and its status. Done epics that
+      predate the story taxonomy, and other done work the release carries, go in
+      a `### Done before this release` table under it: epic, what it delivered,
+      and its implemented dates.
+    - **Decisions**: each ADR the release added or updated, linked, with one line
+      on what changed.
+    - **Progress**: a few lines on what is next and what blocks it.
+    - **Commits**: the `git log --grep` command that lists commits naming a scope
+      ID, and its output, refreshed at least at the cut.
+    - **Exit criteria**: what must hold for the release to ship.
+    - **Shipped**: once shipped, the release evidence.
 
 ## Does not belong here
 
@@ -30,8 +30,8 @@
 - `release-<n>/index.md`; the area `index.md` is the list, newest first.
 - A feature belongs to one release at a time, and that assignment lives only on
   the release page.
-- The scope table's status column is the only copy of a spec's status. Update
-  it in the commit that changes the feature's status.
+- The scope table's status column is the only copy of a spec's status. Update it
+  in the commit that changes the feature's status.
 - Commit subjects name the story or feature IDs they deliver, so the commits
   section can be regenerated.
 

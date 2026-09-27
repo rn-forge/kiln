@@ -85,3 +85,62 @@ def test_s4_3_5_readme_is_mdformat_clean(tmp_path: Path) -> None:
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+WEB_CONFIG = """schema_version = 1
+
+[repository]
+name = "{name}"
+archetype = "python-web-api"
+
+[archetype."python-web-api"]
+backend = "fastapi"
+{extra}
+"""
+
+
+def _mdformat_check(root: Path) -> subprocess.CompletedProcess[str]:
+    (root / ".mdformat.toml").write_bytes(
+        (GOLDEN / "python-app" / ".mdformat.toml").read_bytes()
+    )
+    return subprocess.run(
+        [sys.executable, "-m", "mdformat", "--check", "README.md"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+@pytest.mark.parametrize(
+    ("name", "extra", "app_path"),
+    [
+        ("demo", "", "apps/api/src/demo_api/app.py"),
+        (
+            "a-rather-long-repository-name",
+            'api_dir = "services/backend-api"',
+            "services/backend-api/src/a_rather_long_repository_name_api/app.py",
+        ),
+    ],
+)
+def test_s5_3_6_8_web_readme_names_the_api_path_and_is_mdformat_clean(
+    tmp_path: Path, name: str, extra: str, app_path: str
+) -> None:
+    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(WEB_CONFIG.format(name=name, extra=extra), encoding="utf-8")
+    scaffold(tmp_path, KilnConfig.load(tmp_path))
+
+    readme = (tmp_path / "README.md").read_text(encoding="utf-8")
+    assert f"`{app_path}`" in readme
+    assert "`task api:dev`" in readme
+    assert "`app`" in readme
+    assert "repo-owned" in readme
+    result = _mdformat_check(tmp_path)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_s5_3_6_8_non_web_readme_has_no_api_section(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    scaffold(root, KilnConfig.load(root))
+    assert "api:dev" not in (root / "README.md").read_text(encoding="utf-8")

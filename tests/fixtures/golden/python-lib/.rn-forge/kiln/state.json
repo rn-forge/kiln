@@ -30,7 +30,7 @@
     },
     ".gitignore#rn-forge kiln": {
       "begin_marker": "# BEGIN rn-forge kiln",
-      "content_hash": "2bee6b1447e0d87f424ad65898307223f695152a8a917bc6ece9e625d06606d4",
+      "content_hash": "b90a5ae07e279111f64646635796d99280bf4975337a606cc7593f425e09a865",
       "end_marker": "# END rn-forge kiln",
       "kind": "block",
       "path": ".gitignore"

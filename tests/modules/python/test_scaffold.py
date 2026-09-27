@@ -9,15 +9,26 @@ rn-forge dependency lines and the `docs` group so `rn-forge-deps` and
 
 from __future__ import annotations
 
+import re
 import tomllib
 from pathlib import Path
+from unittest import mock
 
 import pytest
+from rn_forge.commons.exceptions import AppException
 
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.core import cycle
+from rn_forge.kiln.modules.python import scaffold as python_scaffold
 from rn_forge.kiln.modules.python.checks import pyproject, rn_forge_deps
-from rn_forge.kiln.modules.python.scaffold import scaffold
+from rn_forge.kiln.modules.python.scaffold import (
+    UV_VERSION,
+    reconcile_backend,
+    scaffold,
+    scaffold_backend,
+    uv_gitignore,
+)
 
 CONFIG = """
 schema_version = 1
@@ -147,3 +158,110 @@ def test_s4_3_7_check_8a_still_passes(tmp_path: Path) -> None:
     config = KilnConfig.load(root)
     scaffold(root, config)
     assert pyproject.check(config, root) == []
+
+
+UV_FIXTURE = (
+    Path(__file__).resolve().parents[2] / "fixtures" / "scaffold" / "uv" / ".gitignore"
+)
+
+
+def test_s5_3_6_1_live_uv_capture_matches_the_fixture() -> None:
+    assert uv_gitignore() == UV_FIXTURE.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("archetype", ["python-tool", "python-lib"])
+def test_s5_3_6_1_scaffold_seeds_the_uv_body_once_at_the_root(
+    tmp_path: Path, archetype: str
+) -> None:
+    root = _root(tmp_path, archetype)
+    scaffold(root, KilnConfig.load(root))
+    assert (root / ".gitignore").read_text(encoding="utf-8") == UV_FIXTURE.read_text(
+        encoding="utf-8"
+    )
+    scaffolded = [
+        p.relative_to(root)
+        for p in root.rglob("*")
+        if ".uv-cache" not in p.relative_to(root).parts  # `task`'s UV_CACHE_DIR
+    ]
+    assert [p for p in scaffolded if p.name == ".gitignore"] == [Path(".gitignore")]
+    assert [p for p in scaffolded if p.name == ".git"] == []
+
+
+def test_s5_3_6_1_uv_version_is_verified_before_scaffolding(tmp_path: Path) -> None:
+    root = _root(tmp_path, "python-tool")
+    config = KilnConfig.load(root)
+    wrong = mock.Mock(stdout="uv 0.0.1 (Homebrew 2020-01-01)\n")
+    with mock.patch(
+        "rn_forge.kiln.modules.python.scaffold.Process.execute", return_value=wrong
+    ) as run:
+        with pytest.raises(AppException, match=UV_VERSION):
+            scaffold_backend(root, config)
+    assert [c.args[1:] for c in run.call_args_list] == [("uv", "--version")]
+
+
+@pytest.mark.parametrize(
+    ("archetype", "relative"),
+    [
+        ("python-tool", "pyproject.toml"),
+        ("python-lib", "pyproject.toml"),
+        ("python-lib", "packages/demo-alpha/pyproject.toml"),
+    ],
+)
+def test_s5_3_6_4_dependency_lists_are_multiline_and_tables_spaced(
+    tmp_path: Path, archetype: str, relative: str
+) -> None:
+    root = _root(tmp_path, archetype)
+    scaffold(root, KilnConfig.load(root))
+    text = (root / relative).read_text(encoding="utf-8")
+    document = tomllib.loads(text)
+    lists = {
+        key: value
+        for key, value in [
+            ("dependencies", document["project"]["dependencies"]),
+            *document.get("dependency-groups", {}).items(),
+        ]
+        if value
+    }
+    assert lists
+    for key, values in lists.items():
+        assert f"{key} = [\n" in text, key
+        for value in values:
+            assert f'    "{value}",\n' in text, value
+    assert re.search(r"[^\n]\n\[", text) is None  # every table follows a blank line
+
+
+def test_s5_3_6_4_readable_toml_round_trips_and_keeps_comments(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    raw = tmp_path / "raw"
+    raw.mkdir()
+    root = _root(tmp_path / "config", "python-lib")
+    config = KilnConfig.load(root)
+    scaffold_backend(raw, config)
+    member = raw / "packages" / "demo-alpha" / "pyproject.toml"
+    member.write_text("# kept: a repo comment\n" + member.read_text("utf-8"), "utf-8")
+
+    readable = tmp_path / "readable"
+    reconcile_backend(raw, readable, config)
+    monkeypatch.setattr(python_scaffold, "_multiline_lists", lambda path: None)
+    dense = tmp_path / "dense"
+    reconcile_backend(raw, dense, config)
+
+    for relative in ("pyproject.toml", "packages/demo-alpha/pyproject.toml"):
+        pretty = (readable / relative).read_text(encoding="utf-8")
+        plain = (dense / relative).read_text(encoding="utf-8")
+        assert pretty != plain
+        assert tomllib.loads(pretty) == tomllib.loads(plain)
+    member_text = (readable / "packages/demo-alpha/pyproject.toml").read_text("utf-8")
+    assert member_text.startswith("# kept: a repo comment\n")
+
+
+def test_s5_3_6_4_apply_does_not_reformat_repo_owned_toml(tmp_path: Path) -> None:
+    root = _root(tmp_path, "python-tool")
+    scaffold(root, KilnConfig.load(root))
+    pyproject = root / "pyproject.toml"
+    dense = pyproject.read_text(encoding="utf-8") + '\n[tool.demo]\nx = ["a", "b"]\n'
+    pyproject.write_text(dense, encoding="utf-8")
+
+    cycle.apply(root, home=tmp_path / "home")
+    assert pyproject.read_text(encoding="utf-8") == dense

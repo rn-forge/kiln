@@ -22,6 +22,7 @@ from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import DocumentUtils
 
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.core import gitignore
 from rn_forge.kiln.modules.frontend.angular import SCAFFOLD_APP_DIR, scaffold_angular
 
 __all__ = ["reconcile_frontend", "scaffold_frontend"]
@@ -31,8 +32,6 @@ _SCAFFOLDERS: dict[str, Callable[[Path], Path]] = {"angular": scaffold_angular}
 the finished workspace."""
 
 _EXCLUDED_TOP_LEVEL = {".git", "node_modules", ".nx"}
-
-_GITIGNORE = ".gitignore"
 
 _DROPPED = {".editorconfig"}
 """Scaffolder-written root files kiln's own `core` module unconditionally
@@ -72,7 +71,7 @@ def reconcile_frontend(root: Path, workspace: Path, config: KilnConfig) -> None:
 
     Every top-level entry of *workspace* is copied into *root*, except `.git`,
     `node_modules` and `.nx`. The scaffolder's `.gitignore` body is appended
-    to `root/.gitignore` (created if absent) rather than moved, since apply's
+    once to `root/.gitignore`, after uv's, rather than moved, since apply's
     own `.gitignore` block still has to land in the same file afterwards. If
     the scaffolder's app directory (`apps/web`) differs from `config.web_dir`,
     it is renamed and every reference to its old path in `project.json`'s
@@ -97,7 +96,7 @@ def reconcile_frontend(root: Path, workspace: Path, config: KilnConfig) -> None:
     conflicts = [
         conflict
         for entry in entries
-        if entry.name != _GITIGNORE
+        if entry.name != gitignore.GITIGNORE
         for conflict in _conflicts(entry, root / entry.name)
     ]
     if conflicts:
@@ -107,8 +106,8 @@ def reconcile_frontend(root: Path, workspace: Path, config: KilnConfig) -> None:
         )
 
     for entry in entries:
-        if entry.name == _GITIGNORE:
-            _append_gitignore(root, entry)
+        if entry.name == gitignore.GITIGNORE:
+            gitignore.append(root, entry.read_text(encoding="utf-8"))
             continue
         _copy_or_merge(entry, root / entry.name)
 
@@ -134,14 +133,6 @@ def _copy_or_merge(src: Path, dst: Path) -> None:
             _copy_or_merge(child, dst / child.name)
         return
     shutil.copy2(src, dst, follow_symlinks=False)
-
-
-def _append_gitignore(root: Path, scaffolded: Path) -> None:
-    body = scaffolded.read_text(encoding="utf-8")
-    target = root / _GITIGNORE
-    existing = target.read_text(encoding="utf-8") if target.is_file() else ""
-    separator = "" if not existing or existing.endswith("\n") else "\n"
-    target.write_text(existing + separator + body, encoding="utf-8")
 
 
 def _rewrite_app_dir(root: Path, web_dir: str) -> None:

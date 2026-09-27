@@ -20,6 +20,7 @@ from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.runtime.console import OutputMode, console
 
 from rn_forge.kiln import archetypes, checks, commands
+from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK
 from rn_forge.kiln.modules.registry import builtin
 
 
@@ -357,3 +358,60 @@ def test_s4_5_9_6_no_retention_or_cleanup_flag_and_no_rnf_home() -> None:
         "json",
     }
     assert "RNF_HOME" not in inspect.getsource(commands._stage)
+
+
+UV_FIXTURE = (
+    Path(__file__).resolve().parent / "fixtures" / "scaffold" / "uv" / ".gitignore"
+)
+
+
+def test_s5_3_6_1_fresh_scaffolds_have_identical_composed_gitignores(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    texts = []
+    for run in ("first", "second"):
+        cwd = tmp_path / run
+        cwd.mkdir()
+        monkeypatch.chdir(cwd)
+        target = cwd / "demo"
+        commands.new(target, archetype="python-web-api", docs="none", yes=True)
+        assert not (target / ".git").exists()
+        texts.append((target / ".gitignore").read_bytes())
+
+    assert texts[0] == texts[1]
+    text = texts[0].decode("utf-8")
+    kiln = GITIGNORE_BLOCK.extract(text)
+    assert kiln is not None
+    assert text == GITIGNORE_BLOCK.render(UV_FIXTURE.read_text(encoding="utf-8"), kiln)
+
+
+def test_s5_3_6_5_new_seeds_the_workspace_file(tmp_path: Path) -> None:
+    target = tmp_path / "demo"
+    commands.new(target, archetype="python-tool", docs="none", yes=True)
+    workspace = json.loads((target / "demo.code-workspace").read_text("utf-8"))
+    assert workspace == {"folders": [{"path": "."}]}
+
+
+def test_s5_3_6_7_docs_none_omits_the_mkdocs_tree_and_site_tasks(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "demo"
+    commands.new(target, archetype="python-tool", docs="none", yes=True)
+
+    assert not (target / "docs").exists()
+    assert not (target / "mkdocs.yml").exists()
+    assert not (target / "tasks" / "docs.yml").exists()
+    listed = subprocess.run(
+        ["task", "--list-all", "--json"],
+        cwd=target,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    names = [task["name"] for task in json.loads(listed.stdout)["tasks"]]
+    assert "format" in names
+    assert [name for name in names if name.startswith("docs:")] == []
+    assert "mdformat" in (target / "tasks" / "quality.yml").read_text("utf-8")
+    assert (target / "README.md").is_file()
+    assert (target / "CLAUDE.md").is_file()
+    assert (target / ".mdformat.toml").is_file()

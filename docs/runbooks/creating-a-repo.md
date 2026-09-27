@@ -55,7 +55,36 @@ kiln new ../my-repo --archetype python-app --docs mkdocs --yes
 
 Without `--yes` this previews and writes nothing. Every prompt has a flag, so
 the same command is what an agent runs unattended. `kiln new` refuses a
-non-empty directory.
+non-empty directory, and it needs the uv release it is pinned to (`uv --version`
+must report kiln's `UV_VERSION`).
+
+`--docs none` omits the MkDocs tree: no `docs/`, no `mkdocs.yml` and no `docs:*`
+site tasks. The root instructions (`README.md`, `CLAUDE.md`, `AGENTS.md`) and
+Markdown formatting (`.mdformat.toml`, mdformat in `task lint` and
+`task format`) remain.
+
+`kiln new` does not initialize Git. Create the repository and make the first
+commit yourself:
+
+```bash
+cd ../my-repo
+git init
+git add -A
+git commit -m "Initial commit from kiln new"
+```
+
+**Pre-release workaround: a local kiln.** A generated `pyproject.toml` takes
+`rn-forge-kiln` from its remote Git source, and a shipped cell must resolve that
+way. Until that ref resolves for you, point the new repo at a local checkout by
+hand, in its own `pyproject.toml`:
+
+```toml
+[tool.uv.sources]
+rn-forge-kiln = { path = "../kiln", editable = true }
+```
+
+This is a development aid, not evidence that the repo bootstraps. kiln never
+writes it for you, and it comes out before the repo is shared.
 
 What it does, in order, is the apply sequence in
 [the workspace architecture](../architecture/workspace.md#apply-sequence). Step

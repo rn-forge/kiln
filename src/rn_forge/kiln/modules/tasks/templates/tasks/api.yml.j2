@@ -9,7 +9,10 @@ version: "3"
 tasks:
   dev:
     desc: Run the API dev server on port 8000.
-    cmds:
+{% if backend != "django" %}    preconditions:
+      - sh: test -f [[ api_dir ]]/src/[[ api_module ]]/app.py
+        msg: "api:dev serves [[ api_dir ]]/src/[[ api_module ]]/app.py, which must define the ASGI application as `app`. The application and its tests are repo-owned: create that file (README.md)."
+{% endif %}    cmds:
 {% if backend == "django" %}      - uv run --package [[ api_package ]] python [[ api_dir ]]/manage.py runserver 8000
 {% else %}      - uv run --package [[ api_package ]] uvicorn [[ api_module ]].app:app --reload --port 8000
 {% endif %}{% if backend == "django" %}  migrate:

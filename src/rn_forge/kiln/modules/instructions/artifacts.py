@@ -58,6 +58,20 @@ def _bullet(text: str) -> str:
     return "\n".join(lines)
 
 
+def _paragraph(text: str) -> str:
+    """*text* as one Markdown paragraph, wrapped exactly as mdformat wraps it."""
+    lines: list[str] = []
+    line = ""
+    for token in _TOKEN.findall(text):
+        if line and len(line) + 1 + len(token) > _WRAP_FIRST:
+            lines.append(line)
+            line = token
+        else:
+            line = f"{line} {token}" if line else token
+    lines.append(line)
+    return "\n".join(lines)
+
+
 def context(config: KilnConfig) -> dict[str, object]:
     """The template context every `instructions` template renders with."""
     docs = getattr(config.document, "docs", None)
@@ -77,6 +91,7 @@ def context(config: KilnConfig) -> dict[str, object]:
     if web_app:
         selectors += f", frontend: `{config.frontend}`"
     selectors += ")" if web else ""
+    api_module = f"{config.name}-api".replace("-", "_")
     tools = "`uv`, `pytest`, `ruff`, `pyright`"
     if config.docs_profile == "mkdocs":
         tools += ", `mkdocs`"
@@ -107,6 +122,12 @@ def context(config: KilnConfig) -> dict[str, object]:
             f"`{web_dir}` (project `{Path(web_dir).name if web_dir else ''}`). "
             "Every file the frontend scaffold wrote is repo-owned; kiln renders "
             f"nothing under `{web_dir}`."
+        ),
+        "api_paragraph": _paragraph(
+            f"`task api:dev` serves `{config.api_dir}/src/{api_module}/app.py`, "
+            "which must define the ASGI application as `app`. The application "
+            "and its tests are repo-owned: kiln renders nothing under `src/` or "
+            "`tests/`, so create that module yourself."
         ),
         "docs_bullet": _bullet(
             f"**Docs:** external, at [docs]({docs.external_url if isinstance(docs, DocsConfig) else ''})."

@@ -10,15 +10,18 @@ from __future__ import annotations
 
 import os
 import shutil
+import tempfile
 import tomllib
 from pathlib import Path
-from typing import cast
+from typing import Any, cast
 
+from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.runtime.subprocess import Process
 
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.core import gitignore
 from rn_forge.kiln.modules.python.checks.pyproject import (
     PYRIGHT_EXPECTED,
     PYTEST_ADDOPTS,
@@ -26,7 +29,17 @@ from rn_forge.kiln.modules.python.checks.pyproject import (
     RUFF_TEST_IGNORES,
 )
 
-__all__ = ["reconcile_backend", "scaffold", "scaffold_backend"]
+__all__ = [
+    "UV_VERSION",
+    "reconcile_backend",
+    "scaffold",
+    "scaffold_backend",
+    "uv_gitignore",
+]
+
+UV_VERSION = "0.12.19"
+"""The uv release this scaffold is recorded against (2026-09-27,
+`tests/fixtures/scaffold/uv/COMMAND.md`)."""
 
 _DEV_GROUP = ["import-linter", "pyright", "pytest", "pytest-cov", "pyyaml", "ruff"]
 """The dev tools every archetype's `pyproject.toml` names; `rn-forge-kiln` too,
@@ -55,7 +68,7 @@ def scaffold(root: Path, config: KilnConfig) -> None:
         AppException: `uv` is not on `PATH`, or exits non-zero.
     """
     scaffold_backend(root, config)
-    _reconcile_pyprojects(root, config)
+    _reconcile_tree(root, config)
 
 
 def scaffold_backend(raw: Path, config: KilnConfig) -> None:
@@ -64,11 +77,14 @@ def scaffold_backend(raw: Path, config: KilnConfig) -> None:
     For `python-lib` and the web archetypes, also runs `uv init` for each
     workspace member in `config.packages` and wires the workspace table at the
     root. `uv init` itself refuses a directory that already holds a
-    `pyproject.toml`, so *raw* must be empty.
+    `pyproject.toml`, so *raw* must be empty. Writes uv's own ignore body to
+    `raw/.gitignore`, once, from `uv_gitignore`.
 
     Raises:
-        AppException: `uv` is not on `PATH`, or exits non-zero.
+        AppException: `uv` is not on `PATH`, is not `UV_VERSION`, or exits
+            non-zero.
     """
+    _verify_uv()
     workspace = config.archetype == "python-lib"
     web = config.archetype in {"python-web-api", "python-web-app"}
     if workspace or web:
@@ -91,6 +107,45 @@ def scaffold_backend(raw: Path, config: KilnConfig) -> None:
         )
     else:
         _uv_init(raw, name=config.name, bare=False)
+    (raw / gitignore.GITIGNORE).write_text(uv_gitignore(), encoding="utf-8")
+
+
+def uv_gitignore() -> str:
+    """The `.gitignore` body uv writes into a new Git repository.
+
+    Captured in a temporary directory: the target itself never gets a `.git/`.
+
+    Raises:
+        AppException: `uv` is not on `PATH`, or exits non-zero.
+    """
+    with tempfile.TemporaryDirectory(prefix="kiln-uv-") as scratch:
+        Process.execute(
+            "uv-init[gitignore]",
+            "uv",
+            "init",
+            "--name",
+            "capture",
+            "--vcs",
+            "git",
+            "--no-readme",
+            "--bare",
+            cwd=scratch,
+        )
+        return (Path(scratch) / gitignore.GITIGNORE).read_text(encoding="utf-8")
+
+
+def _verify_uv() -> None:
+    output = Process.execute("uv-version", "uv", "--version").stdout or ""
+    words = output.split()
+    found = words[1] if len(words) > 1 else output.strip()
+    if found != UV_VERSION:
+        raise AppException(
+            "kiln scaffolds with uv {}, but `uv --version` reports {!r}; "
+            "install uv {} to run `kiln new`",
+            UV_VERSION,
+            found,
+            UV_VERSION,
+        )
 
 
 def reconcile_backend(raw: Path, workspace: Path, config: KilnConfig) -> None:
@@ -99,7 +154,16 @@ def reconcile_backend(raw: Path, workspace: Path, config: KilnConfig) -> None:
     *raw* is left untouched: the reconcile only ever rewrites the copy.
     """
     shutil.copytree(raw, workspace, symlinks=True, dirs_exist_ok=True)
-    _reconcile_pyprojects(workspace, config)
+    _reconcile_tree(workspace, config)
+
+
+def _reconcile_tree(root: Path, config: KilnConfig) -> None:
+    path = root / gitignore.GITIGNORE
+    if path.is_file():
+        body = path.read_text(encoding="utf-8")
+        path.unlink()
+        gitignore.append(root, body)
+    _reconcile_pyprojects(root, config)
 
 
 def _reconcile_pyprojects(root: Path, config: KilnConfig) -> None:
@@ -188,6 +252,18 @@ def _reconcile(
             "dev": [*_existing_list(path, "dependency-groups", "dev"), *extra_dev],
         }
     DocumentUtils.update(path, updates)
+    _multiline_lists(path)
+
+
+def _multiline_lists(path: Path) -> None:
+    """Rewrite *path*'s non-empty dependency lists one entry per line."""
+    document = DocumentUtils.read_document(path)
+    arrays: list[Any] = [document.get("project", {}).get("dependencies")]
+    arrays += list(document.get("dependency-groups", {}).values())
+    for array in arrays:
+        if array:
+            array.multiline(True)
+    DocumentUtils.write_document(path, document)
 
 
 def _existing_list(path: Path, *keys: str) -> list[str]:
