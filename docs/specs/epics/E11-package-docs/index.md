@@ -1,8 +1,8 @@
 # E11 — Package docs sites
 
-**Status:** planned · **Releases:** S11.2.4 in
-[release-2](../../../releases/release-2/index.md); every other story in
-[release-1](../../../releases/release-1/index.md) · **Decisions:**
+**Status:** planned · **Releases:**
+[release-1](../../../releases/release-1/index.md),
+[release-2](../../../releases/release-2/index.md) · **Decisions:**
 [ADR-0008](../../../adr/ADR-0008.md), [ADR-0009](../../../adr/ADR-0009.md)
 
 pykit adopted kiln's docs model on 2026-09-26, and kiln's docs checker was run
@@ -16,10 +16,11 @@ repository's specs are accepted inside that repository
 
 **Dependencies.** F11.1 builds on the `docs` module as
 [S4.3.2](../E4-generator/F4.3-concern-modules.md#s432-docs) left it. F11.2 needs
-F11.1. F11.3 needs F11.2 and the CLI's
-[S4.5.1–S4.5.2](../E4-generator/F4.5-cli.md). F11.4 needs nothing. Downstream,
-[S6.1.1](../E6-rebuild-the-repos/F6.1-pykit-skeleton.md) needs F11.1–F11.3, and
-[F4.4](../E4-generator/F4.4-render-matrix.md)'s `python-lib` cell needs S11.3.1.
+F11.1. F11.5 needs F11.2 and its entry criterion. F11.3 needs F11.2 and the
+CLI's [S4.5.1–S4.5.2](../E4-generator/F4.5-cli.md). F11.4 needs nothing.
+Downstream, [S6.1.1](../E6-rebuild-the-repos/F6.1-pykit-skeleton.md) needs
+F11.1–F11.3, and [F4.4](../E4-generator/F4.4-render-matrix.md)'s `python-lib`
+cell needs S11.3.1.
 
 **Goldens first.** While `tests/fixtures/golden/` is in git, a template change
 starts in the golden it reproduces
@@ -45,9 +46,10 @@ at the same time. F11.4 carries it into the templates.
 | ID | Feature | Depends on |
 | -- | -- | -- |
 | [F11.1](F11.1-checks-learn-package-sites.md) | The docs checks learn package sites | S4.3.2 (done) |
-| [F11.2](F11.2-python-lib-package-sites.md) | `python-lib` repositories carry package docs sites | F11.1; S11.2.4 also on the entry criterion on the story |
+| [F11.2](F11.2-python-lib-package-sites.md) | `python-lib` repositories carry package docs sites | F11.1 |
 | [F11.3](F11.3-generate-package.md) | `kiln generate package` | F11.2, S4.5.1, S4.5.2 |
 | [F11.4](F11.4-cross-repository-rule.md) | The cross-repository rule is seeded | — |
+| [F11.5](F11.5-deploy-package-sites.md) | CI deploys versioned package sites | F11.2; the entry criterion on S11.5.1 |
 
 **Out of scope.** Instruction files: kiln keeps its prose in `README.md` and
 pykit keeps it in `CLAUDE.md`. Both pass the instruction-pointer check, so

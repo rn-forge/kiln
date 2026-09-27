@@ -30,7 +30,7 @@ into the other.
 | [Guides](guides/index.md) | how to use and develop kiln |
 | [Runbooks](runbooks/index.md) | procedures with decision points |
 | Reference | the normative standard, and the generated API reference |
-| [Releases](releases/index.md) | what ships when, by story ID |
+| [Releases](releases/index.md) | what ships when, by feature |
 | [Specs](specs/index.md) | work: epics, features, stories, their design and open questions |
 | [Decisions](adr/index.md) | choices between real alternatives |
 | [Plans](plans/index.md) | the record the work grew out of |

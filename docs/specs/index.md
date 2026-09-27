@@ -17,8 +17,8 @@ board says what is next; the epic says how; its ADRs say why.
 
 | Epic | Release | Next step |
 | -- | -- | -- |
-| [E11 — Package docs sites](epics/E11-package-docs/index.md) | [release-1](../releases/release-1/index.md); S11.2.4 [release-2](../releases/release-2/index.md) | F11.1's check changes, then the `python-lib` golden (S11.2.1); F11.4 any time |
-| [E6 — Rebuild the repos](epics/E6-rebuild-the-repos/index.md) | F6.1 [release-1](../releases/release-1/index.md); F6.2 [release-2](../releases/release-2/index.md) | prove `python-lib` can host pykit after F11.1–F11.3 |
+| [E11 — Package docs sites](epics/E11-package-docs/index.md) | [release-1](../releases/release-1/index.md), [release-2](../releases/release-2/index.md) | F11.1's check changes, then the `python-lib` golden (S11.2.1); F11.4 any time; F11.5 waits on its entry criterion |
+| [E6 — Rebuild the repos](epics/E6-rebuild-the-repos/index.md) | [release-1](../releases/release-1/index.md), [release-2](../releases/release-2/index.md) | prove `python-lib` can host pykit after F11.1–F11.3 |
 
 ### To elaborate
 
@@ -54,7 +54,7 @@ theirs.
 | -- | -- | -- |
 | Every pykit package kiln renders resolves from `feature/upgrade` outside the pykit workspace | [E5](epics/E5-web-archetypes/index.md): `uv sync` of any web cell | not yet (2026-09-26): a web cell's `uv sync` does not resolve |
 | pykit's release-1 tags exist | [E7](epics/E7-pykit-release-pin-flip/index.md) | not yet |
-| pykit's default branch publishes versioned package sites under `https://rn-forge.github.io/pykit/packages/` | [S11.2.4](epics/E11-package-docs/F11.2-python-lib-package-sites.md#s1124-ci-deploys-versioned-package-sites) | not yet |
+| pykit's default branch publishes versioned package sites under `https://rn-forge.github.io/pykit/packages/` | [S11.5.1](epics/E11-package-docs/F11.5-deploy-package-sites.md#s1151-ci-deploys-versioned-package-sites) | not yet |
 
 ## Order
 
@@ -67,7 +67,7 @@ now:   F11.1 checks ─→ F11.2 python-lib package sites ─→ F11.3 generate 
        S5.3.1 + F11.1–F11.3 ─→ S6.1.1 python-lib hosts pykit          │
        S4.5.3–S4.5.7 ─→ F4.6 doctor ──────────────────────────────────┼─→ F4.8 self-host
        F4.7 contracts ────────────────────────────────────────────────┘   F6.2 retire taskkit (after S4.6.2, S5.2.2)
-triggered: E7 pykit tags · E8 ADO · S11.2.4 package-site deploy · backlog: E10 generators
+triggered: E7 pykit tags · E8 ADO · F11.5 package-site deploy · backlog: E10 generators
 ```
 
 E3 shipped on 2026-09-15: every feature's acceptance block passes, S3.3.2's
@@ -121,9 +121,10 @@ whoever builds the story — a person, or an agent of any size.
 - **Taxonomy.** Epic `E<n>` → feature `F<n>.<m>` → story `S<n>.<m>.<k>`. The
   prefix chain locates a bare ID without a lookup. IDs are permanent.
 - **Status lives on the story.** A feature file holds its stories, each with a
-  `**Status:**` line — `planned`, `in progress`, `done`. The epic index
-  carries the epic's status and ship date; this board is the index of those,
-  never a second copy.
+  `**Status:**` line — `planned`, `in progress`, `done`. A feature's status is
+  the status column of its row on its release page, the only copy. The epic
+  index carries the epic's status and ship date; this board is the index of
+  those, never a second copy.
 - **A story is done when its acceptance holds.** Each story carries an
   `**Acceptance:**` list of observable results. The tests that prove its
   behaviour belong in that list, never in a story of their own, so no story
@@ -144,8 +145,9 @@ whoever builds the story — a person, or an agent of any size.
   first match, the writer takes a SIGPIPE, and `pipefail` then fails the line
   although the check passed. Let the grep read to the end and send its own
   output to `/dev/null`.
-- **One home per story; releases link.** A release page names its scope by story
-  ID and links here. Moving a story between releases edits only release pages.
+- **Releases pick features; they link here.** A release page's scope table names
+  each feature once, linked to its file, with its status. A feature belongs to
+  one release at a time; moving it edits only the two release pages.
 - **Shipped work still has an epic**, marked `done` with its ship date and its
   acceptance as run. There is no build log.
 - **The backlog is deferred epics**, each with entry criteria. Promoting one:

@@ -57,8 +57,8 @@ this file and at `docs/index.md`.
 Check for these when changing the tree, and report what you find rather than
 fixing it silently — some of it is deliberate:
 
-- A release names a story ID that does not exist, or a planned story is in no
-  release.
+- A release names a feature that does not exist, a feature is on two release
+  pages, or a planned feature is on none.
 - An epic's status contradicts its stories, or its board row is in the wrong
   group, or in two.
 - Two ADRs decide the same topic, or an ADR's Decision changed

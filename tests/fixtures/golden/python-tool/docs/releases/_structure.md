@@ -2,32 +2,44 @@
 
 ## Belongs here
 
-- One page per release, `release-<n>/index.md`: its `**Status:**` (`planned`,
-  `in progress` or `shipped`, with the date), entry criteria, scope, and exit
-  criteria.
-- Scope named by story ID, linking to the feature file that holds the story.
+- One page per release, `release-<n>/index.md`, in this order:
+    - `**Status:**`: `planned`, `in progress` or `shipped`, with the date.
+    - **Entry criteria**: what must hold before work on the release starts.
+    - **Scope**: a table of the features picked from the backlog, one row each:
+      the feature linked to its spec, its epic, and its status. Done epics that
+      predate the story taxonomy, and other done work the release carries, go in
+      a `### Done before this release` table under it: epic, what it delivered,
+      and its implemented dates.
+    - **Decisions**: each ADR the release added or updated, linked, with one line
+      on what changed.
+    - **Progress**: a few lines on what is next and what blocks it.
+    - **Commits**: the `git log --grep` command that lists commits naming a scope
+      ID, and its output, refreshed at least at the cut.
+    - **Exit criteria**: what must hold for the release to ship.
+    - **Shipped**: once shipped, the release evidence.
 
 ## Does not belong here
 
 | Instead of | Put it in |
 | -- | -- |
-| A story's text, acceptance or design | its feature under `specs/` |
-| A story's status | the story itself |
+| A story's text, acceptance, design or status | its feature under `specs/` |
 | Why a choice was made | an ADR under `adr/` |
 
 ## Naming and shape
 
 - `release-<n>/index.md`; the area `index.md` is the list, newest first.
-- A story belongs to exactly one release at a time, and that assignment lives
-  only on the release page.
+- A feature belongs to one release at a time, and that assignment lives only on
+  the release page.
+- The scope table's status column is the only copy of a spec's status. Update it
+  in the commit that changes the feature's status.
+- Commit subjects name the story or feature IDs they deliver, so the commits
+  section can be regenerated.
 
 ## Changing this area
 
 1. Cut a release page when there is scope to put on it, not ahead of time.
-1. Give it its status, entry criteria, the scope as story IDs linking to their
-   feature files, and exit criteria. Nothing else: the detail lives with the
-   story.
-1. List it in `index.md`, newest first.
+1. Fill the sections above. List it in `index.md`, newest first.
+1. Add or remove scope rows as the plan changes; a moved feature leaves one
+   release page and joins another.
 
-Moving a story between releases edits the two release pages and nothing else.
-When a release ships, set `shipped` with the date once its exit criteria hold.
+A release is `shipped`, with the date, once its exit criteria hold.

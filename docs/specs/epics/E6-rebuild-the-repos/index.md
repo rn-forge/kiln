@@ -1,7 +1,7 @@
 # E6 — Rebuild the repos, retire the old
 
-**Status:** planned · **Releases:** F6.1 in
-[release-1](../../../releases/release-1/index.md); F6.2 in
+**Status:** planned · **Releases:**
+[release-1](../../../releases/release-1/index.md),
 [release-2](../../../releases/release-2/index.md) · **Phase:** F
 
 Each repository's cutover onto kiln is that repository's own work, accepted by

@@ -22,13 +22,15 @@
 | -- | -- |
 | Behaviour that already exists | `architecture/` |
 | A decision | an ADR under `adr/` |
-| Which stories ship when | `releases/` — it links here, never restates |
+| Which features ship in which release, and a feature's status | `releases/` — it links here, never restates |
 | A `progress.md`, `backlog.md`, `decisions.md` or `overview.md` | the epic, a deferred epic, an ADR, or the README |
 
 ## Naming and shape
 
 - `epics/E<n>-<slug>/` directories; feature files `F<n>.<m>-<slug>.md`.
 - IDs are permanent: never renumber; a moved story keeps its ID. Gaps are fine.
+  Work no longer needed is removed and its ID is never reused: a retired story
+  is listed on its feature's `**Retired:**` line.
 - Every epic index carries a `**Status:**` line — `planned`, `elaborating`,
   `in progress`, `done` (with `**Shipped:**`) or `deferred` (with entry
   criteria) — and `index.md`'s board lists each epic in exactly one group.

@@ -46,16 +46,18 @@ Nothing shipped yet.
 - **Every piece of work is an epic**, shipped work included, marked `done` with
   its ship date and its acceptance as run. There is no build log.
 - **Status lives on the story.** A feature file holds its stories, each with a
-  `**Status:**` line. The epic index carries the epic's status and ship date;
-  this board is the index of those, never a second copy.
+  `**Status:**` line. A feature's status is the status column of its row on
+  its release page, the only copy. The epic index carries the epic's status
+  and ship date; this board is the index of those, never a second copy.
 - **A story is done when its acceptance holds.** Each story carries an
   `**Acceptance:**` list of observable results, and the tests that prove it
   belong in that list.
 - **A feature states its dependencies and its acceptance**: a `**Depends on:**`
   line, and a `## Acceptance` block that exercises every story and fails
   loudly.
-- **One home per story; releases link.** A release page names its scope by story
-  ID and links here. Moving a story between releases edits only release pages.
+- **Releases pick features; they link here.** A release page's scope table names
+  each feature once, linked to its file, with its status. A feature belongs to
+  one release at a time; moving it edits only the two release pages.
 - **The backlog is deferred epics**, each with entry criteria. There is no
   `backlog.md`.
 - **Design lives with the work** — a `## Design` section on the feature, or the
