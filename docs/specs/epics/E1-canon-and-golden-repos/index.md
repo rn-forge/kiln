@@ -1,6 +1,6 @@
 # E1 — The canon and the hand-authored golden repos
 
-**Status:** done · **Shipped:** 2026-09-09 (`fe7bc70`, review `e1c4abb`) ·
+**Status:** done · **Implemented:** 2026-09-09 (`fe7bc70`, review `e1c4abb`) ·
 **Phase:** B
 
 New repo `rn-forge/kiln`, no generator code. Its own skeleton was bootstrapped

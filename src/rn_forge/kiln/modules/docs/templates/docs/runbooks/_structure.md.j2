@@ -11,8 +11,9 @@
 | -- | -- |
 | A routine development activity | `guides/` |
 | A one-off plan | `specs/` |
+| What a release carries | `releases/` |
 
 ## Naming and shape
 
 - One kebab-case `.md` per procedure, written as ordered steps with the decision
-  points called out.
+  points called out and the evidence each gate needs.

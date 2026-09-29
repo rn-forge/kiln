@@ -1,6 +1,6 @@
 # E3 — Realign the goldens and the canon with pykit
 
-**Status:** done · **Shipped:** 2026-09-15 · **Release:**
+**Status:** done · **Implemented:** 2026-09-15 · **Release:**
 [release-1](../../../releases/release-1/index.md) · **Phase:** C.4 ·
 **Estimate:** 3 days
 

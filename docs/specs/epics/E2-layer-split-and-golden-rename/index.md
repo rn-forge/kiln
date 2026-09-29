@@ -1,7 +1,7 @@
 # E2 — The layer split lands in the goldens
 
-**Status:** done · **Shipped:** 2026-09-12 (`afcfa07`) · **Phase:** C.2 (kiln
-half)
+**Status:** done · **Implemented:** 2026-09-12 (`afcfa07`) · **Phase:** C.2
+(kiln half)
 
 Repos `rn-forge/pykit` (`feature/upgrade`) and `rn-forge/kiln` (`feature/v1`).
 This is what the Phase C review produced

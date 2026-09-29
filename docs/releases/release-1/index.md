@@ -40,7 +40,7 @@ archetypes are [release-2](../release-2/index.md).
 | [F11.1 — The docs checks learn package sites](../../specs/epics/E11-package-docs/F11.1-checks-learn-package-sites.md) | E11 | planned |
 | [F11.2 — `python-lib` repositories carry package docs sites](../../specs/epics/E11-package-docs/F11.2-python-lib-package-sites.md) | E11 | planned |
 | [F11.3 — `kiln generate package`](../../specs/epics/E11-package-docs/F11.3-generate-package.md) | E11 | planned |
-| [F11.4 — The cross-repository rule is seeded](../../specs/epics/E11-package-docs/F11.4-cross-repository-rule.md) | E11 | planned |
+| [F11.4 — The docs rules are one standard, and kiln owns them](../../specs/epics/E11-package-docs/F11.4-cross-repository-rule.md) | E11 | in progress |
 
 ## Decisions
 

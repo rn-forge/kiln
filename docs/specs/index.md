@@ -12,12 +12,12 @@ board says what is next; the epic says how; its ADRs say why.
 | -- | -- | -- |
 | [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | F4.1–F4.3 (apart from S4.3.6's Sonar decisions) and S4.5.1–S4.5.6 and S4.5.9 are done, as is E5's S5.3.6. Next are E11's F11.1–F11.3, then F4.4, and the rest of F4.5–F4.8, including S4.6.5's ownership alignment |
 | [E5 — The web archetypes](epics/E5-web-archetypes/index.md) | [release-2](../releases/release-2/index.md) | FastAPI/Angular scaffolding exists; the owner trial's setup and formatting gaps are closed (S5.3.5–S5.3.6). S5.2.4, S4.5.9, S5.3.5 and S5.3.6 are done. Next are the two FastAPI cells, after F4.4; Django is deferred |
+| [E11 — Package docs sites](epics/E11-package-docs/index.md) | [release-1](../releases/release-1/index.md), [release-2](../releases/release-2/index.md) | F11.1's check changes, then the `python-lib` golden (S11.2.1); S11.4.2 any time; F11.5 waits on its entry criterion |
 
 ### Scheduled
 
 | Epic | Release | Next step |
 | -- | -- | -- |
-| [E11 — Package docs sites](epics/E11-package-docs/index.md) | [release-1](../releases/release-1/index.md), [release-2](../releases/release-2/index.md) | F11.1's check changes, then the `python-lib` golden (S11.2.1); F11.4 any time; F11.5 waits on its entry criterion |
 | [E6 — Rebuild the repos](epics/E6-rebuild-the-repos/index.md) | [release-1](../releases/release-1/index.md), [release-2](../releases/release-2/index.md) | prove `python-lib` can host pykit after F11.1–F11.3 |
 
 ### To elaborate
@@ -36,9 +36,9 @@ Nothing agreed without stories.
 Work outside kiln's releases is a standalone plan, not an epic: agent
 configuration and intellibuild — see [plans](../plans/index.md).
 
-### Shipped
+### Done
 
-| Epic | Shipped |
+| Epic | Implemented |
 | -- | -- |
 | [E1 — The canon and the hand-authored golden repos](epics/E1-canon-and-golden-repos/index.md) | 2026-09-09 |
 | [E2 — The layer split lands in the goldens](epics/E2-layer-split-and-golden-rename/index.md) | 2026-09-12 |
@@ -62,7 +62,7 @@ theirs.
 done:  E1 ─→ E2 ─→ E3 ─→ F4.1 ─→ F4.2 ─→ S4.3.1–S4.3.5 ─→ S4.5.1–S4.5.6
 done:  F5.1 ─→ F5.2 fastapi ─→ S5.2.4 frontend module ─→ S4.5.9 staged `new` ─→ S5.3.1 fresh-repo gate fixes ─→ S5.3.5 quality commands ─→ S5.3.6 setup experience
        (Django S5.2.3 deferred; live sync still needs resolvable pykit pins)
-now:   F11.1 checks ─→ F11.2 python-lib package sites ─→ F11.3 generate package   (F11.4 any time)
+now:   F11.1 checks ─→ F11.2 python-lib package sites ─→ F11.3 generate package   (S11.4.2 any time)
        F4.4 matrix (goldens leave git; python-lib cell needs S11.3.1) ─┬─→ S5.3.2–S5.3.4 ─→ E5 done
        S5.3.1 + F11.1–F11.3 ─→ S6.1.1 python-lib hosts pykit          │
        S4.5.3–S4.5.7 ─→ F4.6 doctor ──────────────────────────────────┼─→ F4.8 self-host
@@ -120,11 +120,10 @@ whoever builds the story — a person, or an agent of any size.
 
 - **Taxonomy.** Epic `E<n>` → feature `F<n>.<m>` → story `S<n>.<m>.<k>`. The
   prefix chain locates a bare ID without a lookup. IDs are permanent.
-- **Status lives on the story.** A feature file holds its stories, each with a
-  `**Status:**` line — `planned`, `in progress`, `done`. A feature's status is
-  the status column of its row on its release page, the only copy. The epic
-  index carries the epic's status and ship date; this board is the index of
-  those, never a second copy.
+- **Status lives on the work.** Epics, features and stories each carry a
+  `**Status:**` line — `planned`, `in progress`, `done`. A release page's
+  scope table mirrors its features' status, updated in the same commit. This
+  board is the index of the epics' status, never a second copy.
 - **A story is done when its acceptance holds.** Each story carries an
   `**Acceptance:**` list of observable results. The tests that prove its
   behaviour belong in that list, never in a story of their own, so no story
@@ -133,9 +132,10 @@ whoever builds the story — a person, or an agent of any size.
 - **A feature states its dependencies and its acceptance.** `**Depends on:**`
   names features, stories and upstream work. A decision the feature needs is
   its own story, so work can depend on the decision without depending on its
-  implementation. A `## Acceptance` block exercises every story, each line
-  tagged with the story it proves; what cannot be scripted — an approval, a
-  recorded decision — is listed under the block.
+  implementation. A feature with several stories has a `## Acceptance` block
+  that exercises every story, each line tagged with the story it proves; what
+  cannot be scripted — an approval, a recorded decision — is listed under the
+  block.
 - **Acceptance blocks fail loudly.** They start with `set -euo pipefail`, and a
   failure is never turned into output (`|| echo`). A negative check uses the
   `absent` or `fails_with` helper defined at the top of the block, never a
@@ -148,10 +148,13 @@ whoever builds the story — a person, or an agent of any size.
 - **Releases pick features; they link here.** A release page's scope table names
   each feature once, linked to its file, with its status. A feature belongs to
   one release at a time; moving it edits only the two release pages.
-- **Shipped work still has an epic**, marked `done` with its ship date and its
-  acceptance as run. There is no build log.
-- **The backlog is deferred epics**, each with entry criteria. Promoting one:
-  flip to `elaborating`, write its stories, then `planned` with a release.
+- **Done work still has an epic**, marked `done` with its `**Implemented:**`
+  date and its acceptance as run. There is no build log.
+- **The backlog is a parking lot.** An idea not yet agreed as work is a row in
+  `backlog.md`, with no ID and no status, until the owner takes it up as an
+  epic or feature. Agreed work that is not ready is a deferred epic with entry
+  criteria; promoting one: flip to `elaborating`, write its stories, then
+  `planned` with a release.
 - **Design lives with the work** — a `## Design` section on the feature, or the
   epic's `design.md`. Current behaviour belongs in
   [architecture](../architecture/index.md), the normative standard in
