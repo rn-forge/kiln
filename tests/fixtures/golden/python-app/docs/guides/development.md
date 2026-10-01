@@ -15,8 +15,8 @@ task docs:serve  # live docs on http://127.0.0.1:8080
 
 `setup`, `validate`, `lint`, `format`, `typecheck`, `test`, `test:coverage`,
 `build`, `clean`, `version` — plus the public `docs:build`, `docs:serve`,
-`docs:nav`, `docs:structure`. Every other task is `internal: true` and exists to
-be composed by a wrapper. That list is fixed by kiln ADR-0007, and
+`docs:generate`, `docs:structure`. Every other task is `internal: true` and
+exists to be composed by a wrapper. That list is fixed by kiln ADR-0007, and
 `kiln doctor --only task-layout` fails if a gate stops being reachable from
 `validate`.
 
@@ -27,4 +27,4 @@ one anyway, `task lint` will tell you which file drifted and from what.
 
 ## After adding a docs page
 
-Run `task docs:nav` — `task lint` fails on a stale nav block.
+Run `task docs:generate` — `task lint` fails on a stale nav.

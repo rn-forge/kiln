@@ -44,21 +44,21 @@
     },
     ".rn-forge/kiln/standard.md": {
       "begin_marker": null,
-      "content_hash": "5bc10bd078c590201a2ab5f115ed1a076d8e5644447ff0680c0933675db750cd",
+      "content_hash": "dc8daa72ac5ddbb98de9ea2a841ad2ffb4ecd75ea861bf0bce742d761a635e35",
       "end_marker": null,
       "kind": "managed",
       "path": ".rn-forge/kiln/standard.md"
     },
     "CLAUDE.md#rn-forge kiln": {
       "begin_marker": "<!-- BEGIN rn-forge kiln -->",
-      "content_hash": "b7aec74ce90f592107fc1875b8e792a247d09516d1c527b178cc5c62a9de5f41",
+      "content_hash": "a2b9c3f6cd698c64d9e5dcfce52b1bef71ec6d16dad90f12b222d1578fee9ab7",
       "end_marker": "<!-- END rn-forge kiln -->",
       "kind": "block",
       "path": "CLAUDE.md"
     },
     "Taskfile.yml": {
       "begin_marker": null,
-      "content_hash": "eba0f7e9ab188f558246e4087bdf5f8df0aafe75e340128fd4ec77325194ec93",
+      "content_hash": "6a906aa9dec995e8421bf055252581943bfa46d71ef470fab035220b0951f6bf",
       "end_marker": null,
       "kind": "managed",
       "path": "Taskfile.yml"
@@ -182,13 +182,6 @@
       "kind": "seeded",
       "path": "docs/specs/index.md"
     },
-    "mkdocs.yml#generated nav": {
-      "begin_marker": "# BEGIN generated nav",
-      "content_hash": "8f5fde56675fe105c95fd59dcfe58f734e80765af4c39b89a22aa0df9bcbd4cf",
-      "end_marker": "# END generated nav",
-      "kind": "block",
-      "path": "mkdocs.yml"
-    },
     "sonar-project.properties": {
       "begin_marker": null,
       "content_hash": "1096c3cf7c8cf95f95655ec5f4346374698784c6105edd1eff45d34cb54459a8",
@@ -198,14 +191,14 @@
     },
     "tasks/docs.yml": {
       "begin_marker": null,
-      "content_hash": "bd835e83323beaece02c8bcb40f31350105d4e30515cc79be774a80fc3e09785",
+      "content_hash": "9224e4153d37d3aeeedf5c74323919656388f752246a5a024d65af2d0de395ee",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/docs.yml"
     },
     "tasks/quality.yml": {
       "begin_marker": null,
-      "content_hash": "585f36125c711601da2a59d2676e0658b975dac60332ed07bcbeff11e143ed72",
+      "content_hash": "7cd11438e408a8a62ba605cd1e5531246483a897f5cdd7d970b6943ea1865ba5",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/quality.yml"
@@ -219,7 +212,7 @@
     }
   },
   "metadata": {
-    "config_hash": "049b26050110c47c9694c141c73cccbaceada132f5ec4113a3b9bcbc69fe14f1",
+    "config_hash": "bc448687c09e9700de8697e6711547557286d5e435d2bffd8f59fc1c4091690b",
     "kiln_version": "golden"
   },
   "schema_version": "1"

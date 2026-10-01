@@ -53,7 +53,7 @@ tasks:
       - task: quality:lint:ci-entrypoint
 {% if docs %}      - task: quality:lint:docs
       - task: quality:lint:docs-structure
-      - task: quality:lint:docs-nav
+      - task: quality:lint:docs-generate
 {% endif %}      - task: quality:lint:markdown
 {% if web_app %}      - task: web:lint
 {% endif %}{% for ref in extra_refs.get("lint", []) %}      - task: [[ ref ]]

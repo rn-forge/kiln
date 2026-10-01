@@ -22,7 +22,7 @@ def test_every_check_is_named_by_its_module() -> None:
         "ci-entrypoint",
         "ci-pins",
         "docs-structure",
-        "docs-nav",
+        "docs-generate",
         "docs-site",
         "root-hygiene",
     )

@@ -87,12 +87,12 @@ tasks:
 {% if overrides.get("quality:lint:docs-structure") %}      - [[ overrides["quality:lint:docs-structure"] ]]
 {% else %}      - task: :docs:structure
 {% endif %}
-  lint:docs-nav:
-    desc: Check mkdocs.yml's generated nav block is up to date.
+  lint:docs-generate:
+    desc: Check the docs' derived regions are up to date.
     internal: true
     cmds:
-{% if overrides.get("quality:lint:docs-nav") %}      - [[ overrides["quality:lint:docs-nav"] ]]
-{% else %}      - uv run kiln doctor . --only docs-nav
+{% if overrides.get("quality:lint:docs-generate") %}      - [[ overrides["quality:lint:docs-generate"] ]]
+{% else %}      - uv run kiln doctor . --only docs-generate
 {% endif %}{% endif %}
   format:python:
 {% if workspace %}    desc: Fix and format every workspace package in place with ruff.

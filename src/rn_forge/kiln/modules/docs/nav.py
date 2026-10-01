@@ -6,6 +6,7 @@ order, then all remaining pages alphabetically.
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
@@ -20,11 +21,12 @@ __all__ = [
     "NAV_BLOCK",
     "NavEntry",
     "build_nav",
+    "page_title",
     "title_from_filename",
     "update_nav",
 ]
 
-NAV_BLOCK = ManagedBlock("generated nav", indent="  ")
+NAV_BLOCK = ManagedBlock("derived nav", indent="  ")
 """The fenced block inside `mkdocs.yml`'s ``nav:`` that this module owns."""
 
 ACRONYMS = {"adr": "ADR", "api": "API", "cli": "CLI", "ci": "CI", "id": "ID"}
@@ -37,6 +39,14 @@ def title_from_filename(name: str) -> str:
     return " ".join(
         ACRONYMS.get(word.lower(), word.capitalize()) for word in stem.split("-")
     )
+
+
+def page_title(path: Path) -> str:
+    """The text of *path*'s first `# ` heading, else its filename's title."""
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.startswith("# "):
+            return line.removeprefix("# ").strip()
+    return title_from_filename(path.name)
 
 
 def _linked_order(index_path: Path) -> list[str]:
@@ -69,8 +79,8 @@ def _children_entries(docs_root: Path, area_key: str) -> list[tuple[str, str]]:
     return [
         (
             "Overview"
-            if Path(rel).name == "index.md"
-            else title_from_filename(Path(rel).name),
+            if rel == f"{area_key}/index.md"
+            else page_title(docs_root / rel),
             rel,
         )
         for rel in ordered
@@ -98,7 +108,7 @@ def _area_entry(docs_root: Path, area: Area) -> NavEntry | None:
 
 
 def build_nav(docs_root: str | Path) -> str:
-    """Render the nav block's body for the docs tree at *docs_root*."""
+    """Render the derived nav's body for the docs tree at *docs_root*."""
     docs_root = Path(docs_root)
     nav: list[NavEntry] = [{"Home": "index.md"}]
     nav.extend(
@@ -106,7 +116,7 @@ def build_nav(docs_root: str | Path) -> str:
         for area in load_areas(docs_root)
         if (entry := _area_entry(docs_root, area)) is not None
     )
-    serialized = YamlUtils.serialize(nav)
+    serialized = YamlUtils.serialize(nav, width=sys.maxsize)
     return "".join(
         f"{BLOCK_INDENT}{line}\n" if line else "\n" for line in serialized.splitlines()
     )
@@ -118,7 +128,7 @@ def update_nav(mkdocs_path: str | Path, docs_root: str | Path) -> tuple[str, boo
     Writes nothing — the caller decides whether this is a check or a rewrite.
 
     Raises:
-        AppException: The nav block's markers are missing or malformed.
+        AppException: The nav's markers are missing or malformed.
     """
     mkdocs_path = Path(mkdocs_path)
     current = mkdocs_path.read_text(encoding="utf-8")

@@ -1,4 +1,4 @@
-"""S4.3.2 — the `docs` module's artifacts: the seeded tree and the nav block.
+"""S4.3.2 — the `docs` module's artifacts: the seeded tree.
 
 Also proves the five properties every F4.3 story owes its module
 (`docs/specs/epics/E4-generator/F4.3-concern-modules.md`).
@@ -14,9 +14,9 @@ from rn_forge.tooling.generation import Action, ArtifactKind
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
-from rn_forge.kiln.modules.docs import DOCS
+from rn_forge.kiln.modules.docs import DOCS, generate
 from rn_forge.kiln.modules.docs.artifacts import SEEDS
-from rn_forge.kiln.modules.docs.nav import NAV_BLOCK
+from rn_forge.kiln.modules.docs.nav import NAV_BLOCK, build_nav
 from rn_forge.kiln.modules.docs.scaffold import scaffold
 from rn_forge.kiln.modules.instructions.scaffold import (
     scaffold as instructions_scaffold,
@@ -24,7 +24,6 @@ from rn_forge.kiln.modules.instructions.scaffold import (
 
 GOLDEN = Path(__file__).resolve().parents[2] / "fixtures" / "golden"
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
-NAV_KEY = "mkdocs.yml#generated nav"
 
 CONFIG = """
 schema_version = 1
@@ -71,6 +70,7 @@ def _new(tmp_path: Path, archetype: str = "python-tool") -> Path:
     scaffold(root, config)
     instructions_scaffold(root, config)
     cycle.apply(root, home=tmp_path / "home")
+    generate.generate(root)
     return root
 
 
@@ -93,7 +93,6 @@ def test_s4_3_2_property1_renders_exactly_the_module_s_template_inventory_row(
     artifacts = DOCS.artifacts(KilnConfig.load(root), root)
     assert [(a.key, a.kind) for a in artifacts] == [
         *((path, ArtifactKind.SEEDED) for path in SEEDS),
-        (NAV_KEY, ArtifactKind.BLOCK),
     ]
 
 
@@ -104,7 +103,6 @@ def test_s4_3_2_property2_into_an_empty_directory_only_creates(
     actions = _actions(_root(tmp_path, archetype), tmp_path)
     assert set(actions.values()) <= {Action.CREATE, Action.INSERT, Action.SKIP}
     assert all(actions[path] is Action.CREATE for path in SEEDS)
-    assert actions[NAV_KEY] is Action.INSERT
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
@@ -142,10 +140,13 @@ def test_s4_3_2_property4_matches_its_golden(tmp_path: Path, archetype: str) -> 
     rendered = {a.key: a.content for a in DOCS.artifacts(config, golden)}
 
     mkdocs = (golden / "mkdocs.yml").read_text(encoding="utf-8")
-    assert rendered[NAV_KEY] == NAV_BLOCK.extract(mkdocs)
+    assert NAV_BLOCK.extract(mkdocs) == build_nav(golden / "docs")
     scaffold(tmp_path, config)
     body = (tmp_path / "mkdocs.yml").read_text(encoding="utf-8")
-    assert _normalized(NAV_BLOCK.render(body, rendered[NAV_KEY])) == _normalized(mkdocs)
+    assert NAV_BLOCK.extract(body) == ""
+    assert _normalized(NAV_BLOCK.render(body, build_nav(golden / "docs"))) == (
+        _normalized(mkdocs)
+    )
 
     for path in SEEDS:
         on_disk = (golden / path).read_text(encoding="utf-8")
@@ -234,14 +235,21 @@ def test_s4_3_2_3_a_new_page_updates_only_the_nav_block(tmp_path: Path) -> None:
     before = mkdocs.read_text(encoding="utf-8")
     (root / "docs" / "guides" / "setup.md").write_text("# Setup\n", encoding="utf-8")
 
-    actions = _actions(root, tmp_path)
     assert {
-        k for k, a in actions.items() if a not in (Action.UNCHANGED, Action.SKIP)
-    } == {NAV_KEY}
-    assert actions[NAV_KEY] is Action.UPDATE
+        k
+        for k, a in _actions(root, tmp_path).items()
+        if a not in (Action.UNCHANGED, Action.SKIP)
+    } == set()
 
-    cycle.apply(root, home=tmp_path / "home")
+    assert generate.generate(root) == [mkdocs]
     after = mkdocs.read_text(encoding="utf-8")
     assert "guides/setup.md" in (NAV_BLOCK.extract(after) or "")
     assert NAV_BLOCK.remove(after) == NAV_BLOCK.remove(before)
     assert _codes(root) == []
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s13_1_1_2_no_docs_artifact_is_a_block(tmp_path: Path, archetype: str) -> None:
+    root = _root(tmp_path, archetype)
+    kinds = {a.kind for a in DOCS.artifacts(KilnConfig.load(root), root)}
+    assert ArtifactKind.BLOCK not in kinds

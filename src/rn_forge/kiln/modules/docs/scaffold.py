@@ -1,8 +1,7 @@
 """Scaffolding: the repo-owned body of `mkdocs.yml`.
 
-Runs once, from `kiln new`, before the first `apply`. The body carries no nav
-markers and ends in `nav:`, so the apply that follows inserts the generated nav
-block beneath it.
+Runs once, from `kiln new`, before the first `apply`. The body ends with the empty
+derived-nav fence, which `kiln docs-generate` fills.
 """
 
 from __future__ import annotations

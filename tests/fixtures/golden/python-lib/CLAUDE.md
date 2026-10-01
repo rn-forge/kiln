@@ -26,13 +26,13 @@ changing anything structural.
   `mkdocs` or `kiln` directly, in a workflow or in a document — the ten root
   verbs are
   `setup validate lint format typecheck test test:coverage build clean version`,
-  plus `docs:build docs:serve docs:nav docs:structure`.
+  plus `docs:build docs:serve docs:generate docs:structure`.
 - **Generated files** carry a provenance header naming kiln. They are owned by
   kiln, not by this repo: edit `.rn-forge/kiln/config.toml` and run
   `kiln apply`. An edit in place is drift, and `task lint` fails on it.
 - **Docs rules:** [docs/\_structure.md](docs/_structure.md) says what belongs
   where; [docs/index.md](docs/index.md) is the reader's entry point. Run
-  `task docs:nav` after adding a page.
+  `task docs:generate` after adding a page.
 - **kiln is a pinned dev dependency.** CI runs it read-only through
   `task validate` — `kiln doctor` on every run, `kiln doctor --full` where the
   workflow asks — and never runs `kiln apply`.

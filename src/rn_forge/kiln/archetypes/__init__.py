@@ -35,7 +35,7 @@ __all__ = [
 RN_FORGE_PREFIX = "rn-forge-"
 """Every distribution the dependency contract governs starts with this."""
 
-RN_FORGE_SOURCE = "git+https://github.com/rn-forge/pykit@feature/upgrade"
+RN_FORGE_SOURCE = "git+https://github.com/rn-forge/pykit@main"
 """pykit's git source. Flipping to tags (E7) is a change to this constant alone."""
 KILN_SOURCE = "git+https://github.com/rn-forge/kiln@feature/v1"
 """kiln's own git source, for the `rn-forge-kiln` dev dependency it scaffolds."""
@@ -46,7 +46,7 @@ _TOOLING = "rn-forge-tooling"
 _MKDOCS_VALIDATE = (
     "quality:lint:docs",
     "quality:lint:docs-structure",
-    "quality:lint:docs-nav",
+    "quality:lint:docs-generate",
     "docs:build",
 )
 

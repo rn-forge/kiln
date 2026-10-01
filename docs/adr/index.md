@@ -23,5 +23,5 @@ it generates.
 | [0008](ADR-0008.md) | Only published packages get their own docs site | the docs layout of Python repositories |
 | [0009](ADR-0009.md) | A repository's specs are accepted inside that repository | every repository's specs |
 | [0010](ADR-0010.md) | The canon carries an architecture baseline, as managed records (proposed) | the product code of every generated repository |
-| [0011](ADR-0011.md) | Work is tracked as Azure DevOps-shaped work items (proposed) | the specs and releases of every generated repository, and kiln's |
-| [0012](ADR-0012.md) | Every repository publishes one MkDocs site, whatever its language (proposed) | the docs site of every generated repository |
+| [0011](ADR-0011.md) | Work is tracked as Azure DevOps-shaped work items | the specs and releases of every generated repository, and kiln's |
+| [0012](ADR-0012.md) | Every repository publishes one MkDocs site, whatever its language | the docs site of every generated repository |

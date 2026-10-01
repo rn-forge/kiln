@@ -14,7 +14,7 @@ import pytest
 
 from rn_forge.kiln import checks
 
-BASE_URL = "git+https://github.com/rn-forge/pykit@feature/upgrade"
+BASE_URL = "git+https://github.com/rn-forge/pykit@main"
 
 
 def pinned(distribution: str) -> str:

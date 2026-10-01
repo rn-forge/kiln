@@ -61,11 +61,11 @@ tasks:
     cmds:
       - task: :docs:structure
 
-  lint:docs-nav:
-    desc: Check mkdocs.yml's generated nav block is up to date.
+  lint:docs-generate:
+    desc: Check the docs' derived regions are up to date.
     internal: true
     cmds:
-      - uv run kiln doctor . --only docs-nav
+      - uv run kiln doctor . --only docs-generate
 
   format:python:
     desc: Fix and format src/ (and tests/, when present) in place with ruff.

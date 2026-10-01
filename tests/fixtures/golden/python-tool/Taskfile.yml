@@ -48,7 +48,7 @@ tasks:
       - task: quality:lint:ci-entrypoint
       - task: quality:lint:docs
       - task: quality:lint:docs-structure
-      - task: quality:lint:docs-nav
+      - task: quality:lint:docs-generate
       - task: quality:lint:markdown
 
   format:

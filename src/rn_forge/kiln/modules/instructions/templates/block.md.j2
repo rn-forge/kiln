@@ -16,7 +16,7 @@ changing anything structural.
   `kiln apply`. An edit in place is drift, and `task lint` fails on it.
 {% if docs_profile == "mkdocs" %}- **Docs rules:** [docs/\_structure.md](docs/_structure.md) says what belongs
   where; [docs/index.md](docs/index.md) is the reader's entry point. Run
-  `task docs:nav` after adding a page.
+  `task docs:generate` after adding a page.
 {% elif docs_profile == "external" %}{{ docs_bullet }}
 {% endif %}- **kiln is a pinned dev dependency.** CI runs it read-only through
   `task validate` — `kiln doctor` on every run, `kiln doctor --full` where the

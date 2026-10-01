@@ -54,8 +54,8 @@ text.
   A template change not first made in a golden repo is a bug. This holds until
   the rendered templates reproduce the goldens and they leave git
   ([render-matrix policy](docs/specs/epics/E4-generator/F4.4-render-matrix.md#template-review-policy)).
-- The policy and docs checks are `kiln doctor`, and `kiln docs-nav` writes the
-  nav; no repo carries `scripts/**` for them
+- The policy and docs checks are `kiln doctor`, and `kiln docs-generate` writes
+  the derived regions; no repo carries `scripts/**` for them
   ([ADR-0006](docs/adr/ADR-0006.md)). The goldens take `rn-forge-kiln` from a
   path source to this checkout, so a change under `src/` reaches their gates
   directly.

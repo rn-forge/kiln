@@ -3,7 +3,7 @@
 # kiln writes it once and never touches it again: a repo
 # that needs an area kiln has never heard of adds it here, and the docs checkers
 # validate the tree against this file rather than against a list baked into
-# them. Order is nav order; re-run `task docs:nav` after editing.
+# them. Order is nav order; re-run `task docs:generate` after editing.
 version: 1
 areas:
   - key: architecture

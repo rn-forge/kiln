@@ -39,9 +39,9 @@ _QUALITY_TASKS = (
 _QUALITY_DOCS_TASKS = (
     "quality:lint:docs",
     "quality:lint:docs-structure",
-    "quality:lint:docs-nav",
+    "quality:lint:docs-generate",
 )
-_DOCS_TASKS = ("docs:build", "docs:serve", "docs:nav", "docs:structure")
+_DOCS_TASKS = ("docs:build", "docs:serve", "docs:generate", "docs:structure")
 
 
 def _tasks_config(config: KilnConfig) -> TasksConfig:

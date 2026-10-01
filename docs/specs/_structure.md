@@ -78,7 +78,7 @@ owner asks. A dropped idea is deleted.
    epic's `design.md` when it spans features; a link to `architecture/` when
    it describes current behaviour.
 1. Add the epic's row to the board in `index.md`, in exactly one group, and run
-   `task docs:nav`.
+   `task docs:generate`.
 
 **Writing acceptance:**
 

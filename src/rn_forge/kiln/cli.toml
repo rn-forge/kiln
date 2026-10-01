@@ -16,8 +16,8 @@ name = "doctor"
 target = "rn_forge.kiln.commands:doctor"
 
 [[cli.commands]]
-name = "docs-nav"
-target = "rn_forge.kiln.commands:docs_nav"
+name = "docs-generate"
+target = "rn_forge.kiln.commands:docs_generate"
 
 [[cli.commands]]
 name = "new"

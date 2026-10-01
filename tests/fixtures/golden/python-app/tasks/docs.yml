@@ -19,10 +19,10 @@ tasks:
     cmds:
       - uv run --group docs mkdocs serve -a 127.0.0.1:8080
 
-  nav:
-    desc: Regenerate mkdocs.yml's nav block from docs/_areas.yml and the tree.
+  generate:
+    desc: Regenerate the docs' derived regions.
     cmds:
-      - uv run kiln docs-nav .
+      - uv run kiln docs-generate .
 
   structure:
     desc: Check the docs tree matches the area model declared in docs/_areas.yml.

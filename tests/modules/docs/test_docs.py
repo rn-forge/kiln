@@ -10,7 +10,12 @@ from rn_forge.commons.exceptions import AppException
 
 from rn_forge.kiln.modules.docs.areas import Area, load_areas
 from rn_forge.kiln.modules.docs.markdown import headings, is_external, links, slugify
-from rn_forge.kiln.modules.docs.nav import NAV_BLOCK, build_nav, update_nav
+from rn_forge.kiln.modules.docs.nav import (
+    NAV_BLOCK,
+    build_nav,
+    page_title,
+    update_nav,
+)
 from rn_forge.kiln.modules.docs.policy import (
     DocsPolicy,
     NestedArea,
@@ -36,8 +41,8 @@ areas:
 MKDOCS = """\
 site_name: demo
 nav:
-  # BEGIN generated nav
-  # END generated nav
+  # BEGIN derived nav
+  # END derived nav
 """
 
 
@@ -79,7 +84,7 @@ def write(path, text):
 
 @pytest.fixture
 def repo(tmp_path):
-    """A minimal but valid repo: two areas, an instruction file, a nav block."""
+    """A minimal but valid repo: two areas, an instruction file, a nav fence."""
     docs = tmp_path / "docs"
     write(docs / "_areas.yml", AREAS)
     write(docs / "_structure.md", "# Structure\n")
@@ -272,8 +277,20 @@ class TestNav:
         assert "api/module.md" not in body
 
     def test_titles_use_acronyms(self, repo):
-        write(repo / "docs/guides/cli-api.md", "# x\n")
+        write(repo / "docs/guides/cli-api.md", "no heading here\n")
         assert "CLI API: guides/cli-api.md" in build_nav(repo / "docs")
+
+    def test_s13_1_1_3_page_title_is_the_h1_or_the_filename_title(self, repo):
+        write(repo / "docs/guides/with-h1.md", "intro\n#  Choosing packages  \n")
+        write(repo / "docs/guides/no-h1.md", "## Only a subheading\n")
+        assert page_title(repo / "docs/guides/with-h1.md") == "Choosing packages"
+        assert page_title(repo / "docs/guides/no-h1.md") == "No H1"
+
+    def test_s13_1_1_3_nav_titles_come_from_h1s(self, repo):
+        write(repo / "docs/guides/choosing-packages.md", "# Choosing packages\n")
+        body = build_nav(repo / "docs")
+        assert "Choosing packages: guides/choosing-packages.md" in body
+        assert "Overview: adr/index.md" in body
 
     def test_update_nav_reports_staleness_without_writing(self, repo):
         before = (repo / "mkdocs.yml").read_text()
@@ -353,3 +370,25 @@ class TestMarkdownAgreesWithTheRenderer:
 
     def test_tilde_fences_are_stripped_too(self):
         assert links("~~~\n[x](inside.md)\n~~~\n\n[y](outside.md)\n") == ["outside.md"]
+
+
+class TestGenerate:
+    def test_s13_1_1_5_generate_writes_a_stale_nav_once(self, repo):
+        from rn_forge.kiln.modules.docs import generate
+
+        assert generate.generate(repo) == [repo / "mkdocs.yml"]
+        assert generate.generate(repo) == []
+        assert generate.stale(repo) == []
+
+    def test_s13_1_1_5_stale_reports_the_finding_without_writing(self, repo):
+        from rn_forge.kiln.modules.docs import generate
+
+        before = (repo / "mkdocs.yml").read_text()
+        assert codes(generate.stale(repo)) == ["docs.nav-stale"]
+        assert (repo / "mkdocs.yml").read_text() == before
+
+    def test_s13_1_1_5_nothing_happens_without_mkdocs_yml(self, tmp_path):
+        from rn_forge.kiln.modules.docs import generate
+
+        assert generate.generate(tmp_path) == []
+        assert generate.stale(tmp_path) == []

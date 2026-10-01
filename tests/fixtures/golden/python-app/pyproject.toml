@@ -12,8 +12,8 @@ requires-python = ">=3.14"
 # consumer of this package's release could not resolve commons at all
 # (the dependency specification).
 dependencies = [
-  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-commons",
-  "rn-forge-cli @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-cli",
+  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@main#subdirectory=packages/rn-forge-commons",
+  "rn-forge-cli @ git+https://github.com/rn-forge/pykit@main#subdirectory=packages/rn-forge-cli",
 ]
 
 [project.scripts]

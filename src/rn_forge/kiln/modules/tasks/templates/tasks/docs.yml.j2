@@ -21,11 +21,11 @@ tasks:
 {% if overrides.get("docs:serve") %}      - [[ overrides["docs:serve"] ]]
 {% else %}      - uv run --group docs mkdocs serve -a 127.0.0.1:8080
 {% endif %}
-  nav:
-    desc: Regenerate mkdocs.yml's nav block from docs/_areas.yml and the tree.
+  generate:
+    desc: Regenerate the docs' derived regions.
     cmds:
-{% if overrides.get("docs:nav") %}      - [[ overrides["docs:nav"] ]]
-{% else %}      - uv run kiln docs-nav .
+{% if overrides.get("docs:generate") %}      - [[ overrides["docs:generate"] ]]
+{% else %}      - uv run kiln docs-generate .
 {% endif %}
   structure:
     desc: Check the docs tree matches the area model declared in docs/_areas.yml.

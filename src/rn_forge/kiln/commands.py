@@ -32,7 +32,7 @@ from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
 from rn_forge.kiln.modules.core import cycle, umbrella
 from rn_forge.kiln.modules.core.config.manager import ConfigManager
 from rn_forge.kiln.modules.core.config.sources import Source
-from rn_forge.kiln.modules.docs.nav import update_nav
+from rn_forge.kiln.modules.docs import generate
 from rn_forge.kiln.modules.docs.scaffold import scaffold as docs_scaffold
 from rn_forge.kiln.modules.frontend.scaffold import (
     reconcile_frontend,
@@ -49,7 +49,7 @@ __all__ = [
     "config_update",
     "config_upgrade",
     "diff",
-    "docs_nav",
+    "docs_generate",
     "doctor",
     "new",
     "prompt",
@@ -83,18 +83,17 @@ def doctor(path: Path, only: str | None = None) -> None:
         raise AppException("{} check(s) failed in {}", len(errors), path)
 
 
-def docs_nav(path: Path) -> None:
-    """Regenerate the nav block in PATH's `mkdocs.yml` from its docs tree.
+def docs_generate(path: Path) -> None:
+    """Regenerate the derived regions of PATH's docs, such as `mkdocs.yml`'s nav.
 
-    `kiln doctor --only docs-nav` is the check that the block is current.
+    `kiln doctor --only docs-generate` is the check that they are current.
     """
-    mkdocs_path = path / "mkdocs.yml"
-    updated, changed = update_nav(mkdocs_path, path / "docs")
-    if not changed:
+    written = generate.generate(path)
+    if not written:
         console.info("no change")
         return
-    mkdocs_path.write_text(updated, encoding="utf-8")
-    console.success("updated {}", mkdocs_path)
+    for file in written:
+        console.success("updated {}", file)
 
 
 def new(
@@ -168,6 +167,8 @@ def new(
     instructions_scaffold(workspace, resolved)
 
     result = cycle.apply(workspace, provenance=resolution.provenance_metadata())
+    if resolved.docs_profile == "mkdocs":
+        generate.generate(workspace)
     _fail_on_errors(workspace)
 
     directory.mkdir(parents=True, exist_ok=True)

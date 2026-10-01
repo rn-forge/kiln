@@ -209,7 +209,7 @@ def test_s4_3_3_1_an_mkdocs_repo_also_lists_the_four_docs_verbs(tmp_path: Path) 
     result = _run_task(root, "--list", "--json")
     assert result.returncode == 0, result.stderr
     names = {entry["name"] for entry in json.loads(result.stdout)["tasks"]}
-    assert {"docs:build", "docs:serve", "docs:nav", "docs:structure"} <= names
+    assert {"docs:build", "docs:serve", "docs:generate", "docs:structure"} <= names
 
 
 def test_s4_3_3_2_a_repo_owned_include_is_seeded_once_and_list_all_succeeds(

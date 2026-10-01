@@ -17,7 +17,7 @@ from rn_forge.commons.findings import Finding
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd.checks import entrypoint, pins
 from rn_forge.kiln.modules.core.checks import generated
-from rn_forge.kiln.modules.docs.checks import nav, site, structure
+from rn_forge.kiln.modules.docs.checks import derived, site, structure
 from rn_forge.kiln.modules.instructions.checks import hygiene
 from rn_forge.kiln.modules.python.checks import pyproject, rn_forge_deps
 from rn_forge.kiln.modules.tasks.checks import layout
@@ -44,7 +44,7 @@ CHECKS: tuple[Check, ...] = (
     Check(entrypoint.NAME, "cicd", entrypoint.check),
     Check(pins.NAME, "cicd", pins.check),
     Check(structure.NAME, "docs", structure.check),
-    Check(nav.NAME, "docs", nav.check),
+    Check(derived.NAME, "docs", derived.check),
     Check(site.NAME, "docs", site.check),
     Check(hygiene.NAME, "instructions", hygiene.check),
 )

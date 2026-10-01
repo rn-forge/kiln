@@ -29,3 +29,13 @@ def test_s4_5_5_packaged_lifecycle_matches_repo_config() -> None:
     packaged = _table(ROOT / "src" / "rn_forge" / "kiln" / "cli.toml", "lifecycle")
     declared = _table(ROOT / ".rn-forge" / "kiln" / "config.toml", "lifecycle")
     assert packaged == declared
+
+
+def test_s13_1_1_6_the_cli_has_docs_generate_and_no_other_docs_command() -> None:
+    names = [
+        command["name"]
+        for command in _table(ROOT / ".rn-forge" / "kiln" / "config.toml", "cli")[
+            "commands"
+        ]
+    ]
+    assert [name for name in names if name.startswith("docs-")] == ["docs-generate"]

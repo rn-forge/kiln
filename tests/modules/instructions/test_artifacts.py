@@ -16,7 +16,7 @@ from rn_forge.tooling.generation import Action, ArtifactKind
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
-from rn_forge.kiln.modules.docs import DOCS
+from rn_forge.kiln.modules.docs import DOCS, generate
 from rn_forge.kiln.modules.docs.scaffold import scaffold as docs_scaffold
 from rn_forge.kiln.modules.instructions import INSTRUCTIONS
 from rn_forge.kiln.modules.instructions.artifacts import KILN_BLOCK
@@ -80,6 +80,7 @@ def _new(tmp_path: Path, archetype: str = "python-tool", **kwargs: object) -> Pa
     scaffold(root, config)
     docs_scaffold(root, config)
     cycle.apply(root, home=tmp_path / "home")
+    generate.generate(root)
     return root
 
 

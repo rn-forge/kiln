@@ -22,9 +22,9 @@ classifiers = [
 # (the dependency specification). A pykit workspace that takes kiln overrides these
 # (kiln ADR-0006).
 dependencies = [
-  "rn-forge-commons[pydantic] @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-commons",
-  "rn-forge-cli @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-cli",
-  "rn-forge-tooling @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-tooling",
+  "rn-forge-commons[pydantic] @ git+https://github.com/rn-forge/pykit@main#subdirectory=packages/rn-forge-commons",
+  "rn-forge-cli @ git+https://github.com/rn-forge/pykit@main#subdirectory=packages/rn-forge-cli",
+  "rn-forge-tooling @ git+https://github.com/rn-forge/pykit@main#subdirectory=packages/rn-forge-tooling",
   # The docs checks ask Python-Markdown what anchor a heading gets rather than
   # guessing; mkdocs already brings it, but a check that only works inside a
   # docs build is not a check.

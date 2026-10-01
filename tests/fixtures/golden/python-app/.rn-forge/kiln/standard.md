@@ -11,7 +11,7 @@ is a kiln ADR; this file states the rule.
   pyright at the root, GitHub Actions, and a command line declared in
   `.rn-forge/kiln/config.toml` rather than assembled by hand. No self-install
   and no local state: that is `python-tool`.
-- **Docs profile:** `mkdocs` — the full area model, a generated nav block, and a
+- **Docs profile:** `mkdocs` — the full area model, a derived nav, and a
   strict site build inside `task validate`.
 - **CI:** GitHub Actions, Sonar on, release by tag-exists check.
 
@@ -36,7 +36,7 @@ The public surface for this repo is exactly:
 | `task version`      | print the version from `pyproject.toml`             |
 | `task docs:build`   | strict MkDocs build into `.docs-site/`              |
 | `task docs:serve`   | live-reload docs on `127.0.0.1:8080`                |
-| `task docs:nav`     | regenerate `mkdocs.yml`'s nav block                 |
+| `task docs:generate`| regenerate the docs' derived regions                |
 | `task docs:structure` | check the tree against `docs/_areas.yml`          |
 
 Every other task is `internal: true`. The root `Taskfile.yml` holds wrappers
@@ -46,20 +46,41 @@ any gate stops being reachable from `validate`.
 
 ## 2. One owner per file, or per block
 
-| Kind        | Meaning                                                        |
-| ----------- | -------------------------------------------------------------- |
-| **managed** | kiln owns the whole file. Editing it is drift; CI fails.       |
-| **block**   | kiln owns a fenced region inside a repo-owned file.            |
-| **seeded**  | repo-owned after scaffolding; doctor ignores it.             |
+Every path kiln writes or reads has exactly one of these kinds:
+
+| Kind | Owner | Written by | Recorded in `state.json` | Checked by |
+| -- | -- | -- | -- | -- |
+| **managed** | kiln | `kiln apply` | the file's SHA-256 | `generated`: drift if the file differs |
+| **block** | kiln (the fence); repo (the rest of the file) | `kiln apply` | the body's SHA-256 and the markers | `generated`: drift if the body differs |
+| **derived region** | kiln (the fence); repo (the rest of the file) | `kiln docs-generate`, and `kiln new` | nothing | `docs-generate`: stale if regenerating it from the repo's inputs differs |
+| **seeded** | repo, after the first write | `kiln apply`, once, when absent | creation only | nothing, including presence |
+| **scaffolded** | repo | `kiln new`'s scaffold step, once | nothing | nothing |
+| **repo** | repo | never kiln | nothing | the repo's own tasks |
+| **input** | repo | the owner, or `kiln config-update` | its hash, as `config_hash` | nothing compares it; `kiln apply` re-renders from it |
+| **baseline** | kiln | `kiln apply` | — (it is the record; it never hashes itself) | `generated` reads it |
+| **derived data** | kiln | kiln, at run time | nothing | nothing; gitignored |
+
+- A file has one kind, except that a file holding a **block** or **derived
+  region** is otherwise scaffolded or repo-owned: `.gitignore`, `CLAUDE.md`
+  and `mkdocs.yml`.
+- **Seeded** and **scaffolded** differ only in who writes them. A seeded file is
+  an apply artifact, so a later `kiln apply` recreates it if it is absent and
+  never touches it if present. A scaffolded file (`pyproject.toml`,
+  `README.md`, the bodies of `CLAUDE.md`, `AGENTS.md` and `mkdocs.yml`, the
+  first `src/` and `tests/`) is written by `kiln new` before its first apply,
+  and never again.
+- Paths kiln neither writes nor reads (`.claude/**`, `.codex/**`, installed
+  skills) are not kiln's and have no kind.
 
 Managed here: `Taskfile.yml`, `tasks/*.yml`, `.editorconfig`, `.importlinter`,
 `.github/workflows/*.yml`, `.github/actions/setup`, `sonar-project.properties`
 and this file. `.rn-forge/kiln/state.json` is generated and committed, and
 never hashes itself.
 
-Blocks here: the `# BEGIN rn-forge kiln` region in `.gitignore`, the
-`# BEGIN generated nav` region in `mkdocs.yml`, and the
+Blocks here: the `# BEGIN rn-forge kiln` region in `.gitignore`, and the
 `<!-- BEGIN rn-forge kiln -->` region in `CLAUDE.md` and `AGENTS.md`.
+
+Derived regions here: the `# BEGIN derived nav` region in `mkdocs.yml`.
 
 Seeded here: `README.md`, `docs/_areas.yml`, `docs/_structure.md`, each area's
 `_structure.md` and `index.md`, and `docs/index.md`.
@@ -97,8 +118,8 @@ pykit stable, they name its branch:
 
 ```toml
 dependencies = [
-  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-commons",
-  "rn-forge-cli @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-cli",
+  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@main#subdirectory=packages/rn-forge-commons",
+  "rn-forge-cli @ git+https://github.com/rn-forge/pykit@main#subdirectory=packages/rn-forge-cli",
 ]
 ```
 
@@ -133,7 +154,7 @@ the `KILN_DOCTOR_FULL` task variable set.
 `task validate` proves: ruff is clean and formatted; the archetype's
 dependency set is present, allowed and pinned; the import contracts hold; the
 task layout and validate gate are intact; no workflow step invokes a wrapped
-tool; the docs tree matches `docs/_areas.yml`; the nav block is current; no link
+tool; the docs tree matches `docs/_areas.yml`; the derived nav is current; no link
 or anchor is broken; **every managed file and block still hashes to the value
 committed in `.rn-forge/kiln/state.json`**; pyright is clean; the tests pass;
 and the docs site builds `--strict`.

@@ -415,3 +415,15 @@ def test_s5_3_6_7_docs_none_omits_the_mkdocs_tree_and_site_tasks(
     assert (target / "README.md").is_file()
     assert (target / "CLAUDE.md").is_file()
     assert (target / ".mdformat.toml").is_file()
+
+
+def test_s13_1_1_4_new_writes_a_current_derived_nav(tmp_path: Path) -> None:
+    target = tmp_path / "demo"
+    commands.new(target, archetype="python-tool", docs="mkdocs", yes=True)
+
+    assert checks.run(target, only="docs-generate") == []
+    nav = (target / "mkdocs.yml").read_text(encoding="utf-8")
+    assert "# BEGIN derived nav" in nav
+    assert "guides/index.md" in nav
+    state = (target / ".rn-forge" / "kiln" / "state.json").read_text("utf-8")
+    assert "mkdocs.yml" not in state

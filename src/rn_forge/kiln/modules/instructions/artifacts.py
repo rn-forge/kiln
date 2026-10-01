@@ -34,7 +34,7 @@ _TOKEN = re.compile(r"(?:[^\s`]|`[^`]*`)+")
 _ROOT_VERBS = (
     "`setup validate lint format typecheck test test:coverage build clean version`"
 )
-_DOCS_VERBS = "`docs:build docs:serve docs:nav docs:structure`"
+_DOCS_VERBS = "`docs:build docs:serve docs:generate docs:structure`"
 _WEB_VERBS = "`web:lint web:test web:build web:dev`"
 
 

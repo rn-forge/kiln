@@ -59,7 +59,7 @@ libraries and owns repository policy; it does not own their internal graph
 ```text
 1. core         .rn-forge/kiln/ only (not its siblings), the gitignore block, .editorconfig
 2. python       managed Python artifacts, including .importlinter
-3. docs         the managed mkdocs nav block; docs content is seeded
+3. docs         the derived mkdocs nav; docs content is seeded
 4. tasks        Taskfile.yml, tasks/*.yml
 5. cicd         workflows, .github/actions/setup, sonar-project.properties
 6. instructions the kiln block, .rn-forge/kiln/standard.md; prose bodies are seeded

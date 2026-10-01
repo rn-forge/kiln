@@ -27,7 +27,7 @@ setup  validate  lint  format  typecheck  test  test:coverage  build  clean  ver
 plus, under `docs.profile = mkdocs`, four public docs verbs:
 
 ```text
-docs:build  docs:serve  docs:nav  docs:structure
+docs:build  docs:serve  docs:generate  docs:structure
 ```
 
 `validate` calls `lint`, `typecheck`, `test`, and — for `mkdocs` — `docs:build`.
@@ -55,7 +55,7 @@ plus, under `docs.profile = mkdocs`:
 
 ```text
 quality:lint:docs   quality:lint:docs-structure
-quality:lint:docs-nav   quality:lint:markdown   docs:build
+quality:lint:docs-generate   quality:lint:markdown   docs:build
 ```
 
 An archetype adds to this list; it never removes from it.
@@ -71,14 +71,36 @@ editing a managed file:
 
 ## 2. One owner per file, or per block
 
-Three artifact kinds, and they are the whole model
-([ADR-0003](../adr/ADR-0003.md)):
+Every path kiln writes or reads has exactly one of these kinds:
 
-| Kind | Meaning | What CI checks |
-| -- | -- | -- |
-| **managed** | kiln owns the whole file | its SHA-256 |
-| **block** | kiln owns a fenced region inside a repo-owned file | the region's body SHA-256 |
-| **seeded** | kiln wrote it once; the repo owns it thereafter | nothing, including presence |
+| Kind | Owner | Written by | Recorded in `state.json` | Checked by |
+| -- | -- | -- | -- | -- |
+| **managed** | kiln | `kiln apply` | the file's SHA-256 | `generated`: drift if the file differs |
+| **block** | kiln (the fence); repo (the rest of the file) | `kiln apply` | the body's SHA-256 and the markers | `generated`: drift if the body differs |
+| **derived region** | kiln (the fence); repo (the rest of the file) | `kiln docs-generate`, and `kiln new` | nothing | `docs-generate`: stale if regenerating it from the repo's inputs differs |
+| **seeded** | repo, after the first write | `kiln apply`, once, when absent | creation only | nothing, including presence (see below) |
+| **scaffolded** | repo | `kiln new`'s scaffold step, once | nothing | nothing |
+| **repo** | repo | never kiln | nothing | the repo's own tasks |
+| **input** | repo | the owner, or `kiln config-update` | its hash, as `config_hash` | nothing compares it; `kiln apply` re-renders from it |
+| **baseline** | kiln | `kiln apply` | — (it is the record; it never hashes itself) | `generated` reads it |
+| **derived data** | kiln | kiln, at run time | nothing | nothing; gitignored |
+
+- A file has one kind, except that a file holding a **block** or **derived
+  region** is otherwise scaffolded or repo-owned: `.gitignore`, `CLAUDE.md`
+  and `mkdocs.yml`.
+- **Seeded** and **scaffolded** differ only in who writes them. A seeded file is
+  an apply artifact, so a later `kiln apply` recreates it if it is absent and
+  never touches it if present. A scaffolded file (`pyproject.toml`,
+  `README.md`, the bodies of `CLAUDE.md`, `AGENTS.md` and `mkdocs.yml`, the
+  first `src/` and `tests/`) is written by `kiln new` before its first apply,
+  and never again.
+- "Nothing, including presence" for **seeded** is the target set by
+  [ADR-0003](../adr/ADR-0003.md). Today the `generated` check still reports a
+  missing seeded file (`generated.seed-missing`), and
+  [S4.6.5](../specs/epics/E4-generator/F4.6-doctor.md#s465-doctor-respects-ownership)
+  removes that. S13.1.1 documents the target and leaves the check alone.
+- Paths kiln neither writes nor reads (`.claude/**`, `.codex/**`, installed
+  skills) are not kiln's and have no kind.
 
 Two owners never write the same bytes. After scaffolding, doctor checks only
 kiln-owned files and blocks for artifact conformance. It does not require seeded
@@ -90,22 +112,22 @@ The assignment is normative:
 | File / tree | Owner | Artifact kind |
 | -- | -- | -- |
 | `.rn-forge/kiln/config.toml` | repo (merged, committed input) | input |
-| `.rn-forge/kiln/state.json` | kiln | generated, committed CI baseline; never hashes itself |
+| `.rn-forge/kiln/state.json` | kiln | baseline — the committed CI baseline; never hashes itself |
 | `.rn-forge/kiln/standard.md` | kiln | managed — the rendered canon |
-| `.rn-forge/kiln/backups/`, `rendered/`, `state.lock` | kiln | gitignored derived data |
+| `.rn-forge/kiln/backups/`, `rendered/`, `state.lock` | kiln | derived data — gitignored |
 | `.gitignore` | repo body, seeded once by `kiln new` from uv's and (for a frontend) Nx's own ignore bodies, in that order; `# BEGIN rn-forge kiln` block → kiln | block |
 | `<repo-name>.code-workspace` | repo after scaffolding — one relative folder, `{ "path": "." }` | **seeded** |
-| `pyproject.toml` | **repo** — scaffolded once; tool settings are not kiln-owned | repo |
+| `pyproject.toml` | **repo** — scaffolded once; tool settings are not kiln-owned | scaffolded |
 | `.editorconfig` | kiln | managed |
 | `.importlinter` | kiln | managed import-boundary contracts |
 | `Taskfile.yml`, `tasks/workspace.yml`, `tasks/quality.yml`, `tasks/docs.yml`, archetype namespace files (`tasks/api.yml`, `tasks/web.yml`) | kiln | managed |
 | `tasks/self.yml` and any include declared `ownership = "repository"` | repo | seeded once, never rewritten |
 | `scripts/**` | **repo only** — a repo's own lints, wired via `[tasks.extra_refs]`. kiln and `cicd` generate nothing here ([ADR-0006](../adr/ADR-0006.md)) | repo |
-| `src/**`, `tests/**` | **repo** — scaffolded once; no doctor structure policing | repo |
-| `README.md` | written once by `kiln new`, then repo | the single prose home; never rewritten |
+| `src/**`, `tests/**` | **repo** — scaffolded once; no doctor structure policing | scaffolded |
+| `README.md` | written once by `kiln new`, then repo | scaffolded — the single prose home; never rewritten |
 | `docs/_areas.yml`, `docs/_structure.md`, `docs/adr/_structure.md` | repo after scaffolding | **seeded** — repos may extend areas |
 | `docs/index.md`, `docs/<area>/index.md` | repo after scaffolding | **seeded** — written once |
-| `mkdocs.yml` | repo body, written once by `kiln new` with `nav:` as its last key; `# BEGIN generated nav` block → kiln, inserted at the end | block |
+| `mkdocs.yml` | repo body, scaffolded by `kiln new`; the `# BEGIN derived nav` region → kiln, rewritten by `task docs:generate` | **derived region** |
 | `.github/workflows/ci.yml`, `docs.yml`; `.github/actions/setup`; `sonar-project.properties` | kiln (`cicd`) | managed |
 | `CLAUDE.md`, `AGENTS.md` | bodies written once by `kiln new`, then repo; the `<!-- BEGIN rn-forge kiln -->` block in `CLAUDE.md` → kiln | block (`CLAUDE.md` only; `AGENTS.md` points at it) |
 | `.claude/**`, `.codex/**`, installed skills | not kiln's | — |
@@ -185,7 +207,7 @@ Every rn-forge requirement is a **PEP 508 direct URL** in `dependencies`:
 
 ```toml
 dependencies = [
-  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@feature/upgrade#subdirectory=packages/rn-forge-commons",
+  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@main#subdirectory=packages/rn-forge-commons",
 ]
 ```
 
@@ -236,11 +258,11 @@ it; `task validate` reaches it. ([ADR-0002](../adr/ADR-0002.md))
 CI runs the pinned kiln read-only ([ADR-0006](../adr/ADR-0006.md)): it never
 runs `kiln apply` and never writes a generated file. `task validate` runs
 `kiln doctor` — the render-free checks, `generated`, `rn-forge-deps`,
-`task-layout`, `ci-entrypoint`, `docs-structure`, `docs-nav` and `docs-site` —
-on every run. `kiln doctor --full`, which adds a full render and diff, runs
-where the workflow asks for it: `lint` runs it when the `KILN_DOCTOR_FULL` task
-variable is set, by default on pushes to the default branch and on manual
-dispatch.
+`task-layout`, `ci-entrypoint`, `docs-structure`, `docs-generate` and
+`docs-site` — on every run. `kiln doctor --full`, which adds a full render and
+diff, runs where the workflow asks for it: `lint` runs it when the
+`KILN_DOCTOR_FULL` task variable is set, by default on pushes to the default
+branch and on manual dispatch.
 
 A cold clone with go-task and the pinned language toolchain — `uv sync`, but no
 installed kiln, no `$RNF_HOME`, no bootstrap script — proves all of this:
@@ -253,9 +275,9 @@ installed kiln, no `$RNF_HOME`, no bootstrap script — proves all of this:
 - the import contracts hold;
 - the task layout is intact and no gate has been removed from `validate`;
 - no workflow step invokes a wrapped tool;
-- the docs tree matches the repo's `docs/_areas.yml`, the nav block is current,
-  every tracked Markdown file is mdformat-clean, and no link or anchor is
-  broken (`mkdocs` profile);
+- the docs tree matches the repo's `docs/_areas.yml`, the derived nav is
+  current, every tracked Markdown file is mdformat-clean, and no link or
+  anchor is broken (`mkdocs` profile);
 - **every managed file and every managed block still hashes to the value
   committed in `.rn-forge/kiln/state.json`**;
 - pyright is clean in strict mode ([ADR-0002](../adr/ADR-0002.md));
@@ -285,7 +307,7 @@ render-free checks are the ones `kiln doctor` runs by default.
 | `gate.shrunk` | tasks reachable from `validate` ⊇ the archetype's `required_validate` |
 | `kiln.pin` | `rn-forge-kiln` is in the dev group with a pinned source, and the running kiln is the version `uv.lock` records |
 | `ci.unpinned` / `ci.permissions` | every `uses:` SHA-pinned with a version comment; every job has `permissions:` |
-| `docs.nav` | managed nav block matches the explicitly configured docs inputs |
+| `docs.nav-stale` | the derived nav (`docs-generate`) differs from what regenerating it from the docs tree would write |
 | `legacy.kiln-state` (error) | a pre-kiln `.rn-forge/kiln/` or `$RNF_HOME/kiln/` tree |
 
 **Implementation gap:** current doctor checks include missing seeds,
