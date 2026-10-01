@@ -41,6 +41,10 @@ archetypes are [release-2](../release-2/index.md).
 | [F11.2 — `python-lib` repositories carry package docs sites](../../specs/epics/E11-package-docs/F11.2-python-lib-package-sites.md) | E11 | planned |
 | [F11.3 — `kiln generate package`](../../specs/epics/E11-package-docs/F11.3-generate-package.md) | E11 | planned |
 | [F11.4 — The docs rules are one standard, and kiln owns them](../../specs/epics/E11-package-docs/F11.4-cross-repository-rule.md) | E11 | in progress |
+| [F12.1 — The baseline module, and the Python records](../../specs/epics/E12-architecture-baseline/F12.1-python-baseline.md) | E12 | planned |
+| [F13.1 — Derived regions, starting with the nav](../../specs/epics/E13-docs-work-model/F13.1-derived-regions.md) | E13 | planned |
+| [F13.2 — The board and Scope regions, and metadata checks](../../specs/epics/E13-docs-work-model/F13.2-board-and-scope.md) | E13 | planned |
+| [F13.3 — The seeded rules and kiln's own docs adopt the model](../../specs/epics/E13-docs-work-model/F13.3-adopt-the-model.md) | E13 | planned |
 
 ## Decisions
 
@@ -51,20 +55,29 @@ archetypes are [release-2](../release-2/index.md).
   get their own docs site (E11).
 - [ADR-0009](../../adr/ADR-0009.md) — added 2026-09-26: a repository's specs are
   accepted inside that repository (E11, F11.4).
+- [ADR-0010](../../adr/ADR-0010.md) — proposed 2026-09-28: the canon carries an
+  architecture baseline, as managed records (E12).
+- [ADR-0003](../../adr/ADR-0003.md) — revision proposed 2026-10-01: generated
+  regions, derived from the repository's inputs and never hashed (E13).
+- [ADR-0011](../../adr/ADR-0011.md) — proposed 2026-10-01: work is tracked as
+  Azure DevOps-shaped work items (E13).
+- [ADR-0012](../../adr/ADR-0012.md) — proposed 2026-10-01: every repository
+  publishes one MkDocs site, whatever its language (E13).
 
 ## Progress
 
 E3 shipped 2026-09-15. F4.1 and F4.2 are done; F4.3 waits only on S4.3.6, the
-owner's Sonar decisions; F4.5 has S4.5.7–S4.5.8 left. Next are F11.1–F11.3, then
-F4.4, then the rest of F4.5–F4.8. F6.1 follows F11.1–F11.3. E5's web stories are
-built alongside, ahead of F4.4 ([board](../../specs/index.md#order)).
+owner's Sonar decisions; F4.5 has S4.5.7–S4.5.8 left. Next are F11.1–F11.3 and
+F12.1, then F4.4, then the rest of F4.5–F4.8. F6.1 follows F11.1–F11.3. E5's web
+stories are built alongside, ahead of F4.4
+([board](../../specs/index.md#order)).
 
 ## Commits
 
 Commits whose subject names a scope ID, newest first:
 
 ```bash
-git log --format='%h %ad %s' --date=short -E --grep='[FS](3\.[1-4]|4\.[1-8]|6\.1|11\.[1-4])'
+git log --format='%h %ad %s' --date=short -E --grep='[FS](3\.[1-4]|4\.[1-8]|6\.1|11\.[1-4]|12\.1)'
 ```
 
 - `6feaf37` 2026-09-26 S4.5.9 kiln new assembles in persistent staging
@@ -85,6 +98,7 @@ Earlier release-1 work also landed in commits whose subjects name no ID:
 - E3's acceptance block passes.
 - E4's acceptance block passes.
 - F11.1–F11.4's acceptance blocks pass. F11.5 is release-2.
+- F12.1's acceptance block passes. F12.2 is release-2.
 - F6.1's acceptance block passes: a pykit-shaped repository passes its own gate.
   Nothing in this release is checked inside pykit
   ([ADR-0009](../../adr/ADR-0009.md)).

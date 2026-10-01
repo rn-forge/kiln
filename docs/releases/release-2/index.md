@@ -27,6 +27,7 @@ package docs sites, and taskkit is retired.
 | [F5.3 — Prove and ship the FastAPI cells](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) | E5 | in progress |
 | [F6.2 — Retire taskkit](../../specs/epics/E6-rebuild-the-repos/F6.2-retire-taskkit.md) | E6 | planned |
 | [F11.5 — CI deploys versioned package sites](../../specs/epics/E11-package-docs/F11.5-deploy-package-sites.md) | E11 | planned; waits on its entry criterion |
+| [F12.2 — The web records](../../specs/epics/E12-architecture-baseline/F12.2-web-baseline.md) | E12 | planned |
 
 ## Decisions
 
@@ -46,7 +47,7 @@ criterion and its open question.
 Commits whose subject names a scope ID, newest first:
 
 ```bash
-git log --format='%h %ad %s' --date=short -E --grep='[FS](5\.[1-3]|6\.2|11\.5)'
+git log --format='%h %ad %s' --date=short -E --grep='[FS](5\.[1-3]|6\.2|11\.5|12\.2)'
 ```
 
 - `a31d739` 2026-09-27 S5.3.6 complete the repository setup experience
@@ -60,6 +61,7 @@ git log --format='%h %ad %s' --date=short -E --grep='[FS](5\.[1-3]|6\.2|11\.5)'
 
 - E5's acceptance block passes.
 - F11.5's acceptance holds.
+- F12.2's acceptance holds.
 - taskkit is archived.
 
 intellibuild is not in this release; it is built on its own schedule from the

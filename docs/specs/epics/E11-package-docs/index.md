@@ -15,12 +15,13 @@ repository's specs are accepted inside that repository
 ([ADR-0009](../../../adr/ADR-0009.md)).
 
 **Dependencies.** F11.1 builds on the `docs` module as
-[S4.3.2](../E4-generator/F4.3-concern-modules.md#s432-docs) left it. F11.2 needs
-F11.1. F11.5 needs F11.2 and its entry criterion. F11.3 needs F11.2 and the
-CLI's [S4.5.1–S4.5.2](../E4-generator/F4.5-cli.md). F11.4 needs nothing.
-Downstream, [S6.1.1](../E6-rebuild-the-repos/F6.1-pykit-skeleton.md) needs
-F11.1–F11.3, and [F4.4](../E4-generator/F4.4-render-matrix.md)'s `python-lib`
-cell needs S11.3.1.
+[S4.3.2](../E4-generator/F4.3-concern-modules.md#s432-docs) left it, and after
+[S13.1.1](../E13-docs-work-model/F13.1-derived-regions.md#s1311-the-nav-is-a-derived-region)
+made the nav a derived region. F11.2 needs F11.1. F11.5 needs F11.2 and its
+entry criterion. F11.3 needs F11.2 and the CLI's
+[S4.5.1–S4.5.2](../E4-generator/F4.5-cli.md). F11.4 needs nothing. Downstream,
+[S6.1.1](../E6-rebuild-the-repos/F6.1-pykit-skeleton.md) needs F11.1–F11.3, and
+[F4.4](../E4-generator/F4.4-render-matrix.md)'s `python-lib` cell needs S11.3.1.
 
 **Goldens first.** While `tests/fixtures/golden/` is in git, a template change
 starts in the golden it reproduces
@@ -28,7 +29,7 @@ starts in the golden it reproduces
 S11.2.1 and S11.3.1 change the `python-lib` golden before any template does.
 
 **Where the checks run.** Every check this epic adds extends `docs-structure`,
-`docs-site` or `docs-nav`.
+`docs-site` or `docs-generate`.
 [S4.6.5](../E4-generator/F4.6-doctor.md#s465-doctor-respects-ownership) moves
 those checks out of doctor's ownership report and into explicit docs quality
 tasks, and these checks move with them. Nothing here is a doctor-only check.
@@ -45,10 +46,10 @@ at the same time. F11.4 carries it into the templates.
 
 | ID | Feature | Depends on |
 | -- | -- | -- |
-| [F11.1](F11.1-checks-learn-package-sites.md) | The docs checks learn package sites | S4.3.2 (done) |
+| [F11.1](F11.1-checks-learn-package-sites.md) | The docs checks learn package sites | S4.3.2 (done), S13.1.1 |
 | [F11.2](F11.2-python-lib-package-sites.md) | `python-lib` repositories carry package docs sites | F11.1 |
 | [F11.3](F11.3-generate-package.md) | `kiln generate package` | F11.2, S4.5.1, S4.5.2 |
-| [F11.4](F11.4-cross-repository-rule.md) | The docs rules are one standard, and kiln owns them | — |
+| [F11.4](F11.4-cross-repository-rule.md) | The docs rules are one standard, and kiln owns them | S13.3.1, for S11.4.2 |
 | [F11.5](F11.5-deploy-package-sites.md) | CI deploys versioned package sites | F11.2; the entry criterion on S11.5.1 |
 
 **Out of scope.** Instruction files: kiln keeps its prose in `README.md` and
@@ -64,7 +65,7 @@ in [E10](../E10-kiln-generators/index.md).
 The layout a `python-lib` repository has once this epic is done:
 
 ```text
-mkdocs.yml                    # repo-owned body + generated nav block; monorepo plugin;
+mkdocs.yml                    # repo-owned body + derived nav region; monorepo plugin;
                               # mkdocstrings paths: [packages/*/src]
 docs/                         # cross-package material only: architecture, guides,
   _areas.yml                  #   runbooks, releases, specs, adr
@@ -91,7 +92,7 @@ directory:
   nav: include
 ```
 
-The generated nav renders that area as one entry per `config.packages` entry, in
+The derived nav renders that area as one entry per `config.packages` entry, in
 config order: `- <pkg dir name>: '!include packages/<pkg>/mkdocs.yml'`.
 
 **How links resolve.** The monorepo plugin mounts each included site at

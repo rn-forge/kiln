@@ -10,15 +10,17 @@ board says what is next; the epic says how; its ADRs say why.
 
 | Epic | Release | Next step |
 | -- | -- | -- |
-| [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | F4.1–F4.3 (apart from S4.3.6's Sonar decisions) and S4.5.1–S4.5.6 and S4.5.9 are done, as is E5's S5.3.6. Next are E11's F11.1–F11.3, then F4.4, and the rest of F4.5–F4.8, including S4.6.5's ownership alignment |
+| [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | F4.1–F4.3 (apart from S4.3.6's Sonar decisions) and S4.5.1–S4.5.6 and S4.5.9 are done, as is E5's S5.3.6. Next are E13, then E11's F11.1–F11.3 and E12's F12.1, then F4.4, and the rest of F4.5–F4.8, including S4.6.5's ownership alignment |
 | [E5 — The web archetypes](epics/E5-web-archetypes/index.md) | [release-2](../releases/release-2/index.md) | FastAPI/Angular scaffolding exists; the owner trial's setup and formatting gaps are closed (S5.3.5–S5.3.6). S5.2.4, S4.5.9, S5.3.5 and S5.3.6 are done. Next are the two FastAPI cells, after F4.4; Django is deferred |
-| [E11 — Package docs sites](epics/E11-package-docs/index.md) | [release-1](../releases/release-1/index.md), [release-2](../releases/release-2/index.md) | F11.1's check changes, then the `python-lib` golden (S11.2.1); S11.4.2 any time; F11.5 waits on its entry criterion |
+| [E11 — Package docs sites](epics/E11-package-docs/index.md) | [release-1](../releases/release-1/index.md), [release-2](../releases/release-2/index.md) | after E13: F11.1's check changes, then the `python-lib` golden (S11.2.1); S11.4.2 after S13.3.1; F11.5 waits on its entry criterion |
 
 ### Scheduled
 
 | Epic | Release | Next step |
 | -- | -- | -- |
 | [E6 — Rebuild the repos](epics/E6-rebuild-the-repos/index.md) | [release-1](../releases/release-1/index.md), [release-2](../releases/release-2/index.md) | prove `python-lib` can host pykit after F11.1–F11.3 |
+| [E13 — The docs work model and derived regions](epics/E13-docs-work-model/index.md) | [release-1](../releases/release-1/index.md) | the owner accepting ADR-0003's revision, [ADR-0011](../adr/ADR-0011.md) and [ADR-0012](../adr/ADR-0012.md); then S13.1.1's derived nav, F13.2, F13.3 — before F11.1 |
+| [E12 — The architecture baseline](epics/E12-architecture-baseline/index.md) | [release-1](../releases/release-1/index.md), [release-2](../releases/release-2/index.md) | S12.1.1, the owner accepting [ADR-0010](../adr/ADR-0010.md) and the Python records; then S12.1.2–S12.1.4, before F4.4 |
 
 ### To elaborate
 
@@ -62,7 +64,9 @@ theirs.
 done:  E1 ─→ E2 ─→ E3 ─→ F4.1 ─→ F4.2 ─→ S4.3.1–S4.3.5 ─→ S4.5.1–S4.5.6
 done:  F5.1 ─→ F5.2 fastapi ─→ S5.2.4 frontend module ─→ S4.5.9 staged `new` ─→ S5.3.1 fresh-repo gate fixes ─→ S5.3.5 quality commands ─→ S5.3.6 setup experience
        (Django S5.2.3 deferred; live sync still needs resolvable pykit pins)
-now:   F11.1 checks ─→ F11.2 python-lib package sites ─→ F11.3 generate package   (S11.4.2 any time)
+now:   ADRs accepted ─→ S13.1.1 derived nav ─→ F13.2 board/scope ─→ F13.3 adopt the model
+       F11.1 checks ─→ F11.2 python-lib package sites ─→ F11.3 generate package   (S11.4.2 after S13.3.1)
+       S12.1.1 accept ─→ S12.1.2–S12.1.4 baseline ─→ F4.4 · F12.1 ─→ F12.2 web records (release-2)
        F4.4 matrix (goldens leave git; python-lib cell needs S11.3.1) ─┬─→ S5.3.2–S5.3.4 ─→ E5 done
        S5.3.1 + F11.1–F11.3 ─→ S6.1.1 python-lib hosts pykit          │
        S4.5.3–S4.5.7 ─→ F4.6 doctor ──────────────────────────────────┼─→ F4.8 self-host
