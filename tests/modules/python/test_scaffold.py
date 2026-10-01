@@ -23,7 +23,6 @@ from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.python import scaffold as python_scaffold
 from rn_forge.kiln.modules.python.checks import pyproject, rn_forge_deps
 from rn_forge.kiln.modules.python.scaffold import (
-    UV_VERSION,
     reconcile_backend,
     scaffold,
     scaffold_backend,
@@ -185,18 +184,6 @@ def test_s5_3_6_1_scaffold_seeds_the_uv_body_once_at_the_root(
     ]
     assert [p for p in scaffolded if p.name == ".gitignore"] == [Path(".gitignore")]
     assert [p for p in scaffolded if p.name == ".git"] == []
-
-
-def test_s5_3_6_1_uv_version_is_verified_before_scaffolding(tmp_path: Path) -> None:
-    root = _root(tmp_path, "python-tool")
-    config = KilnConfig.load(root)
-    wrong = mock.Mock(stdout="uv 0.0.1 (Homebrew 2020-01-01)\n")
-    with mock.patch(
-        "rn_forge.kiln.modules.python.scaffold.Process.execute", return_value=wrong
-    ) as run:
-        with pytest.raises(AppException, match=UV_VERSION):
-            scaffold_backend(root, config)
-    assert [c.args[1:] for c in run.call_args_list] == [("uv", "--version")]
 
 
 @pytest.mark.parametrize(

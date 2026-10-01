@@ -15,7 +15,6 @@ import tomllib
 from pathlib import Path
 from typing import Any, cast
 
-from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.runtime.subprocess import Process
 
@@ -30,16 +29,11 @@ from rn_forge.kiln.modules.python.checks.pyproject import (
 )
 
 __all__ = [
-    "UV_VERSION",
     "reconcile_backend",
     "scaffold",
     "scaffold_backend",
     "uv_gitignore",
 ]
-
-UV_VERSION = "0.12.19"
-"""The uv release this scaffold is recorded against (2026-09-27,
-`tests/fixtures/scaffold/uv/COMMAND.md`)."""
 
 _DEV_GROUP = ["import-linter", "pyright", "pytest", "pytest-cov", "pyyaml", "ruff"]
 """The dev tools every archetype's `pyproject.toml` names; `rn-forge-kiln` too,
@@ -81,10 +75,8 @@ def scaffold_backend(raw: Path, config: KilnConfig) -> None:
     `raw/.gitignore`, once, from `uv_gitignore`.
 
     Raises:
-        AppException: `uv` is not on `PATH`, is not `UV_VERSION`, or exits
-            non-zero.
+        AppException: `uv` is not on `PATH`, or exits non-zero.
     """
-    _verify_uv()
     workspace = config.archetype == "python-lib"
     web = config.archetype in {"python-web-api", "python-web-app"}
     if workspace or web:
@@ -132,20 +124,6 @@ def uv_gitignore() -> str:
             cwd=scratch,
         )
         return (Path(scratch) / gitignore.GITIGNORE).read_text(encoding="utf-8")
-
-
-def _verify_uv() -> None:
-    output = Process.execute("uv-version", "uv", "--version").stdout or ""
-    words = output.split()
-    found = words[1] if len(words) > 1 else output.strip()
-    if found != UV_VERSION:
-        raise AppException(
-            "kiln scaffolds with uv {}, but `uv --version` reports {!r}; "
-            "install uv {} to run `kiln new`",
-            UV_VERSION,
-            found,
-            UV_VERSION,
-        )
 
 
 def reconcile_backend(raw: Path, workspace: Path, config: KilnConfig) -> None:

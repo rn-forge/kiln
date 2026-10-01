@@ -55,8 +55,7 @@ kiln new ../my-repo --archetype python-app --docs mkdocs --yes
 
 Without `--yes` this previews and writes nothing. Every prompt has a flag, so
 the same command is what an agent runs unattended. `kiln new` refuses a
-non-empty directory, and it needs the uv release it is pinned to (`uv --version`
-must report kiln's `UV_VERSION`).
+non-empty directory.
 
 `--docs none` omits the MkDocs tree: no `docs/`, no `mkdocs.yml` and no `docs:*`
 site tasks. The root instructions (`README.md`, `CLAUDE.md`, `AGENTS.md`) and
