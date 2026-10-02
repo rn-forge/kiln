@@ -376,8 +376,8 @@ class TestGenerate:
     def test_s13_1_1_5_generate_writes_a_stale_nav_once(self, repo):
         from rn_forge.kiln.modules.docs import generate
 
-        assert generate.generate(repo) == [repo / "mkdocs.yml"]
-        assert generate.generate(repo) == []
+        assert generate.generate(repo) == ([repo / "mkdocs.yml"], [])
+        assert generate.generate(repo) == ([], [])
         assert generate.stale(repo) == []
 
     def test_s13_1_1_5_stale_reports_the_finding_without_writing(self, repo):
@@ -390,5 +390,5 @@ class TestGenerate:
     def test_s13_1_1_5_nothing_happens_without_mkdocs_yml(self, tmp_path):
         from rn_forge.kiln.modules.docs import generate
 
-        assert generate.generate(tmp_path) == []
+        assert generate.generate(tmp_path) == ([], [])
         assert generate.stale(tmp_path) == []

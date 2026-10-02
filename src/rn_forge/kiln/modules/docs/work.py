@@ -9,12 +9,15 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from rn_forge.commons.findings import Finding, Severity
+from rn_forge.commons.fs.blocks import HTML_COMMENT, ManagedBlock
 
 __all__ = [
+    "BOARD_BLOCK",
     "EPIC_KEYS",
     "FEATURE_KEYS",
     "RELEASE_KEYS",
     "RELEASE_STATUSES",
+    "SCOPE_BLOCK",
     "STATES",
     "Epic",
     "Feature",
@@ -24,6 +27,8 @@ __all__ = [
     "Work",
     "load_work",
     "read_metadata",
+    "render_board",
+    "render_scope",
     "validate",
 ]
 
@@ -42,6 +47,16 @@ FEATURE_KEYS = (
 RELEASE_KEYS = ("Status", "Start Date", "Finish Date")
 STATES = ("New", "Active", "Closed", "Removed")
 RELEASE_STATUSES = ("planned", "in progress", "shipped")
+
+BOARD_BLOCK = ManagedBlock("derived board", comment=HTML_COMMENT)
+"""The fenced board region of `docs/specs/index.md`."""
+
+SCOPE_BLOCK = ManagedBlock("derived scope", comment=HTML_COMMENT)
+"""The fenced Scope region of a release page."""
+
+_COUNT_ORDER = ("Active", "New", "Closed", "Removed")
+_NO_FEATURES = "—"
+_PER_FEATURE = "Per feature; see the epic."
 
 _HEADER_RE = re.compile(r"^\|\s*\|\s*\|\s*$")
 _DELIMITER_RE = re.compile(r"^\|\s*:?-+:?\s*\|\s*:?-+:?\s*\|\s*$")
@@ -416,3 +431,143 @@ def _identities(
                     "state-mismatch",
                     f"lists {row.id} as {row.state!r} but {feature.page.path.name} has State {actual!r}",
                 )
+
+
+def _id_key(feature_id: str) -> tuple[int, ...]:
+    return tuple(int(n) for n in _NUMBER_RE.findall(feature_id))
+
+
+def _release_rows(work: Work) -> list[str]:
+    rows: list[str] = []
+    for release in sorted(work.releases, key=lambda r: -r.number):
+        page = release.page
+        status = page.get("Status") or ""
+        if finish := page.get("Finish Date"):
+            status += f" ({finish})"
+        counts = Counter(
+            f.page.get("State") for f in work.features if f.iteration == release.dir
+        )
+        features = (
+            " · ".join(
+                f"{counts[state]} {state}" for state in _COUNT_ORDER if counts[state]
+            )
+            or _NO_FEATURES
+        )
+        rows.append(
+            f"| [{page.title}](../releases/{release.dir}/index.md) | {status} | {features} |"
+        )
+    return rows
+
+
+def _backlog(work: Work) -> dict[str, dict[int, list[str]]]:
+    """Backlog cells by section (`New`, `Deferred`), then by epic number."""
+    epics = {epic.number: epic for epic in work.epics}
+    by_id = {(f.epic_dir, f.id) for f in work.features}
+    # (epic number, feature id, file, state, tags)
+    items: list[tuple[int, str, str | None, str, set[str]]] = [
+        (
+            f.epic_number,
+            f.id,
+            f.page.path.name,
+            f.page.get("State") or "",
+            _tags(f.page.get("Tags")),
+        )
+        for f in work.features
+        if f.iteration is None
+    ]
+    for epic in work.epics:
+        epic_tags = _tags(epic.page.get("Tags"))
+        for row in epic.rows:
+            # A row whose ID has a file in this epic is that feature, however linked.
+            if (epic.dir, row.id) not in by_id:
+                items.append(
+                    (epic.number, row.id, None, row.state, _tags(row.tags) or epic_tags)
+                )
+
+    def section(state: str, tags: set[str]) -> str | None:
+        if "deferred" in tags:
+            return "Deferred"
+        return "New" if state == "New" else None
+
+    grouped: dict[str, dict[int, list[tuple[tuple[int, ...], str]]]] = {}
+    for number, feature_id, file, state, tags in items:
+        name = section(state, tags) if state != "Removed" else None
+        if name is None:
+            continue
+        text = (
+            f"[{feature_id}](epics/{epics[number].dir}/{file})" if file else feature_id
+        )
+        grouped.setdefault(name, {}).setdefault(number, []).append(
+            (_id_key(feature_id), text)
+        )
+    cells = {
+        name: {
+            number: [text for _, text in sorted(entries)]
+            for number, entries in by_epic.items()
+        }
+        for name, by_epic in grouped.items()
+    }
+    for epic in work.epics:
+        has_files = any(f.epic_number == epic.number for f in work.features)
+        if epic.page.get("State") == "New" and not has_files and not epic.rows:
+            name = section("New", _tags(epic.page.get("Tags"))) or "New"
+            cells.setdefault(name, {})[epic.number] = [_NO_FEATURES]
+    return cells
+
+
+def render_board(work: Work) -> str:
+    """The body of the board region: releases, then the unscheduled backlog."""
+    epics = {epic.number: epic for epic in work.epics}
+    lines = [
+        "",
+        "## Releases",
+        "",
+        "| Release | Status | Features |",
+        "| -- | -- | -- |",
+        *_release_rows(work),
+        "",
+        "## Backlog",
+        "",
+    ]
+    backlog = _backlog(work)
+    if not backlog:
+        lines.append("Every feature is on a release or Removed.")
+    else:
+        lines.append("Features with no Iteration, by State and epic.")
+    for name in ("New", "Deferred"):
+        if name not in backlog:
+            continue
+        deferred = name == "Deferred"
+        lines += [
+            "",
+            f"### {name}",
+            "",
+            "| Epic | Features | Entry criteria |"
+            if deferred
+            else "| Epic | Features |",
+            "| -- | -- | -- |" if deferred else "| -- | -- |",
+        ]
+        for number in sorted(backlog[name]):
+            epic = epics[number]
+            row = f"| [{epic.page.title}](epics/{epic.dir}/index.md) | {', '.join(backlog[name][number])} |"
+            if deferred:
+                row += f" {epic.page.get('Entry criteria') or _PER_FEATURE} |"
+            lines.append(row)
+    lines.append("")
+    return "\n".join(lines) + "\n"
+
+
+def render_scope(work: Work, release: Release) -> str:
+    """The body of *release*'s Scope region: the features whose `Iteration` names it."""
+    features = sorted(
+        (f for f in work.features if f.iteration == release.dir),
+        key=lambda f: (f.epic_number, _id_key(f.id)),
+    )
+    lines = ["", "| Feature | Epic | State |", "| -- | -- | -- |"]
+    lines += [
+        f"| [{f.id}](../../specs/epics/{f.epic_dir}/{f.page.path.name}) "
+        f"| E{f.epic_number} | {f.page.get('State') or ''} |"
+        for f in features
+    ]
+    lines.append("")
+    return "\n".join(lines) + "\n"

@@ -241,7 +241,7 @@ def test_s4_3_2_3_a_new_page_updates_only_the_nav_block(tmp_path: Path) -> None:
         if a not in (Action.UNCHANGED, Action.SKIP)
     } == set()
 
-    assert generate.generate(root) == [mkdocs]
+    assert generate.generate(root) == ([mkdocs], [])
     after = mkdocs.read_text(encoding="utf-8")
     assert "guides/setup.md" in (NAV_BLOCK.extract(after) or "")
     assert NAV_BLOCK.remove(after) == NAV_BLOCK.remove(before)

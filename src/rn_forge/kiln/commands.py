@@ -88,12 +88,16 @@ def docs_generate(path: Path) -> None:
 
     `kiln doctor --only docs-generate` is the check that they are current.
     """
-    written = generate.generate(path)
+    written, findings = generate.generate(path)
     if not written:
         console.info("no change")
-        return
     for file in written:
         console.success("updated {}", file)
+    for finding in findings:
+        console.error("{}", finding)
+    errors = [finding for finding in findings if finding.is_error]
+    if errors:
+        raise AppException("{} finding(s) in {}", len(errors), path)
 
 
 def new(
