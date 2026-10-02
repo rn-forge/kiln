@@ -127,6 +127,7 @@ The assignment is normative:
 | `README.md` | written once by `kiln new`, then repo | scaffolded — the single prose home; never rewritten |
 | `docs/_areas.yml`, `docs/_structure.md`, `docs/adr/_structure.md` | repo after scaffolding | **seeded** — repos may extend areas |
 | `docs/index.md`, `docs/<area>/index.md` | repo after scaffolding | **seeded** — written once |
+| `docs/specs/ideas.md`, `docs/reference/_structure.md`, `docs/reference/index.md` | repo after scaffolding | **seeded** — written once |
 | `mkdocs.yml` | repo body, scaffolded by `kiln new`; the `# BEGIN derived nav` region → kiln, rewritten by `task docs:generate` | **derived region** |
 | `.github/workflows/ci.yml`, `docs.yml`; `.github/actions/setup`; `sonar-project.properties` | kiln (`cicd`) | managed |
 | `CLAUDE.md`, `AGENTS.md` | bodies written once by `kiln new`, then repo; the `<!-- BEGIN rn-forge kiln -->` block in `CLAUDE.md` → kiln | block (`CLAUDE.md` only; `AGENTS.md` points at it) |
@@ -277,7 +278,9 @@ installed kiln, no `$RNF_HOME`, no bootstrap script — proves all of this:
 - no workflow step invokes a wrapped tool;
 - the docs tree matches the repo's `docs/_areas.yml`, the derived nav is
   current, every tracked Markdown file is mdformat-clean, and no link or
-  anchor is broken (`mkdocs` profile);
+  anchor is broken (`mkdocs` profile). mdformat formats every Markdown file; a
+  repository that uses Prettier lists `*.md` in `.prettierignore`
+  ([ADR-0012](../adr/ADR-0012.md));
 - **every managed file and every managed block still hashes to the value
   committed in `.rn-forge/kiln/state.json`**;
 - pyright is clean in strict mode ([ADR-0002](../adr/ADR-0002.md));

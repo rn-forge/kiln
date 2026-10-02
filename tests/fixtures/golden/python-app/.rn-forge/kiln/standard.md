@@ -80,7 +80,9 @@ never hashes itself.
 Blocks here: the `# BEGIN rn-forge kiln` region in `.gitignore`, and the
 `<!-- BEGIN rn-forge kiln -->` region in `CLAUDE.md` and `AGENTS.md`.
 
-Derived regions here: the `# BEGIN derived nav` region in `mkdocs.yml`.
+Derived regions here: the `# BEGIN derived nav` region in `mkdocs.yml`, the
+`<!-- BEGIN derived board -->` region in `docs/specs/index.md` and the
+`<!-- BEGIN derived scope -->` region in each release page.
 
 Seeded here: `README.md`, `docs/_areas.yml`, `docs/_structure.md`, each area's
 `_structure.md` and `index.md`, and `docs/index.md`.

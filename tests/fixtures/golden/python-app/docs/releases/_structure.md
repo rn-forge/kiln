@@ -2,14 +2,13 @@
 
 ## Belongs here
 
-- One page per release, `release-<n>/index.md`, in this order:
-    - `**Status:**`: `planned`, `in progress` or `shipped`, with the date.
+- One page per release, `release-<n>/index.md`: its metadata table, then these
+  sections in this order:
     - **Entry criteria**: what must hold before work on the release starts.
-    - **Scope**: a table of the features picked from the backlog, one row each:
-      the feature linked to its spec, its epic, and its status. Done epics that
-      predate the story taxonomy, and other done work the release carries, go in
-      a `### Done before this release` table under it: epic, what it delivered,
-      and its implemented dates.
+    - **Scope**: the derived Scope table, then, when there is any, a
+      `### Done before this release` table: done epics that predate the story
+      taxonomy, and other done work the release carries — epic, what it
+      delivered, and its closed dates. That table is kept by hand.
     - **Decisions**: each ADR the release added or updated, linked, with one line
       on what changed.
     - **Breaking changes**: what a consumer must change on upgrading, or `None`.
@@ -19,31 +18,68 @@
     - **Exit criteria**: what must hold for the release to ship.
     - **Shipped**: once shipped, the release evidence — each version and tag, its
       commit, and what was checked.
+- `index.md`, listing every release newest first, each linked, with its status.
 
 ## Does not belong here
 
 | Instead of | Put it in |
 | -- | -- |
-| A story's text, acceptance, design or status | its feature under `specs/` |
+| A story's text, acceptance, design or state | its feature under `specs/` |
+| Which features a release carries | each feature's `Iteration`; the Scope table is derived from it |
 | Why a choice was made | an ADR under `adr/` |
 | How to run a release | `runbooks/` |
 
-## Naming and shape
+## Metadata and scope
 
-- `release-<n>/index.md`; the area `index.md` lists them, newest first.
-- A feature belongs to one release at a time, and that assignment lives only on
-  the release page.
-- The scope table's status column mirrors each feature's own `**Status:**` line,
-  so the release's state reads without opening every feature. Update both in
-  the commit that changes the feature's status.
-- Commit subjects name the story or feature IDs they deliver, so the commits
+A release page opens like this:
+
+```markdown
+# Release <n> — <Title>
+
+| | |
+| -- | -- |
+| **Status** | planned |
+
+<one paragraph: what the release carries>
+
+## Entry criteria
+
+- <what must hold before work starts>
+
+## Scope
+
+<!-- BEGIN derived scope -->
+
+| Feature | Epic | State |
+| -- | -- | -- |
+
+<!-- END derived scope -->
+```
+
+- `Status` is `planned`, `in progress` or `shipped`. A release closes on scope,
+  not on a date, so it keeps its own word rather than a work-item `State`.
+- `Start Date` is optional. `Finish Date` is present exactly when `Status` is
+  `shipped`.
+- The Scope region lists every feature whose `Iteration` names this release.
+  `task docs:generate` writes it; never edit inside its fence.
+- Commit subjects name the story or feature IDs they deliver, so the Commits
   section can be regenerated.
+
+## Tracker mapping
+
+| Here | Azure DevOps |
+| -- | -- |
+| `release-<n>` and its title | an Iteration under the Iteration Path |
+| `Start Date`, `Finish Date` | the Iteration's dates |
+| `Status` | no field: ADO derives past, current and future from dates |
+| The Scope table | an iteration query |
+| The other sections | stay in the repository |
 
 ## Changing this area
 
 1. Cut a release page when there is scope to put on it, not ahead of time.
-1. Fill the sections above. List it in `index.md`, newest first.
-1. Add or remove scope rows as the plan changes; a moved feature leaves one
-   release page and joins another.
+1. Fill the sections above, and list it in `index.md`, newest first.
+1. Put a feature on it by setting the feature's `Iteration`; take it off by
+   clearing it. Then run `task docs:generate`.
 
-A release is `shipped`, with the date, once its exit criteria hold.
+A release is `shipped`, with its `Finish Date`, once its exit criteria hold.

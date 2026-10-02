@@ -47,7 +47,7 @@ Declared in `_areas.yml`, in nav order. These are the areas kiln seeds:
 - A choice between real alternatives → a new ADR under `adr/`; a change to one →
   that ADR, revised in place.
 - Work to do, or a record of work done → an epic under `specs/epics/`.
-- An idea not yet agreed as work → a row in `specs/backlog.md`.
+- An idea not yet agreed as work → a row in `specs/ideas.md`.
 - What ships when → `releases/`.
 - An operational procedure → `runbooks/`.
 - An open question → the epic or feature it blocks, until it becomes an ADR or a
@@ -67,16 +67,17 @@ a valid `**Status:**` line; every relative link resolves, including anchors; no
 shipped page links to a `_*.md` file; and `CLAUDE.md`/`AGENTS.md` both point at
 this file and at `docs/index.md`.
 
+`kiln doctor --only docs-generate` checks that the derived regions — the nav,
+the spec board and each release's Scope table — are current, and that every
+epic, feature and release page's metadata table follows `specs/_structure.md`.
+
 ## Keeping it honest
 
 Check for these when changing the tree, and report what you find rather than
 fixing it silently — some of it is deliberate:
 
-- A release names a feature that does not exist, a feature is on two release
-  pages, or a planned feature is on none.
-- A feature's `**Status:**` differs from its row on its release page.
-- An epic's status contradicts its features or stories, or its board row is in
-  the wrong group, or in two.
+- A derived region edited by hand: `task lint` fails, and `task docs:generate`
+  overwrites it.
 - Two ADRs decide the same topic, or an ADR's Decision changed
   (`git log --follow docs/adr/ADR-<nnnn>.md`) with no Background entry saying
   so.

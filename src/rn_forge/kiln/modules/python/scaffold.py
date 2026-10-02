@@ -85,7 +85,7 @@ def scaffold_backend(raw: Path, config: KilnConfig) -> None:
             member = raw / package
             member.mkdir(parents=True, exist_ok=True)
             member_name = f"{config.name}-api" if web else Path(package).name
-            _uv_init(member, name=member_name, bare=False)
+            _uv_init(member, name=member_name, bare=False, member=True)
         DocumentUtils.update(
             raw / "pyproject.toml",
             {
@@ -183,9 +183,11 @@ def _extra_dev(config: KilnConfig, *, web: bool, is_member: bool) -> tuple[str, 
     return ()
 
 
-def _uv_init(target: Path, *, name: str, bare: bool) -> None:
+def _uv_init(target: Path, *, name: str, bare: bool, member: bool = False) -> None:
     args = ["uv", "init", "--name", name, "--vcs", "none", "--no-readme"]
     args += ["--bare"] if bare else ["--package", "--build-backend", "uv"]
+    # A root must not join a uv project above `.staging/`; a member joins its root.
+    args += [] if member else ["--no-workspace"]
     Process.execute(f"uv-init[{name}]", *args, cwd=str(target))
 
 

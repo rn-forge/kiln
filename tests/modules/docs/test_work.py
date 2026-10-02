@@ -10,6 +10,7 @@ import pytest
 from rn_forge.kiln.modules.docs.work import (
     BOARD_BLOCK,
     SCOPE_BLOCK,
+    Work,
     load_work,
     read_metadata,
     render_board,
@@ -287,3 +288,12 @@ def test_s13_2_2_render_scope_of_an_empty_release_keeps_the_header(
     scope = render_scope(work, work.releases[1])
     assert scope == "\n| Feature | Epic | State |\n| -- | -- | -- |\n\n"
     _stable(SCOPE_BLOCK, scope)
+
+
+def test_s13_3_1_seeded_board_is_current() -> None:
+    seed = (
+        Path(__file__).parents[3]
+        / "src/rn_forge/kiln/modules/docs/templates/docs/specs/index.md.j2"
+    ).read_text(encoding="utf-8")
+    body = seed.split(f"{BOARD_BLOCK.begin}\n", 1)[1].split(BOARD_BLOCK.end, 1)[0]
+    assert body == render_board(Work((), (), ()))

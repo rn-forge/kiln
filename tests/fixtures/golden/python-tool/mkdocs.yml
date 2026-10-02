@@ -54,6 +54,7 @@ nav:
     - Overview: runbooks/index.md
     - Recovering from drift: runbooks/recovering-from-drift.md
   - Reference:
+    - Overview: reference/index.md
     - Python API: reference/python-api.md
   - Releases: releases/index.md
   - Specs: specs/index.md

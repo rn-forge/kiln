@@ -427,3 +427,16 @@ def test_s13_1_1_4_new_writes_a_current_derived_nav(tmp_path: Path) -> None:
     assert "guides/index.md" in nav
     state = (target / ".rn-forge" / "kiln" / "state.json").read_text("utf-8")
     assert "mkdocs.yml" not in state
+
+
+def test_new_inside_a_uv_project_leaves_it_untouched(tmp_path: Path) -> None:
+    parent = tmp_path / "pyproject.toml"
+    parent.write_text('[project]\nname = "host"\nversion = "0.1.0"\n', encoding="utf-8")
+
+    commands.new(
+        tmp_path / "out" / "demo", archetype="python-tool", docs="none", yes=True
+    )
+
+    assert parent.read_text(encoding="utf-8") == (
+        '[project]\nname = "host"\nversion = "0.1.0"\n'
+    )

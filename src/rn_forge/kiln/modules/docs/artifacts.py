@@ -25,6 +25,9 @@ SEEDS = (
     "docs/releases/index.md",
     "docs/specs/_structure.md",
     "docs/specs/index.md",
+    "docs/specs/ideas.md",
+    "docs/reference/_structure.md",
+    "docs/reference/index.md",
     "docs/adr/_structure.md",
     "docs/adr/index.md",
 )

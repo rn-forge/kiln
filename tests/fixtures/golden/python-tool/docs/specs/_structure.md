@@ -4,24 +4,15 @@
 
 - Every piece of work as an epic, `epics/E<n>-<slug>/index.md` — done work
   included, so the tree is the inventory of what this repo is made of.
-- An epic's features as `F<n>.<m>-<slug>.md` beside it, each with its own
-  `**Status:**` and `**Depends on:**` lines, its stories inline as
-  `S<n>.<m>.<k>` headings with their own `**Status:**` line and
-  `**Acceptance:**` list, and its `## Acceptance` block
-  ([conventions](index.md#conventions)). A feature file, once written, stays
-  when its work is done.
-- A done epic whose work predates this taxonomy, its specs written after the
-  code, keeps its features as rows in its `index.md`, each with the commits
-  that delivered it.
+- An epic's features as `F<n>.<m>-<slug>.md` beside it, stories inline. A
+  feature file, once written, stays when its work is closed.
+- A closed epic whose work predates this taxonomy, its specs written after the
+  code, keeps its features as rows in its `index.md`, with no feature files.
 - Design for work not yet built: a `## Design` section in the feature it belongs
   to, or `design.md` in the epic when it spans features.
 - Open questions, as a `## Open questions` section on the epic or feature they
   block.
-- Work that is real but not scheduled, as a `deferred` epic or feature with
-  entry criteria.
-- Ideas not yet agreed as work, in `backlog.md`: a row each (slug, one-line
-  summary, source), with a `##` section under the table only when there is
-  more to record. Entries take no ID and no status.
+- Ideas not yet agreed as work, in `ideas.md`.
 
 ## Does not belong here
 
@@ -29,63 +20,140 @@
 | -- | -- |
 | Behaviour that already exists | `architecture/` |
 | A decision | an ADR under `adr/` |
-| Which features ship in which release | `releases/` — it links here |
+| What a release carries beyond its scope | `releases/` |
 | History and evidence | the commit message |
 | A `progress.md`, `decisions.md` or `overview.md` | the epic, an ADR, or the README |
 
-## Naming and status
+## Work items
+
+Epics, features and stories follow Azure DevOps's Agile process, so that a move
+to a tracker is a field-by-field mapping (see
+[Tracker mapping](#tracker-mapping)).
+
+### Metadata tables
+
+An epic, feature or release page opens with its `# ` title and then a metadata
+table. Its keys come in the fixed order below; a key that does not apply is left
+out, never left blank. A value is short: a state, a date, an ID, a link or a
+phrase, with no trailing period and no commit hash. `—` means none.
+
+| Page | Keys, in order |
+| -- | -- |
+| Epic | `State`, `Tags`, `Start Date`, `Closed Date`, `Entry criteria` |
+| Feature | `State`, `Parent`, `Iteration`, `Tags`, `Start Date`, `Closed Date`, `Predecessors`, `Source`, `Entry criteria` |
+| Release | `Status`, `Start Date`, `Finish Date` ([releases/\_structure.md](../releases/_structure.md)) |
+
+Anything else a page used to carry in its status line — the releases it spans,
+its decisions, its design — goes in a plain line under the table.
+
+### States
+
+| State | Means |
+| -- | -- |
+| `New` | Agreed, not started. With no `Iteration` and no tag, its stories or design are not settled yet. Tagged `deferred`, it is not scheduled and carries `Entry criteria`. With an `Iteration`, its stories are written and it is on a release. |
+| `Active` | At least one story started. Carries `Start Date`; a feature also carries `Iteration`. |
+| `Closed` | Every story's acceptance holds. Carries `Closed Date`; an epic also carries `Start Date`. Means implemented, not released. |
+| `Removed` | Retired: no longer needed. Stays in place, with one line saying why. |
+
+- A story carries one line, `**State:** New`, `Active`, `Closed (<date>)` or
+  `Removed`, and may add `· **Depends on:** <IDs>` after it. A story in a
+  deferred feature or epic is `New`.
+- A feature's `Iteration` is the only place its release is recorded. The release
+  page's Scope table is derived from it.
+- An epic's feature table has a `State` column, and each row's `State` equals
+  its feature's own.
+- `Entry criteria` is present exactly when `Tags` includes `deferred`.
+
+### The board
+
+`index.md`'s Releases and Backlog sections and each release page's Scope table
+are derived regions. `task docs:generate` writes them from the epic, feature and
+release pages, and `task lint` fails when one is stale or a metadata table
+breaks the rules above. Never edit inside their fences.
+
+### File templates
+
+An epic, `epics/E<n>-<slug>/index.md`:
+
+```markdown
+# E<n> — <Title>
+
+| | |
+| -- | -- |
+| **State** | New |
+
+<one paragraph: the epic's scope>
+
+| Feature | Scope | State |
+| -- | -- | -- |
+| [F<n>.<m> — <Title>](F<n>.<m>-<slug>.md) | <what it delivers> | New |
+```
+
+A feature, `epics/E<n>-<slug>/F<n>.<m>-<slug>.md`:
+
+```markdown
+# F<n>.<m> — <Title>
+
+| | |
+| -- | -- |
+| **State** | New |
+| **Parent** | [E<n>](index.md) |
+| **Iteration** | [Release <r>](../../../releases/release-<r>/index.md) |
+| **Predecessors** | — |
+
+<one paragraph: what the feature delivers>
+
+## S<n>.<m>.1 — <Title>
+
+**State:** New
+
+**Acceptance:**
+
+- <an observable result>
+
+## Acceptance
+
+<the feature's acceptance block, when it has two or more stories>
+```
+
+An epic design, `epics/E<n>-<slug>/design.md`, opens with what it covers and the
+feature that settles it into ADRs and implementation. Nothing in it is decided
+until it is.
+
+## Naming
 
 - `epics/E<n>-<slug>/` directories; feature files `F<n>.<m>-<slug>.md`.
 - IDs are permanent: never renumber; a moved story keeps its ID. Gaps are fine.
-  Work no longer needed is removed and its ID is never reused: a retired story
-  is listed on its feature's `**Retired:**` line, a retired epic on the board.
-- Epic and feature status is one of these, and `index.md`'s board lists each
-  epic in exactly one group:
-
-| Status | Means |
-| -- | -- |
-| `elaborating` | Agreed, but its stories or design are not settled. |
-| `planned` | Stories written, and in a release. |
-| `in progress` | At least one story started. |
-| `done` | Every story's acceptance holds; carries an `**Implemented:**` date. |
-| `deferred` | Not scheduled; carries `**Entry criteria:**`. |
-
-- Story status is `planned`, `in progress` or `done (<date>)`. A story in a
-  deferred epic or feature is `deferred`.
-- `done` means implemented, not released; the release pages record what shipped.
-- A feature's status is mirrored on its release page's scope row; a change to
-  one is a change to both, in the same commit.
-- Status lines appear only on epics, features, stories and releases.
-- `**Source:**`, when present, cites a current document, or the owner decision
-  and its date.
+  Retired work keeps its ID as `Removed`, and the ID is never reused.
 
 ## Changing this area
 
-**Parking an idea:** add a row to `backlog.md`, and a section linked from the
-row if it needs more than a line. Do not elaborate a backlog entry unless the
-owner asks. A dropped idea is deleted.
+**Parking an idea:** add a row to `ideas.md`, and a section linked from the row
+if it needs more than a line. Do not elaborate an idea unless the owner asks. A
+dropped idea is deleted.
 
 **Adding an epic or a feature:**
 
-1. Take the next free ID. Never renumber a sibling. An idea promoted from the
-   backlog carries its section into the new file, and its entry is deleted.
-1. Create `epics/E<n>-<slug>/index.md` with its status: `elaborating` while it
-   has no stories, `planned` once it has stories and a release, or `deferred`
-   with entry criteria.
+1. Take the next free ID. Never renumber a sibling. An idea promoted from
+   `ideas.md` carries its section into the new file, and its row is deleted.
+1. Create `epics/E<n>-<slug>/index.md`, `State` `New`; tag it `deferred`, with
+   `Entry criteria`, when it is not scheduled.
 1. Write one feature file per feature, stories inline. Give a story its own file
    only when its acceptance runs past about a screen.
 1. Put design at the lowest level that fits: the feature's `## Design`; the
    epic's `design.md` when it spans features; a link to `architecture/` when
    it describes current behaviour.
-1. Add the epic's row to the board in `index.md`, in exactly one group, and run
-   `task docs:generate`.
+1. Run `task docs:generate`.
 
 **Writing acceptance:**
 
 - Each line is an observable result, and the tests that prove a story belong in
   its acceptance, not in a story of their own.
-- A decision the work needs is its own story, so other work can depend on the
-  decision without depending on its implementation.
+- A decision still to be made, by comparing options or measuring, is its own
+  story, so other work can depend on the decision without depending on its
+  implementation. Accepting an ADR already written is not a story: its
+  `**Status:**` line records it, and the features that need it name it under
+  `Predecessors`.
 - A feature with several stories has a `## Acceptance` block that exercises
   every story, each line tagged with the story it proves; a one-story feature
   keeps its acceptance on the story. What cannot be scripted, such as an
@@ -105,20 +173,39 @@ may name removed behaviour to say it is gone.
 
 **Working on and closing out work:**
 
-1. Starting: flip the feature, and the epic, to `in progress`, on the feature's
-   release row too, and move the epic's board row.
-1. A story is `done` when its acceptance holds; run the feature's acceptance
-   block, then flip the story's status.
-1. When every story is done, the feature is `done` with its `**Implemented:**`
-   date, on its release row too. When every feature is done, the epic is
-   `done` with its `**Implemented:**` date and the acceptance as run, and its
-   board row moves to Done. Done work is never deleted.
+1. Starting: set the feature, and its epic, to `Active` with a `Start Date`, and
+   give the feature its `Iteration`.
+1. A story is `Closed (<date>)` when its acceptance holds; run the feature's
+   acceptance block, then flip the story's state.
+1. When every story is closed, the feature is `Closed` with its `Closed Date`;
+   its `Iteration` stays. When every feature is closed, the epic is `Closed`
+   with its `Closed Date` and the acceptance as run. Closed work is never
+   deleted.
 1. An answered open question becomes an ADR, or a rejected option recorded on
    the feature under *Considered and rejected*; the question is then removed.
+1. Run `task docs:generate` after every state or `Iteration` change.
 
-**Deferred work:** do not start or elaborate a deferred epic or feature unless
-the owner asks. When its entry criteria hold it becomes `elaborating`, then
-`planned` with a release. Nothing renumbers.
+**Deferred work:** do not start or elaborate work tagged `deferred` unless the
+owner asks. When its entry criteria hold, drop the tag and the `Entry criteria`
+row, and give it an `Iteration` once it has a release. Nothing renumbers.
+
+**Retiring work:** a story, feature or epic no longer needed becomes `Removed`
+in place, with one line saying why.
+
+## Tracker mapping
+
+| Here | Azure DevOps |
+| -- | -- |
+| Epic, feature, story | Epic, Feature, User Story, linked by `Parent` |
+| `E<n>`, `F<n>.<m>`, `S<n>.<m>.<k>` | the work item title's prefix |
+| `State` | `State`; ADO's `Resolved` is unused |
+| `Iteration` | Iteration Path |
+| `Tags` | Tags |
+| `Predecessors` | Predecessor links |
+| `Entry criteria`, `Source` | custom fields |
+| `**Acceptance:**` | Acceptance Criteria |
+| A commit subject naming an ID | an `AB#<id>` link |
+| `design.md`, ADRs, release pages, `ideas.md` | stay in the repository |
 
 ## Other repositories
 
