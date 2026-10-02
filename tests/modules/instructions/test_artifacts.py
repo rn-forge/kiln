@@ -265,7 +265,9 @@ def test_s4_3_5_5_docs_structure_passes_with_no_hand_written_claude_md(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _new(tmp_path, archetype)
-    assert [f.code for f in DOCS.checks(KilnConfig.load(root), root)] == []
+    codes = [f.code for f in DOCS.checks(KilnConfig.load(root), root)]
+    # The fixture lists packages it never seeds a site for (S11.2.3's checks).
+    assert [c for c in codes if not c.startswith("docs.package-")] == []
 
 
 def test_s4_3_5_6_root_hygiene_warns_on_notes_md(repo) -> None:

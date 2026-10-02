@@ -7,6 +7,7 @@ from pathlib import Path
 from rn_forge.commons.findings import Finding
 
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.docs.packages import check_packages
 from rn_forge.kiln.modules.docs.policy import POLICY
 from rn_forge.kiln.modules.docs.structure import check_structure
 
@@ -20,4 +21,7 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
     if config.docs_profile != "mkdocs":
         return []
     packages = config.packages if config.archetype == "python-lib" else ()
-    return check_structure(root, root / "docs", POLICY, packages)
+    return [
+        *check_structure(root, root / "docs", POLICY, packages),
+        *check_packages(root, config),
+    ]
