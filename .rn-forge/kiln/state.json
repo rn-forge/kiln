@@ -72,16 +72,16 @@
     },
     "docs/_structure.md": {
       "begin_marker": null,
-      "content_hash": null,
+      "content_hash": "432b2318d424ae23491c7d2d7f7058cd652516c16d0c7609423e270c644dbf2e",
       "end_marker": null,
-      "kind": "seeded",
+      "kind": "managed",
       "path": "docs/_structure.md"
     },
     "docs/adr/_structure.md": {
       "begin_marker": null,
-      "content_hash": null,
+      "content_hash": "6a0a4752a49c4213ca5d073be27030695cf1163b39c8f6d68c7f17422a6823e9",
       "end_marker": null,
-      "kind": "seeded",
+      "kind": "managed",
       "path": "docs/adr/_structure.md"
     },
     "docs/adr/index.md": {
@@ -93,9 +93,9 @@
     },
     "docs/architecture/_structure.md": {
       "begin_marker": null,
-      "content_hash": null,
+      "content_hash": "b29715bb5e6dc943b2f4a396bd08340ab3d7b475e98798bdd29ffd51e7be00a0",
       "end_marker": null,
-      "kind": "seeded",
+      "kind": "managed",
       "path": "docs/architecture/_structure.md"
     },
     "docs/architecture/index.md": {
@@ -107,9 +107,9 @@
     },
     "docs/guides/_structure.md": {
       "begin_marker": null,
-      "content_hash": null,
+      "content_hash": "da40b90d8f5c5068a6bb49064cc0a97e3e2d6fc8f678d4f2eafcc2460db0a9e7",
       "end_marker": null,
-      "kind": "seeded",
+      "kind": "managed",
       "path": "docs/guides/_structure.md"
     },
     "docs/guides/index.md": {
@@ -142,9 +142,9 @@
     },
     "docs/releases/_structure.md": {
       "begin_marker": null,
-      "content_hash": null,
+      "content_hash": "8f6956ad17a8975ad949d76eb221b3d3b2f7de28b86350272b7e24c2f7b143f1",
       "end_marker": null,
-      "kind": "seeded",
+      "kind": "managed",
       "path": "docs/releases/_structure.md"
     },
     "docs/releases/index.md": {
@@ -156,9 +156,9 @@
     },
     "docs/runbooks/_structure.md": {
       "begin_marker": null,
-      "content_hash": null,
+      "content_hash": "6b709084222b311ac66f845e6676e62c8e61267e757f3744a9956cacb75ba89a",
       "end_marker": null,
-      "kind": "seeded",
+      "kind": "managed",
       "path": "docs/runbooks/_structure.md"
     },
     "docs/runbooks/index.md": {
@@ -170,9 +170,9 @@
     },
     "docs/specs/_structure.md": {
       "begin_marker": null,
-      "content_hash": null,
+      "content_hash": "c59a22a1a5482d46d9ac0abc312cbde19200b8dc9f780a4fd368efd1c9773b94",
       "end_marker": null,
-      "kind": "seeded",
+      "kind": "managed",
       "path": "docs/specs/_structure.md"
     },
     "docs/specs/index.md": {

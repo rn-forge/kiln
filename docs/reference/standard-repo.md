@@ -125,19 +125,23 @@ The assignment is normative:
 | `scripts/**` | **repo only** — a repo's own lints, wired via `[tasks.extra_refs]`. kiln and `cicd` generate nothing here ([ADR-0006](../adr/ADR-0006.md)) | repo |
 | `src/**`, `tests/**` | **repo** — scaffolded once; no doctor structure policing | scaffolded |
 | `README.md` | written once by `kiln new`, then repo | scaffolded — the single prose home; never rewritten |
-| `docs/_areas.yml`, `docs/_structure.md`, `docs/adr/_structure.md` | repo after scaffolding | **seeded** — repos may extend areas |
+| `docs/_structure.md`, `docs/<area>/_structure.md` for each area kiln seeds | kiln | managed — one rule set in every repo; an area a repo adds keeps its rules in its own, repo-owned `_structure.md` |
+| `docs/_areas.yml` | repo after scaffolding | **seeded** — repos may extend areas |
 | `docs/index.md`, `docs/<area>/index.md` | repo after scaffolding | **seeded** — written once |
-| `docs/specs/ideas.md`, `docs/reference/_structure.md`, `docs/reference/index.md` | repo after scaffolding | **seeded** — written once |
+| `docs/specs/ideas.md`, `docs/reference/index.md` | repo after scaffolding | **seeded** — written once |
 | `mkdocs.yml` | repo body, scaffolded by `kiln new`; the `# BEGIN derived nav` region → kiln, rewritten by `task docs:generate` | **derived region** |
 | `.github/workflows/ci.yml`, `docs.yml`; `.github/actions/setup`; `sonar-project.properties` | kiln (`cicd`) | managed |
 | `CLAUDE.md`, `AGENTS.md` | bodies written once by `kiln new`, then repo; the `<!-- BEGIN rn-forge kiln -->` block in `CLAUDE.md` → kiln | block (`CLAUDE.md` only; `AGENTS.md` points at it) |
 | `.claude/**`, `.codex/**`, installed skills | not kiln's | — |
 | Repo-specific lints (`check_brand.py`, `check_gate_tags.py`, …) | repo, wired via `[tasks.extra_refs]` | repo |
 
-`docs/_areas.yml` and `_structure.md` are **seeded, not managed**, so a repo can
-add an area kiln has never heard of — intellibuild needs a `context` area, and
-kiln's own tree has a `plans` area. Repository-configured docs validation uses
-the repo's copy; these files are not kiln-owned artifacts.
+`docs/_areas.yml` is **seeded, not managed**, so a repo can add an area kiln has
+never heard of — intellibuild needs a `context` area, and kiln's own tree has a
+`plans` area. The `_structure.md` files of the areas kiln seeds are managed and
+carry kiln's provenance header as an HTML comment, which renders nowhere; an
+area a repo adds keeps its rules in its own `_structure.md`, which kiln neither
+writes nor reads. Repository-configured docs validation uses the repo's
+`_areas.yml`.
 
 To change a managed file: change `.rn-forge/kiln/config.toml`, run `kiln apply`.
 

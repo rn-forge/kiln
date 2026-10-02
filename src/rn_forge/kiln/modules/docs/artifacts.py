@@ -1,4 +1,4 @@
-"""The artifacts `docs` renders: the seeded docs tree."""
+"""The artifacts `docs` renders: the managed `_structure.md` rules and the seeded rest of the docs tree."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from pathlib import Path
 from rn_forge.tooling.generation import Artifact, ArtifactKind
 from rn_forge.tooling.templates import TemplateEngine
 
+from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
 
 __all__ = ["SEEDS", "render"]
@@ -31,7 +32,7 @@ SEEDS = (
     "docs/adr/_structure.md",
     "docs/adr/index.md",
 )
-"""Every seeded docs path, each rendered from `templates/<path>.j2`."""
+"""Every docs path, each rendered from `templates/<path>.j2`; `_structure.md` is managed."""
 
 
 def render(config: KilnConfig, root: Path) -> list[Artifact]:
@@ -39,8 +40,13 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
     if config.docs_profile != "mkdocs":
         return []
     engine = TemplateEngine(package="rn_forge.kiln.modules.docs")
-    context = {"name": config.name}
+    context = {"name": config.name, "kiln_version": __version__}
     return [
-        Artifact(path, ArtifactKind.SEEDED, engine.render(f"{path}.j2", context))
+        Artifact(path, _kind(path), engine.render(f"{path}.j2", context))
         for path in SEEDS
     ]
+
+
+def _kind(path: str) -> ArtifactKind:
+    managed = path.endswith("/_structure.md")
+    return ArtifactKind.MANAGED if managed else ArtifactKind.SEEDED
