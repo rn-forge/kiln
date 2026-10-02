@@ -21,14 +21,19 @@ def scaffold(root: Path, config: KilnConfig) -> None:
     if config.docs_profile != "mkdocs" or target.exists():
         return
     sources = (
-        [f"{package}/src" for package in config.packages]
+        ["packages/*/src"]
         if config.archetype == "python-lib"
-        else ["src"]
+        else ["src", *(f"{package}/src" for package in config.packages)]
     )
     engine = TemplateEngine(package="rn_forge.kiln.modules.docs")
     target.write_text(
         engine.render(
-            "mkdocs.yml.j2", {"name": config.name, "source_paths": ", ".join(sources)}
+            "mkdocs.yml.j2",
+            {
+                "name": config.name,
+                "archetype": config.archetype,
+                "source_paths": ", ".join(sources),
+            },
         ),
         encoding="utf-8",
     )

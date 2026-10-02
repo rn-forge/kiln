@@ -549,3 +549,75 @@ ASGI_APP = '''async def app(scope, receive, send):
     await send({"type": "http.response.start", "status": 200, "headers": []})
     await send({"type": "http.response.body", "body": b"ok"})
 '''
+
+
+def _docs_build_cmds(tmp_path: Path, archetype: str, packages: list[str]) -> list[str]:
+    root = _root(tmp_path, archetype, extra="")
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    text = config.read_text(encoding="utf-8").split("[archetype")[0]
+    if packages:
+        quoted = ", ".join(f'"packages/{p}"' for p in packages)
+        text += f'\n[archetype."{archetype}"]\npackages = [{quoted}]\n'
+    config.write_text(text, encoding="utf-8")
+    rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
+    return yaml.safe_load(rendered["tasks/docs.yml"])["tasks"]["build"]["cmds"]
+
+
+def test_s11_2_2_6_python_lib_builds_one_standalone_site_per_package(
+    tmp_path: Path,
+) -> None:
+    cmds = _docs_build_cmds(tmp_path, "python-lib", ["alpha", "beta"])
+    assert len(cmds) == 3
+    assert cmds[1] == (
+        "site=$(mktemp -d) && uv run --group docs mkdocs build --strict"
+        ' -f packages/alpha/mkdocs.yml --site-dir "$site"; rc=$?;'
+        ' rm -rf "$site"; exit $rc\n'
+    )
+    assert "packages/beta/mkdocs.yml" in cmds[2]
+
+
+@pytest.mark.parametrize(
+    ("archetype", "packages"),
+    [("python-lib", []), ("python-app", ["core"]), ("python-tool", [])],
+)
+def test_s11_2_2_6_other_cases_build_only_the_root_site(
+    tmp_path: Path, archetype: str, packages: list[str]
+) -> None:
+    assert len(_docs_build_cmds(tmp_path, archetype, packages)) == 1
+
+
+QUALITY_PER_PACKAGE = (
+    "lint:python",
+    "format:python",
+    "typecheck:python",
+    "test:python",
+    "test:coverage",
+    "lint:imports",
+)
+
+
+def _quality_tasks(tmp_path: Path, packages: bool) -> dict[str, list[object]]:
+    root = _root(tmp_path, "python-lib")
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    text = config.read_text(encoding="utf-8")
+    if not packages:
+        config.write_text(text.split("[archetype")[0], encoding="utf-8")
+    rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
+    tasks = yaml.safe_load(rendered["tasks/quality.yml"])["tasks"]
+    return {name: tasks[name]["cmds"] for name in QUALITY_PER_PACKAGE}
+
+
+def test_s11_2_2_7_a_python_lib_with_no_packages_renders_commands_that_say_so(
+    tmp_path: Path,
+) -> None:
+    for name, cmds in _quality_tasks(tmp_path, packages=False).items():
+        assert len(cmds) == 1, name
+        assert isinstance(cmds[0], str)
+        assert cmds[0].startswith('echo "no packages to check'), name
+
+
+def test_s11_2_2_7_a_python_lib_with_packages_renders_no_such_command(
+    tmp_path: Path,
+) -> None:
+    for name, cmds in _quality_tasks(tmp_path, packages=True).items():
+        assert not any("no packages" in str(cmd) for cmd in cmds), name

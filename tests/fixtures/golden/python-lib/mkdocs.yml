@@ -24,10 +24,11 @@ theme:
         name: Switch to light mode
 plugins:
   - search
+  - monorepo
   - mkdocstrings:
       handlers:
         python:
-          paths: [packages/golden-alpha/src, packages/golden-beta/src]
+          paths: [packages/*/src]
           options:
             docstring_style: google
             show_source: true
@@ -37,6 +38,8 @@ markdown_extensions:
   - attr_list
   - pymdownx.highlight:
       anchor_linenums: true
+  - pymdownx.snippets:
+      check_paths: true
   - pymdownx.superfences
 # The nav below is derived by `kiln docs-generate` from docs/_areas.yml and
 # the tree — do not hand-edit between the markers; run `task docs:generate`
@@ -50,12 +53,12 @@ nav:
   - Guides:
     - Overview: guides/index.md
     - Development: guides/development.md
+  - Packages:
+    - golden-alpha: '!include packages/golden-alpha/mkdocs.yml'
+    - golden-beta: '!include packages/golden-beta/mkdocs.yml'
   - Runbooks:
     - Overview: runbooks/index.md
     - Recovering from drift: runbooks/recovering-from-drift.md
-  - Reference:
-    - Overview: reference/index.md
-    - Python API: reference/python-api.md
   - Releases: releases/index.md
   - Specs: specs/index.md
   - Decisions: adr/index.md

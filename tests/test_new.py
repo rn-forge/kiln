@@ -440,3 +440,45 @@ def test_new_inside_a_uv_project_leaves_it_untouched(tmp_path: Path) -> None:
     assert parent.read_text(encoding="utf-8") == (
         '[project]\nname = "host"\nversion = "0.1.0"\n'
     )
+
+
+PACKAGES_AT_NEW = (
+    "config.packages-at-new: a python-lib repository starts with no packages;"
+    " add each with 'kiln generate package <name>'"
+)
+
+
+def test_s11_2_2_3_new_python_lib_refuses_a_config_that_lists_a_package(
+    tmp_path: Path,
+) -> None:
+    layer = tmp_path / "layer"
+    layer.mkdir()
+    (layer / "config.toml").write_text(
+        '[archetype.python-lib]\npackages = ["packages/x"]\n', encoding="utf-8"
+    )
+    directory = tmp_path / "refused"
+
+    for yes in (True, False):
+        with pytest.raises(AppException) as raised:
+            commands.new(
+                directory,
+                archetype="python-lib",
+                docs="mkdocs",
+                config=str(layer),
+                yes=yes,
+            )
+        assert PACKAGES_AT_NEW in str(raised.value)
+        assert not directory.exists()
+
+
+def test_s11_2_2_4_new_python_lib_writes_no_member_and_passes_every_check(
+    tmp_path: Path,
+) -> None:
+    directory = tmp_path / "lib"
+    commands.new(directory, archetype="python-lib", docs="mkdocs", yes=True)
+
+    assert not list((directory / "packages").glob("*"))
+    document = tomllib.loads((directory / "pyproject.toml").read_text(encoding="utf-8"))
+    assert document["tool"]["uv"]["workspace"]["members"] == []
+    assert not (directory / "docs" / "reference").exists()
+    assert checks.run(directory) == []

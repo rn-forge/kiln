@@ -1,0 +1,1 @@
+--8<-- "packages/golden-alpha/CHANGELOG.md"

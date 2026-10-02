@@ -8,7 +8,7 @@ text for anyone — human or agent — working here. The reasoning behind each r
 is a kiln ADR; this file states the rule.
 
 {% if workspace %}- **Archetype:** `python-lib` — a uv workspace of published library packages
-  ({% for package in packages %}`packages/{{ package }}`{% if not loop.last %}, {% endif %}{% endfor %}), each with its own `src/`
+  ({% for package in packages %}`packages/{{ package }}`{% if not loop.last %}, {% endif %}{% else %}none yet{% endfor %}), each with its own `src/`
   layout, per-package verify, and a `<package>-v<version>` release tag.
 {% elif web_app %}- **Archetype:** `python-web-app` — a uv workspace with one API member at
   `{{ api_dir }}` (backend `{{ backend }}`) plus a pnpm-managed Nx frontend
@@ -81,7 +81,7 @@ frontend scaffold wrote is repo-owned; kiln renders nothing under
 `{{ web_dir }}`.
 
 {% endif %}{% if workspace %}`build` and `version` take a package name after `--`
-(`task version -- {{ packages[0] }}`); given none, they act on every member.
+(`task version -- {{ packages[0] if packages else "<package>" }}`); given none, they act on every member.
 
 {% endif %}Every other task is `internal: true`. The root `Taskfile.yml` holds wrappers
 only: each of its commands is a `task:` call into a `tasks/*.yml` namespace.

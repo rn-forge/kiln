@@ -129,7 +129,10 @@ The assignment is normative:
 | `docs/_areas.yml` | repo after scaffolding | **seeded** — repos may extend areas |
 | `docs/index.md`, `docs/<area>/index.md` | repo after scaffolding | **seeded** — written once |
 | `docs/specs/ideas.md`, `docs/reference/index.md` | repo after scaffolding | **seeded** — written once |
-| `mkdocs.yml` | repo body, scaffolded by `kiln new`; the `# BEGIN derived nav` region → kiln, rewritten by `task docs:generate` | **derived region** |
+| `mkdocs.yml` | repo body, scaffolded by `kiln new`; the `# BEGIN derived nav` region → kiln, rewritten by `task docs:generate`. For `python-lib` the body carries the `monorepo` plugin | **derived region** |
+| `packages/<pkg>/mkdocs.yml` | `python-lib` only; repo, seeded once by `kiln generate package`; no managed block ([ADR-0008](../adr/ADR-0008.md)) | **seeded** |
+| `packages/<pkg>/docs/**` | `python-lib` only; repo, seeded once by `kiln generate package` | **seeded** |
+| `packages/<pkg>/CHANGELOG.md`, `packages/<pkg>/README.md` | `python-lib` only; repo, seeded once by `kiln generate package` | **seeded** |
 | `.github/workflows/ci.yml`, `docs.yml`; `.github/actions/setup`; `sonar-project.properties` | kiln (`cicd`) | managed |
 | `CLAUDE.md`, `AGENTS.md` | bodies written once by `kiln new`, then repo; the `<!-- BEGIN rn-forge kiln -->` block in `CLAUDE.md` → kiln | block (`CLAUDE.md` only; `AGENTS.md` points at it) |
 | `.claude/**`, `.codex/**`, installed skills | not kiln's | — |
@@ -183,6 +186,17 @@ records its URL, and `none` generates no docs site. The shipped web combinations
 and promotion criteria live in
 [F5.3](../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md).
 
+**Docs layout per archetype** ([ADR-0008](../adr/ADR-0008.md)). Only a published
+package gets its own docs site. In `python-lib`, every package carries
+`packages/<pkg>/docs/` and `packages/<pkg>/mkdocs.yml`, built standalone with
+`--strict` and included into the root site by `mkdocs-monorepo-plugin`. The root
+`docs/_areas.yml` declares them as an area of kind `include`, which has no
+directory under `docs/` and whose nav is one `!include` entry per package. The
+root `docs/` holds only cross-package material. Every other Python archetype has
+one root site: its internal workspace packages have no docs of their own, and
+their reference renders in the root site. A `python-lib` repository starts with
+no packages; `kiln generate package` adds them one at a time.
+
 ## 3. The dependency set
 
 An archetype carries the libraries a repo of that shape is built on
@@ -193,7 +207,7 @@ An archetype carries the libraries a repo of that shape is built on
 | every python repo | `rn-forge-commons` | — |
 | `python-app` | + `rn-forge-cli` | — |
 | `python-tool` | + `rn-forge-cli`, `rn-forge-tooling` | — |
-| `python-lib` | `rn-forge-commons` in each distributable | — |
+| `python-lib` | `rn-forge-commons` in each distributable | — (the `docs` group adds `mkdocs-monorepo-plugin`) |
 | `python-web-api` · `python-web-app`, `backend = "django"` | + `rn-forge-cli`, `rn-forge-web`, `rn-forge-django` | + `rn-forge-django[codegen]` |
 | `python-web-api` · `python-web-app`, `backend = "fastapi"` | + `rn-forge-cli`, `rn-forge-web`, `rn-forge-fastapi`, when that package exists | + `rn-forge-fastapi[codegen]` |
 | `node-lib` · `node-web-app` | — (deferred) | — |
@@ -289,7 +303,9 @@ installed kiln, no `$RNF_HOME`, no bootstrap script — proves all of this:
   committed in `.rn-forge/kiln/state.json`**;
 - pyright is clean in strict mode ([ADR-0002](../adr/ADR-0002.md));
 - the tests pass;
-- the docs site builds `--strict` (`mkdocs` profile).
+- the docs site builds `--strict` (`mkdocs` profile). `docs:build` builds the
+  root site and then, for `python-lib`, every package's own site `--strict`,
+  standalone, from the repository root.
 
 ## 6. What `kiln doctor --full` adds
 

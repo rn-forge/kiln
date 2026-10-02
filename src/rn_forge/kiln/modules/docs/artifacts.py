@@ -34,16 +34,26 @@ SEEDS = (
 )
 """Every docs path, each rendered from `templates/<path>.j2`; `_structure.md` is managed."""
 
+_PACKAGE_SITE_SKIPS = ("docs/reference/",)
+"""Seeds a `python-lib` repository does not carry: each package's reference
+lives in its own site."""
+
 
 def render(config: KilnConfig, root: Path) -> list[Artifact]:
     """Render the seeded docs tree, for an `mkdocs` repo at *root*."""
     if config.docs_profile != "mkdocs":
         return []
     engine = TemplateEngine(package="rn_forge.kiln.modules.docs")
-    context = {"name": config.name, "kiln_version": __version__}
+    context = {
+        "name": config.name,
+        "archetype": config.archetype,
+        "kiln_version": __version__,
+    }
+    skipped = _PACKAGE_SITE_SKIPS if config.archetype == "python-lib" else ()
     return [
         Artifact(path, _kind(path), engine.render(f"{path}.j2", context))
         for path in SEEDS
+        if not path.startswith(skipped)
     ]
 
 

@@ -15,6 +15,12 @@ dependencies = [
   "rn-forge-commons @ git+https://github.com/rn-forge/pykit@main#subdirectory=packages/rn-forge-commons",
 ]
 
+[project.urls]
+Documentation = "https://rn-forge.github.io/golden-lib/packages/golden-alpha/latest/"
+Source = "https://github.com/rn-forge/golden-lib"
+Changelog = "https://github.com/rn-forge/golden-lib/blob/main/packages/golden-alpha/CHANGELOG.md"
+Issues = "https://github.com/rn-forge/golden-lib/issues"
+
 [build-system]
 requires = ["uv_build>=0.11.28,<0.12.0"]
 build-backend = "uv_build"

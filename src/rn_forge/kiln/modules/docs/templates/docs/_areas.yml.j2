@@ -12,7 +12,10 @@ areas:
   - key: guides
     title: Guides
     nav: children
-  - key: runbooks
+{% if archetype == "python-lib" %}  - key: packages
+    title: Packages
+    nav: include
+{% endif %}  - key: runbooks
     title: Runbooks
     nav: children
     optional: true

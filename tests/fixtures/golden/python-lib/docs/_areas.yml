@@ -12,6 +12,9 @@ areas:
   - key: guides
     title: Guides
     nav: children
+  - key: packages
+    title: Packages
+    nav: include
   - key: runbooks
     title: Runbooks
     nav: children

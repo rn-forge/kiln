@@ -52,6 +52,13 @@ _DOCS_GROUP = [
 """The `docs` dependency group's shared entries, present for every docs profile."""
 _DOCS_GROUP_MKDOCS = ["mkdocs-material>=9.6", "mkdocstrings[python]>=0.30"]
 """Added to the `docs` group only when `docs.profile == "mkdocs"`."""
+_DOCS_GROUP_MKDOCS_LIB = [
+    "mkdocs-material>=9.6",
+    "mkdocs-monorepo-plugin>=1.1",
+    "mkdocstrings[python]>=0.30",
+]
+"""`_DOCS_GROUP_MKDOCS` plus the monorepo plugin, for `python-lib`, which
+includes each package's site."""
 
 
 def scaffold(root: Path, config: KilnConfig) -> None:
@@ -194,6 +201,7 @@ def _reconcile_pyprojects(root: Path, config: KilnConfig) -> None:
             if is_workspace_root
             else tuple(archetypes.requirement(d) for d in required),
             mkdocs=config.docs_profile == "mkdocs",
+            lib=workspace,
             extra_dev=extra_dev,
         )
 
@@ -229,6 +237,7 @@ def _reconcile(
     is_workspace_root: bool,
     dependencies: tuple[str, ...],
     mkdocs: bool,
+    lib: bool = False,
     extra_dev: tuple[str, ...] = (),
 ) -> None:
     test_glob = "**/tests/*" if is_workspace_root else "tests/*"
@@ -251,7 +260,8 @@ def _reconcile(
     updates: dict[str, object] = {"project": project, "tool": tool}
     if is_root:
         dev = [*_DEV_GROUP, f"rn-forge-kiln @ {archetypes.KILN_SOURCE}"]
-        docs = [*_DOCS_GROUP, *(_DOCS_GROUP_MKDOCS if mkdocs else [])]
+        mkdocs_group = _DOCS_GROUP_MKDOCS_LIB if lib else _DOCS_GROUP_MKDOCS
+        docs = [*_DOCS_GROUP, *(mkdocs_group if mkdocs else [])]
         updates["dependency-groups"] = {
             "dev": [*_existing_list(path, "dependency-groups", "dev"), *dev],
             "docs": [*_existing_list(path, "dependency-groups", "docs"), *docs],

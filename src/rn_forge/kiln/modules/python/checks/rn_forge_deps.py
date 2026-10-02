@@ -197,6 +197,9 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
         findings.extend(_check_no_codegen_in_runtime(label, document))
         declared.update(distribution(r) for r in runtime_dependencies(document))
 
+    if config.archetype == "python-lib" and not config.packages:
+        return findings
+
     findings.extend(
         Finding(
             f"{CODE}.required-missing",

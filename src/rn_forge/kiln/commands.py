@@ -127,7 +127,8 @@ def new(
 
     Raises:
         AppException: `--archetype` is missing or unknown, a flag names an
-            untested value without `--allow-untested`, DIRECTORY is non-empty,
+            untested value without `--allow-untested`, a `python-lib` config
+            lists packages (`config.packages-at-new`), DIRECTORY is non-empty,
             or the config, scaffold, apply or check step fails.
     """
     if json:
@@ -150,6 +151,11 @@ def new(
     source = Source.parse(config) if config else None
     resolution = manager.resolve(flags=flags, source=source)
     resolved = resolution.config
+    if resolved.archetype == "python-lib" and resolved.packages:
+        raise AppException(
+            "config.packages-at-new: a python-lib repository starts with no "
+            "packages; add each with 'kiln generate package <name>'"
+        )
 
     if not yes or dry_run:
         rows = _preview_rows(directory, resolved, manager)

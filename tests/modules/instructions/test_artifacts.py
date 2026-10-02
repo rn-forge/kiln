@@ -80,7 +80,7 @@ def _new(tmp_path: Path, archetype: str = "python-tool", **kwargs: object) -> Pa
     scaffold(root, config)
     docs_scaffold(root, config)
     cycle.apply(root, home=tmp_path / "home")
-    generate.generate(root)
+    generate.generate(root, config.packages if config.archetype == "python-lib" else ())
     return root
 
 

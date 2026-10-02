@@ -258,3 +258,33 @@ def test_an_app_may_not_take_the_tooling_layer(repo) -> None:
 def test_kiln_itself_is_outside_the_contract(repo) -> None:
     """kiln is the dev tool running the check; doctor's `kiln.pin` owns its source."""
     assert run(repo(lifecycle=True, **{"pyproject.toml": KILN_FROM_PATH})) == []
+
+
+def _lib_root(tmp_path: Path, packages: str) -> Path:
+    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True, exist_ok=True)
+    config.write_text(
+        'schema_version = 1\n\n[repository]\nname = "demo"\narchetype = "python-lib"\n'
+        f'\n[archetype."python-lib"]\npackages = [{packages}]\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "pyproject.toml").write_text(
+        '[tool.uv]\npackage = false\n[project]\nname = "demo"\n', encoding="utf-8"
+    )
+    return tmp_path
+
+
+def test_s11_2_2_4_a_python_lib_with_no_packages_has_no_required_dependency(
+    tmp_path: Path,
+) -> None:
+    assert run(_lib_root(tmp_path, "")) == []
+
+
+def test_s11_2_2_4_a_python_lib_package_must_still_declare_the_required_set(
+    tmp_path: Path,
+) -> None:
+    root = _lib_root(tmp_path, '"packages/a"')
+    member = root / "packages" / "a" / "pyproject.toml"
+    member.parent.mkdir(parents=True)
+    member.write_text(MISSING_REQUIRED, encoding="utf-8")
+    assert any("required" in line or "requires" in line for line in run(root))

@@ -298,3 +298,52 @@ def test_s4_5_10_scaffold_writes_a_sample_test_into_each_package(
 def test_s4_5_10_each_golden_carries_the_sample_test(golden: str, name: str) -> None:
     on_disk = (GOLDEN / golden / SAMPLE_TEST).read_text(encoding="utf-8")
     assert on_disk == sample_test(name)
+
+
+def _bare_lib(tmp_path: Path, *, docs_profile: str = "mkdocs") -> Path:
+    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(
+        LIB_CONFIG.split("[archetype")[0] + f'[docs]\nprofile = "{docs_profile}"\n',
+        encoding="utf-8",
+    )
+    return tmp_path
+
+
+def test_s11_2_2_1_a_python_lib_with_no_packages_is_a_bare_workspace(
+    tmp_path: Path,
+) -> None:
+    root = _bare_lib(tmp_path)
+    scaffold(root, KilnConfig.load(root))
+    document = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    assert document["tool"]["uv"]["workspace"] == {"members": []}
+    assert not (root / "packages").exists()
+
+
+@pytest.mark.parametrize(
+    ("archetype", "docs_profile", "expected"),
+    [
+        ("python-lib", "mkdocs", True),
+        ("python-lib", "none", False),
+        ("python-tool", "mkdocs", False),
+    ],
+)
+def test_s11_2_2_2_only_python_lib_under_mkdocs_gets_the_monorepo_plugin(
+    tmp_path: Path, archetype: str, docs_profile: str, expected: bool
+) -> None:
+    root = _root(tmp_path, archetype, docs_profile=docs_profile)
+    scaffold(root, KilnConfig.load(root))
+    document = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    assert ("mkdocs-monorepo-plugin>=1.1" in document["dependency-groups"]["docs"]) == (
+        expected
+    )
+
+
+def test_s11_2_2_2_the_python_lib_docs_group_matches_the_golden(tmp_path: Path) -> None:
+    root = _root(tmp_path, "python-lib")
+    scaffold(root, KilnConfig.load(root))
+    rendered = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    golden = tomllib.loads(
+        (GOLDEN / "python-lib" / "pyproject.toml").read_text(encoding="utf-8")
+    )
+    assert rendered["dependency-groups"]["docs"] == golden["dependency-groups"]["docs"]

@@ -14,7 +14,9 @@ tasks:
     cmds:
 {% if overrides.get("docs:build") %}      - [[ overrides["docs:build"] ]]
 {% else %}      - uv run --group docs mkdocs build --strict --site-dir "{{.CLI_ARGS | default .MKDOCS_SITE_DIR}}"
-{% endif %}
+{% if workspace %}{% for pkg in packages %}      - |
+        site=$(mktemp -d) && uv run --group docs mkdocs build --strict -f packages/[[ pkg ]]/mkdocs.yml --site-dir "$site"; rc=$?; rm -rf "$site"; exit $rc
+{% endfor %}{% endif %}{% endif %}
   serve:
     desc: Serve the docs site locally with live reload on http://127.0.0.1:8080.
     cmds:

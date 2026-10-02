@@ -72,7 +72,7 @@
     },
     "docs/_structure.md": {
       "begin_marker": null,
-      "content_hash": "432b2318d424ae23491c7d2d7f7058cd652516c16d0c7609423e270c644dbf2e",
+      "content_hash": "0cf80dc512cfc639f45b0e308126e08b438e9824abb2f8f5f5bd8d435eeef047",
       "end_marker": null,
       "kind": "managed",
       "path": "docs/_structure.md"
@@ -126,13 +126,6 @@
       "kind": "seeded",
       "path": "docs/index.md"
     },
-    "docs/reference/_structure.md": {
-      "begin_marker": null,
-      "content_hash": "4ff3fee36d48dbc68143912f424008ef1a416f059666c087ba9abbc57ede9058",
-      "end_marker": null,
-      "kind": "managed",
-      "path": "docs/reference/_structure.md"
-    },
     "docs/releases/_structure.md": {
       "begin_marker": null,
       "content_hash": "8f6956ad17a8975ad949d76eb221b3d3b2f7de28b86350272b7e24c2f7b143f1",
@@ -184,7 +177,7 @@
     },
     "tasks/docs.yml": {
       "begin_marker": null,
-      "content_hash": "8686a01843fe8f0a14f7fd2b8598607d0292779025d64ce0274c6bcfbae994cb",
+      "content_hash": "e2298d188ea9d4b7f3c9903c8405c8144e957a22cfbf0838f17e3be9af693b35",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/docs.yml"

@@ -1,5 +1,5 @@
-site_name: {{ name }}
-site_description: {{ name }} — architecture, guides, and API reference.
+site_name: golden-beta
+site_description: The golden-beta package of the python-lib golden repo.
 docs_dir: docs
 exclude_docs: "_*"
 strict: true
@@ -24,11 +24,10 @@ theme:
         name: Switch to light mode
 plugins:
   - search
-{% if archetype == "python-lib" %}  - monorepo
-{% endif %}  - mkdocstrings:
+  - mkdocstrings:
       handlers:
         python:
-          paths: [{{ source_paths }}]
+          paths: [src]
           options:
             docstring_style: google
             show_source: true
@@ -38,12 +37,12 @@ markdown_extensions:
   - attr_list
   - pymdownx.highlight:
       anchor_linenums: true
-{% if archetype == "python-lib" %}  - pymdownx.snippets:
+  - pymdownx.snippets:
       check_paths: true
-{% endif %}  - pymdownx.superfences
-# The nav below is derived by `kiln docs-generate` from docs/_areas.yml and
-# the tree — do not hand-edit between the markers; run `task docs:generate`
-# after adding a page. `task lint` fails on a stale nav.
+  - pymdownx.superfences
 nav:
-  # BEGIN derived nav
-  # END derived nav
+  - Home: index.md
+  - Guides:
+    - Usage: guides/usage.md
+  - Reference: reference/api.md
+  - Changelog: changelog.md

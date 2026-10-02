@@ -60,7 +60,35 @@ These docs describe only this repository. A requirement that came from another
 repository is written here in full, as this repository's own;
 `specs/_structure.md` says how a dependency on another repository is written.
 
-## Checks
+{% if archetype == "python-lib" %}## Package docs
+
+Each package under `packages/` ships its own docs site, included in the root
+site as an entry under `Packages` (the `include` area in `_areas.yml`). The root
+`docs/` holds only cross-package material.
+
+A package's `docs/` has this shape:
+
+- `index.md`, the package's entry page.
+- `guides/`, with kebab-case pages.
+- `reference/`, generated from the package's doc comments; it is not
+  naming-checked.
+- `changelog.md`, which holds only a snippet include of the package's
+  `CHANGELOG.md`.
+- No `adr/`, `specs/`, `releases/`, `plans/` or `runbooks/`: those are
+  cross-package, and live in the root `docs/`.
+
+Beside `docs/`, a package carries:
+
+- `CHANGELOG.md`, in Keep a Changelog form, with an `## [Unreleased]` heading.
+- `[project.urls]` in its `pyproject.toml`: `Documentation`, `Source`,
+  `Changelog` and `Issues`.
+- A `README.md` whose links are all absolute, because PyPI and GitHub render it
+  outside the site.
+
+A package page links only within its own `docs/`; a link that resolves outside
+it fails the package's standalone strict build.
+
+{% endif %}## Checks
 
 `kiln doctor --only docs-structure` enforces kiln's docs policy: every
 non-optional area in `docs/_areas.yml` exists and has both a `_structure.md` and

@@ -51,6 +51,13 @@ GROWN = {
 """Seeded pages the goldens have since added their own entries to."""
 
 
+def _seeds(archetype: str) -> tuple[str, ...]:
+    """The seeds *archetype* carries: `python-lib` has no `docs/reference/`."""
+    if archetype == "python-lib":
+        return tuple(p for p in SEEDS if not p.startswith("docs/reference/"))
+    return SEEDS
+
+
 def _kind(path: str) -> ArtifactKind:
     managed = path.endswith("/_structure.md")
     return ArtifactKind.MANAGED if managed else ArtifactKind.SEEDED
@@ -97,7 +104,7 @@ def test_s4_3_2_property1_renders_exactly_the_module_s_template_inventory_row(
     root = _root(tmp_path, archetype)
     artifacts = DOCS.artifacts(KilnConfig.load(root), root)
     assert [(a.key, a.kind) for a in artifacts] == [
-        *((path, _kind(path)) for path in SEEDS),
+        *((path, _kind(path)) for path in _seeds(archetype)),
     ]
 
 
@@ -107,7 +114,9 @@ def test_s4_3_2_property2_into_an_empty_directory_only_creates(
 ) -> None:
     actions = _actions(_root(tmp_path, archetype), tmp_path)
     assert set(actions.values()) <= {Action.CREATE, Action.INSERT, Action.SKIP}
-    assert all(actions[path] is Action.CREATE for path in SEEDS)  # managed too
+    assert all(
+        actions[path] is Action.CREATE for path in _seeds(archetype)
+    )  # managed too
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
@@ -119,9 +128,9 @@ def test_s4_3_2_property3_a_second_apply_changes_nothing(
     actions = _actions(root, tmp_path)
     expected = {
         path: Action.UNCHANGED if _kind(path) is ArtifactKind.MANAGED else Action.SKIP
-        for path in SEEDS
+        for path in _seeds(archetype)
     }
-    assert {path: actions[path] for path in SEEDS} == expected
+    assert {path: actions[path] for path in _seeds(archetype)} == expected
     assert {a for k, a in actions.items() if k not in SEEDS} <= {
         Action.UNCHANGED,
         Action.SKIP,
@@ -160,15 +169,14 @@ def test_s4_3_2_property4_matches_its_golden(tmp_path: Path, archetype: str) -> 
     rendered = {a.key: a.content for a in DOCS.artifacts(config, golden)}
 
     mkdocs = (golden / "mkdocs.yml").read_text(encoding="utf-8")
-    assert NAV_BLOCK.extract(mkdocs) == build_nav(golden / "docs")
+    nav = build_nav(golden / "docs", config.packages)
+    assert NAV_BLOCK.extract(mkdocs) == nav
     scaffold(tmp_path, config)
     body = (tmp_path / "mkdocs.yml").read_text(encoding="utf-8")
     assert NAV_BLOCK.extract(body) == ""
-    assert _normalized(NAV_BLOCK.render(body, build_nav(golden / "docs"))) == (
-        _normalized(mkdocs)
-    )
+    assert _normalized(NAV_BLOCK.render(body, nav)) == (_normalized(mkdocs))
 
-    for path in SEEDS:
+    for path in _seeds(archetype):
         on_disk = (golden / path).read_text(encoding="utf-8")
         if path in GROWN:
             assert _is_subsequence(rendered[path].splitlines(), on_disk.splitlines()), (
@@ -223,6 +231,14 @@ def test_s4_3_2_1_mkdocs_build_strict_passes_on_the_rendered_tree(
     from mkdocs.config import load_config
 
     root = _new(tmp_path / "repo", archetype)
+    if archetype == "python-lib":
+        # The `monorepo` plugin is a docs-group dependency of the generated
+        # repo, not of kiln; its own gate builds the real site.
+        mkdocs = root / "mkdocs.yml"
+        mkdocs.write_text(
+            mkdocs.read_text(encoding="utf-8").replace("  - monorepo\n", ""),
+            encoding="utf-8",
+        )
     build(
         load_config(
             str(root / "mkdocs.yml"), strict=True, site_dir=str(tmp_path / "site")
@@ -281,10 +297,11 @@ def test_s11_4_2_structure_files_are_managed_and_indexes_and_areas_are_seeded(
 ) -> None:
     root = _root(tmp_path, archetype)
     kinds = {a.key: a.kind for a in DOCS.artifacts(KilnConfig.load(root), root)}
-    structures = [path for path in SEEDS if path.endswith("/_structure.md")]
-    assert len(structures) == 8
+    seeds = _seeds(archetype)
+    structures = [path for path in seeds if path.endswith("/_structure.md")]
+    assert len(structures) == (7 if archetype == "python-lib" else 8)
     assert all(kinds[path] is ArtifactKind.MANAGED for path in structures)
-    others = [path for path in SEEDS if path not in structures]
+    others = [path for path in seeds if path not in structures]
     assert "docs/_areas.yml" in others
     assert all(kinds[path] is ArtifactKind.SEEDED for path in others)
 
@@ -319,3 +336,91 @@ def test_s11_4_2_an_edited_structure_file_is_drift_and_an_edited_index_is_not(
     actions = _actions(root, tmp_path)
     assert actions["docs/specs/_structure.md"] is Action.DRIFT
     assert actions["docs/specs/index.md"] is Action.SKIP
+
+
+def _config_root(tmp_path: Path, archetype: str, extra: str = "") -> Path:
+    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    text = CONFIG.format(archetype=archetype, profile="mkdocs") + extra
+    config.write_text(text, encoding="utf-8")
+    return tmp_path
+
+
+def _rendered_mkdocs(root: Path) -> str:
+    scaffold(root, KilnConfig.load(root))
+    return (root / "mkdocs.yml").read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s11_2_2_1_the_docs_artifacts_reproduce_the_golden_for_both_packages(
+    tmp_path: Path, archetype: str
+) -> None:
+    """Acceptance 1: the F4.3 property tests above run against each golden's
+    `config.toml`, and the `python-lib` one lists `golden-alpha` and
+    `golden-beta`; this pins that fact."""
+    config = KilnConfig.load(GOLDEN / archetype)
+    assert config.packages == (
+        ("packages/golden-alpha", "packages/golden-beta")
+        if archetype == "python-lib"
+        else ()
+    )
+
+
+def test_s11_2_2_2_a_python_lib_root_body_has_monorepo_glob_paths_and_snippets(
+    tmp_path: Path,
+) -> None:
+    body = _rendered_mkdocs(_config_root(tmp_path, "python-lib"))
+    assert "  - search\n  - monorepo\n  - mkdocstrings:" in body
+    assert "paths: [packages/*/src]" in body
+    assert "  - pymdownx.snippets:\n      check_paths: true\n" in body
+
+
+@pytest.mark.parametrize(
+    ("archetype", "extra", "paths"),
+    [
+        ("python-app", "", "[src]"),
+        ("python-tool", "", "[src]"),
+        (
+            "python-app",
+            '\n[archetype."python-app"]\npackages = ["packages/core"]\n',
+            "[src, packages/core/src]",
+        ),
+    ],
+)
+def test_s11_2_2_3_other_archetypes_list_src_and_each_package_src(
+    tmp_path: Path, archetype: str, extra: str, paths: str
+) -> None:
+    body = _rendered_mkdocs(_config_root(tmp_path, archetype, extra))
+    assert f"paths: {paths}\n" in body
+    assert "monorepo" not in body
+    assert "snippets" not in body
+
+
+def test_s11_2_2_4_python_lib_adds_the_packages_area_and_the_package_docs_section(
+    tmp_path: Path,
+) -> None:
+    def rendered(archetype: str) -> dict[str, str]:
+        root = _config_root(tmp_path / archetype, archetype)
+        return {a.key: a.content for a in DOCS.artifacts(KilnConfig.load(root), root)}
+
+    lib, tool = rendered("python-lib"), rendered("python-tool")
+    assert (
+        "  - key: packages\n    title: Packages\n    nav: include\n"
+        in (lib["docs/_areas.yml"])
+    )
+    assert "## Package docs" in lib["docs/_structure.md"]
+    assert "packages" not in tool["docs/_areas.yml"]
+    assert "## Package docs" not in tool["docs/_structure.md"]
+
+
+def test_s11_2_2_5_python_lib_seeds_no_reference_area_and_the_others_keep_it(
+    tmp_path: Path,
+) -> None:
+    def keys(archetype: str) -> set[str]:
+        root = _config_root(tmp_path / archetype, archetype)
+        return {a.key for a in DOCS.artifacts(KilnConfig.load(root), root)}
+
+    assert not {k for k in keys("python-lib") if k.startswith("docs/reference/")}
+    assert {"docs/reference/index.md", "docs/reference/_structure.md"} <= keys(
+        "python-app"
+    )
