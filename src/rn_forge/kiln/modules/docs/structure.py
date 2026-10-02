@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
@@ -9,6 +10,7 @@ from rn_forge.commons.findings import Finding, Severity
 
 from rn_forge.kiln.modules.docs.areas import Area, load_areas
 from rn_forge.kiln.modules.docs.markdown import headings, is_external, links
+from rn_forge.kiln.modules.docs.packages import package_mounts, resolve_link
 from rn_forge.kiln.modules.docs.policy import (
     STATUS_LINE,
     DocsPolicy,
@@ -174,7 +176,7 @@ def _check_status(docs_root: Path, series: NumberedArea) -> list[Finding]:
     return findings
 
 
-def _check_links(docs_root: Path) -> list[Finding]:
+def _check_links(docs_root: Path, mounts: Mapping[str, Path]) -> list[Finding]:
     findings: list[Finding] = []
     for path in sorted(docs_root.rglob("*.md")):
         text = path.read_text(encoding="utf-8")
@@ -190,7 +192,7 @@ def _check_links(docs_root: Path) -> list[Finding]:
                         )
                     )
                 continue
-            resolved = (path.parent / target).resolve()
+            resolved = resolve_link(path, target, docs_root, mounts)
             if not resolved.exists():
                 findings.append(_error("broken-link", path, f"{link} does not resolve"))
                 continue
@@ -275,7 +277,10 @@ def _check_instruction_pointer(
 
 
 def check_structure(
-    repo_root: str | Path, docs_root: str | Path, policy: DocsPolicy
+    repo_root: str | Path,
+    docs_root: str | Path,
+    policy: DocsPolicy,
+    packages: Sequence[str] = (),
 ) -> list[Finding]:
     """Run every structure check, returning the findings in reporting order.
 
@@ -283,6 +288,8 @@ def check_structure(
         repo_root: The repository root, where the instruction files live.
         docs_root: The docs tree, normally ``<repo_root>/docs``.
         policy: The repository's documentation conventions.
+        packages: Package site directories, relative to *repo_root*, whose docs
+            root links may name by ``site_name``.
     """
     repo_root = Path(repo_root)
     docs_root = Path(docs_root)
@@ -295,7 +302,7 @@ def check_structure(
         *_check_areas(areas, docs_root),
         *_check_naming(areas, docs_root, policy),
         *(_check_status(docs_root, policy.numbered) if policy.numbered else []),
-        *_check_links(docs_root),
+        *_check_links(docs_root, package_mounts(repo_root, packages)),
         *_check_no_underscore_refs(docs_root),
         *_check_instruction_pointer(repo_root, docs_root, policy.instruction_files),
     ]

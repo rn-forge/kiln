@@ -11,6 +11,8 @@ from pathlib import Path
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs.checks import structure
+from rn_forge.kiln.modules.docs.policy import POLICY
+from rn_forge.kiln.modules.docs.structure import check_structure
 
 ROOT = Path(__file__).resolve().parents[4]
 
@@ -30,3 +32,56 @@ def test_s11_1_1_3_an_include_area_needs_no_directory(tmp_path: Path) -> None:
 
     areas = [Area(key="packages", title="Packages", nav="include")]
     assert _check_areas(areas, tmp_path) == []
+
+
+_STRUCTURE_PAGE = "# Root\n\n[x]({link})\n"
+
+
+def _packages_repo(repo, link: str) -> Path:
+    root = repo(
+        archetype="python-lib",
+        docs="mkdocs",
+        **{
+            "docs/_areas.yml": "areas:\n  - key: packages\n    nav: include\n",
+            "docs/index.md": _STRUCTURE_PAGE.format(link=link),
+            "packages/alpha/mkdocs.yml": "site_name: alpha\n",
+            "packages/alpha/docs/index.md": "# Alpha\n\n## Usage\n",
+            "packages/beta/mkdocs.yml": "site_name: beta\n",
+            "packages/beta/docs/index.md": "# Beta\n",
+        },
+    )
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(
+        config.read_text(encoding="utf-8")
+        + '\n[archetype.python-lib]\npackages = ["packages/alpha", "packages/beta"]\n',
+        encoding="utf-8",
+    )
+    return root
+
+
+def _link_codes(root: Path) -> list[str]:
+    return [
+        f.code
+        for f in checks.run(root, only=structure.NAME)
+        if f.code in {"docs.broken-link", "docs.broken-anchor"}
+    ]
+
+
+def test_s11_1_2_1_a_root_link_into_a_package_page_resolves(repo) -> None:
+    assert _link_codes(_packages_repo(repo, "alpha/index.md#usage")) == []
+
+
+def test_s11_1_2_2_a_root_link_to_a_missing_package_page_is_broken(repo) -> None:
+    assert _link_codes(_packages_repo(repo, "alpha/missing.md")) == ["docs.broken-link"]
+
+
+def test_s11_1_2_2_a_root_link_to_a_missing_package_anchor_is_broken(repo) -> None:
+    assert _link_codes(_packages_repo(repo, "alpha/index.md#nope")) == [
+        "docs.broken-anchor"
+    ]
+
+
+def test_s11_1_2_5_without_packages_a_package_name_is_not_a_mount(repo) -> None:
+    root = _packages_repo(repo, "alpha/index.md")
+    findings = check_structure(root, root / "docs", POLICY)
+    assert [f.code for f in findings if f.code.endswith("link")] == ["docs.broken-link"]

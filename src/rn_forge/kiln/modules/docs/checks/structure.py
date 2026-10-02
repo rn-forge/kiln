@@ -19,4 +19,5 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
     """Check `docs/` against `docs/_areas.yml`, for a repo with an MkDocs site."""
     if config.docs_profile != "mkdocs":
         return []
-    return check_structure(root, root / "docs", POLICY)
+    packages = config.packages if config.archetype == "python-lib" else ()
+    return check_structure(root, root / "docs", POLICY, packages)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, cast
 
@@ -9,6 +10,11 @@ from rn_forge.commons.findings import Finding, Severity
 from rn_forge.commons.fs.documents import YamlUtils
 
 from rn_forge.kiln.modules.docs.markdown import headings, is_external, links
+from rn_forge.kiln.modules.docs.packages import (
+    package_mounts,
+    read_mkdocs,
+    resolve_link,
+)
 
 __all__ = ["Site", "check_site"]
 
@@ -22,15 +28,29 @@ def _error(code: str, path: Path | str, message: str) -> Finding:
 class Site:
     """A repository's docs tree, read the way MkDocs will read it."""
 
-    def __init__(self, root: str | Path, *, docs_dir: str = "docs") -> None:
+    def __init__(
+        self,
+        root: str | Path,
+        *,
+        docs_dir: str = "docs",
+        packages: Sequence[str] = (),
+        package: str | None = None,
+    ) -> None:
         """Initialize :class:`Site`.
 
         Args:
             root: The repository root.
             docs_dir: The docs directory's name, relative to *root*.
+            packages: Package site directories, relative to *root*, whose docs
+                root links may name by ``site_name``.
+            package: Set when this site is itself a package's: the package's
+                path in the repository. A link out of its docs directory is
+                then an error.
         """
         self.root = Path(root).resolve()
         self.docs_dir = self.root / docs_dir
+        self.mounts = package_mounts(self.root, packages)
+        self.package = package
         self.mkdocs_yml = self.root / "mkdocs.yml"
         self.generated = self._generated_prefixes()
 
@@ -96,7 +116,7 @@ class Site:
             target, _, _anchor = link.partition("#")
             if not target.endswith(".md"):
                 continue
-            resolved = (path.parent / target).resolve()
+            resolved = resolve_link(path, target, self.docs_dir, self.mounts)
             if resolved.exists():
                 targets.add(resolved)
         return targets
@@ -138,6 +158,9 @@ class Site:
             if path.resolve() not in reachable
         ]
 
+    def _within_docs(self, path: Path) -> bool:
+        return path == self.docs_dir or self.docs_dir in path.parents
+
     def check_links(self) -> list[Finding]:
         """Every relative link and anchor in a shipping page resolves."""
         findings: list[Finding] = []
@@ -146,7 +169,21 @@ class Site:
                 if is_external(link):
                     continue
                 target, _, anchor = link.partition("#")
-                resolved = path if not target else (path.parent / target).resolve()
+                resolved = (
+                    path
+                    if not target
+                    else resolve_link(path, target, self.docs_dir, self.mounts)
+                )
+                if self.package is not None and not self._within_docs(resolved):
+                    findings.append(
+                        _error(
+                            "package-link-escapes",
+                            path,
+                            f"links outside {self.package}/"
+                            f"{self.docs_dir.relative_to(self.root)}: {link}",
+                        )
+                    )
+                    continue
                 if resolved.suffix and resolved.suffix != ".md":
                     continue  # a non-Markdown asset is not this check's job
                 if not resolved.exists():
@@ -174,6 +211,20 @@ class Site:
         ]
 
 
-def check_site(root: str | Path, *, docs_dir: str = "docs") -> list[Finding]:
-    """Run every site check against the repository at *root*."""
-    return Site(root, docs_dir=docs_dir).check()
+def check_site(
+    root: str | Path, *, docs_dir: str = "docs", packages: Sequence[str] = ()
+) -> list[Finding]:
+    """Run every site check against the repository at *root*, then each package's."""
+    root = Path(root).resolve()
+    findings = Site(root, docs_dir=docs_dir, packages=packages).check()
+    for package in packages:
+        mkdocs_yml = root / package / "mkdocs.yml"
+        if not mkdocs_yml.is_file():
+            continue
+        site = Site(
+            root / package,
+            docs_dir=str(read_mkdocs(mkdocs_yml).get("docs_dir", "docs")),
+            package=package,
+        )
+        findings.extend(site.check())
+    return findings
