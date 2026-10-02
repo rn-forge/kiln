@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
@@ -98,7 +99,9 @@ def _work_regions(
     return writes, [*markers, *validate(work, root)], stale_findings
 
 
-def generate(root: Path) -> tuple[list[Path], list[Finding]]:
+def generate(
+    root: Path, packages: Sequence[str] = ()
+) -> tuple[list[Path], list[Finding]]:
     """Rewrite every stale derived region under *root*.
 
     Returns the files written, and the findings that remain after writing: the
@@ -107,7 +110,7 @@ def generate(root: Path) -> tuple[list[Path], list[Finding]]:
     written: list[Path] = []
     mkdocs = root / "mkdocs.yml"
     if mkdocs.exists():
-        updated, changed = update_nav(mkdocs, root / "docs")
+        updated, changed = update_nav(mkdocs, root / "docs", packages)
         if changed:
             mkdocs.write_text(updated, encoding="utf-8")
             written.append(mkdocs)
@@ -121,11 +124,11 @@ def generate(root: Path) -> tuple[list[Path], list[Finding]]:
     return written, remaining
 
 
-def stale(root: Path) -> list[Finding]:
+def stale(root: Path, packages: Sequence[str] = ()) -> list[Finding]:
     """A finding for each derived region under *root* that regenerating would change."""
     findings: list[Finding] = []
     mkdocs = root / "mkdocs.yml"
-    if mkdocs.exists() and update_nav(mkdocs, root / "docs")[1]:
+    if mkdocs.exists() and update_nav(mkdocs, root / "docs", packages)[1]:
         findings.append(
             _error(
                 "docs.nav-stale",

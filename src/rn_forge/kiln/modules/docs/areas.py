@@ -12,7 +12,7 @@ from rn_forge.commons.lang.dataclasses import DataclassMixin
 
 __all__ = ["NAV_VALUES", "Area", "load_areas"]
 
-NAV_VALUES = frozenset({"children", "index-only"})
+NAV_VALUES = frozenset({"children", "index-only", "include"})
 """Valid values of an area's ``nav`` key."""
 
 
@@ -24,7 +24,9 @@ class Area(DataclassMixin):
         key: The directory name under `docs/`.
         title: The nav heading for the area.
         nav: ``"children"`` to list the area's pages, ``"index-only"`` to show
-            only its `index.md`.
+            only its `index.md`. ``"include"`` declares an area that is not a
+            directory under `docs/`, and its nav is one `!include` entry per
+            package.
         optional: The area may be absent without that being a finding.
         generated: The area's contents are produced by a generator (API
             reference output) — never checked, and only navigated if present.

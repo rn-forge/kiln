@@ -88,7 +88,9 @@ def docs_generate(path: Path) -> None:
 
     `kiln doctor --only docs-generate` is the check that they are current.
     """
-    written, findings = generate.generate(path)
+    config = ConfigManager().load(path)
+    packages = config.packages if config.archetype == "python-lib" else ()
+    written, findings = generate.generate(path, packages)
     if not written:
         console.info("no change")
     for file in written:
@@ -172,7 +174,8 @@ def new(
 
     result = cycle.apply(workspace, provenance=resolution.provenance_metadata())
     if resolved.docs_profile == "mkdocs":
-        generate.generate(workspace)
+        packages = resolved.packages if resolved.archetype == "python-lib" else ()
+        generate.generate(workspace, packages)
     _fail_on_errors(workspace)
 
     directory.mkdir(parents=True, exist_ok=True)

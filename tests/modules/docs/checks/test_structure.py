@@ -22,3 +22,11 @@ def test_kiln_docs_pass_the_policy() -> None:
 def test_a_repo_without_an_mkdocs_site_is_not_checked(repo) -> None:
     root = repo(docs="none")
     assert structure.check(KilnConfig.load(root), root) == []
+
+
+def test_s11_1_1_3_an_include_area_needs_no_directory(tmp_path: Path) -> None:
+    from rn_forge.kiln.modules.docs.areas import Area
+    from rn_forge.kiln.modules.docs.structure import _check_areas
+
+    areas = [Area(key="packages", title="Packages", nav="include")]
+    assert _check_areas(areas, tmp_path) == []

@@ -50,7 +50,7 @@ at the same time. F11.4 carries it into the templates.
 
 | ID | Feature | Depends on | State |
 | -- | -- | -- | -- |
-| [F11.1](F11.1-checks-learn-package-sites.md) | The docs checks learn package sites | S4.3.2 (done), S13.1.1 | New |
+| [F11.1](F11.1-checks-learn-package-sites.md) | The docs checks learn package sites | S4.3.2 (done), S13.1.1 | Active |
 | [F11.2](F11.2-python-lib-package-sites.md) | `python-lib` repositories carry package docs sites | F11.1 | New |
 | [F11.3](F11.3-generate-package.md) | `kiln generate package` | F11.2, S4.5.1, S4.5.2 | New |
 | [F11.4](F11.4-cross-repository-rule.md) | The docs rules are one standard, and kiln owns them | S13.3.1, for S11.4.2 | Active |

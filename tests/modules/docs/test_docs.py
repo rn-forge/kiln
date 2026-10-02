@@ -142,6 +142,11 @@ class TestAreas:
         with pytest.raises(AppException):
             load_areas(tmp_path)
 
+    def test_s11_1_1_1_an_include_area_loads(self, tmp_path):
+        write(tmp_path / "_areas.yml", "areas:\n  - key: packages\n    nav: include\n")
+        (area,) = load_areas(tmp_path)
+        assert (area.key, area.nav, area.title) == ("packages", "include", "Packages")
+
     def test_area_round_trips_through_dict(self, repo):
         for area in load_areas(repo / "docs"):
             assert Area.from_dict(area.as_dict()) == area
@@ -265,6 +270,25 @@ class TestNav:
         )
         body = build_nav(repo / "docs")
         assert body.index("guides/setup.md") < body.index("guides/alpha.md")
+
+    def test_s11_1_1_2_include_area_renders_one_include_per_package(self, repo):
+        write(
+            repo / "docs/_areas.yml",
+            AREAS + "  - key: packages\n    title: Packages\n    nav: include\n",
+        )
+        body = build_nav(repo / "docs", ("packages/a", "packages/b"))
+        assert body.index("a: '!include packages/a/mkdocs.yml'") < body.index(
+            "b: '!include packages/b/mkdocs.yml'"
+        )
+        assert "  - Packages:\n" in body
+
+    def test_s11_1_1_3_include_area_without_packages_renders_nothing(self, repo):
+        write(
+            repo / "docs/_areas.yml",
+            AREAS + "  - key: packages\n    title: Packages\n    nav: include\n",
+        )
+        assert "Packages" not in build_nav(repo / "docs")
+        assert "Packages" not in build_nav(repo / "docs", ())
 
     def test_generated_area_is_skipped_when_absent(self, repo):
         assert "api/index.md" not in build_nav(repo / "docs")

@@ -21,4 +21,5 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
     """Fail if regenerating a derived region would change a file."""
     if config.docs_profile != "mkdocs":
         return []
-    return generate.stale(root)
+    packages = config.packages if config.archetype == "python-lib" else ()
+    return generate.stale(root, packages)

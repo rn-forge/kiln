@@ -150,3 +150,38 @@ def test_s13_2_2_the_check_reports_the_regions(repo) -> None:
     assert [f.code for f in checks.run(_specs(repo), only=derived.NAME)][:1] == [
         "docs.board-stale"
     ]
+
+
+def _lib(repo, archetype: str, table: str):
+    root = _site(
+        repo,
+        **{
+            "docs/_areas.yml": "areas:\n  - key: packages\n    nav: include\n",
+            "mkdocs.yml": MKDOCS,
+        },
+    )
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(
+        config.read_text(encoding="utf-8").replace(
+            'archetype = "python-app"', f'archetype = "{archetype}"'
+        )
+        + table,
+        encoding="utf-8",
+    )
+    return root
+
+
+def test_s11_1_1_2_the_nav_check_passes_python_lib_packages(repo) -> None:
+    root = _lib(
+        repo, "python-lib", '\n[archetype.python-lib]\npackages = ["packages/a"]\n'
+    )
+    assert generate.generate(root, ("packages/a",))[0] == [root / "mkdocs.yml"]
+    assert "!include packages/a/mkdocs.yml" in (root / "mkdocs.yml").read_text()
+    assert checks.run(root, only=derived.NAME) == []
+
+
+def test_s11_1_1_4_a_web_archetypes_api_dir_is_not_a_package_site(repo) -> None:
+    root = _lib(repo, "python-web-api", "")
+    generate.generate(root)
+    assert checks.run(root, only=derived.NAME) == []
+    assert "!include" not in (root / "mkdocs.yml").read_text()

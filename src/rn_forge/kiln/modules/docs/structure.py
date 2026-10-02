@@ -42,7 +42,7 @@ def _content_pages(directory: Path) -> list[Path]:
 def _check_areas(areas: list[Area], docs_root: Path) -> list[Finding]:
     findings: list[Finding] = []
     for area in areas:
-        if area.generated:
+        if area.generated or area.nav == "include":
             continue
         target = docs_root / area.key
         if not target.is_dir():
