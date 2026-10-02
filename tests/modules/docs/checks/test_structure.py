@@ -85,3 +85,43 @@ def test_s11_1_2_5_without_packages_a_package_name_is_not_a_mount(repo) -> None:
     root = _packages_repo(repo, "alpha/index.md")
     findings = check_structure(root, root / "docs", POLICY)
     assert [f.code for f in findings if f.code.endswith("link")] == ["docs.broken-link"]
+
+
+def _excluding_repo(repo, old: str = "", new: str = "", underscore: str = "") -> Path:
+    return repo(
+        archetype="python-app",
+        docs="mkdocs",
+        **{
+            "mkdocs.yml": "site_name: root\nexclude_docs: |\n  _*\n  plans/archive/\n",
+            "docs/_areas.yml": "areas:\n  - key: packages\n    nav: include\n",
+            "docs/index.md": "# Root\n",
+            "docs/plans/new.md": f"# New\n\n{new}",
+            "docs/plans/archive/old.md": f"# Old\n\n{old}",
+            "docs/plans/archive/other.md": f"# Other\n\n{underscore}",
+        },
+    )
+
+
+def _structure_codes(root: Path) -> list[str]:
+    return [
+        f.code
+        for f in checks.run(root, only=structure.NAME)
+        if f.code.startswith("docs.broken") or f.code == "docs.underscore-referenced"
+    ]
+
+
+def test_s11_1_3_1_a_broken_link_in_an_excluded_page_is_not_reported(repo) -> None:
+    assert _structure_codes(_excluding_repo(repo, old="[x](gone.md)\n")) == []
+
+
+def test_s11_1_3_1_the_same_link_in_a_shipping_page_is_broken(repo) -> None:
+    root = _excluding_repo(repo, new="[x](gone.md)\n")
+    assert _structure_codes(root) == ["docs.broken-link"]
+
+
+def test_s11_1_3_an_excluded_page_may_link_an_underscore_page(repo) -> None:
+    root = _excluding_repo(repo, underscore="[x](_inc.md)\n")
+    assert _structure_codes(root) == []
+    (root / "docs/plans/new.md").write_text("[x](_inc.md)\n", encoding="utf-8")
+    (root / "docs/plans/_inc.md").write_text("# Inc\n", encoding="utf-8")
+    assert _structure_codes(root) == ["docs.underscore-referenced"]

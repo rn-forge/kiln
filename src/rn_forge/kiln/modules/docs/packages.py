@@ -6,15 +6,33 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, cast
 
+from pathspec.gitignore import GitIgnoreSpec
 from rn_forge.commons.fs.documents import YamlUtils
 
-__all__ = ["package_mounts", "read_mkdocs", "resolve_link"]
+__all__ = ["excluded_docs", "package_mounts", "read_mkdocs", "resolve_link"]
 
 
 def read_mkdocs(mkdocs_yml: Path) -> dict[str, Any]:
     """The mapping in *mkdocs_yml*, or an empty one if it holds none."""
     config: Any = YamlUtils.read_file(mkdocs_yml)
     return cast(dict[str, Any], config) if isinstance(config, dict) else {}
+
+
+def excluded_docs(mkdocs_yml: Path) -> GitIgnoreSpec:
+    """The pages *mkdocs_yml*'s ``exclude_docs`` keeps out of the site.
+
+    Args:
+        mkdocs_yml: The site's ``mkdocs.yml``, which may not exist.
+
+    Returns:
+        A spec matched against paths relative to ``docs_dir``. It matches
+        nothing when the file or the key is absent.
+    """
+    block = (
+        read_mkdocs(mkdocs_yml).get("exclude_docs") if mkdocs_yml.is_file() else None
+    )
+    lines = block.splitlines() if isinstance(block, str) else []
+    return GitIgnoreSpec.from_lines(lines)
 
 
 def package_mounts(root: Path, packages: Sequence[str]) -> dict[str, Path]:

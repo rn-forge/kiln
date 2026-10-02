@@ -962,6 +962,7 @@ version = "0.1.0"
 source = { editable = "../../../../" }
 dependencies = [
     { name = "markdown" },
+    { name = "pathspec" },
     { name = "rn-forge-cli" },
     { name = "rn-forge-commons", extra = ["pydantic"] },
     { name = "rn-forge-tooling" },
@@ -970,6 +971,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "markdown", specifier = ">=3.7" },
+    { name = "pathspec", specifier = ">=1.1" },
     { name = "rn-forge-cli", git = "https://github.com/rn-forge/pykit?subdirectory=packages%2Frn-forge-cli&rev=main" },
     { name = "rn-forge-commons", extras = ["pydantic"], git = "https://github.com/rn-forge/pykit?subdirectory=packages%2Frn-forge-commons&rev=main" },
     { name = "rn-forge-tooling", git = "https://github.com/rn-forge/pykit?subdirectory=packages%2Frn-forge-tooling&rev=main" },

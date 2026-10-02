@@ -98,3 +98,87 @@ def test_s11_1_2_5_only_a_python_lib_has_package_sites(repo) -> None:
         encoding="utf-8",
     )
     assert [f.code for f in checks.run(root, only=site.NAME)] == ["docs.broken-link"]
+
+
+EXCLUDE = "exclude_docs: |\n  _*\n  plans/archive/\n"
+
+
+def _excluding_repo(repo, old: str = "", new: str = "", index: str = "# Root\n"):
+    return repo(
+        archetype="python-app",
+        docs="mkdocs",
+        **{
+            "mkdocs.yml": (
+                "site_name: root\n" + EXCLUDE + "nav:\n  - Home: index.md\n"
+                "  - New: plans/new.md\n"
+            ),
+            "docs/index.md": index,
+            "docs/plans/new.md": f"# New\n\n{new}",
+            "docs/plans/archive/old.md": f"# Old\n\n{old}",
+        },
+    )
+
+
+def test_s11_1_3_1_a_broken_link_in_an_excluded_page_is_not_reported(repo) -> None:
+    root = _excluding_repo(repo, old="[x](gone.md)\n")
+    assert check_site(root) == []
+    assert checks.run(root, only=site.NAME) == []
+
+
+def test_s11_1_3_1_the_same_link_in_a_shipping_page_is_broken(repo) -> None:
+    root = _excluding_repo(repo, new="[x](gone.md)\n")
+    assert [f.code for f in check_site(root)] == ["docs.broken-link"]
+
+
+def test_s11_1_3_2_an_excluded_page_is_not_an_orphan(repo) -> None:
+    root = _excluding_repo(repo)
+    assert (root / "docs/plans/archive/old.md").exists()
+    assert check_site(root) == []
+
+
+def test_s11_1_3_3_linking_an_excluded_page_names_the_exclusion(repo) -> None:
+    root = _excluding_repo(repo, new="[old](archive/old.md)\n")
+    findings = check_site(root)
+    assert [f.code for f in findings] == ["docs.broken-link"]
+    assert findings[0].message == (
+        "links to a page excluded from the site: archive/old.md"
+    )
+
+
+def test_s11_1_3_3_a_package_site_uses_its_own_exclude_docs(repo) -> None:
+    root = _repo(
+        repo,
+        **{
+            "packages/alpha/mkdocs.yml": (
+                "site_name: alpha\nexclude_docs: |\n  drafts/\n"
+                "nav:\n  - Home: index.md\n"
+            ),
+            "packages/alpha/docs/drafts/d.md": "# D\n\n[x](gone.md)\n",
+        },
+    )
+    assert check_site(root, packages=PACKAGES) == []
+
+
+def test_s11_1_3_4_the_seeded_underscore_exclusion_keeps_todays_behaviour(
+    repo,
+) -> None:
+    root = repo(
+        archetype="python-app",
+        docs="mkdocs",
+        **{
+            "mkdocs.yml": 'site_name: root\nexclude_docs: "_*"\nnav:\n  - Home: index.md\n',
+            "docs/index.md": "# Root\n",
+            "docs/_include.md": "[x](gone.md)\n",
+        },
+    )
+    assert check_site(root) == []
+
+
+def test_s11_1_3_excluded_docs_is_empty_without_the_key_or_the_file(
+    tmp_path: Path,
+) -> None:
+    from rn_forge.kiln.modules.docs.packages import excluded_docs
+
+    assert not excluded_docs(tmp_path / "mkdocs.yml").match_file("a.md")
+    (tmp_path / "mkdocs.yml").write_text("site_name: x\n", encoding="utf-8")
+    assert not excluded_docs(tmp_path / "mkdocs.yml").match_file("a.md")

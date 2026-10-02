@@ -5,12 +5,17 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
+from pathspec.gitignore import GitIgnoreSpec
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding, Severity
 
 from rn_forge.kiln.modules.docs.areas import Area, load_areas
 from rn_forge.kiln.modules.docs.markdown import headings, is_external, links
-from rn_forge.kiln.modules.docs.packages import package_mounts, resolve_link
+from rn_forge.kiln.modules.docs.packages import (
+    excluded_docs,
+    package_mounts,
+    resolve_link,
+)
 from rn_forge.kiln.modules.docs.policy import (
     STATUS_LINE,
     DocsPolicy,
@@ -176,9 +181,19 @@ def _check_status(docs_root: Path, series: NumberedArea) -> list[Finding]:
     return findings
 
 
-def _check_links(docs_root: Path, mounts: Mapping[str, Path]) -> list[Finding]:
+def _shipping_pages(docs_root: Path, excluded: GitIgnoreSpec) -> list[Path]:
+    return sorted(
+        path
+        for path in docs_root.rglob("*.md")
+        if not excluded.match_file(path.relative_to(docs_root).as_posix())
+    )
+
+
+def _check_links(
+    docs_root: Path, mounts: Mapping[str, Path], excluded: GitIgnoreSpec
+) -> list[Finding]:
     findings: list[Finding] = []
-    for path in sorted(docs_root.rglob("*.md")):
+    for path in _shipping_pages(docs_root, excluded):
         text = path.read_text(encoding="utf-8")
         for link in links(text):
             if is_external(link):
@@ -207,9 +222,11 @@ def _check_links(docs_root: Path, mounts: Mapping[str, Path]) -> list[Finding]:
     return findings
 
 
-def _check_no_underscore_refs(docs_root: Path) -> list[Finding]:
+def _check_no_underscore_refs(
+    docs_root: Path, excluded: GitIgnoreSpec
+) -> list[Finding]:
     findings: list[Finding] = []
-    for path in sorted(docs_root.rglob("*.md")):
+    for path in _shipping_pages(docs_root, excluded):
         if path.name.startswith("_"):
             continue
         findings.extend(
@@ -298,11 +315,12 @@ def check_structure(
     except AppException as exc:
         return [_error("areas-manifest", docs_root, str(exc))]
 
+    excluded = excluded_docs(repo_root / "mkdocs.yml")
     return [
         *_check_areas(areas, docs_root),
         *_check_naming(areas, docs_root, policy),
         *(_check_status(docs_root, policy.numbered) if policy.numbered else []),
-        *_check_links(docs_root, package_mounts(repo_root, packages)),
-        *_check_no_underscore_refs(docs_root),
+        *_check_links(docs_root, package_mounts(repo_root, packages), excluded),
+        *_check_no_underscore_refs(docs_root, excluded),
         *_check_instruction_pointer(repo_root, docs_root, policy.instruction_files),
     ]

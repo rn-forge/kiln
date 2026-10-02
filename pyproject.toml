@@ -29,6 +29,8 @@ dependencies = [
   # guessing; mkdocs already brings it, but a check that only works inside a
   # docs build is not a check.
   "markdown>=3.7",
+  # The docs checks read `exclude_docs` the way MkDocs does, with its matcher.
+  "pathspec>=1.1",
 ]
 
 [project.scripts]

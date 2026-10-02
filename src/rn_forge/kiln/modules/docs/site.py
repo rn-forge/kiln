@@ -11,6 +11,7 @@ from rn_forge.commons.fs.documents import YamlUtils
 
 from rn_forge.kiln.modules.docs.markdown import headings, is_external, links
 from rn_forge.kiln.modules.docs.packages import (
+    excluded_docs,
     package_mounts,
     read_mkdocs,
     resolve_link,
@@ -53,6 +54,7 @@ class Site:
         self.package = package
         self.mkdocs_yml = self.root / "mkdocs.yml"
         self.generated = self._generated_prefixes()
+        self.excluded = excluded_docs(self.mkdocs_yml)
 
     def _generated_prefixes(self) -> list[Path]:
         """Directories under docs/ that are gitignored — generator output, not prose."""
@@ -73,12 +75,22 @@ class Site:
         """Whether *path* is inside a gitignored, generated subtree."""
         return any(path == p or p in path.parents for p in self.generated)
 
+    def is_excluded(self, path: Path) -> bool:
+        """Whether *path* is a page under docs_dir that ``exclude_docs`` drops."""
+        try:
+            relative = path.relative_to(self.docs_dir)
+        except ValueError:
+            return False
+        return self.excluded.match_file(relative.as_posix())
+
     def markdown_files(self) -> list[Path]:
-        """Every page that ships: not generated, not an underscore-prefixed include."""
+        """Every page that ships: not generated, not excluded, not an underscore include."""
         return sorted(
             path
             for path in self.docs_dir.rglob("*.md")
-            if not self.is_generated(path) and not path.name.startswith("_")
+            if not self.is_generated(path)
+            and not path.name.startswith("_")
+            and not self.is_excluded(path)
         )
 
     def nav_paths(self) -> list[str]:
@@ -186,6 +198,15 @@ class Site:
                     continue
                 if resolved.suffix and resolved.suffix != ".md":
                     continue  # a non-Markdown asset is not this check's job
+                if resolved.suffix == ".md" and self.is_excluded(resolved):
+                    findings.append(
+                        _error(
+                            "broken-link",
+                            path,
+                            f"links to a page excluded from the site: {link}",
+                        )
+                    )
+                    continue
                 if not resolved.exists():
                     if not self.is_generated(resolved):
                         findings.append(
