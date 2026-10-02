@@ -1,11 +1,13 @@
 # E7 — pykit releases, and the pin flip
 
-**Status:** deferred · **Phase:** G (triggered, not scheduled) · Absorbs the
-deferred C.2 step 9
-([F2.9](../E2-layer-split-and-golden-rename/index.md#f29-as-it-stood-when-deferred))
+|  |  |
+| -- | -- |
+| **State** | New |
+| **Tags** | deferred |
+| **Entry criteria** | pykit's release-1 tags exist. Cutting them, and their order, is pykit's work (ADR-0009) |
 
-**Entry criteria:** pykit's release-1 tags exist. Cutting them, and their order,
-is pykit's work ([ADR-0009](../../../adr/ADR-0009.md)).
+Phase: G (triggered, not scheduled) · Absorbs the deferred C.2 step 9
+([F2.9](../E2-layer-split-and-golden-rename/index.md#f29-as-it-stood-when-deferred))
 
 Until then, dependencies use `feature/upgrade`, with resolved commits recorded
 in lockfiles. This lets integration fixes land without cutting a new library

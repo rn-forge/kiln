@@ -29,7 +29,9 @@ from rn_forge.kiln.modules.python.checks.pyproject import (
 )
 
 __all__ = [
+    "SAMPLE_TEST",
     "reconcile_backend",
+    "sample_test",
     "scaffold",
     "scaffold_backend",
     "uv_gitignore",
@@ -72,7 +74,8 @@ def scaffold_backend(raw: Path, config: KilnConfig) -> None:
     workspace member in `config.packages` and wires the workspace table at the
     root. `uv init` itself refuses a directory that already holds a
     `pyproject.toml`, so *raw* must be empty. Writes uv's own ignore body to
-    `raw/.gitignore`, once, from `uv_gitignore`.
+    `raw/.gitignore`, once, from `uv_gitignore`, and `SAMPLE_TEST` into each
+    package `uv init` creates.
 
     Raises:
         AppException: `uv` is not on `PATH`, or exits non-zero.
@@ -86,6 +89,7 @@ def scaffold_backend(raw: Path, config: KilnConfig) -> None:
             member.mkdir(parents=True, exist_ok=True)
             member_name = f"{config.name}-api" if web else Path(package).name
             _uv_init(member, name=member_name, bare=False, member=True)
+            _write_sample_test(member, member_name)
         DocumentUtils.update(
             raw / "pyproject.toml",
             {
@@ -99,7 +103,32 @@ def scaffold_backend(raw: Path, config: KilnConfig) -> None:
         )
     else:
         _uv_init(raw, name=config.name, bare=False)
+        _write_sample_test(raw, config.name)
     (raw / gitignore.GITIGNORE).write_text(uv_gitignore(), encoding="utf-8")
+
+
+SAMPLE_TEST = Path("tests") / "test_package.py"
+"""The sample test `scaffold_backend` writes into each package `uv init` creates."""
+
+
+def sample_test(name: str) -> str:
+    """The body of `SAMPLE_TEST` for the package *name* (dashes allowed).
+
+    A new package has no tests, and pytest exits 5 on an empty suite, so
+    without this a fresh repository's `task validate` fails.
+    """
+    module = name.replace("-", "_")
+    return (
+        f"import {module}\n\n\n"
+        "def test_package_imports():\n"
+        f'    assert {module}.__name__ == "{module}"\n'
+    )
+
+
+def _write_sample_test(package: Path, name: str) -> None:
+    path = package / SAMPLE_TEST
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(sample_test(name), encoding="utf-8")
 
 
 def uv_gitignore() -> str:

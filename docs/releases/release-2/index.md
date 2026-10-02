@@ -1,6 +1,8 @@
 # Release 2 — the web archetypes
 
-**Status:** in progress
+|  |  |
+| -- | -- |
+| **Status** | in progress |
 
 kiln creates and ships the FastAPI web cells: `python-web-api` and
 `python-web-app` with an Angular frontend. It also deploys `python-lib`'s
@@ -20,14 +22,18 @@ package docs sites, and taskkit is retired.
 
 ## Scope
 
-| Feature | Epic | Status |
+<!-- BEGIN derived scope -->
+
+| Feature | Epic | State |
 | -- | -- | -- |
-| [F5.1 — Library sets, and the modules gain the web shapes](../../specs/epics/E5-web-archetypes/F5.1-web-library-sets-and-modules.md) | E5 | done |
-| [F5.2 — `kiln new` end to end for the web archetypes](../../specs/epics/E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md) | E5 | done; S5.2.3 (Django) deferred |
-| [F5.3 — Prove and ship the FastAPI cells](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) | E5 | in progress |
-| [F6.2 — Retire taskkit](../../specs/epics/E6-rebuild-the-repos/F6.2-retire-taskkit.md) | E6 | planned |
-| [F11.5 — CI deploys versioned package sites](../../specs/epics/E11-package-docs/F11.5-deploy-package-sites.md) | E11 | planned; waits on its entry criterion |
-| [F12.2 — The web records](../../specs/epics/E12-architecture-baseline/F12.2-web-baseline.md) | E12 | planned |
+| [F5.1](../../specs/epics/E5-web-archetypes/F5.1-web-library-sets-and-modules.md) | E5 | Closed |
+| [F5.2](../../specs/epics/E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md) | E5 | Closed |
+| [F5.3](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) | E5 | Active |
+| [F6.2](../../specs/epics/E6-rebuild-the-repos/F6.2-retire-taskkit.md) | E6 | New |
+| [F11.5](../../specs/epics/E11-package-docs/F11.5-deploy-package-sites.md) | E11 | New |
+| [F12.2](../../specs/epics/E12-architecture-baseline/F12.2-web-baseline.md) | E12 | New |
+
+<!-- END derived scope -->
 
 ## Decisions
 

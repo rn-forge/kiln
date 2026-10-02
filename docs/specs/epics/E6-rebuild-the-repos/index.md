@@ -1,8 +1,11 @@
 # E6 — Rebuild the repos, retire the old
 
-**Status:** planned · **Releases:**
-[release-1](../../../releases/release-1/index.md),
-[release-2](../../../releases/release-2/index.md) · **Phase:** F
+|  |  |
+| -- | -- |
+| **State** | New |
+
+Releases: [release-1](../../../releases/release-1/index.md),
+[release-2](../../../releases/release-2/index.md) · Phase: F
 
 Each repository's cutover onto kiln is that repository's own work, accepted by
 its own specs ([ADR-0009](../../../adr/ADR-0009.md)). kiln's part is to prove,
@@ -14,10 +17,10 @@ kiln.
 
 ## Features
 
-| ID | Feature | Depends on |
-| -- | -- | -- |
-| [F6.1](F6.1-pykit-skeleton.md) | `python-lib` can host pykit | S5.3.1; E11's F11.1–F11.3 |
-| [F6.2](F6.2-retire-taskkit.md) | Retire taskkit | S4.6.2, S5.2.2 |
+| ID | Feature | Depends on | State |
+| -- | -- | -- | -- |
+| [F6.1](F6.1-pykit-skeleton.md) | `python-lib` can host pykit | S5.3.1; E11's F11.1–F11.3 | New |
+| [F6.2](F6.2-retire-taskkit.md) | Retire taskkit | S4.6.2, S5.2.2 | New |
 
 **Out of scope here:** kiln itself is already self-hosted by
 [F4.8](../E4-generator/F4.8-self-hosting.md). intellibuild is built on its own

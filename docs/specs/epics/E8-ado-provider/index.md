@@ -1,10 +1,12 @@
 # E8 — The Azure DevOps CI provider
 
-**Status:** deferred · **Phase:** G (triggered, not scheduled)
+|  |  |
+| -- | -- |
+| **State** | New |
+| **Tags** | deferred |
+| **Entry criteria** | a repo needs `ci.provider = "ado"`. The intellibuild plan holds the question of whether intellibuild is that repo |
 
-**Entry criteria:** a repo needs `ci.provider = "ado"`. The
-[intellibuild plan](../../../plans/intellibuild.md) holds the question of
-whether intellibuild is that repo.
+Phase: G (triggered, not scheduled)
 
 ## Scope
 

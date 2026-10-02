@@ -1,7 +1,12 @@
 # E13 — The docs work model and derived regions
 
-**Status:** planned · **Release:**
-[release-1](../../../releases/release-1/index.md) · **Decisions:**
+|  |  |
+| -- | -- |
+| **State** | Closed |
+| **Start Date** | 2026-10-01 |
+| **Closed Date** | 2026-10-01 |
+
+Release: [release-1](../../../releases/release-1/index.md) · Decisions:
 [ADR-0003](../../../adr/ADR-0003.md) (revised),
 [ADR-0011](../../../adr/ADR-0011.md), [ADR-0012](../../../adr/ADR-0012.md)
 
@@ -19,10 +24,9 @@ the rules, the finding codes and the region shapes, verbatim.
 ADR-0011 and ADR-0012; their status lines record it, and no story starts before
 then. F13.2 needs S13.1.1. F13.3 needs F13.2. Downstream,
 [S11.1.1](../E11-package-docs/F11.1-checks-learn-package-sites.md) needs
-S13.1.1, and
-[S11.4.2](../E11-package-docs/F11.4-cross-repository-rule.md#s1142-kiln-owns-the-_structuremd-files)
-needs S13.3.1, so that kiln starts owning the `_structure.md` files only once
-they carry the new rules.
+S13.1.1, and [S11.4.2](../E11-package-docs/F11.4-cross-repository-rule.md) needs
+S13.3.1, so that kiln starts owning the `_structure.md` files only once they
+carry the new rules.
 
 **Goldens first.** While `tests/fixtures/golden/` is in git, a template change
 starts in the golden it reproduces
@@ -33,11 +37,11 @@ S13.1.1 and S13.3.1 change all three goldens before any template.
 
 ## Features
 
-| ID | Feature | Release | Depends on |
-| -- | -- | -- | -- |
-| [F13.1](F13.1-derived-regions.md) | Derived regions, starting with the nav | release-1 | S4.3.2 (done) |
-| [F13.2](F13.2-board-and-scope.md) | The board and Scope regions, and metadata checks | release-1 | S13.1.1 |
-| [F13.3](F13.3-adopt-the-model.md) | The seeded rules and kiln's own docs adopt the model | release-1 | F13.2 |
+| ID | Feature | Release | Depends on | State |
+| -- | -- | -- | -- | -- |
+| [F13.1](F13.1-derived-regions.md) | Derived regions, starting with the nav | release-1 | S4.3.2 (done) | Closed |
+| [F13.2](F13.2-board-and-scope.md) | The board and Scope regions, and metadata checks | release-1 | S13.1.1 | Closed |
+| [F13.3](F13.3-adopt-the-model.md) | The seeded rules and kiln's own docs adopt the model | release-1 | F13.2 | Closed |
 
 **Out of scope.** Moving pykit and ngkit onto the model. Each repository does
 that in its own specs ([ADR-0009](../../../adr/ADR-0009.md)), once it adopts

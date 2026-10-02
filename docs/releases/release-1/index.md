@@ -1,6 +1,8 @@
 # Release 1 — kiln generates and self-hosts the Python archetypes
 
-**Status:** in progress
+|  |  |
+| -- | -- |
+| **Status** | in progress |
 
 kiln renders `python-app`, `python-app` + `lifecycle` (the `python-tool` alias)
 and `python-lib` from authored templates, regenerates its own repo, and proves
@@ -22,29 +24,33 @@ archetypes are [release-2](../release-2/index.md).
 
 ## Scope
 
-| Feature | Epic | Status |
+<!-- BEGIN derived scope -->
+
+| Feature | Epic | State |
 | -- | -- | -- |
-| [F3.1 — Port the goldens to the Part E API](../../specs/epics/E3-realign-goldens-and-canon/F3.1-goldens-on-part-e-api.md) | E3 | done |
-| [F3.2 — Branch pins during pykit stabilization](../../specs/epics/E3-realign-goldens-and-canon/F3.2-branch-pins.md) | E3 | done |
-| [F3.3 — Make `golden/python-tool` a tool](../../specs/epics/E3-realign-goldens-and-canon/F3.3-python-tool-is-a-tool.md) | E3 | done |
-| [F3.4 — The canon catches up](../../specs/epics/E3-realign-goldens-and-canon/F3.4-canon-catches-up.md) | E3 | done |
-| [F4.1 — The checks, organized by module](../../specs/epics/E4-generator/F4.1-checks-by-module.md) | E4 | done |
-| [F4.2 — The `core` module, the config manager and the module contract](../../specs/epics/E4-generator/F4.2-core-module.md) | E4 | done |
-| [F4.3 — The concern modules, with templates](../../specs/epics/E4-generator/F4.3-concern-modules.md) | E4 | in progress |
-| [F4.4 — The render matrix, and the goldens leave git](../../specs/epics/E4-generator/F4.4-render-matrix.md) | E4 | planned |
-| [F4.5 — CLI](../../specs/epics/E4-generator/F4.5-cli.md) | E4 | in progress |
-| [F4.6 — doctor](../../specs/epics/E4-generator/F4.6-doctor.md) | E4 | planned |
-| [F4.7 — Import contracts](../../specs/epics/E4-generator/F4.7-import-contracts.md) | E4 | planned |
-| [F4.8 — Self-hosting](../../specs/epics/E4-generator/F4.8-self-hosting.md) | E4 | planned |
-| [F6.1 — `python-lib` can host pykit](../../specs/epics/E6-rebuild-the-repos/F6.1-pykit-skeleton.md) | E6 | planned |
-| [F11.1 — The docs checks learn package sites](../../specs/epics/E11-package-docs/F11.1-checks-learn-package-sites.md) | E11 | planned |
-| [F11.2 — `python-lib` repositories carry package docs sites](../../specs/epics/E11-package-docs/F11.2-python-lib-package-sites.md) | E11 | planned |
-| [F11.3 — `kiln generate package`](../../specs/epics/E11-package-docs/F11.3-generate-package.md) | E11 | planned |
-| [F11.4 — The docs rules are one standard, and kiln owns them](../../specs/epics/E11-package-docs/F11.4-cross-repository-rule.md) | E11 | in progress |
-| [F12.1 — The baseline module, and the Python records](../../specs/epics/E12-architecture-baseline/F12.1-python-baseline.md) | E12 | planned |
-| [F13.1 — Derived regions, starting with the nav](../../specs/epics/E13-docs-work-model/F13.1-derived-regions.md) | E13 | planned |
-| [F13.2 — The board and Scope regions, and metadata checks](../../specs/epics/E13-docs-work-model/F13.2-board-and-scope.md) | E13 | planned |
-| [F13.3 — The seeded rules and kiln's own docs adopt the model](../../specs/epics/E13-docs-work-model/F13.3-adopt-the-model.md) | E13 | planned |
+| [F3.1](../../specs/epics/E3-realign-goldens-and-canon/F3.1-goldens-on-part-e-api.md) | E3 | Closed |
+| [F3.2](../../specs/epics/E3-realign-goldens-and-canon/F3.2-branch-pins.md) | E3 | Closed |
+| [F3.3](../../specs/epics/E3-realign-goldens-and-canon/F3.3-python-tool-is-a-tool.md) | E3 | Closed |
+| [F3.4](../../specs/epics/E3-realign-goldens-and-canon/F3.4-canon-catches-up.md) | E3 | Closed |
+| [F4.1](../../specs/epics/E4-generator/F4.1-checks-by-module.md) | E4 | Closed |
+| [F4.2](../../specs/epics/E4-generator/F4.2-core-module.md) | E4 | Closed |
+| [F4.3](../../specs/epics/E4-generator/F4.3-concern-modules.md) | E4 | Active |
+| [F4.4](../../specs/epics/E4-generator/F4.4-render-matrix.md) | E4 | New |
+| [F4.5](../../specs/epics/E4-generator/F4.5-cli.md) | E4 | Active |
+| [F4.6](../../specs/epics/E4-generator/F4.6-doctor.md) | E4 | New |
+| [F4.7](../../specs/epics/E4-generator/F4.7-import-contracts.md) | E4 | New |
+| [F4.8](../../specs/epics/E4-generator/F4.8-self-hosting.md) | E4 | New |
+| [F6.1](../../specs/epics/E6-rebuild-the-repos/F6.1-pykit-skeleton.md) | E6 | New |
+| [F11.1](../../specs/epics/E11-package-docs/F11.1-checks-learn-package-sites.md) | E11 | New |
+| [F11.2](../../specs/epics/E11-package-docs/F11.2-python-lib-package-sites.md) | E11 | New |
+| [F11.3](../../specs/epics/E11-package-docs/F11.3-generate-package.md) | E11 | New |
+| [F11.4](../../specs/epics/E11-package-docs/F11.4-cross-repository-rule.md) | E11 | Active |
+| [F12.1](../../specs/epics/E12-architecture-baseline/F12.1-python-baseline.md) | E12 | New |
+| [F13.1](../../specs/epics/E13-docs-work-model/F13.1-derived-regions.md) | E13 | Closed |
+| [F13.2](../../specs/epics/E13-docs-work-model/F13.2-board-and-scope.md) | E13 | Closed |
+| [F13.3](../../specs/epics/E13-docs-work-model/F13.3-adopt-the-model.md) | E13 | Closed |
+
+<!-- END derived scope -->
 
 ## Decisions
 

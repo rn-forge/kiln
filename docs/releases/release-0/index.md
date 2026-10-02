@@ -1,6 +1,9 @@
 # Release 0 — the canon and the hand-authored goldens
 
-**Status:** shipped 2026-09-12
+|  |  |
+| -- | -- |
+| **Status** | shipped |
+| **Finish Date** | 2026-09-12 |
 
 The foundation the generator renders against: the canon (ADRs, the reference
 standard, the architecture and the runbook) and the hand-authored golden repos
@@ -19,15 +22,19 @@ None — this is the first release.
 [E2](../../specs/epics/E2-layer-split-and-golden-rename/index.md) predate the
 story taxonomy: their features are rows in each epic's index, not files.
 
-| Feature | Epic | Status |
+<!-- BEGIN derived scope -->
+
+| Feature | Epic | State |
 | -- | -- | -- |
-| [F1.1 — The canon](../../specs/epics/E1-canon-and-golden-repos/index.md) | E1 | done |
-| [F1.2 — Harvest inventory](../../specs/epics/E1-canon-and-golden-repos/index.md) | E1 | done |
-| [F1.3 — Golden repos](../../specs/epics/E1-canon-and-golden-repos/index.md) | E1 | done |
-| [F1.4 — Generated-body assertion](../../specs/epics/E1-canon-and-golden-repos/index.md) | E1 | done |
-| [F1.5 — Owner review loop](../../specs/epics/E1-canon-and-golden-repos/index.md) | E1 | done |
-| [F2.8 — Rename the goldens and add the missing ones](../../specs/epics/E2-layer-split-and-golden-rename/index.md) | E2 | done |
-| [F2.10 — Prove declarative CLI construction](../../specs/epics/E2-layer-split-and-golden-rename/index.md) | E2 | done |
+
+<!-- END derived scope -->
+
+### Done before this release
+
+| Epic | Delivered | Implemented |
+| -- | -- | -- |
+| [E1](../../specs/epics/E1-canon-and-golden-repos/index.md) | F1.1 The canon; F1.2 Harvest inventory; F1.3 Golden repos; F1.4 Generated-body assertion; F1.5 Owner review loop | 2026-09-09 |
+| [E2](../../specs/epics/E2-layer-split-and-golden-rename/index.md) | F2.8 Rename the goldens and add the missing ones; F2.10 Prove declarative CLI construction | 2026-09-12 |
 
 F2.1–F2.7 are pykit's, tracked as
 [upstream work](../../specs/index.md#upstream-pins). F2.9, the pin flip to

@@ -1,7 +1,12 @@
 # E2 — The layer split lands in the goldens
 
-**Status:** done · **Implemented:** 2026-09-12 (`afcfa07`) · **Phase:** C.2
-(kiln half)
+|  |  |
+| -- | -- |
+| **State** | Closed |
+| **Start Date** | 2026-09-12 |
+| **Closed Date** | 2026-09-12 |
+
+Implemented at: `afcfa07` · Phase: C.2 (kiln half)
 
 Repos `rn-forge/pykit` (`feature/upgrade`) and `rn-forge/kiln` (`feature/v1`).
 This is what the Phase C review produced
@@ -16,18 +21,18 @@ about to be moved; then the split; then the re-layout; then the consumers.
 
 ## Features
 
-| ID | Feature | Owner | Status |
+| ID | Feature | Owner | State |
 | -- | -- | -- | -- |
-| F2.1 | Defect fixes F1–F6 in pykit, before anything moves | pykit | done |
-| F2.2 | Split the development layer: `rn-forge-cli` + `rn-forge-tooling` (D52; [shared CLI integration](../E3-realign-goldens-and-canon/index.md#shared-cli-design)) | pykit | done |
-| F2.3 | Extract the docs policy from tooling (A2) — the policy object is supplied by [F4.1](../E4-generator/F4.1-checks-by-module.md) | pykit | done |
-| F2.4 | Re-layout all three packages (D55) | pykit | done |
-| F2.5 | F10–F13 while the code is open | pykit | done |
-| F2.6 | F7 — CI: cli and tooling in pykit's package verification, `lint-imports` as a required gate | pykit | done |
-| F2.7 | F9 + F14 — release contract and instructions | pykit | done |
-| F2.8 | **Rename the golden repos and add the missing ones (D53).** `golden/python-cli` → `golden/python-tool`; a new `golden/python-app`. `golden/python-lib` unchanged. Update kiln's own `.rn-forge/kiln/config.toml` to `python-tool`, re-render `.rn-forge/kiln/standard.md`, and **re-seed `state.json`**. | kiln | done |
-| F2.9 | **Close Phase C's addendum (F8)** — cut the first `rn-forge-cli` and `rn-forge-tooling` releases and re-point every pin at a tag | kiln + pykit | **deferred**; now [E7](../E7-pykit-release-pin-flip/index.md) |
-| F2.10 | **Prove declarative CLI construction.** `golden/python-app` contains a working CLI with **zero hand-written app construction** | kiln | done |
+| F2.1 | Defect fixes F1–F6 in pykit, before anything moves | pykit | Closed |
+| F2.2 | Split the development layer: `rn-forge-cli` + `rn-forge-tooling` (D52; [shared CLI integration](../E3-realign-goldens-and-canon/index.md#shared-cli-design)) | pykit | Closed |
+| F2.3 | Extract the docs policy from tooling (A2) — the policy object is supplied by [F4.1](../E4-generator/F4.1-checks-by-module.md) | pykit | Closed |
+| F2.4 | Re-layout all three packages (D55) | pykit | Closed |
+| F2.5 | F10–F13 while the code is open | pykit | Closed |
+| F2.6 | F7 — CI: cli and tooling in pykit's package verification, `lint-imports` as a required gate | pykit | Closed |
+| F2.7 | F9 + F14 — release contract and instructions | pykit | Closed |
+| F2.8 | **Rename the golden repos and add the missing ones (D53).** `golden/python-cli` → `golden/python-tool`; a new `golden/python-app`. `golden/python-lib` unchanged. Update kiln's own `.rn-forge/kiln/config.toml` to `python-tool`, re-render `.rn-forge/kiln/standard.md`, and **re-seed `state.json`**. | kiln | Closed |
+| F2.9 | **Close Phase C's addendum (F8)** — cut the first `rn-forge-cli` and `rn-forge-tooling` releases and re-point every pin at a tag (now [E7](../E7-pykit-release-pin-flip/index.md)) | kiln + pykit | New |
+| F2.10 | **Prove declarative CLI construction.** `golden/python-app` contains a working CLI with **zero hand-written app construction** | kiln | Closed |
 
 ### F2.9 — as it stood when deferred
 

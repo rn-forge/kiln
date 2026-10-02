@@ -23,7 +23,9 @@ from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.python import scaffold as python_scaffold
 from rn_forge.kiln.modules.python.checks import pyproject, rn_forge_deps
 from rn_forge.kiln.modules.python.scaffold import (
+    SAMPLE_TEST,
     reconcile_backend,
+    sample_test,
     scaffold,
     scaffold_backend,
     uv_gitignore,
@@ -252,3 +254,47 @@ def test_s5_3_6_4_apply_does_not_reformat_repo_owned_toml(tmp_path: Path) -> Non
 
     cycle.apply(root, home=tmp_path / "home")
     assert pyproject.read_text(encoding="utf-8") == dense
+
+
+GOLDEN = Path(__file__).resolve().parents[2] / "fixtures" / "golden"
+
+
+@pytest.mark.parametrize(
+    ("archetype", "packages"),
+    [
+        ("python-app", {".": "demo-tool"}),
+        ("python-tool", {".": "demo-tool"}),
+        (
+            "python-lib",
+            {"packages/demo-alpha": "demo-alpha", "packages/demo-beta": "demo-beta"},
+        ),
+    ],
+)
+def test_s4_5_10_scaffold_writes_a_sample_test_into_each_package(
+    tmp_path: Path, archetype: str, packages: dict[str, str]
+) -> None:
+    root = _root(tmp_path, archetype)
+    scaffold(root, KilnConfig.load(root))
+    written = {
+        p.relative_to(root)
+        for p in root.rglob("test_*.py")
+        if ".uv-cache" not in p.relative_to(root).parts
+    }
+    assert written == {Path(package) / SAMPLE_TEST for package in packages}
+    for package, name in packages.items():
+        body = (root / package / SAMPLE_TEST).read_text(encoding="utf-8")
+        assert body == sample_test(name)
+
+
+@pytest.mark.parametrize(
+    ("golden", "name"),
+    [
+        ("python-app", "golden-app"),
+        ("python-tool", "golden-tool"),
+        ("python-lib/packages/golden-alpha", "golden-alpha"),
+        ("python-lib/packages/golden-beta", "golden-beta"),
+    ],
+)
+def test_s4_5_10_each_golden_carries_the_sample_test(golden: str, name: str) -> None:
+    on_disk = (GOLDEN / golden / SAMPLE_TEST).read_text(encoding="utf-8")
+    assert on_disk == sample_test(name)

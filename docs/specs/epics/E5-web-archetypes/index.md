@@ -1,8 +1,12 @@
 # E5 — The web archetypes
 
-**Status:** in progress · **Release:**
-[release-2](../../../releases/release-2/index.md) · **Phase:** E · **Estimate:**
-2 weeks
+|  |  |
+| -- | -- |
+| **State** | Active |
+| **Start Date** | 2026-09-26 |
+
+Release: [release-2](../../../releases/release-2/index.md) · Phase: E ·
+Estimate: 2 weeks
 
 Repo `rn-forge/kiln`. There are no hand-authored goldens: templates are written
 directly and approved through the render matrix
@@ -39,11 +43,11 @@ when one appears.
 
 ## Features
 
-| ID | Feature | Depends on |
-| -- | -- | -- |
-| [F5.1](F5.1-web-library-sets-and-modules.md) | Library sets, and the modules gain the web shapes | S4.3.3–S4.3.5, S4.3.7, S4.5.1, S4.5.2; resolvable pykit pins |
-| [F5.2](F5.2-kiln-new-web-end-to-end.md) | `kiln new` end to end for the web archetypes | F5.1; S5.2.1 on S5.2.2; S5.2.4 on S5.2.1; Django deferred |
-| [F5.3](F5.3-shipped-web-cells.md) | Prove and ship the FastAPI cells | S5.3.1 on F5.2; S5.3.5 on S5.3.1; S5.3.6 on S5.3.5; S5.3.2–S5.3.3 on F4.4, S5.3.5–S5.3.6 and resolvable kiln/pykit pins; S5.3.3 on S4.5.9; S5.3.4 on S5.3.3 |
+| ID | Feature | Depends on | State |
+| -- | -- | -- | -- |
+| [F5.1](F5.1-web-library-sets-and-modules.md) | Library sets, and the modules gain the web shapes | S4.3.3–S4.3.5, S4.3.7, S4.5.1, S4.5.2; resolvable pykit pins | Closed |
+| [F5.2](F5.2-kiln-new-web-end-to-end.md) | `kiln new` end to end for the web archetypes | F5.1; S5.2.1 on S5.2.2; S5.2.4 on S5.2.1; Django deferred | Closed |
+| [F5.3](F5.3-shipped-web-cells.md) | Prove and ship the FastAPI cells | S5.3.1 on F5.2; S5.3.5 on S5.3.1; S5.3.6 on S5.3.5; S5.3.2–S5.3.3 on F4.4, S5.3.5–S5.3.6 and resolvable kiln/pykit pins; S5.3.3 on S4.5.9; S5.3.4 on S5.3.3 | Active |
 
 ## Acceptance
 

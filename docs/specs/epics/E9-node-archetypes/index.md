@@ -1,9 +1,10 @@
 # E9 — The node archetypes
 
-**Status:** deferred
-
-**Entry criteria:** a repo in scope needs a second toolchain — pnpm release,
-node CI, no uv.
+|  |  |
+| -- | -- |
+| **State** | New |
+| **Tags** | deferred |
+| **Entry criteria** | a repo in scope needs a second toolchain — pnpm release, node CI, no uv |
 
 ## Scope
 

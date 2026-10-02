@@ -1,9 +1,12 @@
 # E10 — kiln generators
 
-**Status:** deferred — backlog, to be elaborated after release-1
+|  |  |
+| -- | -- |
+| **State** | New |
+| **Tags** | deferred |
+| **Entry criteria** | release-1 has shipped and the owner picks this up for elaboration |
 
-**Entry criteria:** release-1 has shipped and the owner picks this up for
-elaboration.
+backlog, to be elaborated after release-1
 
 ## Scope, as known today
 

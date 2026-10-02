@@ -1,8 +1,13 @@
 # E3 — Realign the goldens and the canon with pykit
 
-**Status:** done · **Implemented:** 2026-09-15 · **Release:**
-[release-1](../../../releases/release-1/index.md) · **Phase:** C.4 ·
-**Estimate:** 3 days
+|  |  |
+| -- | -- |
+| **State** | Closed |
+| **Start Date** | 2026-09-15 |
+| **Closed Date** | 2026-09-15 |
+
+Release: [release-1](../../../releases/release-1/index.md) · Phase: C.4 ·
+Estimate: 3 days
 
 Repo `rn-forge/kiln`, branch `feature/v1`. The hand-authored goldens are the
 reference [E4](../E4-generator/index.md) writes templates from
@@ -31,12 +36,12 @@ to their repository generator.
 
 ## Features
 
-| ID | Feature | Depends on |
-| -- | -- | -- |
-| [F3.1](F3.1-goldens-on-part-e-api.md) | Port `golden/python-app` and `golden/python-tool` to the Part E API | F3.2 |
-| [F3.2](F3.2-branch-pins.md) | Branch pins during pykit stabilization | — |
-| [F3.3](F3.3-python-tool-is-a-tool.md) | Make `golden/python-tool` a tool | F3.1; pykit C.3 (lifecycle surface) |
-| [F3.4](F3.4-canon-catches-up.md) | The canon catches up; re-seed state; README | S3.4.1: —; S3.4.4: [S4.1.4](../E4-generator/F4.1-checks-by-module.md#s414-the-ci-shape-is-decided) (decision); S3.4.2: F3.1–F3.3, S3.4.1, S3.4.4 |
+| ID | Feature | Depends on | State |
+| -- | -- | -- | -- |
+| [F3.1](F3.1-goldens-on-part-e-api.md) | Port `golden/python-app` and `golden/python-tool` to the Part E API | F3.2 | Closed |
+| [F3.2](F3.2-branch-pins.md) | Branch pins during pykit stabilization | — | Closed |
+| [F3.3](F3.3-python-tool-is-a-tool.md) | Make `golden/python-tool` a tool | F3.1; pykit C.3 (lifecycle surface) | Closed |
+| [F3.4](F3.4-canon-catches-up.md) | The canon catches up; re-seed state; README | S3.4.1: —; S3.4.4: [S4.1.4](../E4-generator/F4.1-checks-by-module.md#s414-the-ci-shape-is-decided) (decision); S3.4.2: F3.1–F3.3, S3.4.1, S3.4.4 | Closed |
 
 The instruction-file split (the old C.3 step 4, D57) is the one piece already
 done.

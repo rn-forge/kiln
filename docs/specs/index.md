@@ -2,49 +2,42 @@
 
 What kiln is made of and what is left to build. Read this before adding an epic,
 starting a feature, or cutting a release. **Start here in a new session:** the
-board says what is next; the epic says how; its ADRs say why.
+board says what is next; the epic says how; its ADRs say why. The Releases and
+Backlog sections below are derived from the epic, feature and release pages by
+`task docs:generate`; never edit inside their fence.
 
-## Board
+<!-- BEGIN derived board -->
 
-### In progress
+## Releases
 
-| Epic | Release | Next step |
+| Release | Status | Features |
 | -- | -- | -- |
-| [E4 — The generator](epics/E4-generator/index.md) | [release-1](../releases/release-1/index.md) | F4.1–F4.3 (apart from S4.3.6's Sonar decisions) and S4.5.1–S4.5.6 and S4.5.9 are done, as is E5's S5.3.6. Next are E13, then E11's F11.1–F11.3 and E12's F12.1, then F4.4, and the rest of F4.5–F4.8, including S4.6.5's ownership alignment |
-| [E5 — The web archetypes](epics/E5-web-archetypes/index.md) | [release-2](../releases/release-2/index.md) | FastAPI/Angular scaffolding exists; the owner trial's setup and formatting gaps are closed (S5.3.5–S5.3.6). S5.2.4, S4.5.9, S5.3.5 and S5.3.6 are done. Next are the two FastAPI cells, after F4.4; Django is deferred |
-| [E11 — Package docs sites](epics/E11-package-docs/index.md) | [release-1](../releases/release-1/index.md), [release-2](../releases/release-2/index.md) | after E13: F11.1's check changes, then the `python-lib` golden (S11.2.1); S11.4.2 after S13.3.1; F11.5 waits on its entry criterion |
+| [Release 2 — the web archetypes](../releases/release-2/index.md) | in progress | 1 Active · 3 New · 2 Closed |
+| [Release 1 — kiln generates and self-hosts the Python archetypes](../releases/release-1/index.md) | in progress | 3 Active · 9 New · 9 Closed |
+| [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
-### Scheduled
+## Backlog
 
-| Epic | Release | Next step |
-| -- | -- | -- |
-| [E6 — Rebuild the repos](epics/E6-rebuild-the-repos/index.md) | [release-1](../releases/release-1/index.md), [release-2](../releases/release-2/index.md) | prove `python-lib` can host pykit after F11.1–F11.3 |
-| [E13 — The docs work model and derived regions](epics/E13-docs-work-model/index.md) | [release-1](../releases/release-1/index.md) | the owner accepting ADR-0003's revision, [ADR-0011](../adr/ADR-0011.md) and [ADR-0012](../adr/ADR-0012.md); then S13.1.1's derived nav, F13.2, F13.3 — before F11.1 |
-| [E12 — The architecture baseline](epics/E12-architecture-baseline/index.md) | [release-1](../releases/release-1/index.md), [release-2](../releases/release-2/index.md) | S12.1.1, the owner accepting [ADR-0010](../adr/ADR-0010.md) and the Python records; then S12.1.2–S12.1.4, before F4.4 |
+Features with no Iteration, by State and epic.
 
-### To elaborate
+### New
 
-Nothing agreed without stories.
+| Epic | Features |
+| -- | -- |
+| [E2 — The layer split lands in the goldens](epics/E2-layer-split-and-golden-rename/index.md) | F2.9 |
 
 ### Deferred
 
-| Epic | Entry criteria |
-| -- | -- |
-| [E7 — pykit releases, and the pin flip](epics/E7-pykit-release-pin-flip/index.md) | pykit's release-1 tags exist |
-| [E8 — The Azure DevOps CI provider](epics/E8-ado-provider/index.md) | a repo needs `ci.provider = "ado"` |
-| [E9 — The node archetypes](epics/E9-node-archetypes/index.md) | a repo in scope needs the node toolchain |
-| [E10 — kiln generators](epics/E10-kiln-generators/index.md) | release-1 has shipped; to be elaborated (`kiln generate package` for `python-lib` moved to E11) |
+| Epic | Features | Entry criteria |
+| -- | -- | -- |
+| [E7 — pykit releases, and the pin flip](epics/E7-pykit-release-pin-flip/index.md) | — | pykit's release-1 tags exist. Cutting them, and their order, is pykit's work (ADR-0009) |
+| [E8 — The Azure DevOps CI provider](epics/E8-ado-provider/index.md) | — | a repo needs `ci.provider = "ado"`. The intellibuild plan holds the question of whether intellibuild is that repo |
+| [E9 — The node archetypes](epics/E9-node-archetypes/index.md) | — | a repo in scope needs a second toolchain — pnpm release, node CI, no uv |
+| [E10 — kiln generators](epics/E10-kiln-generators/index.md) | — | release-1 has shipped and the owner picks this up for elaboration |
 
-Work outside kiln's releases is a standalone plan, not an epic: agent
-configuration and intellibuild — see [plans](../plans/index.md).
+<!-- END derived board -->
 
-### Done
-
-| Epic | Implemented |
-| -- | -- |
-| [E1 — The canon and the hand-authored golden repos](epics/E1-canon-and-golden-repos/index.md) | 2026-09-09 |
-| [E2 — The layer split lands in the goldens](epics/E2-layer-split-and-golden-rename/index.md) | 2026-09-12 |
-| [E3 — Realign the goldens and the canon](epics/E3-realign-goldens-and-canon/index.md) | 2026-09-15 |
+Ideas not yet agreed as work are parked in the [ideas list](ideas.md).
 
 ## Upstream pins
 
@@ -115,7 +108,7 @@ whoever builds the story — a person, or an agent of any size.
    says.
 1. Record under the story, as *What the build settled that the story did not
    say*, every choice from step 3 and every place the build had to depart from
-   the list — and flip its **Status** to `done (<date>)`. Leave the feature's
+   the list — and flip its **State** to `Closed (<date>)`. Leave the feature's
    `## Acceptance` block for the owner.
 1. Commit nothing. The owner reviews the diff and the tests, runs the acceptance
    block, and commits.
@@ -123,51 +116,32 @@ whoever builds the story — a person, or an agent of any size.
 ## Conventions
 
 - **Taxonomy.** Epic `E<n>` → feature `F<n>.<m>` → story `S<n>.<m>.<k>`. The
-  prefix chain locates a bare ID without a lookup. IDs are permanent.
-- **Status lives on the work.** Epics, features and stories each carry a
-  `**Status:**` line — `planned`, `in progress`, `done`. A release page's
-  scope table mirrors its features' status, updated in the same commit. This
-  board is the index of the epics' status, never a second copy.
-- **A story is done when its acceptance holds.** Each story carries an
-  `**Acceptance:**` list of observable results. The tests that prove its
-  behaviour belong in that list, never in a story of their own, so no story
-  can read done before its behaviour is proven. A story is sized so its
-  acceptance can be verified on its own.
-- **A feature states its dependencies and its acceptance.** `**Depends on:**`
-  names features, stories and upstream work. A decision the feature needs is
-  its own story, so work can depend on the decision without depending on its
-  implementation. A feature with several stories has a `## Acceptance` block
-  that exercises every story, each line tagged with the story it proves; what
-  cannot be scripted — an approval, a recorded decision — is listed under the
-  block.
-- **Acceptance blocks fail loudly.** They start with `set -euo pipefail`, and a
-  failure is never turned into output (`|| echo`). A negative check uses the
-  `absent` or `fails_with` helper defined at the top of the block, never a
-  bare `! cmd`: `set -e` ignores a negated command, and `!` also turns an
-  error in `cmd` itself — a missing path, say — into a pass. A line that greps
-  a command's output never pipes into `grep -q` or `rg -q`: those exit on the
-  first match, the writer takes a SIGPIPE, and `pipefail` then fails the line
-  although the check passed. Let the grep read to the end and send its own
-  output to `/dev/null`.
-- **Releases pick features; they link here.** A release page's scope table names
-  each feature once, linked to its file, with its status. A feature belongs to
-  one release at a time; moving it edits only the two release pages.
-- **Done work still has an epic**, marked `done` with its `**Implemented:**`
-  date and its acceptance as run. There is no build log.
-- **The backlog is a parking lot.** An idea not yet agreed as work is a row in
-  `backlog.md`, with no ID and no status, until the owner takes it up as an
-  epic or feature. Agreed work that is not ready is a deferred epic with entry
-  criteria; promoting one: flip to `elaborating`, write its stories, then
-  `planned` with a release.
+  prefix chain locates a bare ID without a lookup. IDs are permanent: a moved
+  story keeps its ID, and gaps are fine.
+- **Every piece of work is an epic**, closed work included. There is no build
+  log.
+- **State lives on the work.** Epics and features carry `State` in a metadata
+  table, stories on a `**State:**` line: `New`, `Active`, `Closed` or
+  `Removed`. The board above is derived from them, never a second copy.
+- **A feature's `Iteration` is its release.** A release page's Scope table is
+  derived from it, so moving a feature edits only the feature.
+- **A story is closed when its acceptance holds.** Each story carries an
+  `**Acceptance:**` list of observable results, and the tests that prove it
+  belong in that list.
+- **A feature states its predecessors and its acceptance**: a `Predecessors`
+  row, and, when it has several stories, a `## Acceptance` block that
+  exercises every story and fails loudly.
+- **Ideas are a parking lot.** An idea not yet agreed as work is a row in
+  `ideas.md`, with no ID and no state. Agreed work that is not ready is tagged
+  `deferred`, with entry criteria.
 - **Design lives with the work** — a `## Design` section on the feature, or the
   epic's `design.md`. Current behaviour belongs in
-  [architecture](../architecture/index.md), the normative standard in
-  [the reference](../reference/standard-repo.md).
-- **Decisions are ADRs**, one durable choice per file. Keep delivery history and
-  implementation detail in specs; see [the log](../adr/index.md).
+  [architecture](../architecture/index.md).
+- **Decisions are ADRs**, one file per topic, revised in place with a dated line
+  under `## Background` when they change — see [the log](../adr/index.md).
 - **Open questions live on the feature or epic they block.** Answered, a
-  question becomes an [ADR](../adr/index.md), or a rejected option recorded on
-  the feature; it is not left open on the page.
+  question becomes an ADR or a rejected option recorded on the feature, and
+  leaves the page.
 - **Why things are the way they are** — the evidence, the harvest, what each
   review changed — is [context](../plans/context.md). The original
   standardization plan is retired at revision 14 and survives only in git
