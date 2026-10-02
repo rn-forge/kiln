@@ -9,6 +9,7 @@ sections check 8a verifies, using the same expected values that check reads.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import tempfile
 import tomllib
@@ -30,6 +31,8 @@ from rn_forge.kiln.modules.python.checks.pyproject import (
 
 __all__ = [
     "SAMPLE_TEST",
+    "add_package",
+    "github_remote",
     "reconcile_backend",
     "sample_test",
     "scaffold",
@@ -114,6 +117,102 @@ def scaffold_backend(raw: Path, config: KilnConfig) -> None:
     (raw / gitignore.GITIGNORE).write_text(uv_gitignore(), encoding="utf-8")
 
 
+_GITHUB_REMOTE = re.compile(
+    r"^(?:https://github\.com/|git@github\.com:)"
+    r"(?P<owner>[A-Za-z0-9_.-]+)/(?P<repo>[A-Za-z0-9_.-]+?)(?:\.git)?/?$"
+)
+
+
+def github_remote(root: Path) -> str | None:
+    """`https://github.com/<owner>/<repo>` for *root*'s `origin`, or `None`.
+
+    `None` when `git remote get-url origin` fails or names no GitHub
+    repository; `https` and `ssh` URLs, with or without `.git`, give the same
+    value.
+    """
+    result = Process.execute(
+        "git-remote[origin]",
+        "git",
+        "remote",
+        "get-url",
+        "origin",
+        cwd=str(root),
+        fail_on_error=False,
+    )
+    match = _GITHUB_REMOTE.match((result.stdout or "").strip())
+    if not result.succeeded or match is None:
+        return None
+    return f"https://github.com/{match['owner']}/{match['repo']}"
+
+
+def add_package(root: Path, config: KilnConfig, name: str, remote: str) -> None:
+    """Add the `python-lib` member `packages/<name>` to the repository at *root*.
+
+    Runs `uv init` and the reconcile for the member alone, then lists it in the
+    root's workspace members, sources and `workspace` dependency group, and
+    writes its `[project.urls]` from *remote*.
+
+    Args:
+        root: The repository root.
+        config: The config, already listing the package.
+        name: The package's distribution name.
+        remote: The GitHub repository, as `https://github.com/<owner>/<repo>`.
+
+    Raises:
+        AppException: `uv` is not on `PATH`, or exits non-zero.
+    """
+    relative = f"packages/{name}"
+    member = root / relative
+    member.mkdir(parents=True, exist_ok=True)
+    _uv_init(member, name=name, bare=False, member=True)
+    _write_sample_test(member, name)
+    _reconcile_pyproject(root, config, Path(relative) / "pyproject.toml")
+    _join_workspace(root / "pyproject.toml", relative, name)
+    slug = remote.removeprefix("https://github.com/")
+    owner, repo = slug.split("/")
+    DocumentUtils.update(
+        member / "pyproject.toml",
+        {
+            "project": {
+                "urls": {
+                    "Documentation": f"https://{owner}.github.io/{repo}/packages/{name}/latest/",
+                    "Source": remote,
+                    "Changelog": f"{remote}/blob/main/{relative}/CHANGELOG.md",
+                    "Issues": f"{remote}/issues",
+                }
+            }
+        },
+    )
+
+
+def _join_workspace(pyproject: Path, relative: str, name: str) -> None:
+    """List *relative* in the root's workspace members, sources and `workspace` group."""
+    members = [*_existing_list(pyproject, "tool", "uv", "workspace", "members")]
+    group = _existing_list(pyproject, "dependency-groups", "workspace")
+    dev: list[Any] = _existing_list(pyproject, "dependency-groups", "dev")
+    include = {"include-group": "workspace"}
+    DocumentUtils.update(
+        pyproject,
+        {
+            "tool": {
+                "uv": {
+                    "workspace": {
+                        "members": members
+                        if relative in members
+                        else [*members, relative]
+                    },
+                    "sources": {name: {"workspace": True}},
+                }
+            },
+            "dependency-groups": {
+                "workspace": [*group, name],
+                "dev": dev if include in dev else [include, *dev],
+            },
+        },
+    )
+    _multiline_lists(pyproject)
+
+
 SAMPLE_TEST = Path("tests") / "test_package.py"
 """The sample test `scaffold_backend` writes into each package `uv init` creates."""
 
@@ -181,29 +280,33 @@ def _reconcile_tree(root: Path, config: KilnConfig) -> None:
 
 
 def _reconcile_pyprojects(root: Path, config: KilnConfig) -> None:
+    for relative in archetypes.pyproject_paths(config):
+        _reconcile_pyproject(root, config, relative)
+
+
+def _reconcile_pyproject(root: Path, config: KilnConfig, relative: Path) -> None:
     workspace = config.archetype == "python-lib"
     web = config.archetype in {"python-web-api", "python-web-app"}
     required = archetypes.for_config(config).dependencies.required
-    for relative in archetypes.pyproject_paths(config):
-        path = root / relative
-        is_root = path.parent == root
-        is_member = not is_root
-        is_workspace_root = (workspace or web) and is_root
-        name = _member_name(config, path, root, web=web, is_member=is_member)
-        extra_dev = _extra_dev(config, web=web, is_member=is_member)
-        _reconcile(
-            path,
-            name=name,
-            venv_path=os.path.relpath(root, path.parent) or ".",
-            is_root=is_root,
-            is_workspace_root=is_workspace_root,
-            dependencies=()
-            if is_workspace_root
-            else tuple(archetypes.requirement(d) for d in required),
-            mkdocs=config.docs_profile == "mkdocs",
-            lib=workspace,
-            extra_dev=extra_dev,
-        )
+    path = root / relative
+    is_root = path.parent == root
+    is_member = not is_root
+    is_workspace_root = (workspace or web) and is_root
+    name = _member_name(config, path, root, web=web, is_member=is_member)
+    extra_dev = _extra_dev(config, web=web, is_member=is_member)
+    _reconcile(
+        path,
+        name=name,
+        venv_path=os.path.relpath(root, path.parent) or ".",
+        is_root=is_root,
+        is_workspace_root=is_workspace_root,
+        dependencies=()
+        if is_workspace_root
+        else tuple(archetypes.requirement(d) for d in required),
+        mkdocs=config.docs_profile == "mkdocs",
+        lib=workspace,
+        extra_dev=extra_dev,
+    )
 
 
 def _member_name(

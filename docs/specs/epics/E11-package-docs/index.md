@@ -137,12 +137,17 @@ kiln_dir=$PWD
 kiln() { uv run --project "$kiln_dir" kiln "$@"; }
 task validate
 s=$(mktemp -d)
-kiln new "$s/lib" --archetype python-lib --docs mkdocs --yes </dev/null
+(cd "$s" && kiln new "$s/lib" --archetype python-lib --docs mkdocs --yes </dev/null)
 cd "$s/lib"
 git init -q && git remote add origin https://github.com/rn-forge/e11-proof
 kiln generate package e11-alpha
 kiln generate package e11-beta
 uv sync
 task validate
-kiln doctor
+kiln doctor .
 ```
+
+Run 2026-10-01 against this checkout, because a fresh repository pins kiln at
+`feature/v1` on GitHub, which did not yet carry the E11 commits: the gate ran as
+`task setup && uv pip install -e "$kiln_dir" && UV_NO_SYNC=1 task validate`.
+Every line passed. Re-run the block as written after the push, then close.

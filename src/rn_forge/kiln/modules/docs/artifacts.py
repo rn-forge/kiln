@@ -22,6 +22,7 @@ SEEDS = (
     "docs/guides/index.md",
     "docs/runbooks/_structure.md",
     "docs/runbooks/index.md",
+    "docs/runbooks/adding-a-package.md",
     "docs/releases/_structure.md",
     "docs/releases/index.md",
     "docs/specs/_structure.md",
@@ -39,6 +40,10 @@ _PACKAGE_SITE_SKIPS = ("docs/reference/",)
 lives in its own site."""
 
 
+_PYTHON_LIB_ONLY = ("docs/runbooks/adding-a-package.md",)
+"""Seeds only a `python-lib` repository carries."""
+
+
 def render(config: KilnConfig, root: Path) -> list[Artifact]:
     """Render the seeded docs tree, for an `mkdocs` repo at *root*."""
     if config.docs_profile != "mkdocs":
@@ -49,7 +54,8 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
         "archetype": config.archetype,
         "kiln_version": __version__,
     }
-    skipped = _PACKAGE_SITE_SKIPS if config.archetype == "python-lib" else ()
+    lib = config.archetype == "python-lib"
+    skipped = _PACKAGE_SITE_SKIPS if lib else _PYTHON_LIB_ONLY
     return [
         Artifact(path, _kind(path), engine.render(f"{path}.j2", context))
         for path in SEEDS

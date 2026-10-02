@@ -147,6 +147,13 @@
       "kind": "managed",
       "path": "docs/runbooks/_structure.md"
     },
+    "docs/runbooks/adding-a-package.md": {
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/runbooks/adding-a-package.md"
+    },
     "docs/runbooks/index.md": {
       "begin_marker": null,
       "content_hash": null,

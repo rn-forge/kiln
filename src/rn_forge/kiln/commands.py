@@ -13,12 +13,14 @@ which `CliApp` maps to exit code 1.
 from __future__ import annotations
 
 import difflib
+import re
 import shutil
 from collections.abc import Sequence
 from importlib import metadata
 from importlib.resources import files
 from pathlib import Path
 
+from rn_forge.cli import CliApp
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import ConfigFormat, DocumentUtils
 from rn_forge.commons.lang.collections import DictUtils
@@ -33,6 +35,7 @@ from rn_forge.kiln.modules.core import cycle, umbrella
 from rn_forge.kiln.modules.core.config.manager import ConfigManager
 from rn_forge.kiln.modules.core.config.sources import Source
 from rn_forge.kiln.modules.docs import generate
+from rn_forge.kiln.modules.docs.scaffold import add_package as docs_add_package
 from rn_forge.kiln.modules.docs.scaffold import scaffold as docs_scaffold
 from rn_forge.kiln.modules.frontend.scaffold import (
     reconcile_frontend,
@@ -41,7 +44,14 @@ from rn_forge.kiln.modules.frontend.scaffold import (
 from rn_forge.kiln.modules.instructions.scaffold import (
     scaffold as instructions_scaffold,
 )
-from rn_forge.kiln.modules.python.scaffold import reconcile_backend, scaffold_backend
+from rn_forge.kiln.modules.python.scaffold import (
+    add_package as python_add_package,
+)
+from rn_forge.kiln.modules.python.scaffold import (
+    github_remote,
+    reconcile_backend,
+    scaffold_backend,
+)
 from rn_forge.kiln.modules.registry import builtin
 
 __all__ = [
@@ -51,6 +61,8 @@ __all__ = [
     "diff",
     "docs_generate",
     "doctor",
+    "generate_app",
+    "generate_package",
     "new",
     "prompt",
     "version",
@@ -62,6 +74,8 @@ _CONFIG_HEADER = (
     "# The one hand-authored input kiln reads (kiln ADR-0004). Edit this, then run\n"
     "# `kiln apply`. Everything else under .rn-forge/kiln/ is kiln's.\n"
 )
+
+_PACKAGE_NAME = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
 
 # `new`'s config-setting flags: every one of them must be backed by a
 # registered module's `Option`, verified by `tests/test_new.py`.
@@ -217,6 +231,78 @@ def apply(
 
     if not dry_run:
         _fail_on_errors(root)
+
+
+def generate_package(name: str, path: Path = Path(), json: bool = False) -> None:
+    """Add the package NAME to the `python-lib` repository at `--path`.
+
+    Writes the package, its docs site, changelog and README, and updates the
+    config, the workspace and the managed files that list packages. Everything
+    is checked before anything is written.
+
+    Raises:
+        AppException: The archetype is not `python-lib`
+            (`generate.unsupported-archetype`), NAME is not a kebab-case
+            distribution name (`generate.invalid-name`), NAME is already a
+            package or `packages/NAME` exists (`generate.package-exists`),
+            `origin` is not a GitHub remote (`generate.no-remote`), or a step
+            or the apply fails.
+    """
+    if json:
+        console.set_mode(OutputMode.JSON)
+    root = umbrella.find_root(path.resolve())
+    config = ConfigManager().load(root)
+    remote = _package_preflight(root, config, name)
+    relative = f"packages/{name}"
+
+    DocumentUtils.update(
+        root / CONFIG_PATH,
+        {"archetype": {"python-lib": {"packages": [*config.packages, relative]}}},
+    )
+    config = ConfigManager().load(root)
+    python_add_package(root, config, name, remote)
+    docs_add_package(root, config, name)
+    result = cycle.apply(root)
+    generate.generate(root, config.packages)
+
+    written = sorted(
+        file.relative_to(root).as_posix()
+        for file in (root / relative).rglob("*")
+        if file.is_file() and "__pycache__" not in file.parts
+    )
+    rows = _change_rows(result.changes)
+    _emit(
+        {
+            "root": str(root),
+            "written": [CONFIG_PATH.as_posix(), "pyproject.toml", *written],
+            "artifacts": rows,
+        },
+        rows,
+    )
+
+
+def _package_preflight(root: Path, config: KilnConfig, name: str) -> str:
+    """The repository's GitHub URL, after refusing every case `generate package` cannot write."""
+    if config.archetype != "python-lib":
+        raise AppException(
+            "generate.unsupported-archetype: kiln generate package supports "
+            "python-lib only, not {}",
+            config.archetype,
+        )
+    if not _PACKAGE_NAME.match(name):
+        raise AppException(
+            "generate.invalid-name: {!r} is not a kebab-case distribution name", name
+        )
+    relative = f"packages/{name}"
+    if relative in config.packages or (root / relative).exists():
+        raise AppException("generate.package-exists: {} already exists", relative)
+    remote = github_remote(root)
+    if remote is None:
+        raise AppException(
+            "generate.no-remote: a published package needs the repository's "
+            "GitHub remote: git remote add origin https://github.com/<owner>/<repo>"
+        )
+    return remote
 
 
 def config_update(
@@ -604,3 +690,8 @@ def _fail_on_errors(root: Path) -> None:
     errors = [finding for finding in findings if finding.is_error]
     if errors:
         raise AppException("{} check(s) failed in {}", len(errors), root)
+
+
+generate_app = CliApp("kiln", "Generate parts of a repository.")
+"""The `generate` namespace; each generator is a command on it."""
+generate_app.command(name="package")(generate_package)

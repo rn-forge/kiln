@@ -47,6 +47,10 @@ name = "apply"
 target = "rn_forge.kiln.commands:apply"
 
 [[cli.commands]]
+name = "generate"
+target = "rn_forge.kiln.commands:generate_app"
+
+[[cli.commands]]
 name = "config-update"
 target = "rn_forge.kiln.commands:config_update"
 

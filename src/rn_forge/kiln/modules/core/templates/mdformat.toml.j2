@@ -17,15 +17,19 @@ exclude = [
   # They carry third-party READMEs and licences, none of which are this repo's
   # prose. mdformat resolves its config per file, from that file's own
   # directory upward, so a nested repo's caches are that repo's to exempt.
-  ".uv-cache/**",
-  ".pytest_cache/**",
-  ".ruff_cache/**",
-  ".import_linter_cache/**",
+  # `**/`: a task run with `--directory packages/<pkg>` runs the tool there, so
+  # each workspace member grows its own caches.
+  "**/.uv-cache/**",
+  "**/.pytest_cache/**",
+  "**/.ruff_cache/**",
+  "**/.import_linter_cache/**",
   ".docs-site/**",
   "site/**",
   "node_modules/**",
   ".nx/**",
   ".rn-forge/kiln/rendered/**",
+  # `kiln apply` keeps the managed files it replaced here.
+  ".rn-forge/kiln/backups/**",
   ".rn-forge/kiln/standard.md",
 ]
 

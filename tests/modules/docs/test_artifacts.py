@@ -52,10 +52,13 @@ GROWN = {
 
 
 def _seeds(archetype: str) -> tuple[str, ...]:
-    """The seeds *archetype* carries: `python-lib` has no `docs/reference/`."""
+    """The seeds *archetype* carries.
+
+    `python-lib` has no `docs/reference/`; only it has the adding-a-package runbook.
+    """
     if archetype == "python-lib":
         return tuple(p for p in SEEDS if not p.startswith("docs/reference/"))
-    return SEEDS
+    return tuple(p for p in SEEDS if p != "docs/runbooks/adding-a-package.md")
 
 
 def _kind(path: str) -> ArtifactKind:

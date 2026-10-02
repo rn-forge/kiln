@@ -58,6 +58,7 @@ nav:
     - golden-beta: '!include packages/golden-beta/mkdocs.yml'
   - Runbooks:
     - Overview: runbooks/index.md
+    - Adding a package: runbooks/adding-a-package.md
     - Recovering from drift: runbooks/recovering-from-drift.md
   - Releases: releases/index.md
   - Specs: specs/index.md
