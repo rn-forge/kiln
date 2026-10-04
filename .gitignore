@@ -9,6 +9,9 @@ wheels/
 # Virtual environments
 .venv
 
+# Rendered template cells (task self:golden:render)
+.goldens
+
 # BEGIN rn-forge kiln
 .rn-forge/kiln/backups/
 .rn-forge/kiln/rendered/

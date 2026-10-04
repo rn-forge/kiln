@@ -20,7 +20,7 @@ sonar = true
 release = "tag-exists"
 
 [tasks]
-includes = []
+includes = [{ namespace = "self", taskfile = "tasks/self.yml" }]
 
 # The command line this repo exposes, built by `CliApp.from_config` rather
 # than assembled by hand (kiln ADR-0002). F4.5 adds the rest of the surface to

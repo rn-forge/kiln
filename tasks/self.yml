@@ -1,0 +1,13 @@
+# Seeded by kiln — this file is yours.
+version: "3"
+
+tasks:
+  golden:render:
+    desc: Render every archetype x flag cell into .goldens/<ref>/ (REF=<git-ref>; default the working tree).
+    cmds:
+      - uv run python scripts/golden_matrix.py render {{.REF}}
+
+  golden:validate:
+    desc: Run uv sync, task validate, actionlint and the strict docs build in every rendered cell (REF=<git-ref>).
+    cmds:
+      - uv run python scripts/golden_matrix.py validate {{.REF}}

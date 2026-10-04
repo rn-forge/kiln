@@ -22,6 +22,7 @@ includes:
   quality: tasks/quality.yml
   docs: tasks/docs.yml
   workspace: tasks/workspace.yml
+  self: tasks/self.yml
 
 tasks:
   setup:
