@@ -34,6 +34,8 @@ exclude = [
   # tests/fixtures/**: each fixture is held to its own gate (README.md), not
   # this repo's — a captured frontend scaffold's README is its own prose.
   "tests/fixtures/**",
+  # task self:golden:render output: each cell is held to its own gate.
+  ".goldens/**",
 ]
 
 [plugin.tables]

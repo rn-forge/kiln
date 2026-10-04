@@ -2,4 +2,4 @@ import golden_alpha
 
 
 def test_package_imports():
-    assert golden_alpha.__name__ == "golden_alpha"
+    assert golden_alpha.__spec__ is not None

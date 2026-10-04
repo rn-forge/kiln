@@ -227,7 +227,7 @@ def sample_test(name: str) -> str:
     return (
         f"import {module}\n\n\n"
         "def test_package_imports():\n"
-        f'    assert {module}.__name__ == "{module}"\n'
+        f"    assert {module}.__spec__ is not None\n"
     )
 
 

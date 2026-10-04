@@ -300,6 +300,19 @@ def test_s4_5_10_each_golden_carries_the_sample_test(golden: str, name: str) -> 
     assert on_disk == sample_test(name)
 
 
+def test_s4_4_4_1_sample_test_fits_at_a_long_name() -> None:
+    name = "-".join(["abcdefgh"] * 6) + "xyz"
+    assert len(name) == 56
+    module = name.replace("-", "_")
+    body = sample_test(name)
+    assert max(len(line) for line in body.splitlines()) <= 88
+    assert body == (
+        f"import {module}\n\n\n"
+        "def test_package_imports():\n"
+        f"    assert {module}.__spec__ is not None\n"
+    )
+
+
 def _bare_lib(tmp_path: Path, *, docs_profile: str = "mkdocs") -> Path:
     config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
     config.parent.mkdir(parents=True)
