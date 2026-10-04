@@ -16,6 +16,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -76,12 +77,12 @@ def render_cell(cell: Cell, dest: Path, kiln_cmd: list[str]) -> None:
         RuntimeError: A step failed.
     """
     if dest.exists():
-        shutil.rmtree(dest)
+        _remove(dest)
     dest.parent.mkdir(parents=True, exist_ok=True)
     # The directory name becomes the repository name, which cannot hold `=`.
     built = dest.parent / dest.name.replace("=", "-")
     if built.exists():
-        shutil.rmtree(built)
+        _remove(built)
     shutil.rmtree(dest.parent / ".staging" / built.name, ignore_errors=True)
     new = [*kiln_cmd, "new", built.name, "--archetype", cell.archetype]
     for flag, value in cell.flags:
@@ -95,6 +96,20 @@ def render_cell(cell: Cell, dest: Path, kiln_cmd: list[str]) -> None:
     if built != dest:
         built.rename(dest)
     shutil.rmtree(dest.parent / ".staging", ignore_errors=True)
+
+
+def _remove(path: Path, attempts: int = 3) -> None:
+    """`rmtree` *path*, retrying: a just-validated cell's `.uv-cache` or `.venv`
+    can still be written to for a moment, which fails with "Directory not empty".
+    """
+    for attempt in range(1, attempts + 1):
+        try:
+            shutil.rmtree(path)
+            return
+        except OSError:
+            if attempt == attempts:
+                raise
+            time.sleep(1)
 
 
 def render(ref: str, out_root: Path) -> list[Path]:

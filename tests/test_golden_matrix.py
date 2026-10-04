@@ -63,6 +63,37 @@ def test_s4_4_1_1_render_one_cell(matrix: ModuleType, tmp_path: Path) -> None:
         assert (dest / relative).is_file(), relative
 
 
+def test_s4_4_1_1_remove_retries_a_directory_not_empty(
+    matrix: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cell = tmp_path / "cell"
+    (cell / ".uv-cache").mkdir(parents=True)
+    real = matrix.shutil.rmtree
+    calls: list[Path] = []
+
+    def flaky(path: Path) -> None:
+        calls.append(path)
+        if len(calls) == 1:
+            raise OSError(66, "Directory not empty")
+        real(path)
+
+    monkeypatch.setattr(matrix.shutil, "rmtree", flaky)
+    monkeypatch.setattr(matrix.time, "sleep", lambda _: None)
+    matrix._remove(cell)
+    assert not cell.exists()
+    assert len(calls) == 2
+
+    def stuck(path: Path) -> None:
+        calls.append(path)
+        raise OSError(66, "Directory not empty")
+
+    calls.clear()
+    monkeypatch.setattr(matrix.shutil, "rmtree", stuck)
+    with pytest.raises(OSError, match="Directory not empty"):
+        matrix._remove(cell)
+    assert len(calls) == 3
+
+
 def test_s4_4_1_2_ref_dir(matrix: ModuleType, tmp_path: Path) -> None:
     assert matrix.ref_dir("") == "working"
     assert matrix.ref_dir("feature/v1") == "feature-v1"
