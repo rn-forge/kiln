@@ -16,8 +16,10 @@ import pytest
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import DocumentUtils
+from rn_forge.commons.runtime.subprocess import Process
 
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.frontend.angular import scaffold_angular
 from rn_forge.kiln.modules.registry import builtin
 from rn_forge.kiln.modules.python.artifacts import render
 from rn_forge.kiln.modules.frontend.scaffold import (
@@ -59,6 +61,32 @@ def _workspace(tmp_path: Path) -> Path:
     workspace = tmp_path / "workspace"
     shutil.copytree(FIXTURE, workspace)
     return workspace
+
+
+def test_angular_scaffold_has_its_own_git_boundary(tmp_path: Path) -> None:
+    (tmp_path / ".gitignore").write_text("*\n", encoding="utf-8")
+    raw = tmp_path / "frontend"
+    raw.mkdir()
+    execute = Process.execute
+
+    def run(name: str, *args: str, **kwargs: object) -> None:
+        if args[0] == "git":
+            execute(name, *args, cwd=str(raw))
+        elif name == "nx-workspace":
+            assert (raw / ".git").is_dir()
+            shutil.copytree(FIXTURE, raw / "workspace")
+
+    with mock.patch(
+        "rn_forge.kiln.modules.frontend.angular.Process.execute", side_effect=run
+    ):
+        workspace = scaffold_angular(raw)
+
+    boundary = execute(
+        "git-root", "git", "rev-parse", "--show-toplevel", cwd=str(workspace)
+    )
+    assert boundary.stdout is not None
+    assert Path(boundary.stdout.strip()).resolve() == raw.resolve()
+    assert not (workspace / ".git").exists()
 
 
 def test_s5_2_1_reconcile_moves_fixture_into_root(tmp_path: Path) -> None:

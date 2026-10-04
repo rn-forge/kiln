@@ -35,6 +35,8 @@ its AI-agent template flow, which ignores `--appName` (COMMAND.md)."""
 def scaffold_angular(raw: Path) -> Path:
     """Run the Nx/Angular scaffold inside *raw*; return the workspace it made."""
     env = {k: v for k, v in os.environ.items() if k not in _AGENT_ENV_VARS}
+    # Keep Nx's native scanner from inheriting staging and checkout ignore rules.
+    Process.execute("nx-git-boundary", "git", "init", "-q", cwd=str(raw), env=env)
     Process.execute(
         "nx-workspace",
         "pnpm",

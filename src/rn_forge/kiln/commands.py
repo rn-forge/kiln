@@ -559,7 +559,8 @@ def _stage(name: str) -> Path:
     if run.exists():
         raise AppException("{} already exists; staging is never reused", run)
     staging.mkdir(exist_ok=True)
-    (staging / ".gitignore").write_text("*\n", encoding="utf-8")
+    # Anchor the rule so Nx's scanner does not ignore every descendant file.
+    (staging / ".gitignore").write_text("/*\n", encoding="utf-8")
     for part in ("backend", "frontend", "workspace"):
         (run / part).mkdir(parents=True)
     return run / "workspace"

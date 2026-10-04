@@ -285,7 +285,7 @@ def test_s4_5_9_1_success_retains_staging_and_target_equals_workspace(
     assert all((run / part).is_dir() for part in ("backend", "frontend", "workspace"))
     assert (run / "backend" / "pyproject.toml").is_file()
     assert _hashes(run / "workspace") == _hashes(target)
-    assert (tmp_path / ".staging" / ".gitignore").read_text(encoding="utf-8") == "*\n"
+    assert (tmp_path / ".staging" / ".gitignore").read_text(encoding="utf-8") == "/*\n"
 
 
 def test_s4_5_9_2_workspace_holds_only_reconciled_files(tmp_path: Path) -> None:
