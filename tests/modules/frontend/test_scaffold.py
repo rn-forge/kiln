@@ -102,6 +102,16 @@ def test_s5_2_1_reconcile_moves_fixture_into_root(tmp_path: Path) -> None:
     assert not (root / "workspace").exists()
 
 
+def test_s4_4_1_reconcile_drops_scaffolder_readme(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    workspace = _workspace(tmp_path)
+    assert (workspace / "README.md").is_file()
+
+    reconcile_frontend(root, workspace, KilnConfig.load(root))
+
+    assert not (root / "README.md").exists()
+
+
 def test_s5_2_1_reconcile_appends_scaffolder_gitignore(tmp_path: Path) -> None:
     root = _root(tmp_path)
     workspace = _workspace(tmp_path)

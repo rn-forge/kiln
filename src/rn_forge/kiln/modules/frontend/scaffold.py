@@ -33,14 +33,14 @@ the finished workspace."""
 
 _EXCLUDED_TOP_LEVEL = {".git", "node_modules", ".nx"}
 
-_DROPPED = {".editorconfig"}
-"""Scaffolder-written root files kiln's own `core` module unconditionally
-renders for every archetype, with no earlier scaffold step of its own to
-reconcile against (unlike `pyproject.toml` or `README.md`, whose scaffolded
-content already matches what `apply` renders). Moving the scaffolder's copy
-into root would only have `apply` reject it as an unapproved conflict once it
-tries to write its own; dropping it here is a no-op, since `apply` writes the
-real one right after."""
+_DROPPED = {".editorconfig", "README.md"}
+"""Scaffolder-written root files kiln writes its own copy of right after
+reconcile. `core` renders `.editorconfig` for every archetype, with no earlier
+scaffold step to reconcile against: moving the scaffolder's copy into root
+would only have `apply` reject it as an unapproved conflict. `README.md` is
+seeded by `instructions` only when absent, so the scaffolder's copy (Nx's
+stock README, not mdformat-clean) would otherwise replace kiln's body. Both
+still count as conflicts when root already holds them."""
 
 
 def scaffold_frontend(raw: Path, config: KilnConfig) -> Path | None:
@@ -70,8 +70,9 @@ def reconcile_frontend(root: Path, workspace: Path, config: KilnConfig) -> None:
     """Fold *workspace* (a finished frontend scaffold) into *root*.
 
     Every top-level entry of *workspace* is copied into *root*, except `.git`,
-    `node_modules` and `.nx`. The scaffolder's `.gitignore` body is appended
-    once to `root/.gitignore`, after uv's, rather than moved, since apply's
+    `node_modules` and `.nx`, and `_DROPPED`'s files. The scaffolder's
+    `.gitignore` body is appended once to `root/.gitignore`, after uv's,
+    rather than moved, since apply's
     own `.gitignore` block still has to land in the same file afterwards. If
     the scaffolder's app directory (`apps/web`) differs from `config.web_dir`,
     it is renamed and every reference to its old path in `project.json`'s
@@ -88,11 +89,7 @@ def reconcile_frontend(root: Path, workspace: Path, config: KilnConfig) -> None:
     """
     web_dir = config.web_dir or SCAFFOLD_APP_DIR
 
-    entries = [
-        p
-        for p in workspace.iterdir()
-        if p.name not in _EXCLUDED_TOP_LEVEL and p.name not in _DROPPED
-    ]
+    entries = [p for p in workspace.iterdir() if p.name not in _EXCLUDED_TOP_LEVEL]
     conflicts = [
         conflict
         for entry in entries
@@ -106,6 +103,8 @@ def reconcile_frontend(root: Path, workspace: Path, config: KilnConfig) -> None:
         )
 
     for entry in entries:
+        if entry.name in _DROPPED:
+            continue
         if entry.name == gitignore.GITIGNORE:
             gitignore.append(root, entry.read_text(encoding="utf-8"))
             continue
