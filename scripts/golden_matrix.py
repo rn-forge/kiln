@@ -1,12 +1,16 @@
 """Render and validate every shipped archetype x flag cell of kiln's templates.
 
-Usage: golden_matrix.py {render,validate} [REF]
+Usage: golden_matrix.py {render,validate,compare} [REF]
 
 Cells land in `.goldens/<ref_dir>/<cell name>/`, beneath the repository root.
+`compare` diffs the python-app, python-tool and python-lib cells against the
+hand-authored goldens in `tests/fixtures/golden/`.
 """
 
 from __future__ import annotations
 
+import difflib
+import re
 import shutil
 import subprocess
 import sys
@@ -18,6 +22,37 @@ ROOT = Path(__file__).resolve().parent.parent
 GOLDENS = ROOT / ".goldens"
 LIB_ORIGIN = "https://github.com/rn-forge/golden-lib"
 LIB_PACKAGES = ("golden-alpha", "golden-beta")
+GOLDEN_FIXTURES = ROOT / "tests" / "fixtures" / "golden"
+COMPARED: tuple[tuple[str, str], ...] = (
+    ("python-app", "golden-app"),
+    ("python-tool", "golden-tool"),
+    ("python-lib", "golden-lib"),
+)
+_SKIP_DIRS = frozenset(
+    {
+        ".git",
+        ".venv",
+        ".docs-site",
+        ".uv-cache",
+        ".ruff_cache",
+        ".pytest_cache",
+        ".import_linter_cache",
+        "__pycache__",
+        "node_modules",
+    }
+)
+_SKIP_FILES = frozenset(
+    {
+        ".DS_Store",
+        ".coverage",
+        "coverage.xml",
+        "uv.lock",
+        ".rn-forge/kiln/state.json",
+        ".rn-forge/kiln/state.lock",
+    }
+)
+# kiln's own working copies beside state.json, not rendered output.
+_SKIP_PREFIXES = (".rn-forge/kiln/rendered/", ".rn-forge/kiln/backups/")
 
 
 @dataclass(frozen=True)
@@ -145,14 +180,95 @@ def validate(ref: str, out_root: Path) -> int:
     return 1 if failed else 0
 
 
+def normalize(text: str, name: str, target: str) -> str:
+    """Rename *name* (and its module form) to *target*, and blank provenance versions.
+
+    Only the golden's name is mapped, onto the cell's: a cell's name can equal
+    its archetype (`python-app`), which a placeholder would also replace.
+    """
+    text = text.replace(name, target)
+    text = text.replace(name.replace("-", "_"), target.replace("-", "_"))
+    return re.sub(r"\b(Generated|Seeded) by kiln \S+", r"\1 by kiln <version>", text)
+
+
+def _files(root: Path, name: str, target: str) -> dict[str, Path]:
+    found: dict[str, Path] = {}
+    for path in root.rglob("*"):
+        relative = path.relative_to(root)
+        if not path.is_file() or _SKIP_DIRS.intersection(relative.parts):
+            continue
+        key = relative.as_posix()
+        if key in _SKIP_FILES or path.name in _SKIP_FILES:
+            continue
+        if key.startswith(_SKIP_PREFIXES):
+            continue
+        found[normalize(key, name, target)] = path
+    return found
+
+
+def compare_cell(
+    cell_dir: Path, golden_dir: Path, cell_name: str, golden_name: str
+) -> list[str]:
+    """Differences between a rendered cell and its golden, one line each, sorted."""
+    if not cell_dir.is_dir():
+        return [f"missing cell: {cell_dir}"]
+    golden = _files(golden_dir, golden_name, cell_name)
+    cell = _files(cell_dir, cell_name, cell_name)
+    groups: dict[str, list[str]] = {}
+    for key in golden.keys() - cell.keys():
+        groups[f"only in golden: {key}"] = []
+    for key in cell.keys() - golden.keys():
+        groups[f"only in cell: {key}"] = []
+    for key in golden.keys() & cell.keys():
+        try:
+            old = golden[key].read_text(encoding="utf-8")
+            new = cell[key].read_text(encoding="utf-8")
+            old = normalize(old, golden_name, cell_name)
+            new = normalize(new, cell_name, cell_name)
+        except UnicodeDecodeError:
+            if golden[key].read_bytes() != cell[key].read_bytes():
+                groups[f"differs: {key}"] = []
+            continue
+        if old != new:
+            groups[f"differs: {key}"] = list(
+                difflib.unified_diff(
+                    old.splitlines(),
+                    new.splitlines(),
+                    fromfile=f"golden/{key}",
+                    tofile=f"cell/{key}",
+                    lineterm="",
+                )
+            )
+    return [line for head in sorted(groups) for line in (head, *groups[head])]
+
+
+def compare(ref: str, out_root: Path, golden_root: Path = GOLDEN_FIXTURES) -> int:
+    """Diff each compared cell of *ref* against its golden, print one table, and return 1 on any difference."""
+    target = out_root / ref_dir(ref)
+    mark = {True: "PASS", False: "FAIL"}
+    rows: list[tuple[str, ...]] = [("cell", "result")]
+    failed = False
+    for cell, golden_name in COMPARED:
+        lines = compare_cell(target / cell, golden_root / cell, cell, golden_name)
+        print("\n".join(lines))
+        failed = failed or bool(lines)
+        rows.append((cell, mark[not lines]))
+    widths = [max(len(row[i]) for row in rows) for i in range(2)]
+    for row in rows:
+        print(" | ".join(text.ljust(width) for text, width in zip(row, widths)))
+    return 1 if failed else 0
+
+
 def main(argv: list[str]) -> int:
-    """Run `render` or `validate` with an optional REF."""
-    if not argv or argv[0] not in ("render", "validate") or len(argv) > 2:
-        print("usage: golden_matrix.py {render,validate} [REF]", file=sys.stderr)
+    """Run `render`, `validate` or `compare` with an optional REF."""
+    if not argv or argv[0] not in ("render", "validate", "compare") or len(argv) > 2:
+        print("usage: golden_matrix.py {render,validate,compare} [REF]", file=sys.stderr)
         return 2
     ref = argv[1] if len(argv) == 2 else ""
     if argv[0] == "validate":
         return validate(ref, GOLDENS)
+    if argv[0] == "compare":
+        return compare(ref, GOLDENS)
     try:
         render(ref, GOLDENS)
     except RuntimeError as error:

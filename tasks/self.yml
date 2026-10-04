@@ -11,3 +11,8 @@ tasks:
     desc: Run uv sync, task validate, actionlint and the strict docs build in every rendered cell (REF=<git-ref>).
     cmds:
       - uv run python scripts/golden_matrix.py validate {{.REF}}
+
+  golden:compare:
+    desc: Diff the python-app, python-tool and python-lib cells against their hand-authored goldens, ignoring name and provenance-version lines (REF=<git-ref>).
+    cmds:
+      - uv run python scripts/golden_matrix.py compare {{.REF}}
