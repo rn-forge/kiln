@@ -13,6 +13,6 @@ tasks:
       - uv run python scripts/golden_matrix.py validate {{.REF}}
 
   golden:compare:
-    desc: Diff the python-app, python-tool and python-lib cells against their hand-authored goldens, ignoring name and provenance-version lines (REF=<git-ref>).
+    desc: Diff the kiln-owned (managed and block) files of the python-app, python-tool and python-lib cells against their goldens, ignoring name and provenance-version lines (REF=<git-ref>).
     cmds:
       - uv run python scripts/golden_matrix.py compare {{.REF}}

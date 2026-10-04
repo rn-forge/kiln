@@ -27,9 +27,10 @@ done, and S4.5.7–S4.5.8 are planned. S4.5.9 followed
 [S5.2.4](../E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md)'s frontend-module
 split. F4.6–F4.8 have not started.
 
-**F4.4 (2026-10-04).** S4.4.1 and S4.4.4 are closed. S4.4.2 is blocked on
-S4.4.5, a CI checkout bug in every rendered repository. S4.4.3 was redefined to
-compare only kiln-owned files, with S4.4.6–S4.4.9 split out.
+**F4.4 (2026-10-04).** S4.4.1, S4.4.4 and S4.4.6 are closed. S4.4.5, the CI
+checkout fix, is built; S4.4.2's failing-render rerun on GitHub proves it.
+S4.4.3 now compares only kiln-owned files, and the compare passes; it waits on
+the owner's approval. S4.4.7–S4.4.9 are next.
 
 Decisions this epic builds on: [ADR-0001](../../../adr/ADR-0001.md),
 [ADR-0003](../../../adr/ADR-0003.md), [ADR-0004](../../../adr/ADR-0004.md),

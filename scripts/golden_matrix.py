@@ -10,6 +10,7 @@ hand-authored goldens in `tests/fixtures/golden/`.
 from __future__ import annotations
 
 import difflib
+import json
 import re
 import shutil
 import subprocess
@@ -28,31 +29,6 @@ COMPARED: tuple[tuple[str, str], ...] = (
     ("python-tool", "golden-tool"),
     ("python-lib", "golden-lib"),
 )
-_SKIP_DIRS = frozenset(
-    {
-        ".git",
-        ".venv",
-        ".docs-site",
-        ".uv-cache",
-        ".ruff_cache",
-        ".pytest_cache",
-        ".import_linter_cache",
-        "__pycache__",
-        "node_modules",
-    }
-)
-_SKIP_FILES = frozenset(
-    {
-        ".DS_Store",
-        ".coverage",
-        "coverage.xml",
-        "uv.lock",
-        ".rn-forge/kiln/state.json",
-        ".rn-forge/kiln/state.lock",
-    }
-)
-# kiln's own working copies beside state.json, not rendered output.
-_SKIP_PREFIXES = (".rn-forge/kiln/rendered/", ".rn-forge/kiln/backups/")
 
 
 @dataclass(frozen=True)
@@ -191,44 +167,65 @@ def normalize(text: str, name: str, target: str) -> str:
     return re.sub(r"\b(Generated|Seeded) by kiln \S+", r"\1 by kiln <version>", text)
 
 
-def _files(root: Path, name: str, target: str) -> dict[str, Path]:
-    found: dict[str, Path] = {}
-    for path in root.rglob("*"):
-        relative = path.relative_to(root)
-        if not path.is_file() or _SKIP_DIRS.intersection(relative.parts):
-            continue
-        key = relative.as_posix()
-        if key in _SKIP_FILES or path.name in _SKIP_FILES:
-            continue
-        if key.startswith(_SKIP_PREFIXES):
-            continue
-        found[normalize(key, name, target)] = path
-    return found
+Owned = tuple[str, str | None, str | None]
+
+
+def _owned(root: Path, name: str, target: str) -> dict[str, Owned]:
+    """The `managed` and `block` entries of *root*'s state.json, keyed by normalized entry key.
+
+    Each value is `(path, begin_marker, end_marker)`. No state.json gives `{}`.
+    """
+    state = root / ".rn-forge" / "kiln" / "state.json"
+    if not state.is_file():
+        return {}
+    data = json.loads(state.read_text(encoding="utf-8"))
+    entries: dict[str, dict[str, str | None]] = data["entries"]
+    return {
+        normalize(key, name, target): (
+            entry["path"] or "",
+            entry.get("begin_marker"),
+            entry.get("end_marker"),
+        )
+        for key, entry in entries.items()
+        if entry["kind"] in ("managed", "block")
+    }
+
+
+def _owned_text(root: Path, path: str, begin: str | None, end: str | None) -> str:
+    """The owned text of *path*: the whole file, or a block's marked lines inclusive."""
+    missing = f"<missing: {path}>"
+    file = root / path
+    if not file.is_file():
+        return missing
+    text = file.read_text(encoding="utf-8")
+    if begin is None or end is None:
+        return text
+    lines = text.splitlines()
+    if begin not in lines:
+        return missing
+    first = lines.index(begin)
+    if end not in lines[first:]:
+        return missing
+    last = first + lines[first:].index(end)
+    return "\n".join(lines[first : last + 1]) + "\n"
 
 
 def compare_cell(
     cell_dir: Path, golden_dir: Path, cell_name: str, golden_name: str
 ) -> list[str]:
-    """Differences between a rendered cell and its golden, one line each, sorted."""
-    if not cell_dir.is_dir():
+    """Differences between a cell's and its golden's kiln-owned files, one line each, sorted."""
+    if not (cell_dir / ".rn-forge" / "kiln" / "state.json").is_file():
         return [f"missing cell: {cell_dir}"]
-    golden = _files(golden_dir, golden_name, cell_name)
-    cell = _files(cell_dir, cell_name, cell_name)
+    golden = _owned(golden_dir, golden_name, cell_name)
+    cell = _owned(cell_dir, cell_name, cell_name)
     groups: dict[str, list[str]] = {}
     for key in golden.keys() - cell.keys():
         groups[f"only in golden: {key}"] = []
     for key in cell.keys() - golden.keys():
         groups[f"only in cell: {key}"] = []
     for key in golden.keys() & cell.keys():
-        try:
-            old = golden[key].read_text(encoding="utf-8")
-            new = cell[key].read_text(encoding="utf-8")
-            old = normalize(old, golden_name, cell_name)
-            new = normalize(new, cell_name, cell_name)
-        except UnicodeDecodeError:
-            if golden[key].read_bytes() != cell[key].read_bytes():
-                groups[f"differs: {key}"] = []
-            continue
+        old = normalize(_owned_text(golden_dir, *golden[key]), golden_name, cell_name)
+        new = normalize(_owned_text(cell_dir, *cell[key]), cell_name, cell_name)
         if old != new:
             groups[f"differs: {key}"] = list(
                 difflib.unified_diff(
