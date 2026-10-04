@@ -48,6 +48,37 @@ jobs:
       - name: Validate
         run: task validate
 
+  golden-render:
+    # Every shipped archetype x flag cell must still render (S4.4.2). Validating
+    # the cells stays local: `task self:golden:validate`.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # The python-web-app cell scaffolds its Angular frontend with pnpm and
+      # Node, which kiln's own setup action does not install.
+      - name: Install pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          version: 12
+
+      - name: Install Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: task setup
+
+      - name: Render every golden cell
+        run: task self:golden:render
+
   sonar:
     needs: validate
     # A fork's pull request cannot see SONAR_TOKEN, so an unconditional scan job
