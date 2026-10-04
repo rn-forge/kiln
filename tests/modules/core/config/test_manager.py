@@ -190,6 +190,18 @@ def test_s4_2_2_a_git_source_records_location_ref_and_resolved_commit(
     }
 
 
+@pytest.mark.parametrize(
+    ("archetype", "lifecycle"), [("python-tool", True), ("python-app", False)]
+)
+def test_s4_4_6_2_new_python_tool_writes_lifecycle_true(
+    archetype: str, lifecycle: bool
+) -> None:
+    resolution = ConfigManager().resolve(
+        flags={"repository": {"name": "demo", "archetype": archetype}}
+    )
+    assert resolution.config.document.repository.lifecycle is lifecycle
+
+
 def test_s4_2_2_re_resolution_keeps_and_lists_a_repo_override(tmp_path: Path) -> None:
     layer = tmp_path / "profile" / "config.toml"
     write_layer(

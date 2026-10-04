@@ -322,6 +322,8 @@ class ConfigManager:
         name = next((n for n in reversed(names) if isinstance(n, str)), None)
         if name not in archetypes.shipped():
             return defaults  # validation reports the archetype
+        if name == "python-tool":
+            defaults["repository"]["lifecycle"] = True
         for module in self._registry.for_archetype(archetypes.load(name)):
             if module.section is not None and module.config_model is not None:
                 defaults[module.section] = module.config_model().model_dump(

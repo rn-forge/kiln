@@ -48,8 +48,8 @@ class KilnConfig:
 
     @property
     def lifecycle(self) -> bool:
-        """Whether the repo installs itself."""
-        return self.document.repository.lifecycle
+        """Whether the repo installs itself; the python-tool archetype always does."""
+        return self.document.repository.lifecycle or self.archetype == "python-tool"
 
     @property
     def name(self) -> str:

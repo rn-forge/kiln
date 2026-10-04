@@ -81,6 +81,16 @@ def test_lifecycle_and_mkdocs_adjust_the_manifest(repo) -> None:
     assert "docs:build" in archetype.required_validate
 
 
+def test_s4_4_6_1_python_tool_implies_lifecycle(repo) -> None:
+    tool = KilnConfig.load(repo(archetype="python-tool", lifecycle=False))
+    assert tool.lifecycle is True
+    assert "rn-forge-tooling" in archetypes.for_config(tool).dependencies.required
+
+
+def test_s4_4_6_1_python_app_without_lifecycle_stays_false(repo) -> None:
+    assert KilnConfig.load(repo(archetype="python-app")).lifecycle is False
+
+
 @pytest.mark.parametrize(
     ("archetype", "backend", "frontend"),
     [
