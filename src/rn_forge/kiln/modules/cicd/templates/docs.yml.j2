@@ -29,6 +29,9 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Checkout
+        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
+
       - name: Set up the toolchain
         uses: ./.github/actions/setup
         with:

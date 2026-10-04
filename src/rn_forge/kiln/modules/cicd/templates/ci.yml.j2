@@ -14,8 +14,9 @@ name: CI
 # .rn-forge/kiln/state.json baseline, through `task validate`.
 #
 # The repeated toolchain setup lives in .github/actions/setup, committed beside
-# this file. Every `uses:` is pinned to a commit SHA with the version in a
-# trailing comment; Dependabot watches kiln's own repo, not this file.
+# this file. Each job checks out first: GitHub can only run a local action from
+# the checked-out tree. Every `uses:` is pinned to a commit SHA with the version
+# in a trailing comment; Dependabot watches kiln's own repo, not this file.
 
 on:
   push:
@@ -42,6 +43,9 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Checkout
+        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
+
       - name: Set up the toolchain
         uses: ./.github/actions/setup
         with:
@@ -66,10 +70,14 @@ jobs:
       contents: read
       pull-requests: read
     steps:
+      - name: Checkout
+        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
+        with:
+          fetch-depth: 0
+
       - name: Set up the toolchain
         uses: ./.github/actions/setup
         with:
-          fetch-depth: "0"
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install dependencies
@@ -101,6 +109,9 @@ jobs:
       matrix:
         package: [{% for package in packages %}[[ package ]]{% if not loop.last %}, {% endif %}{% endfor %}]
 {% endif %}    steps:
+      - name: Checkout
+        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
+
       - name: Set up the toolchain
         uses: ./.github/actions/setup
         with:

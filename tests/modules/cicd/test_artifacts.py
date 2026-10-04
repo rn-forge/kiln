@@ -338,3 +338,52 @@ def test_s5_1_2_actionlint_passes_on_web_app_workflows(
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+SETUP_ACTION = "./.github/actions/setup"
+
+
+def _assert_checks_out_first(workflow: str, where: str) -> None:
+    jobs = yaml.safe_load(workflow)["jobs"]
+    for name, job in jobs.items():
+        steps = job["steps"]
+        for index, step in enumerate(steps):
+            if step.get("uses") != SETUP_ACTION:
+                continue
+            assert index > 0, f"{where}: {name} sets up before checking out"
+            previous = steps[index - 1]
+            assert str(previous.get("uses", "")).startswith("actions/checkout@"), (
+                f"{where}: {name}'s setup step does not follow a checkout"
+            )
+            if name == "sonar":
+                assert previous.get("with", {}).get("fetch-depth") == 0, where
+
+
+def test_s4_4_5_1_every_job_checks_out_before_the_setup_action(
+    tmp_path: Path,
+) -> None:
+    roots = [_root(tmp_path / archetype, archetype) for archetype in ARCHETYPES] + [
+        _web_root(tmp_path / "web", "python-web-app", extra='frontend = "angular"'),
+    ]
+    for root in roots:
+        for path, content in _rendered(root).items():
+            if path in WORKFLOWS:
+                _assert_checks_out_first(content, f"{root.name}:{path}")
+
+
+def test_s4_4_5_2_setup_action_has_no_checkout(tmp_path: Path) -> None:
+    action = _rendered(_root(tmp_path))[".github/actions/setup/action.yml"]
+    assert "actions/checkout@" not in action
+    assert "fetch-depth" not in action
+    parsed = yaml.safe_load(action)
+    assert "fetch-depth" not in parsed["inputs"]
+
+
+def test_s4_4_5_3_kiln_and_goldens_check_out_first() -> None:
+    repo = GOLDEN.parents[2]
+    roots = [repo, *(GOLDEN / archetype for archetype in ARCHETYPES)]
+    for root in roots:
+        for workflow in sorted((root / ".github" / "workflows").glob("*.yml")):
+            _assert_checks_out_first(
+                workflow.read_text(encoding="utf-8"), str(workflow.relative_to(repo))
+            )

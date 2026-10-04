@@ -2,14 +2,11 @@
 name: Set up the toolchain
 description: >-
   Install the pinned interpreter and go-task, and nothing else. Every CI job
-  starts with these three steps; a composite action is how they stay one copy
-  instead of four.
+  runs these steps right after its own checkout; a composite action is how
+  they stay one copy instead of four. The checkout cannot live in here:
+  GitHub resolves a local action from the checked-out tree.
 
 inputs:
-  fetch-depth:
-    description: Checkout depth. Sonar needs full history; nothing else does.
-    required: false
-    default: "1"
   github-token:
     description: Token for setup-task's release lookup, to avoid rate limits.
     required: true
@@ -17,11 +14,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Checkout
-      uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
-      with:
-        fetch-depth: ${{ inputs.fetch-depth }}
-
     - name: Install uv
       uses: [[ pins["setup-uv"].uses ]]@[[ pins["setup-uv"].sha ]] # [[ pins["setup-uv"].version ]]
       with:

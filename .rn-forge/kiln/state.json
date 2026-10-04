@@ -9,21 +9,21 @@
     },
     ".github/actions/setup/action.yml": {
       "begin_marker": null,
-      "content_hash": "6f3d7e7041dcee019e576a9325d334aef56dd38ad4f0558007bb92fe999e5b46",
+      "content_hash": "cfc69a1705e524e0486d8f82011332f5a23fee460cb398a76d9e0ba552f2490f",
       "end_marker": null,
       "kind": "managed",
       "path": ".github/actions/setup/action.yml"
     },
     ".github/workflows/ci.yml": {
       "begin_marker": null,
-      "content_hash": "17c409708ed57e6677c2067e192757afe09c75711cf048dee99347680d58ffe6",
+      "content_hash": "0ae7e14a2a424e3b2097e904f652cb3a8ce1725d4621b0dea66031a799480bd1",
       "end_marker": null,
       "kind": "managed",
       "path": ".github/workflows/ci.yml"
     },
     ".github/workflows/docs.yml": {
       "begin_marker": null,
-      "content_hash": "c4531984d1e8d741f78da0212de73d9cedecdf495b436eff3c59038d187a5fdd",
+      "content_hash": "606338754d636d2d0f7eee55067647e7b7c065578c53c51d14dda90b9b76c588",
       "end_marker": null,
       "kind": "managed",
       "path": ".github/workflows/docs.yml"

@@ -9,8 +9,10 @@ name: CI
 # .rn-forge/kiln/state.json baseline, through `task validate` (kiln ADR-0006).
 #
 # The repeated toolchain setup lives in .github/actions/setup, committed beside
-# this file. Every `uses:` is pinned to a commit SHA with the version in a
-# trailing comment; Dependabot watches kiln's own repo, not this file (D21).
+# this file. Each job checks out first: GitHub can only run a local action from
+# the checked-out tree. Every `uses:` is pinned to a commit SHA with the version
+# in a trailing comment; Dependabot watches kiln's own repo, not this file
+# (D21).
 
 on:
   push:
@@ -37,6 +39,9 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - name: Set up the toolchain
         uses: ./.github/actions/setup
         with:
@@ -56,6 +61,9 @@ jobs:
     permissions:
       contents: read
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - name: Set up the toolchain
         uses: ./.github/actions/setup
         with:
@@ -92,10 +100,14 @@ jobs:
       contents: read
       pull-requests: read
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
       - name: Set up the toolchain
         uses: ./.github/actions/setup
         with:
-          fetch-depth: "0"
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install dependencies
@@ -121,6 +133,9 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
       - name: Set up the toolchain
         uses: ./.github/actions/setup
         with:
