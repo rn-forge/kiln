@@ -25,7 +25,11 @@ F11.1–F11.3 before F4.4, whose `python-lib` cell needs `kiln generate package`
 from S4.3.6, the owner's Sonar decisions. In F4.5, S4.5.1–S4.5.6 and S4.5.9 are
 done, and S4.5.7–S4.5.8 are planned. S4.5.9 followed
 [S5.2.4](../E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md)'s frontend-module
-split. F4.4 and F4.6–F4.8 have not started.
+split. F4.6–F4.8 have not started.
+
+**F4.4 (2026-10-04).** S4.4.1 and S4.4.4 are closed. S4.4.2 is blocked on
+S4.4.5, a CI checkout bug in every rendered repository. S4.4.3 was redefined to
+compare only kiln-owned files, with S4.4.6–S4.4.9 split out.
 
 Decisions this epic builds on: [ADR-0001](../../../adr/ADR-0001.md),
 [ADR-0003](../../../adr/ADR-0003.md), [ADR-0004](../../../adr/ADR-0004.md),
@@ -41,7 +45,7 @@ inventory, config lifecycle, module contract — is [design.md](design.md).
 | [F4.1](F4.1-checks-by-module.md) | The checks, organized by module | D.1 | S4.1.4: done; the rest: E3 | Closed |
 | [F4.2](F4.2-core-module.md) | The `core` module, the config manager and the module contract | D.2 | F4.1 | Closed |
 | [F4.3](F4.3-concern-modules.md) | The concern modules, with templates | D.3 | F4.2; E3 goldens | Active |
-| [F4.4](F4.4-render-matrix.md) | The render matrix, and the goldens leave git | D.4 | F4.3; the `python-lib` cell also S11.3.1 | New |
+| [F4.4](F4.4-render-matrix.md) | The render matrix, and the goldens leave git | D.4 | F4.3; the `python-lib` cell also S11.3.1 | Active |
 | [F4.5](F4.5-cli.md) | CLI | D.5 | F4.3; S4.5.9 also S5.2.4 | Active |
 | [F4.6](F4.6-doctor.md) | doctor | D.6 | F4.3, S4.5.1 | New |
 | [F4.7](F4.7-import-contracts.md) | Import contracts | D.7 | F4.3, S4.1.2 | New |

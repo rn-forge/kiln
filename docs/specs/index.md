@@ -13,7 +13,7 @@ Backlog sections below are derived from the epic, feature and release pages by
 | Release | Status | Features |
 | -- | -- | -- |
 | [Release 2 — the web archetypes](../releases/release-2/index.md) | in progress | 1 Active · 3 New · 2 Closed |
-| [Release 1 — kiln generates and self-hosts the Python archetypes](../releases/release-1/index.md) | in progress | 2 Active · 8 New · 11 Closed |
+| [Release 1 — kiln generates and self-hosts the Python archetypes](../releases/release-1/index.md) | in progress | 3 Active · 7 New · 11 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
