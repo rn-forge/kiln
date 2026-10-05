@@ -149,7 +149,7 @@ def _check(cell_dir: Path) -> tuple[bool, bool, bool]:
         return False, False, False
     # `-t` stops a cell with no Taskfile from running an ancestor's.
     task = ["task", "-t", "Taskfile.yml"]
-    synced = run(["uv", "sync"], cell_dir) and run([*task, "validate"], cell_dir)
+    synced = run([*task, "setup"], cell_dir) and run([*task, "validate"], cell_dir)
     return synced, run(["actionlint"], cell_dir), run([*task, "docs:build"], cell_dir)
 
 
@@ -158,7 +158,7 @@ def validate(ref: str, out_root: Path) -> int:
     target = out_root / ref_dir(ref)
     mark = {True: "PASS", False: "FAIL"}
     rows: list[tuple[str, ...]] = [
-        ("cell", "sync+validate", "actionlint", "docs", "result")
+        ("cell", "setup+validate", "actionlint", "docs", "result")
     ]
     failed = False
     for cell in CELLS:

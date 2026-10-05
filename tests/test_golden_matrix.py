@@ -130,6 +130,32 @@ def test_s4_4_1_3_validate_reports_every_cell(
     assert tmp_path / "working" / NAMES[-1] in calls
 
 
+def test_s5_3_2_1_validate_runs_setup_then_validate(
+    matrix: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    for name in NAMES:
+        (tmp_path / "working" / name).mkdir(parents=True)
+    calls: list[tuple[list[str], Path]] = []
+
+    def fake_run(cmd: list[str], cwd: Path) -> bool:
+        calls.append((cmd, cwd))
+        return True
+
+    monkeypatch.setattr(matrix, "run", fake_run)
+    assert matrix.validate("", tmp_path) == 0
+    task = ["task", "-t", "Taskfile.yml"]
+    for name in NAMES:
+        cell = tmp_path / "working" / name
+        cmds = [cmd for cmd, cwd in calls if cwd == cell]
+        assert cmds[0] == [*task, "setup"]
+        assert cmds[1] == [*task, "validate"]
+    assert ["uv", "sync"] not in [cmd for cmd, _ in calls]
+    assert "setup+validate" in capsys.readouterr().out
+
+
 def test_s4_4_1_3_missing_cell_is_a_fail_row(
     matrix: ModuleType,
     tmp_path: Path,
