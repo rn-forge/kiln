@@ -10,7 +10,15 @@ What this repository is, in a paragraph.
 {% if web %}
 ## Running the API
 
-{{ api_paragraph }}
+{{ api_paragraph }}{% if backend == "fastapi" %}
+
+The smallest such module uses `rn-forge-fastapi`'s standard application:
+
+```python
+from rn_forge.fastapi import AppConfig, FastApiApp
+
+app = FastApiApp(AppConfig())
+```{% endif %}
 {% endif %}
 ## Conventions
 

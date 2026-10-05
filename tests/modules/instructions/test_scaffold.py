@@ -140,6 +140,49 @@ def test_s5_3_6_8_web_readme_names_the_api_path_and_is_mdformat_clean(
     assert result.returncode == 0, result.stdout + result.stderr
 
 
+FASTAPI_MODULE = """The smallest such module uses `rn-forge-fastapi`'s standard application:
+
+```python
+from rn_forge.fastapi import AppConfig, FastApiApp
+
+app = FastApiApp(AppConfig())
+```
+"""
+
+
+def test_s5_3_7_1_fastapi_readme_shows_the_standard_module(tmp_path: Path) -> None:
+    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(WEB_CONFIG.format(name="demo", extra=""), encoding="utf-8")
+    scaffold(tmp_path, KilnConfig.load(tmp_path))
+
+    readme = (tmp_path / "README.md").read_text(encoding="utf-8")
+    assert FASTAPI_MODULE in readme
+    before, after = readme.split(FASTAPI_MODULE)
+    assert before.endswith("so create that module yourself.\n\n")
+    assert after.startswith("\n## Conventions")
+    result = _mdformat_check(tmp_path)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_s5_3_7_2_django_readme_has_no_fastapi_module(tmp_path: Path) -> None:
+    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(
+        WEB_CONFIG.format(name="demo", extra="").replace(
+            'backend = "fastapi"', 'backend = "django"'
+        ),
+        encoding="utf-8",
+    )
+    scaffold(tmp_path, KilnConfig.load(tmp_path))
+
+    readme = (tmp_path / "README.md").read_text(encoding="utf-8")
+    assert "## Running the API" in readme
+    assert "rn_forge.fastapi" not in readme
+    result = _mdformat_check(tmp_path)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
 def test_s5_3_6_8_non_web_readme_has_no_api_section(tmp_path: Path) -> None:
     root = _root(tmp_path)
     scaffold(root, KilnConfig.load(root))
