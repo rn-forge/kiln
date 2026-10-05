@@ -14,9 +14,9 @@ package docs sites, and taskkit is retired.
   starts earlier, once its **Depends on** lines hold (S4.3.3–S4.3.7 and
   S4.5.1–S4.5.2): the owner's next repositories are web repositories, and F5.1
   and F5.2 need neither the render matrix nor self-hosting.
-- `rn-forge-fastapi` is implemented in pykit; what remains upstream is
-  resolvable pins for the web packages
-  ([board](../../specs/index.md#upstream-pins)).
+- `rn-forge-fastapi` is implemented in pykit, and the web packages resolve from
+  outside the pykit workspace (2026-10-04,
+  [board](../../specs/index.md#upstream-pins)).
 - Django is deferred for both web archetypes; FastAPI is the default and the
   only shipped backend ([ADR-0005](../../adr/ADR-0005.md)).
 
@@ -44,8 +44,9 @@ package docs sites, and taskkit is retired.
 ## Progress
 
 F5.1 is done, and F5.2 apart from the deferred Django scaffold. In F5.3, S5.3.1,
-S5.3.5 and S5.3.6 are done. S5.3.2–S5.3.3 wait on F4.4 and on a web cell's
-`uv sync` resolving pykit's pins; S5.3.4 follows them. F11.5 waits on its entry
+S5.3.5 and S5.3.6 are done. Nothing blocks the rest: S5.3.7 adopts pykit's
+`FastApiApp` in the seeded README, and S5.3.2–S5.3.3 then prove and approve the
+two cells from a clean clone. S5.3.4 follows them. F11.5 waits on its entry
 criterion and its open question.
 
 ## Commits

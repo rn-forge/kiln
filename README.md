@@ -26,12 +26,13 @@ hand-authored golden repos exist and match pykit's `feature/upgrade` branch,
 tool lifecycle surface included (E1–E3, done 2026-09-15). The
 [shared CLI integration](docs/specs/epics/E3-realign-goldens-and-canon/index.md#shared-cli-design)
 is proven by the goldens. E4's render-free checks, module contract, config
-manager, apply cycle and concern modules exist. E5's FastAPI and Angular
-scaffold now exists too; the next story makes every fresh generated repo pass
-its own gate before the render matrix and real-project proofs. Django is
-deferred until a real repository needs it. The order is deliberate — templates
-reviewed as templates are how the fleet ended up with four divergent pipelines,
-so the standard is reviewed first as complete runnable repositories.
+manager, apply cycle and concern modules exist, and so does the render matrix.
+E5's FastAPI and Angular cells pass their own gates in it. What is left is
+proving them from a clean clone, the owner's approval, and a first real project
+([F5.3](docs/specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md)). Django
+is deferred until a real repository needs it. The order is deliberate —
+templates reviewed as templates are how the fleet ended up with four divergent
+pipelines, so the standard is reviewed first as complete runnable repositories.
 
 ```bash
 cd tests/fixtures/golden/python-app     # or python-tool, or python-lib

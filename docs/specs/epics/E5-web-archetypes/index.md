@@ -25,16 +25,22 @@ resumes.
 dependency lines
 ([S4.3.7](../E4-generator/F4.3-concern-modules.md#s437-the-scaffold-completes-pyprojecttoml))
 and the thin CLI ([S4.5.1, S4.5.2](../E4-generator/F4.5-cli.md)) — not the whole
-of E4. F5.3's scaffold-gate fixes can follow F5.2 immediately; its shipped-cell
-stories need the render matrix (F4.4).
+of E4. F5.3's shipped-cell stories need only the render matrix's
+[S4.4.1](../E4-generator/F4.4-render-matrix.md#s441-render-and-validate-every-cell),
+which is closed. They do not wait for the goldens to leave, and they do not wait
+for `kiln doctor --full` (S4.6.1).
 
 **Upstream.** A web cell's `uv sync` needs every pykit package it renders to
-resolve from `feature/upgrade` outside the pykit workspace; that is a pin on
+resolve outside the pykit workspace. That is a pin on
 [the board](../../index.md#upstream-pins), not pykit work tracked here
-([ADR-0009](../../../adr/ADR-0009.md)). The wired FastAPI application — problem
-handlers, a paginated route, the health router — is repo-owned code under
-`src/**` that kiln never renders ([E10](../E10-kiln-generators/index.md)); the
-owner's first `python-web-app` + `fastapi` repo is that proof, not a kiln cell.
+([ADR-0009](../../../adr/ADR-0009.md)), and it held on 2026-10-04: the cells
+resolve pykit `main` and kiln `feature/v1` remotely. pykit's `FastApiApp` is
+adopted in the seeded README by
+[S5.3.7](F5.3-shipped-web-cells.md#s537-the-seeded-readme-shows-the-standard-fastapi-module).
+The wired FastAPI application — problem handlers, a paginated route, the health
+router — is repo-owned code under `src/**` that kiln never renders
+([E10](../E10-kiln-generators/index.md)); the owner's first `python-web-app` +
+`fastapi` repo is that proof, not a kiln cell.
 
 **`[codegen]` is not here.** Neither framework package ships the extra yet (both
 have the import fence and nothing behind it). Nothing in E5 renders it; the
@@ -47,7 +53,7 @@ when one appears.
 | -- | -- | -- | -- |
 | [F5.1](F5.1-web-library-sets-and-modules.md) | Library sets, and the modules gain the web shapes | S4.3.3–S4.3.5, S4.3.7, S4.5.1, S4.5.2; resolvable pykit pins | Closed |
 | [F5.2](F5.2-kiln-new-web-end-to-end.md) | `kiln new` end to end for the web archetypes | F5.1; S5.2.1 on S5.2.2; S5.2.4 on S5.2.1; Django deferred | Closed |
-| [F5.3](F5.3-shipped-web-cells.md) | Prove and ship the FastAPI cells | S5.3.1 on F5.2; S5.3.5 on S5.3.1; S5.3.6 on S5.3.5; S5.3.2–S5.3.3 on F4.4, S5.3.5–S5.3.6 and resolvable kiln/pykit pins; S5.3.3 on S4.5.9; S5.3.4 on S5.3.3 | Active |
+| [F5.3](F5.3-shipped-web-cells.md) | Prove and ship the FastAPI cells | S5.3.1 on F5.2; S5.3.5 on S5.3.1; S5.3.6 on S5.3.5; S5.3.7 on S5.3.6; S5.3.2 on S5.3.7 and S4.4.1; S5.3.3 on S5.3.2; S5.3.4 on S5.3.3 | Active |
 
 ## Acceptance
 
@@ -60,5 +66,5 @@ cd rn-forge/kiln
 task self:golden:render && task self:golden:validate   # all web cells pass
 scratch=$(mktemp -d)
 uv run kiln new "$scratch/web" --archetype python-web-app --backend fastapi --frontend angular --docs mkdocs --yes </dev/null
-(cd "$scratch/web" && uv sync && pnpm install --frozen-lockfile && task validate && uv run --project "$OLDPWD" kiln doctor)
+(cd "$scratch/web" && uv sync && pnpm install --frozen-lockfile && task validate && uv run --project "$OLDPWD" kiln doctor .)
 ```
