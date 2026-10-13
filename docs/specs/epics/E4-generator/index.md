@@ -25,11 +25,13 @@ F11.1–F11.3 before F4.4, whose `python-lib` cell needs `kiln generate package`
 from S4.3.6, the owner's Sonar decisions. In F4.5, S4.5.1–S4.5.6 and S4.5.9 are
 done, and S4.5.7–S4.5.8 are planned. S4.5.9 followed
 [S5.2.4](../E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md)'s frontend-module
-split. F4.6–F4.8 have not started.
+split. F4.6–F4.9 have not started.
 
 **F4.4 (2026-10-04).** S4.4.1, S4.4.2, S4.4.4, S4.4.5 and S4.4.6 are closed.
 S4.4.3 now compares only kiln-owned files, and the compare passes; it waits on
-the owner's approval. S4.4.7–S4.4.9 are next.
+the owner's approval. S4.4.7–S4.4.9 are next; S4.4.9 waits on
+[S4.9.1](F4.9-seeded-starter-source.md#s491-python-starter-source), which seeds
+starter source from the `python-tool` fixture first.
 
 Decisions this epic builds on: [ADR-0001](../../../adr/ADR-0001.md),
 [ADR-0003](../../../adr/ADR-0003.md), [ADR-0004](../../../adr/ADR-0004.md),
@@ -50,6 +52,7 @@ inventory, config lifecycle, module contract — is [design.md](design.md).
 | [F4.6](F4.6-doctor.md) | doctor | D.6 | F4.3, S4.5.1 | New |
 | [F4.7](F4.7-import-contracts.md) | Import contracts | D.7 | F4.3, S4.1.2 | New |
 | [F4.8](F4.8-self-hosting.md) | Self-hosting | D.8 | F4.4, F4.5, F4.6, F4.7 | New |
+| [F4.9](F4.9-seeded-starter-source.md) | Seeded starter source | D.9 | F4.3, S4.4.1; S4.9.2 also F5.2 | New |
 
 **Out of scope:** `kiln generate package` is
 [E11](../E11-package-docs/F11.3-generate-package.md) for `python-lib`, and

@@ -37,9 +37,12 @@ resolve outside the pykit workspace. That is a pin on
 resolve pykit `main` and kiln `feature/v1` remotely. pykit's `FastApiApp` is
 adopted in the seeded README by
 [S5.3.7](F5.3-shipped-web-cells.md#s537-the-seeded-readme-shows-the-standard-fastapi-module).
-The wired FastAPI application — problem handlers, a paginated route, the health
-router — is repo-owned code under `src/**` that kiln never renders
-([E10](../E10-kiln-generators/index.md)); the owner's first `python-web-app` +
+The minimal wired FastAPI application — `FastApiApp(AppConfig())`, a router and
+a test — is seeded once at `kiln new` by
+[S4.9.2](../E4-generator/F4.9-seeded-starter-source.md#s492-fastapi-backend-starter),
+and is repo-owned from then on; kiln never renders or re-checks it. A real
+product's further code stays repo-owned, and ongoing generation is
+[E10](../E10-kiln-generators/index.md). The owner's first `python-web-app` +
 `fastapi` repo is that proof, not a kiln cell.
 
 **`[codegen]` is not here.** Neither framework package ships the extra yet (both

@@ -24,9 +24,11 @@ backlog, to be elaborated after release-1
   `rn_forge.kiln.generators`; kiln supplies only the command surface (D2,
   D37).
 
-The boundary for these generators is: kiln generates repo structure, frameworks
-generate their own code, and kiln generates nothing inside `src/` or `tests/`
-itself.
+The boundary for these generators is: kiln generates repo structure and, once at
+`kiln new`, a minimal seeded starter inside `src/` and `tests/`
+([F4.9](../E4-generator/F4.9-seeded-starter-source.md),
+[ADR-0010](../../../adr/ADR-0010.md)); ongoing code generation, such as a new
+app or model, stays the frameworks' job. Managed files never go inside `src/`.
 
 Risk carried into this epic, and its guard: the codegen extra leaking into the
 runtime surface — pykit's import-linter contract exists before the first codegen

@@ -40,6 +40,7 @@ archetypes are [release-2](../release-2/index.md).
 | [F4.6](../../specs/epics/E4-generator/F4.6-doctor.md) | E4 | New |
 | [F4.7](../../specs/epics/E4-generator/F4.7-import-contracts.md) | E4 | New |
 | [F4.8](../../specs/epics/E4-generator/F4.8-self-hosting.md) | E4 | New |
+| [F4.9](../../specs/epics/E4-generator/F4.9-seeded-starter-source.md) | E4 | New |
 | [F6.1](../../specs/epics/E6-rebuild-the-repos/F6.1-pykit-skeleton.md) | E6 | New |
 | [F11.1](../../specs/epics/E11-package-docs/F11.1-checks-learn-package-sites.md) | E11 | Closed |
 | [F11.2](../../specs/epics/E11-package-docs/F11.2-python-lib-package-sites.md) | E11 | New |
