@@ -7,9 +7,10 @@
 kiln renders `python-app`, `python-app` + `lifecycle` (the `python-tool` alias)
 and `python-lib` from authored templates, creates and ships the FastAPI web
 cells (`python-web-api`, and `python-web-app` with an Angular frontend), and
-regenerates its own repo. Proving that `python-lib` can host pykit, the
-architecture baseline, package-site deploys and retiring taskkit are
-[release-2](../release-2/index.md).
+regenerates its own repo. It proves that `python-lib`, with its package docs
+sites, can host pykit (F6.1): adopting pykit exercises the scaffolding, seeding,
+CI, docs and tasks end to end. The architecture baseline, package-site deploys
+and retiring taskkit are [release-2](../release-2/index.md).
 
 ## Entry criteria
 
@@ -47,7 +48,7 @@ architecture baseline, package-site deploys and retiring taskkit are
 | [F4.6](../../specs/epics/E4-generator/F4.6-doctor.md) | E4 | New |
 | [F4.7](../../specs/epics/E4-generator/F4.7-import-contracts.md) | E4 | New |
 | [F4.8](../../specs/epics/E4-generator/F4.8-self-hosting.md) | E4 | New |
-| [F4.9](../../specs/epics/E4-generator/F4.9-seeded-starter-source.md) | E4 | New |
+| [F4.9](../../specs/epics/E4-generator/F4.9-seeded-starter-source.md) | E4 | Closed |
 | [F5.1](../../specs/epics/E5-web-archetypes/F5.1-web-library-sets-and-modules.md) | E5 | Closed |
 | [F5.2](../../specs/epics/E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md) | E5 | Closed |
 | [F5.3](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) | E5 | Active |
@@ -84,10 +85,10 @@ architecture baseline, package-site deploys and retiring taskkit are
 ## Progress
 
 E3 shipped 2026-09-15. F4.1, F4.2, F5.1 and F5.2 are done (F5.2 apart from the
-deferred Django scaffold); F4.9's stories are built and await the owner's
-review. F4.3 waits only on S4.3.6, the owner's Sonar decisions; F4.5 has
-S4.5.7–S4.5.8 left; F5.3 has S5.3.7, S5.3.2–S5.3.4 left. Next are F11.2–F11.3
-(F4.4's `python-lib` cell needs S11.3.1), then F4.4, then the rest of F4.5–F4.8
+deferred Django scaffold); F4.9 closed on 2026-10-13. F4.3 waits only on S4.3.6,
+the owner's Sonar decisions; F4.5 has S4.5.7–S4.5.8 left; F5.3 has S5.3.7,
+S5.3.2–S5.3.4 left. Next are F11.2–F11.3 (F4.4's `python-lib` cell needs
+S11.3.1), then F4.4, then the rest of F4.5–F4.8. F6.1 follows F11.1–F11.3
 ([board](../../specs/index.md#order)).
 
 ## Commits
@@ -95,7 +96,7 @@ S4.5.7–S4.5.8 left; F5.3 has S5.3.7, S5.3.2–S5.3.4 left. Next are F11.2–F1
 Commits whose subject names a scope ID, newest first:
 
 ```bash
-git log --format='%h %ad %s' --date=short -E --grep='[FS](3\.[1-4]|4\.[1-8]|5\.[1-3]|11\.[1-4])'
+git log --format='%h %ad %s' --date=short -E --grep='[FS](3\.[1-4]|4\.[1-9]|5\.[1-3]|6\.1|11\.[1-4])'
 ```
 
 - `6feaf37` 2026-09-26 S4.5.9 kiln new assembles in persistent staging

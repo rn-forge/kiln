@@ -52,7 +52,7 @@ inventory, config lifecycle, module contract — is [design.md](design.md).
 | [F4.6](F4.6-doctor.md) | doctor | D.6 | F4.3, S4.5.1 | New |
 | [F4.7](F4.7-import-contracts.md) | Import contracts | D.7 | F4.3, S4.1.2 | New |
 | [F4.8](F4.8-self-hosting.md) | Self-hosting | D.8 | F4.4, F4.5, F4.6, F4.7 | New |
-| [F4.9](F4.9-seeded-starter-source.md) | Seeded starter source | D.9 | F4.3, S4.4.1; S4.9.2 also F5.2 | New |
+| [F4.9](F4.9-seeded-starter-source.md) | Seeded starter source | D.9 | F4.3, S4.4.1; S4.9.2 also F5.2 | Closed |
 
 **Out of scope:** `kiln generate package` is
 [E11](../E11-package-docs/F11.3-generate-package.md) for `python-lib`, and

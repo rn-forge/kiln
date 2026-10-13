@@ -1,12 +1,11 @@
-# Release 2 — pykit on python-lib, the architecture baseline, and taskkit retired
+# Release 2 — the architecture baseline, package-site deploys, and taskkit retired
 
 |  |  |
 | -- | -- |
 | **Status** | planned |
 
-kiln proves that `python-lib`, with its package docs sites, can host pykit
-(F6.1), and deploys those sites (F11.5); it adds the architecture baseline
-records for Python and web (E12); and taskkit is retired (F6.2).
+kiln deploys `python-lib`'s package docs sites (F11.5); it adds the architecture
+baseline records for Python and web (E12); and taskkit is retired (F6.2).
 
 ## Entry criteria
 
@@ -32,16 +31,15 @@ records for Python and web (E12); and taskkit is retired (F6.2).
 
 ## Progress
 
-Nothing started. F6.1 follows F11.1–F11.3 (release-1). F12.1's S12.1.1 is an
-owner decision and comes first in E12. F11.5 waits on its entry criterion and
-its open question.
+Nothing started. F12.1's S12.1.1 is an owner decision and comes first in E12.
+F11.5 waits on its entry criterion and its open question.
 
 ## Commits
 
 Commits whose subject names a scope ID, newest first:
 
 ```bash
-git log --format='%h %ad %s' --date=short -E --grep='[FS](6\.[1-2]|11\.5|12\.[1-2])'
+git log --format='%h %ad %s' --date=short -E --grep='[FS](6\.2|11\.5|12\.[1-2])'
 ```
 
 - `a31d739` 2026-09-27 S5.3.6 complete the repository setup experience

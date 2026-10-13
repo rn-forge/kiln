@@ -4,7 +4,8 @@
 | -- | -- |
 | **State** | New |
 
-Release: [release-2](../../../releases/release-2/index.md) · Phase: F
+Releases: [release-1](../../../releases/release-1/index.md),
+[release-2](../../../releases/release-2/index.md) · Phase: F
 
 Each repository's cutover onto kiln is that repository's own work, accepted by
 its own specs ([ADR-0009](../../../adr/ADR-0009.md)). kiln's part is to prove,
