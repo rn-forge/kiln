@@ -42,7 +42,7 @@ and retiring taskkit are [release-2](../release-2/index.md).
 | [F3.4](../../specs/epics/E3-realign-goldens-and-canon/F3.4-canon-catches-up.md) | E3 | Closed |
 | [F4.1](../../specs/epics/E4-generator/F4.1-checks-by-module.md) | E4 | Closed |
 | [F4.2](../../specs/epics/E4-generator/F4.2-core-module.md) | E4 | Closed |
-| [F4.3](../../specs/epics/E4-generator/F4.3-concern-modules.md) | E4 | Active |
+| [F4.3](../../specs/epics/E4-generator/F4.3-concern-modules.md) | E4 | Closed |
 | [F4.4](../../specs/epics/E4-generator/F4.4-render-matrix.md) | E4 | Active |
 | [F4.5](../../specs/epics/E4-generator/F4.5-cli.md) | E4 | Active |
 | [F4.6](../../specs/epics/E4-generator/F4.6-doctor.md) | E4 | New |
