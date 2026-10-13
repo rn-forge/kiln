@@ -41,7 +41,11 @@ def _config(root: Path, *, archetype: str = "python-web-app", extra: str) -> Kil
     return KilnConfig.load(root)
 
 
-def _stock(root: Path, web_dir: str) -> None:
+def _stock(root: Path, web_dir: str, *, ngkit: bool = True) -> None:
+    dependencies = {"@rn-forge/ng": NGKIT_URL} if ngkit else {}
+    (root / "package.json").write_text(
+        json.dumps({"dependencies": dependencies}), encoding="utf-8"
+    )
     app = root / web_dir / "src" / "app"
     app.mkdir(parents=True)
     (app / "app.config.ts").write_text("// stock\n", encoding="utf-8")
@@ -79,6 +83,16 @@ def test_s4_9_3_1_no_stock_config_gives_nothing(tmp_path: Path) -> None:
     assert FRONTEND.artifacts(config, tmp_path) == ()
 
 
+def test_s4_9_3_1_no_ngkit_dependency_gives_nothing(tmp_path: Path) -> None:
+    config = _config(tmp_path, extra='frontend = "angular"')
+    _stock(tmp_path, "apps/web", ngkit=False)
+    assert FRONTEND.artifacts(config, tmp_path) == ()
+    (tmp_path / "package.json").unlink()
+    assert FRONTEND.artifacts(config, tmp_path) == ()
+    (tmp_path / "package.json").write_text("{not json", encoding="utf-8")
+    assert FRONTEND.artifacts(config, tmp_path) == ()
+
+
 def test_s4_9_3_1_other_archetype_or_frontend_gives_nothing(tmp_path: Path) -> None:
     api = _config(tmp_path / "api", archetype="python-web-api", extra="")
     _stock(tmp_path / "api", "apps/web")
@@ -100,6 +114,11 @@ def test_s4_9_3_2_reconcile_replaces_the_stock_config(
     scaffold(root, config)
     workspace = tmp_path / "workspace"
     shutil.copytree(FIXTURE, workspace)
+    # The captured Nx workspace predates `pnpm add`, which scaffold_angular runs.
+    manifest = workspace / "package.json"
+    package = json.loads(manifest.read_text(encoding="utf-8"))
+    package["dependencies"]["@rn-forge/ng"] = NGKIT_URL
+    manifest.write_text(json.dumps(package), encoding="utf-8")
 
     reconcile_frontend(root, workspace, config)
 

@@ -78,7 +78,8 @@ The public surface for this repo is exactly:
 {% if web_app %}**Frontend:** `{{ frontend }}`, managed by pnpm + Nx. Its one application is the
 Nx project at `{{ web_dir }}` (project `{{ web_project }}`). Every file the
 frontend scaffold wrote is repo-owned; kiln renders nothing under
-`{{ web_dir }}`.
+`{{ web_dir }}`{% if frontend == "angular" %}, and seeded `src/app/app.config.ts` and its spec once
+at `kiln new`{% endif %}.
 
 {% endif %}{% if workspace %}`build` and `version` take a package name after `--`
 (`task version -- {{ packages[0] if packages else "<package>" }}`); given none, they act on every member.

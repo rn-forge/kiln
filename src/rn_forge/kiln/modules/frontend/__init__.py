@@ -50,7 +50,8 @@ class FrontendModule:
 
         Returns:
             `SEEDED` artifacts for `python-web-app` with `frontend = "angular"`
-            once the stock `app.config.ts` exists; otherwise nothing.
+            once the stock `app.config.ts` exists and the root `package.json` depends
+            on `@rn-forge/ng`; otherwise nothing.
         """
         from rn_forge.kiln.modules.frontend import starter
 

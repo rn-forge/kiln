@@ -355,7 +355,12 @@ def test_s4_9_3_block_frontend_bullet_names_the_seeded_config(tmp_path: Path) ->
     block = " ".join(_rendered(root)[BLOCK_KEY].split())
     assert (
         "kiln renders nothing under `apps/web`, and seeded "
-        "`src/app/app.config.ts` once at `kiln new`." in block
+        "`src/app/app.config.ts` and its spec once at `kiln new`." in block
+    )
+    standard = " ".join(_rendered(root)[".rn-forge/kiln/standard.md"].split())
+    assert (
+        "kiln renders nothing under `apps/web`, and seeded "
+        "`src/app/app.config.ts` and its spec once at `kiln new`." in standard
     )
 
 
