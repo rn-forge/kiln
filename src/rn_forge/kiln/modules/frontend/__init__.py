@@ -21,10 +21,10 @@ __all__ = ["FRONTEND", "FrontendModule"]
 class FrontendModule:
     """The `frontend` module.
 
-    Owns no config section and renders nothing: the archetype owns the
-    validated `frontend` and `web_dir` values, and every file the frontend
-    scaffold writes is repo-owned. It owns the `--frontend` selector and the
-    scaffold that runs it.
+    Owns no config section: the archetype owns the validated `frontend` and
+    `web_dir` values, and every file the frontend scaffold writes is
+    repo-owned. It owns the `--frontend` selector, the scaffold that runs it,
+    and the Angular starter, which is seeded once at `kiln new`.
     """
 
     name = "frontend"
@@ -42,9 +42,19 @@ class FrontendModule:
         )
 
     def artifacts(self, config: KilnConfig, root: Path) -> Sequence[Artifact]:
-        """Nothing: kiln templates nothing under `web_dir`."""
-        del config, root
-        return ()
+        """The seeded Angular starter; nothing else under `web_dir`.
+
+        Args:
+            config: The loaded config.
+            root: The repository root.
+
+        Returns:
+            `SEEDED` artifacts for `python-web-app` with `frontend = "angular"`
+            once the stock `app.config.ts` exists; otherwise nothing.
+        """
+        from rn_forge.kiln.modules.frontend import starter
+
+        return tuple(starter.render(config, root))
 
     def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:
         """Nothing yet: this module has no render-free checks."""

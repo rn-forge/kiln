@@ -12,11 +12,16 @@ from pathlib import Path
 from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.runtime.subprocess import Process
 
-__all__ = ["NX_VERSION", "SCAFFOLD_APP_DIR", "scaffold_angular"]
+__all__ = ["NGKIT_URL", "NX_VERSION", "SCAFFOLD_APP_DIR", "scaffold_angular"]
 
 NX_VERSION = "23.2.1"
 """`create-nx-workspace`/`@nx/angular`'s pinned release (recorded 2026-09-17,
 `tests/fixtures/scaffold/nx-angular/COMMAND.md`)."""
+
+NGKIT_URL = (
+    "https://github.com/rn-forge/ngkit/releases/download/v0.1.2/rn-forge-ng-0.1.2.tgz"
+)
+"""`@rn-forge/ng`'s release tarball (npm publishing is disabled)."""
 
 SCAFFOLD_APP_DIR = "apps/web"
 """Where the pinned command always creates the app; renamed to `web_dir` by
@@ -88,6 +93,7 @@ def scaffold_angular(raw: Path) -> Path:
         fail_on_error=False,
     )
     _approve_pnpm_builds(workspace / "pnpm-workspace.yaml")
+    Process.execute("ngkit-core", "pnpm", "add", NGKIT_URL, cwd=str(workspace), env=env)
     Process.execute("nx-install", "pnpm", "install", cwd=str(workspace), env=env)
     return workspace
 

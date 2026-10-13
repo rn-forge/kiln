@@ -5,7 +5,8 @@ generator: it dispatches on `config.frontend` to that frontend's scaffolder
 (`angular.py`), which builds a workspace in a scratch directory, and
 `reconcile_frontend` folds every top-level entry it
 wrote into the repo at `config.web_dir`. Every file the frontend scaffolder
-writes is repo-owned; kiln templates nothing under `web_dir` (F5.1's design).
+writes is repo-owned; the only files kiln adds under `web_dir` are the seeded
+Angular starter's, written once here.
 
 `--frontend` values other than `angular` normally never reach here: `kiln new`
 refuses them as untested before scaffolding starts. One that does is rejected
@@ -23,6 +24,7 @@ from rn_forge.commons.fs.documents import DocumentUtils
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import gitignore
+from rn_forge.kiln.modules.frontend import starter
 from rn_forge.kiln.modules.frontend.angular import SCAFFOLD_APP_DIR, scaffold_angular
 
 __all__ = ["reconcile_frontend", "scaffold_frontend"]
@@ -77,7 +79,8 @@ def reconcile_frontend(root: Path, workspace: Path, config: KilnConfig) -> None:
     the scaffolder's app directory (`apps/web`) differs from `config.web_dir`,
     it is renamed and every reference to its old path in `project.json`'s
     `sourceRoot`/`root` and in `tsconfig.base.json`'s `paths` is rewritten to
-    the new one — nothing else.
+    the new one — nothing else. Last, the Angular starter's two files are
+    written into `<web_dir>/src/app`, overwriting the stock `app.config.ts`.
 
     A shared top-level directory (`apps/`, holding the API member too) merges
     rather than conflicts: only an actual file colliding with an existing file
@@ -113,6 +116,9 @@ def reconcile_frontend(root: Path, workspace: Path, config: KilnConfig) -> None:
     if web_dir != SCAFFOLD_APP_DIR:
         shutil.move(str(root / SCAFFOLD_APP_DIR), str(root / web_dir))
         _rewrite_app_dir(root, web_dir)
+
+    for artifact in starter.render(config, root):
+        (root / artifact.path).write_text(artifact.content, encoding="utf-8")
 
 
 def _conflicts(src: Path, dst: Path) -> list[str]:

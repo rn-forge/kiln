@@ -348,6 +348,17 @@ def test_s5_1_2_standard_md_web_app_has_web_verb_rows_and_frontend_clause(
     assert "**Frontend:** `angular`" in standard
 
 
+def test_s4_9_3_block_frontend_bullet_names_the_seeded_config(tmp_path: Path) -> None:
+    root = _web_root(
+        tmp_path, "python-web-app", "fastapi", extra='frontend = "angular"'
+    )
+    block = " ".join(_rendered(root)[BLOCK_KEY].split())
+    assert (
+        "kiln renders nothing under `apps/web`, and seeded "
+        "`src/app/app.config.ts` once at `kiln new`." in block
+    )
+
+
 MDFORMAT_TOML = Path(__file__).resolve().parents[3] / ".mdformat.toml"
 LONG_DIR = "apps/a-frontend-directory-with-a-rather-long-name"
 

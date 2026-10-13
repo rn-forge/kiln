@@ -134,7 +134,8 @@ def context(config: KilnConfig) -> dict[str, object]:
             f"**Frontend:** `{config.frontend}`, managed by pnpm + Nx at "
             f"`{web_dir}` (project `{Path(web_dir).name if web_dir else ''}`). "
             "Every file the frontend scaffold wrote is repo-owned; kiln renders "
-            f"nothing under `{web_dir}`."
+            f"nothing under `{web_dir}`, and seeded `src/app/app.config.ts` once "
+            "at `kiln new`."
         ),
         "api_paragraph": _paragraph(api_text),
         "docs_bullet": _bullet(
