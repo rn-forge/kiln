@@ -5,7 +5,7 @@
 | **State** | Active |
 | **Start Date** | 2026-09-26 |
 
-Release: [release-2](../../../releases/release-2/index.md) · Phase: E ·
+Release: [release-1](../../../releases/release-1/index.md) · Phase: E ·
 Estimate: 2 weeks
 
 Repo `rn-forge/kiln`. There are no hand-authored goldens: templates are written
@@ -16,9 +16,8 @@ shape the owner's next repositories take, so E5 is built as soon as its
 [F4.4](../E4-generator/F4.4-render-matrix.md),
 [F4.6](../E4-generator/F4.6-doctor.md),
 [F4.7](../E4-generator/F4.7-import-contracts.md) and
-[F4.8](../E4-generator/F4.8-self-hosting.md) — while release-2 still ships after
-release-1. The owner reviews the first rendered web repo before the rest of E4
-resumes.
+[F4.8](../E4-generator/F4.8-self-hosting.md). The owner reviews the first
+rendered web repo before the rest of E4 resumes.
 
 **Dependencies.** F5.1 needs the three remaining concern modules
 ([S4.3.3–S4.3.5](../E4-generator/F4.3-concern-modules.md)), the scaffold's

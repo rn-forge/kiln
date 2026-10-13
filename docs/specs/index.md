@@ -12,8 +12,8 @@ Backlog sections below are derived from the epic, feature and release pages by
 
 | Release | Status | Features |
 | -- | -- | -- |
-| [Release 2 — the web archetypes](../releases/release-2/index.md) | in progress | 1 Active · 3 New · 2 Closed |
-| [Release 1 — kiln generates and self-hosts the Python archetypes](../releases/release-1/index.md) | in progress | 3 Active · 8 New · 11 Closed |
+| [Release 2 — pykit on python-lib, the architecture baseline, and taskkit retired](../releases/release-2/index.md) | planned | 5 New |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 4 Active · 6 New · 13 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -71,13 +71,12 @@ triggered: E7 pykit tags · E8 ADO · F11.5 package-site deploy · backlog: E10 
 E3 shipped on 2026-09-15: every feature's acceptance block passes, S3.3.2's
 normalized golden diff was reviewed, and the epic block re-proves the whole. E4
 is under way. **Build order is not release order:** E5's first two features and
-S5.3.1 are built before F4.4, because the owner's next repositories are web
+S5.3.1 were built before F4.4, because the owner's next repositories are web
 repositories and those stories need neither the render matrix, the full doctor
-nor self-hosting; release-1 still ships before release-2. The **Depends on**
-column on each epic and line on each feature are normative; this diagram
-summarizes them. Nothing in E4 waits on a pykit release
-([E7](epics/E7-pykit-release-pin-flip/index.md)): the rn-forge dependency source
-is one constant
+nor self-hosting; E5 ships in release-1. The **Depends on** column on each epic
+and line on each feature are normative; this diagram summarizes them. Nothing in
+E4 waits on a pykit release ([E7](epics/E7-pykit-release-pin-flip/index.md)):
+the rn-forge dependency source is one constant
 ([S4.3.7](epics/E4-generator/F4.3-concern-modules.md#s437-the-scaffold-completes-pyprojecttoml)),
 so flipping to tags later is a one-line change, not a template change.
 

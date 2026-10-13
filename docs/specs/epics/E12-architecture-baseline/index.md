@@ -4,8 +4,7 @@
 | -- | -- |
 | **State** | New |
 
-Releases: [release-1](../../../releases/release-1/index.md),
-[release-2](../../../releases/release-2/index.md) · Decision:
+Release: [release-2](../../../releases/release-2/index.md) · Decision:
 [ADR-0010](../../../adr/ADR-0010.md)
 
 kiln's canon stops at the repository's structure today. `src/` and `tests/` are
@@ -41,7 +40,7 @@ of [F5.3](../E5-web-archetypes/F5.3-shipped-web-cells.md) are approved.
 
 | ID | Feature | Release | Depends on | State |
 | -- | -- | -- | -- | -- |
-| [F12.1](F12.1-python-baseline.md) | The baseline module, and the Python records | release-1 | S4.3.1, S4.3.5 (done) | New |
+| [F12.1](F12.1-python-baseline.md) | The baseline module, and the Python records | release-2 | S4.3.1, S4.3.5 (done) | New |
 | [F12.2](F12.2-web-baseline.md) | The web records | release-2 | F12.1; F5.1 (done) | New |
 
 **Out of scope.** kiln's own repository: its skeleton is a hand-copy of the

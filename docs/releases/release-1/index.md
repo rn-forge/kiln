@@ -1,13 +1,15 @@
-# Release 1 — kiln generates and self-hosts the Python archetypes
+# Release 1 — kiln generates and self-hosts the Python and web archetypes
 
 |  |  |
 | -- | -- |
 | **Status** | in progress |
 
 kiln renders `python-app`, `python-app` + `lifecycle` (the `python-tool` alias)
-and `python-lib` from authored templates, regenerates its own repo, and proves
-that `python-lib`, with its package docs sites, can host pykit. The web
-archetypes are [release-2](../release-2/index.md).
+and `python-lib` from authored templates, creates and ships the FastAPI web
+cells (`python-web-api`, and `python-web-app` with an Angular frontend), and
+regenerates its own repo. Proving that `python-lib` can host pykit, the
+architecture baseline, package-site deploys and retiring taskkit are
+[release-2](../release-2/index.md).
 
 ## Entry criteria
 
@@ -21,6 +23,11 @@ archetypes are [release-2](../release-2/index.md).
   [S4.1.4](../../specs/epics/E4-generator/F4.1-checks-by-module.md#s414-the-ci-shape-is-decided)
   — the checks-shape decision — came first and is done
   ([ADR-0006](../../adr/ADR-0006.md)).
+- `rn-forge-fastapi` is implemented in pykit, and the web packages resolve from
+  outside the pykit workspace (2026-10-04,
+  [board](../../specs/index.md#upstream-pins)).
+- Django is deferred for both web archetypes; FastAPI is the default and the
+  only shipped backend ([ADR-0005](../../adr/ADR-0005.md)).
 
 ## Scope
 
@@ -41,12 +48,14 @@ archetypes are [release-2](../release-2/index.md).
 | [F4.7](../../specs/epics/E4-generator/F4.7-import-contracts.md) | E4 | New |
 | [F4.8](../../specs/epics/E4-generator/F4.8-self-hosting.md) | E4 | New |
 | [F4.9](../../specs/epics/E4-generator/F4.9-seeded-starter-source.md) | E4 | New |
+| [F5.1](../../specs/epics/E5-web-archetypes/F5.1-web-library-sets-and-modules.md) | E5 | Closed |
+| [F5.2](../../specs/epics/E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md) | E5 | Closed |
+| [F5.3](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) | E5 | Active |
 | [F6.1](../../specs/epics/E6-rebuild-the-repos/F6.1-pykit-skeleton.md) | E6 | New |
 | [F11.1](../../specs/epics/E11-package-docs/F11.1-checks-learn-package-sites.md) | E11 | Closed |
 | [F11.2](../../specs/epics/E11-package-docs/F11.2-python-lib-package-sites.md) | E11 | New |
 | [F11.3](../../specs/epics/E11-package-docs/F11.3-generate-package.md) | E11 | New |
 | [F11.4](../../specs/epics/E11-package-docs/F11.4-cross-repository-rule.md) | E11 | Closed |
-| [F12.1](../../specs/epics/E12-architecture-baseline/F12.1-python-baseline.md) | E12 | New |
 | [F13.1](../../specs/epics/E13-docs-work-model/F13.1-derived-regions.md) | E13 | Closed |
 | [F13.2](../../specs/epics/E13-docs-work-model/F13.2-board-and-scope.md) | E13 | Closed |
 | [F13.3](../../specs/epics/E13-docs-work-model/F13.3-adopt-the-model.md) | E13 | Closed |
@@ -58,12 +67,13 @@ archetypes are [release-2](../release-2/index.md).
 - [ADR-0001–ADR-0007](../../adr/index.md) — added 2026-09-13 to 2026-09-15: the
   decision log renumbered and consolidated (`9d96478`). ADR-0006 records
   S4.1.4's CI shape.
+- [ADR-0005](../../adr/ADR-0005.md) — updated 2026-09-17: the web selectors are
+  `--backend` and `--frontend`, and the shipped web cells are FastAPI and
+  FastAPI + Angular, with Django untested (F5.1, F5.3).
 - [ADR-0008](../../adr/ADR-0008.md) — added 2026-09-26: only published packages
   get their own docs site (E11).
 - [ADR-0009](../../adr/ADR-0009.md) — added 2026-09-26: a repository's specs are
   accepted inside that repository (E11, F11.4).
-- [ADR-0010](../../adr/ADR-0010.md) — proposed 2026-09-28: the canon carries an
-  architecture baseline, as managed records (E12).
 - [ADR-0003](../../adr/ADR-0003.md) — revision proposed 2026-10-01: generated
   regions, derived from the repository's inputs and never hashed (E13).
 - [ADR-0011](../../adr/ADR-0011.md) — proposed 2026-10-01: work is tracked as
@@ -73,10 +83,11 @@ archetypes are [release-2](../release-2/index.md).
 
 ## Progress
 
-E3 shipped 2026-09-15. F4.1 and F4.2 are done; F4.3 waits only on S4.3.6, the
-owner's Sonar decisions; F4.5 has S4.5.7–S4.5.8 left. Next are F11.1–F11.3 and
-F12.1, then F4.4, then the rest of F4.5–F4.8. F6.1 follows F11.1–F11.3. E5's web
-stories are built alongside, ahead of F4.4
+E3 shipped 2026-09-15. F4.1, F4.2, F5.1 and F5.2 are done (F5.2 apart from the
+deferred Django scaffold); F4.9's stories are built and await the owner's
+review. F4.3 waits only on S4.3.6, the owner's Sonar decisions; F4.5 has
+S4.5.7–S4.5.8 left; F5.3 has S5.3.7, S5.3.2–S5.3.4 left. Next are F11.2–F11.3
+(F4.4's `python-lib` cell needs S11.3.1), then F4.4, then the rest of F4.5–F4.8
 ([board](../../specs/index.md#order)).
 
 ## Commits
@@ -84,7 +95,7 @@ stories are built alongside, ahead of F4.4
 Commits whose subject names a scope ID, newest first:
 
 ```bash
-git log --format='%h %ad %s' --date=short -E --grep='[FS](3\.[1-4]|4\.[1-8]|6\.1|11\.[1-4]|12\.1)'
+git log --format='%h %ad %s' --date=short -E --grep='[FS](3\.[1-4]|4\.[1-8]|5\.[1-3]|11\.[1-4])'
 ```
 
 - `6feaf37` 2026-09-26 S4.5.9 kiln new assembles in persistent staging
