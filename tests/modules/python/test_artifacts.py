@@ -10,7 +10,7 @@ import re
 from pathlib import Path
 
 import pytest
-from rn_forge.tooling.generation import Action, ArtifactKind
+from rn_forge.tooling.generation import Action, Artifact, ArtifactKind
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
@@ -37,6 +37,11 @@ archetype = "python-lib"
 [archetype."python-lib"]
 packages = ["packages/alpha", "packages/beta"]
 """
+
+
+def _importlinter(config: KilnConfig, root: Path) -> list[Artifact]:
+    """The module's `.importlinter` alone; the seeded starter files are S4.9.1's."""
+    return [a for a in PYTHON.artifacts(config, root) if a.path == ".importlinter"]
 
 
 def _root(tmp_path: Path, archetype: str) -> Path:
@@ -98,7 +103,7 @@ def test_s4_3_1_property4_matches_its_golden_apart_from_the_provenance_line(
     archetype: str,
 ) -> None:
     config = KilnConfig.load(GOLDEN / archetype)
-    [artifact] = PYTHON.artifacts(config, GOLDEN / archetype)
+    [artifact] = _importlinter(config, GOLDEN / archetype)
     rendered = _normalized(artifact.content)
     golden = _normalized(
         (GOLDEN / archetype / ".importlinter").read_text(encoding="utf-8")
@@ -115,7 +120,7 @@ def test_s4_3_1_3_lint_imports_passes_on_the_rendered_importlinter(
 
     source = GOLDEN / archetype
     config = KilnConfig.load(source)
-    [artifact] = PYTHON.artifacts(config, source)
+    [artifact] = _importlinter(config, source)
     (tmp_path / ".importlinter").write_text(artifact.content, encoding="utf-8")
 
     src_dirs = (

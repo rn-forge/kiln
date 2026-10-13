@@ -44,6 +44,7 @@ from rn_forge.kiln.modules.frontend.scaffold import (
 from rn_forge.kiln.modules.instructions.scaffold import (
     scaffold as instructions_scaffold,
 )
+from rn_forge.kiln.modules.python.artifacts import root_package
 from rn_forge.kiln.modules.python.scaffold import (
     add_package as python_add_package,
 )
@@ -160,6 +161,19 @@ def new(
         frontend=frontend,
     )
     DictUtils.set(flags, "repository.name", directory.name)
+    package = root_package(directory.name)
+    if archetype in {"python-tool", "python-app"}:
+        DictUtils.set(
+            flags,
+            "cli",
+            {
+                "name": directory.name,
+                "help": f"The {directory.name} command line.",
+                "commands": [{"name": "hello", "target": f"{package}.commands:hello"}],
+            },
+        )
+    if archetype == "python-tool":
+        DictUtils.set(flags, "lifecycle", {"product": f"{package}.product:PRODUCT"})
 
     manager = ConfigManager()
     source = Source.parse(config) if config else None

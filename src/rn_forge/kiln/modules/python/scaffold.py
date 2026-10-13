@@ -22,6 +22,7 @@ from rn_forge.commons.runtime.subprocess import Process
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import gitignore
+from rn_forge.kiln.modules.python.artifacts import root_package
 from rn_forge.kiln.modules.python.checks.pyproject import (
     PYRIGHT_EXPECTED,
     PYTEST_ADDOPTS,
@@ -307,6 +308,15 @@ def _reconcile_pyproject(root: Path, config: KilnConfig, relative: Path) -> None
         lib=workspace,
         extra_dev=extra_dev,
     )
+    if config.archetype in {"python-tool", "python-app"} and is_root:
+        DocumentUtils.update(
+            path,
+            {
+                "project": {
+                    "scripts": {config.name: f"{root_package(config.name)}.main:app"}
+                }
+            },
+        )
 
 
 def _member_name(

@@ -1,0 +1,9 @@
+from {{ module }}.settings import DEFAULTS, merge_settings
+
+
+def test_no_overrides_gives_the_defaults():
+    assert merge_settings() == DEFAULTS
+
+
+def test_overrides_win_over_the_defaults():
+    assert merge_settings(greeting="Hi")["greeting"] == "Hi"

@@ -20,6 +20,7 @@ from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.runtime.console import OutputMode, console
 
 from rn_forge.kiln import archetypes, checks, commands
+from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK
 from rn_forge.kiln.modules.registry import builtin
 
@@ -482,3 +483,65 @@ def test_s11_2_2_4_new_python_lib_writes_no_member_and_passes_every_check(
     assert document["tool"]["uv"]["workspace"]["members"] == []
     assert not (directory / "docs" / "reference").exists()
     assert checks.run(directory) == []
+
+
+STARTER = {
+    "src/{package}/main.py",
+    "src/{package}/commands.py",
+    "src/{package}/product.py",
+    "tests/test_cli.py",
+    "tests/test_product.py",
+}
+
+
+@pytest.mark.parametrize("archetype", ["python-tool", "python-app"])
+def test_s4_9_1_5_new_wires_cli_and_script(tmp_path: Path, archetype: str) -> None:
+    directory = tmp_path / "demo-tool"
+    commands.new(directory, archetype=archetype, docs="none", yes=True)
+
+    written = tomllib.loads(
+        (directory / ".rn-forge" / "kiln" / "config.toml").read_text(encoding="utf-8")
+    )
+    cli = written["cli"]
+    assert cli["name"] == "demo-tool"
+    assert cli["commands"] == [{"name": "hello", "target": "demo_tool.commands:hello"}]
+    if archetype == "python-tool":
+        assert written["lifecycle"] == {"product": "demo_tool.product:PRODUCT"}
+    else:
+        assert "lifecycle" not in written
+    pyproject = tomllib.loads((directory / "pyproject.toml").read_text("utf-8"))
+    assert pyproject["project"]["scripts"] == {"demo-tool": "demo_tool.main:app"}
+
+
+def test_s4_9_1_6_new_records_seeded_and_validates(tmp_path: Path) -> None:
+    """Slow like its neighbours: runs `uv init`; marks none, as the module note says."""
+    directory = tmp_path / "demo-tool"
+    commands.new(directory, archetype="python-tool", docs="none", yes=True)
+
+    paths = {path.format(package="demo_tool") for path in STARTER}
+    state_path = directory / ".rn-forge" / "kiln" / "state.json"
+
+    def entries() -> dict[str, Any]:
+        return json.loads(state_path.read_text(encoding="utf-8"))["entries"]
+
+    recorded = entries()
+    assert all(recorded[path]["kind"] == "seeded" for path in paths)
+    assert not [
+        path
+        for path, entry in recorded.items()
+        if path.startswith(("src/", "tests/"))
+        and entry["kind"] != "seeded"
+        and path not in {"src/demo_tool/__init__.py", "tests/test_package.py"}
+    ]
+    assert checks.run(directory) == []
+
+    main = directory / "src" / "demo_tool" / "main.py"
+    main.write_text("# edited\n", encoding="utf-8")
+    before = {path: (directory / path).read_bytes() for path in paths}
+    before_entries = {path: recorded[path] for path in paths}
+
+    cycle.apply(directory, home=tmp_path / "home")
+
+    assert {path: (directory / path).read_bytes() for path in paths} == before
+    assert main.read_text(encoding="utf-8") == "# edited\n"
+    assert {path: entries()[path] for path in paths} == before_entries

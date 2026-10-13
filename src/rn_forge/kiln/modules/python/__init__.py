@@ -36,12 +36,11 @@ class PythonModule:
         )
 
     def artifacts(self, config: KilnConfig, root: Path) -> Sequence[Artifact]:
-        """Render `.importlinter` for *config*."""
-        del root
+        """Render `.importlinter`, and the seeded starter source, for *config*."""
         # Imported here so importing a module object never loads jinja2.
-        from rn_forge.kiln.modules.python import artifacts
+        from rn_forge.kiln.modules.python import artifacts, starter
 
-        return artifacts.render(config)
+        return [*artifacts.render(config), *starter.render(config, root)]
 
     def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:
         """This module's render-free checks."""

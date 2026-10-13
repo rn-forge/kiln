@@ -360,3 +360,20 @@ def test_s11_2_2_2_the_python_lib_docs_group_matches_the_golden(tmp_path: Path) 
         (GOLDEN / "python-lib" / "pyproject.toml").read_text(encoding="utf-8")
     )
     assert rendered["dependency-groups"]["docs"] == golden["dependency-groups"]["docs"]
+
+
+@pytest.mark.parametrize(
+    ("archetype", "scripts"),
+    [
+        ("python-tool", {"demo-tool": "demo_tool.main:app"}),
+        ("python-app", {"demo-tool": "demo_tool.main:app"}),
+        ("python-lib", None),
+    ],
+)
+def test_s4_9_1_7_scaffold_points_project_scripts_at_the_app(
+    tmp_path: Path, archetype: str, scripts: dict[str, str] | None
+) -> None:
+    root = _root(tmp_path, archetype)
+    scaffold(root, KilnConfig.load(root))
+    document = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    assert document["project"].get("scripts") == scripts
