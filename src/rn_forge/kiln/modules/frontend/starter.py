@@ -14,8 +14,12 @@ from rn_forge.kiln.modules.frontend.angular import SCAFFOLD_APP_DIR
 __all__ = ["render"]
 
 _APP_FILES = {
-    "app.config.ts": "angular/app.config.ts.j2",
-    "app.config.spec.ts": "angular/app.config.spec.ts.j2",
+    "src/app/app.config.ts": "angular/app.config.ts.j2",
+    "src/app/app.config.spec.ts": "angular/app.config.spec.ts.j2",
+    "src/app/app.ts": "angular/app.ts.j2",
+    "src/app/app.html": "angular/app.html.j2",
+    "src/app/app.spec.ts": "angular/app.spec.ts.j2",
+    "proxy.conf.json": "angular/proxy.conf.json.j2",
 }
 
 
@@ -48,9 +52,9 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
     engine = TemplateEngine(package="rn_forge.kiln.modules.frontend")
     return [
         Artifact(
-            f"{web_dir}/src/app/{name}",
+            f"{web_dir}/{relative}",
             ArtifactKind.SEEDED,
             engine.render(template, {"name": config.name}),
         )
-        for name, template in _APP_FILES.items()
+        for relative, template in _APP_FILES.items()
     ]

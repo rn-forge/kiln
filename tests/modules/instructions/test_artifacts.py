@@ -348,19 +348,21 @@ def test_s5_1_2_standard_md_web_app_has_web_verb_rows_and_frontend_clause(
     assert "**Frontend:** `angular`" in standard
 
 
-def test_s4_9_3_block_frontend_bullet_names_the_seeded_config(tmp_path: Path) -> None:
+def test_s4_9_4_block_frontend_bullet_names_the_starter_page(tmp_path: Path) -> None:
     root = _web_root(
         tmp_path, "python-web-app", "fastapi", extra='frontend = "angular"'
     )
     block = " ".join(_rendered(root)[BLOCK_KEY].split())
     assert (
-        "kiln renders nothing under `apps/web`, and seeded "
-        "`src/app/app.config.ts` and its spec once at `kiln new`." in block
+        "kiln renders nothing under `apps/web`, and seeded a starter page that "
+        "calls the API (`src/app/app.ts`, `app.html`, their specs, "
+        "`app.config.ts` and `proxy.conf.json`) once at `kiln new`." in block
     )
     standard = " ".join(_rendered(root)[".rn-forge/kiln/standard.md"].split())
     assert (
-        "kiln renders nothing under `apps/web`, and seeded "
-        "`src/app/app.config.ts` and its spec once at `kiln new`." in standard
+        "kiln renders nothing under `apps/web`, and seeded a starter page that "
+        "calls the API (`src/app/app.ts`, `app.html`, their specs, "
+        "`app.config.ts` and `proxy.conf.json`) once at `kiln new`." in standard
     )
 
 

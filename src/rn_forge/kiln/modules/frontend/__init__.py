@@ -24,7 +24,8 @@ class FrontendModule:
     Owns no config section: the archetype owns the validated `frontend` and
     `web_dir` values, and every file the frontend scaffold writes is
     repo-owned. It owns the `--frontend` selector, the scaffold that runs it,
-    and the Angular starter, which is seeded once at `kiln new`.
+    and the Angular starter (a page that calls the API, its specs, the app
+    config and the dev proxy), which is seeded once at `kiln new`.
     """
 
     name = "frontend"

@@ -1,0 +1,49 @@
+import { provideHttpClient } from '@angular/common/http';
+import {
+  HttpTestingController,
+  provideHttpClientTesting,
+} from '@angular/common/http/testing';
+import { TestBed } from '@angular/core/testing';
+import { App } from './app';
+
+describe('App', () => {
+  let http: HttpTestingController;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [App],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    }).compileComponents();
+    http = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => http.verify());
+
+  it('renders the page the API returns', async () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    http.expectOne('/v1/items').flush({ pageSize: 20, items: [] });
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('h1')?.textContent).toContain('{{ name }}');
+    expect(
+      compiled.querySelector('[data-testid="items"]')?.textContent,
+    ).toContain('page size 20');
+  });
+
+  it('renders the problem detail when the API fails', async () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    http
+      .expectOne('/v1/items')
+      .flush(
+        { type: 'about:blank', title: 'Not Found', status: 404, detail: 'gone' },
+        { status: 404, statusText: 'Not Found' },
+      );
+    await fixture.whenStable();
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(
+      compiled.querySelector('[data-testid="error"]')?.textContent,
+    ).toContain('gone');
+  });
+});

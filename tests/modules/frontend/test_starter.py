@@ -55,6 +55,10 @@ def _paths(web_dir: str) -> set[str]:
     return {
         f"{web_dir}/src/app/app.config.ts",
         f"{web_dir}/src/app/app.config.spec.ts",
+        f"{web_dir}/src/app/app.ts",
+        f"{web_dir}/src/app/app.html",
+        f"{web_dir}/src/app/app.spec.ts",
+        f"{web_dir}/proxy.conf.json",
     }
 
 
@@ -64,10 +68,27 @@ def test_s4_9_3_1_angular_starter_artifacts(tmp_path: Path) -> None:
     artifacts = FRONTEND.artifacts(config, tmp_path)
     assert {a.path for a in artifacts} == _paths("apps/web")
     assert all(a.kind is ArtifactKind.SEEDED for a in artifacts)
-    assert all("{{" not in a.content for a in artifacts)
+    assert all("{{ name }}" not in a.content for a in artifacts)
     by_path = {a.path: a.content for a in artifacts}
     assert "appName: 'demo'" in by_path["apps/web/src/app/app.config.ts"]
     assert "LocalStorageService" in by_path["apps/web/src/app/app.config.spec.ts"]
+
+
+def test_s4_9_4_1_starter_paths(tmp_path: Path) -> None:
+    config = _config(tmp_path, extra='frontend = "angular"')
+    _stock(tmp_path, "apps/web")
+    artifacts = FRONTEND.artifacts(config, tmp_path)
+    assert {a.path for a in artifacts} == _paths("apps/web")
+    assert all(a.kind is ArtifactKind.SEEDED for a in artifacts)
+    assert all("{{ name }}" not in a.content for a in artifacts)
+    by_path = {a.path: a.content for a in artifacts}
+    assert "{{ title }}" in by_path["apps/web/src/app/app.html"]
+    assert "@if (page(); as page)" in by_path["apps/web/src/app/app.html"]
+    app_ts = by_path["apps/web/src/app/app.ts"]
+    assert "title = 'demo'" in app_ts
+    assert "'/v1/items'" in app_ts
+    proxy = json.loads(by_path["apps/web/proxy.conf.json"])
+    assert proxy["/v1"]["target"] == "http://localhost:8000"
 
 
 def test_s4_9_3_1_web_dir_moves_the_paths(tmp_path: Path) -> None:
@@ -127,6 +148,46 @@ def test_s4_9_3_2_reconcile_replaces_the_stock_config(
         encoding="utf-8"
     )
     assert (app / "app.config.spec.ts").is_file()
+
+
+def _reconciled(tmp_path: Path, web_dir: str, *, ngkit: bool) -> Path:
+    root = tmp_path / "root"
+    config = _config(root, extra=f'frontend = "angular"\nweb_dir = "{web_dir}"')
+    scaffold(root, config)
+    workspace = tmp_path / "workspace"
+    shutil.copytree(FIXTURE, workspace)
+    if ngkit:
+        manifest = workspace / "package.json"
+        package = json.loads(manifest.read_text(encoding="utf-8"))
+        package["dependencies"]["@rn-forge/ng"] = NGKIT_URL
+        manifest.write_text(json.dumps(package), encoding="utf-8")
+    reconcile_frontend(root, workspace, config)
+    return root
+
+
+@pytest.mark.parametrize("web_dir", ["apps/web", "services/web"])
+def test_s4_9_4_2_reconcile_wires_the_proxy(tmp_path: Path, web_dir: str) -> None:
+    root = _reconciled(tmp_path, web_dir, ngkit=True)
+    project = json.loads((root / web_dir / "project.json").read_text(encoding="utf-8"))
+    assert (
+        project["targets"]["serve"]["options"]["proxyConfig"]
+        == f"{web_dir}/proxy.conf.json"
+    )
+    assert project["targets"]["serve"]["executor"] == "@angular/build:dev-server"
+    assert (root / web_dir / "proxy.conf.json").is_file()
+    assert not (root / web_dir / "src" / "app" / "nx-welcome.ts").exists()
+    app_ts = (root / web_dir / "src" / "app" / "app.ts").read_text(encoding="utf-8")
+    assert "NxWelcome" not in app_ts
+
+
+def test_s4_9_4_3_no_starter_no_proxy(tmp_path: Path) -> None:
+    root = _reconciled(tmp_path, "apps/web", ngkit=False)
+    project = json.loads(
+        (root / "apps/web" / "project.json").read_text(encoding="utf-8")
+    )
+    assert "proxyConfig" not in project["targets"]["serve"].get("options", {})
+    assert (root / "apps/web" / "src" / "app" / "nx-welcome.ts").is_file()
+    assert not (root / "apps/web" / "proxy.conf.json").exists()
 
 
 def test_s4_9_3_3_scaffold_adds_the_ngkit_dependency(tmp_path: Path) -> None:

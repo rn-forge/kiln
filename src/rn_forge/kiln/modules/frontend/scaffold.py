@@ -6,7 +6,8 @@ generator: it dispatches on `config.frontend` to that frontend's scaffolder
 `reconcile_frontend` folds every top-level entry it
 wrote into the repo at `config.web_dir`. Every file the frontend scaffolder
 writes is repo-owned; the only files kiln adds under `web_dir` are the seeded
-Angular starter's, written once here.
+Angular starter's, written once here, along with the `serve` proxy wiring in
+`project.json` and the deletion of Nx's `nx-welcome.ts`.
 
 `--frontend` values other than `angular` normally never reach here: `kiln new`
 refuses them as untested before scaffolding starts. One that does is rejected
@@ -79,8 +80,10 @@ def reconcile_frontend(root: Path, workspace: Path, config: KilnConfig) -> None:
     the scaffolder's app directory (`apps/web`) differs from `config.web_dir`,
     it is renamed and every reference to its old path in `project.json`'s
     `sourceRoot`/`root` and in `tsconfig.base.json`'s `paths` is rewritten to
-    the new one — nothing else. Last, the Angular starter's two files are
-    written into `<web_dir>/src/app`, overwriting the stock `app.config.ts`.
+    the new one — nothing else. Last, the Angular starter's files are written
+    under `<web_dir>`, overwriting Nx's stock `app.config.ts`, `app.ts`,
+    `app.html` and `app.spec.ts`; `serve.options.proxyConfig` in `project.json`
+    is set to `<web_dir>/proxy.conf.json` and Nx's `nx-welcome.ts` is deleted.
 
     A shared top-level directory (`apps/`, holding the API member too) merges
     rather than conflicts: only an actual file colliding with an existing file
@@ -117,8 +120,20 @@ def reconcile_frontend(root: Path, workspace: Path, config: KilnConfig) -> None:
         shutil.move(str(root / SCAFFOLD_APP_DIR), str(root / web_dir))
         _rewrite_app_dir(root, web_dir)
 
-    for artifact in starter.render(config, root):
+    artifacts = starter.render(config, root)
+    for artifact in artifacts:
         (root / artifact.path).write_text(artifact.content, encoding="utf-8")
+    if artifacts:
+        _wire_starter(root, web_dir)
+
+
+def _wire_starter(root: Path, web_dir: str) -> None:
+    project_path = root / web_dir / "project.json"
+    project = DocumentUtils.read(project_path)
+    serve = project.setdefault("targets", {}).setdefault("serve", {})
+    serve.setdefault("options", {})["proxyConfig"] = f"{web_dir}/proxy.conf.json"
+    DocumentUtils.write(project_path, project)
+    (root / web_dir / "src" / "app" / "nx-welcome.ts").unlink(missing_ok=True)
 
 
 def _conflicts(src: Path, dst: Path) -> list[str]:

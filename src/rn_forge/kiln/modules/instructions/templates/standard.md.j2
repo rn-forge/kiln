@@ -73,13 +73,13 @@ The public surface for this repo is exactly:
 {% endif %}{% if web_app %}| `task web:lint`     | lint the frontend workspace with Nx                 |
 {% endif %}{% if web_app %}| `task web:test`     | test the frontend workspace with Nx                 |
 {% endif %}{% if web_app %}| `task web:build`    | build the frontend workspace with Nx                |
-{% endif %}{% if web_app %}| `task web:dev`      | run the frontend dev server via Nx                  |
+{% endif %}{% if web_app %}| `task web:dev`      | run the frontend dev server via Nx, proxying `/v1` to `api:dev` |
 {% endif %}{% endif %}
 {% if web_app %}**Frontend:** `{{ frontend }}`, managed by pnpm + Nx. Its one application is the
 Nx project at `{{ web_dir }}` (project `{{ web_project }}`). Every file the
 frontend scaffold wrote is repo-owned; kiln renders nothing under
-`{{ web_dir }}`{% if frontend == "angular" %}, and seeded `src/app/app.config.ts` and its spec once
-at `kiln new`{% endif %}.
+`{{ web_dir }}`{% if frontend == "angular" %}, and seeded a starter page that calls the API (`src/app/app.ts`,
+`app.html`, their specs, `app.config.ts` and `proxy.conf.json`) once at `kiln new`{% endif %}.
 
 {% endif %}{% if workspace %}`build` and `version` take a package name after `--`
 (`task version -- {{ packages[0] if packages else "<package>" }}`); given none, they act on every member.
