@@ -92,6 +92,19 @@ def context(config: KilnConfig) -> dict[str, object]:
         selectors += f", frontend: `{config.frontend}`"
     selectors += ")" if web else ""
     api_module = f"{config.name}-api".replace("-", "_")
+    api_text = (
+        f"`task api:dev` serves `{config.api_dir}/src/{api_module}/app.py`, "
+        "which must define the ASGI application as `app`. The application "
+        "and its tests are repo-owned: kiln renders nothing under `src/` or "
+        "`tests/`, so create that module yourself."
+    )
+    if config.backend == "fastapi":
+        api_text = (
+            f"`task api:dev` serves `{config.api_dir}/src/{api_module}/app.py`, "
+            "which defines the ASGI application as `app`. `kiln new` seeded it "
+            "with a small router and a test; the application and its tests are "
+            "repo-owned from then on."
+        )
     tools = "`uv`, `pytest`, `ruff`, `pyright`"
     if config.docs_profile == "mkdocs":
         tools += ", `mkdocs`"
@@ -123,12 +136,7 @@ def context(config: KilnConfig) -> dict[str, object]:
             "Every file the frontend scaffold wrote is repo-owned; kiln renders "
             f"nothing under `{web_dir}`."
         ),
-        "api_paragraph": _paragraph(
-            f"`task api:dev` serves `{config.api_dir}/src/{api_module}/app.py`, "
-            "which must define the ASGI application as `app`. The application "
-            "and its tests are repo-owned: kiln renders nothing under `src/` or "
-            "`tests/`, so create that module yourself."
-        ),
+        "api_paragraph": _paragraph(api_text),
         "docs_bullet": _bullet(
             f"**Docs:** external, at [docs]({docs.external_url if isinstance(docs, DocsConfig) else ''})."
         ),

@@ -329,7 +329,7 @@ def _member_name(
 
 def _extra_dev(config: KilnConfig, *, web: bool, is_member: bool) -> tuple[str, ...]:
     if web and is_member and config.backend == "fastapi":
-        return ("uvicorn>=0.30",)
+        return ("uvicorn>=0.30", "httpx>=0.28.1")
     return ()
 
 

@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import json
+import tomllib
 from pathlib import Path
 
+import pytest
 from rn_forge.tooling.generation import ArtifactKind
 
+from rn_forge.kiln import commands
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.python import starter
 
@@ -120,3 +124,109 @@ def test_s4_9_1_4_gate(tmp_path: Path) -> None:
     assert starter.seedable(package, ["main.py", "commands.py", "product.py"])
     assert not starter.seedable(package, ["main.py"])
     assert not starter.seedable(tmp_path / "missing", [])
+
+
+WEB_CONFIG = """
+schema_version = 1
+
+[repository]
+name = "demo"
+archetype = "{archetype}"
+
+[archetype."{archetype}"]
+backend = "{backend}"
+{extra}
+"""
+
+
+def _web(
+    root: Path, archetype: str, backend: str = "fastapi", extra: str = ""
+) -> KilnConfig:
+    text = WEB_CONFIG.format(archetype=archetype, backend=backend, extra=extra)
+    return _config(root, text)
+
+
+def _fresh_api(root: Path, api_dir: str, *names: str) -> None:
+    directory = root / api_dir / "src" / "demo_api"
+    directory.mkdir(parents=True)
+    for name in ("__init__.py", *names):
+        (directory / name).write_text("", encoding="utf-8")
+
+
+def _api_paths(api_dir: str) -> set[str]:
+    return {
+        f"{api_dir}/src/demo_api/app.py",
+        f"{api_dir}/src/demo_api/errors.py",
+        f"{api_dir}/src/demo_api/routes.py",
+        f"{api_dir}/tests/test_app.py",
+    }
+
+
+def test_s4_9_2_1_fastapi_starter_artifacts(tmp_path: Path) -> None:
+    api = tmp_path / "api"
+    api.mkdir()
+    config = _web(api, "python-web-api")
+    _fresh_api(api, "apps/api")
+    artifacts = starter.render(config, api)
+    assert {a.path for a in artifacts} == _api_paths("apps/api")
+    assert all(a.kind is ArtifactKind.SEEDED for a in artifacts)
+    assert all("{{" not in a.content for a in artifacts)
+    by_path = {a.path: a.content for a in artifacts}
+    assert (
+        "from demo_api.routes import router" in by_path["apps/api/src/demo_api/app.py"]
+    )
+    assert 'title="demo"' in by_path["apps/api/src/demo_api/app.py"]
+    assert "from demo_api.app import app" in by_path["apps/api/tests/test_app.py"]
+
+    moved = tmp_path / "moved"
+    moved.mkdir()
+    config = _web(moved, "python-web-app", extra='api_dir = "services/api"')
+    _fresh_api(moved, "services/api")
+    artifacts = starter.render(config, moved)
+    assert {a.path for a in artifacts} == _api_paths("services/api")
+
+    django = tmp_path / "django"
+    django.mkdir()
+    config = _web(django, "python-web-api", backend="django")
+    _fresh_api(django, "apps/api")
+    assert starter.render(config, django) == []
+
+
+def test_s4_9_2_2_gate(tmp_path: Path) -> None:
+    config = _web(tmp_path, "python-web-api")
+    assert starter.render(config, tmp_path) == []
+    _fresh_api(tmp_path, "apps/api", "other.py")
+    package = tmp_path / "apps/api/src/demo_api"
+    assert not starter.seedable(package, ["app.py", "errors.py", "routes.py"])
+    assert starter.render(config, tmp_path) == []
+    (package / "other.py").unlink()
+    assert len(starter.render(config, tmp_path)) == 4
+
+
+def test_s4_9_2_3_httpx_is_a_dev_dependency(tmp_path: Path) -> None:
+    from rn_forge.kiln.modules.python import scaffold
+
+    config = _web(tmp_path, "python-web-api")
+    scaffold.scaffold(tmp_path, config)
+    document = tomllib.loads(
+        (tmp_path / "apps/api/pyproject.toml").read_text(encoding="utf-8")
+    )
+    dev = document["dependency-groups"]["dev"]
+    assert "uvicorn>=0.30" in dev
+    assert "httpx>=0.28.1" in dev
+    assert dev.index("uvicorn>=0.30") < dev.index("httpx>=0.28.1")
+
+
+def test_s4_9_2_4_new_records_seeded(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    directory = tmp_path / "demo"
+    commands.new(
+        directory, archetype="python-web-api", docs="none", backend="fastapi", yes=True
+    )
+    entries = json.loads(
+        (directory / ".rn-forge" / "kiln" / "state.json").read_text(encoding="utf-8")
+    )["entries"]
+    for path in _api_paths("apps/api"):
+        assert entries[path]["kind"] == "seeded"

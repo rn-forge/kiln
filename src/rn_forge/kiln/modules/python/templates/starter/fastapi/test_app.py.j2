@@ -1,0 +1,22 @@
+from fastapi.testclient import TestClient
+from rn_forge.web import PROBLEM_MEDIA_TYPE
+
+from {{ module }}.app import app
+
+client = TestClient(app, raise_server_exceptions=False)
+
+
+def test_liveness_passes():
+    assert client.get("/livez").json() == {"status": "pass"}
+
+
+def test_page_size_is_clamped_to_the_cap():
+    response = client.get("/v1/items", params={"pageSize": 1000})
+    assert response.status_code == 200
+    assert response.json() == {"pageSize": 100, "items": []}
+
+
+def test_an_application_error_is_a_problem_response():
+    response = client.get("/v1/items/42")
+    assert response.status_code == 404
+    assert response.headers["content-type"].startswith(PROBLEM_MEDIA_TYPE)

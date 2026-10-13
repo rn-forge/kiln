@@ -26,6 +26,12 @@ _APP_SRC = {"main.py": "main_app.py.j2", "commands.py": "commands.py.j2"}
 _APP_TESTS = {"test_cli.py": "test_cli.py.j2"}
 _LIB_SRC = {"settings.py": "settings.py.j2"}
 _LIB_TESTS = {"test_settings.py": "test_settings.py.j2"}
+_API_SRC = {
+    "app.py": "fastapi/app.py.j2",
+    "errors.py": "fastapi/errors.py.j2",
+    "routes.py": "fastapi/routes.py.j2",
+}
+_API_TESTS = {"test_app.py": "fastapi/test_app.py.j2"}
 
 
 def seedable(package_dir: Path, starter: Collection[str]) -> bool:
@@ -73,6 +79,19 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
                 context={"name": config.name, "module": module},
             )
         return artifacts
+    if config.archetype in {"python-web-api", "python-web-app"}:
+        if config.backend != "fastapi":
+            return []
+        module = root_package(f"{config.name}-api")
+        return _render(
+            engine,
+            root,
+            base=f"{config.api_dir}/",
+            module=module,
+            src=_API_SRC,
+            tests=_API_TESTS,
+            context={"name": config.name, "module": module},
+        )
     return []
 
 

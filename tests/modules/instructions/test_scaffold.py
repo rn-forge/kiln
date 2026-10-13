@@ -159,7 +159,9 @@ def test_s5_3_7_1_fastapi_readme_shows_the_standard_module(tmp_path: Path) -> No
     readme = (tmp_path / "README.md").read_text(encoding="utf-8")
     assert FASTAPI_MODULE in readme
     before, after = readme.split(FASTAPI_MODULE)
-    assert before.endswith("so create that module yourself.\n\n")
+    assert before.endswith("are repo-owned from then on.\n\n")
+    assert "create that module yourself" not in readme
+    assert "seeded it with a small router and a test" in readme.replace("\n", " ")
     assert after.startswith("\n## Conventions")
     result = _mdformat_check(tmp_path)
     assert result.returncode == 0, result.stdout + result.stderr

@@ -1,0 +1,30 @@
+"""The starter routes: a paginated list and a lookup that fails as a problem."""
+
+from __future__ import annotations
+
+from typing import Annotated
+
+from fastapi import APIRouter, Depends
+from rn_forge.fastapi import page_params
+from rn_forge.web import Cursor
+
+from {{ module }}.errors import ItemNotFound
+
+router = APIRouter(prefix="/v1", tags=["items"])
+
+PAGE = page_params(cap=100, default=20)
+
+
+@router.get("/items")
+async def list_items(
+    page: Annotated[tuple[int, Cursor | None], Depends(PAGE)],
+) -> dict[str, object]:
+    """Return an empty page, sized by the clamped ``pageSize`` query."""
+    size, _cursor = page
+    return {"pageSize": size, "items": []}
+
+
+@router.get("/items/{item_id}")
+async def get_item(item_id: str) -> dict[str, str]:
+    """Fail with ``ItemNotFound``: the starter holds no items."""
+    raise ItemNotFound(item_id)

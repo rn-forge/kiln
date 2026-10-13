@@ -1,0 +1,17 @@
+"""The ASGI application: `task api:dev` serves `app`."""
+
+from __future__ import annotations
+
+from rn_forge.fastapi import AppConfig, FastApiApp
+from rn_forge.web import NOT_FOUND, default_registry
+
+from {{ module }}.errors import ItemNotFound
+from {{ module }}.routes import router
+
+registry = default_registry().register(ItemNotFound, NOT_FOUND)
+
+app = FastApiApp(
+    AppConfig(registry=registry),
+    routers=(router,),
+    title="{{ name }}",
+)
