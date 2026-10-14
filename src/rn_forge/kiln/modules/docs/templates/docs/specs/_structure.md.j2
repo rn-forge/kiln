@@ -15,7 +15,8 @@
 - Open questions, as a `## Open questions` section on the epic or feature they
   block.
 - Ideas not yet agreed as work, in `ideas.md`.
-- `epics/index.md`, the derived epic list.
+- `epics/index.md`, the derived epic list. The specs tab lists every epic in
+  ranges of ten, with its features and design.
 
 ## Does not belong here
 

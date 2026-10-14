@@ -147,6 +147,11 @@ class TestAreas:
         (area,) = load_areas(tmp_path)
         assert (area.key, area.nav, area.title) == ("packages", "include", "Packages")
 
+    def test_s14_1_3_3_a_work_area_loads(self, tmp_path):
+        write(tmp_path / "_areas.yml", "areas:\n  - key: specs\n    nav: work\n")
+        (area,) = load_areas(tmp_path)
+        assert (area.key, area.nav, area.title) == ("specs", "work", "Specs")
+
     def test_area_round_trips_through_dict(self, repo):
         for area in load_areas(repo / "docs"):
             assert Area.from_dict(area.as_dict()) == area
@@ -322,6 +327,52 @@ class TestNav:
         assert "Overview:" not in body
         assert "  - Guides:\n    - guides/index.md\n" in body
         assert body.index("guides/index.md") < body.index("A: guides/a.md")
+
+    @staticmethod
+    def _specs(repo, *, epics=True):
+        write(repo / "docs/_areas.yml", "areas:\n  - key: specs\n    nav: work\n")
+        write(repo / "docs/specs/index.md", "# Specs\n")
+        write(repo / "docs/specs/_structure.md", "# S\n")
+        write(repo / "docs/specs/ideas.md", "# Ideas\n")
+        if epics:
+            write(repo / "docs/specs/epics/index.md", "# Epics\n")
+            write(repo / "docs/specs/epics/E1-one/index.md", "# E1 \u2014 One\n")
+            write(repo / "docs/specs/epics/E3-three/index.md", "# E3 \u2014 Three\n")
+            write(repo / "docs/specs/epics/E3-three/F3.1-a.md", "# F3.1 \u2014 A\n")
+            write(repo / "docs/specs/epics/E3-three/F3.10-b.md", "# F3.10 \u2014 B\n")
+            write(repo / "docs/specs/epics/E3-three/F3.2-c.md", "# F3.2 \u2014 C\n")
+            write(repo / "docs/specs/epics/E3-three/design.md", "# Design\n")
+            write(repo / "docs/specs/epics/E3-three/_hidden.md", "# H\n")
+            write(
+                repo / "docs/specs/epics/E12-twelve/index.md", "# E12 \u2014 Twelve\n"
+            )
+
+    def test_s14_1_3_1_work_area_lists_epics_in_ranges(self, repo):
+        self._specs(repo)
+        body = build_nav(repo / "docs")
+        e = "specs/epics"
+        assert body.split("  - Specs:\n", 1)[1] == (
+            "    - specs/index.md\n"
+            "    - Epics: specs/epics/index.md\n"
+            "    - E1\u2013E10:\n"
+            f"      - E1 \u2014 One: {e}/E1-one/index.md\n"
+            "      - E3 \u2014 Three:\n"
+            f"        - {e}/E3-three/index.md\n"
+            f"        - F3.1 \u2014 A: {e}/E3-three/F3.1-a.md\n"
+            f"        - F3.2 \u2014 C: {e}/E3-three/F3.2-c.md\n"
+            f"        - F3.10 \u2014 B: {e}/E3-three/F3.10-b.md\n"
+            f"        - Design: {e}/E3-three/design.md\n"
+            "    - E11\u2013E20:\n"
+            f"      - E12 \u2014 Twelve: {e}/E12-twelve/index.md\n"
+            "    - Ideas: specs/ideas.md\n"
+        )
+
+    def test_s14_1_3_2_a_work_area_without_epics_lists_index_and_root_pages(self, repo):
+        self._specs(repo, epics=False)
+        body = build_nav(repo / "docs")
+        assert body.split("  - Specs:\n", 1)[1] == (
+            "    - specs/index.md\n    - Ideas: specs/ideas.md\n"
+        )
 
     def test_update_nav_reports_staleness_without_writing(self, repo):
         before = (repo / "mkdocs.yml").read_text()

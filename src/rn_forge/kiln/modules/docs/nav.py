@@ -7,6 +7,7 @@ in link order, then all remaining pages alphabetically.
 
 from __future__ import annotations
 
+import re
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -17,6 +18,7 @@ from rn_forge.commons.fs.documents import YamlUtils
 
 from rn_forge.kiln.modules.docs.areas import Area, load_areas
 from rn_forge.kiln.modules.docs.markdown import is_external, links
+from rn_forge.kiln.modules.docs.work import epic_range, range_label
 
 __all__ = [
     "ACRONYMS",
@@ -91,6 +93,63 @@ BLOCK_INDENT = "  "
 """What every serialized nav line is indented by, to sit under ``nav:``."""
 
 
+_EPIC_DIR_RE = re.compile(r"^E(\d+)-")
+_FEATURE_FILE_RE = re.compile(r"^F(\d+)\.(\d+)-.*\.md$")
+
+
+def _is_page(page: Path) -> bool:
+    return page.name != "index.md" and not page.name.startswith("_")
+
+
+def _epic_entry(docs_root: Path, epic_dir: Path) -> NavEntry:
+    def rel(page: Path) -> str:
+        return page.relative_to(docs_root).as_posix()
+
+    index = epic_dir / "index.md"
+    title = page_title(index)
+    others = [p for p in epic_dir.glob("*.md") if _is_page(p)]
+    features = sorted(
+        (p for p in others if _FEATURE_FILE_RE.match(p.name)),
+        key=lambda p: tuple(int(n) for n in re.findall(r"\d+", p.name.split("-")[0])),
+    )
+    rest = sorted((p for p in others if p not in features), key=lambda p: p.name)
+    if not features and not rest:
+        return {title: rel(index)}
+    children: list[str | NavEntry] = [rel(index)]
+    children.extend({page_title(p): rel(p)} for p in [*features, *rest])
+    return {title: children}
+
+
+def _work_entry(docs_root: Path, area: Area) -> NavEntry:
+    area_dir = docs_root / area.key
+    items: list[str | NavEntry] = []
+    if (area_dir / "index.md").exists():
+        items.append(f"{area.key}/index.md")
+    epic_list = area_dir / "epics" / "index.md"
+    if epic_list.exists():
+        items.append({page_title(epic_list): f"{area.key}/epics/index.md"})
+    epic_dirs = sorted(
+        (
+            (int(match.group(1)), path)
+            for path in (area_dir / "epics").glob("E*-*")
+            if path.is_dir()
+            and (path / "index.md").exists()
+            and (match := _EPIC_DIR_RE.match(path.name))
+        ),
+        key=lambda pair: pair[0],
+    )
+    ranges: dict[tuple[int, int], list[str | NavEntry]] = {}
+    for number, path in epic_dirs:
+        ranges.setdefault(epic_range(number), []).append(_epic_entry(docs_root, path))
+    items.extend({range_label(*span): ranges[span]} for span in sorted(ranges))
+    items.extend(
+        {page_title(p): f"{area.key}/{p.name}"}
+        for p in sorted(area_dir.glob("*.md"), key=lambda p: p.name)
+        if _is_page(p)
+    )
+    return {area.title: items}
+
+
 def _area_entry(
     docs_root: Path, area: Area, packages: Sequence[str] = ()
 ) -> NavEntry | None:
@@ -104,6 +163,8 @@ def _area_entry(
     area_dir = docs_root / area.key
     if (area.optional or area.generated) and not area_dir.is_dir():
         return None
+    if area.nav == "work":
+        return _work_entry(docs_root, area)
     if area.nav == "index-only":
         return {area.title: f"{area.key}/index.md"}
     entries = _children_entries(docs_root, area.key)
