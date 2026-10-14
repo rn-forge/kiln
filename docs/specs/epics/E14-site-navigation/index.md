@@ -9,7 +9,7 @@
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
 | [F14.1 — Area tabs, the epic ranges and the epic list](F14.1-tabbed-navigation.md) | New | release-1 | 3 Closed |
-| [F14.2 — Epic and feature summary tables](F14.2-work-summaries.md) | New | release-1 | 1 New · 2 Closed |
+| [F14.2 — Epic and feature summary tables](F14.2-work-summaries.md) | New | release-1 | 3 Closed |
 
 <!-- END derived features -->
 

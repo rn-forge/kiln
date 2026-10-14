@@ -666,7 +666,8 @@ def render_scope(work: Work, release: Release) -> str:
     )
     lines = ["", "| Feature | Epic | State |", "| -- | -- | -- |"]
     lines += [
-        f"| [{f.id}](../../specs/epics/{f.epic_dir}/{f.page.path.name}) "
+        f"| [{f.page.title.replace('|', chr(92) + '|')}]"
+        f"(../../specs/epics/{f.epic_dir}/{f.page.path.name}) "
         f"| E{f.epic_number} | {f.page.get('State') or ''} |"
         for f in features
     ]

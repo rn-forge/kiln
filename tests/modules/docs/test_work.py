@@ -279,9 +279,9 @@ def test_s13_2_2_render_scope_orders_features_numerically(tmp_path: Path) -> Non
         scope
         == (
             "\n| Feature | Epic | State |\n| -- | -- | -- |\n"
-            "| [F1.1](../../specs/epics/E1-x/F1.1-a.md) | E1 | Active |\n"
-            "| [F2.1](../../specs/epics/E1-x/F2.1-d.md) | E1 | Closed |\n"
-            "| [F10.1](../../specs/epics/E1-x/F10.1-c.md) | E1 | New |\n"
+            "| [F1.1 \u2014 A](../../specs/epics/E1-x/F1.1-a.md) | E1 | Active |\n"
+            "| [F2.1 \u2014 T](../../specs/epics/E1-x/F2.1-d.md) | E1 | Closed |\n"
+            "| [F10.1 \u2014 T](../../specs/epics/E1-x/F10.1-c.md) | E1 | New |\n"
         )
         + "\n"
     )
@@ -560,3 +560,13 @@ def test_s14_2_2_rows_inside_the_derived_fence_are_not_hand_written(
         "\n<!-- END derived features -->\n"
     )
     assert codes(tmp_path, {**VALID, E: fenced}) == []
+
+
+def test_s14_2_3_scope_link_text_is_the_title_with_pipes_escaped(
+    tmp_path: Path,
+) -> None:
+    feature = ACTIVE.replace("# F1.1 \u2014 A", "# F1.1 \u2014 A | B")
+    work = _tree(tmp_path, {**VALID, "specs/epics/E1-x/F1.1-a.md": feature})
+    scope = render_scope(work, work.releases[0])
+    assert "| [F1.1 \u2014 A \\| B](../../specs/epics/E1-x/F1.1-a.md) |" in scope
+    _stable(SCOPE_BLOCK, scope)
