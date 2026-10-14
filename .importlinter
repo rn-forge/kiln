@@ -21,6 +21,15 @@
 ; the engine never loaded. Contract 1 forbids Jinja everywhere today; it has to
 ; relax for `kiln doctor --full`, which renders, and this contract is what survives
 ; that.
+;
+; The third contract keeps a concern module off its siblings: it imports
+; `core` and kiln's composition layer, never another concern module.
+; `rn_forge.kiln.config` and `rn_forge.kiln.modules.registry` import every
+; module, so their edges into the modules are ignored — a path through the
+; composer is not a sibling dependency. The four direct edges ignored after
+; them existed when the contract landed (kiln S4.7.1); each reads a sibling's
+; config section or a helper. Add no fifth: have the composer pass the value
+; in instead.
 
 [importlinter]
 root_package = rn_forge.kiln
@@ -49,6 +58,25 @@ source_modules =
     rn_forge.kiln.modules.tasks.checks
     rn_forge.kiln.modules.cicd.checks
     rn_forge.kiln.modules.docs.checks
+    rn_forge.kiln.modules.instructions.checks
 forbidden_modules =
     jinja2
 allow_indirect_imports = False
+
+[importlinter:contract:concern-modules-are-independent]
+name = a concern module imports core, never a sibling
+type = independence
+modules =
+    rn_forge.kiln.modules.python
+    rn_forge.kiln.modules.docs
+    rn_forge.kiln.modules.tasks
+    rn_forge.kiln.modules.cicd
+    rn_forge.kiln.modules.instructions
+    rn_forge.kiln.modules.frontend
+ignore_imports =
+    rn_forge.kiln.config -> rn_forge.kiln.modules.**
+    rn_forge.kiln.modules.registry -> rn_forge.kiln.modules.**
+    rn_forge.kiln.modules.tasks.artifacts -> rn_forge.kiln.modules.docs.config
+    rn_forge.kiln.modules.tasks.artifacts -> rn_forge.kiln.modules.python.artifacts
+    rn_forge.kiln.modules.instructions.artifacts -> rn_forge.kiln.modules.cicd.config
+    rn_forge.kiln.modules.instructions.artifacts -> rn_forge.kiln.modules.docs.config

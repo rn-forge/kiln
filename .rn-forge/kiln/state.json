@@ -37,7 +37,7 @@
     },
     ".importlinter": {
       "begin_marker": null,
-      "content_hash": "ae1ad478dfc0425d92e7bd55b63ad181ca61b31aa9e134f6d623829c592c57ac",
+      "content_hash": "d04298a71ef48ab2157a6bc8312d96b8d510c0a6661deac0c5eeaa2a3eda9b59",
       "end_marker": null,
       "kind": "managed",
       "path": ".importlinter"
