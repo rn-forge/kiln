@@ -125,3 +125,10 @@ def test_s11_1_3_an_excluded_page_may_link_an_underscore_page(repo) -> None:
     (root / "docs/plans/new.md").write_text("[x](_inc.md)\n", encoding="utf-8")
     (root / "docs/plans/_inc.md").write_text("# Inc\n", encoding="utf-8")
     assert _structure_codes(root) == ["docs.underscore-referenced"]
+
+
+def test_s4_5_8_a_missing_mkdocs_yml_is_a_finding_not_a_crash(tmp_path: Path) -> None:
+    from rn_forge.kiln.modules.docs.site import check_site
+
+    (tmp_path / "docs").mkdir()
+    assert [f.code for f in check_site(tmp_path)] == ["docs.missing-config"]

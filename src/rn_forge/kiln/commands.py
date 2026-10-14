@@ -15,7 +15,9 @@ from __future__ import annotations
 import difflib
 import re
 import shutil
+import tomllib
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from importlib import metadata
 from importlib.resources import files
 from pathlib import Path
@@ -32,7 +34,7 @@ from rn_forge.tooling.state import StateStore
 from rn_forge.kiln import archetypes, checks
 from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
 from rn_forge.kiln.modules.core import cycle, umbrella
-from rn_forge.kiln.modules.core.config.manager import ConfigManager
+from rn_forge.kiln.modules.core.config.manager import ConfigManager, Resolution
 from rn_forge.kiln.modules.core.config.sources import Source
 from rn_forge.kiln.modules.docs import generate
 from rn_forge.kiln.modules.docs.scaffold import add_package as docs_add_package
@@ -64,6 +66,7 @@ __all__ = [
     "doctor",
     "generate_app",
     "generate_package",
+    "init",
     "new",
     "prompt",
     "version",
@@ -75,6 +78,16 @@ _CONFIG_HEADER = (
     "# The one hand-authored input kiln reads (kiln ADR-0004). Edit this, then run\n"
     "# `kiln apply`. Everything else under .rn-forge/kiln/ is kiln's.\n"
 )
+
+_INIT_FILES = (
+    "pyproject.toml",
+    "Taskfile.yml",
+    "README.md",
+    "CLAUDE.md",
+    "AGENTS.md",
+    ".gitignore",
+)
+_INIT_DIRECTORIES = ("tasks", ".github", "docs")
 
 _PACKAGE_NAME = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
 
@@ -151,39 +164,16 @@ def new(
     if not archetype:
         raise AppException("--archetype is required")
 
-    manifest = archetypes.load(archetype)
-    flags = _flag_layer(
+    manager, resolution = _resolve_config(
+        directory.name,
         archetype=archetype,
         docs=docs,
-        manifest=manifest,
-        allow_untested=allow_untested,
         backend=backend,
         frontend=frontend,
+        config=config,
+        allow_untested=allow_untested,
     )
-    DictUtils.set(flags, "repository.name", directory.name)
-    package = root_package(directory.name)
-    if archetype in {"python-tool", "python-app"}:
-        DictUtils.set(
-            flags,
-            "cli",
-            {
-                "name": directory.name,
-                "help": f"The {directory.name} command line.",
-                "commands": [{"name": "hello", "target": f"{package}.commands:hello"}],
-            },
-        )
-    if archetype == "python-tool":
-        DictUtils.set(flags, "lifecycle", {"product": f"{package}.product:PRODUCT"})
-
-    manager = ConfigManager()
-    source = Source.parse(config) if config else None
-    resolution = manager.resolve(flags=flags, source=source)
     resolved = resolution.config
-    if resolved.archetype == "python-lib" and resolved.packages:
-        raise AppException(
-            "config.packages-at-new: a python-lib repository starts with no "
-            "packages; add each with 'kiln generate package <name>'"
-        )
 
     if not yes or dry_run:
         rows = _preview_rows(directory, resolved, manager)
@@ -216,6 +206,218 @@ def new(
     shutil.copytree(workspace, directory, symlinks=True, dirs_exist_ok=True)
     rows = _change_rows(result.changes)
     _report(directory, resolved, rows)
+
+
+def init(
+    archetype: str = "",
+    docs: str = "mkdocs",
+    backend: str | None = None,
+    frontend: str | None = None,
+    config: str | None = None,
+    force: bool = False,
+    dry_run: bool = False,
+    yes: bool = False,
+    json: bool = False,
+) -> None:
+    """Bring the existing standard repository in the current directory under kiln.
+
+    `new`'s configuration and first-apply flow, run in place and never
+    scaffolding. Without `--yes` (or with `--dry-run`) prints the resolved
+    config and the artifact plan, and writes nothing. With `--yes`, writes
+    `config.toml`, then applies, recording byte-identical managed files in the
+    baseline without rewriting them, then runs `kiln doctor`'s checks.
+
+    `--force` approves every conflict at once: each conflicting target, and a
+    prior `config.toml` and `state.json`, is first copied to
+    `.rn-forge/kiln/backups/<UTC timestamp>/`. It never implies `--yes`.
+
+    Raises:
+        AppException: `--archetype` is missing, the current directory fails the
+            preflight (each failed condition is named), `state.json` already
+            exists, a conflict exists without `--force`, or the config, apply
+            or check step fails.
+    """
+    if json:
+        console.set_mode(OutputMode.JSON)
+    if not archetype:
+        raise AppException("--archetype is required")
+    root = Path.cwd()
+    _init_preflight(root)
+
+    state_path = root / umbrella.STATE_PATH
+    if state_path.exists() and not force:
+        raise AppException(
+            "{} already exists; this repository is under kiln — pass --force "
+            "to archive it and initialise again",
+            state_path,
+        )
+
+    _, resolution = _resolve_config(
+        root.name,
+        archetype=archetype,
+        docs=docs,
+        backend=backend,
+        frontend=frontend,
+        config=config,
+        allow_untested=False,
+    )
+    resolved = resolution.config
+    planned = cycle.adoption_plan(root, resolved)
+
+    if not yes or dry_run:
+        _report(root, resolved, _change_rows(planned.changes))
+        return
+
+    config_path = root / CONFIG_PATH
+    conflicts = [
+        change
+        for change in planned.changes
+        if change.action is generation.Action.CONFLICT
+    ]
+    conflicting = {change.path for change in conflicts}
+    if config_path.exists():
+        conflicting.add(CONFIG_PATH.as_posix())
+    if conflicting and not force:
+        raise AppException(
+            "{} conflict(s), nothing written: {} — pass --force to archive "
+            "them and overwrite",
+            len(conflicting),
+            ", ".join(sorted(conflicting)),
+        )
+    if force:
+        if state_path.exists():
+            conflicting.add(umbrella.STATE_PATH.as_posix())
+        _archive(root, sorted(conflicting))
+
+    _write_config(root, resolved)
+    result = cycle.apply(
+        root,
+        force=[change.key for change in conflicts],
+        provenance=resolution.provenance_metadata(),
+        adopt=True,
+    )
+    if resolved.docs_profile == "mkdocs" and (root / "mkdocs.yml").is_file():
+        packages = resolved.packages if resolved.archetype == "python-lib" else ()
+        generate.generate(root, packages)
+    _fail_on_errors(root)
+    _report(root, resolved, _change_rows(result.changes))
+
+
+def _init_preflight(root: Path) -> None:
+    """Refuse *root* unless it is a standard repository's Git worktree root.
+
+    Raises:
+        AppException: Naming every failed condition at once.
+    """
+    failed: list[str] = []
+    if not (root / ".git").exists():
+        failed.append("not a Git worktree root (no .git entry here)")
+    if _project_name(root / "pyproject.toml") == _canonical(_own_name()):
+        failed.append("kiln's own source checkout")
+    failed.extend(
+        f"missing {name}" for name in _INIT_FILES if not (root / name).is_file()
+    )
+    failed.extend(
+        f"missing {name}/" for name in _INIT_DIRECTORIES if not (root / name).is_dir()
+    )
+    if failed:
+        raise AppException("kiln init cannot run in {}: {}", root, "; ".join(failed))
+
+
+def _own_name() -> str:
+    """kiln's distribution name, as its `pyproject.toml` declared it at build."""
+    return metadata.metadata(_DISTRIBUTION)["Name"]
+
+
+def _canonical(name: str) -> str:
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def _project_name(pyproject: Path) -> str | None:
+    """`[project].name` of *pyproject*, canonicalised; `None` if absent or unreadable."""
+    if not pyproject.is_file():
+        return None
+    try:
+        document = tomllib.loads(pyproject.read_text(encoding="utf-8"))
+    except tomllib.TOMLDecodeError:
+        return None
+    name = document.get("project", {}).get("name")
+    return _canonical(name) if isinstance(name, str) else None
+
+
+def _archive(root: Path, paths: Sequence[str]) -> None:
+    """Warn, then copy each existing repo-relative *paths* under a fresh timestamped backup directory."""
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    base = root / umbrella.BACKUPS
+    archive = base / stamp
+    suffix = 0
+    while archive.exists():
+        suffix += 1
+        archive = base / f"{stamp}-{suffix}"
+    console.warning(
+        "--force: archiving {} target(s) to {} before overwriting",
+        len(paths),
+        archive,
+    )
+    for relative in paths:
+        source = root / relative
+        if source.is_file():
+            destination = archive / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
+
+
+def _resolve_config(
+    name: str,
+    *,
+    archetype: str,
+    docs: str,
+    backend: str | None,
+    frontend: str | None,
+    config: str | None,
+    allow_untested: bool,
+) -> tuple[ConfigManager, Resolution]:
+    """Merge defaults, the `--config` layer and the flags for a repository called *name*.
+
+    Raises:
+        AppException: The archetype is unknown, a flag names an untested value,
+            the config is invalid, or a `python-lib` config lists packages.
+    """
+    manifest = archetypes.load(archetype)
+    flags = _flag_layer(
+        archetype=archetype,
+        docs=docs,
+        manifest=manifest,
+        allow_untested=allow_untested,
+        backend=backend,
+        frontend=frontend,
+    )
+    DictUtils.set(flags, "repository.name", name)
+    package = root_package(name)
+    if archetype in {"python-tool", "python-app"}:
+        DictUtils.set(
+            flags,
+            "cli",
+            {
+                "name": name,
+                "help": f"The {name} command line.",
+                "commands": [{"name": "hello", "target": f"{package}.commands:hello"}],
+            },
+        )
+    if archetype == "python-tool":
+        DictUtils.set(flags, "lifecycle", {"product": f"{package}.product:PRODUCT"})
+
+    manager = ConfigManager()
+    source = Source.parse(config) if config else None
+    resolution = manager.resolve(flags=flags, source=source)
+    resolved = resolution.config
+    if resolved.archetype == "python-lib" and resolved.packages:
+        raise AppException(
+            "config.packages-at-new: a python-lib repository starts with no "
+            "packages; add each with 'kiln generate package <name>'"
+        )
+
+    return manager, resolution
 
 
 def apply(

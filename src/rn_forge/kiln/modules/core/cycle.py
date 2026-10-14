@@ -6,6 +6,7 @@ engine then stages, backs up and swaps them in, and writes `state.json` last.
 
 from __future__ import annotations
 
+import dataclasses
 from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 
@@ -14,17 +15,23 @@ from rn_forge.commons.findings import Finding
 from rn_forge.commons.fs.hashing import ContentHash
 from rn_forge.commons.lang.types import JsonValue
 from rn_forge.tooling import generation
-from rn_forge.tooling.generation import ApplyResult, Plan, StateEntry
+from rn_forge.tooling.generation import (
+    Action,
+    ApplyResult,
+    ArtifactKind,
+    Plan,
+    StateEntry,
+)
 from rn_forge.tooling.install.home import rnf_home
 from rn_forge.tooling.state import StateStore
 
 from rn_forge.kiln import __version__
-from rn_forge.kiln.config import CONFIG_PATH
+from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
 from rn_forge.kiln.modules.base import ModuleRegistry
 from rn_forge.kiln.modules.core import umbrella
 from rn_forge.kiln.modules.core.config.manager import PROVENANCE_KEY, ConfigManager
 
-__all__ = ["CycleRefused", "apply", "plan"]
+__all__ = ["CycleRefused", "adoption_plan", "apply", "plan"]
 
 STATE_SCHEMA_VERSION = "1"
 
@@ -49,6 +56,7 @@ def plan(
     registry: ModuleRegistry | None = None,
     home: Path | None = None,
     provenance: Mapping[str, JsonValue] | None = None,
+    adopt: bool = False,
 ) -> Plan:
     """Render every enabled module's artifacts and classify them, writing nothing.
 
@@ -63,12 +71,28 @@ def plan(
             shape — `kiln new` and `kiln config-update`/`config-upgrade` pass their
             fresh `Resolution`'s, overriding any value carried forward from a
             previous `state.json`.
+        adopt: Plan as the first apply of an existing repository (`kiln init`):
+            any recorded state is ignored, and a managed file already equal to
+            its render is `unchanged` instead of a conflict.
 
     Raises:
         CycleRefused: A legacy kiln tree is present.
         AppException: The config is invalid.
     """
-    return _prepare(root, force, registry, home, provenance)[1]
+    return _prepare(root, force, registry, home, provenance, adopt)[1]
+
+
+def adoption_plan(
+    root: Path, config: KilnConfig, *, registry: ModuleRegistry | None = None
+) -> Plan:
+    """The first-apply plan for an existing repository under *config*, writing nothing.
+
+    Unlike :func:`plan` this needs no `config.toml` on disk, and ignores any
+    `state.json`: a byte-identical whole file is `unchanged`, and every other
+    existing artifact is a `conflict`.
+    """
+    artifacts = _artifacts(ConfigManager(registry), config, root)
+    return _adopted(root, generation.plan(root, artifacts, {}))
 
 
 def apply(
@@ -80,6 +104,7 @@ def apply(
     home: Path | None = None,
     verify: Callable[[], None] | None = None,
     provenance: Mapping[str, JsonValue] | None = None,
+    adopt: bool = False,
 ) -> ApplyResult:
     """Plan, then apply transactionally; see :func:`plan` for the arguments.
 
@@ -94,7 +119,7 @@ def apply(
             conflict, drift or missing artifact, or a write failed (after the
             tree and `state.json` were restored).
     """
-    store, planned = _prepare(root, force, registry, home, provenance)
+    store, planned = _prepare(root, force, registry, home, provenance, adopt)
     return generation.apply(
         root,
         planned,
@@ -112,6 +137,7 @@ def _prepare(
     registry: ModuleRegistry | None,
     home: Path | None,
     provenance: Mapping[str, JsonValue] | None = None,
+    adopt: bool = False,
 ) -> tuple[StateStore[StateEntry], Plan]:
     refused = umbrella.legacy(root / umbrella.UMBRELLA, (home or rnf_home()) / "kiln")
     if refused:
@@ -119,11 +145,7 @@ def _prepare(
 
     manager = ConfigManager(registry)
     config = manager.load(root)
-    artifacts = [
-        artifact
-        for module in manager.modules_for(config)
-        for artifact in module.artifacts(config, root)
-    ]
+    artifacts = _artifacts(manager, config, root)
 
     state_path = root / umbrella.STATE_PATH
     metadata: dict[str, JsonValue] = {
@@ -146,4 +168,34 @@ def _prepare(
         schema_version=STATE_SCHEMA_VERSION,
         metadata=metadata,
     )
-    return store, generation.plan(root, artifacts, store.load(), force=force)
+    entries = {} if adopt else store.load()
+    planned = generation.plan(root, artifacts, entries, force=force)
+    return store, _adopted(root, planned) if adopt else planned
+
+
+def _artifacts(
+    manager: ConfigManager, config: KilnConfig, root: Path
+) -> list[generation.Artifact]:
+    return [
+        artifact
+        for module in manager.modules_for(config)
+        for artifact in module.artifacts(config, root)
+    ]
+
+
+def _adopted(root: Path, planned: Plan) -> Plan:
+    """*planned* with each byte-identical whole-file conflict settled as unchanged."""
+    changes = tuple(
+        dataclasses.replace(change, action=Action.UNCHANGED)
+        if change.action is Action.CONFLICT
+        and change.kind is ArtifactKind.MANAGED
+        and change.artifact is not None
+        and _bytes(root / change.path) == change.artifact.content.encode("utf-8")
+        else change
+        for change in planned.changes
+    )
+    return Plan(changes)
+
+
+def _bytes(path: Path) -> bytes | None:
+    return path.read_bytes() if path.is_file() else None

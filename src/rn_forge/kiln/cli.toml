@@ -24,6 +24,10 @@ name = "new"
 target = "rn_forge.kiln.commands:new"
 
 [[cli.commands]]
+name = "init"
+target = "rn_forge.kiln.commands:init"
+
+[[cli.commands]]
 name = "apply"
 target = "rn_forge.kiln.commands:apply"
 

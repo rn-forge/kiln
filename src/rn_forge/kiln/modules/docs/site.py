@@ -225,6 +225,8 @@ class Site:
 
     def check(self) -> list[Finding]:
         """Run every site check, in reporting order."""
+        if not self.mkdocs_yml.is_file():
+            return [_error("missing-config", self.mkdocs_yml, "mkdocs.yml is missing")]
         return [
             *self.check_nav_targets_exist(),
             *self.check_orphans(),
