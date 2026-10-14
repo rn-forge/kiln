@@ -68,10 +68,16 @@ def fetch(source: Source, base: Path) -> Fetched:
     with tempfile.TemporaryDirectory(prefix="kiln-source-") as scratch:
         checkout = Path(scratch)
         url = source.location.removeprefix(_GIT_PREFIX)
-        _git("clone", "--quiet", url, str(checkout))
-        if source.ref is not None:
-            _git("-C", str(checkout), "checkout", "--quiet", source.ref)
-        commit = _git("-C", str(checkout), "rev-parse", "HEAD")
+        try:
+            _git("clone", "--quiet", url, str(checkout))
+            if source.ref is not None:
+                _git("-C", str(checkout), "checkout", "--quiet", source.ref)
+            commit = _git("-C", str(checkout), "rev-parse", "HEAD")
+        except AppException as error:
+            ref = f"@{source.ref}" if source.ref is not None else ""
+            raise AppException(
+                "config source {}{}: {}", source.location, ref, error
+            ) from error
         return Fetched(
             _read_layer(checkout),
             SourceConfig(location=source.location, ref=source.ref, commit=commit),

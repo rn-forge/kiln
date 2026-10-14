@@ -22,8 +22,8 @@ F11.1–F11.3 before F4.4, whose `python-lib` cell needs `kiln generate package`
 ([board](../../index.md#order)).
 
 **Where it stands (2026-10-13).** F4.1, F4.2 and F4.3 are done — S4.3.6, the
-owner's Sonar decisions, closed on 2026-10-13. In F4.5, S4.5.1–S4.5.6 and S4.5.9
-are done, and S4.5.7–S4.5.8 are planned. S4.5.9 followed
+owner's Sonar decisions, closed on 2026-10-13. In F4.5, S4.5.1–S4.5.7 and S4.5.9
+are done, and S4.5.8 is planned. S4.5.9 followed
 [S5.2.4](../E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md)'s frontend-module
 split. F4.6–F4.9 have not started.
 

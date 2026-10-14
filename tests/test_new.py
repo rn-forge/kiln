@@ -268,6 +268,81 @@ def test_s4_5_1_config_layer_merges_beneath_flags_and_records_source(
     assert written["source"]["location"] == str(layer_dir)
 
 
+def _bare_layer_repo(tmp_path: Path, layer: str) -> tuple[str, str]:
+    """A bare repo whose `main` holds *layer* as `config.toml`; (git+ URL, commit)."""
+    work = tmp_path / "layer-work"
+    work.mkdir()
+    (work / "config.toml").write_text(layer, encoding="utf-8")
+    git = ["git", "-c", "user.name=kiln", "-c", "user.email=kiln@example.com"]
+    subprocess.run([*git, "init", "--quiet", "-b", "main", str(work)], check=True)
+    subprocess.run([*git, "-C", str(work), "add", "."], check=True)
+    subprocess.run([*git, "-C", str(work), "commit", "--quiet", "-m", "l"], check=True)
+    sha = subprocess.run(
+        ["git", "-C", str(work), "rev-parse", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    bare = tmp_path / "layer.git"
+    subprocess.run(
+        ["git", "clone", "--quiet", "--bare", str(work), str(bare)], check=True
+    )
+    return f"git+file://{bare}", sha
+
+
+def test_s4_5_7_1_git_config_merges_beneath_flags_and_records_source(
+    tmp_path: Path,
+) -> None:
+    location, sha = _bare_layer_repo(
+        tmp_path, '[ci]\nsonar = false\n\n[docs]\nprofile = "mkdocs"\n'
+    )
+
+    directory = tmp_path / "demo-git"
+    commands.new(
+        directory,
+        archetype="python-tool",
+        docs="none",
+        config=f"{location}@main",
+        yes=True,
+    )
+
+    written = tomllib.loads(
+        (directory / ".rn-forge" / "kiln" / "config.toml").read_text(encoding="utf-8")
+    )
+    assert written["ci"]["sonar"] is False  # from the layer, no flag sets it
+    assert written["docs"]["profile"] == "none"  # the flag wins over the layer
+    assert written["source"]["location"] == location
+    assert written["source"]["ref"] == "main"
+    assert written["source"]["commit"] == sha
+    assert len(sha) == 40
+
+
+def test_s4_5_7_2_unreachable_url_and_missing_ref_name_the_url(
+    tmp_path: Path,
+) -> None:
+    missing = f"git+file://{tmp_path / 'nope.git'}"
+    with pytest.raises(AppException) as unreachable:
+        commands.new(
+            tmp_path / "a",
+            archetype="python-tool",
+            docs="none",
+            config=f"{missing}@main",
+        )
+    assert missing in str(unreachable.value)
+
+    location, _ = _bare_layer_repo(tmp_path, "[ci]\nsonar = false\n")
+    with pytest.raises(AppException) as no_ref:
+        commands.new(
+            tmp_path / "b",
+            archetype="python-tool",
+            docs="none",
+            config=f"{location}@nope",
+        )
+    assert location in str(no_ref.value)
+    assert not (tmp_path / "a").exists()
+    assert not (tmp_path / "b").exists()
+
+
 def _hashes(root: Path) -> dict[str, bytes]:
     return {
         str(p.relative_to(root)): p.read_bytes()
