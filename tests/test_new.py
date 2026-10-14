@@ -383,7 +383,9 @@ def test_s5_3_6_1_fresh_scaffolds_have_identical_composed_gitignores(
     text = texts[0].decode("utf-8")
     kiln = GITIGNORE_BLOCK.extract(text)
     assert kiln is not None
-    assert text == GITIGNORE_BLOCK.render(UV_FIXTURE.read_text(encoding="utf-8"), kiln)
+    assert text == GITIGNORE_BLOCK.render(
+        "## uv ##\n" + UV_FIXTURE.read_text(encoding="utf-8"), kiln
+    )
 
 
 def test_s5_3_6_5_new_seeds_the_workspace_file(tmp_path: Path) -> None:

@@ -12,6 +12,7 @@ from __future__ import annotations
 import re
 import tomllib
 from pathlib import Path
+from typing import Any
 from unittest import mock
 
 import pytest
@@ -24,6 +25,7 @@ from rn_forge.kiln.modules.python import scaffold as python_scaffold
 from rn_forge.kiln.modules.python.checks import pyproject, rn_forge_deps
 from rn_forge.kiln.modules.python.scaffold import (
     SAMPLE_TEST,
+    add_package,
     reconcile_backend,
     sample_test,
     scaffold,
@@ -176,8 +178,8 @@ def test_s5_3_6_1_scaffold_seeds_the_uv_body_once_at_the_root(
 ) -> None:
     root = _root(tmp_path, archetype)
     scaffold(root, KilnConfig.load(root))
-    assert (root / ".gitignore").read_text(encoding="utf-8") == UV_FIXTURE.read_text(
-        encoding="utf-8"
+    assert (root / ".gitignore").read_text(encoding="utf-8") == (
+        "## uv ##\n" + UV_FIXTURE.read_text(encoding="utf-8")
     )
     scaffolded = [
         p.relative_to(root)
@@ -377,3 +379,115 @@ def test_s4_9_1_7_scaffold_points_project_scripts_at_the_app(
     scaffold(root, KilnConfig.load(root))
     document = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
     assert document["project"].get("scripts") == scripts
+
+
+WEB_API_CONFIG = """
+schema_version = 1
+
+[repository]
+name = "demo"
+archetype = "python-web-api"
+
+[archetype."python-web-api"]
+backend = "fastapi"
+"""
+
+
+def _web_api(tmp_path: Path) -> Path:
+    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(WEB_API_CONFIG, encoding="utf-8")
+    return tmp_path
+
+
+def _toml(path: Path) -> dict[str, Any]:
+    return tomllib.loads(path.read_text(encoding="utf-8"))
+
+
+def _scaffolded(tmp_path: Path, archetype: str) -> tuple[Path, KilnConfig]:
+    root = (
+        _web_api(tmp_path)
+        if archetype == "python-web-api"
+        else _root(tmp_path, archetype)
+    )
+    config = KilnConfig.load(root)
+    scaffold(root, config)
+    return root, config
+
+
+def _add_package(root: Path, config: KilnConfig, name: str) -> Path:
+    add_package(root, config, name, "https://github.com/acme/demo-lib")
+    return root / "packages" / name
+
+
+def test_s4_4_8_5_readme_is_set_where_a_readme_is_seeded(tmp_path: Path) -> None:
+    app, _ = _scaffolded(tmp_path / "app", "python-app")
+    lib, _ = _scaffolded(tmp_path / "lib", "python-lib")
+    api, _ = _scaffolded(tmp_path / "api", "python-web-api")
+
+    assert _toml(app / "pyproject.toml")["project"]["readme"] == "README.md"
+    for member in ("demo-alpha", "demo-beta"):
+        document = _toml(lib / "packages" / member / "pyproject.toml")
+        assert document["project"]["readme"] == "README.md"
+    assert "readme" not in _toml(lib / "pyproject.toml")["project"]
+    (member_pyproject,) = (api / "pyproject.toml").parent.glob("*/*/pyproject.toml")
+    assert "readme" not in _toml(member_pyproject)["project"]
+
+
+def test_s4_4_8_6_every_package_is_typed(tmp_path: Path) -> None:
+    app, _ = _scaffolded(tmp_path / "app", "python-app")
+    lib, _ = _scaffolded(tmp_path / "lib", "python-lib")
+    api, api_config = _scaffolded(tmp_path / "api", "python-web-api")
+
+    assert (app / "src" / "demo_tool" / "py.typed").is_file()
+    assert (
+        lib / "packages" / "demo-alpha" / "src" / "demo_alpha" / "py.typed"
+    ).is_file()
+    (api_dir,) = api_config.packages
+    assert (api / api_dir / "src" / "demo_api" / "py.typed").is_file()
+
+
+def test_s4_4_8_7_lib_members_are_libraries(tmp_path: Path) -> None:
+    root, config = _scaffolded(tmp_path, "python-lib")
+    added = _add_package(root, config, "demo-gamma")
+
+    for member, module in (
+        (root / "packages" / "demo-alpha", "demo_alpha"),
+        (added, "demo_gamma"),
+    ):
+        assert "scripts" not in _toml(member / "pyproject.toml")["project"]
+        init = (member / "src" / module / "__init__.py").read_text(encoding="utf-8")
+        assert "def main" not in init
+
+
+def test_s4_4_8_8_python_version_sits_at_the_workspace_root(tmp_path: Path) -> None:
+    app, _ = _scaffolded(tmp_path / "app", "python-app")
+    lib, lib_config = _scaffolded(tmp_path / "lib", "python-lib")
+    api, _ = _scaffolded(tmp_path / "api", "python-web-api")
+    added = _add_package(lib, lib_config, "demo-gamma")
+
+    assert (app / ".python-version").is_file()
+    assert (lib / ".python-version").is_file()
+    assert (api / ".python-version").is_file()
+    assert sorted(p.relative_to(lib) for p in lib.rglob(".python-version")) == [
+        Path(".python-version")
+    ]
+    assert not (added / ".python-version").exists()
+    assert sorted(p.relative_to(api) for p in api.rglob(".python-version")) == [
+        Path(".python-version")
+    ]
+
+
+def test_s4_4_8_9_lib_root_points_tools_at_packages(tmp_path: Path) -> None:
+    lib, _ = _scaffolded(tmp_path / "lib", "python-lib")
+    app, _ = _scaffolded(tmp_path / "app", "python-app")
+
+    document = _toml(lib / "pyproject.toml")
+    assert document["tool"]["pyright"]["include"] == ["packages"]
+    assert document["tool"]["pytest"]["ini_options"]["testpaths"] == ["packages"]
+    assert "coverage[toml]>=7.6" in document["dependency-groups"]["dev"]
+
+    other = _toml(app / "pyproject.toml")
+    assert "include" not in other["tool"]["pyright"]
+    assert "testpaths" not in other["tool"]["pytest"]["ini_options"]
+    assert "coverage[toml]>=7.6" not in other["dependency-groups"]["dev"]

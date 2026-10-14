@@ -27,13 +27,16 @@ def normalize(body: str) -> str:
     return "\n".join(lines) + "\n" if lines else ""
 
 
-def append(root: Path, body: str) -> None:
-    """Append *body* to `root/.gitignore`, one blank line after what is there.
+def append(root: Path, body: str, tool: str) -> None:
+    """Append *body* to `root/.gitignore` under a `## {tool} ##` header.
 
-    Creates the file if absent; a blank *body* adds nothing.
+    The header and body form one section, one blank line after what is there.
+    Creates the file if absent; a blank *body* adds nothing, header included.
     """
     target = root / GITIGNORE
     existing = normalize(target.read_text(encoding="utf-8")) if target.is_file() else ""
-    sections = [section for section in (existing, normalize(body)) if section]
+    normalized = normalize(body)
+    section = f"## {tool} ##\n{normalized}" if normalized else ""
+    sections = [part for part in (existing, section) if part]
     if sections:
         target.write_text("\n".join(sections), encoding="utf-8")

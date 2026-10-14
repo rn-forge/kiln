@@ -134,9 +134,9 @@ def test_s5_3_6_1_reconcile_composes_uv_then_nx_once(tmp_path: Path) -> None:
 
     reconcile_frontend(root, workspace, KilnConfig.load(root))
 
-    assert uv_body == UV_FIXTURE.read_text(encoding="utf-8")
+    assert uv_body == "## uv ##\n" + UV_FIXTURE.read_text(encoding="utf-8")
     assert (root / ".gitignore").read_text(encoding="utf-8") == (
-        uv_body + "\n" + nx_body.rstrip("\n") + "\n"
+        uv_body + "\n## nx ##\n" + nx_body.rstrip("\n") + "\n"
     )
 
 

@@ -112,7 +112,7 @@ def reconcile_frontend(root: Path, workspace: Path, config: KilnConfig) -> None:
         if entry.name in _DROPPED:
             continue
         if entry.name == gitignore.GITIGNORE:
-            gitignore.append(root, entry.read_text(encoding="utf-8"))
+            gitignore.append(root, entry.read_text(encoding="utf-8"), "nx")
             continue
         _copy_or_merge(entry, root / entry.name)
 

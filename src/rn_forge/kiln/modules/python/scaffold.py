@@ -99,7 +99,7 @@ def scaffold_backend(raw: Path, config: KilnConfig) -> None:
             member = raw / package
             member.mkdir(parents=True, exist_ok=True)
             member_name = f"{config.name}-api" if web else Path(package).name
-            _uv_init(member, name=member_name, bare=False, member=True)
+            _uv_init(member, name=member_name, bare=False, member=True, lib=workspace)
             _write_sample_test(member, member_name)
         DocumentUtils.update(
             raw / "pyproject.toml",
@@ -165,7 +165,7 @@ def add_package(root: Path, config: KilnConfig, name: str, remote: str) -> None:
     relative = f"packages/{name}"
     member = root / relative
     member.mkdir(parents=True, exist_ok=True)
-    _uv_init(member, name=name, bare=False, member=True)
+    _uv_init(member, name=name, bare=False, member=True, lib=True)
     _write_sample_test(member, name)
     _reconcile_pyproject(root, config, Path(relative) / "pyproject.toml")
     _join_workspace(root / "pyproject.toml", relative, name)
@@ -276,7 +276,7 @@ def _reconcile_tree(root: Path, config: KilnConfig) -> None:
     if path.is_file():
         body = path.read_text(encoding="utf-8")
         path.unlink()
-        gitignore.append(root, body)
+        gitignore.append(root, body, "uv")
     _reconcile_pyprojects(root, config)
 
 
@@ -333,12 +333,27 @@ def _extra_dev(config: KilnConfig, *, web: bool, is_member: bool) -> tuple[str, 
     return ()
 
 
-def _uv_init(target: Path, *, name: str, bare: bool, member: bool = False) -> None:
+def _uv_init(
+    target: Path,
+    *,
+    name: str,
+    bare: bool,
+    member: bool = False,
+    lib: bool = False,
+) -> None:
     args = ["uv", "init", "--name", name, "--vcs", "none", "--no-readme"]
-    args += ["--bare"] if bare else ["--package", "--build-backend", "uv"]
-    # A root must not join a uv project above `.staging/`; a member joins its root.
-    args += [] if member else ["--no-workspace"]
+    if bare:
+        args += ["--bare", "--pin-python"]
+    else:
+        args += ["--lib" if lib else "--package", "--build-backend", "uv"]
+    # A root must not join a uv project above `.staging/`; a member joins its
+    # root, and its Python pin comes from the root's `.python-version`.
+    args += ["--no-pin-python"] if member else ["--no-workspace"]
     Process.execute(f"uv-init[{name}]", *args, cwd=str(target))
+    if not bare:
+        typed = target / "src" / name.replace("-", "_") / "py.typed"
+        if not typed.exists():
+            typed.touch()
 
 
 def _reconcile(
@@ -367,12 +382,23 @@ def _reconcile(
             }
         }
     project: dict[str, object] = {"requires-python": REQUIRES_PYTHON}
+    if (is_root and not is_workspace_root) or (lib and not is_root):
+        project["readme"] = "README.md"
     if dependencies:
         existing = _existing_list(path, "project", "dependencies")
         project["dependencies"] = [*existing, *dependencies]
+    if lib and is_workspace_root:
+        tool["pyright"] = {
+            **cast("dict[str, object]", tool["pyright"]),
+            "include": ["packages"],
+        }
+        tool["pytest"] = {
+            "ini_options": {"addopts": PYTEST_ADDOPTS, "testpaths": ["packages"]}
+        }
     updates: dict[str, object] = {"project": project, "tool": tool}
     if is_root:
-        dev = [*_DEV_GROUP, f"rn-forge-kiln @ {archetypes.KILN_SOURCE}"]
+        coverage = ["coverage[toml]>=7.6"] if lib else []
+        dev = [*_DEV_GROUP, *coverage, f"rn-forge-kiln @ {archetypes.KILN_SOURCE}"]
         mkdocs_group = _DOCS_GROUP_MKDOCS_LIB if lib else _DOCS_GROUP_MKDOCS
         docs = [*_DOCS_GROUP, *(mkdocs_group if mkdocs else [])]
         updates["dependency-groups"] = {

@@ -38,8 +38,15 @@ def root(tmp_path: Path) -> Path:
 
 
 def _compose(root: Path, *bodies: str) -> None:
-    for body in bodies:
-        gitignore.append(root, body)
+    for tool, body in zip(("uv", "nx"), bodies, strict=False):
+        gitignore.append(root, body, tool)
+
+
+def _sections(uv: str, nx: str | None = None) -> str:
+    text = "## uv ##\n" + uv.rstrip("\n") + "\n"
+    if nx is not None:
+        text += "\n## nx ##\n" + nx.rstrip("\n") + "\n"
+    return text
 
 
 def test_s5_3_6_1_composition_is_uv_then_nx_then_kiln(root: Path) -> None:
@@ -47,9 +54,7 @@ def test_s5_3_6_1_composition_is_uv_then_nx_then_kiln(root: Path) -> None:
     cycle.apply(root, home=root.parent / "home")
 
     text = (root / ".gitignore").read_text(encoding="utf-8")
-    expected = GITIGNORE_BLOCK.render(
-        UV_BODY + "\n" + NX_BODY.rstrip("\n") + "\n", _kiln_body(root)
-    )
+    expected = GITIGNORE_BLOCK.render(_sections(UV_BODY, NX_BODY), _kiln_body(root))
     assert text == expected
     assert text.index("__pycache__/") < text.index("node_modules")
     assert text.index("node_modules") < text.index("# BEGIN rn-forge kiln")
@@ -60,7 +65,7 @@ def test_s5_3_6_1_without_a_frontend_it_is_uv_then_kiln(root: Path) -> None:
     cycle.apply(root, home=root.parent / "home")
 
     text = (root / ".gitignore").read_text(encoding="utf-8")
-    assert text == GITIGNORE_BLOCK.render(UV_BODY, _kiln_body(root))
+    assert text == GITIGNORE_BLOCK.render(_sections(UV_BODY), _kiln_body(root))
     assert text.count("# Python-generated files") == 1
 
 
@@ -90,13 +95,13 @@ def test_s5_3_6_2_upstream_bodies_are_normalized_not_rewritten(
 ) -> None:
     _compose(root, "# uv\n.venv", body)
     assert (root / ".gitignore").read_text(encoding="utf-8") == (
-        "# uv\n.venv\n\ndist\n!dist/keep\n"
+        "## uv ##\n# uv\n.venv\n\n## nx ##\ndist\n!dist/keep\n"
     )
 
 
 def test_s5_3_6_2_an_empty_body_adds_no_section(root: Path) -> None:
     _compose(root, UV_BODY, "\n\n")
-    assert (root / ".gitignore").read_text(encoding="utf-8") == UV_BODY
+    assert (root / ".gitignore").read_text(encoding="utf-8") == _sections(UV_BODY)
 
 
 def test_s5_3_6_2_two_applies_keep_bodies_and_user_rules_with_one_block(
@@ -115,7 +120,7 @@ def test_s5_3_6_2_two_applies_keep_bodies_and_user_rules_with_one_block(
 
     assert after_first == before
     assert path.read_text(encoding="utf-8") == before
-    assert before.startswith(UV_BODY)
+    assert before.startswith(_sections(UV_BODY, NX_BODY))
     assert before.count("# BEGIN rn-forge kiln") == 1
     assert before.endswith("secrets.env\n")
 
@@ -179,3 +184,41 @@ def test_s5_3_6_3_check_ignore_covers_outputs_and_leaves_sources(
 
     assert [p for p in IGNORED if not ignored(p)] == []
     assert [p for p in TRACKED if ignored(p)] == []
+
+
+def test_s4_4_8_1_append_writes_a_tool_header_above_the_body(root: Path) -> None:
+    gitignore.append(root, "a/\n", "uv")
+    assert (root / ".gitignore").read_text(encoding="utf-8") == "## uv ##\na/\n"
+
+
+def test_s4_4_8_2_two_tools_stack_in_call_order(root: Path) -> None:
+    gitignore.append(root, "a/\n!a/keep\n", "uv")
+    gitignore.append(root, "b/\n!b/keep\n", "nx")
+    assert (root / ".gitignore").read_text(encoding="utf-8") == (
+        "## uv ##\na/\n!a/keep\n\n## nx ##\nb/\n!b/keep\n"
+    )
+
+
+def test_s4_4_8_3_blank_body_adds_no_header(root: Path) -> None:
+    gitignore.append(root, "\n  \n", "uv")
+    assert not (root / ".gitignore").exists()
+    gitignore.append(root, "a/\n", "uv")
+    gitignore.append(root, "\n\n", "nx")
+    assert (root / ".gitignore").read_text(encoding="utf-8") == "## uv ##\na/\n"
+
+
+def test_s4_4_8_4_kiln_block_stays_after_the_tool_sections(root: Path) -> None:
+    home = root.parent / "home"
+    _compose(root, UV_BODY, NX_BODY)
+    cycle.apply(root, home=home)
+    path = root / ".gitignore"
+    text = path.read_text(encoding="utf-8")
+
+    sections = _sections(UV_BODY, NX_BODY)
+    assert text == GITIGNORE_BLOCK.render(sections, _kiln_body(root))
+    assert text.startswith(sections)
+    assert text.index("## nx ##") < text.index("# BEGIN rn-forge kiln")
+    assert "## uv ##" not in text.split("# BEGIN rn-forge kiln")[1]
+
+    cycle.apply(root, home=home)
+    assert path.read_text(encoding="utf-8") == text
