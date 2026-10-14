@@ -2,8 +2,7 @@
 
 kiln is the rn-forge repository generator, and it carries the standard it
 generates against. Both halves live here: the decisions and the spec are this
-site, the archetypes and golden repos are the fixtures, and the CLI renders one
-into the other.
+site, the archetypes are the fixtures, and the CLI renders one into the other.
 
 ## Read in this order
 
@@ -37,16 +36,11 @@ into the other.
 
 ## Where kiln is
 
-The canon and the hand-authored golden repos exist and are green; there is no
-generator code yet. That order is deliberate — see [ADR-0005](adr/ADR-0005.md).
-Next is [E3](specs/epics/E3-realign-goldens-and-canon/index.md), bringing the
-goldens and the canon up to date with pykit, then the generator itself.
-
-The golden repos under `tests/fixtures/golden/` are complete, runnable
-repositories. Read one as if it were the finished product, because that is
-exactly what the templates will be derived from:
+The canon, the generator and the render matrix exist. The hand-authored golden
+repos that bootstrapped the templates have left git; the oracle now is the
+owner's review of the rendered cells (see [ADR-0005](adr/ADR-0005.md)). Render
+and validate every cell, and read one as the finished product:
 
 ```bash
-cd tests/fixtures/golden/python-tool
-uv sync && task validate
+task self:golden:render && task self:golden:validate
 ```

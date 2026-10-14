@@ -1,3 +1,0 @@
-# API
-
-::: golden_beta

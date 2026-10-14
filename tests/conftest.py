@@ -8,6 +8,8 @@ looks at.
 from __future__ import annotations
 
 import json
+import subprocess
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -73,5 +75,39 @@ def write_state(tmp_path: Path):
             encoding="utf-8",
         )
         return path
+
+    return build
+
+
+@pytest.fixture(scope="session")
+def rendered(tmp_path_factory: pytest.TempPathFactory) -> Callable[[str], Path]:
+    """Return `(archetype) -> Path` to a repository `kiln new` rendered once.
+
+    The result is read-only; a test that changes it copies it first.
+    """
+    from rn_forge.kiln import commands
+
+    cache: dict[str, Path] = {}
+
+    def build(archetype: str) -> Path:
+        if archetype in cache:
+            return cache[archetype]
+        parent = tmp_path_factory.mktemp(archetype)
+        with pytest.MonkeyPatch.context() as patch:
+            patch.chdir(parent)
+            commands.new(Path(archetype), archetype=archetype, docs="mkdocs", yes=True)
+        root = parent / archetype
+        if archetype == "python-lib":
+            for args in (
+                ("init", "-q"),
+                ("remote", "add", "origin", "https://github.com/rn-forge/example-lib"),
+            ):
+                subprocess.run(
+                    ["git", *args], cwd=root, check=True, capture_output=True
+                )
+            for package in ("lib-alpha", "lib-beta"):
+                commands.generate_package(package, path=root)
+        cache[archetype] = root
+        return root
 
     return build

@@ -1,10 +1,10 @@
 """Render and validate every shipped archetype x flag cell of kiln's templates.
 
-Usage: golden_matrix.py {render,validate,compare} [REF]
+Usage: golden_matrix.py {render,validate} [REF]
+       golden_matrix.py compare BASE [REF]
 
 Cells land in `.goldens/<ref_dir>/<cell name>/`, beneath the repository root.
-`compare` diffs the python-app, python-tool and python-lib cells against the
-hand-authored goldens in `tests/fixtures/golden/`.
+`compare` diffs the kiln-owned files of every cell between two rendered refs.
 """
 
 from __future__ import annotations
@@ -24,12 +24,6 @@ ROOT = Path(__file__).resolve().parent.parent
 GOLDENS = ROOT / ".goldens"
 LIB_ORIGIN = "https://github.com/rn-forge/golden-lib"
 LIB_PACKAGES = ("golden-alpha", "golden-beta")
-GOLDEN_FIXTURES = ROOT / "tests" / "fixtures" / "golden"
-COMPARED: tuple[tuple[str, str], ...] = (
-    ("python-app", "golden-app"),
-    ("python-tool", "golden-tool"),
-    ("python-lib", "golden-lib"),
-)
 
 
 @dataclass(frozen=True)
@@ -174,8 +168,8 @@ def validate(ref: str, out_root: Path) -> int:
 def normalize(text: str, name: str, target: str) -> str:
     """Rename *name* (and its module form) to *target*, and blank provenance versions.
 
-    Only the golden's name is mapped, onto the cell's: a cell's name can equal
-    its archetype (`python-app`), which a placeholder would also replace.
+    A cell's name can equal its archetype (`python-app`), so *name* is mapped
+    directly onto *target* rather than through a placeholder.
     """
     text = text.replace(name, target)
     text = text.replace(name.replace("-", "_"), target.replace("-", "_"))
@@ -225,46 +219,46 @@ def _owned_text(root: Path, path: str, begin: str | None, end: str | None) -> st
     return "\n".join(lines[first : last + 1]) + "\n"
 
 
-def compare_cell(
-    cell_dir: Path, golden_dir: Path, cell_name: str, golden_name: str
-) -> list[str]:
-    """Differences between a cell's and its golden's kiln-owned files, one line each, sorted."""
-    if not (cell_dir / ".rn-forge" / "kiln" / "state.json").is_file():
-        return [f"missing cell: {cell_dir}"]
-    golden = _owned(golden_dir, golden_name, cell_name)
-    cell = _owned(cell_dir, cell_name, cell_name)
+def compare_cell(ref_dir: Path, base_dir: Path, name: str) -> list[str]:
+    """Differences between a cell's kiln-owned files at two refs, one line each, sorted."""
+    for cell_dir in (base_dir, ref_dir):
+        if not (cell_dir / ".rn-forge" / "kiln" / "state.json").is_file():
+            return [f"missing cell: {cell_dir}"]
+    base = _owned(base_dir, name, name)
+    ref = _owned(ref_dir, name, name)
     groups: dict[str, list[str]] = {}
-    for key in golden.keys() - cell.keys():
-        groups[f"only in golden: {key}"] = []
-    for key in cell.keys() - golden.keys():
-        groups[f"only in cell: {key}"] = []
-    for key in golden.keys() & cell.keys():
-        old = normalize(_owned_text(golden_dir, *golden[key]), golden_name, cell_name)
-        new = normalize(_owned_text(cell_dir, *cell[key]), cell_name, cell_name)
+    for key in base.keys() - ref.keys():
+        groups[f"only in base: {key}"] = []
+    for key in ref.keys() - base.keys():
+        groups[f"only in ref: {key}"] = []
+    for key in base.keys() & ref.keys():
+        old = normalize(_owned_text(base_dir, *base[key]), name, name)
+        new = normalize(_owned_text(ref_dir, *ref[key]), name, name)
         if old != new:
             groups[f"differs: {key}"] = list(
                 difflib.unified_diff(
                     old.splitlines(),
                     new.splitlines(),
-                    fromfile=f"golden/{key}",
-                    tofile=f"cell/{key}",
+                    fromfile=f"base/{key}",
+                    tofile=f"ref/{key}",
                     lineterm="",
                 )
             )
     return [line for head in sorted(groups) for line in (head, *groups[head])]
 
 
-def compare(ref: str, out_root: Path, golden_root: Path = GOLDEN_FIXTURES) -> int:
-    """Diff each compared cell of *ref* against its golden, print one table, and return 1 on any difference."""
-    target = out_root / ref_dir(ref)
+def compare(base: str, ref: str, out_root: Path) -> int:
+    """Diff every cell of *base* against *ref*, print one table, and return 1 on any difference."""
+    base_target = out_root / ref_dir(base)
+    ref_target = out_root / ref_dir(ref)
     mark = {True: "PASS", False: "FAIL"}
     rows: list[tuple[str, ...]] = [("cell", "result")]
     failed = False
-    for cell, golden_name in COMPARED:
-        lines = compare_cell(target / cell, golden_root / cell, cell, golden_name)
+    for cell in CELLS:
+        lines = compare_cell(ref_target / cell.name, base_target / cell.name, cell.name)
         print("\n".join(lines))
         failed = failed or bool(lines)
-        rows.append((cell, mark[not lines]))
+        rows.append((cell.name, mark[not lines]))
     widths = [max(len(row[i]) for row in rows) for i in range(2)]
     for row in rows:
         print(" | ".join(text.ljust(width) for text, width in zip(row, widths)))
@@ -272,15 +266,22 @@ def compare(ref: str, out_root: Path, golden_root: Path = GOLDEN_FIXTURES) -> in
 
 
 def main(argv: list[str]) -> int:
-    """Run `render`, `validate` or `compare` with an optional REF."""
-    if not argv or argv[0] not in ("render", "validate", "compare") or len(argv) > 2:
-        print("usage: golden_matrix.py {render,validate,compare} [REF]", file=sys.stderr)
+    """Run `render`, `validate` or `compare` with the refs it takes."""
+    usage = "usage: golden_matrix.py {render,validate} [REF] | compare BASE [REF]"
+    if not argv or argv[0] not in ("render", "validate", "compare") or len(argv) > 3:
+        print(usage, file=sys.stderr)
+        return 2
+    if argv[0] == "compare":
+        if len(argv) < 2 or not argv[1] or len(argv) > 3:
+            print(usage, file=sys.stderr)
+            return 2
+        return compare(argv[1], argv[2] if len(argv) == 3 else "", GOLDENS)
+    if len(argv) > 2:
+        print(usage, file=sys.stderr)
         return 2
     ref = argv[1] if len(argv) == 2 else ""
     if argv[0] == "validate":
         return validate(ref, GOLDENS)
-    if argv[0] == "compare":
-        return compare(ref, GOLDENS)
     try:
         render(ref, GOLDENS)
     except RuntimeError as error:

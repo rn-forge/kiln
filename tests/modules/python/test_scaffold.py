@@ -258,9 +258,6 @@ def test_s5_3_6_4_apply_does_not_reformat_repo_owned_toml(tmp_path: Path) -> Non
     assert pyproject.read_text(encoding="utf-8") == dense
 
 
-GOLDEN = Path(__file__).resolve().parents[2] / "fixtures" / "golden"
-
-
 @pytest.mark.parametrize(
     ("archetype", "packages"),
     [
@@ -286,20 +283,6 @@ def test_s4_5_10_scaffold_writes_a_sample_test_into_each_package(
     for package, name in packages.items():
         body = (root / package / SAMPLE_TEST).read_text(encoding="utf-8")
         assert body == sample_test(name)
-
-
-@pytest.mark.parametrize(
-    ("golden", "name"),
-    [
-        ("python-app", "golden-app"),
-        ("python-tool", "golden-tool"),
-        ("python-lib/packages/golden-alpha", "golden-alpha"),
-        ("python-lib/packages/golden-beta", "golden-beta"),
-    ],
-)
-def test_s4_5_10_each_golden_carries_the_sample_test(golden: str, name: str) -> None:
-    on_disk = (GOLDEN / golden / SAMPLE_TEST).read_text(encoding="utf-8")
-    assert on_disk == sample_test(name)
 
 
 def test_s4_4_4_1_sample_test_fits_at_a_long_name() -> None:
@@ -354,14 +337,19 @@ def test_s11_2_2_2_only_python_lib_under_mkdocs_gets_the_monorepo_plugin(
     )
 
 
-def test_s11_2_2_2_the_python_lib_docs_group_matches_the_golden(tmp_path: Path) -> None:
+def test_s11_2_2_2_the_python_lib_docs_group_is_pinned(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-lib")
     scaffold(root, KilnConfig.load(root))
     rendered = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
-    golden = tomllib.loads(
-        (GOLDEN / "python-lib" / "pyproject.toml").read_text(encoding="utf-8")
-    )
-    assert rendered["dependency-groups"]["docs"] == golden["dependency-groups"]["docs"]
+    assert rendered["dependency-groups"]["docs"] == [
+        "mdformat>=1.0.0",
+        "mdformat-gfm>=0.4",
+        "mdformat-front-matters>=2.0.0",
+        "mdformat-mkdocs>=5.3.0",
+        "mkdocs-material>=9.6",
+        "mkdocs-monorepo-plugin>=1.1",
+        "mkdocstrings[python]>=0.30",
+    ]
 
 
 @pytest.mark.parametrize(

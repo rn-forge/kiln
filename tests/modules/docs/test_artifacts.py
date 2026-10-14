@@ -23,7 +23,6 @@ from rn_forge.kiln.modules.instructions.scaffold import (
     scaffold as instructions_scaffold,
 )
 
-GOLDEN = Path(__file__).resolve().parents[2] / "fixtures" / "golden"
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
 
 CONFIG = """
@@ -163,31 +162,6 @@ def _provenance(text: str) -> str:
 def _is_subsequence(needle: list[str], haystack: list[str]) -> bool:
     remaining = iter(haystack)
     return all(line in remaining for line in needle)
-
-
-@pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_2_property4_matches_its_golden(tmp_path: Path, archetype: str) -> None:
-    """Grown index pages must still contain every seeded line, in order."""
-    golden = GOLDEN / archetype
-    config = KilnConfig.load(golden)
-    rendered = {a.key: a.content for a in DOCS.artifacts(config, golden)}
-
-    mkdocs = (golden / "mkdocs.yml").read_text(encoding="utf-8")
-    nav = build_nav(golden / "docs", config.packages)
-    assert NAV_BLOCK.extract(mkdocs) == nav
-    scaffold(tmp_path, config)
-    body = (tmp_path / "mkdocs.yml").read_text(encoding="utf-8")
-    assert NAV_BLOCK.extract(body) == ""
-    assert _normalized(NAV_BLOCK.render(body, nav)) == (_normalized(mkdocs))
-
-    for path in _seeds(archetype):
-        on_disk = (golden / path).read_text(encoding="utf-8")
-        if path in GROWN:
-            assert _is_subsequence(rendered[path].splitlines(), on_disk.splitlines()), (
-                path
-            )
-        else:
-            assert _provenance(rendered[path]) == _provenance(on_disk), path
 
 
 def test_s4_3_2_property5_checks_pass_on_the_rendered_output(tmp_path: Path) -> None:
@@ -361,21 +335,6 @@ def _rendered_mkdocs(root: Path) -> str:
     return (root / "mkdocs.yml").read_text(encoding="utf-8")
 
 
-@pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s11_2_2_1_the_docs_artifacts_reproduce_the_golden_for_both_packages(
-    tmp_path: Path, archetype: str
-) -> None:
-    """Acceptance 1: the F4.3 property tests above run against each golden's
-    `config.toml`, and the `python-lib` one lists `golden-alpha` and
-    `golden-beta`; this pins that fact."""
-    config = KilnConfig.load(GOLDEN / archetype)
-    assert config.packages == (
-        ("packages/golden-alpha", "packages/golden-beta")
-        if archetype == "python-lib"
-        else ()
-    )
-
-
 def test_s11_2_2_2_a_python_lib_root_body_has_monorepo_glob_paths_and_snippets(
     tmp_path: Path,
 ) -> None:
@@ -507,18 +466,3 @@ def test_s4_4_7_3_indexes_link_the_pages(tmp_path: Path, archetype: str) -> None
     assert (reference in pages["docs/index.md"]) is (
         archetype in ("python-app", "python-tool")
     )
-
-
-@pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_4_7_4_goldens_carry_the_rendered_pages(archetype: str) -> None:
-    golden = GOLDEN / archetype
-    config = KilnConfig.load(golden)
-    rendered = {a.key: a.content for a in DOCS.artifacts(config, golden)}
-    state = json.loads(
-        (golden / ".rn-forge" / "kiln" / "state.json").read_text(encoding="utf-8")
-    )
-    paths = [DEV, DRIFT] + ([PY_API] if archetype != "python-lib" else [])
-    for path in paths:
-        on_disk = (golden / path).read_text(encoding="utf-8")
-        assert _provenance(rendered[path]) == _provenance(on_disk), path
-        assert state["entries"][path]["kind"] == "seeded", path

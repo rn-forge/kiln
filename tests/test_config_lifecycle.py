@@ -7,10 +7,9 @@ Two repo shapes:
   re-resolve and `state.json` carries real recorded `config_provenance`. It is
   not a full scaffold (no `uv init`), so `--apply`'s post-apply checks are not
   exercised on it.
-- `repo` — the `python-tool` golden `tests/test_apply.py` already builds on,
-  which passes every check. It carries no recorded provenance of its own (it
-  is hand-authored, per `README.md`), so provenance is seeded here the way
-  `kiln new` would have left it — every committed key attributed to the flags
+- `repo` — a copy of the rendered `python-tool` repo `tests/test_apply.py` builds on,
+  which passes every check. Its recorded provenance is replaced here with
+  what a flags-only `kiln new` leaves — every committed key attributed to the flags
   layer — to exercise `--apply` and the schema-upgrade path against a repo
   whose checks actually pass.
 """
@@ -18,6 +17,7 @@ Two repo shapes:
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 import shutil
 import tomllib
 from pathlib import Path
@@ -39,7 +39,6 @@ FLAGS = {"repository": {"name": "demo", "archetype": "python-app"}}
 CONFIG_PATH = Path(".rn-forge") / "kiln" / "config.toml"
 STATE_PATH = Path(".rn-forge") / "kiln" / "state.json"
 
-GOLDEN = Path(__file__).resolve().parent / "fixtures" / "golden" / "python-tool"
 _IGNORE = shutil.ignore_patterns(
     ".venv",
     ".uv-cache",
@@ -85,9 +84,13 @@ def resolved_repo(tmp_path: Path, layer: Path, monkeypatch: pytest.MonkeyPatch) 
 
 
 @pytest.fixture
-def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+def repo(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    rendered: Callable[[str], Path],
+) -> Path:
     root = tmp_path / "repo"
-    shutil.copytree(GOLDEN, root, ignore=_IGNORE)
+    shutil.copytree(rendered("python-tool"), root, ignore=_IGNORE)
     cycle.apply(root)
     _seed_flags_provenance(root)
     monkeypatch.chdir(root)
@@ -98,9 +101,8 @@ def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def _seed_flags_provenance(root: Path) -> None:
     """Record every committed key as flags-layer provenance, as `kiln new` would.
 
-    The golden is hand-authored and carries no `state.json` provenance of its
-    own; this reconstructs what committing it through `kiln new` would have
-    left, so `reresolve` has a baseline to compare the committed file against.
+    Replaces the `state.json` provenance with what a flags-only `kiln new`
+    leaves, so `reresolve` has a baseline to compare the committed file against.
     """
     document = tomllib.loads((root / CONFIG_PATH).read_text(encoding="utf-8"))
     provenance = {

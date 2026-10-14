@@ -1,8 +1,8 @@
 """S4.5.2 — `kiln apply`: reconciliation.
 
-Built over a copy of the `python-tool` golden repo — already scaffolded and
-already passing every check (`tests/test_checks_registry.py`), so these tests
-need no `uv init` and run fast. The copy skips `.venv` and the various tool
+Built over a copy of the session-rendered `python-tool` repo (`rendered` in
+`tests/conftest.py`) — already scaffolded and already passing every check
+(`tests/test_checks_registry.py`), so each test needs no `uv init` and runs fast. The copy skips `.venv` and the various tool
 caches, which `cycle.apply`/`checks.run` never touch.
 """
 
@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import inspect
 import json
+from collections.abc import Callable
 import shutil
 from pathlib import Path
 from typing import Any
@@ -22,7 +23,6 @@ from rn_forge.commons.runtime.console import OutputMode, console
 from rn_forge.kiln import commands
 from rn_forge.kiln.modules.core import cycle
 
-GOLDEN = Path(__file__).resolve().parent / "fixtures" / "golden" / "python-tool"
 _IGNORE = shutil.ignore_patterns(
     ".venv",
     ".uv-cache",
@@ -36,16 +36,14 @@ _IGNORE = shutil.ignore_patterns(
 
 
 @pytest.fixture
-def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """A copy of the `python-tool` golden repo, resynced to the current templates.
-
-    The checked-in golden is hand-kept in step with the templates (README);
-    mid-feature-branch it can be briefly behind, so `cycle.apply` once before
-    the test brings its generated files (never `pyproject.toml`/`src`, which
-    `python`'s module renders nothing of) current — without `uv init`.
-    """
+def repo(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    rendered: Callable[[str], Path],
+) -> Path:
+    """A copy of the rendered `python-tool` repo, applied once more."""
     root = tmp_path / "repo"
-    shutil.copytree(GOLDEN, root, ignore=_IGNORE)
+    shutil.copytree(rendered("python-tool"), root, ignore=_IGNORE)
     cycle.apply(root)
     monkeypatch.chdir(root)
     yield root

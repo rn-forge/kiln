@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -11,7 +12,6 @@ import pytest
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.instructions.scaffold import scaffold
 
-GOLDEN = Path(__file__).resolve().parents[2] / "fixtures" / "golden"
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
 
 CONFIG = 'schema_version = 1\n\n[repository]\nname = "demo"\narchetype = "python-app"\n'
@@ -63,19 +63,23 @@ def test_s4_3_5_scaffold_never_overwrites_a_present_body(tmp_path: Path) -> None
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_5_readme_bullets_appear_verbatim_in_every_golden(archetype: str) -> None:
-    golden = (GOLDEN / archetype / "README.md").read_text(encoding="utf-8")
+def test_s4_3_5_readme_bullets_appear_verbatim_in_every_rendered_readme(
+    archetype: str, rendered: Callable[[str], Path]
+) -> None:
+    text = (rendered(archetype) / "README.md").read_text(encoding="utf-8")
     for bullet in BULLETS:
         assert bullet in README
-        assert bullet in golden
+        assert bullet in text
 
 
-def test_s4_3_5_readme_is_mdformat_clean(tmp_path: Path) -> None:
-    """Formatted under a golden's `.mdformat.toml`, which a rendered repo carries too."""
+def test_s4_3_5_readme_is_mdformat_clean(
+    tmp_path: Path, rendered: Callable[[str], Path]
+) -> None:
+    """Formatted under the `.mdformat.toml` a rendered repo carries."""
     root = _root(tmp_path)
     scaffold(root, KilnConfig.load(root))
     (root / ".mdformat.toml").write_bytes(
-        (GOLDEN / "python-app" / ".mdformat.toml").read_bytes()
+        (rendered("python-app") / ".mdformat.toml").read_bytes()
     )
     result = subprocess.run(
         [sys.executable, "-m", "mdformat", "--check", "README.md"],
@@ -99,9 +103,11 @@ backend = "fastapi"
 """
 
 
-def _mdformat_check(root: Path) -> subprocess.CompletedProcess[str]:
+def _mdformat_check(
+    root: Path, rendered: Callable[[str], Path]
+) -> subprocess.CompletedProcess[str]:
     (root / ".mdformat.toml").write_bytes(
-        (GOLDEN / "python-app" / ".mdformat.toml").read_bytes()
+        (rendered("python-app") / ".mdformat.toml").read_bytes()
     )
     return subprocess.run(
         [sys.executable, "-m", "mdformat", "--check", "README.md"],
@@ -124,7 +130,11 @@ def _mdformat_check(root: Path) -> subprocess.CompletedProcess[str]:
     ],
 )
 def test_s5_3_6_8_web_readme_names_the_api_path_and_is_mdformat_clean(
-    tmp_path: Path, name: str, extra: str, app_path: str
+    tmp_path: Path,
+    name: str,
+    extra: str,
+    app_path: str,
+    rendered: Callable[[str], Path],
 ) -> None:
     config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
     config.parent.mkdir(parents=True)
@@ -136,7 +146,7 @@ def test_s5_3_6_8_web_readme_names_the_api_path_and_is_mdformat_clean(
     assert "`task api:dev`" in readme
     assert "`app`" in readme
     assert "repo-owned" in readme
-    result = _mdformat_check(tmp_path)
+    result = _mdformat_check(tmp_path, rendered)
     assert result.returncode == 0, result.stdout + result.stderr
 
 
@@ -150,7 +160,9 @@ app = FastApiApp(AppConfig())
 """
 
 
-def test_s5_3_7_1_fastapi_readme_shows_the_standard_module(tmp_path: Path) -> None:
+def test_s5_3_7_1_fastapi_readme_shows_the_standard_module(
+    tmp_path: Path, rendered: Callable[[str], Path]
+) -> None:
     config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
     config.parent.mkdir(parents=True)
     config.write_text(WEB_CONFIG.format(name="demo", extra=""), encoding="utf-8")
@@ -163,11 +175,13 @@ def test_s5_3_7_1_fastapi_readme_shows_the_standard_module(tmp_path: Path) -> No
     assert "create that module yourself" not in readme
     assert "seeded it with a small router and a test" in readme.replace("\n", " ")
     assert after.startswith("\n## Conventions")
-    result = _mdformat_check(tmp_path)
+    result = _mdformat_check(tmp_path, rendered)
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_s5_3_7_2_django_readme_has_no_fastapi_module(tmp_path: Path) -> None:
+def test_s5_3_7_2_django_readme_has_no_fastapi_module(
+    tmp_path: Path, rendered: Callable[[str], Path]
+) -> None:
     config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
     config.parent.mkdir(parents=True)
     config.write_text(
@@ -181,7 +195,7 @@ def test_s5_3_7_2_django_readme_has_no_fastapi_module(tmp_path: Path) -> None:
     readme = (tmp_path / "README.md").read_text(encoding="utf-8")
     assert "## Running the API" in readme
     assert "rn_forge.fastapi" not in readme
-    result = _mdformat_check(tmp_path)
+    result = _mdformat_check(tmp_path, rendered)
     assert result.returncode == 0, result.stdout + result.stderr
 
 

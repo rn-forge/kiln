@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -11,7 +12,6 @@ from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs.checks import structure
 from rn_forge.kiln.modules.docs.packages import check_packages
 
-GOLDEN = Path(__file__).parents[2].parent / "fixtures" / "golden"
 PKG = "packages/alpha"
 TABLE = '\n[archetype.python-lib]\npackages = ["packages/alpha"]\n'
 MKDOCS = "site_name: alpha\nnav:\n  - Home: index.md\n  - Changelog: changelog.md\n"
@@ -108,8 +108,10 @@ def test_s11_2_3_1_a_generated_reference_is_not_naming_checked(repo) -> None:
     assert _codes(root) == []
 
 
-def test_s11_2_3_2_the_python_lib_golden_reports_none(repo) -> None:
-    root = GOLDEN / "python-lib"
+def test_s11_2_3_2_the_rendered_python_lib_reports_none(
+    rendered: Callable[[str], Path],
+) -> None:
+    root = rendered("python-lib")
     assert check_packages(root, KilnConfig.load(root)) == []
 
 

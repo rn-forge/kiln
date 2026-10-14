@@ -23,7 +23,6 @@ from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.tasks import TASKS
 from rn_forge.kiln.modules.tasks.checks import layout
 
-GOLDEN = Path(__file__).resolve().parents[2] / "fixtures" / "golden"
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
 
 TASK_KEYS = (
@@ -145,17 +144,6 @@ def _normalized(text: str) -> str:
         count=1,
         flags=re.M,
     )
-
-
-@pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_3_property4_matches_its_golden(tmp_path: Path, archetype: str) -> None:
-    """Every golden's `[tasks].includes` is empty, so only the managed rows apply."""
-    golden = GOLDEN / archetype
-    config = KilnConfig.load(golden)
-    rendered = {a.path: a.content for a in TASKS.artifacts(config, golden)}
-    for path in TASK_KEYS:
-        on_disk = (golden / path).read_text(encoding="utf-8")
-        assert _normalized(rendered[path]) == _normalized(on_disk), path
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)

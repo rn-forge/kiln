@@ -1,6 +1,6 @@
 """S4.5.3 — `kiln diff` and `kiln version`: inspection.
 
-Built over the same golden-repo fixture as `test_apply.py` (the nearest `done`
+Built over the same rendered-repo fixture as `test_apply.py` (the nearest `done`
 story in this feature) — already scaffolded and passing, so no `uv init` is
 needed.
 """
@@ -8,6 +8,7 @@ needed.
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 import shutil
 from importlib import metadata
 from pathlib import Path
@@ -21,7 +22,6 @@ from rn_forge.commons.runtime.console import OutputMode, console
 from rn_forge.kiln import commands
 from rn_forge.kiln.modules.core import cycle
 
-GOLDEN = Path(__file__).resolve().parent / "fixtures" / "golden" / "python-tool"
 _IGNORE = shutil.ignore_patterns(
     ".venv",
     ".uv-cache",
@@ -35,9 +35,13 @@ _IGNORE = shutil.ignore_patterns(
 
 
 @pytest.fixture
-def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+def repo(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    rendered: Callable[[str], Path],
+) -> Path:
     root = tmp_path / "repo"
-    shutil.copytree(GOLDEN, root, ignore=_IGNORE)
+    shutil.copytree(rendered("python-tool"), root, ignore=_IGNORE)
     cycle.apply(root)
     monkeypatch.chdir(root)
     yield root

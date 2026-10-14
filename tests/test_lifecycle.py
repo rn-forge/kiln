@@ -10,6 +10,7 @@ the repository check.
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 import shutil
 from pathlib import Path
 
@@ -25,7 +26,6 @@ from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.core.config.schema import RootConfig
 
 ROOT = Path(__file__).resolve().parents[1]
-GOLDEN = Path(__file__).resolve().parent / "fixtures" / "golden" / "python-tool"
 _IGNORE = shutil.ignore_patterns(
     ".venv",
     ".uv-cache",
@@ -52,9 +52,13 @@ def kiln_cli() -> CliApp:
 
 
 @pytest.fixture
-def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+def repo(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    rendered: Callable[[str], Path],
+) -> Path:
     root = tmp_path / "repo"
-    shutil.copytree(GOLDEN, root, ignore=_IGNORE)
+    shutil.copytree(rendered("python-tool"), root, ignore=_IGNORE)
     cycle.apply(root)
     monkeypatch.chdir(root)
     yield root

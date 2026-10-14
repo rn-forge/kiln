@@ -6,6 +6,7 @@ ever errors defeats the point of it being one.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -15,7 +16,6 @@ from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.python.checks import pyproject
 
-GOLDEN = Path(__file__).resolve().parents[3] / "fixtures" / "golden"
 
 COMPLIANT = """
 [project]
@@ -98,11 +98,15 @@ def test_s4_3_1_property5_each_rule_warns_on_its_violation(
 
 
 @pytest.mark.parametrize("archetype", ["python-app", "python-tool"])
-def test_s4_3_1_property5_passes_on_the_golden_rendered_output(archetype: str) -> None:
-    root = GOLDEN / archetype
+def test_s4_3_1_property5_passes_on_the_rendered_output(
+    archetype: str, rendered: Callable[[str], Path]
+) -> None:
+    root = rendered(archetype)
     assert pyproject.check(KilnConfig.load(root), root) == []
 
 
-def test_s4_3_1_property5_passes_on_the_golden_lib_workspace() -> None:
-    root = GOLDEN / "python-lib"
+def test_s4_3_1_property5_passes_on_the_rendered_lib_workspace(
+    rendered: Callable[[str], Path],
+) -> None:
+    root = rendered("python-lib")
     assert pyproject.check(KilnConfig.load(root), root) == []

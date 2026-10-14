@@ -22,21 +22,22 @@ kiln doctor
 ## Where kiln is
 
 Working towards [release 1](docs/releases/release-1/index.md). The canon and the
-hand-authored golden repos exist and match pykit's `feature/upgrade` branch,
-tool lifecycle surface included (E1–E3, done 2026-09-15). The
+rendered archetype cells match pykit's `feature/upgrade` branch, tool lifecycle
+surface included (E1–E3, done 2026-09-15). The
 [shared CLI integration](docs/specs/epics/E3-realign-goldens-and-canon/index.md#shared-cli-design)
-is proven by the goldens. E4's render-free checks, module contract, config
-manager, apply cycle and concern modules exist, and so does the render matrix.
-E5's FastAPI and Angular cells pass their own gates in it. What is left is
-proving them from a clean clone, the owner's approval, and a first real project
+was proven by the hand-authored golden repos, which have since left git
+([S4.4.9](docs/specs/epics/E4-generator/F4.4-render-matrix.md#s449--the-goldens-leave-the-repository)).
+E4's render-free checks, module contract, config manager, apply cycle and
+concern modules exist, and so does the render matrix. E5's FastAPI and Angular
+cells pass their own gates in it. What is left is proving them from a clean
+clone, the owner's approval, and a first real project
 ([F5.3](docs/specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md)). Django
 is deferred until a real repository needs it. The order is deliberate —
 templates reviewed as templates are how the fleet ended up with four divergent
-pipelines, so the standard is reviewed first as complete runnable repositories.
+pipelines, so the standard is reviewed as complete runnable repositories.
 
 ```bash
-cd tests/fixtures/golden/python-app     # or python-tool, or python-lib
-uv sync && task validate
+task self:golden:render && task self:golden:validate
 ```
 
 **Picking this up in a new session?** Read [the spec board](docs/specs/index.md)
@@ -49,20 +50,15 @@ text.
 ## Working here
 
 - Run everything through `task`. `task validate` is the gate.
-- **The golden repos under `tests/fixtures/golden/` are the source of truth for
-  the templates.** A standard change starts there, in real files, and is
-  proven by running that repo's own `uv sync && task validate` from inside it.
-  A template change not first made in a golden repo is a bug. This holds until
-  the rendered templates reproduce the goldens and they leave git
-  ([render-matrix policy](docs/specs/epics/E4-generator/F4.4-render-matrix.md#template-review-policy)).
+- **A standard change is a template change**, reviewed as the rendered cells
+  (`task self:golden:compare BASE=<ref>`), per the
+  [render-matrix policy](docs/specs/epics/E4-generator/F4.4-render-matrix.md#template-review-policy).
 - The policy and docs checks are `kiln doctor`, and `kiln docs-generate` writes
   the derived regions; no repo carries `scripts/**` for them
-  ([ADR-0006](docs/adr/ADR-0006.md)). The goldens take `rn-forge-kiln` from a
-  path source to this checkout, so a change under `src/` reaches their gates
-  directly.
-- This repo's own skeleton is a hand-copy of the `python-tool` golden repo. It
+  ([ADR-0006](docs/adr/ADR-0006.md)).
+- This repo's own skeleton is a hand-copy of the rendered `python-tool` cell. It
   regenerates itself once the generator exists; until then, keep them in step
-  by hand — a change to a golden repo's skeleton is usually a change here too.
+  by hand — a change to that cell's skeleton is usually a change here too.
 - **After changing any managed file, re-seed the state baseline.** There is no
   `kiln apply` yet, so `.rn-forge/kiln/state.json` is written by hand;
   `task lint` fails with `has drifted from the committed state` until it
@@ -81,9 +77,8 @@ text.
 
 - Python 3.14, `src/` layout under the `rn_forge` namespace, pyright strict,
   ruff for lint and format.
-- `tests/fixtures/**` is excluded from this repo's ruff, pyright and pytest:
-  each golden repo is held to its own archetype's configuration, by its own
-  gate.
+- `tests/fixtures/**` holds the scaffold fixtures (`scaffold/`), and is excluded
+  from this repo's ruff, pyright and pytest.
 - This repo has a `plans/` docs area that kiln's seeded model does not — which
   is the point of the model being seeded (D44).
 - Docstrings describe the contract only (what, args, return, raises); no design

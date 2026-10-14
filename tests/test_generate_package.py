@@ -2,7 +2,7 @@
 
 Every repository here comes from `kiln new` run beneath `tmp_path`, which runs
 `uv init` for real, as `tests/modules/python/test_scaffold.py` does; the
-golden-equality repository is built once for the module. A fresh repository's
+pair of generated packages is built once for the module. A fresh repository's
 `uv sync && task validate` and `kiln doctor` need the network and minutes, so
 they are not here: the feature's acceptance block runs them.
 """
@@ -29,7 +29,6 @@ from rn_forge.kiln.modules.docs.nav import NAV_BLOCK
 from rn_forge.kiln.modules.docs.scaffold import PACKAGE_SEEDS
 from rn_forge.kiln.modules.python.scaffold import github_remote
 
-GOLDEN = Path(__file__).resolve().parent / "fixtures" / "golden" / "python-lib"
 HTTPS = "https://github.com/rn-forge/golden-lib"
 NO_REMOTE = (
     "generate.no-remote: a published package needs the repository's GitHub "
@@ -123,50 +122,13 @@ def test_s11_3_1_0_the_command_is_declared_as_generate_package() -> None:
     assert [c.name for c in commands.generate_app.registered_commands] == ["package"]
 
 
-def test_s11_3_1_1_managed_files_equal_the_golden(generated: Path) -> None:
-    state = json.loads(
-        (generated / ".rn-forge/kiln/state.json").read_text(encoding="utf-8")
-    )["entries"]
-    golden_state = json.loads(
-        (GOLDEN / ".rn-forge/kiln/state.json").read_text(encoding="utf-8")
-    )["entries"]
-    managed = [
-        path
-        for path, entry in state.items()
-        if entry["kind"] == "managed" and path in golden_state
-    ]
-    assert {"tasks/docs.yml", "tasks/quality.yml", "tasks/workspace.yml"} <= set(
-        managed
-    )
-    for path in managed:
-        assert _provenance((generated / path).read_text(encoding="utf-8")) == (
-            _provenance((GOLDEN / path).read_text(encoding="utf-8"))
-        ), path
-
-
-def test_s11_3_1_1_config_lists_both_packages_as_the_golden_does(
-    generated: Path,
-) -> None:
-    config = KilnConfig.load(generated)
-    golden = KilnConfig.load(GOLDEN)
-    assert config.packages == golden.packages
-    assert config.to_document() == golden.to_document()
-
-
 def test_s11_3_1_1_config_keeps_its_comments(generated: Path) -> None:
     text = (generated / ".rn-forge/kiln/config.toml").read_text(encoding="utf-8")
     assert text.startswith("# The one hand-authored input kiln reads")
 
 
-def test_s11_3_1_1_root_mkdocs_body_and_package_nav_equal_the_golden(
-    generated: Path,
-) -> None:
-    ours = (generated / "mkdocs.yml").read_text(encoding="utf-8")
-    golden = (GOLDEN / "mkdocs.yml").read_text(encoding="utf-8")
-    assert _site_description(NAV_BLOCK.render(ours, "")) == _site_description(
-        NAV_BLOCK.render(golden, "")
-    )
-    nav = NAV_BLOCK.extract(ours)
+def test_s11_3_1_1_root_mkdocs_package_nav_is_pinned(generated: Path) -> None:
+    nav = NAV_BLOCK.extract((generated / "mkdocs.yml").read_text(encoding="utf-8"))
     assert nav is not None
     assert _is_subsequence(
         [
@@ -176,80 +138,68 @@ def test_s11_3_1_1_root_mkdocs_body_and_package_nav_equal_the_golden(
         ],
         nav.splitlines(),
     )
-    assert _is_subsequence(
-        nav.splitlines(), (NAV_BLOCK.extract(golden) or "").splitlines()
-    )
 
 
 @pytest.mark.parametrize("package", ["golden-alpha", "golden-beta"])
-def test_s11_3_1_1_package_seeds_are_the_golden_s_or_contained_in_it(
-    generated: Path, package: str
-) -> None:
-    """Seeds the golden extended by hand must hold in its lines, in order."""
-    unextended = {"mkdocs.yml", "docs/changelog.md", "docs/reference/api.md"}
-    for seed in PACKAGE_SEEDS:
-        ours = (generated / "packages" / package / seed).read_text(encoding="utf-8")
-        golden = (GOLDEN / "packages" / package / seed).read_text(encoding="utf-8")
-        if seed in unextended:
-            assert _site_description(ours) == _site_description(golden), seed
-        assert _is_subsequence(
-            _site_description(ours).splitlines(),
-            _site_description(golden).splitlines(),
-        ), seed
-
-
-@pytest.mark.parametrize("package", ["golden-alpha", "golden-beta"])
-def test_s11_3_1_1_member_pyproject_matches_the_golden_where_the_command_writes(
+def test_s11_3_1_1_member_pyproject_where_the_command_writes_is_pinned(
     generated: Path, package: str
 ) -> None:
     ours = _toml(generated / "packages" / package / "pyproject.toml")
-    golden = _toml(GOLDEN / "packages" / package / "pyproject.toml")
-    assert ours["project"]["urls"] == golden["project"]["urls"]
-    for key in ("name", "requires-python", "dependencies"):
-        assert ours["project"][key] == golden["project"][key], key
-    assert (
-        ours["build-system"]["build-backend"] == golden["build-system"]["build-backend"]
-    )
-    assert ours["tool"]["uv"] == golden["tool"]["uv"]
-    assert ours["tool"]["pytest"] == golden["tool"]["pytest"]
-    for key in ("typeCheckingMode", "venv", "venvPath", "reportMissingTypeStubs"):
-        assert ours["tool"]["pyright"][key] == golden["tool"]["pyright"][key], key
-    ignores = "tests/*"
-    assert sorted(ours["tool"]["ruff"]["lint"]["per-file-ignores"][ignores]) == sorted(
-        golden["tool"]["ruff"]["lint"]["per-file-ignores"][ignores]
-    )
+    assert ours["project"]["urls"] == {
+        "Documentation": f"https://rn-forge.github.io/golden-lib/packages/{package}/latest/",
+        "Source": HTTPS,
+        "Changelog": f"{HTTPS}/blob/main/packages/{package}/CHANGELOG.md",
+        "Issues": f"{HTTPS}/issues",
+    }
+    assert ours["project"]["name"] == package
+    assert ours["project"]["requires-python"] == ">=3.14"
+    assert ours["project"]["dependencies"] == [
+        "rn-forge-commons @ git+https://github.com/rn-forge/pykit@main#subdirectory=packages/rn-forge-commons"
+    ]
+    assert ours["build-system"]["build-backend"] == "uv_build"
+    assert ours["tool"]["uv"] == {
+        "build-backend": {
+            "module-name": package.replace("-", "_"),
+            "source-exclude": ["**/.DS_Store"],
+        }
+    }
+    assert ours["tool"]["pytest"] == {
+        "ini_options": {"addopts": "-ra --import-mode=importlib"}
+    }
+    pyright = ours["tool"]["pyright"]
+    assert pyright["typeCheckingMode"] == "strict"
+    assert pyright["venv"] == ".venv"
+    assert pyright["venvPath"] == "../.."
+    assert pyright["reportMissingTypeStubs"] is False
+    ignores = ours["tool"]["ruff"]["lint"]["per-file-ignores"]["tests/*"]
+    assert sorted(ignores) == ["ANN", "D", "PLR2004", "S101"]
 
 
-@pytest.mark.parametrize("package", ["golden-alpha", "golden-beta"])
-def test_s11_3_1_1_the_sample_test_equals_the_golden_s(
-    generated: Path, package: str
-) -> None:
-    path = Path("packages") / package / "tests" / "test_package.py"
-    assert (generated / path).read_text(encoding="utf-8") == (GOLDEN / path).read_text(
-        encoding="utf-8"
-    )
-
-
-def test_s11_3_1_1_root_pyproject_workspace_sources_and_groups_equal_the_golden(
+def test_s11_3_1_1_root_pyproject_workspace_sources_and_groups_are_pinned(
     generated: Path,
 ) -> None:
-    ours = _toml(generated / "pyproject.toml")
-    golden = _toml(GOLDEN / "pyproject.toml")
-    assert ours["tool"]["uv"]["workspace"] == golden["tool"]["uv"]["workspace"]
-    for package in ("golden-alpha", "golden-beta"):
-        assert ours["tool"]["uv"]["sources"][package] == {"workspace": True}
-        assert golden["tool"]["uv"]["sources"][package] == {"workspace": True}
-    groups, golden_groups = ours["dependency-groups"], golden["dependency-groups"]
-    assert groups["workspace"] == golden_groups["workspace"]
-    assert groups["docs"] == golden_groups["docs"]
-    assert groups["dev"][0] == golden_groups["dev"][0] == {"include-group": "workspace"}
-
-
-def test_s11_3_1_1_the_runbook_is_seeded_equal_to_the_golden_s(generated: Path) -> None:
-    path = Path("docs/runbooks/adding-a-package.md")
-    assert (generated / path).read_text(encoding="utf-8") == (GOLDEN / path).read_text(
-        encoding="utf-8"
+    packages = ["golden-alpha", "golden-beta"]
+    assert KilnConfig.load(generated).packages == tuple(
+        f"packages/{package}" for package in packages
     )
+    ours = _toml(generated / "pyproject.toml")
+    assert ours["tool"]["uv"]["workspace"] == {
+        "members": [f"packages/{package}" for package in packages]
+    }
+    for package in packages:
+        assert ours["tool"]["uv"]["sources"][package] == {"workspace": True}
+    groups = ours["dependency-groups"]
+    assert groups["workspace"] == packages
+    assert groups["docs"] == [
+        "mdformat>=1.0.0",
+        "mdformat-gfm>=0.4",
+        "mdformat-front-matters>=2.0.0",
+        "mdformat-mkdocs>=5.3.0",
+        "mkdocs-material>=9.6",
+        "mkdocs-monorepo-plugin>=1.1",
+        "mkdocstrings[python]>=0.30",
+    ]
+    assert groups["dev"][0] == {"include-group": "workspace"}
 
 
 def test_s11_3_1_2_a_second_apply_dry_run_changes_nothing(

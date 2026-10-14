@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -9,8 +10,6 @@ import pytest
 from rn_forge.commons.exceptions import AppException
 
 from rn_forge.kiln import checks
-
-GOLDEN = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "golden"
 
 
 def test_every_check_is_named_by_its_module() -> None:
@@ -56,10 +55,12 @@ def test_an_unknown_archetype_is_refused(repo) -> None:
         checks.run(repo(archetype="python-hovercraft"), only="rn-forge-deps")
 
 
-@pytest.mark.parametrize("golden", ["python-app", "python-tool", "python-lib"])
-def test_every_golden_passes_every_check(golden: str) -> None:
-    """The goldens are the oracle: a check that fails one of them is wrong."""
-    assert [str(f) for f in checks.run(GOLDEN / golden)] == []
+@pytest.mark.parametrize("archetype", ["python-app", "python-tool", "python-lib"])
+def test_every_rendered_archetype_passes_every_check(
+    archetype: str, rendered: Callable[[str], Path]
+) -> None:
+    """A check that fails a freshly rendered archetype is wrong."""
+    assert [str(f) for f in checks.run(rendered(archetype))] == []
 
 
 def test_running_one_check_is_a_subset_of_running_all(repo) -> None:

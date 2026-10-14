@@ -90,7 +90,7 @@ dependencies = [
 ]
 """
 
-# How a golden takes kiln: a dev dependency, from a path source.
+# How a repo takes kiln: a dev dependency, from a path source.
 KILN_FROM_PATH = f"""
 [project]
 name = "example"
