@@ -48,7 +48,7 @@ and retiring taskkit are [release-2](../release-2/index.md).
 | [F4.6](../../specs/epics/E4-generator/F4.6-doctor.md) | E4 | New |
 | [F4.7](../../specs/epics/E4-generator/F4.7-import-contracts.md) | E4 | New |
 | [F4.8](../../specs/epics/E4-generator/F4.8-self-hosting.md) | E4 | New |
-| [F4.9](../../specs/epics/E4-generator/F4.9-seeded-starter-source.md) | E4 | Closed |
+| [F4.9](../../specs/epics/E4-generator/F4.9-seeded-starter-source.md) | E4 | Active |
 | [F5.1](../../specs/epics/E5-web-archetypes/F5.1-web-library-sets-and-modules.md) | E5 | Closed |
 | [F5.2](../../specs/epics/E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md) | E5 | Closed |
 | [F5.3](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) | E5 | Active |
