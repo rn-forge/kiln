@@ -372,3 +372,21 @@ def test_s4_4_5_3_kiln_and_rendered_repos_check_out_first(
             _assert_checks_out_first(
                 workflow.read_text(encoding="utf-8"), f"{root.name}/{workflow.name}"
             )
+
+
+def test_s6_3_1_every_job_has_a_timeout(tmp_path: Path) -> None:
+    roots = [_root(tmp_path / archetype, archetype) for archetype in ARCHETYPES] + [
+        _web_root(tmp_path / "api", "python-web-api"),
+        _web_root(tmp_path / "web", "python-web-app", extra='frontend = "angular"'),
+    ]
+    for root in roots:
+        workflows = {
+            path: content
+            for path, content in _rendered(root).items()
+            if path.startswith(".github/workflows/")
+        }
+        assert workflows
+        for path, content in workflows.items():
+            for name, job in yaml.safe_load(content)["jobs"].items():
+                timeout = job.get("timeout-minutes")
+                assert isinstance(timeout, int), f"{root.name}:{path}:{name}"
