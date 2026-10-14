@@ -53,6 +53,7 @@ and retiring taskkit are [release-2](../release-2/index.md).
 | [F5.2](../../specs/epics/E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md) | E5 | Closed |
 | [F5.3](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) | E5 | Active |
 | [F6.1](../../specs/epics/E6-rebuild-the-repos/F6.1-pykit-skeleton.md) | E6 | New |
+| [F6.3](../../specs/epics/E6-rebuild-the-repos/F6.3-hardened-ci.md) | E6 | New |
 | [F11.1](../../specs/epics/E11-package-docs/F11.1-checks-learn-package-sites.md) | E11 | Closed |
 | [F11.2](../../specs/epics/E11-package-docs/F11.2-python-lib-package-sites.md) | E11 | New |
 | [F11.3](../../specs/epics/E11-package-docs/F11.3-generate-package.md) | E11 | New |
@@ -60,6 +61,8 @@ and retiring taskkit are [release-2](../release-2/index.md).
 | [F13.1](../../specs/epics/E13-docs-work-model/F13.1-derived-regions.md) | E13 | Closed |
 | [F13.2](../../specs/epics/E13-docs-work-model/F13.2-board-and-scope.md) | E13 | Closed |
 | [F13.3](../../specs/epics/E13-docs-work-model/F13.3-adopt-the-model.md) | E13 | Closed |
+| [F14.1](../../specs/epics/E14-site-navigation/F14.1-tabbed-navigation.md) | E14 | New |
+| [F14.2](../../specs/epics/E14-site-navigation/F14.2-work-summaries.md) | E14 | New |
 
 <!-- END derived scope -->
 

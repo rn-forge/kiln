@@ -11,9 +11,11 @@ Each repository's cutover onto kiln is that repository's own work, accepted by
 its own specs ([ADR-0009](../../../adr/ADR-0009.md)). kiln's part is to prove,
 inside kiln, that an archetype can host the repository: for pykit, a
 pykit-shaped `python-lib` repository built in a scratch directory
-([F6.1](F6.1-pykit-skeleton.md)). Retiring taskkit
-([F6.2](F6.2-retire-taskkit.md)) is kiln's because taskkit's job moves into
-kiln.
+([F6.1](F6.1-pykit-skeleton.md)), whose CI carries what pykit's and ngkit's own
+CI already does ([F6.3](F6.3-hardened-ci.md),
+[F6.4](F6.4-workspace-pipeline.md)), so adopting kiln takes nothing out of their
+pipelines. Retiring taskkit ([F6.2](F6.2-retire-taskkit.md)) is kiln's because
+taskkit's job moves into kiln.
 
 ## Features
 
@@ -21,6 +23,8 @@ kiln.
 | -- | -- | -- | -- |
 | [F6.1](F6.1-pykit-skeleton.md) | `python-lib` can host pykit | S5.3.1; E11's F11.1–F11.3 | New |
 | [F6.2](F6.2-retire-taskkit.md) | Retire taskkit | S4.6.2, S5.2.2 | New |
+| [F6.3](F6.3-hardened-ci.md) | The generated CI matches the hardened upstream CI | F4.4 | New |
+| [F6.4](F6.4-workspace-pipeline.md) | `python-lib` renders pykit's discovered workspace pipeline | F6.3, F6.1 | New |
 
 **Out of scope here:** kiln itself is already self-hosted by
 [F4.8](../E4-generator/F4.8-self-hosting.md). intellibuild is built on its own

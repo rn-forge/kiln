@@ -12,8 +12,8 @@ Backlog sections below are derived from the epic, feature and release pages by
 
 | Release | Status | Features |
 | -- | -- | -- |
-| [Release 2 — the architecture baseline, package-site deploys, and taskkit retired](../releases/release-2/index.md) | planned | 4 New |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 1 Active · 6 New · 17 Closed |
+| [Release 2 — the architecture baseline, package-site deploys, and taskkit retired](../releases/release-2/index.md) | planned | 5 New |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 1 Active · 9 New · 17 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -32,7 +32,7 @@ Features with no Iteration, by State and epic.
 | -- | -- | -- |
 | [E7 — pykit releases, and the pin flip](epics/E7-pykit-release-pin-flip/index.md) | — | pykit's release-1 tags exist. Cutting them, and their order, is pykit's work (ADR-0009) |
 | [E8 — The Azure DevOps CI provider](epics/E8-ado-provider/index.md) | — | a repo needs `ci.provider = "ado"`. The intellibuild plan holds the question of whether intellibuild is that repo |
-| [E9 — The node archetypes](epics/E9-node-archetypes/index.md) | — | a repo in scope needs a second toolchain — pnpm release, node CI, no uv |
+| [E9 — The node archetypes](epics/E9-node-archetypes/index.md) | [F9.1](epics/E9-node-archetypes/F9.1-node-lib-hosts-ngkit-ci.md) | a repo in scope needs a second toolchain — pnpm release, node CI, no uv |
 | [E10 — kiln generators](epics/E10-kiln-generators/index.md) | — | release-1 has shipped and the owner picks this up for elaboration |
 
 <!-- END derived board -->
@@ -65,6 +65,7 @@ now:   ADRs accepted ─→ S13.1.1 derived nav ─→ F13.2 board/scope ─→ 
        S5.3.1 + F11.1–F11.3 ─→ S6.1.1 python-lib hosts pykit          │
        S4.5.3–S4.5.7 ─→ F4.6 doctor ──────────────────────────────────┼─→ F4.8 self-host
        F4.7 contracts ────────────────────────────────────────────────┘   F6.2 retire taskkit (after S4.6.2, S5.2.2)
+       F6.3 CI hardening (after F4.4) ─→ F6.4 workspace pipeline (release-2, after F6.1)
 triggered: E7 pykit tags · E8 ADO · F11.5 package-site deploy · backlog: E10 generators
 ```
 

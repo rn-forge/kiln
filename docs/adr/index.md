@@ -25,3 +25,4 @@ it generates.
 | [0010](ADR-0010.md) | The canon carries an architecture baseline, as managed records (proposed) | the product code of every generated repository |
 | [0011](ADR-0011.md) | Work is tracked as Azure DevOps-shaped work items | the specs and releases of every generated repository, and kiln's |
 | [0012](ADR-0012.md) | Every repository publishes one MkDocs site, whatever its language | the docs site of every generated repository |
+| [0013](ADR-0013.md) | The docs site navigates by area tabs, and work pages open with derived summaries (proposed) | the docs site of every generated repository, and kiln's |

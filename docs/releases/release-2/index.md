@@ -18,6 +18,7 @@ baseline records for Python and web (E12); and taskkit is retired (F6.2).
 | Feature | Epic | State |
 | -- | -- | -- |
 | [F6.2](../../specs/epics/E6-rebuild-the-repos/F6.2-retire-taskkit.md) | E6 | New |
+| [F6.4](../../specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md) | E6 | New |
 | [F11.5](../../specs/epics/E11-package-docs/F11.5-deploy-package-sites.md) | E11 | New |
 | [F12.1](../../specs/epics/E12-architecture-baseline/F12.1-python-baseline.md) | E12 | New |
 | [F12.2](../../specs/epics/E12-architecture-baseline/F12.2-web-baseline.md) | E12 | New |
