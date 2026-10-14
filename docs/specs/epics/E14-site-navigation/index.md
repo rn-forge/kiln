@@ -4,7 +4,7 @@
 | -- | -- |
 | **State** | New |
 
-Decisions: [ADR-0013](../../../adr/ADR-0013.md) (proposed)
+Decisions: [ADR-0013](../../../adr/ADR-0013.md) (accepted 2026-10-14)
 
 The docs site's single sidebar stacks every area's pages on top of each other.
 No page lists all the epics, and an epic or feature page shows the state of its
