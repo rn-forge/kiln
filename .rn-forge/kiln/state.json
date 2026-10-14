@@ -16,7 +16,7 @@
     },
     ".github/workflows/ci.yml": {
       "begin_marker": null,
-      "content_hash": "7f477fe3ecf9eb7a0e693c1d2adebcba854d8c698257a746b6ee234e61b9ee12",
+      "content_hash": "530ad3f0621c8772862ba7a3f582a6f5f630fbb8cb80104b9217e23f215aa065",
       "end_marker": null,
       "kind": "managed",
       "path": ".github/workflows/ci.yml"

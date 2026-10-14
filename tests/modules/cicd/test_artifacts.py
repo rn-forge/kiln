@@ -428,3 +428,31 @@ def test_s6_3_2_ci_ok_fails_on_failure_or_cancel(tmp_path: Path) -> None:
         assert "contains(needs.*.result, 'failure')" in step["if"]
         assert "contains(needs.*.result, 'cancelled')" in step["if"]
         assert step["run"] == "exit 1"
+
+
+def _sonar_steps(root: Path) -> list[dict[str, object]]:
+    return _ci_jobs(root)["sonar"]["steps"]  # type: ignore[return-value]
+
+
+def test_s6_3_3_scan_passes_the_target_branch_arg(tmp_path: Path) -> None:
+    for root in _ci_ok_roots(tmp_path):
+        if root.name == "nosonar":
+            continue
+        steps = _sonar_steps(root)
+        names = [step["name"] for step in steps]
+        target = next(i for i, step in enumerate(steps) if step.get("id") == "target")
+        assert target < names.index("Test with coverage"), root.name
+        scan = next(step for step in steps if step["name"] == "SonarQube scan")
+        assert (
+            "${{ steps.target.outputs.branch-arg }}" in scan["with"]["args"]  # type: ignore[index]
+        ), root.name
+
+
+def test_s6_3_3_ref_text_reaches_run_only_through_env(tmp_path: Path) -> None:
+    for root in _ci_ok_roots(tmp_path):
+        if root.name == "nosonar":
+            continue
+        for step in _sonar_steps(root):
+            run = str(step.get("run", ""))
+            assert "github.ref_name" not in run, root.name
+            assert "github.head_ref" not in run, root.name

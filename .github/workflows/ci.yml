@@ -116,6 +116,26 @@ jobs:
       - name: Install dependencies
         run: task setup
 
+      # A push or dispatch names its branch, so the analysis lands on that
+      # branch rather than the project's main. A pull request keeps the
+      # scanner's own detection. A tag has no branch to analyse.
+      - name: Resolve the analysis target
+        id: target
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = pull_request ]; then
+            printf 'branch-arg=\n' >> "$GITHUB_OUTPUT"
+          elif [ "$REF_TYPE" = tag ]; then
+            printf '%s\n' "Sonar analyses branches, not tags: $REF_NAME" >&2
+            exit 1
+          else
+            printf 'branch-arg=-Dsonar.branch.name=%s\n' "$REF_NAME" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Test with coverage
         run: task test:coverage
 
@@ -127,7 +147,9 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
-          args: -Dsonar.qualitygate.wait=true
+          args: >
+            -Dsonar.qualitygate.wait=true
+            ${{ steps.target.outputs.branch-arg }}
 
   release:
     needs: [validate, sonar]
