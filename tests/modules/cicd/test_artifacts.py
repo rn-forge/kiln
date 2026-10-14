@@ -456,3 +456,57 @@ def test_s6_3_3_ref_text_reaches_run_only_through_env(tmp_path: Path) -> None:
             run = str(step.get("run", ""))
             assert "github.ref_name" not in run, root.name
             assert "github.head_ref" not in run, root.name
+
+
+def _release_steps(root: Path) -> list[dict[str, object]]:
+    return _ci_jobs(root)["release"]["steps"]  # type: ignore[return-value]
+
+
+def _release_roots(tmp_path: Path) -> list[Path]:
+    return [_root(tmp_path / archetype, archetype) for archetype in ARCHETYPES]
+
+
+def _step_index(steps: list[dict[str, object]], name: str) -> int:
+    return next(i for i, step in enumerate(steps) if step.get("name") == name)
+
+
+def test_s6_3_4_check_step_outputs_the_tag_state(tmp_path: Path) -> None:
+    for root in _release_roots(tmp_path):
+        steps = _release_steps(root)
+        check = next(step for step in steps if step.get("id") == "check")
+        run = str(check["run"])
+        for output in ("should-release=", "tagged=", "draft="):
+            assert f"{output}" in run, root.name
+            assert "$GITHUB_OUTPUT" in run
+
+
+def test_s6_3_4_checkout_of_the_tag_precedes_build(tmp_path: Path) -> None:
+    for root in _release_roots(tmp_path):
+        steps = _release_steps(root)
+        index = _step_index(steps, "Check out the tagged source")
+        assert steps[index]["if"] == "steps.check.outputs.tagged == 'true'"
+        check = next(i for i, s in enumerate(steps) if s.get("id") == "check")
+        assert check < index < _step_index(steps, "Build"), root.name
+
+
+def test_s6_3_4_draft_is_deleted_before_publish(tmp_path: Path) -> None:
+    for root in _release_roots(tmp_path):
+        steps = _release_steps(root)
+        index = _step_index(steps, "Delete the leftover draft")
+        assert steps[index]["if"] == "steps.check.outputs.draft == 'true'"
+        assert (
+            _step_index(steps, "Build")
+            < index
+            < _step_index(steps, "Publish GitHub Release")
+        ), root.name
+
+
+def test_s6_3_4_publish_targets_the_source_commit(tmp_path: Path) -> None:
+    for root in _release_roots(tmp_path):
+        steps = _release_steps(root)
+        publish = steps[_step_index(steps, "Publish GitHub Release")]
+        assert (
+            publish["with"]["target_commitish"]  # type: ignore[index]
+            == "${{ steps.source.outputs.sha }}"
+        )
+        assert any(step.get("id") == "source" for step in steps)

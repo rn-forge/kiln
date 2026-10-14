@@ -157,26 +157,58 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="{% if workspace %}${{ matrix.package }}-{% endif %}v${{ steps.version.outputs.version }}"
-          if gh release view "$tag" --json isDraft --jq '.isDraft == false' 2>/dev/null | grep -q true; then
+          draft=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null || true)
+          if [ "$draft" = false ]; then
             printf '%s\n' "Release $tag already published; nothing to do."
             printf 'should-release=false\n' >> "$GITHUB_OUTPUT"
-          else
-            printf 'should-release=true\n' >> "$GITHUB_OUTPUT"
+            exit 0
           fi
+          printf 'should-release=true\n' >> "$GITHUB_OUTPUT"
+          printf 'draft=%s\n' "$([ "$draft" = true ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          if [ -n "$(git ls-remote --tags origin "refs/tags/$tag")" ]; then
+            printf 'tagged=true\n' >> "$GITHUB_OUTPUT"
+          else
+            printf 'tagged=false\n' >> "$GITHUB_OUTPUT"
+          fi
+          printf 'tag=%s\n' "$tag" >> "$GITHUB_OUTPUT"
+
+      # A tag without a published release is a release that failed after
+      # tagging; rebuilding from `HEAD` would ship a different commit under
+      # that version.
+      - name: Check out the tagged source
+        if: steps.check.outputs.tagged == 'true'
+        env:
+          TAG: ${{ steps.check.outputs.tag }}
+        run: |
+          git fetch --no-tags origin "refs/tags/$TAG:refs/tags/$TAG" && git checkout --detach "$TAG"
+
+      - name: Record the source commit
+        id: source
+        if: steps.check.outputs.should-release == 'true'
+        run: |
+          printf 'sha=%s\n' "$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Build
         if: steps.check.outputs.should-release == 'true'
         run: task build{% if workspace %} -- ${{ matrix.package }}{% endif %}
 
+      - name: Delete the leftover draft
+        if: steps.check.outputs.draft == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.check.outputs.tag }}
+        run: gh release delete "$TAG" --yes
+
       # action-gh-release creates the tag itself from `tag_name`, at this commit,
       # as part of publishing. Tagging in a separate earlier step is what made a
-      # failed upload unrecoverable.
+      # failed upload unrecoverable. On a resumed release the tag already
+      # exists and is reused.
       - name: Publish GitHub Release
         if: steps.check.outputs.should-release == 'true'
         uses: [[ pins["gh-release"].uses ]]@[[ pins["gh-release"].sha ]] # [[ pins["gh-release"].version ]]
         with:
           tag_name: {% if workspace %}${{ matrix.package }}-{% endif %}v${{ steps.version.outputs.version }}
-          target_commitish: ${{ github.sha }}
+          target_commitish: ${{ steps.source.outputs.sha }}
           name: {% if workspace %}${{ matrix.package }} {% endif %}v${{ steps.version.outputs.version }}
           generate_release_notes: true
           files: dist/*
