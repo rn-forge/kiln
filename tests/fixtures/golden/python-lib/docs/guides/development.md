@@ -5,12 +5,12 @@ Everything goes through `task`. Nobody — human, agent or CI — invokes `uv`,
 `kiln doctor --only ci-entrypoint` fails the build if a workflow step does.
 
 ```bash
-task setup                    # sync the whole workspace with dev and docs
-task validate                 # the whole gate: lint, typecheck, test, docs build
-task format                   # ruff format + fix, in place, per package
-task version -- golden-alpha  # one package's version
-task build -- golden-alpha    # one package's wheel and sdist
-task docs:serve               # live docs on http://127.0.0.1:8080
+task setup                 # sync the whole workspace with dev and docs
+task validate              # the whole gate: lint, typecheck, test, docs build
+task format                # ruff format + fix, in place, per package
+task version -- <package>  # one package's version
+task build -- <package>    # one package's wheel and sdist
+task docs:serve            # live docs on http://127.0.0.1:8080
 ```
 
 The per-package tools run from each package's own directory, so a package's

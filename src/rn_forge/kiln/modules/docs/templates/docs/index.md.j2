@@ -3,7 +3,8 @@
 - [Architecture](architecture/index.md) — how the repo is put together.
 - [Guides](guides/index.md) — how to work in it.
 - [Runbooks](runbooks/index.md) — procedures that need judgement.
-- [Releases](releases/index.md) — what shipped when.
+{% if archetype in ("python-app", "python-tool") %}- [Reference](reference/python-api.md) — the generated Python API.
+{% endif %}- [Releases](releases/index.md) — what shipped when.
 - [Specs](specs/index.md) — work planned and done.
 - [Decisions](adr/index.md) — the ADR log.
 

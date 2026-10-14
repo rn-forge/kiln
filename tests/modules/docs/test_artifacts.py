@@ -6,6 +6,7 @@ Also proves the five properties every F4.3 story owes its module
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
 
@@ -234,6 +235,12 @@ def test_s4_3_2_1_mkdocs_build_strict_passes_on_the_rendered_tree(
     from mkdocs.config import load_config
 
     root = _new(tmp_path / "repo", archetype)
+    if archetype != "python-lib":
+        # `python-api.md` documents the product's module, which `_new` leaves out.
+        (root / "src" / "demo").mkdir(parents=True)
+        (root / "src" / "demo" / "__init__.py").write_text(
+            '"""Demo."""\n', encoding="utf-8"
+        )
     if archetype == "python-lib":
         # The `monorepo` plugin is a docs-group dependency of the generated
         # repo, not of kiln; its own gate builds the real site.
@@ -427,3 +434,91 @@ def test_s11_2_2_5_python_lib_seeds_no_reference_area_and_the_others_keep_it(
     assert {"docs/reference/index.md", "docs/reference/_structure.md"} <= keys(
         "python-app"
     )
+
+
+DEV = "docs/guides/development.md"
+DRIFT = "docs/runbooks/recovering-from-drift.md"
+PY_API = "docs/reference/python-api.md"
+
+
+def _seed_root(tmp_path: Path, archetype: str) -> Path:
+    extra = (
+        '\n[archetype."python-web-api"]\nbackend = "fastapi"\n'
+        if archetype == "python-web-api"
+        else ""
+    )
+    return _config_root(tmp_path, archetype, extra)
+
+
+def _rendered(tmp_path: Path, archetype: str) -> dict[str, str]:
+    root = _seed_root(tmp_path / archetype, archetype)
+    return {a.key: a.content for a in DOCS.artifacts(KilnConfig.load(root), root)}
+
+
+@pytest.mark.parametrize("archetype", ["python-app", "python-tool"])
+def test_s4_4_7_1_app_and_tool_seed_the_three_pages(
+    tmp_path: Path, archetype: str
+) -> None:
+    root = _seed_root(tmp_path, archetype)
+    artifacts = {a.key: a for a in DOCS.artifacts(KilnConfig.load(root), root)}
+    for path in (DEV, DRIFT, PY_API):
+        assert artifacts[path].kind is ArtifactKind.SEEDED, path
+    assert artifacts[PY_API].content == "# Python API\n\n::: demo\n"
+
+
+def test_s4_4_7_1_the_module_is_the_name_with_underscores(tmp_path: Path) -> None:
+    root = tmp_path
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(
+        CONFIG.format(archetype="python-tool", profile="mkdocs").replace(
+            "demo", "my-demo-tool"
+        ),
+        encoding="utf-8",
+    )
+    artifacts = {a.key: a for a in DOCS.artifacts(KilnConfig.load(root), root)}
+    assert artifacts[PY_API].content == "# Python API\n\n::: my_demo_tool\n"
+
+
+@pytest.mark.parametrize("archetype", ["python-lib", "python-web-api"])
+def test_s4_4_7_2_lib_and_web_seed_two_pages(tmp_path: Path, archetype: str) -> None:
+    root = _seed_root(tmp_path, archetype)
+    artifacts = {a.key: a for a in DOCS.artifacts(KilnConfig.load(root), root)}
+    for path in (DEV, DRIFT):
+        assert artifacts[path].kind is ArtifactKind.SEEDED, path
+    assert PY_API not in artifacts
+    has = "task build -- <package>" in artifacts[DEV].content
+    assert has is (archetype == "python-lib")
+
+
+@pytest.mark.parametrize("archetype", [*ARCHETYPES, "python-web-api"])
+def test_s4_4_7_3_indexes_link_the_pages(tmp_path: Path, archetype: str) -> None:
+    pages = _rendered(tmp_path, archetype)
+    lib = archetype == "python-lib"
+    assert "[Development](development.md)" in pages["docs/guides/index.md"]
+    runbooks = pages["docs/runbooks/index.md"]
+    assert "[Recovering From Drift](recovering-from-drift.md)" in runbooks
+    assert ("[Adding A Package](adding-a-package.md)" in runbooks) is lib
+    if lib:
+        assert runbooks.index("adding-a-package.md") < runbooks.index(
+            "recovering-from-drift.md"
+        )
+    reference = "- [Reference](reference/python-api.md) — the generated Python API.\n"
+    assert (reference in pages["docs/index.md"]) is (
+        archetype in ("python-app", "python-tool")
+    )
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s4_4_7_4_goldens_carry_the_rendered_pages(archetype: str) -> None:
+    golden = GOLDEN / archetype
+    config = KilnConfig.load(golden)
+    rendered = {a.key: a.content for a in DOCS.artifacts(config, golden)}
+    state = json.loads(
+        (golden / ".rn-forge" / "kiln" / "state.json").read_text(encoding="utf-8")
+    )
+    paths = [DEV, DRIFT] + ([PY_API] if archetype != "python-lib" else [])
+    for path in paths:
+        on_disk = (golden / path).read_text(encoding="utf-8")
+        assert _provenance(rendered[path]) == _provenance(on_disk), path
+        assert state["entries"][path]["kind"] == "seeded", path

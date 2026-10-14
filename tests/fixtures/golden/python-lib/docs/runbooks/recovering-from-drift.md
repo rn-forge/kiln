@@ -24,9 +24,8 @@ which also tells you whether kiln itself would now produce something different.
 - **The edit was a mistake, or a local hack.** Revert it: `kiln apply` restores
   the rendered bytes. Done.
 - **The edit is right and the standard is wrong.** Then the change belongs in
-  the golden repo, not here. Open it in `rn-forge/kiln` under
-  `tests/fixtures/golden/`, make it there, let the snapshot test fail, and
-  update the template until it passes. Then `kiln apply` here.
+  kiln, not here: change the template in `rn-forge/kiln`, release kiln, bump
+  this repo's `rn-forge-kiln` pin, then run `kiln apply` here.
 
 Never leave the third option — the edit in place, the state stale — in a branch
 you intend to merge. CI is checking the committed baseline, not your intent.

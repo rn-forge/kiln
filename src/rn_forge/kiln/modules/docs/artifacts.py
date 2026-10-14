@@ -20,9 +20,11 @@ SEEDS = (
     "docs/architecture/index.md",
     "docs/guides/_structure.md",
     "docs/guides/index.md",
+    "docs/guides/development.md",
     "docs/runbooks/_structure.md",
     "docs/runbooks/index.md",
     "docs/runbooks/adding-a-package.md",
+    "docs/runbooks/recovering-from-drift.md",
     "docs/releases/_structure.md",
     "docs/releases/index.md",
     "docs/specs/_structure.md",
@@ -30,6 +32,7 @@ SEEDS = (
     "docs/specs/ideas.md",
     "docs/reference/_structure.md",
     "docs/reference/index.md",
+    "docs/reference/python-api.md",
     "docs/adr/_structure.md",
     "docs/adr/index.md",
 )
@@ -44,6 +47,10 @@ _PYTHON_LIB_ONLY = ("docs/runbooks/adding-a-package.md",)
 """Seeds only a `python-lib` repository carries."""
 
 
+_APP_TOOL_ONLY = ("docs/reference/python-api.md",)
+"""Seeds only a `python-app` or `python-tool` repository carries."""
+
+
 def render(config: KilnConfig, root: Path) -> list[Artifact]:
     """Render the seeded docs tree, for an `mkdocs` repo at *root*."""
     if config.docs_profile != "mkdocs":
@@ -52,10 +59,14 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
     context = {
         "name": config.name,
         "archetype": config.archetype,
+        "module": config.name.replace("-", "_"),
         "kiln_version": __version__,
     }
-    lib = config.archetype == "python-lib"
-    skipped = _PACKAGE_SITE_SKIPS if lib else _PYTHON_LIB_ONLY
+    skipped = (
+        _PACKAGE_SITE_SKIPS if config.archetype == "python-lib" else _PYTHON_LIB_ONLY
+    )
+    if config.archetype not in ("python-app", "python-tool"):
+        skipped += _APP_TOOL_ONLY
     return [
         Artifact(path, _kind(path), engine.render(f"{path}.j2", context))
         for path in SEEDS

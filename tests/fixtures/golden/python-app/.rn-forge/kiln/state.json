@@ -112,6 +112,13 @@
       "kind": "managed",
       "path": "docs/guides/_structure.md"
     },
+    "docs/guides/development.md": {
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/guides/development.md"
+    },
     "docs/guides/index.md": {
       "begin_marker": null,
       "content_hash": null,
@@ -132,6 +139,13 @@
       "end_marker": null,
       "kind": "managed",
       "path": "docs/reference/_structure.md"
+    },
+    "docs/reference/python-api.md": {
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/reference/python-api.md"
     },
     "docs/releases/_structure.md": {
       "begin_marker": null,
@@ -160,6 +174,13 @@
       "end_marker": null,
       "kind": "seeded",
       "path": "docs/runbooks/index.md"
+    },
+    "docs/runbooks/recovering-from-drift.md": {
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/runbooks/recovering-from-drift.md"
     },
     "docs/specs/_structure.md": {
       "begin_marker": null,
