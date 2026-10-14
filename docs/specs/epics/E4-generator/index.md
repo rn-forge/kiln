@@ -22,9 +22,13 @@ F11.1–F11.3 before F4.4, whose `python-lib` cell needs `kiln generate package`
 ([board](../../index.md#order)).
 
 **Where it stands (2026-10-13).** F4.1, F4.2 and F4.3 are done — S4.3.6, the
-owner's Sonar decisions, closed on 2026-10-13. In F4.5, S4.5.1–S4.5.10 are done.
-S4.5.9 followed [S5.2.4](../E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md)'s
-frontend-module split. F4.6–F4.9 have not started.
+owner's Sonar decisions, closed on 2026-10-13. F4.6–F4.9 have not started.
+
+**F4.5 (closed 2026-10-13).** Every command is on the declared app: `new`
+(staged, seeded, from a path or a `git+` config source), `apply`, `diff`,
+`version`, `config update`/`upgrade`, `prompt`, the `self` lifecycle verbs, and
+`init`, which brings an existing standard repository under kiln without a
+scaffold.
 
 **F4.4 (closed 2026-10-13).** Every cell renders and validates, and CI renders
 them all. The owner approved the rendered output at `fbfbae1` (S4.4.3). The
@@ -47,7 +51,7 @@ inventory, config lifecycle, module contract — is [design.md](design.md).
 | [F4.2](F4.2-core-module.md) | The `core` module, the config manager and the module contract | D.2 | F4.1 | Closed |
 | [F4.3](F4.3-concern-modules.md) | The concern modules, with templates | D.3 | F4.2; E3 goldens | Closed |
 | [F4.4](F4.4-render-matrix.md) | The render matrix, and the goldens leave git | D.4 | F4.3; the `python-lib` cell also S11.3.1 | Closed |
-| [F4.5](F4.5-cli.md) | CLI | D.5 | F4.3; S4.5.9 also S5.2.4 | Active |
+| [F4.5](F4.5-cli.md) | CLI | D.5 | F4.3; S4.5.9 also S5.2.4 | Closed |
 | [F4.6](F4.6-doctor.md) | doctor | D.6 | F4.3, S4.5.1 | New |
 | [F4.7](F4.7-import-contracts.md) | Import contracts | D.7 | F4.3, S4.1.2 | New |
 | [F4.8](F4.8-self-hosting.md) | Self-hosting | D.8 | F4.4, F4.5, F4.6, F4.7 | New |

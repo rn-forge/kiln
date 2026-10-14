@@ -44,7 +44,7 @@ and retiring taskkit are [release-2](../release-2/index.md).
 | [F4.2](../../specs/epics/E4-generator/F4.2-core-module.md) | E4 | Closed |
 | [F4.3](../../specs/epics/E4-generator/F4.3-concern-modules.md) | E4 | Closed |
 | [F4.4](../../specs/epics/E4-generator/F4.4-render-matrix.md) | E4 | Closed |
-| [F4.5](../../specs/epics/E4-generator/F4.5-cli.md) | E4 | Active |
+| [F4.5](../../specs/epics/E4-generator/F4.5-cli.md) | E4 | Closed |
 | [F4.6](../../specs/epics/E4-generator/F4.6-doctor.md) | E4 | New |
 | [F4.7](../../specs/epics/E4-generator/F4.7-import-contracts.md) | E4 | New |
 | [F4.8](../../specs/epics/E4-generator/F4.8-self-hosting.md) | E4 | New |
@@ -86,9 +86,9 @@ and retiring taskkit are [release-2](../release-2/index.md).
 
 E3 shipped 2026-09-15. F4.1, F4.2, F5.1 and F5.2 are done (F5.2 apart from the
 deferred Django scaffold); F4.9 closed on 2026-10-13. F4.3 waits only on S4.3.6,
-the owner's Sonar decisions; F4.5 has S4.5.7–S4.5.8 left; F5.3 has S5.3.7,
+the owner's Sonar decisions; F4.5 closed on 2026-10-13; F5.3 has S5.3.7,
 S5.3.2–S5.3.4 left. Next are F11.2–F11.3 (F4.4's `python-lib` cell needs
-S11.3.1), then F4.4, then the rest of F4.5–F4.8. F6.1 follows F11.1–F11.3
+S11.3.1), then F4.4, then F4.6–F4.8. F6.1 follows F11.1–F11.3
 ([board](../../specs/index.md#order)).
 
 ## Commits
