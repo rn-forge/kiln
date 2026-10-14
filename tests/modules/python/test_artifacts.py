@@ -62,7 +62,7 @@ def test_s4_3_1_property1_renders_exactly_the_module_s_template_inventory_row(
     config = KilnConfig.load(_root(tmp_path, archetype))
     artifacts = PYTHON.artifacts(config, tmp_path)
     assert [a.path for a in artifacts] == [".importlinter"]
-    assert artifacts[0].kind is ArtifactKind.MANAGED
+    assert artifacts[0].kind is ArtifactKind.BLOCK
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
@@ -75,7 +75,7 @@ def test_s4_3_1_property2_into_an_empty_directory_only_creates(
         change.key: change.action for change in cycle.plan(root, home=home).changes
     }
     assert set(actions.values()) <= {Action.CREATE, Action.INSERT, Action.SKIP}
-    assert actions[".importlinter"] is Action.CREATE
+    assert actions[".importlinter#rn-forge kiln"] is Action.INSERT
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
@@ -104,7 +104,10 @@ def test_s4_3_1_3_lint_imports_passes_on_the_rendered_importlinter(
     source = rendered(archetype)
     config = KilnConfig.load(source)
     [artifact] = _importlinter(config, source)
-    (tmp_path / ".importlinter").write_text(artifact.content, encoding="utf-8")
+    assert artifact.block is not None
+    (tmp_path / ".importlinter").write_text(
+        artifact.block.render("", artifact.content), encoding="utf-8"
+    )
 
     src_dirs = (
         [str(source / "src")]

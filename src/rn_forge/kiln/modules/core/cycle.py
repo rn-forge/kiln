@@ -7,11 +7,11 @@ engine then stages, backs up and swaps them in, and writes `state.json` last.
 from __future__ import annotations
 
 import dataclasses
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
-from rn_forge.commons.findings import Finding
+from rn_forge.commons.findings import Finding, Severity
 from rn_forge.commons.fs.hashing import ContentHash
 from rn_forge.commons.lang.types import JsonValue
 from rn_forge.tooling import generation
@@ -34,6 +34,12 @@ from rn_forge.kiln.modules.core.config.manager import PROVENANCE_KEY, ConfigMana
 __all__ = ["CycleRefused", "adoption_plan", "apply", "plan"]
 
 STATE_SCHEMA_VERSION = "1"
+
+UNFENCED_CODE = "core.block-unfenced"
+
+_NO_APPEND = frozenset({".importlinter"})
+"""Files a block may not be appended to: a second `[importlinter]` section is
+a `configparser` error, so an unfenced file is refused instead."""
 
 
 class CycleRefused(AppException):
@@ -146,6 +152,9 @@ def _prepare(
     manager = ConfigManager(registry)
     config = manager.load(root)
     artifacts = _artifacts(manager, config, root)
+    unfenced = _unfenced(root, artifacts)
+    if unfenced:
+        raise CycleRefused(unfenced)
 
     state_path = root / umbrella.STATE_PATH
     metadata: dict[str, JsonValue] = {
@@ -168,7 +177,7 @@ def _prepare(
         schema_version=STATE_SCHEMA_VERSION,
         metadata=metadata,
     )
-    entries = {} if adopt else store.load()
+    entries = {} if adopt else _without_converted(store.load(), artifacts)
     planned = generation.plan(root, artifacts, entries, force=force)
     return store, _adopted(root, planned) if adopt else planned
 
@@ -181,6 +190,48 @@ def _artifacts(
         for module in manager.modules_for(config)
         for artifact in module.artifacts(config, root)
     ]
+
+
+def _unfenced(root: Path, artifacts: Sequence[generation.Artifact]) -> list[Finding]:
+    """A `core.block-unfenced` error for each `_NO_APPEND` file with content but no markers.
+
+    A blank file holds nothing the block could duplicate, so it is appended to.
+    """
+    message = (
+        "kiln's part of this file is not fenced — put `# BEGIN rn-forge kiln` "
+        "above its first line and `# END rn-forge kiln` after kiln's last "
+        "contract, move any contract of your own below the END marker, then "
+        "run `kiln apply --force .importlinter`"
+    )
+    return [
+        Finding(UNFENCED_CODE, Severity.ERROR, message, path=artifact.path)
+        for artifact in artifacts
+        if artifact.block is not None
+        and artifact.path in _NO_APPEND
+        and (root / artifact.path).is_file()
+        and _text(root / artifact.path).strip()
+        and artifact.block.extract(_text(root / artifact.path)) is None
+    ]
+
+
+def _text(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def _without_converted(
+    entries: Mapping[str, StateEntry], artifacts: Sequence[generation.Artifact]
+) -> dict[str, StateEntry]:
+    """*entries* without the whole-file entries of files kiln now owns a block of.
+
+    A file kiln used to own whole and now owns a block of is forgotten as a
+    whole file, so the plan does not delete it.
+    """
+    converted = {a.path for a in artifacts if a.block is not None}
+    return {
+        key: entry
+        for key, entry in entries.items()
+        if entry.kind is ArtifactKind.BLOCK or entry.path not in converted
+    }
 
 
 def _adopted(root: Path, planned: Plan) -> Plan:

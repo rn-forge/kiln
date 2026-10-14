@@ -1,16 +1,20 @@
-"""The artifacts `python` renders: `.importlinter`."""
+"""The artifacts `python` renders: kiln's block in `.importlinter`."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
+from rn_forge.commons.fs.blocks import ManagedBlock
 from rn_forge.tooling.generation import Artifact, ArtifactKind
 from rn_forge.tooling.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
 
-__all__ = ["render", "root_package"]
+__all__ = ["IMPORTLINTER_BLOCK", "render", "root_package"]
+
+IMPORTLINTER_BLOCK = ManagedBlock("rn-forge kiln")
+"""kiln's fenced block in the repo's `.importlinter`."""
 
 
 def root_package(name: str) -> str:
@@ -44,7 +48,8 @@ def render(config: KilnConfig) -> list[Artifact]:
     return [
         Artifact(
             ".importlinter",
-            ArtifactKind.MANAGED,
+            ArtifactKind.BLOCK,
             engine.render("importlinter.j2", context),
+            block=IMPORTLINTER_BLOCK,
         )
     ]

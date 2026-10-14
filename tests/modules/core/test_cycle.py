@@ -9,12 +9,14 @@ from pathlib import Path
 import pytest
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.paths import PathUtils
-from rn_forge.tooling.generation import Action
+from rn_forge.tooling.generation import Action, ArtifactKind, StateEntry
+from rn_forge.tooling.state import StateStore
 
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import CORE, cycle, umbrella
 from rn_forge.kiln.modules.core.cycle import CycleRefused
+from rn_forge.kiln.modules.python import PYTHON
 
 CONFIG = 'schema_version = 1\n\n[repository]\nname = "demo"\narchetype = "python-app"\n'
 STATE = Path(".rn-forge/kiln/state.json")
@@ -59,7 +61,7 @@ def test_s4_2_3_applying_core_into_an_empty_directory_only_creates_and_inserts(
         ".mdformat.toml": Action.CREATE,
         "demo.code-workspace": Action.CREATE,
         ".gitignore#rn-forge kiln": Action.INSERT,
-        ".importlinter": Action.CREATE,
+        ".importlinter#rn-forge kiln": Action.INSERT,
         "Taskfile.yml": Action.CREATE,
         "tasks/workspace.yml": Action.CREATE,
         "tasks/quality.yml": Action.CREATE,
@@ -263,3 +265,92 @@ def test_s4_2_3_core_checks_report_what_doctor_only_generated_reports(
     from_core = [str(finding) for finding in CORE.checks(KilnConfig.load(root), root)]
     assert len(from_doctor) == 2
     assert from_core == from_doctor
+
+
+IMPORTLINTER_KEY = ".importlinter#rn-forge kiln"
+END_MARKER = "# END rn-forge kiln"
+
+
+def test_s4_7_3_1_new_repo_gets_a_fenced_importlinter(root: Path, home: Path) -> None:
+    cycle.apply(root, home=home)
+    first = (root / ".importlinter").read_text(encoding="utf-8").splitlines()[0]
+    assert first == "# BEGIN rn-forge kiln"
+    assert actions(root, home)[IMPORTLINTER_KEY] is Action.UNCHANGED
+
+
+def test_s4_7_3_2_own_contract_below_the_block_survives(root: Path, home: Path) -> None:
+    cycle.apply(root, home=home)
+    path = root / ".importlinter"
+    own = "\n[importlinter:contract:mine]\nname = mine\ntype = forbidden\n"
+    path.write_text(path.read_text(encoding="utf-8") + own, encoding="utf-8")
+    before = path.read_bytes()
+
+    assert actions(root, home)[IMPORTLINTER_KEY] is Action.UNCHANGED
+    cycle.apply(root, home=home)
+    assert path.read_bytes() == before
+    assert actions(root, home)[IMPORTLINTER_KEY] is Action.UNCHANGED
+
+
+@pytest.mark.parametrize("adopt", [False, True])
+def test_s4_7_3_3_unfenced_importlinter_is_refused(
+    root: Path, home: Path, adopt: bool
+) -> None:
+    path = root / ".importlinter"
+    path.write_text("[importlinter]\nroot_package = demo\n", encoding="utf-8")
+    before = snapshot(root)
+
+    with pytest.raises(CycleRefused) as refused:
+        cycle.plan(root, home=home, adopt=adopt)
+    (finding,) = refused.value.findings
+    assert finding.code == "core.block-unfenced"
+    assert finding.path == ".importlinter"
+    assert snapshot(root) == before
+
+
+def test_s4_7_3_4_converted_entry_is_forgotten(root: Path) -> None:
+    config = KilnConfig.load(root)
+    artifacts = PYTHON.artifacts(config, root) + CORE.artifacts(config, root)
+    managed = StateEntry(
+        path=".importlinter", kind=ArtifactKind.MANAGED, content_hash="x"
+    )
+    block = next(a for a in artifacts if a.path == ".gitignore")
+    block_entry = StateEntry(
+        path=".gitignore", kind=ArtifactKind.BLOCK, content_hash="y"
+    )
+    taskfile = StateEntry(
+        path="Taskfile.yml", kind=ArtifactKind.MANAGED, content_hash="z"
+    )
+    assert block.block is not None
+    entries = {
+        ".importlinter": managed,
+        ".gitignore#rn-forge kiln": block_entry,
+        "Taskfile.yml": taskfile,
+    }
+    assert cycle._without_converted(entries, artifacts) == {
+        ".gitignore#rn-forge kiln": block_entry,
+        "Taskfile.yml": taskfile,
+    }
+
+
+def test_s4_7_3_5_fenced_file_with_old_state_converts_under_force(
+    root: Path, home: Path
+) -> None:
+    cycle.apply(root, home=home)
+    store = StateStore(
+        root / STATE, entry_type=StateEntry, schema_version=cycle.STATE_SCHEMA_VERSION
+    )
+    entries = store.load()
+    del entries[IMPORTLINTER_KEY]
+    entries[".importlinter"] = StateEntry(
+        path=".importlinter", kind=ArtifactKind.MANAGED, content_hash="x"
+    )
+    store.replace_all(entries)
+
+    planned = cycle.plan(root, home=home)
+    by_key = {change.key: change.action for change in planned.changes}
+    assert by_key[IMPORTLINTER_KEY] is Action.CONFLICT
+    assert ".importlinter" not in by_key
+
+    cycle.apply(root, home=home, force=[".importlinter"])
+    text = (root / ".importlinter").read_text(encoding="utf-8")
+    assert text.startswith("# BEGIN rn-forge kiln")
