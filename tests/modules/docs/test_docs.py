@@ -314,7 +314,14 @@ class TestNav:
         write(repo / "docs/guides/choosing-packages.md", "# Choosing packages\n")
         body = build_nav(repo / "docs")
         assert "Choosing packages: guides/choosing-packages.md" in body
-        assert "Overview: adr/index.md" in body
+        assert "  - adr/index.md\n" in body
+
+    def test_s14_1_1_1_an_area_index_is_the_first_untitled_item(self, repo):
+        write(repo / "docs/guides/a.md", "# A\n")
+        body = build_nav(repo / "docs")
+        assert "Overview:" not in body
+        assert "  - Guides:\n    - guides/index.md\n" in body
+        assert body.index("guides/index.md") < body.index("A: guides/a.md")
 
     def test_update_nav_reports_staleness_without_writing(self, repo):
         before = (repo / "mkdocs.yml").read_text()

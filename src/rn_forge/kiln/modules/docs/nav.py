@@ -1,7 +1,8 @@
 """Generate `mkdocs.yml` navigation from `docs/_areas.yml` and the docs tree.
 
-Pages are ordered with `index.md` first, followed by its linked pages in link
-order, then all remaining pages alphabetically.
+Pages are ordered with `index.md` first and untitled, so that
+`navigation.indexes` makes it the section's page, followed by its linked pages
+in link order, then all remaining pages alphabetically.
 """
 
 from __future__ import annotations
@@ -60,7 +61,7 @@ def _linked_order(index_path: Path) -> list[str]:
     ]
 
 
-def _children_entries(docs_root: Path, area_key: str) -> list[tuple[str, str]]:
+def _children_entries(docs_root: Path, area_key: str) -> list[tuple[str | None, str]]:
     area_dir = docs_root / area_key
     index_path = area_dir / "index.md"
 
@@ -78,17 +79,12 @@ def _children_entries(docs_root: Path, area_key: str) -> list[tuple[str, str]]:
         ordered.append(rel)
 
     return [
-        (
-            "Overview"
-            if rel == f"{area_key}/index.md"
-            else page_title(docs_root / rel),
-            rel,
-        )
+        (None if rel == f"{area_key}/index.md" else page_title(docs_root / rel), rel)
         for rel in ordered
     ]
 
 
-NavEntry = dict[str, "str | list[NavEntry]"]
+NavEntry = dict[str, "str | list[str | NavEntry]"]
 """One mkdocs nav entry: a title mapped to a page path or to nested entries."""
 
 BLOCK_INDENT = "  "
@@ -113,7 +109,9 @@ def _area_entry(
     entries = _children_entries(docs_root, area.key)
     if not entries:
         return None
-    return {area.title: [{title: rel} for title, rel in entries]}
+    return {
+        area.title: [rel if title is None else {title: rel} for title, rel in entries]
+    }
 
 
 def build_nav(docs_root: str | Path, packages: Sequence[str] = ()) -> str:
