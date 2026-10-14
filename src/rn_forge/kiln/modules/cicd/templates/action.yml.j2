@@ -18,6 +18,7 @@ runs:
       uses: [[ pins["setup-uv"].uses ]]@[[ pins["setup-uv"].sha ]] # [[ pins["setup-uv"].version ]]
       with:
         python-version: "3.14"
+        enable-cache: true
 
     - name: Install go-task
       uses: [[ pins["setup-task"].uses ]]@[[ pins["setup-task"].sha ]] # [[ pins["setup-task"].version ]]

@@ -15,9 +15,10 @@ runs:
   using: composite
   steps:
     - name: Install uv
-      uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+      uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
       with:
         python-version: "3.14"
+        enable-cache: true
 
     - name: Install go-task
       uses: arduino/setup-task@bfe25a35f5c1f609e1d6153197b3b42a04ae054c # v3.0.0

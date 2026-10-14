@@ -9,6 +9,8 @@ from __future__ import annotations
 import re
 import shutil
 import subprocess
+import sys
+import tomllib
 from collections.abc import Callable
 from pathlib import Path
 
@@ -510,3 +512,29 @@ def test_s6_3_4_publish_targets_the_source_commit(tmp_path: Path) -> None:
             == "${{ steps.source.outputs.sha }}"
         )
         assert any(step.get("id") == "source" for step in steps)
+
+
+UPSTREAM_PINS = {
+    "setup-uv": ("c18668ad3cf93ea998bef934396af7bb5c839dc7", "v10.2.0"),
+    "sonarqube-scan": ("d209202bc7d53ff1cc128f7f907dac145c9d6ae9", "v8.3.0"),
+    "deploy-pages": ("368f82528645a54fb793d4d04e342629a3f51346", "v5.0.1"),
+    "pnpm-setup": ("0ebf47130e4866e96fce0953f49152a61190b271", "v6.0.9"),
+    "setup-node": ("820762786026740c76f36085b0efc47a31fe5020", "v7.0.0"),
+}
+
+
+def test_s6_3_5_setup_uv_enables_the_cache(tmp_path: Path) -> None:
+    action = yaml.safe_load(
+        _rendered(_root(tmp_path))[".github/actions/setup/action.yml"]
+    )
+    install = next(
+        step for step in action["runs"]["steps"] if step["name"] == "Install uv"
+    )
+    assert install["with"]["enable-cache"] is True
+
+
+def test_s6_3_5_pins_match_the_upstream_versions() -> None:
+    pins_file = Path(sys.modules[CICD.__module__].__file__ or "").parent / "pins.toml"
+    pins = tomllib.loads(pins_file.read_text(encoding="utf-8"))
+    for key, (sha, version) in UPSTREAM_PINS.items():
+        assert (pins[key]["sha"], pins[key]["version"]) == (sha, version), key
