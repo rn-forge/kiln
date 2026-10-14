@@ -27,11 +27,11 @@ are done, and S4.5.7–S4.5.8 are planned. S4.5.9 followed
 [S5.2.4](../E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md)'s frontend-module
 split. F4.6–F4.9 have not started.
 
-**F4.4 (2026-10-04).** S4.4.1, S4.4.2, S4.4.4, S4.4.5 and S4.4.6 are closed.
-S4.4.3 now compares only kiln-owned files, and the compare passes; it waits on
-the owner's approval. S4.4.7–S4.4.9 are next; S4.4.9 waits on
-[S4.9.1](F4.9-seeded-starter-source.md#s491-python-starter-source), which seeds
-starter source from the `python-tool` fixture first.
+**F4.4 (closed 2026-10-13).** Every cell renders and validates, and CI renders
+them all. The owner approved the rendered output at `fbfbae1` (S4.4.3). The
+standard docs pages are seeded (S4.4.7), the scaffold divergences are settled
+(S4.4.8), and the hand-authored goldens have left git (S4.4.9).
+`task self:golden:compare BASE=<ref>` now diffs two rendered refs.
 
 Decisions this epic builds on: [ADR-0001](../../../adr/ADR-0001.md),
 [ADR-0003](../../../adr/ADR-0003.md), [ADR-0004](../../../adr/ADR-0004.md),
@@ -47,7 +47,7 @@ inventory, config lifecycle, module contract — is [design.md](design.md).
 | [F4.1](F4.1-checks-by-module.md) | The checks, organized by module | D.1 | S4.1.4: done; the rest: E3 | Closed |
 | [F4.2](F4.2-core-module.md) | The `core` module, the config manager and the module contract | D.2 | F4.1 | Closed |
 | [F4.3](F4.3-concern-modules.md) | The concern modules, with templates | D.3 | F4.2; E3 goldens | Closed |
-| [F4.4](F4.4-render-matrix.md) | The render matrix, and the goldens leave git | D.4 | F4.3; the `python-lib` cell also S11.3.1 | Active |
+| [F4.4](F4.4-render-matrix.md) | The render matrix, and the goldens leave git | D.4 | F4.3; the `python-lib` cell also S11.3.1 | Closed |
 | [F4.5](F4.5-cli.md) | CLI | D.5 | F4.3; S4.5.9 also S5.2.4 | Active |
 | [F4.6](F4.6-doctor.md) | doctor | D.6 | F4.3, S4.5.1 | New |
 | [F4.7](F4.7-import-contracts.md) | Import contracts | D.7 | F4.3, S4.1.2 | New |
