@@ -12,14 +12,19 @@ from rn_forge.kiln.modules.docs.work import (
     EPIC_RANGE,
     EPICS_BLOCK,
     SCOPE_BLOCK,
+    STORIES_BLOCK,
+    STORY_HEADING_RE,
+    Story,
     Work,
     epic_range,
     load_work,
     range_label,
     read_metadata,
+    read_stories,
     render_board,
     render_epics,
     render_scope,
+    render_stories,
     validate,
 )
 
@@ -418,3 +423,59 @@ def test_s14_1_2_seeded_epic_list_is_current() -> None:
     ).read_text(encoding="utf-8")
     body = seed.split(f"{EPICS_BLOCK.begin}\n", 1)[1].split(EPICS_BLOCK.end, 1)[0]
     assert body == render_epics(Work((), (), ()))
+
+
+def test_s14_2_1_1_read_stories_reads_id_title_state_and_depends_on() -> None:
+    text = (
+        "# F9.9 \u2014 F\n\n## S4.5.9 \u2014 x\n\n"
+        "**State:** Closed (2026-09-26) \u00b7 **Depends on:** S4.5.1, S5.2.4\n\n"
+        "**Build:**\n\n## S4.5.10 \u2014 y `z`: w\n\n**State:** New\n"
+    )
+    assert read_stories(text) == (
+        Story("S4.5.9", "x", "Closed (2026-09-26)", "S4.5.1, S5.2.4"),
+        Story("S4.5.10", "y `z`: w", "New", ""),
+    )
+    assert STORY_HEADING_RE.match("## S1.2.3 \u2014 t")
+
+
+def test_s14_2_1_1_read_stories_ignores_fenced_code_and_stops_state_at_a_dot() -> None:
+    text = (
+        "## S1.1.1 \u2014 a\n\n"
+        "**State:** Closed (2026-09-26) \u00b7 **Unblocked 2026-09-25:** pykit\n\n"
+        "```markdown\n## S1.1.2 \u2014 example\n\n**State:** New\n```\n\n"
+        "## S1.1.3 \u2014 no state line\n"
+    )
+    assert read_stories(text) == (
+        Story("S1.1.1", "a", "Closed (2026-09-26)", ""),
+        Story("S1.1.3", "no state line", "", ""),
+    )
+
+
+def _feature_with(tmp_path: Path, body: str):
+    work = _tree(tmp_path, {**VALID, "specs/epics/E1-x/F1.1-a.md": ACTIVE + body})
+    return next(f for f in work.features if f.id == "F1.1")
+
+
+def test_s14_2_1_2_render_stories_counts_links_and_dashes(tmp_path: Path) -> None:
+    feature = _feature_with(
+        tmp_path,
+        "\n## S1.1.1 \u2014 `kiln new`: a | b\n\n**State:** Closed (2026-09-16)\n"
+        "\n## S1.1.2 \u2014 Two\n\n**State:** New \u00b7 **Depends on:** S1.1.1\n"
+        "\n## S1.1.3 \u2014 Three\n\n**State:** New\n",
+    )
+    body = render_stories(feature)
+    assert body == (
+        "\n**Stories:** 2 New \u00b7 1 Closed\n\n"
+        "| Story | State | Depends on |\n| -- | -- | -- |\n"
+        "| [S1.1.1 \u2014 `kiln new`: a \\| b](#s111-kiln-new-a-b) "
+        "| Closed (2026-09-16) | \u2014 |\n"
+        "| [S1.1.2 \u2014 Two](#s112-two) | New | S1.1.1 |\n"
+        "| [S1.1.3 \u2014 Three](#s113-three) | New | \u2014 |\n\n"
+    )
+    _stable(STORIES_BLOCK, body)
+
+
+def test_s14_2_1_2_a_feature_without_stories_says_so(tmp_path: Path) -> None:
+    body = render_stories(_feature_with(tmp_path, ""))
+    assert body == "\nNo stories yet.\n\n"
+    _stable(STORIES_BLOCK, body)

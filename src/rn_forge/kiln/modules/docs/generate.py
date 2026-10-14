@@ -14,10 +14,13 @@ from rn_forge.kiln.modules.docs.work import (
     BOARD_BLOCK,
     EPICS_BLOCK,
     SCOPE_BLOCK,
+    STORIES_BLOCK,
     load_work,
+    metadata_end,
     render_board,
     render_epics,
     render_scope,
+    render_stories,
     validate,
 )
 
@@ -36,6 +39,28 @@ def _fenced(block: ManagedBlock, text: str) -> bool:
         return block.extract(text) is not None
     except AppException:
         return False
+
+
+def _with_fence(text: str, block: ManagedBlock) -> str | None:
+    """*text* with an empty *block* fence after its metadata table.
+
+    Returns *text* unchanged when it already holds both markers, and `None` when
+    it holds exactly one, or has no metadata table.
+    """
+    try:
+        if block.extract(text) is not None:
+            return text
+    except AppException:
+        return None
+    lines = text.splitlines()
+    end = metadata_end(lines)
+    if end is None:
+        return None
+    head = "\n".join(lines[:end])
+    tail = "\n".join(lines[end:]).lstrip("\n")
+    if tail and text.endswith("\n"):
+        tail += "\n"
+    return f"{head}\n\n{block.render('', '')}" + (f"\n{tail}" if tail else "")
 
 
 def _work_regions(
@@ -72,10 +97,16 @@ def _work_regions(
     markers: list[Finding] = []
     stale_findings: list[Finding] = []
 
-    def region(path: Path, block: ManagedBlock, body: str, code: str) -> None:
-        current = path.read_text(encoding="utf-8")
-        updated = block.render(current, body)
-        if updated != current:
+    def region(
+        path: Path,
+        block: ManagedBlock,
+        body: str,
+        code: str,
+        current: str | None = None,
+    ) -> None:
+        on_disk = path.read_text(encoding="utf-8")
+        updated = block.render(on_disk if current is None else current, body)
+        if updated != on_disk:
             writes[path] = updated
             stale_findings.append(
                 _error(
@@ -110,6 +141,26 @@ def _work_regions(
             )
             continue
         region(path, SCOPE_BLOCK, render_scope(work, release), "docs.scope-stale")
+    for feature in work.features:
+        path = feature.page.path
+        fenced = _with_fence(path.read_text(encoding="utf-8"), STORIES_BLOCK)
+        if fenced is None:
+            if feature.page.meta:
+                markers.append(
+                    _error(
+                        "docs.stories-markers",
+                        "has an incomplete derived stories fence",
+                        path.relative_to(root).as_posix(),
+                    )
+                )
+            continue
+        region(
+            path,
+            STORIES_BLOCK,
+            render_stories(feature),
+            "docs.stories-stale",
+            fenced,
+        )
     return writes, [*markers, *validate(work, root)], stale_findings
 
 

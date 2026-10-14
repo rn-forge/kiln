@@ -11,7 +11,7 @@ from pathlib import Path
 from rn_forge.commons.findings import Finding, Severity
 from rn_forge.commons.fs.blocks import HTML_COMMENT, ManagedBlock
 
-from rn_forge.kiln.modules.docs.markdown import slugify
+from rn_forge.kiln.modules.docs.markdown import slugify, strip_fenced_code
 
 __all__ = [
     "BOARD_BLOCK",
@@ -23,19 +23,25 @@ __all__ = [
     "RELEASE_STATUSES",
     "SCOPE_BLOCK",
     "STATES",
+    "STORIES_BLOCK",
+    "STORY_HEADING_RE",
     "Epic",
     "Feature",
     "FeatureRow",
     "Page",
     "Release",
+    "Story",
     "Work",
     "epic_range",
     "load_work",
+    "metadata_end",
     "range_label",
     "read_metadata",
+    "read_stories",
     "render_board",
     "render_epics",
     "render_scope",
+    "render_stories",
     "validate",
 ]
 
@@ -66,6 +72,11 @@ EPICS_BLOCK = ManagedBlock("derived epics", comment=HTML_COMMENT)
 
 EPIC_RANGE = 10
 """How many epic numbers one range of the epic list spans."""
+
+STORIES_BLOCK = ManagedBlock("derived stories", comment=HTML_COMMENT)
+"""The fenced stories region of a feature page."""
+
+STORY_HEADING_RE = re.compile(r"^## (S\d+\.\d+\.\d+) — (.+?)\s*$")
 
 _COUNT_ORDER = ("Active", "New", "Closed", "Removed")
 _NO_FEATURES = "—"
@@ -110,11 +121,20 @@ class Epic:
 
 
 @dataclass(frozen=True)
+class Story:
+    id: str
+    title: str
+    state: str
+    depends_on: str
+
+
+@dataclass(frozen=True)
 class Feature:
     page: Page
     id: str
     epic_number: int
     epic_dir: str
+    stories: tuple[Story, ...] = ()
 
     @property
     def iteration(self) -> str | None:
@@ -165,6 +185,12 @@ def read_metadata(text: str) -> list[tuple[str, str]] | None:
     """The `(key, value)` rows of the metadata table after the title, or `None`."""
     found = _metadata(text.splitlines())
     return None if found is None else found[0]
+
+
+def metadata_end(lines: list[str]) -> int | None:
+    """The index of the first line after the metadata table, or `None`."""
+    found = _metadata(lines)
+    return None if found is None else found[1]
 
 
 def _title(lines: list[str]) -> str:
@@ -223,6 +249,34 @@ def _feature_rows(lines: list[str]) -> tuple[tuple[FeatureRow, ...], bool]:
     return (), True
 
 
+_DEPENDS_RE = re.compile(r"\*\*Depends on:\*\*([^·]*)")
+
+
+def read_stories(text: str) -> tuple[Story, ...]:
+    """The stories of a feature page: each `## S<n>.<m>.<k> — <title>` heading.
+
+    A heading inside fenced code is ignored. A story's state and dependencies
+    come from the first `**State:**` line before the next `## ` heading.
+    """
+    lines = strip_fenced_code(text).splitlines()
+    stories: list[Story] = []
+    for i, line in enumerate(lines):
+        heading = STORY_HEADING_RE.match(line)
+        if heading is None:
+            continue
+        state = depends = ""
+        for following in lines[i + 1 :]:
+            if following.startswith("## "):
+                break
+            if following.startswith("**State:**"):
+                state = following.removeprefix("**State:**").split("·")[0].strip()
+                found = _DEPENDS_RE.search(following)
+                depends = found.group(1).strip() if found else ""
+                break
+        stories.append(Story(heading.group(1), heading.group(2), state, depends))
+    return tuple(stories)
+
+
 def _number(name: str) -> int:
     match = _NUMBER_RE.search(name)
     return int(match.group(0)) if match else 0
@@ -253,6 +307,7 @@ def load_work(docs_root: Path) -> Work:
                     path.name.split("-")[0],
                     _number(index.parent.name),
                     index.parent.name,
+                    read_stories(path.read_text(encoding="utf-8")),
                 )
             )
     releases = [
@@ -641,5 +696,36 @@ def render_epics(work: Work) -> str:
             "| -- | -- | -- | -- |",
             *(_epic_row(work, epic) for epic in ranges[span]),
         ]
+    lines.append("")
+    return "\n".join(lines) + "\n"
+
+
+def _story_counts(stories: tuple[Story, ...]) -> str:
+    counts = Counter(story.state.split(" ")[0] for story in stories)
+    return (
+        " \u00b7 ".join(
+            f"{counts[name]} {name}" for name in _COUNT_ORDER if counts[name]
+        )
+        or _NO_FEATURES
+    )
+
+
+def render_stories(feature: Feature) -> str:
+    """The body of a feature page's stories region."""
+    if not feature.stories:
+        return "\nNo stories yet.\n\n"
+    lines = [
+        "",
+        f"**Stories:** {_story_counts(feature.stories)}",
+        "",
+        "| Story | State | Depends on |",
+        "| -- | -- | -- |",
+    ]
+    for story in feature.stories:
+        text = f"{story.id} \u2014 {story.title}"
+        lines.append(
+            f"| [{text.replace('|', chr(92) + '|')}](#{slugify(text)}) "
+            f"| {story.state or _NO_FEATURES} | {story.depends_on or _NO_FEATURES} |"
+        )
     lines.append("")
     return "\n".join(lines) + "\n"

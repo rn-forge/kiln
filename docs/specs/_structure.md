@@ -67,14 +67,16 @@ its decisions, its design — goes in a plain line under the table.
 - An epic's feature table has a `State` column, and each row's `State` equals
   its feature's own.
 - `Entry criteria` is present exactly when `Tags` includes `deferred`.
+- A feature page's stories table is derived from its story headings and
+  `**State:**` lines; never edit inside its fence.
 
 ### The board
 
-`index.md`'s Releases and Backlog sections, `epics/index.md`'s epic list and
-each release page's Scope table are derived regions. `task docs:generate` writes
-them from the epic, feature and release pages, and `task lint` fails when one is
-stale or a metadata table breaks the rules above. Never edit inside their
-fences.
+`index.md`'s Releases and Backlog sections, `epics/index.md`'s epic list, each
+feature page's stories table and each release page's Scope table are derived
+regions. `task docs:generate` writes them from the epic, feature and release
+pages, and `task lint` fails when one is stale or a metadata table breaks the
+rules above. Never edit inside their fences.
 
 ### File templates
 
@@ -105,6 +107,9 @@ A feature, `epics/E<n>-<slug>/F<n>.<m>-<slug>.md`:
 | **Parent** | [E<n>](index.md) |
 | **Iteration** | [Release <r>](../../../releases/release-<r>/index.md) |
 | **Predecessors** | — |
+
+<!-- BEGIN derived stories -->
+<!-- END derived stories -->
 
 <one paragraph: what the feature delivers>
 

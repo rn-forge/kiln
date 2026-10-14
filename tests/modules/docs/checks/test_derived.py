@@ -75,14 +75,18 @@ def _codes(root: Path) -> list[str]:
 
 def test_s13_2_2_an_unwritten_board_and_scope_are_stale(repo) -> None:
     root = _specs(repo)
-    assert _codes(root) == ["docs.board-stale", "docs.scope-stale"]
+    assert _codes(root) == [
+        "docs.board-stale",
+        "docs.scope-stale",
+        "docs.stories-stale",
+    ]
     assert all("task docs:generate" in f.message for f in generate.stale(root))
 
 
 def test_s13_2_2_generate_writes_the_regions_and_then_nothing_is_stale(repo) -> None:
     root = _specs(repo)
     written, findings = generate.generate(root)
-    assert sorted(p.name for p in written) == ["index.md", "index.md"]
+    assert sorted(p.name for p in written) == ["F1.1-a.md", "index.md", "index.md"]
     assert findings == []
     assert generate.stale(root) == []
     assert generate.generate(root) == ([], [])
@@ -212,3 +216,51 @@ def test_s14_1_2_3_a_missing_epics_fence_is_reported_and_left_alone(repo) -> Non
 def test_s14_1_2_4_a_tree_without_an_epic_list_reports_nothing_new(repo) -> None:
     root = _specs(repo)
     assert not any(code.startswith("docs.epics") for code in _codes(root))
+
+
+STORIES = "<!-- BEGIN derived stories -->\n<!-- END derived stories -->"
+STORY = "\n## S1.1.1 \u2014 One\n\n**State:** New\n"
+
+
+def _feature_page(root: Path) -> Path:
+    return root / "docs" / "specs" / "epics" / "E1-x" / "F1.1-a.md"
+
+
+def test_s14_2_1_3_a_feature_without_a_fence_gets_one_after_its_table(repo) -> None:
+    root = _specs(repo, **{"docs__specs__epics__E1-x__F1.1-a.md": FEATURE + STORY})
+    assert "docs.stories-stale" in _codes(root)
+    generate.generate(root)
+    text = _feature_page(root).read_text("utf-8")
+    table_end = text.index("| **Predecessors** | none |\n") + len(
+        "| **Predecessors** | none |\n"
+    )
+    assert text[table_end:].startswith("\n" + STORIES.split("\n")[0] + "\n")
+    assert "[S1.1.1 \u2014 One](#s111-one)" in text
+    assert generate.stale(root) == []
+    assert generate.generate(root) == ([], [])
+
+
+def test_s14_2_1_3_a_moved_fence_is_rewritten_where_it_is(repo) -> None:
+    body = FEATURE + "\nProse.\n\n" + STORIES + "\n" + STORY
+    root = _specs(repo, **{"docs__specs__epics__E1-x__F1.1-a.md": body})
+    generate.generate(root)
+    text = _feature_page(root).read_text("utf-8")
+    assert text.index("Prose.") < text.index("<!-- BEGIN derived stories -->")
+    assert text.count("BEGIN derived stories") == 1
+
+
+def test_s14_2_1_4_half_a_stories_fence_is_reported_and_left_alone(repo) -> None:
+    body = FEATURE + "\n<!-- BEGIN derived stories -->\n" + STORY
+    root = _specs(repo, **{"docs__specs__epics__E1-x__F1.1-a.md": body})
+    assert "docs.stories-markers" in _codes(root)
+    _, findings = generate.generate(root)
+    marker = next(f for f in findings if f.code == "docs.stories-markers")
+    assert marker.message == "has an incomplete derived stories fence"
+    assert _feature_page(root).read_text("utf-8") == body
+
+
+def test_s14_2_1_a_feature_without_a_metadata_table_gets_no_fence(repo) -> None:
+    root = _specs(repo, **{"docs__specs__epics__E1-x__F1.1-a.md": "# F1.1\n" + STORY})
+    generate.generate(root)
+    assert "derived stories" not in _feature_page(root).read_text("utf-8")
+    assert not any("stories" in code for code in _codes(root))
