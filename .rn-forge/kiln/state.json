@@ -72,7 +72,7 @@
     },
     "docs/_structure.md": {
       "begin_marker": null,
-      "content_hash": "432b2318d424ae23491c7d2d7f7058cd652516c16d0c7609423e270c644dbf2e",
+      "content_hash": "636a6df0e0939bff7769e102bbbae16ced16e1eca229086c310246b6caeaefd6",
       "end_marker": null,
       "kind": "managed",
       "path": "docs/_structure.md"
@@ -170,10 +170,17 @@
     },
     "docs/specs/_structure.md": {
       "begin_marker": null,
-      "content_hash": "c59a22a1a5482d46d9ac0abc312cbde19200b8dc9f780a4fd368efd1c9773b94",
+      "content_hash": "74b7cd99b5f25e4a4b13cd830ccebf3056a8279783fc2ce91c9a9ab32386a6f5",
       "end_marker": null,
       "kind": "managed",
       "path": "docs/specs/_structure.md"
+    },
+    "docs/specs/epics/index.md": {
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": "docs/specs/epics/index.md"
     },
     "docs/specs/index.md": {
       "begin_marker": null,

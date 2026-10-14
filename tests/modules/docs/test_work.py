@@ -9,11 +9,16 @@ import pytest
 
 from rn_forge.kiln.modules.docs.work import (
     BOARD_BLOCK,
+    EPIC_RANGE,
+    EPICS_BLOCK,
     SCOPE_BLOCK,
     Work,
+    epic_range,
     load_work,
+    range_label,
     read_metadata,
     render_board,
+    render_epics,
     render_scope,
     validate,
 )
@@ -297,3 +302,119 @@ def test_s13_3_1_seeded_board_is_current() -> None:
     ).read_text(encoding="utf-8")
     body = seed.split(f"{BOARD_BLOCK.begin}\n", 1)[1].split(BOARD_BLOCK.end, 1)[0]
     assert body == render_board(Work((), (), ()))
+
+
+def test_s14_1_2_epic_range_groups_by_tens() -> None:
+    assert EPIC_RANGE == 10
+    assert [epic_range(n) for n in (1, 4, 10, 11, 13, 20, 21)] == [
+        (1, 10),
+        (1, 10),
+        (1, 10),
+        (11, 20),
+        (11, 20),
+        (11, 20),
+        (21, 30),
+    ]
+    assert range_label(11, 20) == "E11\u2013E20"
+
+
+def _epic(number: int, state: str, rest: str = "", title: str = "T") -> str:
+    start = "| **Start Date** | 2026-01-01 |\n" if state == "Active" else ""
+    return (
+        f"# E{number} \u2014 {title}\n\n"
+        + TABLE
+        + f"| **State** | {state} |\n"
+        + (start + rest)
+    )
+
+
+def test_s14_1_2_1_render_epics_puts_each_range_under_its_own_heading(
+    tmp_path: Path,
+) -> None:
+    work = _tree(
+        tmp_path,
+        {
+            **VALID,
+            "specs/epics/E12-z/index.md": _epic(12, "New", title="Twelve"),
+        },
+    )
+    body = render_epics(work)
+    assert body.startswith(
+        "\nJump to: [E1\u2013E10](#e1e10) \u00b7 [E11\u2013E20](#e11e20)\n\n## E1\u2013E10\n\n"
+    )
+    assert body.index("## E1\u2013E10") < body.index("## E11\u2013E20")
+    assert "| [E12 \u2014 Twelve](E12-z/index.md) | New | \u2014 | \u2014 |" in body
+    _stable(EPICS_BLOCK, body)
+
+
+def test_s14_1_2_1_one_epic_gives_one_range_and_one_jump_link(tmp_path: Path) -> None:
+    body = render_epics(_tree(tmp_path, VALID))
+    assert body.count("## E") == 1
+    assert body.count("](#") == 1
+    assert "Jump to: [E1\u2013E10](#e1e10)\n" in body
+    _stable(EPICS_BLOCK, body)
+
+
+def test_s14_1_2_2_features_count_files_or_rows_and_deferred_is_marked(
+    tmp_path: Path,
+) -> None:
+    rows = (
+        "\n| ID | Feature | State | Tags |\n| -- | -- | -- | -- |\n"
+        "| F3.1 | A | Closed | |\n| F3.2 | B | New | |\n| F3.3 | C | New | |\n"
+    )
+    deferred = "| **Tags** | deferred |\n| **Entry criteria** | later |\n"
+    work = _tree(
+        tmp_path,
+        {
+            **VALID,
+            "specs/epics/E3-y/index.md": _epic(3, "New", deferred + rows),
+        },
+    )
+    body = render_epics(work)
+    # E1 has files F1.1 (Active, release-1) and F1.2 (New): the file states win.
+    assert (
+        "| [E1 \u2014 Epic](E1-x/index.md) | Active | 1 Active \u00b7 1 New | release-1 |"
+        in body
+    )
+    assert (
+        "| [E3 \u2014 T](E3-y/index.md) | New (deferred) | 2 New \u00b7 1 Closed | \u2014 |"
+        in body
+    )
+    _stable(EPICS_BLOCK, body)
+
+
+def test_s14_1_2_iterations_are_distinct_and_sorted_by_release(tmp_path: Path) -> None:
+    def feature(fid: str, release: int) -> str:
+        return (
+            f"# {fid} \u2014 T\n\n"
+            + TABLE
+            + "| **State** | New |\n| **Parent** | E1 |\n"
+            f"| **Iteration** | [r](../../../releases/release-{release}/index.md) |\n"
+            "| **Predecessors** | none |\n"
+        )
+
+    work = _tree(
+        tmp_path,
+        {
+            **VALID,
+            "releases/release-2/index.md": RELEASE_2,
+            "releases/release-10/index.md": RELEASE_2,
+            "specs/epics/E1-x/F1.3-c.md": feature("F1.3", 10),
+            "specs/epics/E1-x/F1.4-d.md": feature("F1.4", 2),
+        },
+    )
+    assert "| release-1, release-2, release-10 |" in render_epics(work)
+
+
+def test_s14_1_2_no_epics_says_so() -> None:
+    assert render_epics(Work((), (), ())) == "\nNo epics yet.\n\n"
+    _stable(EPICS_BLOCK, render_epics(Work((), (), ())))
+
+
+def test_s14_1_2_seeded_epic_list_is_current() -> None:
+    seed = (
+        Path(__file__).parents[3]
+        / "src/rn_forge/kiln/modules/docs/templates/docs/specs/epics/index.md.j2"
+    ).read_text(encoding="utf-8")
+    body = seed.split(f"{EPICS_BLOCK.begin}\n", 1)[1].split(EPICS_BLOCK.end, 1)[0]
+    assert body == render_epics(Work((), (), ()))

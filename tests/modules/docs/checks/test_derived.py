@@ -185,3 +185,30 @@ def test_s11_1_1_4_a_web_archetypes_api_dir_is_not_a_package_site(repo) -> None:
     generate.generate(root)
     assert checks.run(root, only=derived.NAME) == []
     assert "!include" not in (root / "mkdocs.yml").read_text()
+
+
+EPICS = "# Epics\n\n<!-- BEGIN derived epics -->\n<!-- END derived epics -->\n"
+
+
+def test_s14_1_2_3_an_empty_epic_list_fence_is_stale_then_current(repo) -> None:
+    root = _specs(repo, **{"docs__specs__epics__index.md": EPICS})
+    assert "docs.epics-stale" in _codes(root)
+    generate.generate(root)
+    assert generate.stale(root) == []
+    assert "E1\u2013E10" in (root / "docs/specs/epics/index.md").read_text("utf-8")
+
+
+def test_s14_1_2_3_a_missing_epics_fence_is_reported_and_left_alone(repo) -> None:
+    root = _specs(repo, **{"docs__specs__epics__index.md": "# Epics\n"})
+    page = root / "docs" / "specs" / "epics" / "index.md"
+    assert "docs.epics-markers" in _codes(root)
+    _, findings = generate.generate(root)
+    assert "docs.epics-markers" in [f.code for f in findings]
+    assert page.read_text("utf-8") == "# Epics\n"
+    message = next(f for f in findings if f.code == "docs.epics-markers").message
+    assert message == "has no complete derived epics fence"
+
+
+def test_s14_1_2_4_a_tree_without_an_epic_list_reports_nothing_new(repo) -> None:
+    root = _specs(repo)
+    assert not any(code.startswith("docs.epics") for code in _codes(root))

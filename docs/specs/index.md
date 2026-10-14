@@ -39,6 +39,8 @@ Features with no Iteration, by State and epic.
 
 Ideas not yet agreed as work are parked in the [ideas list](ideas.md).
 
+Every epic, by number, is on [the epic list](epics/index.md).
+
 ## Upstream pins
 
 What kiln needs from other repositories, stated as what kiln can observe from

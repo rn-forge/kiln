@@ -518,6 +518,15 @@ def test_s14_1_1_2_new_writes_tabbed_navigation_features(tmp_path: Path) -> None
     assert "Overview:" not in mkdocs
 
 
+def test_s14_1_2_5_new_writes_a_current_epic_list(tmp_path: Path) -> None:
+    target = tmp_path / "demo"
+    commands.new(target, archetype="python-tool", docs="mkdocs", yes=True)
+
+    page = target / "docs" / "specs" / "epics" / "index.md"
+    assert "No epics yet." in page.read_text(encoding="utf-8")
+    assert checks.run(target, only="docs-generate") == []
+
+
 def test_new_inside_a_uv_project_leaves_it_untouched(tmp_path: Path) -> None:
     parent = tmp_path / "pyproject.toml"
     parent.write_text('[project]\nname = "host"\nversion = "0.1.0"\n', encoding="utf-8")

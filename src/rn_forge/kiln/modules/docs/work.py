@@ -11,9 +11,13 @@ from pathlib import Path
 from rn_forge.commons.findings import Finding, Severity
 from rn_forge.commons.fs.blocks import HTML_COMMENT, ManagedBlock
 
+from rn_forge.kiln.modules.docs.markdown import slugify
+
 __all__ = [
     "BOARD_BLOCK",
+    "EPICS_BLOCK",
     "EPIC_KEYS",
+    "EPIC_RANGE",
     "FEATURE_KEYS",
     "RELEASE_KEYS",
     "RELEASE_STATUSES",
@@ -25,9 +29,12 @@ __all__ = [
     "Page",
     "Release",
     "Work",
+    "epic_range",
     "load_work",
+    "range_label",
     "read_metadata",
     "render_board",
+    "render_epics",
     "render_scope",
     "validate",
 ]
@@ -53,6 +60,12 @@ BOARD_BLOCK = ManagedBlock("derived board", comment=HTML_COMMENT)
 
 SCOPE_BLOCK = ManagedBlock("derived scope", comment=HTML_COMMENT)
 """The fenced Scope region of a release page."""
+
+EPICS_BLOCK = ManagedBlock("derived epics", comment=HTML_COMMENT)
+"""The fenced epic list region of `docs/specs/epics/index.md`."""
+
+EPIC_RANGE = 10
+"""How many epic numbers one range of the epic list spans."""
 
 _COUNT_ORDER = ("Active", "New", "Closed", "Removed")
 _NO_FEATURES = "—"
@@ -569,5 +582,64 @@ def render_scope(work: Work, release: Release) -> str:
         f"| E{f.epic_number} | {f.page.get('State') or ''} |"
         for f in features
     ]
+    lines.append("")
+    return "\n".join(lines) + "\n"
+
+
+def epic_range(number: int) -> tuple[int, int]:
+    """The inclusive `(lo, hi)` epic numbers of the range holding *number*."""
+    lo = (number - 1) // EPIC_RANGE * EPIC_RANGE + 1
+    return lo, lo + EPIC_RANGE - 1
+
+
+def range_label(lo: int, hi: int) -> str:
+    """The heading text of a range, such as `E1–E10`."""
+    return f"E{lo}\u2013E{hi}"
+
+
+def _epic_row(work: Work, epic: Epic) -> str:
+    state = epic.page.get("State") or ""
+    if "deferred" in _tags(epic.page.get("Tags")):
+        state += " (deferred)"
+    features = [f for f in work.features if f.epic_dir == epic.dir]
+    states = Counter(
+        [f.page.get("State") for f in features]
+        if features
+        else [row.state for row in epic.rows]
+    )
+    counts = (
+        " \u00b7 ".join(
+            f"{states[name]} {name}" for name in _COUNT_ORDER if states[name]
+        )
+        or _NO_FEATURES
+    )
+    releases = sorted({f.iteration for f in features if f.iteration}, key=_number)
+    return (
+        f"| [{epic.page.title}]({epic.dir}/index.md) | {state} | {counts} "
+        f"| {', '.join(releases) or _NO_FEATURES} |"
+    )
+
+
+def render_epics(work: Work) -> str:
+    """The body of the epic list region: one table per range that holds an epic."""
+    if not work.epics:
+        return "\nNo epics yet.\n\n"
+    ranges: dict[tuple[int, int], list[Epic]] = {}
+    for epic in work.epics:
+        ranges.setdefault(epic_range(epic.number), []).append(epic)
+    labels = {span: range_label(*span) for span in ranges}
+    jump = " \u00b7 ".join(
+        f"[{labels[span]}](#{slugify(labels[span])})" for span in sorted(ranges)
+    )
+    lines = ["", f"Jump to: {jump}"]
+    for span in sorted(ranges):
+        lines += [
+            "",
+            f"## {labels[span]}",
+            "",
+            "| Epic | State | Features | Iterations |",
+            "| -- | -- | -- | -- |",
+            *(_epic_row(work, epic) for epic in ranges[span]),
+        ]
     lines.append("")
     return "\n".join(lines) + "\n"

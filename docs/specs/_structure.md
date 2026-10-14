@@ -15,6 +15,7 @@
 - Open questions, as a `## Open questions` section on the epic or feature they
   block.
 - Ideas not yet agreed as work, in `ideas.md`.
+- `epics/index.md`, the derived epic list.
 
 ## Does not belong here
 
@@ -68,10 +69,11 @@ its decisions, its design — goes in a plain line under the table.
 
 ### The board
 
-`index.md`'s Releases and Backlog sections and each release page's Scope table
-are derived regions. `task docs:generate` writes them from the epic, feature and
-release pages, and `task lint` fails when one is stale or a metadata table
-breaks the rules above. Never edit inside their fences.
+`index.md`'s Releases and Backlog sections, `epics/index.md`'s epic list and
+each release page's Scope table are derived regions. `task docs:generate` writes
+them from the epic, feature and release pages, and `task lint` fails when one is
+stale or a metadata table breaks the rules above. Never edit inside their
+fences.
 
 ### File templates
 

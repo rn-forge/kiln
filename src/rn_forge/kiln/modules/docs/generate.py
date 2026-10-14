@@ -12,9 +12,11 @@ from rn_forge.commons.fs.blocks import ManagedBlock
 from rn_forge.kiln.modules.docs.nav import update_nav
 from rn_forge.kiln.modules.docs.work import (
     BOARD_BLOCK,
+    EPICS_BLOCK,
     SCOPE_BLOCK,
     load_work,
     render_board,
+    render_epics,
     render_scope,
     validate,
 )
@@ -84,6 +86,18 @@ def _work_regions(
             )
 
     region(index, BOARD_BLOCK, render_board(work), "docs.board-stale")
+    epics = docs / "specs" / "epics" / "index.md"
+    if epics.exists():
+        if not _fenced(EPICS_BLOCK, epics.read_text(encoding="utf-8")):
+            markers.append(
+                _error(
+                    "docs.epics-markers",
+                    "has no complete derived epics fence",
+                    epics.relative_to(root).as_posix(),
+                )
+            )
+        else:
+            region(epics, EPICS_BLOCK, render_epics(work), "docs.epics-stale")
     for release in work.releases:
         path = release.page.path
         if not _fenced(SCOPE_BLOCK, path.read_text(encoding="utf-8")):
