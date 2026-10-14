@@ -5,6 +5,22 @@
 | **State** | Active |
 | **Start Date** | 2026-09-16 |
 
+<!-- BEGIN derived features -->
+
+| Feature | State | Iteration | Stories |
+| -- | -- | -- | -- |
+| [F4.1 — The checks, organized by module](F4.1-checks-by-module.md) | Closed | release-1 | 4 Closed |
+| [F4.2 — The `core` module, the config manager and the module contract](F4.2-core-module.md) | Closed | release-1 | 3 Closed |
+| [F4.3 — The concern modules, with templates](F4.3-concern-modules.md) | Closed | release-1 | 7 Closed |
+| [F4.4 — The render matrix, and the goldens leave git](F4.4-render-matrix.md) | Closed | release-1 | 9 Closed |
+| [F4.5 — CLI](F4.5-cli.md) | Closed | release-1 | 10 Closed |
+| [F4.6 — doctor](F4.6-doctor.md) | New | release-1 | 5 New |
+| [F4.7 — Import contracts](F4.7-import-contracts.md) | New | release-1 | 3 Closed |
+| [F4.8 — Self-hosting](F4.8-self-hosting.md) | New | release-1 | 1 New |
+| [F4.9 — Seeded starter source](F4.9-seeded-starter-source.md) | Active | release-1 | 5 Closed |
+
+<!-- END derived features -->
+
 Release: [release-1](../../../releases/release-1/index.md) · Phase: D ·
 Estimate: 2–3 weeks
 
@@ -14,12 +30,12 @@ Repo `rn-forge/kiln`, **one distribution**: `rn-forge-kiln` (module
 ([E7](../E7-pykit-release-pin-flip/index.md)).
 
 **Dependencies.** S4.1.4, the checks-shape decision, is done. Every other story
-depends on [E3](../E3-realign-goldens-and-canon/index.md). Features follow the
-column below, and each ends green on `task validate` and its own acceptance
-block — except that [E5](../E5-web-archetypes/index.md)'s F5.1 and F5.2 are
-built after S4.5.2 and before F4.4, and [E11](../E11-package-docs/index.md)'s
-F11.1–F11.3 before F4.4, whose `python-lib` cell needs `kiln generate package`
-([board](../../index.md#order)).
+depends on [E3](../E3-realign-goldens-and-canon/index.md). Features follow their
+`Predecessors` rows, and each ends green on `task validate` and its own
+acceptance block — except that [E5](../E5-web-archetypes/index.md)'s F5.1 and
+F5.2 are built after S4.5.2 and before F4.4, and
+[E11](../E11-package-docs/index.md)'s F11.1–F11.3 before F4.4, whose
+`python-lib` cell needs `kiln generate package` ([board](../../index.md#order)).
 
 **Where it stands (2026-10-13).** F4.1, F4.2 and F4.3 are done — S4.3.6, the
 owner's Sonar decisions, closed on 2026-10-13. F4.6–F4.9 have not started.
@@ -44,18 +60,6 @@ layout, commands, the artifact cycle, apply order, doctor checks, template
 inventory, config lifecycle, module contract — is [design.md](design.md).
 
 ## Features
-
-| ID | Feature | Phase step | Depends on | State |
-| -- | -- | -- | -- | -- |
-| [F4.1](F4.1-checks-by-module.md) | The checks, organized by module | D.1 | S4.1.4: done; the rest: E3 | Closed |
-| [F4.2](F4.2-core-module.md) | The `core` module, the config manager and the module contract | D.2 | F4.1 | Closed |
-| [F4.3](F4.3-concern-modules.md) | The concern modules, with templates | D.3 | F4.2; E3 goldens | Closed |
-| [F4.4](F4.4-render-matrix.md) | The render matrix, and the goldens leave git | D.4 | F4.3; the `python-lib` cell also S11.3.1 | Closed |
-| [F4.5](F4.5-cli.md) | CLI | D.5 | F4.3; S4.5.9 also S5.2.4 | Closed |
-| [F4.6](F4.6-doctor.md) | doctor | D.6 | F4.3, S4.5.1 | New |
-| [F4.7](F4.7-import-contracts.md) | Import contracts | D.7 | F4.3, S4.1.2 | New |
-| [F4.8](F4.8-self-hosting.md) | Self-hosting | D.8 | F4.4, F4.5, F4.6, F4.7 | New |
-| [F4.9](F4.9-seeded-starter-source.md) | Seeded starter source | D.9 | F4.3, S4.4.1; S4.9.2 also F5.2 | Active |
 
 **Out of scope:** `kiln generate package` is
 [E11](../E11-package-docs/F11.3-generate-package.md) for `python-lib`, and

@@ -6,6 +6,16 @@
 | **Start Date** | 2026-10-01 |
 | **Closed Date** | 2026-10-01 |
 
+<!-- BEGIN derived features -->
+
+| Feature | State | Iteration | Stories |
+| -- | -- | -- | -- |
+| [F13.1 — Derived regions, starting with the nav](F13.1-derived-regions.md) | Closed | release-1 | 1 Closed |
+| [F13.2 — The board and Scope regions, and metadata checks](F13.2-board-and-scope.md) | Closed | release-1 | 2 Closed |
+| [F13.3 — The seeded rules and kiln's own docs adopt the model](F13.3-adopt-the-model.md) | Closed | release-1 | 2 Closed |
+
+<!-- END derived features -->
+
 Release: [release-1](../../../releases/release-1/index.md) · Decisions:
 [ADR-0003](../../../adr/ADR-0003.md) (revised),
 [ADR-0011](../../../adr/ADR-0011.md), [ADR-0012](../../../adr/ADR-0012.md)
@@ -36,12 +46,6 @@ S13.1.1 and S13.3.1 change all three goldens before any template.
 **Build order.** E13 is built before E11's F11.1–F11.3, and so before F4.4.
 
 ## Features
-
-| ID | Feature | Release | Depends on | State |
-| -- | -- | -- | -- | -- |
-| [F13.1](F13.1-derived-regions.md) | Derived regions, starting with the nav | release-1 | S4.3.2 (done) | Closed |
-| [F13.2](F13.2-board-and-scope.md) | The board and Scope regions, and metadata checks | release-1 | S13.1.1 | Closed |
-| [F13.3](F13.3-adopt-the-model.md) | The seeded rules and kiln's own docs adopt the model | release-1 | F13.2 | Closed |
 
 **Out of scope.** Moving pykit and ngkit onto the model. Each repository does
 that in its own specs ([ADR-0009](../../../adr/ADR-0009.md)), once it adopts

@@ -4,6 +4,17 @@
 | -- | -- |
 | **State** | New |
 
+<!-- BEGIN derived features -->
+
+| Feature | State | Iteration | Stories |
+| -- | -- | -- | -- |
+| [F6.1 — `python-lib` can host pykit](F6.1-pykit-skeleton.md) | New | release-1 | 1 New |
+| [F6.2 — Retire taskkit](F6.2-retire-taskkit.md) | New | release-2 | 1 New |
+| [F6.3 — The generated CI matches the hardened upstream CI](F6.3-hardened-ci.md) | New | release-1 | 1 Active · 4 Closed |
+| [F6.4 — `python-lib` renders pykit's discovered workspace pipeline](F6.4-workspace-pipeline.md) | New | release-2 | — |
+
+<!-- END derived features -->
+
 Releases: [release-1](../../../releases/release-1/index.md),
 [release-2](../../../releases/release-2/index.md) · Phase: F
 
@@ -18,13 +29,6 @@ pipelines. Retiring taskkit ([F6.2](F6.2-retire-taskkit.md)) is kiln's because
 taskkit's job moves into kiln.
 
 ## Features
-
-| ID | Feature | Depends on | State |
-| -- | -- | -- | -- |
-| [F6.1](F6.1-pykit-skeleton.md) | `python-lib` can host pykit | S5.3.1; E11's F11.1–F11.3 | New |
-| [F6.2](F6.2-retire-taskkit.md) | Retire taskkit | S4.6.2, S5.2.2 | New |
-| [F6.3](F6.3-hardened-ci.md) | The generated CI matches the hardened upstream CI | F4.4 | New |
-| [F6.4](F6.4-workspace-pipeline.md) | `python-lib` renders pykit's discovered workspace pipeline | F6.3, F6.1 | New |
 
 **Out of scope here:** kiln itself is already self-hosted by
 [F4.8](../E4-generator/F4.8-self-hosting.md). intellibuild is built on its own

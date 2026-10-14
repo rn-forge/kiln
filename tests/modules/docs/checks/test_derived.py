@@ -44,10 +44,7 @@ TABLE = "|  |  |\n| -- | -- |\n"
 BOARD = "<!-- BEGIN derived board -->\n<!-- END derived board -->\n"
 SCOPE = "## Scope\n\n<!-- BEGIN derived scope -->\n<!-- END derived scope -->\n"
 SPECS_INDEX = f"# Specs\n\n{BOARD}"
-EPIC = (
-    "# E1 — Epic\n\n" + TABLE + "| **State** | New |\n\n"
-    "| ID | State |\n| -- | -- |\n| [F1.1](F1.1-a.md) | New |\n"
-)
+EPIC = "# E1 — Epic\n\n" + TABLE + "| **State** | New |\n"
 FEATURE = (
     "# F1.1 — A\n\n" + TABLE + "| **State** | New |\n| **Parent** | E1 |\n"
     "| **Iteration** | [Release 1](../../../releases/release-1/index.md) |\n"
@@ -78,6 +75,7 @@ def test_s13_2_2_an_unwritten_board_and_scope_are_stale(repo) -> None:
     assert _codes(root) == [
         "docs.board-stale",
         "docs.scope-stale",
+        "docs.features-stale",
         "docs.stories-stale",
     ]
     assert all("task docs:generate" in f.message for f in generate.stale(root))
@@ -86,7 +84,12 @@ def test_s13_2_2_an_unwritten_board_and_scope_are_stale(repo) -> None:
 def test_s13_2_2_generate_writes_the_regions_and_then_nothing_is_stale(repo) -> None:
     root = _specs(repo)
     written, findings = generate.generate(root)
-    assert sorted(p.name for p in written) == ["F1.1-a.md", "index.md", "index.md"]
+    assert sorted(p.name for p in written) == [
+        "F1.1-a.md",
+        "index.md",
+        "index.md",
+        "index.md",
+    ]
     assert findings == []
     assert generate.stale(root) == []
     assert generate.generate(root) == ([], [])
@@ -264,3 +267,40 @@ def test_s14_2_1_a_feature_without_a_metadata_table_gets_no_fence(repo) -> None:
     generate.generate(root)
     assert "derived stories" not in _feature_page(root).read_text("utf-8")
     assert not any("stories" in code for code in _codes(root))
+
+
+def _epic_page(root: Path) -> Path:
+    return root / "docs" / "specs" / "epics" / "E1-x" / "index.md"
+
+
+def test_s14_2_2_an_epic_with_feature_files_gets_the_features_region(repo) -> None:
+    root = _specs(repo)
+    assert "docs.features-stale" in _codes(root)
+    generate.generate(root)
+    text = _epic_page(root).read_text("utf-8")
+    assert text.index("| **State** | New |") < text.index("BEGIN derived features")
+    assert "| [F1.1 \u2014 A](F1.1-a.md) | New | release-1 | \u2014 |" in text
+    assert generate.stale(root) == []
+    assert generate.generate(root) == ([], [])
+
+
+def test_s14_2_2_an_epic_without_feature_files_gets_no_fence(repo) -> None:
+    root = repo(
+        docs="mkdocs",
+        **{
+            "docs__specs__index.md": SPECS_INDEX,
+            "docs__specs__epics__E1-x__index.md": EPIC,
+        },
+    )
+    generate.generate(root)
+    assert "derived features" not in _epic_page(root).read_text("utf-8")
+
+
+def test_s14_2_2_half_a_features_fence_is_reported_and_left_alone(repo) -> None:
+    body = EPIC + "\n<!-- END derived features -->\n"
+    root = _specs(repo, **{"docs__specs__epics__E1-x__index.md": body})
+    assert "docs.features-markers" in _codes(root)
+    _, findings = generate.generate(root)
+    marker = next(f for f in findings if f.code == "docs.features-markers")
+    assert marker.message == "has an incomplete derived features fence"
+    assert _epic_page(root).read_text("utf-8") == body

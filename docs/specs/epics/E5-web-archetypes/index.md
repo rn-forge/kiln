@@ -5,6 +5,16 @@
 | **State** | Active |
 | **Start Date** | 2026-09-26 |
 
+<!-- BEGIN derived features -->
+
+| Feature | State | Iteration | Stories |
+| -- | -- | -- | -- |
+| [F5.1 — Library sets, and the modules gain the web shapes](F5.1-web-library-sets-and-modules.md) | Closed | release-1 | 3 Closed |
+| [F5.2 — `kiln new` end to end for the web archetypes](F5.2-kiln-new-web-end-to-end.md) | Closed | release-1 | 1 New · 3 Closed |
+| [F5.3 — Prove and ship the FastAPI cells](F5.3-shipped-web-cells.md) | Active | release-1 | 1 Active · 2 New · 4 Closed |
+
+<!-- END derived features -->
+
 Release: [release-1](../../../releases/release-1/index.md) · Phase: E ·
 Estimate: 2 weeks
 
@@ -48,14 +58,6 @@ product's further code stays repo-owned, and ongoing generation is
 have the import fence and nothing behind it). Nothing in E5 renders it; the
 dependency check accepts a framework's `[codegen]` extra in a dev group only,
 when one appears.
-
-## Features
-
-| ID | Feature | Depends on | State |
-| -- | -- | -- | -- |
-| [F5.1](F5.1-web-library-sets-and-modules.md) | Library sets, and the modules gain the web shapes | S4.3.3–S4.3.5, S4.3.7, S4.5.1, S4.5.2; resolvable pykit pins | Closed |
-| [F5.2](F5.2-kiln-new-web-end-to-end.md) | `kiln new` end to end for the web archetypes | F5.1; S5.2.1 on S5.2.2; S5.2.4 on S5.2.1; Django deferred | Closed |
-| [F5.3](F5.3-shipped-web-cells.md) | Prove and ship the FastAPI cells | S5.3.1 on F5.2; S5.3.5 on S5.3.1; S5.3.6 on S5.3.5; S5.3.7 on S5.3.6; S5.3.2 on S5.3.7 and S4.4.1; S5.3.3 on S5.3.2; S5.3.4 on S5.3.3 | Active |
 
 ## Acceptance
 

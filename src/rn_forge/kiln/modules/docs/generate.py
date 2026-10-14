@@ -13,12 +13,15 @@ from rn_forge.kiln.modules.docs.nav import update_nav
 from rn_forge.kiln.modules.docs.work import (
     BOARD_BLOCK,
     EPICS_BLOCK,
+    FEATURES_BLOCK,
     SCOPE_BLOCK,
     STORIES_BLOCK,
+    Page,
     load_work,
     metadata_end,
     render_board,
     render_epics,
+    render_features,
     render_scope,
     render_stories,
     validate,
@@ -116,6 +119,21 @@ def _work_regions(
                 )
             )
 
+    def summary(page: Page, block: ManagedBlock, body: str, name: str) -> None:
+        path = page.path
+        fenced = _with_fence(path.read_text(encoding="utf-8"), block)
+        if fenced is None:
+            if page.meta:
+                markers.append(
+                    _error(
+                        f"docs.{name}-markers",
+                        f"has an incomplete derived {name} fence",
+                        path.relative_to(root).as_posix(),
+                    )
+                )
+            return
+        region(path, block, body, f"docs.{name}-stale", fenced)
+
     region(index, BOARD_BLOCK, render_board(work), "docs.board-stale")
     epics = docs / "specs" / "epics" / "index.md"
     if epics.exists():
@@ -141,26 +159,11 @@ def _work_regions(
             )
             continue
         region(path, SCOPE_BLOCK, render_scope(work, release), "docs.scope-stale")
+    for epic in work.epics:
+        if any(f.epic_dir == epic.dir for f in work.features):
+            summary(epic.page, FEATURES_BLOCK, render_features(work, epic), "features")
     for feature in work.features:
-        path = feature.page.path
-        fenced = _with_fence(path.read_text(encoding="utf-8"), STORIES_BLOCK)
-        if fenced is None:
-            if feature.page.meta:
-                markers.append(
-                    _error(
-                        "docs.stories-markers",
-                        "has an incomplete derived stories fence",
-                        path.relative_to(root).as_posix(),
-                    )
-                )
-            continue
-        region(
-            path,
-            STORIES_BLOCK,
-            render_stories(feature),
-            "docs.stories-stale",
-            fenced,
-        )
+        summary(feature.page, STORIES_BLOCK, render_stories(feature), "stories")
     return writes, [*markers, *validate(work, root)], stale_findings
 
 

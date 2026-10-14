@@ -18,6 +18,7 @@ __all__ = [
     "EPICS_BLOCK",
     "EPIC_KEYS",
     "EPIC_RANGE",
+    "FEATURES_BLOCK",
     "FEATURE_KEYS",
     "RELEASE_KEYS",
     "RELEASE_STATUSES",
@@ -40,6 +41,7 @@ __all__ = [
     "read_stories",
     "render_board",
     "render_epics",
+    "render_features",
     "render_scope",
     "render_stories",
     "validate",
@@ -72,6 +74,9 @@ EPICS_BLOCK = ManagedBlock("derived epics", comment=HTML_COMMENT)
 
 EPIC_RANGE = 10
 """How many epic numbers one range of the epic list spans."""
+
+FEATURES_BLOCK = ManagedBlock("derived features", comment=HTML_COMMENT)
+"""The fenced features region of an epic page."""
 
 STORIES_BLOCK = ManagedBlock("derived stories", comment=HTML_COMMENT)
 """The fenced stories region of a feature page."""
@@ -207,8 +212,27 @@ def _page(path: Path) -> tuple[Page, list[str], int]:
     return Page(path, _title(lines), tuple(pairs)), lines, end
 
 
+def _outside_fence(lines: list[str]) -> list[str]:
+    begin = FEATURES_BLOCK.begin.strip()
+    end = FEATURES_BLOCK.end.strip()
+    kept: list[str] = []
+    inside = False
+    for line in lines:
+        if line.strip() == begin:
+            inside = True
+        elif line.strip() == end:
+            inside = False
+        elif not inside:
+            kept.append(line)
+    return kept
+
+
 def _feature_rows(lines: list[str]) -> tuple[tuple[FeatureRow, ...], bool]:
-    """The first feature table's rows, and whether it has a `State` column."""
+    """The first feature table's rows, and whether it has a `State` column.
+
+    Lines inside a derived features fence are not hand-written rows.
+    """
+    lines = _outside_fence(lines)
     i = 0
     while i < len(lines):
         if not lines[i].lstrip().startswith("|"):
@@ -411,7 +435,8 @@ def validate(work: Work, repo_root: Path) -> list[Finding]:
             if state in ("New", "Removed") and start is not None:
                 err(page, "dates", f"has Start Date but its State is {state}")
         entry_criteria(page)
-        if not epic.has_state_column:
+        has_files = any(f.epic_dir == epic.dir for f in work.features)
+        if not has_files and not epic.has_state_column:
             err(page, "no-state-column", "has a feature table with no State column")
 
     for feature in work.features:
@@ -485,7 +510,15 @@ def _identities(
             file_ids[feature.id] = feature
     by_file = {(f.epic_dir, f.page.path.name): f for f in work.features}
     for epic in work.epics:
+        epic_file_ids = {f.id for f in work.features if f.epic_dir == epic.dir}
         for row in epic.rows:
+            if row.id in epic_file_ids:
+                err(
+                    epic.page,
+                    "feature-table",
+                    f"lists {row.id} by hand; its derived features table shows it",
+                )
+                continue
             feature = by_file.get((epic.dir, row.file or ""))
             actual = feature.page.get("State") if feature else None
             if (
@@ -726,6 +759,27 @@ def render_stories(feature: Feature) -> str:
         lines.append(
             f"| [{text.replace('|', chr(92) + '|')}](#{slugify(text)}) "
             f"| {story.state or _NO_FEATURES} | {story.depends_on or _NO_FEATURES} |"
+        )
+    lines.append("")
+    return "\n".join(lines) + "\n"
+
+
+def render_features(work: Work, epic: Epic) -> str:
+    """The body of *epic*'s features region: one row per feature file."""
+    lines = [
+        "",
+        "| Feature | State | Iteration | Stories |",
+        "| -- | -- | -- | -- |",
+    ]
+    for feature in work.features:
+        if feature.epic_dir != epic.dir:
+            continue
+        deferred = "deferred" in _tags(feature.page.get("Tags"))
+        iteration = feature.iteration or ("deferred" if deferred else _NO_FEATURES)
+        title = feature.page.title.replace("|", "\\|")
+        lines.append(
+            f"| [{title}]({feature.page.path.name}) | {feature.page.get('State') or ''} "
+            f"| {iteration} | {_story_counts(feature.stories)} |"
         )
     lines.append("")
     return "\n".join(lines) + "\n"

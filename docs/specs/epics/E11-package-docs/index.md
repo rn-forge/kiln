@@ -5,6 +5,18 @@
 | **State** | Active |
 | **Start Date** | 2026-09-26 |
 
+<!-- BEGIN derived features -->
+
+| Feature | State | Iteration | Stories |
+| -- | -- | -- | -- |
+| [F11.1 — The docs checks learn package sites](F11.1-checks-learn-package-sites.md) | Closed | release-1 | 3 Closed |
+| [F11.2 — `python-lib` repositories carry package docs sites](F11.2-python-lib-package-sites.md) | New | release-1 | 3 Closed · 1 Removed |
+| [F11.3 — `kiln generate package`](F11.3-generate-package.md) | New | release-1 | 1 Closed |
+| [F11.4 — The docs rules are one standard, and kiln owns them](F11.4-cross-repository-rule.md) | Closed | release-1 | 2 Closed |
+| [F11.5 — CI deploys versioned package sites](F11.5-deploy-package-sites.md) | New | release-2 | 1 New |
+
+<!-- END derived features -->
+
 Releases: [release-1](../../../releases/release-1/index.md),
 [release-2](../../../releases/release-2/index.md) · Decisions:
 [ADR-0008](../../../adr/ADR-0008.md), [ADR-0009](../../../adr/ADR-0009.md)
@@ -23,7 +35,8 @@ repository's specs are accepted inside that repository
 [S13.1.1](../E13-docs-work-model/F13.1-derived-regions.md#s1311-the-nav-is-a-derived-region)
 made the nav a derived region. F11.2 needs F11.1. F11.5 needs F11.2 and its
 entry criterion. F11.3 needs F11.2 and the CLI's
-[S4.5.1–S4.5.2](../E4-generator/F4.5-cli.md). F11.4 needs nothing. Downstream,
+[S4.5.1–S4.5.2](../E4-generator/F4.5-cli.md). F11.4 needs nothing, but S11.4.2
+waits on S13.3.1. Downstream,
 [S6.1.1](../E6-rebuild-the-repos/F6.1-pykit-skeleton.md) needs F11.1–F11.3, and
 [F4.4](../E4-generator/F4.4-render-matrix.md)'s `python-lib` cell needs S11.3.1.
 
@@ -47,14 +60,6 @@ pykit's work were corrected when the ADR was accepted: the board's
 at the same time. F11.4 carries it into the templates.
 
 ## Features
-
-| ID | Feature | Depends on | State |
-| -- | -- | -- | -- |
-| [F11.1](F11.1-checks-learn-package-sites.md) | The docs checks learn package sites | S4.3.2 (done), S13.1.1 | Closed |
-| [F11.2](F11.2-python-lib-package-sites.md) | `python-lib` repositories carry package docs sites | F11.1 | New |
-| [F11.3](F11.3-generate-package.md) | `kiln generate package` | F11.2, S4.5.1, S4.5.2 | New |
-| [F11.4](F11.4-cross-repository-rule.md) | The docs rules are one standard, and kiln owns them | S13.3.1, for S11.4.2 | Closed |
-| [F11.5](F11.5-deploy-package-sites.md) | CI deploys versioned package sites | F11.2; the entry criterion on S11.5.1 | New |
 
 **Out of scope.** Instruction files: kiln keeps its prose in `README.md` and
 pykit keeps it in `CLAUDE.md`. Both pass the instruction-pointer check, so

@@ -4,6 +4,15 @@
 | -- | -- |
 | **State** | New |
 
+<!-- BEGIN derived features -->
+
+| Feature | State | Iteration | Stories |
+| -- | -- | -- | -- |
+| [F14.1 — Area tabs, the epic ranges and the epic list](F14.1-tabbed-navigation.md) | New | release-1 | 3 Closed |
+| [F14.2 — Epic and feature summary tables](F14.2-work-summaries.md) | New | release-1 | 1 New · 2 Closed |
+
+<!-- END derived features -->
+
 Decisions: [ADR-0013](../../../adr/ADR-0013.md) (accepted 2026-10-14)
 
 The docs site's single sidebar stacks every area's pages on top of each other.
@@ -21,11 +30,6 @@ derived-region generator. **Goldens:** the hand-authored goldens have left git
 (`task self:golden:compare`).
 
 ## Features
-
-| ID | Feature | Release | Depends on | State |
-| -- | -- | -- | -- | -- |
-| [F14.1](F14.1-tabbed-navigation.md) | Area tabs, the epic ranges and the epic list | release-1 | ADR-0013 | New |
-| [F14.2](F14.2-work-summaries.md) | Epic and feature summary tables | release-1 | S14.1.2 | New |
 
 **Out of scope.**
 

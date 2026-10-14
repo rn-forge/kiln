@@ -4,6 +4,15 @@
 | -- | -- |
 | **State** | New |
 
+<!-- BEGIN derived features -->
+
+| Feature | State | Iteration | Stories |
+| -- | -- | -- | -- |
+| [F12.1 — The baseline module, and the Python records](F12.1-python-baseline.md) | New | release-2 | 4 New |
+| [F12.2 — The web records](F12.2-web-baseline.md) | New | release-2 | 3 New |
+
+<!-- END derived features -->
+
 Release: [release-2](../../../releases/release-2/index.md) · Decision:
 [ADR-0010](../../../adr/ADR-0010.md)
 
@@ -37,11 +46,6 @@ baseline with the rest. F12.2 is built after F12.1 and before the FastAPI cells
 of [F5.3](../E5-web-archetypes/F5.3-shipped-web-cells.md) are approved.
 
 ## Features
-
-| ID | Feature | Release | Depends on | State |
-| -- | -- | -- | -- | -- |
-| [F12.1](F12.1-python-baseline.md) | The baseline module, and the Python records | release-2 | S4.3.1, S4.3.5 (done) | New |
-| [F12.2](F12.2-web-baseline.md) | The web records | release-2 | F12.1; F5.1 (done) | New |
 
 **Out of scope.** kiln's own repository: its skeleton is a hand-copy of the
 `python-tool` golden, and it adopts the baseline when it regenerates itself in

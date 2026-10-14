@@ -11,6 +11,7 @@ from rn_forge.kiln.modules.docs.work import (
     BOARD_BLOCK,
     EPIC_RANGE,
     EPICS_BLOCK,
+    FEATURES_BLOCK,
     SCOPE_BLOCK,
     STORIES_BLOCK,
     STORY_HEADING_RE,
@@ -23,6 +24,7 @@ from rn_forge.kiln.modules.docs.work import (
     read_stories,
     render_board,
     render_epics,
+    render_features,
     render_scope,
     render_stories,
     validate,
@@ -31,8 +33,10 @@ from rn_forge.kiln.modules.docs.work import (
 TABLE = "|  |  |\n| -- | -- |\n"
 EPIC = (
     "# E1 — Epic\n\n" + TABLE + "| **State** | Active |\n"
-    "| **Start Date** | 2026-01-01 |\n\n"
-    "| ID | Feature | State | Tags |\n| -- | -- | -- | -- |\n"
+    "| **Start Date** | 2026-01-01 |\n"
+)
+EPIC_ROWS = (
+    EPIC + "\n| ID | Feature | State | Tags |\n| -- | -- | -- | -- |\n"
     "| [F1.1](F1.1-a.md) | A | Active | |\n"
     "| [F1.2](F1.2-b.md) | B | New | deferred |\n"
 )
@@ -130,13 +134,6 @@ R = "releases/release-1/index.md"
             "",
         ),
         ("iteration", F1, "release-1](", "release-9]("),
-        (
-            "no-state-column",
-            E,
-            "| ID | Feature | State | Tags |",
-            "| ID | Feature | Status | Tags |",
-        ),
-        ("state-mismatch", E, "| A | Active |", "| A | New |"),
     ],
 )
 def test_s13_2_1_each_rule_reports_one_finding(
@@ -161,8 +158,8 @@ def test_s13_2_1_reports_every_broken_page(tmp_path: Path) -> None:
 
 
 def test_s13_2_1_bare_id_row_is_never_compared(tmp_path: Path) -> None:
-    files = {**VALID, E: EPIC.replace("[F1.1](F1.1-a.md)", "F1.1")}
-    assert codes(tmp_path, files) == []
+    rows = EPIC_ROWS.replace("[F1.1](F1.1-a.md)", "F1.1")
+    assert codes(tmp_path, {**VALID, E: rows}) == ["docs.work-feature-table"] * 2
 
 
 def _tree(tmp_path: Path, files: dict[str, str]):
@@ -251,7 +248,7 @@ def test_s13_2_2_render_board_new_rows_and_fileless_and_empty_epics(
 
 
 def test_s13_2_2_a_bare_row_with_a_file_is_listed_once(tmp_path: Path) -> None:
-    epic = EPIC.replace("[F1.2](F1.2-b.md)", "F1.2")
+    epic = EPIC_ROWS.replace("[F1.2](F1.2-b.md)", "F1.2")
     board = render_board(_tree(tmp_path, {**VALID, "specs/epics/E1-x/index.md": epic}))
     assert (
         "| [E1 — Epic](epics/E1-x/index.md) | [F1.2](epics/E1-x/F1.2-b.md) "
@@ -479,3 +476,87 @@ def test_s14_2_1_2_a_feature_without_stories_says_so(tmp_path: Path) -> None:
     body = render_stories(_feature_with(tmp_path, ""))
     assert body == "\nNo stories yet.\n\n"
     _stable(STORIES_BLOCK, body)
+
+
+def test_s14_2_2_a_hand_listed_file_backed_feature_is_reported(tmp_path: Path) -> None:
+    files = {**VALID, E: EPIC_ROWS}
+    docs = tmp_path / "docs"
+    for name, text in files.items():
+        (docs / name).parent.mkdir(parents=True, exist_ok=True)
+        (docs / name).write_text(text, encoding="utf-8")
+    findings = validate(load_work(docs), tmp_path)
+    assert [f.code for f in findings] == ["docs.work-feature-table"] * 2
+    assert findings[0].message == (
+        "lists F1.1 by hand; its derived features table shows it"
+    )
+
+
+def test_s14_2_2_a_pre_taxonomy_epic_still_needs_a_state_column(tmp_path: Path) -> None:
+    epic = (
+        "# E2 \u2014 Old\n\n" + TABLE + "| **State** | Closed |\n"
+        "| **Start Date** | 2026-01-01 |\n| **Closed Date** | 2026-02-01 |\n\n"
+        "| ID | Feature | Status |\n| -- | -- | -- |\n| F2.1 | Old | Closed |\n"
+    )
+    files = {**VALID, "specs/epics/E2-y/index.md": epic}
+    assert codes(tmp_path, files) == ["docs.work-no-state-column"]
+
+
+def test_s14_2_2_a_state_column_is_not_needed_when_features_have_files(
+    tmp_path: Path,
+) -> None:
+    epic = EPIC + "\n| ID | Feature | Status |\n| -- | -- | -- |\n| F9.9 | X | New |\n"
+    assert codes(tmp_path, {**VALID, E: epic}) == []
+
+
+def test_s14_2_2_a_row_without_a_file_but_linking_one_is_still_compared(
+    tmp_path: Path,
+) -> None:
+    rows = EPIC + (
+        "\n| ID | Feature | State | Tags |\n| -- | -- | -- | -- |\n"
+        "| [F1.9](F1.1-a.md) | A | New | |\n"
+    )
+    assert codes(tmp_path, {**VALID, E: rows}) == ["docs.work-state-mismatch"]
+
+
+def test_s14_2_2_render_features_lists_files_in_id_order(tmp_path: Path) -> None:
+    def feature(fid: str, title: str, extra: str = "") -> str:
+        return (
+            f"# {fid} \u2014 {title}\n\n"
+            + TABLE
+            + "| **State** | New |\n| **Parent** | E1 |\n"
+            + extra
+            + "| **Predecessors** | none |\n\n## S1.1.1 \u2014 s\n\n**State:** Closed (2026-01-01)\n"
+        )
+
+    iteration = "| **Iteration** | [r](../../../releases/release-1/index.md) |\n"
+    work = _tree(
+        tmp_path,
+        {
+            **VALID,
+            "specs/epics/E1-x/F1.1-a.md": feature("F1.1", "A | B", iteration),
+            "specs/epics/E1-x/F1.2-b.md": feature(
+                "F1.2", "Later", "| **Tags** | deferred |\n| **Entry criteria** | x |\n"
+            ),
+            "specs/epics/E1-x/F1.10-c.md": feature("F1.10", "Tenth"),
+        },
+    )
+    body = render_features(work, work.epics[0])
+    assert body == (
+        "\n| Feature | State | Iteration | Stories |\n| -- | -- | -- | -- |\n"
+        "| [F1.1 \u2014 A \\| B](F1.1-a.md) | New | release-1 | 1 Closed |\n"
+        "| [F1.2 \u2014 Later](F1.2-b.md) | New | deferred | 1 Closed |\n"
+        "| [F1.10 \u2014 Tenth](F1.10-c.md) | New | \u2014 | 1 Closed |\n\n"
+    )
+    _stable(FEATURES_BLOCK, body)
+
+
+def test_s14_2_2_rows_inside_the_derived_fence_are_not_hand_written(
+    tmp_path: Path,
+) -> None:
+    fenced = (
+        EPIC
+        + "\n<!-- BEGIN derived features -->\n\n| Feature | State | Iteration | Stories |\n"
+        "| -- | -- | -- | -- |\n| [F1.1 \u2014 A](F1.1-a.md) | Active | release-1 | \u2014 |\n"
+        "\n<!-- END derived features -->\n"
+    )
+    assert codes(tmp_path, {**VALID, E: fenced}) == []

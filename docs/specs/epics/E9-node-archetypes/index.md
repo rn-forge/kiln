@@ -6,6 +6,14 @@
 | **Tags** | deferred |
 | **Entry criteria** | a repo in scope needs a second toolchain — pnpm release, node CI, no uv |
 
+<!-- BEGIN derived features -->
+
+| Feature | State | Iteration | Stories |
+| -- | -- | -- | -- |
+| [F9.1 — `node-lib` renders ngkit's CI](F9.1-node-lib-hosts-ngkit-ci.md) | New | deferred | — |
+
+<!-- END derived features -->
+
 ## Scope
 
 `node-lib` (pnpm/Nx workspace of published UI libraries; prior art ngkit;
@@ -26,12 +34,6 @@ Markdown in a node archetype is formatted by mdformat under the seeded
 `.mdformat.toml`, as in every other archetype, never by prettier: the seeded
 `.prettierignore` excludes `*.md`, so the docs tree is byte-identical across
 archetypes. ngkit's configuration is the prior art.
-
-## Features
-
-| ID | Feature | Depends on | State |
-| -- | -- | -- | -- |
-| [F9.1](F9.1-node-lib-hosts-ngkit-ci.md) | `node-lib` renders ngkit's CI | F6.3; the entry criterion | New |
 
 ## Open questions
 
