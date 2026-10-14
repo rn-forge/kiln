@@ -185,7 +185,7 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
     off = _rendered(_root(tmp_path / "off", sonar=False))
     assert "sonar-project.properties" not in off
     jobs = yaml.safe_load(off[".github/workflows/ci.yml"])["jobs"]
-    assert set(jobs) == {"validate", "release"}
+    assert set(jobs) == {"validate", "release", "ci-ok"}
     assert jobs["release"]["needs"] == ["validate"]
     assert (
         "sonar"
@@ -196,8 +196,10 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
     # Everything else keeps its bytes.
     on_ci = on[".github/workflows/ci.yml"]
     sonar_job = on_ci[on_ci.index("\n  sonar:") : on_ci.index("\n  release:")]
-    expected = on_ci.replace(sonar_job, "").replace(
-        "needs: [validate, sonar]", "needs: [validate]"
+    expected = (
+        on_ci.replace(sonar_job, "")
+        .replace("needs: [validate, sonar]", "needs: [validate]")
+        .replace("needs: [validate, sonar, release]", "needs: [validate, release]")
     )
     assert off[".github/workflows/ci.yml"] == expected
 
@@ -205,7 +207,7 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
 def test_s4_3_4_3_release_none_renders_no_release_job(tmp_path: Path) -> None:
     rendered = _rendered(_root(tmp_path, release="none"))
     jobs = yaml.safe_load(rendered[".github/workflows/ci.yml"])["jobs"]
-    assert set(jobs) == {"validate", "sonar"}
+    assert set(jobs) == {"validate", "sonar", "ci-ok"}
 
 
 def test_s4_3_4_4_ci_entrypoint_passes_on_the_rendered_workflows(
@@ -390,3 +392,39 @@ def test_s6_3_1_every_job_has_a_timeout(tmp_path: Path) -> None:
             for name, job in yaml.safe_load(content)["jobs"].items():
                 timeout = job.get("timeout-minutes")
                 assert isinstance(timeout, int), f"{root.name}:{path}:{name}"
+
+
+def _ci_ok_roots(tmp_path: Path) -> list[Path]:
+    return [_root(tmp_path / archetype, archetype) for archetype in ARCHETYPES] + [
+        _root(tmp_path / "nosonar", sonar=False),
+        _root(tmp_path / "norelease", release="none"),
+        _web_root(tmp_path / "api", "python-web-api"),
+        _web_root(tmp_path / "web", "python-web-app", extra='frontend = "angular"'),
+    ]
+
+
+def _ci_jobs(root: Path) -> dict[str, dict[str, object]]:
+    return yaml.safe_load(_rendered(root)[".github/workflows/ci.yml"])["jobs"]
+
+
+def test_s6_3_2_ci_ok_needs_every_other_job(tmp_path: Path) -> None:
+    for root in _ci_ok_roots(tmp_path):
+        jobs = _ci_jobs(root)
+        assert list(jobs)[-1] == "ci-ok", root.name
+        assert set(jobs["ci-ok"]["needs"]) == set(jobs) - {"ci-ok"}, root.name  # type: ignore[arg-type]
+        assert jobs["ci-ok"]["if"] == "always()", root.name
+
+
+def test_s6_3_2_ci_ok_has_no_permissions(tmp_path: Path) -> None:
+    for root in _ci_ok_roots(tmp_path):
+        assert _ci_jobs(root)["ci-ok"]["permissions"] == {}, root.name
+
+
+def test_s6_3_2_ci_ok_fails_on_failure_or_cancel(tmp_path: Path) -> None:
+    for root in _ci_ok_roots(tmp_path):
+        steps = _ci_jobs(root)["ci-ok"]["steps"]
+        assert len(steps) == 1  # type: ignore[arg-type]
+        step = steps[0]  # type: ignore[index]
+        assert "contains(needs.*.result, 'failure')" in step["if"]
+        assert "contains(needs.*.result, 'cancelled')" in step["if"]
+        assert step["run"] == "exit 1"

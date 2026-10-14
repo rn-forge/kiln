@@ -159,3 +159,16 @@ jobs:
           generate_release_notes: true
           files: dist/*
 {% endif %}
+  # The only check branch protection requires. Job and matrix names change as
+  # the repo grows; this one does not. A skipped job (the fork-guarded scan, a
+  # release on a pull request) is not a failure.
+  ci-ok:
+    needs: [validate{% if sonar %}, sonar{% endif %}{% if release == "tag-exists" %}, release{% endif %}]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Every job passed or was skipped
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1

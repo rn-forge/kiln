@@ -156,6 +156,7 @@ CI runs the pinned kiln read-only (kiln ADR-0006): it never runs `kiln apply`
 and never writes a generated file. `task validate` runs `kiln doctor` on every
 run; `kiln doctor --full` runs where the workflow asks, through `lint` with
 the `KILN_DOCTOR_FULL` task variable set.
+Branch protection requires `ci-ok` and nothing else.
 
 `task validate` proves: ruff is clean and formatted; the archetype's
 dependency set is present, allowed and pinned; the import contracts hold; the
