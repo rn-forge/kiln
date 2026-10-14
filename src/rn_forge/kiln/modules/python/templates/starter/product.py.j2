@@ -16,7 +16,13 @@ from rn_forge.tooling.install import Check, Link, ToolHome, ToolProduct
 
 def check_home(home: ToolHome) -> list[Finding]:
     """Report where this tool is, or would be, installed."""
-    return [Finding("{{ name }}.home", Severity.INFO, f"home is {home.product_dir}")]
+    return [
+        Finding(
+            "{{ name }}.home",
+            Severity.INFO,
+            f"home is {home.product_dir}",
+        ),
+    ]
 
 
 class Tool(ToolProduct):
@@ -24,7 +30,12 @@ class Tool(ToolProduct):
 
     def artifacts(self) -> Sequence[Link]:
         """Put the command on PATH."""
-        return (Link("bin/{{ name }}", "bin/{{ name }}"),)
+        return (
+            Link(
+                "bin/{{ name }}",
+                "bin/{{ name }}",
+            ),
+        )
 
     def checks(self) -> Sequence[Check]:
         """Check the install's home."""
@@ -32,5 +43,7 @@ class Tool(ToolProduct):
 
 
 PRODUCT = Tool(
-    name="{{ name }}", version=version("{{ name }}"), repo="rn-forge/{{ name }}"
+    name="{{ name }}",
+    version=version("{{ name }}"),
+    repo="rn-forge/{{ name }}",
 )

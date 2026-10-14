@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 import tomllib
 from pathlib import Path
 
 import pytest
-from rn_forge.tooling.generation import ArtifactKind
+from rn_forge.tooling.generation import Artifact, ArtifactKind
 
 from rn_forge.kiln import commands
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.python import starter
+from rn_forge.kiln.modules.python.artifacts import root_package
 
 CONFIG = """
 schema_version = 1
@@ -146,8 +149,8 @@ def _web(
     return _config(root, text)
 
 
-def _fresh_api(root: Path, api_dir: str, *names: str) -> None:
-    directory = root / api_dir / "src" / "demo_api"
+def _fresh_api(root: Path, api_dir: str, *names: str, module: str = "demo_api") -> None:
+    directory = root / api_dir / "src" / module
     directory.mkdir(parents=True)
     for name in ("__init__.py", *names):
         (directory / name).write_text("", encoding="utf-8")
@@ -230,3 +233,66 @@ def test_s4_9_2_4_new_records_seeded(
     )["entries"]
     for path in _api_paths("apps/api"):
         assert entries[path]["kind"] == "seeded"
+
+
+LONG_NAME = "-".join(["abcdefg"] * 4) + "-abcdefgh"
+assert len(LONG_NAME) == 40
+
+
+def _assert_formatter_stable(root: Path, artifacts: list[Artifact]) -> None:
+    paths: list[str] = []
+    for artifact in artifacts:
+        if not artifact.path.endswith(".py"):
+            continue
+        target = root / "out" / artifact.path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(artifact.content, encoding="utf-8")
+        paths.append(str(target))
+    assert paths
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ruff",
+            "format",
+            "--isolated",
+            "--check",
+            "--diff",
+            *paths,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout
+
+
+@pytest.mark.parametrize("name", ["t", "tool", "python-tool", LONG_NAME])
+@pytest.mark.parametrize("archetype", ["python-tool", "python-app", "python-lib"])
+def test_s4_9_5_1_starter_is_formatter_stable_at_any_name(
+    tmp_path: Path, name: str, archetype: str
+) -> None:
+    if archetype == "python-lib":
+        text = LIB_CONFIG.format(packages=f'["packages/{name}"]').replace(
+            "demo-lib", name
+        )
+        config = _config(tmp_path, text)
+        _fresh(tmp_path / "packages" / name, root_package(name))
+    else:
+        config = _config(tmp_path, CONFIG.format(name=name, archetype=archetype))
+        _fresh(tmp_path, root_package(name))
+    artifacts = starter.render(config, tmp_path)
+    assert artifacts
+    _assert_formatter_stable(tmp_path, artifacts)
+
+
+@pytest.mark.parametrize("name", ["demo", LONG_NAME])
+def test_s4_9_5_2_web_api_starter_is_formatter_stable(
+    tmp_path: Path, name: str
+) -> None:
+    text = WEB_CONFIG.format(archetype="python-web-api", backend="fastapi", extra="")
+    config = _config(tmp_path, text.replace('"demo"', f'"{name}"', 1))
+    _fresh_api(tmp_path, "apps/api", module=root_package(f"{name}-api"))
+    artifacts = starter.render(config, tmp_path)
+    assert artifacts
+    _assert_formatter_stable(tmp_path, artifacts)
