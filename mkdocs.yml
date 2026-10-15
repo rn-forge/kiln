@@ -96,7 +96,9 @@ nav:
         - F6.2 — Retire taskkit: specs/epics/E6-rebuild-the-repos/F6.2-retire-taskkit.md
         - F6.3 — The generated CI matches the hardened upstream CI: specs/epics/E6-rebuild-the-repos/F6.3-hardened-ci.md
         - F6.4 — `python-lib` renders pykit's discovered workspace pipeline: specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md
-      - E7 — pykit releases, and the pin flip: specs/epics/E7-pykit-release-pin-flip/index.md
+      - E7 — pykit releases, and the pin flip:
+        - specs/epics/E7-pykit-release-pin-flip/index.md
+        - F7.1 — kiln renders and takes pykit by release tag: specs/epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md
       - E8 — The Azure DevOps CI provider: specs/epics/E8-ado-provider/index.md
       - E9 — The node archetypes:
         - specs/epics/E9-node-archetypes/index.md
