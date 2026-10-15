@@ -24,6 +24,7 @@ from pathlib import Path
 
 from rn_forge.cli import CliApp
 from rn_forge.commons.exceptions import AppException
+from rn_forge.commons.findings import Finding, Severity
 from rn_forge.commons.fs.documents import ConfigFormat, DocumentUtils
 from rn_forge.commons.lang.collections import DictUtils
 from rn_forge.commons.runtime.console import OutputMode, console
@@ -97,50 +98,110 @@ _PACKAGE_NAME = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
 _FLAG_NAMES = ("archetype", "docs", "backend", "frontend")
 
 
-def doctor(
-    path: Path, only: str | None = None, full: bool = False, json: bool = False
-) -> None:
-    """Run the render-free checks over PATH's committed files.
-
-    Prints each finding and raises `AppException` if any is an error. `--full`
-    also reports every managed artifact and block a fresh render would change;
-    it cannot be combined with `--only`. `--json` prints the findings as one
-    JSON object.
-
-    Raises:
-        AppException: `--only` and `--full` are both given, or a finding is an
-            error.
-    """
-    if only is not None and full:
-        raise AppException("--only and --full cannot be combined")
-    if json:
-        console.set_mode(OutputMode.JSON)
+def _findings(path: Path, only: str | None, full: bool) -> list[Finding]:
     root = path.resolve()
     findings = checks.run(root, only)
     if full:
         findings.extend(doctor_module.full(root))
+    return findings
 
+
+def _finding_json(finding: Finding) -> dict[str, str | None]:
+    return {
+        "code": finding.code,
+        "severity": finding.severity.value,
+        "message": finding.message,
+        "path": finding.path,
+    }
+
+
+def doctor(
+    paths: list[Path],
+    only: str | None = None,
+    full: bool = False,
+    json: bool = False,
+    all: bool = False,
+) -> None:
+    """Run the render-free checks over each of PATHS' committed files.
+
+    Prints each finding and raises `AppException` if any is an error. `--full`
+    also reports every managed artifact and block a fresh render would change;
+    it cannot be combined with `--only`. `--json` prints the findings as one
+    JSON object. More than one path needs `--all`, which checks each
+    independently, reports a path whose config will not load as a `config.load`
+    error for that path alone, and prints a table of paths with their error and
+    warning counts.
+
+    Raises:
+        AppException: `--only` and `--full` are both given, several paths are
+            given without `--all`, or a finding is an error.
+    """
+    if only is not None and full:
+        raise AppException("--only and --full cannot be combined")
+    if len(paths) > 1 and not all:
+        raise AppException("several paths need --all")
+    if json:
+        console.set_mode(OutputMode.JSON)
+
+    if not all:
+        findings = _findings(paths[0], only, full)
+        if console.mode is OutputMode.JSON:
+            console.json({"findings": [_finding_json(f) for f in findings]})
+        else:
+            for finding in findings:
+                console.error("{}", finding)
+        errors = [finding for finding in findings if finding.is_error]
+        if errors:
+            raise AppException("{} check(s) failed in {}", len(errors), paths[0])
+        return
+
+    reports: list[tuple[Path, list[Finding]]] = []
+    for path in paths:
+        try:
+            reports.append((path, _findings(path, only, full)))
+        except AppException as exc:
+            reports.append(
+                (path, [Finding("config.load", Severity.ERROR, str(exc), path=None)])
+            )
+    error_counts = [sum(f.is_error for f in found) for _, found in reports]
+    warning_counts = [len(found) - n for (_, found), n in zip(reports, error_counts)]
     if console.mode is OutputMode.JSON:
         console.json(
             {
-                "findings": [
-                    {
-                        "code": finding.code,
-                        "severity": finding.severity.value,
-                        "message": finding.message,
-                        "path": finding.path,
-                    }
-                    for finding in findings
-                ]
+                "repos": [
+                    {"path": str(path), "findings": [_finding_json(f) for f in found]}
+                    for path, found in reports
+                ],
+                "summary": {
+                    "repos": len(reports),
+                    "errors": sum(error_counts),
+                    "warnings": sum(warning_counts),
+                },
             }
         )
     else:
-        for finding in findings:
-            console.error("{}", finding)
-
-    errors = [finding for finding in findings if finding.is_error]
-    if errors:
-        raise AppException("{} check(s) failed in {}", len(errors), path)
+        console.table(
+            "repo",
+            "errors",
+            "warnings",
+            rows=[
+                (path, errors, warnings)
+                for (path, _), errors, warnings in zip(
+                    reports, error_counts, warning_counts
+                )
+            ],
+        )
+        for path, found in reports:
+            if found:
+                console.print("{}", path, markup=False)
+            for finding in found:
+                console.error("{}", finding)
+    if sum(error_counts):
+        raise AppException(
+            "{} check(s) failed across {} repo(s)",
+            sum(error_counts),
+            sum(1 for n in error_counts if n),
+        )
 
 
 def docs_generate(path: Path) -> None:

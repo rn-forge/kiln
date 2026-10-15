@@ -174,7 +174,7 @@ def test_s4_6_1_1_each_check_reports_only_its_own_code(copy: Path, name: str) ->
 
 def test_s4_6_1_2_full_on_a_fresh_repo_exits_0(copy: Path) -> None:
     assert doctor.full(copy) == []
-    commands.doctor(copy, full=True)
+    commands.doctor([copy], full=True)
 
 
 def test_s4_6_1_2_full_reports_a_stale_artifact(copy: Path) -> None:
@@ -188,12 +188,12 @@ def test_s4_6_1_2_full_reports_a_stale_artifact(copy: Path) -> None:
     assert changed
     assert changed <= {f.path for f in stale}
     with pytest.raises(AppException):
-        commands.doctor(copy, full=True)
+        commands.doctor([copy], full=True)
 
 
 def test_s4_6_1_2_full_and_only_cannot_be_combined(copy: Path) -> None:
     with pytest.raises(AppException, match="--only and --full"):
-        commands.doctor(copy, only="generated", full=True)
+        commands.doctor([copy], only="generated", full=True)
 
 
 def test_s4_6_1_2_warnings_alone_exit_0(
@@ -203,7 +203,7 @@ def test_s4_6_1_2_warnings_alone_exit_0(
         return [Finding("stub.warn", Severity.WARNING, "only a warning")]
 
     monkeypatch.setattr(checks, "CHECKS", (checks.Check("stub", "core", warn),))
-    commands.doctor(copy)
+    commands.doctor([copy])
 
 
 def test_s4_6_1_3_json_lists_every_finding_in_module_order(
@@ -213,7 +213,7 @@ def test_s4_6_1_3_json_lists_every_finding_in_module_order(
     _break_pins(copy)  # cicd, listed after docs by the archetype
     _break_derived(copy)  # docs
     with pytest.raises(AppException):
-        commands.doctor(copy, json=True)
+        commands.doctor([copy], json=True)
 
     payload: dict[str, Any] = json.loads(capsys.readouterr().out)
     items = payload["findings"]
@@ -300,3 +300,132 @@ def test_s4_6_5_6_malformed_config_still_errors(copy: Path) -> None:
     )
     with pytest.raises(AppException, match="config"):
         checks.run(copy)
+
+
+@pytest.fixture
+def fleet(copy: Path, tmp_path: Path) -> Path:
+    """Three repos (`clean`, `warned`, `broken`) and a non-kiln `plain` dir under
+    one working directory, so the paths given are short and relative."""
+    base = tmp_path / "fleet"
+    base.mkdir()
+    for name in ("clean", "warned", "broken"):
+        shutil.copytree(copy, base / name, ignore=_IGNORE)
+    _break_generated(base / "broken")
+    (base / "plain").mkdir()
+    return base
+
+
+def _warn_only(monkeypatch: pytest.MonkeyPatch, repo_name: str) -> None:
+    real = checks.run
+
+    def run(root: Path, only: str | None = None) -> list[Finding]:
+        findings = real(root, only)
+        if root.name == repo_name:
+            findings.append(Finding("stub.warn", Severity.WARNING, "only a warning"))
+        return findings
+
+    monkeypatch.setattr(checks, "run", run)
+
+
+def test_s4_6_3_1_table_has_one_row_per_repo(
+    fleet: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(fleet)
+    commands.doctor([Path("clean"), Path("warned")], all=True)
+    out = capsys.readouterr().out
+    lines = [line for line in out.splitlines() if "│" in line or "┃" in line]
+    assert any(
+        "repo" in line and "errors" in line and "warnings" in line for line in lines
+    )
+    rows = [line for line in lines if "clean" in line or "warned" in line]
+    assert len(rows) == 2
+    assert [("clean" in row) for row in rows] == [True, False]
+
+
+def test_s4_6_3_1_more_than_one_path_needs_all(fleet: Path) -> None:
+    with pytest.raises(AppException, match="--all"):
+        commands.doctor([fleet / "clean", fleet / "warned"])
+
+
+def test_s4_6_3_1_single_path_json_is_unchanged(
+    fleet: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    commands.doctor([fleet / "clean"], json=True)
+    assert json.loads(capsys.readouterr().out) == {"findings": []}
+
+
+def test_s4_6_3_2_json_attributes_findings(
+    fleet: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(fleet)
+    with pytest.raises(AppException):
+        commands.doctor([Path("broken"), Path("clean")], all=True, json=True)
+    payload: dict[str, Any] = json.loads(capsys.readouterr().out)
+    assert [repo["path"] for repo in payload["repos"]] == ["broken", "clean"]
+    broken, clean = payload["repos"]
+    assert clean["findings"] == []
+    assert "artifact.drift" in {item["code"] for item in broken["findings"]}
+    assert all(
+        set(item) == {"code", "severity", "message", "path"}
+        for item in broken["findings"]
+    )
+    errors = sum(i["severity"] == "error" for i in broken["findings"])
+    assert payload["summary"] == {"repos": 2, "errors": errors, "warnings": 0}
+
+
+def test_s4_6_3_3_a_non_kiln_path_is_its_own_error(
+    fleet: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(fleet)
+    with pytest.raises(AppException):
+        commands.doctor([Path("plain"), Path("broken")], all=True, json=True)
+    payload: dict[str, Any] = json.loads(capsys.readouterr().out)
+    plain, broken = payload["repos"]
+    assert [i["code"] for i in plain["findings"]] == ["config.load"]
+    assert plain["findings"][0]["severity"] == "error"
+    assert plain["findings"][0]["message"]
+    assert "artifact.drift" in {i["code"] for i in broken["findings"]}
+
+
+def test_s4_6_3_3_full_runs_per_repo(fleet: Path) -> None:
+    commands.doctor([fleet / "clean", fleet / "warned"], all=True, full=True)
+
+
+@pytest.mark.parametrize("order", [("clean", "broken"), ("broken", "clean")])
+def test_s4_6_3_4_exit_is_order_independent(
+    fleet: Path, order: tuple[str, str]
+) -> None:
+    with pytest.raises(AppException):
+        commands.doctor([fleet / name for name in order], all=True)
+
+
+def test_s4_6_3_5_three_repos_clean_warnings_errors(
+    fleet: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.chdir(fleet)
+    _warn_only(monkeypatch, "warned")
+    with pytest.raises(AppException):
+        commands.doctor(
+            [Path("clean"), Path("warned"), Path("broken")], all=True, json=True
+        )
+    payload: dict[str, Any] = json.loads(capsys.readouterr().out)
+    counts = {
+        repo["path"]: (
+            sum(i["severity"] == "error" for i in repo["findings"]),
+            sum(i["severity"] == "warning" for i in repo["findings"]),
+        )
+        for repo in payload["repos"]
+    }
+    assert counts["clean"] == (0, 0)
+    assert counts["warned"] == (0, 1)
+    assert counts["broken"][0] >= 1
+    assert payload["summary"]["repos"] == 3
+    assert payload["summary"]["warnings"] == 1
+    assert payload["summary"]["errors"] == counts["broken"][0]
+
+
+def test_s4_6_3_5_warnings_alone_exit_0(
+    fleet: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _warn_only(monkeypatch, "warned")
+    commands.doctor([fleet / "clean", fleet / "warned"], all=True)

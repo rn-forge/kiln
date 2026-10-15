@@ -14,7 +14,7 @@
 | [F4.3 — The concern modules, with templates](F4.3-concern-modules.md) | Closed | release-1 | 7 Closed |
 | [F4.4 — The render matrix, and the goldens leave git](F4.4-render-matrix.md) | Closed | release-1 | 9 Closed |
 | [F4.5 — CLI](F4.5-cli.md) | Closed | release-1 | 10 Closed |
-| [F4.6 — doctor](F4.6-doctor.md) | New | release-1 | 3 New · 2 Closed |
+| [F4.6 — doctor](F4.6-doctor.md) | New | release-1 | 2 New · 3 Closed |
 | [F4.7 — Import contracts](F4.7-import-contracts.md) | New | release-1 | 3 Closed |
 | [F4.8 — Self-hosting](F4.8-self-hosting.md) | New | release-1 | 1 New |
 | [F4.9 — Seeded starter source](F4.9-seeded-starter-source.md) | Active | release-1 | 5 Closed |

@@ -127,7 +127,7 @@ def test_s4_5_5_load_warns_on_a_stale_but_still_valid_schema(
 ) -> None:
     _set_schema_version(repo, 0)
 
-    commands.doctor(repo)
+    commands.doctor([repo])
 
     assert "kiln config-upgrade" in capsys.readouterr().err
 
@@ -139,7 +139,7 @@ def test_s4_5_5_load_errors_on_a_stale_schema_that_no_longer_validates(
     _corrupt_ci_provider(repo)
 
     with pytest.raises(AppException, match="kiln config-upgrade"):
-        commands.doctor(repo)
+        commands.doctor([repo])
 
 
 def _set_schema_version(root: Path, version: int) -> None:
