@@ -88,6 +88,14 @@ class KilnConfig:
             return Path(package).name.replace("-", "_")
         return section.module_for(self.archetype, package)
 
+    @property
+    def import_contracts(self) -> str:
+        """`own` when a `python-lib` repo writes its own import contracts, else `kiln`."""
+        section = getattr(self.document, "archetype", None)
+        if not isinstance(section, ArchetypeConfig):
+            return "kiln"
+        return section.import_contracts_for(self.archetype)
+
     def _web_section(self) -> Any:
         section = getattr(self.document, "archetype", None)
         if not isinstance(section, ArchetypeConfig):

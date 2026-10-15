@@ -276,6 +276,9 @@ independent of each other, and — inside pykit — the library layering itself:
 `rn_forge.cli` may not import `rn_forge.tooling`. `quality:lint:imports` runs
 it; `task validate` reaches it. ([ADR-0002](../adr/ADR-0002.md))
 
+A `python-lib` repository may set `import_contracts = "own"`; kiln then renders
+only the root packages, and the repository's own contracts are its boundary.
+
 ## 5. What `task validate` proves
 
 CI runs the pinned kiln read-only ([ADR-0006](../adr/ADR-0006.md)): it never
@@ -432,6 +435,7 @@ lint = ["self:check:dist"]
 
 [archetype.python-lib]
 packages = ["packages/rn-forge-commons", "packages/rn-forge-django"]
+import_contracts = "own"         # optional: "kiln" (default) renders the contracts; "own" leaves them to the repo
 modules = { "packages/rn-forge-commons" = "rn_forge.commons" }  # optional: dotted import module; default is the path name with `-` as `_`
 
 [archetype.python-app]           # or [archetype.python-tool]

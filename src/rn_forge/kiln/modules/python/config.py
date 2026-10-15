@@ -12,6 +12,7 @@ from rn_forge.commons.lang.models import StrictModel
 __all__ = [
     "MODULE_PATTERN",
     "ArchetypeConfig",
+    "LibConfig",
     "PackagesConfig",
     "WebApiConfig",
     "WebAppConfig",
@@ -39,6 +40,12 @@ class PackagesConfig(StrictModel):
         return self
 
 
+class LibConfig(PackagesConfig):
+    """`[archetype.python-lib]` — the workspace's members and import contracts."""
+
+    import_contracts: Literal["kiln", "own"] = "kiln"
+
+
 class WebApiConfig(StrictModel):
     """`[archetype.python-web-api]` — the API workspace's selectors."""
 
@@ -62,7 +69,7 @@ class ArchetypeConfig(StrictModel):
 
     python_app: PackagesConfig | None = Field(default=None, alias="python-app")
     python_tool: PackagesConfig | None = Field(default=None, alias="python-tool")
-    python_lib: PackagesConfig | None = Field(default=None, alias="python-lib")
+    python_lib: LibConfig | None = Field(default=None, alias="python-lib")
     python_web_api: WebApiConfig | None = Field(default=None, alias="python-web-api")
     python_web_app: WebAppConfig | None = Field(default=None, alias="python-web-app")
 
@@ -83,6 +90,11 @@ class ArchetypeConfig(StrictModel):
         if isinstance(section, PackagesConfig) and package in section.modules:
             return section.modules[package]
         return Path(package).name.replace("-", "_")
+
+    def import_contracts_for(self, archetype: str) -> str:
+        """Who writes *archetype*'s import contracts: `kiln`, or `own` for a library."""
+        section = self._section(archetype)
+        return section.import_contracts if isinstance(section, LibConfig) else "kiln"
 
     def web_for(self, archetype: str) -> WebApiConfig | WebAppConfig | None:
         """*archetype*'s web selectors table, or None without one or off one."""

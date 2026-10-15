@@ -38,6 +38,7 @@ def render(config: KilnConfig) -> list[Artifact]:
     context: dict[str, object] = {
         "kiln_version": __version__,
         "workspace": workspace,
+        "own_contracts": config.import_contracts == "own",
         "members_block": "\n".join(f"    {member}" for member in members),
         "forbidden_block": "\n".join(f"    {module}" for module in forbidden),
     }

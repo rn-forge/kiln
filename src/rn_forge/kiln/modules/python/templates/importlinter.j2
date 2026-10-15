@@ -38,7 +38,9 @@ root_package = {{ package }}
 ; external package when it is told to, and without this the contract would pass
 ; by never being evaluated at all.
 include_external_packages = True
-
+{% if own_contracts %}
+; This repository owns its import contracts: they are below the END marker.
+{% else %}
 [importlinter:contract:frameworks-come-from-rn-forge]
 {% if workspace -%}
 name = No workspace package imports a framework or CLI toolkit directly
@@ -57,4 +59,5 @@ name = Workspace packages do not import each other
 type = independence
 modules =
 {{ members_block }}
+{% endif -%}
 {% endif %}

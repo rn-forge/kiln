@@ -261,3 +261,55 @@ def test_s6_1_3_2_importlinter_names_the_declared_module(tmp_path: Path) -> None
     assert "rn_forge.alpha" in roots
     assert "beta" in roots
     assert "alpha" not in roots
+
+
+OWN_CONFIG = LIB_CONFIG + 'import_contracts = "own"\n'
+
+
+def _load(tmp_path: Path, text: str) -> KilnConfig:
+    (tmp_path / ".rn-forge" / "kiln").mkdir(parents=True)
+    (tmp_path / ".rn-forge" / "kiln" / "config.toml").write_text(text, encoding="utf-8")
+    return KilnConfig.load(tmp_path)
+
+
+def test_s6_1_4_1_default_keeps_kiln_contracts(tmp_path: Path) -> None:
+    config = _load(tmp_path, LIB_CONFIG)
+    assert config.import_contracts == "kiln"
+    [artifact] = _importlinter(config, tmp_path)
+    assert "[importlinter:contract:frameworks-come-from-rn-forge]" in artifact.content
+    assert "[importlinter:contract:packages-are-independent]" in artifact.content
+    assert "owns its import contracts" not in artifact.content
+
+
+def test_s6_1_4_2_own_renders_only_the_root(tmp_path: Path) -> None:
+    config = _load(tmp_path, OWN_CONFIG)
+    assert config.import_contracts == "own"
+    [artifact] = _importlinter(config, tmp_path)
+    content = artifact.content
+    assert "[importlinter]" in content
+    assert "root_packages =" in content
+    assert "include_external_packages = True" in content
+    assert not [
+        line
+        for line in content.splitlines()
+        if line.startswith("[importlinter:contract:")
+    ]
+    assert (
+        "; This repository owns its import contracts: they are below the END marker."
+        in content
+    )
+
+
+@pytest.mark.parametrize("archetype", ["python-app", "python-tool"])
+def test_s6_1_4_3_own_is_python_lib_only(tmp_path: Path, archetype: str) -> None:
+    with pytest.raises(AppException):
+        _load(
+            tmp_path,
+            CONFIG.format(archetype=archetype)
+            + f'\n[archetype."{archetype}"]\nimport_contracts = "own"\n',
+        )
+
+
+def test_s6_1_4_4_an_unknown_value_is_refused(tmp_path: Path) -> None:
+    with pytest.raises(AppException):
+        _load(tmp_path, LIB_CONFIG + 'import_contracts = "none"\n')
