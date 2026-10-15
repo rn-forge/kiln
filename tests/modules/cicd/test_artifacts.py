@@ -514,6 +514,15 @@ def test_s6_3_4_publish_targets_the_source_commit(tmp_path: Path) -> None:
         assert any(step.get("id") == "source" for step in steps)
 
 
+def test_s6_3_6_release_uploads_wheels_and_sdists_only(tmp_path: Path) -> None:
+    for root in _release_roots(tmp_path):
+        steps = _release_steps(root)
+        publish = steps[_step_index(steps, "Publish GitHub Release")]
+        files = publish["with"]["files"]  # type: ignore[index]
+        assert files == "dist/*.whl\ndist/*.tar.gz\n", root.name
+        assert "dist/*" not in files.splitlines(), root.name
+
+
 UPSTREAM_PINS = {
     "setup-uv": ("c18668ad3cf93ea998bef934396af7bb5c839dc7", "v10.2.0"),
     "sonarqube-scan": ("d209202bc7d53ff1cc128f7f907dac145c9d6ae9", "v8.3.0"),

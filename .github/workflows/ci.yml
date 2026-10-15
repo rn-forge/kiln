@@ -236,7 +236,9 @@ jobs:
           target_commitish: ${{ steps.source.outputs.sha }}
           name: v${{ steps.version.outputs.version }}
           generate_release_notes: true
-          files: dist/*
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
 
   # The only check branch protection requires. Job and matrix names change as
   # the repo grows; this one does not. A skipped job (the fork-guarded scan, a
