@@ -187,7 +187,7 @@ alone — beneath `rn-forge-django` or `rn-forge-fastapi`.
 
 rn-forge distributions are git sources — pykit publishes GitHub Releases, not to
 PyPI — declared as direct URLs in `dependencies`, never as `[tool.uv.sources]`
-overrides, which do not survive into a built wheel. Until the owner declares
+overrides, which do not survive into a built wheel.{% if workspace %} A sibling workspace member is the exception: it keeps that URL, may add a `{ workspace = true }` source, and may be named bare in a dependency group.{% endif %} Until the owner declares
 pykit stable, they name its branch:
 
 ```toml

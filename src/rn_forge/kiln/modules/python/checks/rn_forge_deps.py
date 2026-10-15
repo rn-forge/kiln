@@ -5,10 +5,15 @@ Three rules, all read from `pyproject.toml`:
 1. **Required.** Every distribution in the archetype's required set is a
    runtime dependency of at least one distributable in this repo.
 2. **Allowed.** No `rn-forge-*` distribution outside the allowed set appears
-   anywhere — dependencies, optional dependencies or dependency groups.
+   anywhere — dependencies, optional dependencies or dependency groups. A
+   workspace member of this repo is exempt: it is this repo's own package, not
+   an external kit.
 3. **Pinned, and in the published metadata.** Every rn-forge requirement is a
    PEP 508 direct URL naming a tag or a rev, not a `[tool.uv.sources]` entry
-   (a local override that does not survive into a built wheel).
+   (a local override that does not survive into a built wheel). A workspace
+   member may carry a `{ workspace = true }` source and may be named bare in a
+   dependency group, which never reaches a wheel; in `dependencies` it still
+   needs the URL.
 
 `rn-forge-kiln` is outside all three: it is the dev tool that runs this
 check, not a library the repo is built on, and its own pin is a separate
@@ -20,6 +25,7 @@ from __future__ import annotations
 import re
 import tomllib
 from pathlib import Path
+from typing import cast
 
 from rn_forge.commons.findings import Finding, Severity
 
@@ -62,24 +68,54 @@ def runtime_dependencies(document: dict[str, object]) -> list[str]:
     return documents.strings(documents.table(document, "project").get("dependencies"))
 
 
-def every_dependency(document: dict[str, object]) -> list[str]:
-    """Runtime, optional and dependency-group requirements, flattened.
+def workspace_members(config: KilnConfig, root: Path) -> frozenset[str]:
+    """The normalized `[project] name` of each package under `config.packages`."""
+    found: set[str] = set()
+    for package in config.packages:
+        path = root / package / "pyproject.toml"
+        if not path.exists():
+            continue
+        name = documents.table(
+            tomllib.loads(path.read_text(encoding="utf-8")), "project"
+        ).get("name")
+        if isinstance(name, str):
+            found.add(distribution(name))
+    return frozenset(found)
 
-    A dependency group is still a dependency: a kit that a repo installs only
-    to develop with is exactly the coupling kiln ADR-0002 is about.
-    """
+
+def published_dependencies(document: dict[str, object]) -> list[str]:
+    """Runtime and optional-dependency requirements — what a wheel carries."""
     found = list(runtime_dependencies(document))
     optional = documents.table(document, "project", "optional-dependencies")
-    groups = documents.table(document, "dependency-groups")
-    for group in (*optional.values(), *groups.values()):
+    for group in optional.values():
         found.extend(documents.strings(group))
     return found
 
 
+def group_dependencies(document: dict[str, object]) -> list[str]:
+    """Every dependency-group requirement, flattened."""
+    found: list[str] = []
+    for group in documents.table(document, "dependency-groups").values():
+        found.extend(documents.strings(group))
+    return found
+
+
+def every_dependency(document: dict[str, object]) -> list[str]:
+    """Published and dependency-group requirements, flattened.
+
+    A dependency group is still a dependency: a kit that a repo installs only
+    to develop with is exactly the coupling kiln ADR-0002 is about.
+    """
+    return [*published_dependencies(document), *group_dependencies(document)]
+
+
 def _check_allowed(
-    label: str, document: dict[str, object], allowed: tuple[str, ...]
+    label: str,
+    document: dict[str, object],
+    allowed: tuple[str, ...],
+    members: frozenset[str],
 ) -> list[Finding]:
-    permitted = {name.lower() for name in allowed}
+    permitted = {name.lower() for name in allowed} | members
     return [
         Finding(
             f"{CODE}.not-allowed",
@@ -95,10 +131,16 @@ def _check_allowed(
     ]
 
 
-def _check_direct_url(label: str, document: dict[str, object]) -> list[Finding]:
+def _check_direct_url(
+    label: str, document: dict[str, object], members: frozenset[str]
+) -> list[Finding]:
     """Every rn-forge requirement carries its own pinned source."""
     findings: list[Finding] = []
-    for requirement in every_dependency(document):
+    published = published_dependencies(document)
+    grouped = [
+        r for r in group_dependencies(document) if distribution(r) not in members
+    ]
+    for requirement in (*published, *grouped):
         name = distribution(requirement)
         if not governed(name):
             continue
@@ -147,8 +189,16 @@ def _check_no_codegen_in_runtime(
     ]
 
 
+def _is_workspace_source(name: str, source: object, members: frozenset[str]) -> bool:
+    return (
+        distribution(name) in members
+        and isinstance(source, dict)
+        and cast("dict[str, object]", source).get("workspace") is True
+    )
+
+
 def _check_no_shadowing_source(
-    label: str, document: dict[str, object]
+    label: str, document: dict[str, object], members: frozenset[str]
 ) -> list[Finding]:
     """A [tool.uv.sources] entry for an rn-forge package hides the real one.
 
@@ -163,8 +213,8 @@ def _check_no_shadowing_source(
             f"remove it and pin the URL in `dependencies` instead",
             path=label,
         )
-        for name in documents.table(document, "tool", "uv", "sources")
-        if governed(name)
+        for name, source in documents.table(document, "tool", "uv", "sources").items()
+        if governed(name) and not _is_workspace_source(name, source, members)
     ]
 
 
@@ -174,6 +224,7 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
 
     findings: list[Finding] = []
     declared: set[str] = set()
+    members = workspace_members(config, root)
 
     for relative in archetypes.pyproject_paths(config):
         label = relative.as_posix()
@@ -190,10 +241,12 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
             continue
         document = tomllib.loads(path.read_text(encoding="utf-8"))
         findings.extend(
-            _check_allowed(label, document, tuple(archetype.dependencies.allowed))
+            _check_allowed(
+                label, document, tuple(archetype.dependencies.allowed), members
+            )
         )
-        findings.extend(_check_direct_url(label, document))
-        findings.extend(_check_no_shadowing_source(label, document))
+        findings.extend(_check_direct_url(label, document, members))
+        findings.extend(_check_no_shadowing_source(label, document, members))
         findings.extend(_check_no_codegen_in_runtime(label, document))
         declared.update(distribution(r) for r in runtime_dependencies(document))
 

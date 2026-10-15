@@ -288,3 +288,95 @@ def test_s11_2_2_4_a_python_lib_package_must_still_declare_the_required_set(
     member.parent.mkdir(parents=True)
     member.write_text(MISSING_REQUIRED, encoding="utf-8")
     assert any("required" in line or "requires" in line for line in run(root))
+
+
+MEMBERS = ("commons", "cli", "tooling")
+
+
+def _member_toml(
+    name: str,
+    dependencies: list[str],
+    sources: dict[str, str],
+    group: str = "",
+) -> str:
+    text = f'[project]\nname = "rn-forge-{name}"\nversion = "0.1.0"\n'
+    text += "dependencies = [" + ", ".join(f'"{d}"' for d in dependencies) + "]\n"
+    if group:
+        text += f'\n[dependency-groups]\ndev = ["{group}"]\n'
+    if sources:
+        text += "\n[tool.uv.sources]\n"
+        text += "".join(f"{k} = {v}\n" for k, v in sources.items())
+    return text
+
+
+WORKSPACE_SOURCE = "{ workspace = true }"
+
+
+def _workspace_root(
+    tmp_path: Path,
+    *,
+    tooling_cli: str | None = None,
+    cli_source: str = WORKSPACE_SOURCE,
+    members: tuple[str, ...] = MEMBERS,
+    tooling_group: bool = True,
+) -> Path:
+    root = _lib_root(tmp_path, ", ".join(f'"packages/{m}"' for m in members))
+    cli_dep = tooling_cli or pinned("rn-forge-cli")
+    texts = {
+        "commons": _member_toml("commons", [], {}),
+        "cli": _member_toml(
+            "cli",
+            [pinned("rn-forge-commons")],
+            {"rn-forge-commons": cli_source},
+        ),
+        "tooling": _member_toml(
+            "tooling",
+            [pinned("rn-forge-commons"), cli_dep],
+            {
+                "rn-forge-commons": WORKSPACE_SOURCE,
+                "rn-forge-cli": WORKSPACE_SOURCE,
+            },
+            "rn-forge-tooling[x]" if tooling_group else "",
+        ),
+    }
+    for name in members:
+        member = root / "packages" / name / "pyproject.toml"
+        member.parent.mkdir(parents=True, exist_ok=True)
+        member.write_text(texts[name], encoding="utf-8")
+    (root / "pyproject.toml").write_text(
+        '[tool.uv]\npackage = false\n[project]\nname = "demo"\n\n'
+        '[dependency-groups]\nworkspace = ["rn-forge-commons", "rn-forge-cli", '
+        '"rn-forge-tooling"]\n\n[tool.uv.sources]\n'
+        + "".join(f"rn-forge-{m} = {WORKSPACE_SOURCE}\n" for m in MEMBERS),
+        encoding="utf-8",
+    )
+    return root
+
+
+def test_s6_1_2_1_a_pykit_shaped_workspace_passes(tmp_path: Path) -> None:
+    assert run(_workspace_root(tmp_path)) == []
+
+
+def test_s6_1_2_2_a_sibling_in_runtime_dependencies_still_needs_a_pinned_url(
+    tmp_path: Path,
+) -> None:
+    reported = run(_workspace_root(tmp_path, tooling_cli="rn-forge-cli"))
+    assert any(
+        "rn-forge-cli" in line and "without a direct URL" in line for line in reported
+    )
+
+
+def test_s6_1_2_3_a_non_workspace_source_for_a_member_is_still_refused(
+    tmp_path: Path,
+) -> None:
+    root = _workspace_root(tmp_path, cli_source='{ path = "../commons" }')
+    assert any("overrides an rn-forge dependency" in line for line in run(root))
+
+
+def test_s6_1_2_4_membership_is_by_name_not_prefix(tmp_path: Path) -> None:
+    root = _workspace_root(tmp_path, members=("commons", "tooling"))
+    assert any("not in this archetype's allowed set" in line for line in run(root))
+
+
+def test_s6_1_2_5_an_extra_on_a_member_in_a_group_may_be_bare(tmp_path: Path) -> None:
+    assert run(_workspace_root(tmp_path, tooling_group=False)) == []

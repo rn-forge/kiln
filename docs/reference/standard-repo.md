@@ -235,6 +235,12 @@ into a built wheel, so a consumer of a published package could not resolve the
 dependency at all. An `[tool.uv.sources]` entry for an rn-forge package is
 rejected outright.
 
+The repository's own workspace members are the exception
+([ADR-0014](../adr/ADR-0014.md)). A member's dependency on a sibling keeps its
+pinned direct URL in `dependencies`, may add a `{ workspace = true }` source for
+local development, and is outside the allowed set. A dependency group may name a
+sibling bare.
+
 **Until pykit's release-1 tags exist, repos consume it from its branch**
 ([E7](../specs/epics/E7-pykit-release-pin-flip/index.md)). The dependency source
 is a value every template renders from config: `git` + ref (the default,
