@@ -180,3 +180,48 @@ def test_s5_1_1_5_a_web_app_table_under_a_python_app_config_is_rejected(
     )
     with pytest.raises(AppException, match=r"python-web-app.*python-app"):
         KilnConfig.load(root)
+
+
+def test_s7_1_1_1_requirement_names_the_release_tag() -> None:
+    assert archetypes.requirement("rn-forge-cli") == (
+        "rn-forge-cli @ git+https://github.com/rn-forge/pykit"
+        "@rn-forge-cli-v0.1.0#subdirectory=packages/rn-forge-cli"
+    )
+
+
+def test_s7_1_1_1_every_tag_is_pinned() -> None:
+    import re
+
+    assert set(archetypes.RN_FORGE_TAGS) == {
+        "rn-forge-commons",
+        "rn-forge-cli",
+        "rn-forge-tooling",
+        "rn-forge-web",
+        "rn-forge-django",
+        "rn-forge-fastapi",
+        "rn-forge-sqlalchemy",
+    }
+    for key, tag in archetypes.RN_FORGE_TAGS.items():
+        assert re.fullmatch(rf"{key}-v\d+\.\d+\.\d+", tag)
+
+
+def test_s7_1_1_1_an_unpinned_distribution_is_refused() -> None:
+    with pytest.raises(KeyError):
+        archetypes.requirement("rn-forge-nope")
+
+
+def test_s7_1_1_2_kiln_takes_pykit_by_tag() -> None:
+    import tomllib
+    from pathlib import Path
+
+    text = (Path(__file__).parent.parent / "pyproject.toml").read_text("utf-8")
+    assert "pykit@main" not in text
+    dependencies = tomllib.loads(text)["project"]["dependencies"]
+    ours = [d for d in dependencies if d.startswith("rn-forge-")]
+    assert ours == [
+        archetypes.requirement("rn-forge-commons").replace(
+            "rn-forge-commons @", "rn-forge-commons[pydantic] @", 1
+        ),
+        archetypes.requirement("rn-forge-cli"),
+        archetypes.requirement("rn-forge-tooling"),
+    ]

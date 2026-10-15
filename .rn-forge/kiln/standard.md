@@ -118,14 +118,14 @@ alone — beneath `rn-forge-django` or `rn-forge-fastapi`.
 
 rn-forge distributions are git sources — pykit publishes GitHub Releases, not to
 PyPI — declared as direct URLs in `dependencies`, never as `[tool.uv.sources]`
-overrides, which do not survive into a built wheel. Until the owner declares
-pykit stable, they name its branch:
+overrides, which do not survive into a built wheel. Each names its
+package's release tag:
 
 ```toml
 dependencies = [
-  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@main#subdirectory=packages/rn-forge-commons",
-  "rn-forge-cli @ git+https://github.com/rn-forge/pykit@main#subdirectory=packages/rn-forge-cli",
-  "rn-forge-tooling @ git+https://github.com/rn-forge/pykit@main#subdirectory=packages/rn-forge-tooling",
+  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@rn-forge-commons-v0.5.0#subdirectory=packages/rn-forge-commons",
+  "rn-forge-cli @ git+https://github.com/rn-forge/pykit@rn-forge-cli-v0.1.0#subdirectory=packages/rn-forge-cli",
+  "rn-forge-tooling @ git+https://github.com/rn-forge/pykit@rn-forge-tooling-v0.2.0#subdirectory=packages/rn-forge-tooling",
 ]
 ```
 

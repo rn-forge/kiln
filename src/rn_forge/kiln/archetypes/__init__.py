@@ -21,8 +21,9 @@ if TYPE_CHECKING:
 
 __all__ = [
     "KILN_SOURCE",
+    "PYKIT_GIT",
     "RN_FORGE_PREFIX",
-    "RN_FORGE_SOURCE",
+    "RN_FORGE_TAGS",
     "Archetype",
     "Dependencies",
     "for_config",
@@ -35,8 +36,18 @@ __all__ = [
 RN_FORGE_PREFIX = "rn-forge-"
 """Every distribution the dependency contract governs starts with this."""
 
-RN_FORGE_SOURCE = "git+https://github.com/rn-forge/pykit@main"
-"""pykit's git source. Flipping to tags (E7) is a change to this constant alone."""
+PYKIT_GIT = "git+https://github.com/rn-forge/pykit"
+"""pykit's git source, without a ref."""
+RN_FORGE_TAGS = {
+    "rn-forge-commons": "rn-forge-commons-v0.5.0",
+    "rn-forge-cli": "rn-forge-cli-v0.1.0",
+    "rn-forge-tooling": "rn-forge-tooling-v0.2.0",
+    "rn-forge-web": "rn-forge-web-v0.2.0",
+    "rn-forge-django": "rn-forge-django-v0.4.0",
+    "rn-forge-fastapi": "rn-forge-fastapi-v0.2.0",
+    "rn-forge-sqlalchemy": "rn-forge-sqlalchemy-v0.2.0",
+}
+"""pykit's release tags, read from pykit on 2026-10-14. Moving a pin is a change here alone."""
 KILN_SOURCE = "git+https://github.com/rn-forge/kiln@feature/v1"
 """kiln's own git source, for the `rn-forge-kiln` dev dependency it scaffolds."""
 
@@ -136,8 +147,13 @@ def for_config(config: KilnConfig) -> Archetype:
 
 
 def requirement(distribution: str) -> str:
-    """The pinned PEP 508 requirement line pykit's *distribution* resolves to."""
-    return f"{distribution} @ {RN_FORGE_SOURCE}#subdirectory=packages/{distribution}"
+    """The pinned PEP 508 requirement line pykit's *distribution* resolves to.
+
+    Raises:
+        KeyError: *distribution* has no release tag in `RN_FORGE_TAGS`.
+    """
+    tag = RN_FORGE_TAGS[distribution]
+    return f"{distribution} @ {PYKIT_GIT}@{tag}#subdirectory=packages/{distribution}"
 
 
 def pyproject_paths(config: KilnConfig) -> tuple[Path, ...]:

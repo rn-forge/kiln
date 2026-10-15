@@ -66,6 +66,7 @@ now:   ADRs accepted ─→ S13.1.1 derived nav ─→ F13.2 board/scope ─→ 
        S5.3.1 + F11.1–F11.3 ─→ S6.1.1 python-lib hosts pykit          │
        S4.5.3–S4.5.7 ─→ F4.6 doctor ──────────────────────────────────┼─→ F4.8 self-host
        F4.7 contracts ────────────────────────────────────────────────┘   F6.2 retire taskkit (after S4.6.2, S5.2.2)
+       F7.1 tag pins
        F6.3 CI hardening (after F4.4) ─→ F6.4 workspace pipeline (release-2, after F6.1)
 triggered: E7 pykit tags · E8 ADO · F11.5 package-site deploy · backlog: E10 generators
 ```

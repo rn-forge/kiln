@@ -12,13 +12,11 @@ from pathlib import Path
 
 import pytest
 
-from rn_forge.kiln import checks
-
-BASE_URL = "git+https://github.com/rn-forge/pykit@main"
+from rn_forge.kiln import archetypes, checks
 
 
 def pinned(distribution: str) -> str:
-    return f"{distribution} @ {BASE_URL}#subdirectory=packages/{distribution}"
+    return archetypes.requirement(distribution)
 
 
 # The python-tool archetype's whole required set — the fixtures below are

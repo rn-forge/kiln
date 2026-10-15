@@ -224,7 +224,7 @@ Every rn-forge requirement is a **PEP 508 direct URL** in `dependencies`:
 
 ```toml
 dependencies = [
-  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@main#subdirectory=packages/rn-forge-commons",
+  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@rn-forge-commons-v0.5.0#subdirectory=packages/rn-forge-commons",
 ]
 ```
 
@@ -239,14 +239,9 @@ pinned direct URL in `dependencies`, may add a `{ workspace = true }` source for
 local development, and is outside the allowed set. A dependency group may name a
 sibling bare.
 
-**Until pykit's release-1 tags exist, repos consume it from its branch**
-([E7](../specs/epics/E7-pykit-release-pin-flip/index.md)). The dependency source
-is a value every template renders from config: `git` + ref (the default,
-CI-capable) or `path` (local only). The checker accepts a branch or path source
-with a warning and refuses one in a publish job; goldens and every repo that
-runs CI use `git`. Once pykit is tagged, the tag is the version and there is no
-separate specifier; flipping a repo to tags is `kiln config upgrade --apply`,
-not a template change.
+rn-forge requirements name each package's release tag, from kiln's pin table
+([E7](../specs/epics/E7-pykit-release-pin-flip/index.md)). A new kiln release
+moves the pins; `kiln config upgrade --apply` takes them into a repository.
 
 `kiln doctor`'s `rn-forge-deps` check enforces three rules — **required**,
 **allowed**, **pinned-and-direct**. Its required and allowed lists are config,
