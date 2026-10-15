@@ -98,8 +98,16 @@ def scaffold_backend(raw: Path, config: KilnConfig) -> None:
             member = raw / package
             member.mkdir(parents=True, exist_ok=True)
             member_name = f"{config.name}-api" if web else Path(package).name
-            _uv_init(member, name=member_name, bare=False, member=True, lib=workspace)
-            _write_sample_test(member, member_name)
+            module = config.module_for(package) if workspace else None
+            _uv_init(
+                member,
+                name=member_name,
+                bare=False,
+                member=True,
+                lib=workspace,
+                module=module,
+            )
+            _write_sample_test(member, member_name, module)
         DocumentUtils.update(
             raw / "pyproject.toml",
             {
@@ -164,8 +172,9 @@ def add_package(root: Path, config: KilnConfig, name: str, remote: str) -> None:
     relative = f"packages/{name}"
     member = root / relative
     member.mkdir(parents=True, exist_ok=True)
-    _uv_init(member, name=name, bare=False, member=True, lib=True)
-    _write_sample_test(member, name)
+    module = config.module_for(relative)
+    _uv_init(member, name=name, bare=False, member=True, lib=True, module=module)
+    _write_sample_test(member, name, module)
     _reconcile_pyproject(root, config, Path(relative) / "pyproject.toml")
     _join_workspace(root / "pyproject.toml", relative, name)
     slug = remote.removeprefix("https://github.com/")
@@ -217,13 +226,16 @@ SAMPLE_TEST = Path("tests") / "test_package.py"
 """The sample test `scaffold_backend` writes into each package `uv init` creates."""
 
 
-def sample_test(name: str) -> str:
+def sample_test(name: str, module: str | None = None) -> str:
     """The body of `SAMPLE_TEST` for the package *name* (dashes allowed).
+
+    *module* is the dotted import module; it defaults to *name* with dashes
+    as underscores.
 
     A new package has no tests, and pytest exits 5 on an empty suite, so
     without this a fresh repository's `task validate` fails.
     """
-    module = name.replace("-", "_")
+    module = module or name.replace("-", "_")
     return (
         f"import {module}\n\n\n"
         "def test_package_imports():\n"
@@ -231,10 +243,10 @@ def sample_test(name: str) -> str:
     )
 
 
-def _write_sample_test(package: Path, name: str) -> None:
+def _write_sample_test(package: Path, name: str, module: str | None = None) -> None:
     path = package / SAMPLE_TEST
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(sample_test(name), encoding="utf-8")
+    path.write_text(sample_test(name, module), encoding="utf-8")
 
 
 def uv_gitignore() -> str:
@@ -293,10 +305,16 @@ def _reconcile_pyproject(root: Path, config: KilnConfig, relative: Path) -> None
     is_member = not is_root
     is_workspace_root = (workspace or web) and is_root
     name = _member_name(config, path, root, web=web, is_member=is_member)
+    module = (
+        config.module_for(path.parent.relative_to(root).as_posix())
+        if workspace and is_member
+        else name.replace("-", "_")
+    )
     extra_dev = _extra_dev(config, web=web, is_member=is_member)
     _reconcile(
         path,
         name=name,
+        module=module,
         venv_path=os.path.relpath(root, path.parent) or ".",
         is_root=is_root,
         is_workspace_root=is_workspace_root,
@@ -339,6 +357,7 @@ def _uv_init(
     bare: bool,
     member: bool = False,
     lib: bool = False,
+    module: str | None = None,
 ) -> None:
     args = ["uv", "init", "--name", name, "--vcs", "none", "--no-readme"]
     if bare:
@@ -350,7 +369,12 @@ def _uv_init(
     args += ["--no-pin-python"] if member else ["--no-workspace"]
     Process.execute(f"uv-init[{name}]", *args, cwd=str(target))
     if not bare:
-        typed = target / "src" / name.replace("-", "_") / "py.typed"
+        derived = target / "src" / name.replace("-", "_")
+        package_dir = target / "src" / (module or derived.name).replace(".", "/")
+        if package_dir != derived:
+            package_dir.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(derived, package_dir)
+        typed = package_dir / "py.typed"
         if not typed.exists():
             typed.touch()
 
@@ -359,6 +383,7 @@ def _reconcile(
     path: Path,
     *,
     name: str,
+    module: str,
     venv_path: str,
     is_root: bool,
     is_workspace_root: bool,
@@ -376,7 +401,7 @@ def _reconcile(
     if not is_workspace_root:
         tool["uv"] = {
             "build-backend": {
-                "module-name": name.replace("-", "_"),
+                "module-name": module,
                 "source-exclude": ["**/.DS_Store"],
             }
         }

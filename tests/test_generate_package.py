@@ -345,3 +345,46 @@ def test_s11_3_1_5_a_python_app_fails_with_unsupported_archetype_and_writes_noth
         _generate(root, "alpha")
     assert _tree(root) == tree
     assert not (root / "packages").exists()
+
+
+def test_s6_1_3_3_generate_package_with_a_module(tmp_path: Path) -> None:
+    root = _lib(tmp_path, HTTPS)
+    commands.generate_package("rn-forge-cli", path=root, module="rn_forge.cli")
+    member = root / "packages/rn-forge-cli"
+    assert (member / "src/rn_forge/cli/__init__.py").is_file()
+    assert (member / "src/rn_forge/cli/py.typed").is_file()
+    assert not (member / "src/rn_forge/__init__.py").exists()
+    assert not (member / "src/rn_forge_cli").exists()
+    assert (
+        _toml(member / "pyproject.toml")["tool"]["uv"]["build-backend"]["module-name"]
+        == "rn_forge.cli"
+    )
+    assert "import rn_forge.cli\n" in (member / "tests/test_package.py").read_text(
+        encoding="utf-8"
+    )
+    assert "::: rn_forge.cli" in (member / "docs/reference/api.md").read_text(
+        encoding="utf-8"
+    )
+    config = _toml(root / ".rn-forge/kiln/config.toml")
+    assert config["archetype"]["python-lib"]["modules"] == {
+        "packages/rn-forge-cli": "rn_forge.cli"
+    }
+    assert KilnConfig.load(root).module_for("packages/rn-forge-cli") == "rn_forge.cli"
+    importlinter = (root / ".importlinter").read_text(encoding="utf-8")
+    assert "    rn_forge.cli\n" in importlinter
+
+
+def test_s6_1_3_3_generate_package_without_a_module_is_unchanged(
+    generated: Path,
+) -> None:
+    config = _toml(generated / ".rn-forge/kiln/config.toml")
+    assert "modules" not in config["archetype"]["python-lib"]
+    assert (generated / "packages/golden-alpha/src/golden_alpha/py.typed").is_file()
+
+
+def test_s6_1_3_3_an_invalid_module_is_refused(tmp_path: Path) -> None:
+    root = _lib(tmp_path, HTTPS)
+    tree = _tree(root)
+    with pytest.raises(AppException):
+        commands.generate_package("alpha", path=root, module="Rn-Forge")
+    assert _tree(root) == tree

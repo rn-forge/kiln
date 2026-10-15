@@ -81,6 +81,13 @@ class KilnConfig:
             return (api_dir,)
         return tuple(section.packages_for(self.archetype))
 
+    def module_for(self, package: str) -> str:
+        """The import module of workspace member *package* (a path in `packages`)."""
+        section = getattr(self.document, "archetype", None)
+        if not isinstance(section, ArchetypeConfig):
+            return Path(package).name.replace("-", "_")
+        return section.module_for(self.archetype, package)
+
     def _web_section(self) -> Any:
         section = getattr(self.document, "archetype", None)
         if not isinstance(section, ArchetypeConfig):

@@ -78,7 +78,7 @@ def add_package(root: Path, config: KilnConfig, name: str) -> list[Path]:
     )
     context = {
         "name": name,
-        "module": name.replace("-", "_"),
+        "module": config.module_for(package),
         "package": package,
         "links": textwrap.fill(
             links, width=_WRAP, break_long_words=False, break_on_hyphens=False

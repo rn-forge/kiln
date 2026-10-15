@@ -68,7 +68,7 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
     if config.archetype == "python-lib":
         artifacts: list[Artifact] = []
         for member in config.packages:
-            module = root_package(Path(member).name)
+            module = config.module_for(member)
             artifacts += _render(
                 engine,
                 root,
@@ -105,9 +105,10 @@ def _render(
     tests: Mapping[str, str],
     context: Mapping[str, object],
 ) -> list[Artifact]:
-    if not seedable(root / f"{base}src" / module, src):
+    package_dir = module.replace(".", "/")
+    if not seedable(root / f"{base}src" / package_dir, src):
         return []
-    files = {f"{base}src/{module}/{n}": t for n, t in src.items()}
+    files = {f"{base}src/{package_dir}/{n}": t for n, t in src.items()}
     files |= {f"{base}tests/{n}": t for n, t in tests.items()}
     return [
         Artifact(

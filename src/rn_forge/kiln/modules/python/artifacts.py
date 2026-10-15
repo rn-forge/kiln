@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 from rn_forge.commons.fs.blocks import ManagedBlock
 from rn_forge.tooling.generation import Artifact, ArtifactKind
 from rn_forge.tooling.templates import TemplateEngine
@@ -31,7 +29,7 @@ def render(config: KilnConfig) -> list[Artifact]:
     workspace = config.archetype == "python-lib"
     web = config.archetype in {"python-web-api", "python-web-app"}
     if workspace:
-        members = [root_package(Path(package).name) for package in config.packages]
+        members = [config.module_for(package) for package in config.packages]
     elif web:
         members = [root_package(f"{config.name}-api")]
     else:

@@ -11,6 +11,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+from rn_forge.commons.exceptions import AppException
 from rn_forge.tooling.generation import Action, Artifact, ArtifactKind
 
 from rn_forge.kiln.config import KilnConfig
@@ -202,3 +203,61 @@ def test_s5_1_3_backend_flag_only_changes_the_importlinter_forbidden_list(
     assert len(django_lines) == len(fastapi_lines)
     diffs = [(a, b) for a, b in zip(django_lines, fastapi_lines, strict=True) if a != b]
     assert diffs == [("    fastapi", "    django")]
+
+
+MODULE_CONFIG = (
+    LIB_CONFIG
+    + """modules = { "packages/alpha" = "rn_forge.alpha" }
+"""
+)
+
+
+def test_s6_1_3_1_module_defaults_from_the_path(tmp_path: Path) -> None:
+    config = KilnConfig.load(_root(tmp_path, "python-lib"))
+    assert config.module_for("packages/alpha") == "alpha"
+    assert config.module_for("packages/rn-forge-cli") == "rn_forge_cli"
+
+
+def test_s6_1_3_1_module_is_read_from_config(tmp_path: Path) -> None:
+    (tmp_path / ".rn-forge" / "kiln").mkdir(parents=True)
+    (tmp_path / ".rn-forge" / "kiln" / "config.toml").write_text(
+        MODULE_CONFIG.replace("packages/alpha", "packages/rn-forge-cli", 2).replace(
+            "rn_forge.alpha", "rn_forge.cli"
+        ),
+        encoding="utf-8",
+    )
+    config = KilnConfig.load(tmp_path)
+    assert config.module_for("packages/rn-forge-cli") == "rn_forge.cli"
+    assert config.module_for("packages/beta") == "beta"
+
+
+def test_s6_1_3_1_a_modules_key_outside_packages_is_a_config_error(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / ".rn-forge" / "kiln").mkdir(parents=True)
+    (tmp_path / ".rn-forge" / "kiln" / "config.toml").write_text(
+        LIB_CONFIG + 'modules = { "packages/gamma" = "gamma" }\n', encoding="utf-8"
+    )
+    with pytest.raises(AppException, match="packages/gamma"):
+        KilnConfig.load(tmp_path)
+
+
+def test_s6_1_3_1_an_invalid_module_value_is_a_config_error(tmp_path: Path) -> None:
+    (tmp_path / ".rn-forge" / "kiln").mkdir(parents=True)
+    (tmp_path / ".rn-forge" / "kiln" / "config.toml").write_text(
+        LIB_CONFIG + 'modules = { "packages/alpha" = "Rn-Forge" }\n', encoding="utf-8"
+    )
+    with pytest.raises(AppException):
+        KilnConfig.load(tmp_path)
+
+
+def test_s6_1_3_2_importlinter_names_the_declared_module(tmp_path: Path) -> None:
+    (tmp_path / ".rn-forge" / "kiln").mkdir(parents=True)
+    (tmp_path / ".rn-forge" / "kiln" / "config.toml").write_text(
+        MODULE_CONFIG, encoding="utf-8"
+    )
+    [artifact] = _importlinter(KilnConfig.load(tmp_path), tmp_path)
+    roots = [line.strip() for line in artifact.content.splitlines()]
+    assert "rn_forge.alpha" in roots
+    assert "beta" in roots
+    assert "alpha" not in roots

@@ -49,6 +49,7 @@ from rn_forge.kiln.modules.instructions.scaffold import (
     scaffold as instructions_scaffold,
 )
 from rn_forge.kiln.modules.python.artifacts import root_package
+from rn_forge.kiln.modules.python.config import MODULE_PATTERN
 from rn_forge.kiln.modules.python.scaffold import (
     add_package as python_add_package,
 )
@@ -542,17 +543,25 @@ def apply(
         _fail_on_errors(root)
 
 
-def generate_package(name: str, path: Path = Path(), json: bool = False) -> None:
+def generate_package(
+    name: str,
+    path: Path = Path(),
+    json: bool = False,
+    module: str | None = None,
+) -> None:
     """Add the package NAME to the `python-lib` repository at `--path`.
 
     Writes the package, its docs site, changelog and README, and updates the
     config, the workspace and the managed files that list packages. Everything
-    is checked before anything is written.
+    is checked before anything is written. `--module` sets a dotted import
+    module (a namespace package such as `rn_forge.cli`) in place of the one
+    derived from NAME.
 
     Raises:
         AppException: The archetype is not `python-lib`
             (`generate.unsupported-archetype`), NAME is not a kebab-case
-            distribution name (`generate.invalid-name`), NAME is already a
+            distribution name (`generate.invalid-name`), `--module` is not a
+            dotted import module (`generate.invalid-module`), NAME is already a
             package or `packages/NAME` exists (`generate.package-exists`),
             `origin` is not a GitHub remote (`generate.no-remote`), or a step
             or the apply fails.
@@ -561,13 +570,13 @@ def generate_package(name: str, path: Path = Path(), json: bool = False) -> None
         console.set_mode(OutputMode.JSON)
     root = umbrella.find_root(path.resolve())
     config = ConfigManager().load(root)
-    remote = _package_preflight(root, config, name)
+    remote = _package_preflight(root, config, name, module)
     relative = f"packages/{name}"
 
-    DocumentUtils.update(
-        root / CONFIG_PATH,
-        {"archetype": {"python-lib": {"packages": [*config.packages, relative]}}},
-    )
+    section: dict[str, object] = {"packages": [*config.packages, relative]}
+    if module is not None and module != root_package(name):
+        section["modules"] = {relative: module}
+    DocumentUtils.update(root / CONFIG_PATH, {"archetype": {"python-lib": section}})
     config = ConfigManager().load(root)
     python_add_package(root, config, name, remote)
     docs_add_package(root, config, name)
@@ -590,7 +599,9 @@ def generate_package(name: str, path: Path = Path(), json: bool = False) -> None
     )
 
 
-def _package_preflight(root: Path, config: KilnConfig, name: str) -> str:
+def _package_preflight(
+    root: Path, config: KilnConfig, name: str, module: str | None = None
+) -> str:
     """The repository's GitHub URL, after refusing every case `generate package` cannot write."""
     if config.archetype != "python-lib":
         raise AppException(
@@ -601,6 +612,11 @@ def _package_preflight(root: Path, config: KilnConfig, name: str) -> str:
     if not _PACKAGE_NAME.match(name):
         raise AppException(
             "generate.invalid-name: {!r} is not a kebab-case distribution name", name
+        )
+    if module is not None and not MODULE_PATTERN.match(module):
+        raise AppException(
+            "generate.invalid-module: {!r} is not a dotted import module name",
+            module,
         )
     relative = f"packages/{name}"
     if relative in config.packages or (root / relative).exists():

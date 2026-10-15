@@ -432,6 +432,7 @@ lint = ["self:check:dist"]
 
 [archetype.python-lib]
 packages = ["packages/rn-forge-commons", "packages/rn-forge-django"]
+modules = { "packages/rn-forge-commons" = "rn_forge.commons" }  # optional: dotted import module; default is the path name with `-` as `_`
 
 [archetype.python-app]           # or [archetype.python-tool]
 packages = []                    # internal-only; never published
