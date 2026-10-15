@@ -32,6 +32,7 @@ from rn_forge.tooling.generation import StateEntry
 from rn_forge.tooling.state import StateStore
 
 from rn_forge.kiln import archetypes, checks
+from rn_forge.kiln import doctor as doctor_module
 from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
 from rn_forge.kiln.modules.core import cycle, umbrella
 from rn_forge.kiln.modules.core.config.manager import ConfigManager, Resolution
@@ -96,15 +97,46 @@ _PACKAGE_NAME = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
 _FLAG_NAMES = ("archetype", "docs", "backend", "frontend")
 
 
-def doctor(path: Path, only: str | None = None) -> None:
+def doctor(
+    path: Path, only: str | None = None, full: bool = False, json: bool = False
+) -> None:
     """Run the render-free checks over PATH's committed files.
 
-    Prints each finding and raises `AppException` if any is an error.
-    """
-    findings = checks.run(path.resolve(), only)
+    Prints each finding and raises `AppException` if any is an error. `--full`
+    also reports every managed artifact and block a fresh render would change;
+    it cannot be combined with `--only`. `--json` prints the findings as one
+    JSON object.
 
-    for finding in findings:
-        console.error("{}", finding)
+    Raises:
+        AppException: `--only` and `--full` are both given, or a finding is an
+            error.
+    """
+    if only is not None and full:
+        raise AppException("--only and --full cannot be combined")
+    if json:
+        console.set_mode(OutputMode.JSON)
+    root = path.resolve()
+    findings = checks.run(root, only)
+    if full:
+        findings.extend(doctor_module.full(root))
+
+    if console.mode is OutputMode.JSON:
+        console.json(
+            {
+                "findings": [
+                    {
+                        "code": finding.code,
+                        "severity": finding.severity.value,
+                        "message": finding.message,
+                        "path": finding.path,
+                    }
+                    for finding in findings
+                ]
+            }
+        )
+    else:
+        for finding in findings:
+            console.error("{}", finding)
 
     errors = [finding for finding in findings if finding.is_error]
     if errors:

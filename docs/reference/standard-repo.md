@@ -317,7 +317,8 @@ installed kiln, no `$RNF_HOME`, no bootstrap script — proves all of this:
 
 Exactly one question `kiln doctor` cannot ask without `--full`: whether a newer
 kiln, or an edited config, would now render something different from what is
-committed. Everything else `--full` reports, `kiln doctor` reports too.
+committed. Everything else `--full` reports, `kiln doctor` reports too. `--json`
+prints the same findings as one JSON object.
 
 kiln is modules under one contract ([ADR-0001](../adr/ADR-0001.md)): `core`,
 `python`, `docs`, `tasks`, `cicd` and `instructions`, each owning its config

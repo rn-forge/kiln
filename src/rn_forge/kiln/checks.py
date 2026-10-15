@@ -14,6 +14,7 @@ from pathlib import Path
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding
 
+from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd.checks import entrypoint, pins
 from rn_forge.kiln.modules.core.checks import generated
@@ -59,6 +60,9 @@ def names() -> tuple[str, ...]:
 def run(root: Path, only: str | None = None) -> list[Finding]:
     """Run every check over *root*, or just the one *only* names.
 
+    Findings come in the order of the archetype's `modules`; checks of a module
+    it does not list follow, in registry order.
+
     Raises:
         AppException: *only* names no check, or *root*'s config cannot be read.
     """
@@ -71,7 +75,15 @@ def run(root: Path, only: str | None = None) -> list[Finding]:
             )
 
     config = KilnConfig.load(root)
+    modules = archetypes.for_config(config).modules
+    unlisted = len(modules)
+    ordered = sorted(
+        selected,
+        key=lambda check: (
+            modules.index(check.module) if check.module in modules else unlisted
+        ),
+    )
     findings: list[Finding] = []
-    for check in selected:
+    for check in ordered:
         findings.extend(check.run(config, root))
     return findings

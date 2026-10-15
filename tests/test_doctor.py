@@ -1,0 +1,247 @@
+"""S4.6.1 — `kiln doctor`: one report across modules."""
+
+from __future__ import annotations
+
+import importlib.util
+import json
+import re
+import shutil
+import sys
+from collections.abc import Callable
+from pathlib import Path
+from types import ModuleType
+from typing import Any
+
+import pytest
+from rn_forge.commons.exceptions import AppException
+from rn_forge.commons.findings import Finding, Severity
+from rn_forge.commons.runtime.console import OutputMode, console
+
+from rn_forge.kiln import checks, commands, doctor
+from rn_forge.kiln.modules.core import cycle
+from rn_forge.kiln.modules.core.checks.generated import digest
+
+TESTS = Path(__file__).parent
+_IGNORE = shutil.ignore_patterns(
+    ".venv",
+    ".uv-cache",
+    ".ruff_cache",
+    ".import_linter_cache",
+    ".pytest_cache",
+    ".docs-site",
+    ".git",
+    "__pycache__",
+)
+
+
+def _load(relative: str) -> ModuleType:
+    """Import a sibling test file by path (the suite has no test packages)."""
+    path = TESTS / relative
+    name = "_doctor_helper_" + path.stem
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, path)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.fixture
+def copy(
+    tmp_path: Path, rendered: Callable[[str], Path], monkeypatch: pytest.MonkeyPatch
+) -> Path:
+    """A writable copy of the rendered `python-app` repo."""
+    root = tmp_path / "copy"
+    shutil.copytree(rendered("python-app"), root, ignore=_IGNORE)
+    monkeypatch.chdir(root)
+    yield root
+    console.set_mode(OutputMode.PLAIN)
+
+
+def _edit(root: Path, relative: str, change: Callable[[str], str]) -> None:
+    path = root / relative
+    text = path.read_text(encoding="utf-8")
+    edited = change(text)
+    assert edited != text, relative
+    path.write_text(edited, encoding="utf-8")
+
+
+def _reseed(root: Path, relative: str) -> None:
+    """Record *relative*'s current content as its committed hash, so only the
+    check under test sees the edit."""
+    state_path = root / ".rn-forge" / "kiln" / "state.json"
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    text = (root / relative).read_text(encoding="utf-8", newline="")
+    for entry in state["entries"].values():
+        if entry["path"] == relative and entry["kind"] == "managed":
+            entry["content_hash"] = digest(text)
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+
+
+def _break_generated(root: Path) -> None:
+    _edit(root, "Taskfile.yml", lambda text: text + "\n# edit\n")
+
+
+def _break_deps(root: Path) -> None:
+    (root / "pyproject.toml").write_text(
+        _load("modules/python/checks/test_rn_forge_deps.py").MISSING_REQUIRED,
+        encoding="utf-8",
+    )
+
+
+def _break_pyproject(root: Path) -> None:
+    _edit(
+        root,
+        "pyproject.toml",
+        lambda text: text.replace(
+            'typeCheckingMode = "strict"', 'typeCheckingMode = "basic"'
+        ),
+    )
+
+
+def _break_layout(root: Path) -> None:
+    _edit(
+        root,
+        "Taskfile.yml",
+        lambda text: text + "  build:\n    desc: Build\n    cmds: [uv build]\n",
+    )
+    _reseed(root, "Taskfile.yml")
+
+
+def _break_entrypoint(root: Path) -> None:
+    _edit(
+        root,
+        ".github/workflows/ci.yml",
+        lambda text: text.replace("run: task validate", "run: uv sync", 1),
+    )
+    _reseed(root, ".github/workflows/ci.yml")
+
+
+def _break_pins(root: Path) -> None:
+    _edit(
+        root,
+        ".github/workflows/ci.yml",
+        lambda text: re.sub(r"(uses: [^@\s]+)@[0-9a-f]{40}", r"\1@v4", text, count=1),
+    )
+    _reseed(root, ".github/workflows/ci.yml")
+
+
+def _break_structure(root: Path) -> None:
+    _edit(root, "docs/_areas.yml", lambda text: text + "  - key: ghost\n")
+
+
+def _break_derived(root: Path) -> None:
+    (root / "docs" / "guides" / "brand-new.md").write_text("# New\n", encoding="utf-8")
+
+
+def _break_site(root: Path) -> None:
+    _edit(root, "docs/index.md", lambda text: text + "\n[x](missing.md)\n")
+
+
+def _break_hygiene(root: Path) -> None:
+    (root / "NOTES.md").write_text("# Notes\n", encoding="utf-8")
+
+
+BREAKS: dict[str, tuple[Callable[[Path], None], str]] = {
+    "generated": (_break_generated, "artifact."),
+    "rn-forge-deps": (_break_deps, "deps."),
+    "pyproject-tool-config": (_break_pyproject, "pyproject."),
+    "task-layout": (_break_layout, "taskgraph."),
+    "ci-entrypoint": (_break_entrypoint, "ci.entrypoint"),
+    "ci-pins": (_break_pins, "ci.unpinned"),
+    "docs-structure": (_break_structure, "docs."),
+    "docs-generate": (_break_derived, "docs.nav-stale"),
+    "docs-site": (_break_site, "docs.broken-link"),
+    "root-hygiene": (_break_hygiene, "hygiene."),
+}
+
+
+# The three docs checks read one tree and overlap: a broken link or a page
+# outside the nav is reported by more than one of them.
+DOCS = frozenset({"docs-structure", "docs-generate", "docs-site"})
+
+
+def test_s4_6_1_1_every_registered_check_has_a_break() -> None:
+    assert set(BREAKS) == set(checks.names())
+
+
+@pytest.mark.parametrize("name", checks.names())
+def test_s4_6_1_1_each_check_reports_only_its_own_code(copy: Path, name: str) -> None:
+    breaker, prefix = BREAKS[name]
+    assert checks.run(copy) == []
+    breaker(copy)
+
+    own = checks.run(copy, only=name)
+    assert any(f.code.startswith(prefix) for f in own), [str(f) for f in own]
+    if name not in {"pyproject-tool-config", "root-hygiene"}:
+        # those two report warnings only, by design
+        assert any(f.is_error and f.code.startswith(prefix) for f in own)
+
+    for other in checks.names():
+        if other != name and not (name in DOCS and other in DOCS):
+            errors = [f for f in checks.run(copy, only=other) if f.is_error]
+            assert errors == [], (other, [str(f) for f in errors])
+
+
+def test_s4_6_1_2_full_on_a_fresh_repo_exits_0(copy: Path) -> None:
+    assert doctor.full(copy) == []
+    commands.doctor(copy, full=True)
+
+
+def test_s4_6_1_2_full_reports_a_stale_artifact(copy: Path) -> None:
+    _edit(
+        copy,
+        ".rn-forge/kiln/config.toml",
+        lambda text: text.replace("sonar = true", "sonar = false"),
+    )
+    stale = [f for f in doctor.full(copy) if f.code == "artifact.stale"]
+    changed = {c.path for c in cycle.plan(copy).changes if c.action.value == "update"}
+    assert changed
+    assert changed <= {f.path for f in stale}
+    with pytest.raises(AppException):
+        commands.doctor(copy, full=True)
+
+
+def test_s4_6_1_2_full_and_only_cannot_be_combined(copy: Path) -> None:
+    with pytest.raises(AppException, match="--only and --full"):
+        commands.doctor(copy, only="generated", full=True)
+
+
+def test_s4_6_1_2_warnings_alone_exit_0(
+    copy: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def warn(config: object, root: Path) -> list[Finding]:
+        return [Finding("stub.warn", Severity.WARNING, "only a warning")]
+
+    monkeypatch.setattr(checks, "CHECKS", (checks.Check("stub", "core", warn),))
+    commands.doctor(copy)
+
+
+def test_s4_6_1_3_json_lists_every_finding_in_module_order(
+    copy: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _break_generated(copy)  # core
+    _break_pins(copy)  # cicd, listed after docs by the archetype
+    _break_site(copy)  # docs
+    with pytest.raises(AppException):
+        commands.doctor(copy, json=True)
+
+    payload: dict[str, Any] = json.loads(capsys.readouterr().out)
+    items = payload["findings"]
+    assert items
+    assert all(set(item) == {"code", "severity", "message", "path"} for item in items)
+    assert all(isinstance(item["severity"], str) for item in items)
+
+    codes = [item["code"] for item in items]
+    assert codes.index("artifact.drift") < codes.index("docs.broken-link")
+    assert codes.index("docs.broken-link") < codes.index("ci.unpinned")
+
+
+def test_s4_6_1_4_apply_fails_on_an_error_finding(
+    copy: Path, rendered: Callable[[str], Path]
+) -> None:
+    _break_site(copy)
+    with pytest.raises(AppException, match=r"check\(s\) failed"):
+        commands.apply()
