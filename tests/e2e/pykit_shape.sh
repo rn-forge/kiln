@@ -26,7 +26,8 @@ python3 - "$dir/pyproject.toml" <<'PY'
 import sys
 path = sys.argv[1]
 text = open(path, encoding="utf-8").read()
-line = 'override-dependencies = ["rn-forge-commons", "rn-forge-cli", "rn-forge-tooling"]\n'
+# commons keeps pykit's `[all]`: an override replaces the requirement, extras included.
+line = 'override-dependencies = ["rn-forge-commons[all]", "rn-forge-cli", "rn-forge-tooling"]\n'
 assert "[tool.uv]\n" in text and "override-dependencies" not in text
 open(path, "w", encoding="utf-8").write(text.replace("[tool.uv]\n", "[tool.uv]\n" + line, 1))
 PY
@@ -34,7 +35,8 @@ PY
 packages=(rn-forge-commons rn-forge-cli rn-forge-tooling rn-forge-web
           rn-forge-django rn-forge-fastapi rn-forge-sqlalchemy)
 for p in "${packages[@]}"; do
-  kiln generate package "$p" --path "$dir"
+  # pykit's members are namespace packages: rn-forge-cli is rn_forge.cli (S6.1.3).
+  kiln generate package "$p" --path "$dir" --module "rn_forge.${p#rn-forge-}"
   # pykit's code, with its own dependency declarations: a pinned direct URL for
   # each sibling, and a `{ workspace = true }` source for local development.
   rm -rf "$dir/packages/$p/src" "$dir/packages/$p/tests"
@@ -42,6 +44,9 @@ for p in "${packages[@]}"; do
     cp -R "$pykit/packages/$p/$f" "$dir/packages/$p/$f"
   done
 done
+
+# pykit's root conftest.py holds fixtures its member tests use (`scaffold_venv`).
+cp "$pykit/conftest.py" "$dir/conftest.py"
 
 # The root's dependency groups take what pykit's tests need: the members with
 # pykit's extras, and pykit's third-party dev tools.
