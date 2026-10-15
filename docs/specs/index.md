@@ -13,7 +13,7 @@ Backlog sections below are derived from the epic, feature and release pages by
 | Release | Status | Features |
 | -- | -- | -- |
 | [Release 2 — the architecture baseline, package-site deploys, and taskkit retired](../releases/release-2/index.md) | planned | 4 New |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 2 Active · 11 New · 16 Closed |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 2 Active · 12 New · 16 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -30,7 +30,6 @@ Features with no Iteration, by State and epic.
 
 | Epic | Features | Entry criteria |
 | -- | -- | -- |
-| [E7 — pykit releases, and the pin flip](epics/E7-pykit-release-pin-flip/index.md) | — | pykit's release-1 tags exist. Cutting them, and their order, is pykit's work (ADR-0009) |
 | [E8 — The Azure DevOps CI provider](epics/E8-ado-provider/index.md) | — | a repo needs `ci.provider = "ado"`. The intellibuild plan holds the question of whether intellibuild is that repo |
 | [E10 — kiln generators](epics/E10-kiln-generators/index.md) | — | release-1 has shipped and the owner picks this up for elaboration |
 

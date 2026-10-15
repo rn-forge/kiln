@@ -55,6 +55,7 @@ and retiring taskkit are [release-2](../release-2/index.md).
 | [F6.1 — `python-lib` can host pykit](../../specs/epics/E6-rebuild-the-repos/F6.1-pykit-skeleton.md) | E6 | New |
 | [F6.3 — The generated CI matches the hardened upstream CI](../../specs/epics/E6-rebuild-the-repos/F6.3-hardened-ci.md) | E6 | New |
 | [F6.4 — `python-lib` renders pykit's discovered workspace pipeline](../../specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md) | E6 | New |
+| [F7.1 — kiln renders and takes pykit by release tag](../../specs/epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md) | E7 | New |
 | [F9.1 — `node-lib` renders ngkit's CI](../../specs/epics/E9-node-archetypes/F9.1-node-lib-hosts-ngkit-ci.md) | E9 | New |
 | [F11.1 — The docs checks learn package sites](../../specs/epics/E11-package-docs/F11.1-checks-learn-package-sites.md) | E11 | Closed |
 | [F11.2 — `python-lib` repositories carry package docs sites](../../specs/epics/E11-package-docs/F11.2-python-lib-package-sites.md) | E11 | New |

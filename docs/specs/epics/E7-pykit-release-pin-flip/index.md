@@ -3,11 +3,20 @@
 |  |  |
 | -- | -- |
 | **State** | New |
-| **Tags** | deferred |
-| **Entry criteria** | pykit's release-1 tags exist. Cutting them, and their order, is pykit's work (ADR-0009) |
+
+<!-- BEGIN derived features -->
+
+| Feature | State | Iteration | Stories |
+| -- | -- | -- | -- |
+| [F7.1 — kiln renders and takes pykit by release tag](F7.1-tag-pins.md) | New | release-1 | 1 New |
+
+<!-- END derived features -->
 
 Phase: G (triggered, not scheduled) · Absorbs the deferred C.2 step 9
 ([F2.9](../E2-layer-split-and-golden-rename/index.md#f29-as-it-stood-when-deferred))
+
+**Triggered 2026-10-14:** pykit's tags exist. [F7.1](F7.1-tag-pins.md) is scope
+item 2; items 1 and 3 are the release-1 cut.
 
 Until then, dependencies use `feature/upgrade`, with resolved commits recorded
 in lockfiles. This lets integration fixes land without cutting a new library
