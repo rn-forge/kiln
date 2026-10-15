@@ -214,8 +214,7 @@ The reference's §6 is the normative list; this numbering preserves the feature'
 original check identifiers. All checks respect
 [ADR-0003](../../../adr/ADR-0003.md): doctor checks managed files and fenced
 blocks, reads declared inputs, and ignores seeded or unowned content and its
-continued presence. S4.6.5 tracks the implementation changes needed to meet this
-contract; the current checker registry still exceeds it.
+continued presence.
 
 | # | Code prefix | Check |
 | -- | -- | -- |

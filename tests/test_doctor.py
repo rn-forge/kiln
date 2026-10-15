@@ -1,4 +1,4 @@
-"""S4.6.1 — `kiln doctor`: one report across modules."""
+"""S4.6.1 — `kiln doctor`: one report across modules. S4.6.5 — ownership."""
 
 from __future__ import annotations
 
@@ -91,16 +91,6 @@ def _break_deps(root: Path) -> None:
     )
 
 
-def _break_pyproject(root: Path) -> None:
-    _edit(
-        root,
-        "pyproject.toml",
-        lambda text: text.replace(
-            'typeCheckingMode = "strict"', 'typeCheckingMode = "basic"'
-        ),
-    )
-
-
 def _break_layout(root: Path) -> None:
     _edit(
         root,
@@ -140,27 +130,22 @@ def _break_site(root: Path) -> None:
     _edit(root, "docs/index.md", lambda text: text + "\n[x](missing.md)\n")
 
 
-def _break_hygiene(root: Path) -> None:
-    (root / "NOTES.md").write_text("# Notes\n", encoding="utf-8")
-
-
 BREAKS: dict[str, tuple[Callable[[Path], None], str]] = {
     "generated": (_break_generated, "artifact."),
     "rn-forge-deps": (_break_deps, "deps."),
-    "pyproject-tool-config": (_break_pyproject, "pyproject."),
     "task-layout": (_break_layout, "taskgraph."),
     "ci-entrypoint": (_break_entrypoint, "ci.entrypoint"),
     "ci-pins": (_break_pins, "ci.unpinned"),
     "docs-structure": (_break_structure, "docs."),
     "docs-generate": (_break_derived, "docs.nav-stale"),
     "docs-site": (_break_site, "docs.broken-link"),
-    "root-hygiene": (_break_hygiene, "hygiene."),
 }
 
 
 # The three docs checks read one tree and overlap: a broken link or a page
 # outside the nav is reported by more than one of them.
 DOCS = frozenset({"docs-structure", "docs-generate", "docs-site"})
+QUALITY = frozenset({"rn-forge-deps", "docs-structure", "docs-site"})
 
 
 def test_s4_6_1_1_every_registered_check_has_a_break() -> None:
@@ -174,10 +159,12 @@ def test_s4_6_1_1_each_check_reports_only_its_own_code(copy: Path, name: str) ->
     breaker(copy)
 
     own = checks.run(copy, only=name)
-    assert any(f.code.startswith(prefix) for f in own), [str(f) for f in own]
-    if name not in {"pyproject-tool-config", "root-hygiene"}:
-        # those two report warnings only, by design
-        assert any(f.is_error and f.code.startswith(prefix) for f in own)
+    assert any(f.is_error and f.code.startswith(prefix) for f in own), [
+        str(f) for f in own
+    ]
+    if name in QUALITY:
+        # a quality check runs only when named
+        assert checks.run(copy) == []
 
     for other in checks.names():
         if other != name and not (name in DOCS and other in DOCS):
@@ -224,7 +211,7 @@ def test_s4_6_1_3_json_lists_every_finding_in_module_order(
 ) -> None:
     _break_generated(copy)  # core
     _break_pins(copy)  # cicd, listed after docs by the archetype
-    _break_site(copy)  # docs
+    _break_derived(copy)  # docs
     with pytest.raises(AppException):
         commands.doctor(copy, json=True)
 
@@ -235,13 +222,81 @@ def test_s4_6_1_3_json_lists_every_finding_in_module_order(
     assert all(isinstance(item["severity"], str) for item in items)
 
     codes = [item["code"] for item in items]
-    assert codes.index("artifact.drift") < codes.index("docs.broken-link")
-    assert codes.index("docs.broken-link") < codes.index("ci.unpinned")
+    assert codes.index("artifact.drift") < codes.index("docs.nav-stale")
+    assert codes.index("docs.nav-stale") < codes.index("ci.unpinned")
 
 
 def test_s4_6_1_4_apply_fails_on_an_error_finding(
-    copy: Path, rendered: Callable[[str], Path]
+    copy: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    _break_site(copy)
+    def fail(config: object, root: Path) -> list[Finding]:
+        return [Finding("stub.error", Severity.ERROR, "an error")]
+
+    monkeypatch.setattr(checks, "CHECKS", (checks.Check("stub", "core", fail),))
     with pytest.raises(AppException, match=r"check\(s\) failed"):
         commands.apply()
+
+
+def test_s4_6_5_1_seeded_edits_and_deletions_are_silent(copy: Path) -> None:
+    _edit(copy, "README.md", lambda text: text + "\nmy own words\n")
+    (copy / "src" / "python_app" / "commands.py").unlink()
+    for findings in (checks.run(copy), doctor.full(copy)):
+        assert [
+            str(f)
+            for f in findings
+            if f.path in {"README.md", "src/python_app/commands.py"}
+        ] == []
+        assert findings == []
+
+
+def test_s4_6_5_2_repository_owned_pyproject_and_layout_are_silent(
+    copy: Path,
+) -> None:
+    _edit(
+        copy,
+        "pyproject.toml",
+        lambda text: text.replace(
+            'typeCheckingMode = "strict"', 'typeCheckingMode = "basic"'
+        ),
+    )
+    (copy / "NOTES.txt").write_text("notes\n", encoding="utf-8")
+    (copy / "tests").rename(copy / "test")
+    assert checks.run(copy) == []
+
+
+def test_s4_6_5_3_quality_checks_run_only_when_named(copy: Path) -> None:
+    _break_site(copy)
+    _edit(
+        copy,
+        "pyproject.toml",
+        lambda text: re.sub(r'\s*"rn-forge-commons[^"]*",?', "", text),
+    )
+    assert checks.run(copy) == []
+    assert checks.run(copy, only="docs-site")
+    assert checks.run(copy, only="rn-forge-deps")
+
+
+def test_s4_6_5_4_a_sibling_under_rn_forge_is_ignored(copy: Path) -> None:
+    before = ([str(f) for f in checks.run(copy)], [str(f) for f in doctor.full(copy)])
+    sibling = copy / ".rn-forge" / "other"
+    sibling.mkdir()
+    (sibling / "state.json").write_text("{not json", encoding="utf-8")
+    after = ([str(f) for f in checks.run(copy)], [str(f) for f in doctor.full(copy)])
+    assert after == before
+
+
+def test_s4_6_5_5_managed_drift_still_reported(copy: Path) -> None:
+    _break_generated(copy)
+    assert "artifact.drift" in {f.code for f in checks.run(copy)}
+    _edit(copy, "Taskfile.yml", lambda text: text.replace("\n# edit\n", ""))
+    (copy / "tasks" / "quality.yml").unlink()
+    missing = [f for f in checks.run(copy) if f.code == "artifact.missing"]
+    assert [f.path for f in missing] == ["tasks/quality.yml"]
+
+
+def test_s4_6_5_6_malformed_config_still_errors(copy: Path) -> None:
+    (copy / ".rn-forge" / "kiln" / "config.toml").write_text(
+        "not = [valid", encoding="utf-8"
+    )
+    with pytest.raises(AppException, match="config"):
+        checks.run(copy)

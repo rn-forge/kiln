@@ -84,10 +84,10 @@ def test_an_indented_block_marker_still_matches(repo, write_state) -> None:
     assert run(root) == []
 
 
-def test_a_missing_seeded_file_is_reported(repo, write_state) -> None:
+def test_a_missing_seeded_file_is_not_reported(repo, write_state) -> None:
     root = repo()
     write_state({"README.md": {"path": "README.md", "kind": "seeded"}})
-    assert any("seeded artifact is missing" in line for line in run(root))
+    assert run(root) == []
 
 
 def test_state_that_hashes_itself_is_reported(repo, write_state) -> None:

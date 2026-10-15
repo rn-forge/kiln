@@ -23,12 +23,6 @@ from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import gitignore
 from rn_forge.kiln.modules.python.artifacts import root_package
-from rn_forge.kiln.modules.python.checks.pyproject import (
-    PYRIGHT_EXPECTED,
-    PYTEST_ADDOPTS,
-    REQUIRES_PYTHON,
-    RUFF_TEST_IGNORES,
-)
 
 __all__ = [
     "SAMPLE_TEST",
@@ -40,6 +34,11 @@ __all__ = [
     "scaffold_backend",
     "uv_gitignore",
 ]
+
+REQUIRES_PYTHON = ">=3.14"
+PYTEST_ADDOPTS = "-ra --import-mode=importlib"
+PYRIGHT_EXPECTED = {"typeCheckingMode": "strict", "reportMissingTypeStubs": False}
+RUFF_TEST_IGNORES = {"S101", "D", "ANN", "PLR2004"}
 
 _DEV_GROUP = ["import-linter", "pyright", "pytest", "pytest-cov", "pyyaml", "ruff"]
 """The dev tools every archetype's `pyproject.toml` names; `rn-forge-kiln` too,

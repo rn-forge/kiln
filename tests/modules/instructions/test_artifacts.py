@@ -144,20 +144,11 @@ def _normalized(text: str) -> str:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_5_property5_root_hygiene_passes_on_the_rendered_output(
+def test_s4_3_5_property5_the_module_has_no_render_free_checks(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _new(tmp_path, archetype)
     assert INSTRUCTIONS.checks(KilnConfig.load(root), root) == []
-
-
-def test_s4_3_5_property5_root_hygiene_fails_on_a_stray_root_file(
-    tmp_path: Path,
-) -> None:
-    root = _new(tmp_path)
-    (root / "NOTES.md").write_text("# Notes\n", encoding="utf-8")
-    codes = [f.code for f in INSTRUCTIONS.checks(KilnConfig.load(root), root)]
-    assert codes == ["hygiene.stray-root-file"]
 
 
 def test_s4_3_5_1_edits_to_each_body_survive_and_the_block_is_unchanged(
@@ -243,16 +234,6 @@ def test_s4_3_5_5_docs_structure_passes_with_no_hand_written_claude_md(
     codes = [f.code for f in DOCS.checks(KilnConfig.load(root), root)]
     # The fixture lists packages it never seeds a site for (S11.2.3's checks).
     assert [c for c in codes if not c.startswith("docs.package-")] == []
-
-
-def test_s4_3_5_6_root_hygiene_warns_on_notes_md(repo) -> None:
-    from rn_forge.kiln import checks
-
-    root = repo(**{"NOTES.md": "# Notes\n", "README.md": "# r\n"})
-    findings = checks.run(root, only="root-hygiene")
-    assert [(f.code, f.path) for f in findings] == [
-        ("hygiene.stray-root-file", "NOTES.md")
-    ]
 
 
 WEB_CONFIG = """

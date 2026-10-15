@@ -70,10 +70,8 @@ kiln writes or reads has exactly one of these kinds:
   first `src/` and `tests/`) is written by `kiln new` before its first apply,
   and never again.
 - "Nothing, including presence" for **seeded** is the target set by
-  [ADR-0003](../../../adr/ADR-0003.md). Today the `generated` check still
-  reports a missing seeded file (`generated.seed-missing`), and
-  [S4.6.5](../E4-generator/F4.6-doctor.md#s465-doctor-respects-ownership)
-  removes that. S13.1.1 documents the target and leaves the check alone.
+  [ADR-0003](../../../adr/ADR-0003.md). The `generated` check skips a seeded
+  state entry.
 - Paths kiln neither writes nor reads (`.claude/**`, `.codex/**`, installed
   skills) are not kiln's and have no kind.
 

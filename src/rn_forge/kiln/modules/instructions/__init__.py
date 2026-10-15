@@ -37,10 +37,9 @@ class InstructionsModule:
         return artifacts.render(config)
 
     def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:
-        """This module's render-free checks."""
-        from rn_forge.kiln.modules.instructions.checks import hygiene
-
-        return hygiene.check(config, root)
+        """This module has no render-free checks."""
+        del config, root
+        return []
 
 
 INSTRUCTIONS = InstructionsModule()

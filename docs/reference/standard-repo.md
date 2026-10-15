@@ -95,10 +95,8 @@ Every path kiln writes or reads has exactly one of these kinds:
   first `src/` and `tests/`) is written by `kiln new` before its first apply,
   and never again.
 - "Nothing, including presence" for **seeded** is the target set by
-  [ADR-0003](../adr/ADR-0003.md). Today the `generated` check still reports a
-  missing seeded file (`generated.seed-missing`), and
-  [S4.6.5](../specs/epics/E4-generator/F4.6-doctor.md#s465-doctor-respects-ownership)
-  removes that. S13.1.1 documents the target and leaves the check alone.
+  [ADR-0003](../adr/ADR-0003.md). The `generated` check skips a seeded state
+  entry.
 - Paths kiln neither writes nor reads (`.claude/**`, `.codex/**`, installed
   skills) are not kiln's and have no kind.
 
@@ -282,12 +280,12 @@ it; `task validate` reaches it. ([ADR-0002](../adr/ADR-0002.md))
 
 CI runs the pinned kiln read-only ([ADR-0006](../adr/ADR-0006.md)): it never
 runs `kiln apply` and never writes a generated file. `task validate` runs
-`kiln doctor` — the render-free checks, `generated`, `rn-forge-deps`,
-`task-layout`, `ci-entrypoint`, `docs-structure`, `docs-generate` and
-`docs-site` — on every run. `kiln doctor --full`, which adds a full render and
-diff, runs where the workflow asks for it: `lint` runs it when the
-`KILN_DOCTOR_FULL` task variable is set, by default on pushes to the default
-branch and on manual dispatch.
+`kiln doctor`'s ownership checks — `generated`, `task-layout`, `ci-entrypoint`,
+`ci-pins` and `docs-generate` — and the quality checks `rn-forge-deps`,
+`docs-structure` and `docs-site` through their own lint tasks.
+`kiln doctor --full`, which adds a full render and diff, runs where the workflow
+asks for it: `lint` runs it when the `KILN_DOCTOR_FULL` task variable is set, by
+default on pushes to the default branch and on manual dispatch.
 
 A cold clone with go-task and the pinned language toolchain — `uv sync`, but no
 installed kiln, no `$RNF_HOME`, no bootstrap script — proves all of this:
@@ -339,14 +337,6 @@ render-free checks are the ones `kiln doctor` runs by default.
 | `ci.unpinned` / `ci.permissions` | every `uses:` SHA-pinned with a version comment; every job has `permissions:` |
 | `docs.nav-stale` | the derived nav (`docs-generate`) differs from what regenerating it from the docs tree would write |
 | `legacy.kiln-state` (error) | a pre-kiln `.rn-forge/kiln/` or `$RNF_HOME/kiln/` tree |
-
-**Implementation gap:** current doctor checks include missing seeds,
-repository-owned Python settings and dependencies, docs content, and root-file
-hygiene.
-[S4.6.5](../specs/epics/E4-generator/F4.6-doctor.md#s465-doctor-respects-ownership)
-removes implicit policing of unowned content and separates repository quality
-checks from doctor. The task lists above describe the existing wiring until that
-story lands.
 
 `kiln doctor --all <paths>` runs the same checks across many repos and prints
 one table.

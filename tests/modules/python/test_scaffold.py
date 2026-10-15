@@ -1,7 +1,7 @@
 """S4.3.1 — `uv init` + reconcile. S4.3.7 — the scaffold completes `pyproject.toml`.
 
 `uv` is invoked once, into an empty directory, and the reconcile leaves a
-`pyproject.toml` that check 8a passes without kiln ever writing the file
+`pyproject.toml` with the settings the scaffold fixes, without kiln ever writing the file
 kiln apply owns nothing of (kiln ADR-0003, ADR-0005). S4.3.7 adds the
 rn-forge dependency lines and the `docs` group so `rn-forge-deps` and
 `task setup` pass on a fresh `kiln new` repo too.
@@ -22,7 +22,7 @@ from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.python import scaffold as python_scaffold
-from rn_forge.kiln.modules.python.checks import pyproject, rn_forge_deps
+from rn_forge.kiln.modules.python.checks import rn_forge_deps
 from rn_forge.kiln.modules.python.scaffold import (
     SAMPLE_TEST,
     add_package,
@@ -68,6 +68,24 @@ def _root(tmp_path: Path, archetype: str, *, docs_profile: str = "mkdocs") -> Pa
     return tmp_path
 
 
+def _mismatches(config: KilnConfig, root: Path) -> list[str]:
+    """Each scaffold-fixed pyproject setting that a `pyproject.toml` lacks."""
+    found: list[str] = []
+    for relative in archetypes.pyproject_paths(config):
+        path = root / relative
+        if not path.exists():
+            continue
+        document = tomllib.loads(path.read_text(encoding="utf-8"))
+        tool = document.get("tool", {})
+        for key, expected in python_scaffold.PYRIGHT_EXPECTED.items():
+            if tool.get("pyright", {}).get(key) != expected:
+                found.append(f"{relative}: tool.pyright.{key}")
+        addopts = tool.get("pytest", {}).get("ini_options", {}).get("addopts")
+        if addopts != python_scaffold.PYTEST_ADDOPTS:
+            found.append(f"{relative}: tool.pytest.ini_options.addopts")
+    return found
+
+
 @pytest.mark.parametrize("archetype", ["python-app", "python-tool"])
 def test_s4_3_1_1_scaffold_then_reconcile_passes_check_8a(
     tmp_path: Path, archetype: str
@@ -77,7 +95,7 @@ def test_s4_3_1_1_scaffold_then_reconcile_passes_check_8a(
     scaffold(root, config)
     assert (root / "pyproject.toml").is_file()
     assert (root / "src" / "demo_tool" / "__init__.py").is_file()
-    assert pyproject.check(config, root) == []
+    assert _mismatches(config, root) == []
 
 
 def test_s4_3_1_1_scaffold_a_workspace_passes_check_8a_at_root_and_members(
@@ -89,7 +107,7 @@ def test_s4_3_1_1_scaffold_a_workspace_passes_check_8a_at_root_and_members(
     assert (root / "pyproject.toml").is_file()
     assert (root / "packages" / "demo-alpha" / "pyproject.toml").is_file()
     assert (root / "packages" / "demo-beta" / "pyproject.toml").is_file()
-    assert pyproject.check(config, root) == []
+    assert _mismatches(config, root) == []
 
 
 def test_s4_3_1_1_scaffold_never_leaves_a_git_tree_or_a_readme(tmp_path: Path) -> None:
@@ -160,7 +178,7 @@ def test_s4_3_7_check_8a_still_passes(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-tool")
     config = KilnConfig.load(root)
     scaffold(root, config)
-    assert pyproject.check(config, root) == []
+    assert _mismatches(config, root) == []
 
 
 UV_FIXTURE = (

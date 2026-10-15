@@ -16,14 +16,12 @@ def test_every_check_is_named_by_its_module() -> None:
     assert checks.names() == (
         "generated",
         "rn-forge-deps",
-        "pyproject-tool-config",
         "task-layout",
         "ci-entrypoint",
         "ci-pins",
         "docs-structure",
         "docs-generate",
         "docs-site",
-        "root-hygiene",
     )
 
 
@@ -65,7 +63,18 @@ def test_every_rendered_archetype_passes_every_check(
 
 def test_running_one_check_is_a_subset_of_running_all(repo) -> None:
     root = repo(**{"pyproject.toml": "[project]\nname = 'x'\n"})
-    only = [str(f) for f in checks.run(root, only="rn-forge-deps")]
+    only = [str(f) for f in checks.run(root, only="generated")]
     every = [str(f) for f in checks.run(root)]
     assert only
     assert set(only).issubset(set(every))
+
+
+def test_quality_checks_run_only_when_named(repo) -> None:
+    root = repo(**{"pyproject.toml": "[project]\nname = 'x'\n"})
+    assert [c.name for c in checks.CHECKS if c.scope == "quality"] == [
+        "rn-forge-deps",
+        "docs-structure",
+        "docs-site",
+    ]
+    assert checks.run(root, only="rn-forge-deps")
+    assert not [f for f in checks.run(root) if f.code.startswith("deps.")]

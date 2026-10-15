@@ -4,13 +4,13 @@ This check never renders: it checks the committed `.rn-forge/kiln/state.json`
 against the bytes on disk. It cannot see whether a *newer* kiln would render
 something different — that is `kiln doctor`'s job, not this one's.
 
-Three artifact kinds, three questions:
+Three artifact kinds; two are checked:
 
 - `managed` — the whole file is kiln's. Its SHA-256 must equal the recorded one.
 - `block`   — kiln owns a fenced region inside a repo-owned file. The region
               must be present and its body's SHA-256 must equal the recorded one.
-- `seeded`  — kiln wrote the file once and never touches it again. It must
-              exist; its content is nobody's business here.
+- `seeded`  — kiln wrote the file once and never touches it again. Neither its
+              content nor its presence is checked.
 """
 
 from __future__ import annotations
@@ -133,27 +133,13 @@ def _check_block(root: Path, key: str, entry: dict[str, object]) -> list[Finding
     return []
 
 
-def _check_seeded(root: Path, key: str, entry: dict[str, object]) -> list[Finding]:
-    relative = str(entry["path"])
-    if not (root / relative).exists():
-        return [
-            Finding(
-                f"{CODE}.seed-missing",
-                Severity.ERROR,
-                "seeded artifact is missing — run `kiln apply`",
-                path=relative,
-            )
-        ]
-    return []
-
-
 def _read(path: Path) -> str:
     # newline="" keeps CRLF bytes as they are, which is how the engine hashes.
     with path.open(encoding="utf-8", newline="") as handle:
         return handle.read()
 
 
-_KINDS = {"managed": _check_managed, "block": _check_block, "seeded": _check_seeded}
+_KINDS = {"managed": _check_managed, "block": _check_block}
 
 
 def check(config: KilnConfig, root: Path) -> list[Finding]:
@@ -188,6 +174,8 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
     findings: list[Finding] = []
     for key, entry in sorted(state.get("entries", {}).items()):
         kind = entry.get("kind")
+        if kind == "seeded":
+            continue
         if kind not in _KINDS:
             findings.append(
                 Finding(
