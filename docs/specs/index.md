@@ -12,8 +12,8 @@ Backlog sections below are derived from the epic, feature and release pages by
 
 | Release | Status | Features |
 | -- | -- | -- |
-| [Release 2 — the architecture baseline, package-site deploys, and taskkit retired](../releases/release-2/index.md) | planned | 5 New |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 2 Active · 9 New · 16 Closed |
+| [Release 2 — the architecture baseline, package-site deploys, and taskkit retired](../releases/release-2/index.md) | planned | 4 New |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 2 Active · 11 New · 16 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -32,7 +32,6 @@ Features with no Iteration, by State and epic.
 | -- | -- | -- |
 | [E7 — pykit releases, and the pin flip](epics/E7-pykit-release-pin-flip/index.md) | — | pykit's release-1 tags exist. Cutting them, and their order, is pykit's work (ADR-0009) |
 | [E8 — The Azure DevOps CI provider](epics/E8-ado-provider/index.md) | — | a repo needs `ci.provider = "ado"`. The intellibuild plan holds the question of whether intellibuild is that repo |
-| [E9 — The node archetypes](epics/E9-node-archetypes/index.md) | [F9.1](epics/E9-node-archetypes/F9.1-node-lib-hosts-ngkit-ci.md) | a repo in scope needs a second toolchain — pnpm release, node CI, no uv |
 | [E10 — kiln generators](epics/E10-kiln-generators/index.md) | — | release-1 has shipped and the owner picks this up for elaboration |
 
 <!-- END derived board -->
@@ -50,7 +49,8 @@ theirs.
 | Pin | Needed by | Observed |
 | -- | -- | -- |
 | Every pykit package kiln renders resolves from its git source outside the pykit workspace | [E5](epics/E5-web-archetypes/index.md): `uv sync` of any web cell | yes (2026-10-04): both web cells sync and validate against pykit `main` `cba6d84` and kiln `feature/v1` |
-| pykit's release-1 tags exist | [E7](epics/E7-pykit-release-pin-flip/index.md) | not yet |
+| pykit's release-1 tags exist | [E7](epics/E7-pykit-release-pin-flip/index.md) | yes (2026-10-14): `rn-forge-commons-v0.5.0`, `rn-forge-cli-v0.1.0`, `rn-forge-tooling-v0.2.0` and the web packages, released from pykit `main` `79bb296` |
+| `rn-forge-tooling` publishes the workspace planner as `rn_forge.tooling.workspace_ci` ([ADR-0014](../adr/ADR-0014.md)) | [F6.4](epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md): `task ci:plan` in a library workspace | not yet: the planner is `.github/scripts/workspace_ci.py` in pykit |
 | pykit's default branch publishes versioned package sites under `https://rn-forge.github.io/pykit/packages/` | [S11.5.1](epics/E11-package-docs/F11.5-deploy-package-sites.md#s1151-ci-deploys-versioned-package-sites) | not yet |
 
 ## Order

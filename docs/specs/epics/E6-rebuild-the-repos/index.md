@@ -8,10 +8,10 @@
 
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
-| [F6.1 — `python-lib` can host pykit](F6.1-pykit-skeleton.md) | New | release-1 | 1 New |
+| [F6.1 — `python-lib` can host pykit](F6.1-pykit-skeleton.md) | New | release-1 | 1 Active · 1 New |
 | [F6.2 — Retire taskkit](F6.2-retire-taskkit.md) | New | release-2 | 1 New |
 | [F6.3 — The generated CI matches the hardened upstream CI](F6.3-hardened-ci.md) | New | release-1 | 1 Active · 4 Closed |
-| [F6.4 — `python-lib` renders pykit's discovered workspace pipeline](F6.4-workspace-pipeline.md) | New | release-2 | — |
+| [F6.4 — `python-lib` renders pykit's discovered workspace pipeline](F6.4-workspace-pipeline.md) | New | release-1 | — |
 
 <!-- END derived features -->
 

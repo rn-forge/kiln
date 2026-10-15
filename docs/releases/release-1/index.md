@@ -54,6 +54,8 @@ and retiring taskkit are [release-2](../release-2/index.md).
 | [F5.3 — Prove and ship the FastAPI cells](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) | E5 | Active |
 | [F6.1 — `python-lib` can host pykit](../../specs/epics/E6-rebuild-the-repos/F6.1-pykit-skeleton.md) | E6 | New |
 | [F6.3 — The generated CI matches the hardened upstream CI](../../specs/epics/E6-rebuild-the-repos/F6.3-hardened-ci.md) | E6 | New |
+| [F6.4 — `python-lib` renders pykit's discovered workspace pipeline](../../specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md) | E6 | New |
+| [F9.1 — `node-lib` renders ngkit's CI](../../specs/epics/E9-node-archetypes/F9.1-node-lib-hosts-ngkit-ci.md) | E9 | New |
 | [F11.1 — The docs checks learn package sites](../../specs/epics/E11-package-docs/F11.1-checks-learn-package-sites.md) | E11 | Closed |
 | [F11.2 — `python-lib` repositories carry package docs sites](../../specs/epics/E11-package-docs/F11.2-python-lib-package-sites.md) | E11 | New |
 | [F11.3 — `kiln generate package`](../../specs/epics/E11-package-docs/F11.3-generate-package.md) | E11 | New |
@@ -84,6 +86,11 @@ and retiring taskkit are [release-2](../release-2/index.md).
   Azure DevOps-shaped work items (E13).
 - [ADR-0012](../../adr/ADR-0012.md) — proposed 2026-10-01: every repository
   publishes one MkDocs site, whatever its language (E13).
+- [ADR-0014](../../adr/ADR-0014.md) — added 2026-10-14: a library workspace's CI
+  is planned by rn-forge-tooling, and its own members are exempt from the
+  rn-forge dependency contract (F6.1, F6.4).
+- [ADR-0015](../../adr/ADR-0015.md) — added 2026-10-14: `node-lib` renders
+  ngkit's CI (E9).
 
 ## Progress
 
@@ -124,6 +131,11 @@ Earlier release-1 work also landed in commits whose subjects name no ID:
 - F6.1's acceptance block passes: a pykit-shaped repository passes its own gate.
   Nothing in this release is checked inside pykit
   ([ADR-0009](../../adr/ADR-0009.md)).
+- F6.4's acceptance block passes: the pykit-shaped repository runs pykit's
+  workspace pipeline. Added 2026-10-14, when the owner chose to have pykit and
+  ngkit able to adopt kiln before release-1 ships.
+- E9's `node-lib` features pass their acceptance blocks: an ngkit-shaped
+  repository passes its own gate and renders ngkit's CI. Added 2026-10-14.
 - Every open question on an in-scope feature is answered, as an ADR or as a
   rejected option recorded on the feature.
 

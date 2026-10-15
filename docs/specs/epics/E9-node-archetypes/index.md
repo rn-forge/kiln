@@ -3,26 +3,24 @@
 |  |  |
 | -- | -- |
 | **State** | New |
-| **Tags** | deferred |
-| **Entry criteria** | a repo in scope needs a second toolchain — pnpm release, node CI, no uv |
 
 <!-- BEGIN derived features -->
 
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
-| [F9.1 — `node-lib` renders ngkit's CI](F9.1-node-lib-hosts-ngkit-ci.md) | New | deferred | — |
+| [F9.1 — `node-lib` renders ngkit's CI](F9.1-node-lib-hosts-ngkit-ci.md) | New | release-1 | — |
 
 <!-- END derived features -->
 
 ## Scope
 
 `node-lib` (pnpm/Nx workspace of published UI libraries; prior art ngkit;
-release tag `v<version>` for one fixed group, as ngkit does, with per-package
-`<package>-v<version>` an open choice — [F9.1](F9.1-node-lib-hosts-ngkit-ci.md))
-and `node-web-app` (standalone pnpm-managed Nx frontend consuming remote APIs;
-release tag `v<version>`). Both are named in the catalogue
-([ADR-0005](../../../adr/ADR-0005.md)) so the taxonomy is fixed, and deferred to
-post-v1 because nothing in v1 scope uses them.
+release tag `v<version>` for one fixed group, as ngkit does —
+[ADR-0015](../../../adr/ADR-0015.md)) and `node-web-app` (standalone
+pnpm-managed Nx frontend consuming remote APIs; release tag `v<version>`). Both
+are named in the catalogue ([ADR-0005](../../../adr/ADR-0005.md)) so the
+taxonomy is fixed. `node-lib` is release-1, so that ngkit can adopt kiln.
+`node-web-app` stays deferred, because nothing in scope uses it.
 
 Frontend support here builds on E5's shared frontend module
 ([S5.2.4](../E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md#s524-frontend-scaffolding-has-its-own-module));
@@ -35,14 +33,18 @@ Markdown in a node archetype is formatted by mdformat under the seeded
 `.prettierignore` excludes `*.md`, so the docs tree is byte-identical across
 archetypes. ngkit's configuration is the prior art.
 
-## Open questions
+## Decisions
 
-1. **ngkit** (the Nx + Angular library monorepo): is it `node-lib` when this
-   epic unparks, or hand-managed? (Open question 6, first raised as a fourth
-   archetype `ng-lib`.) ngkit's CI is now written as a portable template with
-   template-owned files and repository-owned declarations
-   (`docs/architecture/ci-template.md`), which is the shape `node-lib` would
-   generate; [F9.1](F9.1-node-lib-hosts-ngkit-ci.md) lists what kiln lacks.
-1. **Running mdformat without uv.** A node archetype has no Python toolchain, so
-   its `task format` needs another way to run the pinned mdformat — `uvx`, or
-   a small uv project for the docs tooling alone.
+**Unparked 2026-10-14.** The owner wants ngkit to adopt kiln before release-1
+ships, so `node-lib` moves into release-1. `node-web-app` stays deferred: no
+repository in scope uses it. The decisions are
+[ADR-0015](../../../adr/ADR-0015.md).
+
+1. **ngkit is `node-lib`**, not hand-managed. Its template-owned and
+   repository-owned split (`docs/architecture/ci-template.md`) maps onto
+   kiln's generated and seeded files.
+1. **mdformat runs through uv.** [ADR-0012](../../../adr/ADR-0012.md) already
+   decided this on 2026-10-01: MkDocs and mdformat are pinned and run through
+   `uv` in every repository. A `node-lib` repository has a root
+   `pyproject.toml` with no package, whose dev group pins the docs tooling and
+   kiln.
