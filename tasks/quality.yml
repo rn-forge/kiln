@@ -24,6 +24,8 @@ tasks:
     internal: true
     cmds:
       - uv run kiln doctor . --only generated
+      - cmd: uv run kiln doctor . --full
+        if: '[ -n "{{.KILN_DOCTOR_FULL}}" ]'
 
   lint:rn-forge-deps:
     desc: Enforce the archetype's rn-forge dependency contract — required, allowed, pinned.

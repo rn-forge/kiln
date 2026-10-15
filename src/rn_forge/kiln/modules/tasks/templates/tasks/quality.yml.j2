@@ -45,6 +45,8 @@ tasks:
     cmds:
 {% if overrides.get("quality:lint:generated") %}      - [[ overrides["quality:lint:generated"] ]]
 {% else %}      - uv run kiln doctor . --only generated
+      - cmd: uv run kiln doctor . --full
+        if: '[ -n "{{.KILN_DOCTOR_FULL}}" ]'
 {% endif %}
   lint:rn-forge-deps:
     desc: Enforce the archetype's rn-forge dependency contract — required, allowed, pinned.

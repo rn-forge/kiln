@@ -57,6 +57,8 @@ jobs:
 
       - name: Validate
         run: task validate
+        env:
+          KILN_DOCTOR_FULL: ${{ ((github.event_name == 'push' && github.ref_name == github.event.repository.default_branch) || github.event_name == 'workflow_dispatch') && '1' || '' }}
 {% if sonar %}
   sonar:
     needs: validate

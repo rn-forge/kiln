@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -609,3 +610,31 @@ def test_s11_2_2_7_a_python_lib_with_packages_renders_no_such_command(
 ) -> None:
     for name, cmds in _quality_tasks(tmp_path, packages=True).items():
         assert not any("no packages" in str(cmd) for cmd in cmds), name
+
+
+FULL_CELLS = (
+    ("python-app", ""),
+    ("python-tool", ""),
+    ("python-lib", ""),
+    ("python-web-api", ""),
+    ("python-web-app", 'frontend = "angular"'),
+)
+
+
+@pytest.mark.parametrize(("archetype", "extra"), FULL_CELLS)
+def test_s4_6_4_1_lint_runs_full_only_when_asked(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    if shutil.which("task") is None:
+        pytest.skip("task is not on PATH")
+    if archetype.startswith("python-web"):
+        root = _web_root(tmp_path, archetype, "fastapi", extra=extra)
+    else:
+        root = _root(tmp_path, archetype)
+    cycle.apply(root, home=tmp_path / "home")
+    without = _run_task(root, "--dry", "lint")
+    assert without.returncode == 0, without.stderr
+    assert "kiln doctor . --full" not in without.stdout + without.stderr
+    asked = _run_task(root, "--dry", "lint", "KILN_DOCTOR_FULL=1")
+    assert asked.returncode == 0, asked.stderr
+    assert "kiln doctor . --full" in asked.stdout + asked.stderr

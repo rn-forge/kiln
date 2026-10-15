@@ -538,3 +538,21 @@ def test_s6_3_5_pins_match_the_upstream_versions() -> None:
     pins = tomllib.loads(pins_file.read_text(encoding="utf-8"))
     for key, (sha, version) in UPSTREAM_PINS.items():
         assert (pins[key]["sha"], pins[key]["version"]) == (sha, version), key
+
+
+KILN_DOCTOR_FULL_EXPRESSION = (
+    "${{ ((github.event_name == 'push' && github.ref_name == "
+    "github.event.repository.default_branch) || "
+    "github.event_name == 'workflow_dispatch') && '1' || '' }}"
+)
+
+
+def test_s4_6_4_2_ci_sets_the_variable_on_default_branch_pushes(
+    tmp_path: Path,
+) -> None:
+    for archetype in ARCHETYPES:
+        root = _root(tmp_path / archetype, archetype)
+        jobs = yaml.safe_load(_rendered(root)[".github/workflows/ci.yml"])["jobs"]
+        step = next(s for s in jobs["validate"]["steps"] if s["name"] == "Validate")
+        assert step["run"] == "task validate"
+        assert step["env"]["KILN_DOCTOR_FULL"] == KILN_DOCTOR_FULL_EXPRESSION, archetype
