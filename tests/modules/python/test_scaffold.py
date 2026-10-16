@@ -497,3 +497,52 @@ def test_s4_4_8_9_lib_root_points_tools_at_packages(tmp_path: Path) -> None:
     assert "include" not in other["tool"]["pyright"]
     assert "testpaths" not in other["tool"]["pytest"]["ini_options"]
     assert "coverage[toml]>=7.6" not in other["dependency-groups"]["dev"]
+
+
+def _uv(path: Path) -> dict[str, Any]:
+    return _toml(path).get("tool", {}).get("uv", {})
+
+
+def _scaffolded_app_with_lifecycle(tmp_path: Path) -> Path:
+    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(
+        CONFIG.format(archetype="python-app", docs_profile="mkdocs").replace(
+            'archetype = "python-app"', 'archetype = "python-app"\nlifecycle = true'
+        ),
+        encoding="utf-8",
+    )
+    scaffold(tmp_path, KilnConfig.load(tmp_path))
+    return tmp_path
+
+
+@pytest.mark.parametrize("kind", ["python-app", "lifecycle", "python-web-api"])
+def test_s7_1_2_1_application_roots_ignore_sources(tmp_path: Path, kind: str) -> None:
+    if kind == "lifecycle":
+        root = _scaffolded_app_with_lifecycle(tmp_path)
+    else:
+        root, _ = _scaffolded(tmp_path, kind)
+
+    assert _uv(root / "pyproject.toml")["no-sources"] is True
+
+
+def test_s7_1_2_1_members_do_not_set_it(tmp_path: Path) -> None:
+    root, config = _scaffolded(tmp_path, "python-web-api")
+
+    (member,) = config.packages
+    assert "no-sources" not in _uv(root / member / "pyproject.toml")
+
+
+def test_s7_1_2_2_python_lib_keeps_sources(tmp_path: Path) -> None:
+    root, _ = _scaffolded(tmp_path, "python-lib")
+
+    for path in root.rglob("pyproject.toml"):
+        assert "no-sources" not in _uv(path)
+
+
+def test_s7_1_2_1_build_backend_survives(tmp_path: Path) -> None:
+    root, _ = _scaffolded(tmp_path, "python-app")
+
+    uv = _uv(root / "pyproject.toml")
+    assert "build-backend" in uv
+    assert uv["no-sources"] is True

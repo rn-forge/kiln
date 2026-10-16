@@ -135,6 +135,11 @@ allowed and pinned-and-direct, accepts a branch or path source with a warning,
 and refuses one in a publish job. Flipping to tags is
 `kiln config upgrade --apply`, not a template change.
 
+Every root outside `python-lib` sets `[tool.uv] no-sources = true`. pykit's
+tags sit on different commits, and pykit's own workspace sources would
+otherwise make uv resolve a shared dependency once per tag. A repository
+scaffolded before kiln did this adds the line by hand.
+
 kiln itself is a dev dependency, `rn-forge-kiln`, pinned the same way (kiln
 ADR-0006).
 

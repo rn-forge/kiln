@@ -243,6 +243,11 @@ rn-forge requirements name each package's release tag, from kiln's pin table
 ([E7](../specs/epics/E7-pykit-release-pin-flip/index.md)). A new kiln release
 moves the pins; `kiln config upgrade --apply` takes them into a repository.
 
+Every root outside `python-lib` sets `[tool.uv] no-sources = true`. pykit's tags
+sit on different commits, and pykit's own workspace sources would otherwise make
+uv resolve a shared dependency once per tag. A repository scaffolded before kiln
+did this adds the line by hand.
+
 `kiln doctor`'s `rn-forge-deps` check enforces three rules — **required**,
 **allowed**, **pinned-and-direct**. Its required and allowed lists are config,
 so pykit — which *contains* commons and cannot depend on it — renders an empty

@@ -405,6 +405,10 @@ def _reconcile(
                 "source-exclude": ["**/.DS_Store"],
             }
         }
+    if is_root and not lib:
+        # pykit's workspace sources resolve per tag; see F7.1 S7.1.2.
+        uv = cast("dict[str, object]", tool.setdefault("uv", {}))
+        uv["no-sources"] = True
     project: dict[str, object] = {"requires-python": REQUIRES_PYTHON}
     if (is_root and not is_workspace_root) or (lib and not is_root):
         project["readme"] = "README.md"
