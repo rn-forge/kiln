@@ -113,8 +113,6 @@ def _epic_entry(docs_root: Path, epic_dir: Path) -> NavEntry:
         key=lambda p: tuple(int(n) for n in re.findall(r"\d+", p.name.split("-")[0])),
     )
     rest = sorted((p for p in others if p not in features), key=lambda p: p.name)
-    if not features and not rest:
-        return {title: rel(index)}
     children: list[str | NavEntry] = [rel(index)]
     children.extend({page_title(p): rel(p)} for p in [*features, *rest])
     return {title: children}

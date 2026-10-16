@@ -65,8 +65,10 @@ nav:
     - specs/index.md
     - Epics: specs/epics/index.md
     - E1–E10:
-      - E1 — The canon and the hand-authored golden repos: specs/epics/E1-canon-and-golden-repos/index.md
-      - E2 — The layer split lands in the goldens: specs/epics/E2-layer-split-and-golden-rename/index.md
+      - E1 — The canon and the hand-authored golden repos:
+        - specs/epics/E1-canon-and-golden-repos/index.md
+      - E2 — The layer split lands in the goldens:
+        - specs/epics/E2-layer-split-and-golden-rename/index.md
       - E3 — Realign the goldens and the canon with pykit:
         - specs/epics/E3-realign-goldens-and-canon/index.md
         - F3.1 — Port `golden/python-app` and `golden/python-tool` to the Part E API: specs/epics/E3-realign-goldens-and-canon/F3.1-goldens-on-part-e-api.md
@@ -99,11 +101,13 @@ nav:
       - E7 — pykit releases, and the pin flip:
         - specs/epics/E7-pykit-release-pin-flip/index.md
         - F7.1 — kiln renders and takes pykit by release tag: specs/epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md
-      - E8 — The Azure DevOps CI provider: specs/epics/E8-ado-provider/index.md
+      - E8 — The Azure DevOps CI provider:
+        - specs/epics/E8-ado-provider/index.md
       - E9 — The node archetypes:
         - specs/epics/E9-node-archetypes/index.md
         - F9.1 — `node-lib` renders ngkit's CI: specs/epics/E9-node-archetypes/F9.1-node-lib-hosts-ngkit-ci.md
-      - E10 — kiln generators: specs/epics/E10-kiln-generators/index.md
+      - E10 — kiln generators:
+        - specs/epics/E10-kiln-generators/index.md
     - E11–E20:
       - E11 — Package docs sites:
         - specs/epics/E11-package-docs/index.md

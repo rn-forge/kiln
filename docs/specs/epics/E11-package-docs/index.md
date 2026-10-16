@@ -10,8 +10,8 @@
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
 | [F11.1 — The docs checks learn package sites](F11.1-checks-learn-package-sites.md) | Closed | release-1 | 3 Closed |
-| [F11.2 — `python-lib` repositories carry package docs sites](F11.2-python-lib-package-sites.md) | New | release-1 | 3 Closed · 1 Removed |
-| [F11.3 — `kiln generate package`](F11.3-generate-package.md) | New | release-1 | 1 Closed |
+| [F11.2 — `python-lib` repositories carry package docs sites](F11.2-python-lib-package-sites.md) | Closed | release-1 | 3 Closed · 1 Removed |
+| [F11.3 — `kiln generate package`](F11.3-generate-package.md) | Closed | release-1 | 1 Closed |
 | [F11.4 — The docs rules are one standard, and kiln owns them](F11.4-cross-repository-rule.md) | Closed | release-1 | 2 Closed |
 | [F11.5 — CI deploys versioned package sites](F11.5-deploy-package-sites.md) | New | release-2 | 1 New |
 

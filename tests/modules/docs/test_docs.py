@@ -355,7 +355,8 @@ class TestNav:
             "    - specs/index.md\n"
             "    - Epics: specs/epics/index.md\n"
             "    - E1\u2013E10:\n"
-            f"      - E1 \u2014 One: {e}/E1-one/index.md\n"
+            "      - E1 \u2014 One:\n"
+            f"        - {e}/E1-one/index.md\n"
             "      - E3 \u2014 Three:\n"
             f"        - {e}/E3-three/index.md\n"
             f"        - F3.1 \u2014 A: {e}/E3-three/F3.1-a.md\n"
@@ -363,7 +364,8 @@ class TestNav:
             f"        - F3.10 \u2014 B: {e}/E3-three/F3.10-b.md\n"
             f"        - Design: {e}/E3-three/design.md\n"
             "    - E11\u2013E20:\n"
-            f"      - E12 \u2014 Twelve: {e}/E12-twelve/index.md\n"
+            "      - E12 \u2014 Twelve:\n"
+            f"        - {e}/E12-twelve/index.md\n"
             "    - Ideas: specs/ideas.md\n"
         )
 

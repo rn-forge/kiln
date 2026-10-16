@@ -45,27 +45,27 @@ and retiring taskkit are [release-2](../release-2/index.md).
 | [F4.3 — The concern modules, with templates](../../specs/epics/E4-generator/F4.3-concern-modules.md) | E4 | Closed |
 | [F4.4 — The render matrix, and the goldens leave git](../../specs/epics/E4-generator/F4.4-render-matrix.md) | E4 | Closed |
 | [F4.5 — CLI](../../specs/epics/E4-generator/F4.5-cli.md) | E4 | Closed |
-| [F4.6 — doctor](../../specs/epics/E4-generator/F4.6-doctor.md) | E4 | New |
-| [F4.7 — Import contracts](../../specs/epics/E4-generator/F4.7-import-contracts.md) | E4 | New |
+| [F4.6 — doctor](../../specs/epics/E4-generator/F4.6-doctor.md) | E4 | Closed |
+| [F4.7 — Import contracts](../../specs/epics/E4-generator/F4.7-import-contracts.md) | E4 | Closed |
 | [F4.8 — Self-hosting](../../specs/epics/E4-generator/F4.8-self-hosting.md) | E4 | New |
 | [F4.9 — Seeded starter source](../../specs/epics/E4-generator/F4.9-seeded-starter-source.md) | E4 | Active |
 | [F5.1 — Library sets, and the modules gain the web shapes](../../specs/epics/E5-web-archetypes/F5.1-web-library-sets-and-modules.md) | E5 | Closed |
 | [F5.2 — `kiln new` end to end for the web archetypes](../../specs/epics/E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md) | E5 | Closed |
 | [F5.3 — Prove and ship the FastAPI cells](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) | E5 | Active |
 | [F6.1 — `python-lib` can host pykit](../../specs/epics/E6-rebuild-the-repos/F6.1-pykit-skeleton.md) | E6 | New |
-| [F6.3 — The generated CI matches the hardened upstream CI](../../specs/epics/E6-rebuild-the-repos/F6.3-hardened-ci.md) | E6 | New |
+| [F6.3 — The generated CI matches the hardened upstream CI](../../specs/epics/E6-rebuild-the-repos/F6.3-hardened-ci.md) | E6 | Closed |
 | [F6.4 — `python-lib` renders pykit's discovered workspace pipeline](../../specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md) | E6 | New |
 | [F7.1 — kiln renders and takes pykit by release tag](../../specs/epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md) | E7 | New |
 | [F9.1 — `node-lib` renders ngkit's CI](../../specs/epics/E9-node-archetypes/F9.1-node-lib-hosts-ngkit-ci.md) | E9 | New |
 | [F11.1 — The docs checks learn package sites](../../specs/epics/E11-package-docs/F11.1-checks-learn-package-sites.md) | E11 | Closed |
-| [F11.2 — `python-lib` repositories carry package docs sites](../../specs/epics/E11-package-docs/F11.2-python-lib-package-sites.md) | E11 | New |
-| [F11.3 — `kiln generate package`](../../specs/epics/E11-package-docs/F11.3-generate-package.md) | E11 | New |
+| [F11.2 — `python-lib` repositories carry package docs sites](../../specs/epics/E11-package-docs/F11.2-python-lib-package-sites.md) | E11 | Closed |
+| [F11.3 — `kiln generate package`](../../specs/epics/E11-package-docs/F11.3-generate-package.md) | E11 | Closed |
 | [F11.4 — The docs rules are one standard, and kiln owns them](../../specs/epics/E11-package-docs/F11.4-cross-repository-rule.md) | E11 | Closed |
 | [F13.1 — Derived regions, starting with the nav](../../specs/epics/E13-docs-work-model/F13.1-derived-regions.md) | E13 | Closed |
 | [F13.2 — The board and Scope regions, and metadata checks](../../specs/epics/E13-docs-work-model/F13.2-board-and-scope.md) | E13 | Closed |
 | [F13.3 — The seeded rules and kiln's own docs adopt the model](../../specs/epics/E13-docs-work-model/F13.3-adopt-the-model.md) | E13 | Closed |
-| [F14.1 — Area tabs, the epic ranges and the epic list](../../specs/epics/E14-site-navigation/F14.1-tabbed-navigation.md) | E14 | New |
-| [F14.2 — Epic and feature summary tables](../../specs/epics/E14-site-navigation/F14.2-work-summaries.md) | E14 | New |
+| [F14.1 — Area tabs, the epic ranges and the epic list](../../specs/epics/E14-site-navigation/F14.1-tabbed-navigation.md) | E14 | Closed |
+| [F14.2 — Epic and feature summary tables](../../specs/epics/E14-site-navigation/F14.2-work-summaries.md) | E14 | Closed |
 
 <!-- END derived scope -->
 
@@ -83,10 +83,13 @@ and retiring taskkit are [release-2](../release-2/index.md).
   accepted inside that repository (E11, F11.4).
 - [ADR-0003](../../adr/ADR-0003.md) — revision proposed 2026-10-01: generated
   regions, derived from the repository's inputs and never hashed (E13).
-- [ADR-0011](../../adr/ADR-0011.md) — proposed 2026-10-01: work is tracked as
+- [ADR-0011](../../adr/ADR-0011.md) — accepted 2026-10-01: work is tracked as
   Azure DevOps-shaped work items (E13).
-- [ADR-0012](../../adr/ADR-0012.md) — proposed 2026-10-01: every repository
+- [ADR-0012](../../adr/ADR-0012.md) — accepted 2026-10-01: every repository
   publishes one MkDocs site, whatever its language (E13).
+- [ADR-0013](../../adr/ADR-0013.md) — accepted 2026-10-14: the docs site
+  navigates by area tabs, and work pages open with derived summaries (F14.1,
+  F14.2).
 - [ADR-0014](../../adr/ADR-0014.md) — added 2026-10-14, revised 2026-10-16: a
   library workspace's CI is planned by rn-forge-devops, and its own members
   are exempt from the rn-forge dependency contract (F6.1, F6.4).
@@ -95,11 +98,18 @@ and retiring taskkit are [release-2](../release-2/index.md).
 
 ## Progress
 
-E3 shipped 2026-09-15. F4.1, F4.2, F5.1 and F5.2 are done (F5.2 apart from the
-deferred Django scaffold); F4.9 closed on 2026-10-13. F4.3 waits only on S4.3.6,
-the owner's Sonar decisions; F4.5 closed on 2026-10-13; F5.3 has S5.3.7,
-S5.3.2–S5.3.4 left. Next are F11.2–F11.3 (F4.4's `python-lib` cell needs
-S11.3.1), then F4.4, then F4.6–F4.8. F6.1 follows F11.1–F11.3
+As of 2026-10-16. E3 shipped 2026-09-15; F4.1–F4.7, F5.1, F5.2, F6.3,
+F11.1–F11.4, F13.1–F13.3 and F14.1–F14.2 are closed, the last seven on
+2026-10-16 when their acceptance blocks passed. F6.3's and F11.2's blocks were
+corrected for goldens that now render into `.goldens/working`, and F14.1's
+sidebar check found E1 missing from its range until S14.1.3 was corrected. Every
+story is closed in F4.9; the feature awaits the owner. F4.8 has one story, not
+started. F6.1 has S6.1.1 open: its fourth run found `tests/e2e/pykit_shape.sh`
+lists seven members where pykit has nine, and the rest is pykit's ruff and test
+fixes. F6.4's planner pin was met 2026-10-16 (`rn-forge-devops-v0.1.0`); S6.4.2
+onward are outlines. S7.1.1 waits on S7.1.2, because the web cells fail golden
+validate at tag pins. F5.3's S5.3.2 and S5.3.3 are the owner's to run from a
+clean clone, and S5.3.4 needs a target repository. F9.1 has no stories written
 ([board](../../specs/index.md#order)).
 
 ## Commits
@@ -107,7 +117,7 @@ S11.3.1), then F4.4, then F4.6–F4.8. F6.1 follows F11.1–F11.3
 Commits whose subject names a scope ID, newest first:
 
 ```bash
-git log --format='%h %ad %s' --date=short -E --grep='[FS](3\.[1-4]|4\.[1-9]|5\.[1-3]|6\.1|11\.[1-4])'
+git log --format='%h %ad %s' --date=short -E --grep='[FS](3\.[1-4]|4\.[1-9]|5\.[1-3]|6\.[134]|7\.1|9\.1|11\.[1-4]|13\.[1-3]|14\.[12])'
 ```
 
 - `6feaf37` 2026-09-26 S4.5.9 kiln new assembles in persistent staging
@@ -128,7 +138,11 @@ Earlier release-1 work also landed in commits whose subjects name no ID:
 - E3's acceptance block passes.
 - E4's acceptance block passes.
 - F11.1–F11.4's acceptance blocks pass. F11.5 is release-2.
-- F12.1's acceptance block passes. F12.2 is release-2.
+- E5's acceptance block passes: the FastAPI cells are proved and shipped.
+- F6.3's acceptance block passes.
+- F7.1's acceptance block passes: kiln pins pykit by release tag.
+- F13.1–F13.3's acceptance blocks pass. E12 (F12.1, F12.2) is release-2.
+- F14.1–F14.2's acceptance blocks pass.
 - F6.1's acceptance block passes: a pykit-shaped repository passes its own gate.
   Nothing in this release is checked inside pykit
   ([ADR-0009](../../adr/ADR-0009.md)).
