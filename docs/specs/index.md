@@ -47,9 +47,9 @@ theirs.
 
 | Pin | Needed by | Observed |
 | -- | -- | -- |
-| Every pykit package kiln renders resolves from its git source outside the pykit workspace | [E5](epics/E5-web-archetypes/index.md): `uv sync` of any web cell | yes (2026-10-04): both web cells sync and validate against pykit `main` `cba6d84` and kiln `feature/v1` |
-| pykit's release-1 tags exist | [E7](epics/E7-pykit-release-pin-flip/index.md) | yes (2026-10-14): `rn-forge-commons-v0.5.0`, `rn-forge-cli-v0.1.0`, `rn-forge-tooling-v0.2.0` and the web packages, released from pykit `main` `79bb296` |
-| `rn-forge-tooling` publishes the workspace planner as `rn_forge.tooling.workspace_ci` ([ADR-0014](../adr/ADR-0014.md)) | [F6.4](epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md): `task ci:plan` in a library workspace | not yet: the planner is `.github/scripts/workspace_ci.py` in pykit |
+| Every pykit package kiln renders resolves from its git source outside the pykit workspace | [E5](epics/E5-web-archetypes/index.md): `uv sync` of any web cell | yes (2026-10-04): both web cells sync and validate against pykit `main` `cba6d84` and kiln `feature/v1`. At tags (2026-10-16) they do not, until [S7.1.2](epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md#s712-the-root-pyprojecttoml-overrides-every-rn-forge-distribution-to-its-tag): pykit's workspace sources resolve per tag |
+| pykit's release-1 tags exist | [E7](epics/E7-pykit-release-pin-flip/index.md) | yes (2026-10-14): `rn-forge-commons-v0.5.0`, `rn-forge-cli-v0.1.0`, `rn-forge-tooling-v0.2.0` and the web packages, released from pykit `main` `79bb296`. pykit Release 4 (2026-10-16) added `rn-forge-commons-v0.6.0`, `rn-forge-data-v0.1.0`, `rn-forge-django-v0.5.0` and `rn-forge-fastapi-v0.3.0`; kiln's pins stay ([F7.1](epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md)) |
+| pykit publishes the workspace planner as the `rn-forge-devops` console script ([ADR-0014](../adr/ADR-0014.md)) | [F6.4](epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md): `task ci:plan` in a library workspace | yes (2026-10-16): `rn-forge-devops-v0.1.0`, released from pykit `4dadf2b`; `uvx` runs it from the tag outside the workspace |
 | pykit's default branch publishes versioned package sites under `https://rn-forge.github.io/pykit/packages/` | [S11.5.1](epics/E11-package-docs/F11.5-deploy-package-sites.md#s1151-ci-deploys-versioned-package-sites) | not yet |
 
 ## Order
@@ -67,7 +67,7 @@ now:   ADRs accepted ─→ S13.1.1 derived nav ─→ F13.2 board/scope ─→ 
        S4.5.3–S4.5.7 ─→ F4.6 doctor ──────────────────────────────────┼─→ F4.8 self-host
        F4.7 contracts ────────────────────────────────────────────────┘   F6.2 retire taskkit (after S4.6.2, S5.2.2)
        F7.1 tag pins
-       F6.3 CI hardening (after F4.4) ─→ F6.4 workspace pipeline (release-2, after F6.1)
+       F6.3 CI hardening (after F4.4) ─→ F6.4 workspace pipeline (after F6.1; planner pin met)
 triggered: E7 pykit tags · E8 ADO · F11.5 package-site deploy · backlog: E10 generators
 ```
 

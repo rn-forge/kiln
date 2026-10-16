@@ -26,5 +26,5 @@ it generates.
 | [0011](ADR-0011.md) | Work is tracked as Azure DevOps-shaped work items | the specs and releases of every generated repository, and kiln's |
 | [0012](ADR-0012.md) | Every repository publishes one MkDocs site, whatever its language | the docs site of every generated repository |
 | [0013](ADR-0013.md) | The docs site navigates by area tabs, and work pages open with derived summaries | the docs site of every generated repository, and kiln's |
-| [0014](ADR-0014.md) | A library workspace's CI is planned by rn-forge-tooling, and its own members are exempt from the rn-forge dependency contract | `python-lib` repositories, and `rn-forge-deps` everywhere |
+| [0014](ADR-0014.md) | A library workspace's CI is planned by rn-forge-devops, and its own members are exempt from the rn-forge dependency contract | `python-lib` repositories, and `rn-forge-deps` everywhere |
 | [0015](ADR-0015.md) | `node-lib` renders ngkit's CI: one release group, a dispatched release, and generated CI helpers | `node-lib` repositories |

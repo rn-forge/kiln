@@ -87,9 +87,9 @@ and retiring taskkit are [release-2](../release-2/index.md).
   Azure DevOps-shaped work items (E13).
 - [ADR-0012](../../adr/ADR-0012.md) — proposed 2026-10-01: every repository
   publishes one MkDocs site, whatever its language (E13).
-- [ADR-0014](../../adr/ADR-0014.md) — added 2026-10-14: a library workspace's CI
-  is planned by rn-forge-tooling, and its own members are exempt from the
-  rn-forge dependency contract (F6.1, F6.4).
+- [ADR-0014](../../adr/ADR-0014.md) — added 2026-10-14, revised 2026-10-16: a
+  library workspace's CI is planned by rn-forge-devops, and its own members
+  are exempt from the rn-forge dependency contract (F6.1, F6.4).
 - [ADR-0015](../../adr/ADR-0015.md) — added 2026-10-14: `node-lib` renders
   ngkit's CI (E9).
 
