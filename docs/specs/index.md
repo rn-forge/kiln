@@ -13,7 +13,7 @@ Backlog sections below are derived from the epic, feature and release pages by
 | Release | Status | Features |
 | -- | -- | -- |
 | [Release 2 — the architecture baseline, package-site deploys, and taskkit retired](../releases/release-2/index.md) | planned | 4 New |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 2 Active · 5 New · 23 Closed |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 2 Active · 4 New · 24 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -25,6 +25,7 @@ Features with no Iteration, by State and epic.
 | Epic | Features |
 | -- | -- |
 | [E2 — The layer split lands in the goldens](epics/E2-layer-split-and-golden-rename/index.md) | F2.9 |
+| [E6 — Rebuild the repos, retire the old](epics/E6-rebuild-the-repos/index.md) | [F6.5](epics/E6-rebuild-the-repos/F6.5-rebuild-and-port.md) |
 
 ### Deferred
 

@@ -8,7 +8,7 @@
 
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
-| [F7.1 — kiln renders and takes pykit by release tag](F7.1-tag-pins.md) | New | release-1 | 2 Closed |
+| [F7.1 — kiln renders and takes pykit by release tag](F7.1-tag-pins.md) | Closed | release-1 | 2 Closed |
 
 <!-- END derived features -->
 

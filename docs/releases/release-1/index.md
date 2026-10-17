@@ -55,7 +55,7 @@ and retiring taskkit are [release-2](../release-2/index.md).
 | [F6.1 — `python-lib` can host pykit](../../specs/epics/E6-rebuild-the-repos/F6.1-pykit-skeleton.md) | E6 | New |
 | [F6.3 — The generated CI matches the hardened upstream CI](../../specs/epics/E6-rebuild-the-repos/F6.3-hardened-ci.md) | E6 | Closed |
 | [F6.4 — `python-lib` renders pykit's discovered workspace pipeline](../../specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md) | E6 | New |
-| [F7.1 — kiln renders and takes pykit by release tag](../../specs/epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md) | E7 | New |
+| [F7.1 — kiln renders and takes pykit by release tag](../../specs/epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md) | E7 | Closed |
 | [F9.1 — `node-lib` renders ngkit's CI](../../specs/epics/E9-node-archetypes/F9.1-node-lib-hosts-ngkit-ci.md) | E9 | New |
 | [F11.1 — The docs checks learn package sites](../../specs/epics/E11-package-docs/F11.1-checks-learn-package-sites.md) | E11 | Closed |
 | [F11.2 — `python-lib` repositories carry package docs sites](../../specs/epics/E11-package-docs/F11.2-python-lib-package-sites.md) | E11 | Closed |
@@ -98,18 +98,22 @@ and retiring taskkit are [release-2](../release-2/index.md).
 
 ## Progress
 
-As of 2026-10-16. E3 shipped 2026-09-15; F4.1–F4.7, F5.1, F5.2, F6.3,
-F11.1–F11.4, F13.1–F13.3 and F14.1–F14.2 are closed, the last seven on
+As of 2026-10-16. E3 shipped 2026-09-15; F4.1–F4.7, F5.1, F5.2, F6.3, F7.1,
+F11.1–F11.4, F13.1–F13.3 and F14.1–F14.2 are closed, the last eight on
 2026-10-16 when their acceptance blocks passed. F6.3's and F11.2's blocks were
 corrected for goldens that now render into `.goldens/working`, and F14.1's
 sidebar check found E1 missing from its range until S14.1.3 was corrected. Every
 story is closed in F4.9; the feature awaits the owner. F4.8 has one story, not
-started. F6.1 has S6.1.1 open: its fourth run found `tests/e2e/pykit_shape.sh`
-lists seven members where pykit has nine, and the rest is pykit's ruff and test
-fixes. F6.4's planner pin was met 2026-10-16 (`rn-forge-devops-v0.1.0`); S6.4.2
-onward are outlines. S7.1.1 waits on S7.1.2, because the web cells fail golden
-validate at tag pins. F5.3's S5.3.2 and S5.3.3 are the owner's to run from a
-clean clone, and S5.3.4 needs a target repository. F9.1 has no stories written
+started. F6.1 has S6.1.1 open: its fifth run, after the script was corrected and
+pykit landed its F16.4, fails only because pykit's `rn-forge-devops` has no
+`docs/guides/`; it stays open for in-place adoption. S6.1.5 is closed, and run 1
+of adopting pykit in place, on an unmerged pykit branch, wrote S6.1.6–S6.1.13:
+`init` fixes, the shipped `adopt` prompt proved by a second pykit run, a
+decision on kiln's area rules, and S6.1.14's rules taken from pykit's.
+Rebuilding a far-off repository and porting it is F6.5, not yet scheduled.
+F6.4's planner pin was met 2026-10-16 (`rn-forge-devops-v0.1.0`); S6.4.2 onward
+are outlines. F5.3's S5.3.2 and S5.3.3 are the owner's to run from a clean
+clone, and S5.3.4 needs a target repository. F9.1 has no stories written
 ([board](../../specs/index.md#order)).
 
 ## Commits

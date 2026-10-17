@@ -111,6 +111,13 @@ def repo(
     scaffold_calls: list[str],
 ) -> Path:
     """A standard repository with no kiln state, no kiln blocks, files already equal."""
+    root = _unadopted(fresh, tmp_path)
+    monkeypatch.chdir(root)
+    return root
+
+
+def _unadopted(fresh: Path, tmp_path: Path) -> Path:
+    """A copy of *fresh* with its kiln state and kiln blocks removed."""
     root = tmp_path / fresh.name
     shutil.copytree(fresh, root, ignore=_IGNORE)
     for block in _blocks(root):
@@ -120,8 +127,7 @@ def repo(
             encoding="utf-8",
         )
     shutil.rmtree(root / ".rn-forge")
-    (root / ".git").mkdir()
-    monkeypatch.chdir(root)
+    (root / ".git").mkdir(exist_ok=True)
     return root
 
 
@@ -202,8 +208,6 @@ def test_s4_5_8_2_kilns_own_checkout_fails_and_leaves_no_umbrella(repo: Path) ->
     "missing",
     [
         "pyproject.toml",
-        "Taskfile.yml",
-        "tasks",
         ".github",
         "docs",
         "README.md",
@@ -224,14 +228,14 @@ def test_s4_5_8_2_a_missing_preflight_path_fails_and_leaves_no_umbrella(
 
 def test_s4_5_8_2_every_failed_condition_is_named_in_one_error(repo: Path) -> None:
     (repo / ".git").rmdir()
-    (repo / "Taskfile.yml").unlink()
-    shutil.rmtree(repo / "tasks")
+    (repo / "README.md").unlink()
+    shutil.rmtree(repo / "docs")
     with pytest.raises(AppException) as raised:
         commands.init(**SELECTORS)
     message = str(raised.value)
     assert "Git worktree" in message
-    assert "Taskfile.yml" in message
-    assert "tasks/" in message or "missing tasks" in message
+    assert "README.md" in message
+    assert "docs/" in message
     assert not (repo / ".rn-forge").exists()
 
 
@@ -377,3 +381,71 @@ def test_s4_5_8_a_failing_check_keeps_the_writes_and_the_archive(
     assert (repo / STATE).is_file()
     assert (repo / CONFIG).is_file()
     assert any((repo / ".rn-forge/kiln/backups").glob("*/Taskfile.yml"))
+
+
+@pytest.fixture
+def lib_fresh(rendered: Callable[[str], Path]) -> Path:
+    """The `new` python-lib repository with two packages; rendered before the scaffolds are fenced."""
+    return rendered("python-lib")
+
+
+@pytest.fixture
+def lib_repo(
+    lib_fresh: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    scaffold_calls: list[str],
+) -> Path:
+    """`lib_fresh`, not yet under kiln."""
+    root = _unadopted(lib_fresh, tmp_path)
+    monkeypatch.chdir(root)
+    return root
+
+
+def _packages_config(tmp_path: Path, *packages: str) -> str:
+    listed = ", ".join(f'"{package}"' for package in packages)
+    path = tmp_path / "adopt.toml"
+    path.write_text(
+        f'[archetype."python-lib"]\npackages = [{listed}]\n', encoding="utf-8"
+    )
+    return str(path)
+
+
+def test_s6_1_5_1_init_adopts_a_library_workspace_with_its_packages(
+    lib_repo: Path, lib_fresh: Path, tmp_path: Path
+) -> None:
+    packages = ["packages/lib-alpha", "packages/lib-beta"]
+    config = _packages_config(tmp_path, *packages)
+
+    commands.init(archetype="python-lib", config=config, yes=True)
+
+    written = tomllib.loads((lib_repo / CONFIG).read_text(encoding="utf-8"))
+    assert written["archetype"]["python-lib"]["packages"] == packages
+    assert _entries(lib_repo) == _entries(lib_fresh)
+
+
+@pytest.mark.parametrize("without_pyproject", [False, True])
+def test_s6_1_5_2_a_listed_package_must_exist(
+    lib_repo: Path, tmp_path: Path, without_pyproject: bool
+) -> None:
+    if without_pyproject:
+        (lib_repo / "packages/missing").mkdir()
+    config = _packages_config(tmp_path, "packages/lib-alpha", "packages/missing")
+
+    with pytest.raises(AppException, match="init.package-missing.*packages/missing"):
+        commands.init(archetype="python-lib", config=config, yes=True)
+    assert not (lib_repo / ".rn-forge").exists()
+
+
+def test_s6_1_5_3_init_renders_a_missing_taskfile_and_tasks(
+    repo: Path, fresh: Path
+) -> None:
+    (repo / "Taskfile.yml").unlink()
+    shutil.rmtree(repo / "tasks")
+
+    commands.init(**SELECTORS, yes=True)
+
+    assert (repo / "Taskfile.yml").read_bytes() == (fresh / "Taskfile.yml").read_bytes()
+    assert sorted(path.name for path in (repo / "tasks").iterdir()) == sorted(
+        path.name for path in (fresh / "tasks").iterdir()
+    )

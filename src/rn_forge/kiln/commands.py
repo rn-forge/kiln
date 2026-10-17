@@ -84,13 +84,12 @@ _CONFIG_HEADER = (
 
 _INIT_FILES = (
     "pyproject.toml",
-    "Taskfile.yml",
     "README.md",
     "CLAUDE.md",
     "AGENTS.md",
     ".gitignore",
 )
-_INIT_DIRECTORIES = ("tasks", ".github", "docs")
+_INIT_DIRECTORIES = (".github", "docs")
 
 _PACKAGE_NAME = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
 
@@ -266,6 +265,7 @@ def new(
         frontend=frontend,
         config=config,
         allow_untested=allow_untested,
+        allow_packages=False,
     )
     resolved = resolution.config
 
@@ -321,13 +321,18 @@ def init(
     `config.toml`, then applies, recording byte-identical managed files in the
     baseline without rewriting them, then runs `kiln doctor`'s checks.
 
+    A `python-lib` workspace is adopted with its members: unlike `new`, the
+    `--config` layer may list `packages`, each an existing directory with a
+    `pyproject.toml` (S6.1.5).
+
     `--force` approves every conflict at once: each conflicting target, and a
     prior `config.toml` and `state.json`, is first copied to
     `.rn-forge/kiln/backups/<UTC timestamp>/`. It never implies `--yes`.
 
     Raises:
         AppException: `--archetype` is missing, the current directory fails the
-            preflight (each failed condition is named), `state.json` already
+            preflight (each failed condition is named), a listed package has
+            no `pyproject.toml` (`init.package-missing`), `state.json` already
             exists, a conflict exists without `--force`, or the config, apply
             or check step fails.
     """
@@ -354,8 +359,10 @@ def init(
         frontend=frontend,
         config=config,
         allow_untested=False,
+        allow_packages=True,
     )
     resolved = resolution.config
+    _require_packages(root, resolved.packages)
     planned = cycle.adoption_plan(root, resolved)
 
     if not yes or dry_run:
@@ -395,6 +402,19 @@ def init(
         generate.generate(root, packages)
     _fail_on_errors(root)
     _report(root, resolved, _change_rows(result.changes))
+
+
+def _require_packages(root: Path, packages: tuple[str, ...]) -> None:
+    """Refuse a listed package that is not an existing member of *root*.
+
+    Raises:
+        AppException: Naming every package directory without a `pyproject.toml`.
+    """
+    missing = [p for p in packages if not (root / p / "pyproject.toml").is_file()]
+    if missing:
+        raise AppException(
+            "init.package-missing: no pyproject.toml in {}", ", ".join(missing)
+        )
 
 
 def _init_preflight(root: Path) -> None:
@@ -470,12 +490,17 @@ def _resolve_config(
     frontend: str | None,
     config: str | None,
     allow_untested: bool,
+    allow_packages: bool,
 ) -> tuple[ConfigManager, Resolution]:
     """Merge defaults, the `--config` layer and the flags for a repository called *name*.
 
+    `new` starts a `python-lib` repository empty; `init` adopts one with its
+    members, so only it passes *allow_packages*.
+
     Raises:
         AppException: The archetype is unknown, a flag names an untested value,
-            the config is invalid, or a `python-lib` config lists packages.
+            the config is invalid, or a `python-lib` config lists packages
+            without *allow_packages*.
     """
     manifest = archetypes.load(archetype)
     flags = _flag_layer(
@@ -505,7 +530,7 @@ def _resolve_config(
     source = Source.parse(config) if config else None
     resolution = manager.resolve(flags=flags, source=source)
     resolved = resolution.config
-    if resolved.archetype == "python-lib" and resolved.packages:
+    if resolved.archetype == "python-lib" and resolved.packages and not allow_packages:
         raise AppException(
             "config.packages-at-new: a python-lib repository starts with no "
             "packages; add each with 'kiln generate package <name>'"
