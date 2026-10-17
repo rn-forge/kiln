@@ -25,6 +25,7 @@ __all__ = [
     "NAV_BLOCK",
     "NavEntry",
     "build_nav",
+    "mark_nav",
     "page_title",
     "title_from_filename",
     "update_nav",
@@ -209,3 +210,37 @@ def update_nav(
         )
     updated = NAV_BLOCK.render(current, build_nav(docs_root, packages))
     return updated, updated != current
+
+
+def mark_nav(text: str) -> str:
+    """Return *text* with `NAV_BLOCK`'s markers placed around ``nav:``'s entries.
+
+    Text that already carries the markers is returned as it is. The entries are
+    the lines after the ``nav:`` line (at column 0) up to the first non-blank
+    line that does not start with a space; trailing blank lines stay outside.
+    With no ``nav:`` line, an empty marked nav is appended.
+    """
+    if NAV_BLOCK.extract(text) is not None:
+        return text
+    lines = text.splitlines(keepends=True)
+    start = next(
+        (i for i, line in enumerate(lines) if line.rstrip("\r\n") == "nav:"), None
+    )
+    if start is None:
+        head = text if text.endswith("\n") or not text else text + "\n"
+        return f"{head}\nnav:\n{NAV_BLOCK.begin}\n{NAV_BLOCK.end}\n"
+    first = start + 1
+    stop = first
+    last = first
+    while stop < len(lines) and (not lines[stop].strip() or lines[stop][0] == " "):
+        stop += 1
+        if lines[stop - 1].strip():
+            last = stop
+    before, entries, after = lines[:first], lines[first:last], lines[last:]
+    if before[-1][-1:] != "\n":
+        before[-1] += "\n"
+    if entries and entries[-1][-1:] != "\n":
+        entries[-1] += "\n"
+    return "".join(
+        [*before, NAV_BLOCK.begin, "\n", *entries, NAV_BLOCK.end, "\n", *after]
+    )

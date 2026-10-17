@@ -41,6 +41,7 @@ from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK
 from rn_forge.kiln.modules.core.config.manager import ConfigManager, Resolution
 from rn_forge.kiln.modules.core.config.sources import Source
 from rn_forge.kiln.modules.docs import generate
+from rn_forge.kiln.modules.docs.nav import NAV_BLOCK, mark_nav
 from rn_forge.kiln.modules.docs.scaffold import add_package as docs_add_package
 from rn_forge.kiln.modules.docs.scaffold import scaffold as docs_scaffold
 from rn_forge.kiln.modules.frontend.scaffold import (
@@ -323,6 +324,11 @@ def init(
     `--config` layer may list `packages`, each an existing directory with a
     `pyproject.toml` (S6.1.5).
 
+    An existing `mkdocs.yml` without the derived-nav markers is refused
+    (`init.nav-unmarked`); under `--force` it is archived and the markers are
+    placed around the nav's entries, which `docs-generate` then replaces
+    (S6.1.9).
+
     `--force` first fences an unfenced `.importlinter` (S6.1.7): kiln's
     `[importlinter]` section is dropped, the rest kept below the markers, and
     the original archived. It also approves every conflict at once: each
@@ -373,6 +379,8 @@ def init(
         if unfenced:
             _archive(root, [str(finding.path) for finding in unfenced], tag="-unfenced")
             cycle.fence(root, resolved)
+    if yes and not dry_run and resolved.docs_profile == "mkdocs":
+        _settle_nav(root, force)
     planned = cycle.adoption_plan(root, resolved)
 
     if not yes or dry_run:
@@ -417,6 +425,24 @@ def init(
         generate.generate(root, packages)
     _fail_on_errors(root)
     _report(root, resolved, _change_rows(result.changes))
+
+
+def _settle_nav(root: Path, force: bool) -> None:
+    """Refuse an unmarked `mkdocs.yml`, or under *force* archive it and mark its nav (S6.1.9)."""
+    path = root / "mkdocs.yml"
+    if not path.is_file():
+        return
+    text = path.read_text(encoding="utf-8")
+    if NAV_BLOCK.extract(text) is not None:
+        return
+    if not force:
+        raise AppException(
+            "init.nav-unmarked: mkdocs.yml has no '# BEGIN derived nav' / "
+            "'# END derived nav' markers — add them around nav's entries, or "
+            "pass --force to have kiln place them and derive the nav"
+        )
+    _archive(root, ["mkdocs.yml"], tag="-nav")
+    path.write_text(mark_nav(text), encoding="utf-8")
 
 
 def _dedupe_gitignore(root: Path) -> list[str]:

@@ -28,6 +28,7 @@ from rn_forge.tooling.generation.artifacts import block_from_entry
 
 from rn_forge.kiln import commands
 from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK
+from rn_forge.kiln.modules.docs.nav import NAV_BLOCK
 from rn_forge.kiln.modules.python.artifacts import IMPORTLINTER_BLOCK
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -564,3 +565,54 @@ def test_s6_1_8_2_a_negation_leaves_the_file_alone(repo: Path) -> None:
 
     text = (repo / ".gitignore").read_text(encoding="utf-8")
     assert text.split(GITIGNORE_BLOCK.begin, 1)[0].rstrip("\n") == original.rstrip("\n")
+
+
+def _unmark_nav(repo: Path) -> bytes:
+    path = repo / "mkdocs.yml"
+    lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
+    markers = (NAV_BLOCK.begin.strip(), NAV_BLOCK.end.strip())
+    text = "".join(line for line in lines if line.strip() not in markers)
+    path.write_text(text, encoding="utf-8")
+    _commit(repo)
+    return text.encode()
+
+
+def test_s6_1_9_1_unmarked_nav_is_refused_before_anything_is_written(
+    repo: Path,
+) -> None:
+    _unmark_nav(repo)
+    before = _snapshot(repo)
+
+    with pytest.raises(AppException, match="init.nav-unmarked") as error:
+        commands.init(**SELECTORS, yes=True)
+    assert "mkdocs.yml" in str(error.value)
+    assert "--force" in str(error.value)
+    assert _snapshot(repo) == before
+    assert not (repo / ".rn-forge").exists()
+
+
+def test_s6_1_9_2_force_marks_the_nav_and_derives_it(repo: Path, fresh: Path) -> None:
+    unmarked = _unmark_nav(repo)
+
+    commands.init(**SELECTORS, force=True, yes=True)
+
+    assert (repo / "mkdocs.yml").read_bytes() == (fresh / "mkdocs.yml").read_bytes()
+    archives = (repo / ".rn-forge/kiln/backups").glob("*/mkdocs.yml")
+    assert [a for a in archives if a.read_bytes() == unmarked]
+
+
+def test_s6_1_9_3_force_adds_a_nav_when_there_is_none(repo: Path, fresh: Path) -> None:
+    text = (repo / "mkdocs.yml").read_text(encoding="utf-8")
+    head = text.split("\nnav:\n", 1)[0]
+    tail = text.split(NAV_BLOCK.end, 1)[1]
+    (repo / "mkdocs.yml").write_text(head + "\n" + tail.lstrip("\n"), encoding="utf-8")
+    assert "nav:" not in (repo / "mkdocs.yml").read_text(encoding="utf-8")
+    _commit(repo)
+
+    commands.init(**SELECTORS, force=True, yes=True)
+
+    def nav(root: Path) -> str | None:
+        return NAV_BLOCK.extract((root / "mkdocs.yml").read_text(encoding="utf-8"))
+
+    assert nav(repo) is not None
+    assert nav(repo) == nav(fresh)
