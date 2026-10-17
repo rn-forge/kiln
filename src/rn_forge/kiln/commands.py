@@ -39,7 +39,7 @@ from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
 from rn_forge.kiln.modules.core import cycle, umbrella
 from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK
 from rn_forge.kiln.modules.core.config.manager import ConfigManager, Resolution
-from rn_forge.kiln.modules.core.config.sources import Source
+from rn_forge.kiln.modules.core.config.sources import Source, fetch
 from rn_forge.kiln.modules.docs import generate
 from rn_forge.kiln.modules.docs.nav import NAV_BLOCK, mark_nav
 from rn_forge.kiln.modules.docs.scaffold import add_package as docs_add_package
@@ -233,6 +233,9 @@ def new(
 ) -> None:
     """Create a repository at DIRECTORY, previewing unless `--yes` is given.
 
+    The repository's name is `--config`'s `[repository] name`, else the
+    directory's.
+
     Without `--yes`, prints the resolved config and the artifacts it would
     produce, and writes nothing. With `--yes`, writes `config.toml`, scaffolds
     the tree and applies it (kiln ADR-0004).
@@ -310,6 +313,9 @@ def init(
     json: bool = False,
 ) -> None:
     """Bring the existing standard repository in the current directory under kiln.
+
+    The repository's name is `--config`'s `[repository] name`, else the
+    directory's.
 
     `new`'s configuration and first-apply flow, run in place and never
     scaffolding. Requires a `.git` entry and a `pyproject.toml`; kiln renders
@@ -611,6 +617,17 @@ def _resolve_config(
             the config is invalid, or a `python-lib` config lists packages
             without *allow_packages*.
     """
+    if config:
+        fetched = fetch(Source.parse(config), Path.cwd())
+        configured = DictUtils.get(fetched.document, "repository.name")
+        if isinstance(configured, str):
+            if configured != name:
+                console.info(
+                    "repository name {} from --config (the directory is {})",
+                    configured,
+                    name,
+                )
+            name = configured
     manifest = archetypes.load(archetype)
     flags = _flag_layer(
         archetype=archetype,

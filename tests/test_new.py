@@ -268,6 +268,28 @@ def test_s4_5_1_config_layer_merges_beneath_flags_and_records_source(
     assert written["source"]["location"] == str(layer_dir)
 
 
+def test_s6_1_16_3_new_takes_the_name_from_config(tmp_path: Path) -> None:
+    layer_dir = tmp_path / "layer"
+    layer_dir.mkdir()
+    (layer_dir / "config.toml").write_text(
+        '[repository]\nname = "repo-name"\n', encoding="utf-8"
+    )
+
+    directory = tmp_path / "dir-name"
+    commands.new(
+        directory,
+        archetype="python-tool",
+        docs="none",
+        config=str(layer_dir),
+        yes=True,
+    )
+
+    written = tomllib.loads(
+        (directory / ".rn-forge" / "kiln" / "config.toml").read_text(encoding="utf-8")
+    )
+    assert written["repository"]["name"] == "repo-name"
+
+
 def _bare_layer_repo(tmp_path: Path, layer: str) -> tuple[str, str]:
     """A bare repo whose `main` holds *layer* as `config.toml`; (git+ URL, commit)."""
     work = tmp_path / "layer-work"

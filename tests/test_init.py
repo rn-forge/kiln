@@ -567,6 +567,54 @@ def test_s6_1_8_2_a_negation_leaves_the_file_alone(repo: Path) -> None:
     assert text.split(GITIGNORE_BLOCK.begin, 1)[0].rstrip("\n") == original.rstrip("\n")
 
 
+def _renamed_repo(fresh: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """An unadopted copy of *fresh* in a directory called `other-dir`, as the cwd."""
+    root = _unadopted(fresh, tmp_path / "unadopted").rename(tmp_path / "other-dir")
+    monkeypatch.chdir(root)
+    return root
+
+
+def _fresh_name(fresh: Path) -> str:
+    written = tomllib.loads((fresh / CONFIG).read_text(encoding="utf-8"))
+    return written["repository"]["name"]
+
+
+def test_s6_1_16_1_init_takes_the_name_from_config(
+    fresh: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    scaffold_calls: list[str],
+) -> None:
+    root = _renamed_repo(fresh, tmp_path, monkeypatch)
+    name = _fresh_name(fresh)
+    layer = tmp_path / "layer.toml"
+    layer.write_text(f'[repository]\nname = "{name}"\n', encoding="utf-8")
+
+    commands.init(**SELECTORS, config=str(layer), yes=True)
+
+    written = tomllib.loads((root / CONFIG).read_text(encoding="utf-8"))
+    assert written["repository"]["name"] == name
+    for file in root.rglob("*"):
+        if file.is_file() and ".git" not in file.parts:
+            assert b"other-dir" not in file.read_bytes(), file
+
+
+def test_s6_1_16_2_without_a_config_name_the_directory_names_it(
+    fresh: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    scaffold_calls: list[str],
+) -> None:
+    root = _renamed_repo(fresh, tmp_path, monkeypatch)
+    layer = tmp_path / "layer.toml"
+    layer.write_text("# no repository name\n", encoding="utf-8")
+
+    commands.init(**SELECTORS, config=str(layer), force=True, yes=True)
+
+    written = tomllib.loads((root / CONFIG).read_text(encoding="utf-8"))
+    assert written["repository"]["name"] == "other-dir"
+
+
 def _unmark_nav(repo: Path) -> bytes:
     path = repo / "mkdocs.yml"
     lines = path.read_text(encoding="utf-8").splitlines(keepends=True)
