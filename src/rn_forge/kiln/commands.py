@@ -37,6 +37,7 @@ from rn_forge.kiln import archetypes, checks
 from rn_forge.kiln import doctor as doctor_module
 from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
 from rn_forge.kiln.modules.core import cycle, umbrella
+from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK
 from rn_forge.kiln.modules.core.config.manager import ConfigManager, Resolution
 from rn_forge.kiln.modules.core.config.sources import Source
 from rn_forge.kiln.modules.docs import generate
@@ -406,11 +407,58 @@ def init(
         provenance=resolution.provenance_metadata(),
         adopt=True,
     )
+    removed = _dedupe_gitignore(root)
+    if removed:
+        console.info(
+            "removed {} line(s) from .gitignore that kiln's block holds", len(removed)
+        )
     if resolved.docs_profile == "mkdocs" and (root / "mkdocs.yml").is_file():
         packages = resolved.packages if resolved.archetype == "python-lib" else ()
         generate.generate(root, packages)
     _fail_on_errors(root)
     _report(root, resolved, _change_rows(result.changes))
+
+
+def _dedupe_gitignore(root: Path) -> list[str]:
+    """Drop the lines outside kiln's `.gitignore` block that the block already holds.
+
+    A pattern is a stripped line that is not blank and not a comment; its key
+    is the pattern without one trailing `/`. Any `!` pattern, inside or outside
+    the block, makes order matter, so the file is left alone.
+
+    Returns:
+        The dropped lines, without their line endings; empty when nothing was
+        removed.
+    """
+    path = root / ".gitignore"
+    if not path.is_file():
+        return []
+    text = path.read_text(encoding="utf-8")
+    body = GITIGNORE_BLOCK.extract(text)
+    if body is None:
+        return []
+
+    def pattern(line: str) -> str | None:
+        stripped = line.strip()
+        return stripped if stripped and not stripped.startswith("#") else None
+
+    outside = GITIGNORE_BLOCK.remove(text)
+    patterns = [p for line in (body + outside).splitlines() if (p := pattern(line))]
+    if any(p.startswith("!") for p in patterns):
+        return []
+    held = {p.removesuffix("/") for line in body.splitlines() if (p := pattern(line))}
+    kept: list[str] = []
+    dropped: list[str] = []
+    for line in outside.splitlines(keepends=True):
+        found = pattern(line)
+        if found is not None and found.removesuffix("/") in held:
+            dropped.append(line.rstrip("\r\n"))
+        else:
+            kept.append(line)
+    if not dropped:
+        return []
+    path.write_text(GITIGNORE_BLOCK.render("".join(kept), body), encoding="utf-8")
+    return dropped
 
 
 def _require_packages(root: Path, packages: tuple[str, ...]) -> None:

@@ -27,6 +27,7 @@ from rn_forge.tooling.generation import ArtifactKind, StateEntry
 from rn_forge.tooling.generation.artifacts import block_from_entry
 
 from rn_forge.kiln import commands
+from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK
 from rn_forge.kiln.modules.python.artifacts import IMPORTLINTER_BLOCK
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -533,3 +534,33 @@ def test_s6_1_7_2_without_force_it_is_still_refused(repo: Path) -> None:
     with pytest.raises(AppException, match="core.block-unfenced"):
         commands.init(**SELECTORS, yes=True)
     assert _snapshot(repo) == before
+
+
+_DUPLICATES = "# mine\n.DS_Store\n.ruff_cache\nnode_stuff/\n.pytest_cache\n"
+
+
+def test_s6_1_8_1_duplicates_outside_the_block_are_removed(
+    repo: Path, fresh: Path
+) -> None:
+    (repo / ".gitignore").write_text(_DUPLICATES, encoding="utf-8")
+    _commit(repo)
+
+    commands.init(**SELECTORS, yes=True)
+
+    block = GITIGNORE_BLOCK
+    text = (repo / ".gitignore").read_text(encoding="utf-8")
+    assert text.split(block.begin, 1)[0] == "# mine\nnode_stuff/\n\n"
+    assert block.extract(text) == block.extract(
+        (fresh / ".gitignore").read_text(encoding="utf-8")
+    )
+
+
+def test_s6_1_8_2_a_negation_leaves_the_file_alone(repo: Path) -> None:
+    original = _DUPLICATES + "!keep.log\n"
+    (repo / ".gitignore").write_text(original, encoding="utf-8")
+    _commit(repo)
+
+    commands.init(**SELECTORS, yes=True)
+
+    text = (repo / ".gitignore").read_text(encoding="utf-8")
+    assert text.split(GITIGNORE_BLOCK.begin, 1)[0].rstrip("\n") == original.rstrip("\n")
