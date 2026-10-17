@@ -16,7 +16,7 @@
 | [F4.5 — CLI](F4.5-cli.md) | Closed | release-1 | 10 Closed |
 | [F4.6 — doctor](F4.6-doctor.md) | Closed | release-1 | 5 Closed |
 | [F4.7 — Import contracts](F4.7-import-contracts.md) | Closed | release-1 | 3 Closed |
-| [F4.8 — Self-hosting](F4.8-self-hosting.md) | New | release-1 | 1 New |
+| [F4.8 — Self-hosting](F4.8-self-hosting.md) | New | release-1 | 2 New |
 | [F4.9 — Seeded starter source](F4.9-seeded-starter-source.md) | Active | release-1 | 5 Closed |
 
 <!-- END derived features -->
