@@ -111,6 +111,15 @@ Read kiln's block and the repository's text together:
   pykit's `CLAUDE.md` pointed at `uv run` commands that the block forbids).
 - Check the guides and runbooks the instructions link to for the same
   contradictions, and fix them on the page.
+- A document contradicts kiln's block when it tells a developer to run, in this
+  repository, a tool that a root `task` verb wraps (`uv run pytest` is
+  `task test`, `uv run ruff check` is `task lint`, `uv sync` is `task setup`,
+  `mkdocs build` is `task docs:build`). Rewrite those to the verb. Leave
+  commands with no verb (`uv add`, `uv lock`, `uv build`), and commands for a
+  consumer outside the repository (a README's `uvx …` install line). No check
+  finds these: grep the docs, `README.md` and `CLAUDE.md` for `uv run`,
+  `pytest`, `ruff`, `pyright`, `mkdocs` (run 2: pykit's `development.md`,
+  `README.md`, `releasing-packages.md`).
 
 ## 6. Seeded files that kiln's checks need in a given shape
 
@@ -155,7 +164,19 @@ repository: add it, pinned. While kiln is not released, use the editable
 checkout (`uv add --dev --editable <kiln>`). A workspace that publishes
 libraries kiln itself depends on needs the override that makes kiln take the
 workspace copies rather than the published ones (ADR-0006; run 1: pykit's
-commons, cli and tooling). Then `task setup`.
+commons, cli and tooling). In the root `pyproject.toml`, written before
+`uv add --dev --editable <kiln>`, list every workspace member kiln depends on,
+with the extras the workspace already uses (an override replaces the
+requirement, extras included):
+
+```toml
+[tool.uv]
+override-dependencies = ["rn-forge-commons[all]", "rn-forge-cli", "rn-forge-tooling"]
+```
+
+Adding a dependency changes the repository's lock, so an agent should expect to
+need the owner's approval for it (run 2: it was refused until approved). Then
+`task setup`.
 
 ## 9. Run the gate and sort what is left
 
