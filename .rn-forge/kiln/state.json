@@ -72,7 +72,7 @@
     },
     "docs/_structure.md": {
       "begin_marker": null,
-      "content_hash": "636a6df0e0939bff7769e102bbbae16ced16e1eca229086c310246b6caeaefd6",
+      "content_hash": "a802ebb8d313f5c64c7aa7b96c74b6d276672fb8ac11defcf3a4158caf8b5ba4",
       "end_marker": null,
       "kind": "managed",
       "path": "docs/_structure.md"
@@ -142,7 +142,7 @@
     },
     "docs/releases/_structure.md": {
       "begin_marker": null,
-      "content_hash": "8f6956ad17a8975ad949d76eb221b3d3b2f7de28b86350272b7e24c2f7b143f1",
+      "content_hash": "01235b24fe824402aefd463e15822d3c9748d7de5e40e996c93b6e84d97658c9",
       "end_marker": null,
       "kind": "managed",
       "path": "docs/releases/_structure.md"
@@ -170,7 +170,7 @@
     },
     "docs/specs/_structure.md": {
       "begin_marker": null,
-      "content_hash": "14412da8f909bc52bb2e17de9c90f907e0d6169f967584783e6c5a2940e928f1",
+      "content_hash": "5f7e93ecd55b3e86420ada3993ecf38dcdf58be3ff342629390bb68134e6c6b0",
       "end_marker": null,
       "kind": "managed",
       "path": "docs/specs/_structure.md"

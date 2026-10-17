@@ -12,6 +12,9 @@
   code, keeps its features as rows in its `index.md`, with no feature files.
 - Design for work not yet built: a `## Design` section in the feature it belongs
   to, or `design.md` in the epic when it spans features.
+- The reasoning behind a feature's `Source`, `Predecessors` or `Entry criteria`
+  value that will not fit the table cell, or the feature's trigger, in its
+  `## Context` section — never in the cell.
 - Open questions, as a `## Open questions` section on the epic or feature they
   block.
 - Ideas not yet agreed as work, in `ideas.md`.
@@ -113,6 +116,11 @@ A feature, `epics/E<n>-<slug>/F<n>.<m>-<slug>.md`:
 
 <one paragraph: what the feature delivers>
 
+## Context
+
+<optional: reasoning behind a Source, Predecessors or Entry criteria value that
+will not fit the table cell, or the feature's trigger>
+
 ## S<n>.<m>.1 — <Title>
 
 **State:** New
@@ -126,6 +134,12 @@ A feature, `epics/E<n>-<slug>/F<n>.<m>-<slug>.md`:
 <the feature's acceptance block, when it has two or more stories>
 ```
 
+A feature's optional sections, when present, come in this order: `## Context`
+and `## Design` before the first story; `## Acceptance`,
+`## Considered and rejected` and `## Open questions` after the last. An epic
+page ends with `## Considered and rejected`, then `## Open questions`, when it
+has them.
+
 An epic design, `epics/E<n>-<slug>/design.md`, opens with what it covers and the
 feature that settles it into ADRs and implementation. Nothing in it is decided
 until it is.
@@ -133,8 +147,13 @@ until it is.
 ## Naming
 
 - `epics/E<n>-<slug>/` directories; feature files `F<n>.<m>-<slug>.md`.
-- IDs are permanent: never renumber; a moved story keeps its ID. Gaps are fine.
-  Retired work keeps its ID as `Removed`, and the ID is never reused.
+- An ID is permanent once a commit names it, or once the item is `Active` or
+  `Closed`: from then on it is never renumbered, and a moved story keeps its
+  ID. Gaps are fine.
+- A `New` item that no commit names takes its new parent's next free ID when it
+  moves to another epic or feature, and its stories are renumbered with it.
+  Its old ID is left as a gap, never reused.
+- Retired work keeps its ID as `Removed`, and the ID is never reused.
 
 ## Changing this area
 
@@ -198,6 +217,17 @@ may name removed behaviour to say it is gone.
 **Deferred work:** do not start or elaborate work tagged `deferred` unless the
 owner asks. When its entry criteria hold, drop the tag and the `Entry criteria`
 row, and give it an `Iteration` once it has a release. Nothing renumbers.
+
+**Moving work:** to move a feature to another epic, or a story to another
+feature, first check that the item can be renumbered:
+
+```bash
+git log --oneline -E --grep='<old ID>'   # must print nothing
+```
+
+If it prints nothing and the item is `New`, rename it to the next free ID under
+its new parent (file, heading, stories and every link and mention), and set
+`Parent`; otherwise it keeps its ID. Run `task docs:generate` either way.
 
 **Retiring work:** a story, feature or epic no longer needed becomes `Removed`
 in place, with one line saying why.

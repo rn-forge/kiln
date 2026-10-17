@@ -25,8 +25,9 @@ Every epic, by number, is on [the epic list](epics/index.md).
 ## Conventions
 
 - **Taxonomy.** Epic `E<n>` → feature `F<n>.<m>` → story `S<n>.<m>.<k>`. The
-  prefix chain locates a bare ID without a lookup. IDs are permanent: a moved
-  story keeps its ID, and gaps are fine.
+  prefix chain locates a bare ID without a lookup. IDs are permanent once a
+  commit names them or work starts; a `New` item no commit names takes its new
+  parent's next ID when it moves. Gaps are fine.
 - **Every piece of work is an epic**, closed work included. There is no build
   log.
 - **State lives on the work.** Epics and features carry `State` in a metadata

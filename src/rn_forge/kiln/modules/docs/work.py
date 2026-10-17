@@ -478,6 +478,43 @@ def validate(work: Work, repo_root: Path) -> list[Finding]:
                 err(page, "dates", "is shipped but has no Finish Date")
 
     _identities(work, rel, err)
+    out.extend(_contradictions(work, rel))
+    return out
+
+
+_CONTRADICTS = {"New": ("Active", "Closed"), "Closed": ("New", "Active")}
+
+
+def _contradictions(work: Work, rel: Callable[[Page], str]) -> list[Finding]:
+    """An epic or feature whose state its features or stories contradict."""
+    out: list[Finding] = []
+
+    def check(page: Page, children: list[tuple[str, str]]) -> None:
+        state = page.get("State") or ""
+        bad = [(i, s) for i, s in children if s in _CONTRADICTS.get(state, ())]
+        if bad:
+            out.append(
+                Finding(
+                    "docs.state-contradicts-work",
+                    Severity.ERROR,
+                    f"is {state} but " + ", ".join(f"{i} is {s}" for i, s in bad),
+                    path=rel(page),
+                )
+            )
+
+    for epic in work.epics:
+        features = [f for f in work.features if f.epic_dir == epic.dir]
+        ids = {f.id for f in features}
+        check(
+            epic.page,
+            [(f.id, f.page.get("State") or "") for f in features]
+            + [(row.id, row.state) for row in epic.rows if row.id not in ids],
+        )
+    for feature in work.features:
+        check(
+            feature.page,
+            [(story.id, story.state.split(" ")[0]) for story in feature.stories],
+        )
     return out
 
 

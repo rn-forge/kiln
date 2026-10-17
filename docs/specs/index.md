@@ -13,7 +13,7 @@ Backlog sections below are derived from the epic, feature and release pages by
 | Release | Status | Features |
 | -- | -- | -- |
 | [Release 2 — the architecture baseline, package-site deploys, and taskkit retired](../releases/release-2/index.md) | planned | 4 New |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 2 Active · 4 New · 24 Closed |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 3 Active · 4 New · 24 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -24,13 +24,13 @@ Features with no Iteration, by State and epic.
 
 | Epic | Features |
 | -- | -- |
-| [E2 — The layer split lands in the goldens](epics/E2-layer-split-and-golden-rename/index.md) | F2.9 |
 | [E6 — Rebuild the repos, retire the old](epics/E6-rebuild-the-repos/index.md) | [F6.5](epics/E6-rebuild-the-repos/F6.5-rebuild-and-port.md) |
 
 ### Deferred
 
 | Epic | Features | Entry criteria |
 | -- | -- | -- |
+| [E5 — The web archetypes](epics/E5-web-archetypes/index.md) | [F5.4](epics/E5-web-archetypes/F5.4-django-scaffold.md) | Per feature; see the epic. |
 | [E8 — The Azure DevOps CI provider](epics/E8-ado-provider/index.md) | — | a repo needs `ci.provider = "ado"`. The intellibuild plan holds the question of whether intellibuild is that repo |
 | [E10 — kiln generators](epics/E10-kiln-generators/index.md) | — | release-1 has shipped and the owner picks this up for elaboration |
 
@@ -58,7 +58,7 @@ theirs.
 ```text
 done:  E1 ─→ E2 ─→ E3 ─→ F4.1 ─→ F4.2 ─→ S4.3.1–S4.3.5 ─→ S4.5.1–S4.5.6
 done:  F5.1 ─→ F5.2 fastapi ─→ S5.2.4 frontend module ─→ S4.5.9 staged `new` ─→ S5.3.1 fresh-repo gate fixes ─→ S5.3.5 quality commands ─→ S5.3.6 setup experience
-       (Django S5.2.3 deferred)
+       (Django deferred: F5.4)
 now:   ADRs accepted ─→ S13.1.1 derived nav ─→ F13.2 board/scope ─→ F13.3 adopt the model
        F11.1 checks ─→ F11.2 python-lib package sites ─→ F11.3 generate package   (S11.4.2 after S13.3.1)
        S12.1.1 accept ─→ S12.1.2–S12.1.4 baseline ─→ F4.4 · F12.1 ─→ F12.2 web records (release-2)
@@ -120,8 +120,9 @@ whoever builds the story — a person, or an agent of any size.
 ## Conventions
 
 - **Taxonomy.** Epic `E<n>` → feature `F<n>.<m>` → story `S<n>.<m>.<k>`. The
-  prefix chain locates a bare ID without a lookup. IDs are permanent: a moved
-  story keeps its ID, and gaps are fine.
+  prefix chain locates a bare ID without a lookup. IDs are permanent once a
+  commit names them or work starts; a `New` item no commit names takes its new
+  parent's next ID when it moves. Gaps are fine.
 - **Every piece of work is an epic**, closed work included. There is no build
   log.
 - **State lives on the work.** Epics and features carry `State` in a metadata

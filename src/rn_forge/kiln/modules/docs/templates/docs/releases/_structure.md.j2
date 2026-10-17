@@ -18,8 +18,9 @@
     - **Commits**: the `git log --grep` command that lists commits naming a scope
       ID, and its output, refreshed at least at the cut.
     - **Exit criteria**: what must hold for the release to ship.
-    - **Shipped**: once shipped, the release evidence — each version and tag, its
-      commit, and what was checked.
+    - **Shipped**: once shipped, the release evidence, as a table with one row per
+      deliverable (each package, in a library): its version, tag, commit, and
+      what was checked.
 - `index.md`, listing every release newest first, each linked, with its status.
 
 ## Does not belong here
@@ -56,6 +57,13 @@ A release page opens like this:
 | -- | -- | -- |
 
 <!-- END derived scope -->
+
+<the other sections, in the order above>
+
+## Shipped
+
+| Deliverable | Version | Tag | Commit | Verification |
+| -- | -- | -- | -- | -- |
 ```
 
 - `Status` is `planned`, `in progress` or `shipped`. A release closes on scope,

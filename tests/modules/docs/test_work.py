@@ -570,3 +570,88 @@ def test_s14_2_3_scope_link_text_is_the_title_with_pipes_escaped(
     scope = render_scope(work, work.releases[0])
     assert "| [F1.1 \u2014 A \\| B](../../specs/epics/E1-x/F1.1-a.md) |" in scope
     _stable(SCOPE_BLOCK, scope)
+
+
+def _states(epic: str, feature: str, story: str | None = None) -> dict[str, str]:
+    """A one-epic, one-feature tree in the given states, each page otherwise valid."""
+
+    def dates(state: str) -> str:
+        if state == "New":
+            return ""
+        closed = "| **Closed Date** | 2026-01-02 |\n" if state == "Closed" else ""
+        return "| **Start Date** | 2026-01-01 |\n" + closed
+
+    iteration = (
+        "| **Iteration** | [release-1](../../../releases/release-1/index.md) |\n"
+        if feature != "New"
+        else ""
+    )
+    epic_page = f"# E1 — Epic\n\n{TABLE}| **State** | {epic} |\n{dates(epic)}"
+    if feature == "Closed":
+        feature_dates = "| **Closed Date** | 2026-01-02 |\n"
+    else:
+        feature_dates = ""
+    feature_page = (
+        f"# F1.1 — A\n\n{TABLE}| **State** | {feature} |\n| **Parent** | E1 |\n"
+        f"{iteration}{feature_dates}| **Predecessors** | — |\n"
+    )
+    if story is not None:
+        feature_page += f"\nText.\n\n## S1.1.1 — A story\n\n**State:** {story}\n"
+    return {E: epic_page, F1: feature_page, R: RELEASE}
+
+
+@pytest.mark.parametrize(
+    ("epic", "feature", "story", "path"),
+    [
+        ("New", "Active", None, E),
+        ("New", "Closed", None, E),
+        ("Closed", "New", None, E),
+        ("Closed", "Active", None, E),
+        ("Active", "New", "Active", F1),
+        ("Active", "New", "Closed (2026-01-02)", F1),
+        ("Active", "Closed", "New", F1),
+        ("Active", "Closed", "Active", F1),
+    ],
+)
+def test_s6_1_14_4_a_state_contradicting_its_work_is_reported(
+    tmp_path: Path, epic: str, feature: str, story: str | None, path: str
+) -> None:
+    docs = tmp_path / "docs"
+    for name, text in _states(epic, feature, story).items():
+        (docs / name).parent.mkdir(parents=True, exist_ok=True)
+        (docs / name).write_text(text, encoding="utf-8")
+    findings = validate(load_work(docs), tmp_path)
+    assert [f.code for f in findings] == ["docs.state-contradicts-work"]
+    assert findings[0].path == f"docs/{path}"
+
+
+@pytest.mark.parametrize(
+    ("epic", "feature", "story"),
+    [
+        ("New", "New", "New"),
+        ("Active", "Active", "Closed (2026-01-02)"),
+        ("Active", "New", None),
+        ("Closed", "Closed", "Closed (2026-01-02)"),
+        ("Closed", "Closed", "Removed"),
+        ("New", "New", "Removed"),
+    ],
+)
+def test_s6_1_14_4_states_that_agree_report_nothing(
+    tmp_path: Path, epic: str, feature: str, story: str | None
+) -> None:
+    assert codes(tmp_path, _states(epic, feature, story)) == []
+
+
+def test_s6_1_14_4_a_removed_feature_is_ignored(tmp_path: Path) -> None:
+    files = _states("Closed", "Removed")
+    assert codes(tmp_path, files) == []
+
+
+def test_s6_1_14_4_a_hand_written_row_counts_as_a_feature(tmp_path: Path) -> None:
+    epic = (
+        f"# E1 — Epic\n\n{TABLE}| **State** | Closed |\n"
+        "| **Start Date** | 2026-01-01 |\n| **Closed Date** | 2026-01-02 |\n\n"
+        "| ID | Scope | State |\n| -- | -- | -- |\n| F1.1 | A | Closed |\n"
+        "| F1.2 | B | New |\n"
+    )
+    assert codes(tmp_path, {E: epic, R: RELEASE}) == ["docs.state-contradicts-work"]

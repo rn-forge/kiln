@@ -92,6 +92,7 @@ nav:
         - F5.1 — Library sets, and the modules gain the web shapes: specs/epics/E5-web-archetypes/F5.1-web-library-sets-and-modules.md
         - F5.2 — `kiln new` end to end for the web archetypes: specs/epics/E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md
         - F5.3 — Prove and ship the FastAPI cells: specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md
+        - F5.4 — The Django scaffold: specs/epics/E5-web-archetypes/F5.4-django-scaffold.md
       - E6 — Rebuild the repos, retire the old:
         - specs/epics/E6-rebuild-the-repos/index.md
         - F6.1 — `python-lib` can host pykit: specs/epics/E6-rebuild-the-repos/F6.1-pykit-skeleton.md
@@ -102,6 +103,7 @@ nav:
       - E7 — pykit releases, and the pin flip:
         - specs/epics/E7-pykit-release-pin-flip/index.md
         - F7.1 — kiln renders and takes pykit by release tag: specs/epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md
+        - F7.2 — A tagged kiln release, taken by each repository: specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md
       - E8 — The Azure DevOps CI provider:
         - specs/epics/E8-ado-provider/index.md
       - E9 — The node archetypes:

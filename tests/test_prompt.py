@@ -73,3 +73,24 @@ def test_s4_5_6_5_the_runbook_is_gone_and_unlinked() -> None:
     assert "carrying-specs-and-decisions" not in (ROOT / "mkdocs.yml").read_text(
         encoding="utf-8"
     )
+
+
+def test_s6_1_12_adopt_is_shipped(capsys: pytest.CaptureFixture[str]) -> None:
+    commands.prompt(json=True)
+    names = [p["name"] for p in json.loads(capsys.readouterr().out)["prompts"]]
+    assert "adopt" in names
+    commands.prompt("adopt")
+    text = capsys.readouterr().out
+    for heading in (
+        "Choose the route",
+        "Prepare",
+        "Preview and sort the plan",
+        "Apply",
+        "Reconcile the files kiln inserted a block into",
+        "Seeded files that kiln's checks need in a given shape",
+        "Convert the specs to kiln's work model",
+        "Make the gate runnable",
+        "Run the gate and sort what is left",
+        "Review",
+    ):
+        assert f". {heading}" in text

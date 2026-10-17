@@ -31,7 +31,7 @@ about to be moved; then the split; then the re-layout; then the consumers.
 | F2.6 | F7 — CI: cli and tooling in pykit's package verification, `lint-imports` as a required gate | pykit | Closed |
 | F2.7 | F9 + F14 — release contract and instructions | pykit | Closed |
 | F2.8 | **Rename the golden repos and add the missing ones (D53).** `golden/python-cli` → `golden/python-tool`; a new `golden/python-app`. `golden/python-lib` unchanged. Update kiln's own `.rn-forge/kiln/config.toml` to `python-tool`, re-render `.rn-forge/kiln/standard.md`, and **re-seed `state.json`**. | kiln | Closed |
-| F2.9 | **Close Phase C's addendum (F8)** — cut the first `rn-forge-cli` and `rn-forge-tooling` releases and re-point every pin at a tag (now [E7](../E7-pykit-release-pin-flip/index.md)) | kiln + pykit | New |
+| F2.9 | **Close Phase C's addendum (F8)** — cut the first `rn-forge-cli` and `rn-forge-tooling` releases and re-point every pin at a tag. Removed 2026-10-17: absorbed by [E7](../E7-pykit-release-pin-flip/index.md) | kiln + pykit | Removed |
 | F2.10 | **Prove declarative CLI construction.** `golden/python-app` contains a working CLI with **zero hand-written app construction** | kiln | Closed |
 
 ### F2.9 — as it stood when deferred
