@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import subprocess
 import tomllib
 from collections.abc import Callable
 from pathlib import Path
@@ -127,8 +128,20 @@ def _unadopted(fresh: Path, tmp_path: Path) -> Path:
             encoding="utf-8",
         )
     shutil.rmtree(root / ".rn-forge")
-    (root / ".git").mkdir(exist_ok=True)
+    _git(root, "init", "-q")
+    _git(root, "add", "-A")
+    _git(root, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "base")
     return root
+
+
+def _git(root: Path, *args: str) -> None:
+    subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
+
+
+def _commit(root: Path) -> None:
+    """Commit every change in *root*, leaving the tree clean."""
+    _git(root, "add", "-A")
+    _git(root, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "edit")
 
 
 def _tamper_block(root: Path, fresh: Path, path: str) -> None:
@@ -168,6 +181,7 @@ def test_s4_5_8_1_force_over_differences_reproduces_a_fresh_new(
 ) -> None:
     (repo / "Taskfile.yml").write_text("# hand made\n", encoding="utf-8")
     _tamper_block(repo, fresh, "CLAUDE.md")
+    _commit(repo)
 
     commands.init(**SELECTORS, force=True, yes=True)
 
@@ -187,7 +201,7 @@ def test_s4_5_8_1_force_over_differences_reproduces_a_fresh_new(
 def test_s4_5_8_2_outside_a_git_worktree_fails_and_leaves_no_umbrella(
     repo: Path,
 ) -> None:
-    (repo / ".git").rmdir()
+    shutil.rmtree(repo / ".git")
     with pytest.raises(AppException, match="Git worktree"):
         commands.init(**SELECTORS, yes=True)
     assert not (repo / ".rn-forge").exists()
@@ -206,15 +220,7 @@ def test_s4_5_8_2_kilns_own_checkout_fails_and_leaves_no_umbrella(repo: Path) ->
 
 @pytest.mark.parametrize(
     "missing",
-    [
-        "pyproject.toml",
-        ".github",
-        "docs",
-        "README.md",
-        "CLAUDE.md",
-        "AGENTS.md",
-        ".gitignore",
-    ],
+    ["pyproject.toml"],
 )
 def test_s4_5_8_2_a_missing_preflight_path_fails_and_leaves_no_umbrella(
     repo: Path, missing: str
@@ -227,15 +233,13 @@ def test_s4_5_8_2_a_missing_preflight_path_fails_and_leaves_no_umbrella(
 
 
 def test_s4_5_8_2_every_failed_condition_is_named_in_one_error(repo: Path) -> None:
-    (repo / ".git").rmdir()
-    (repo / "README.md").unlink()
-    shutil.rmtree(repo / "docs")
+    shutil.rmtree(repo / ".git")
+    (repo / "pyproject.toml").unlink()
     with pytest.raises(AppException) as raised:
         commands.init(**SELECTORS)
     message = str(raised.value)
     assert "Git worktree" in message
-    assert "README.md" in message
-    assert "docs/" in message
+    assert "pyproject.toml" in message
     assert not (repo / ".rn-forge").exists()
 
 
@@ -250,6 +254,7 @@ def test_s4_5_8_3_unforced_conflicts_are_all_named_and_nothing_changes(
 ) -> None:
     (repo / "Taskfile.yml").write_text("# hand made\n", encoding="utf-8")
     _tamper_block(repo, fresh, "CLAUDE.md")
+    _commit(repo)
     before = _snapshot(repo)
 
     with pytest.raises(AppException) as raised:
@@ -265,6 +270,7 @@ def test_s4_5_8_3_a_block_without_a_state_entry_is_a_conflict_even_if_equal(
     repo: Path, fresh: Path
 ) -> None:
     (repo / "CLAUDE.md").write_bytes((fresh / "CLAUDE.md").read_bytes())
+    _commit(repo)
     before = _snapshot(repo)
 
     with pytest.raises(AppException, match="CLAUDE.md"):
@@ -277,6 +283,7 @@ def test_s4_5_8_3_an_existing_config_without_state_is_a_conflict(
 ) -> None:
     (repo / CONFIG).parent.mkdir(parents=True)
     (repo / CONFIG).write_text("# mine\n", encoding="utf-8")
+    _commit(repo)
     with pytest.raises(AppException, match="config.toml"):
         commands.init(**SELECTORS, yes=True)
     assert (repo / CONFIG).read_text(encoding="utf-8") == "# mine\n"
@@ -291,6 +298,7 @@ def test_s4_5_8_4_force_archives_every_overwritten_target(
     claude_before = (repo / "CLAUDE.md").read_bytes()
     gitignore = repo / ".gitignore"
     gitignore.write_text("custom-entry\n", encoding="utf-8")
+    _commit(repo)
 
     commands.init(**SELECTORS, force=True, yes=True)
 
@@ -306,6 +314,7 @@ def test_s4_5_8_4_force_archives_every_overwritten_target(
 
 def test_s4_5_8_5_a_second_unforced_init_fails_naming_the_state(repo: Path) -> None:
     commands.init(**SELECTORS, yes=True)
+    _commit(repo)
     before = _snapshot(repo)
 
     with pytest.raises(AppException, match="state.json"):
@@ -317,6 +326,7 @@ def test_s4_5_8_5_a_forced_reinit_archives_state_and_applies_the_new_selectors(
     repo: Path,
 ) -> None:
     commands.init(**SELECTORS, yes=True)
+    _commit(repo)
     old_state = (repo / STATE).read_bytes()
     old_config = (repo / CONFIG).read_bytes()
 
@@ -341,7 +351,9 @@ def test_s4_5_8_6_neither_path_runs_a_scaffold(
     repo: Path, scaffold_calls: list[str]
 ) -> None:
     (repo / "Taskfile.yml").write_text("# hand made\n", encoding="utf-8")
+    _commit(repo)
     commands.init(**SELECTORS, force=True, yes=True)
+    _commit(repo)
     commands.init(**SELECTORS, force=True, yes=True)
     assert scaffold_calls == []
 
@@ -376,6 +388,7 @@ def test_s4_5_8_a_failing_check_keeps_the_writes_and_the_archive(
         "run",
         lambda *_a, **_k: [Finding("x.y", Severity.ERROR, "broken")],
     )
+    _commit(repo)
     with pytest.raises(AppException, match="check"):
         commands.init(**SELECTORS, force=True, yes=True)
     assert (repo / STATE).is_file()
@@ -442,6 +455,7 @@ def test_s6_1_5_3_init_renders_a_missing_taskfile_and_tasks(
 ) -> None:
     (repo / "Taskfile.yml").unlink()
     shutil.rmtree(repo / "tasks")
+    _commit(repo)
 
     commands.init(**SELECTORS, yes=True)
 
@@ -449,3 +463,35 @@ def test_s6_1_5_3_init_renders_a_missing_taskfile_and_tasks(
     assert sorted(path.name for path in (repo / "tasks").iterdir()) == sorted(
         path.name for path in (fresh / "tasks").iterdir()
     )
+
+
+def test_s6_1_6_1_init_creates_every_missing_path(repo: Path, fresh: Path) -> None:
+    removed = ["README.md", "CLAUDE.md", "AGENTS.md", ".gitignore", "docs", ".github"]
+    for name in removed:
+        target = repo / name
+        shutil.rmtree(target) if target.is_dir() else target.unlink()
+    _commit(repo)
+
+    commands.init(**SELECTORS, yes=True)
+
+    assert _entries(repo) == _entries(fresh)
+    # README.md and AGENTS.md are repo-owned bodies only a scaffold writes.
+    for name in ("CLAUDE.md", ".gitignore", "docs", ".github"):
+        assert (repo / name).exists()
+
+
+@pytest.mark.parametrize("tracked", [False, True])
+def test_s6_1_6_2_a_dirty_tree_is_refused(
+    repo: Path, capsys: pytest.CaptureFixture[str], tracked: bool
+) -> None:
+    path = "README.md" if tracked else "scratch.txt"
+    with (repo / path).open("a", encoding="utf-8") as handle:
+        handle.write("edit\n")
+
+    with pytest.raises(AppException, match=f"init.dirty-tree.*{path}"):
+        commands.init(**SELECTORS, yes=True)
+    assert not (repo / ".rn-forge").exists()
+
+    commands.init(**SELECTORS)
+    assert capsys.readouterr().out.strip()
+    assert not (repo / ".rn-forge").exists()

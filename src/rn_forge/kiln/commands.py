@@ -15,6 +15,7 @@ from __future__ import annotations
 import difflib
 import re
 import shutil
+import subprocess
 import tomllib
 from collections.abc import Sequence
 from datetime import UTC, datetime
@@ -82,14 +83,7 @@ _CONFIG_HEADER = (
     "# `kiln apply`. Everything else under .rn-forge/kiln/ is kiln's.\n"
 )
 
-_INIT_FILES = (
-    "pyproject.toml",
-    "README.md",
-    "CLAUDE.md",
-    "AGENTS.md",
-    ".gitignore",
-)
-_INIT_DIRECTORIES = (".github", "docs")
+_INIT_FILES = ("pyproject.toml",)
 
 _PACKAGE_NAME = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
 
@@ -316,8 +310,11 @@ def init(
     """Bring the existing standard repository in the current directory under kiln.
 
     `new`'s configuration and first-apply flow, run in place and never
-    scaffolding. Without `--yes` (or with `--dry-run`) prints the resolved
-    config and the artifact plan, and writes nothing. With `--yes`, writes
+    scaffolding. Requires a `.git` entry and a `pyproject.toml`; kiln renders
+    every managed path that is missing. Without `--yes` (or with `--dry-run`)
+    prints the resolved config and the artifact plan, and writes nothing. With
+    `--yes`, the Git
+    working tree must be clean (`init.dirty-tree`); it then writes
     `config.toml`, then applies, recording byte-identical managed files in the
     baseline without rewriting them, then runs `kiln doctor`'s checks.
 
@@ -342,6 +339,8 @@ def init(
         raise AppException("--archetype is required")
     root = Path.cwd()
     _init_preflight(root)
+    if yes and not dry_run:
+        _require_clean(root)
 
     state_path = root / umbrella.STATE_PATH
     if state_path.exists() and not force:
@@ -417,6 +416,31 @@ def _require_packages(root: Path, packages: tuple[str, ...]) -> None:
         )
 
 
+def _require_clean(root: Path) -> None:
+    """Refuse *root* unless its Git working tree has no changes.
+
+    Raises:
+        AppException: `init.not-a-repository` if git fails; `init.dirty-tree`
+            naming every changed or untracked path.
+    """
+    status = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if status.returncode != 0:
+        raise AppException("init.not-a-repository: {}", status.stderr.strip())
+    paths = [line[3:] for line in status.stdout.splitlines() if line]
+    if paths:
+        raise AppException(
+            "init.dirty-tree: commit or stash first (git stash -u), so the "
+            "review is kiln's change alone: {}",
+            ", ".join(paths),
+        )
+
+
 def _init_preflight(root: Path) -> None:
     """Refuse *root* unless it is a standard repository's Git worktree root.
 
@@ -430,9 +454,6 @@ def _init_preflight(root: Path) -> None:
         failed.append("kiln's own source checkout")
     failed.extend(
         f"missing {name}" for name in _INIT_FILES if not (root / name).is_file()
-    )
-    failed.extend(
-        f"missing {name}/" for name in _INIT_DIRECTORIES if not (root / name).is_dir()
     )
     if failed:
         raise AppException("kiln init cannot run in {}: {}", root, "; ".join(failed))
