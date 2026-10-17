@@ -9,8 +9,8 @@ import pytest
 
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
-from rn_forge.kiln.modules.docs.checks import structure
-from rn_forge.kiln.modules.docs.packages import check_packages
+from rn_forge.kiln.modules.docs.checks import site, structure
+from rn_forge.kiln.modules.docs.packages import _nav_names, check_packages, read_mkdocs
 
 PKG = "packages/alpha"
 TABLE = '\n[archetype.python-lib]\npackages = ["packages/alpha"]\n'
@@ -142,3 +142,47 @@ def test_s11_2_3_3_an_app_package_without_docs_is_fine(repo) -> None:
         },
     )
     assert check_packages(root, KilnConfig.load(root)) == []
+
+
+def test_s6_1_10_1_mkdocs_tags_do_not_stop_the_read(tmp_path: Path) -> None:
+    path = tmp_path / "mkdocs.yml"
+    path.write_text(
+        "site_name: x\n"
+        "a: !!python/name:x.y\n"
+        "b: !!python/object/apply:x.y [1]\n"
+        "c: !ENV [HOME, d]\n"
+        "e: !relative $config_dir\n"
+        "nav:\n  - Home: index.md\n",
+        encoding="utf-8",
+    )
+    config = read_mkdocs(path)
+    assert list(config) == ["site_name", "a", "b", "c", "e", "nav"]
+    assert config["nav"] == [{"Home": "index.md"}]
+
+
+def test_s6_1_10_2_docs_site_runs_on_a_tagged_mkdocs(repo) -> None:
+    root = _lib(
+        repo,
+        **{
+            "mkdocs.yml": "site_name: root\nnav:\n  - Home: index.md\n"
+            "markdown_extensions:\n  - pymdownx.superfences:\n"
+            "      custom_fences:\n        - name: m\n"
+            "          format: !!python/name:pymdownx.superfences.fence_code_format\n",
+            "docs/index.md": "# Root\n",
+        },
+    )
+    checks.run(root, only=site.NAME)
+
+
+def test_s6_1_10_3_a_tagged_scalar_in_the_nav_is_not_a_page(tmp_path: Path) -> None:
+    path = tmp_path / "mkdocs.yml"
+    path.write_text(
+        "nav:\n  - Home: index.md\n  - Tagged: !ENV PAGE\n"
+        "  - Name: !!python/name:x.y\n",
+        encoding="utf-8",
+    )
+    nav = read_mkdocs(path)["nav"]
+    assert not isinstance(nav[1]["Tagged"], str)
+    assert not isinstance(nav[2]["Name"], str)
+    assert not _nav_names(nav, "PAGE")
+    assert _nav_names(nav, "index.md")

@@ -10,7 +10,7 @@ from typing import Any, cast
 
 from pathspec.gitignore import GitIgnoreSpec
 from rn_forge.commons.findings import Finding, Severity
-from rn_forge.commons.fs.documents import YamlUtils
+from rn_forge.commons.fs.documents import DocumentUtils
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs.markdown import is_external, links
@@ -30,9 +30,12 @@ RELEASE_HEADING = re.compile(r"^## \[\d+\.\d+\.\d+\] - \d{4}-\d{2}-\d{2}$")
 
 
 def read_mkdocs(mkdocs_yml: Path) -> dict[str, Any]:
-    """The mapping in *mkdocs_yml*, or an empty one if it holds none."""
-    config: Any = YamlUtils.read_file(mkdocs_yml)
-    return cast(dict[str, Any], config) if isinstance(config, dict) else {}
+    """The mapping in *mkdocs_yml*, read round-trip so MkDocs's YAML tags survive.
+
+    Raises:
+        DocumentError: The file is not YAML or its root is not a mapping.
+    """
+    return cast(dict[str, Any], DocumentUtils.read_document(mkdocs_yml))
 
 
 def excluded_docs(mkdocs_yml: Path) -> GitIgnoreSpec:

@@ -4,10 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 from rn_forge.commons.findings import Finding, Severity
-from rn_forge.commons.fs.documents import YamlUtils
 
 from rn_forge.kiln.modules.docs.markdown import headings, is_external, links
 from rn_forge.kiln.modules.docs.packages import (
@@ -95,7 +94,6 @@ class Site:
 
     def nav_paths(self) -> list[str]:
         """Every ``.md`` path named by `mkdocs.yml`'s nav, in nav order."""
-        config: Any = YamlUtils.read_file(self.mkdocs_yml)
         paths: list[str] = []
 
         def walk(node: Any) -> None:
@@ -109,8 +107,7 @@ class Site:
                 for item in node:  # pyright: ignore[reportUnknownVariableType]
                     walk(item)
 
-        document = cast(dict[str, Any], config) if isinstance(config, dict) else {}
-        walk(document.get("nav", []))
+        walk(read_mkdocs(self.mkdocs_yml).get("nav", []))
         return paths
 
     def anchors_in(self, path: Path) -> set[str]:
