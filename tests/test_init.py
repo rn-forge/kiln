@@ -27,6 +27,7 @@ from rn_forge.tooling.generation import ArtifactKind, StateEntry
 from rn_forge.tooling.generation.artifacts import block_from_entry
 
 from rn_forge.kiln import commands
+from rn_forge.kiln.modules.python.artifacts import IMPORTLINTER_BLOCK
 
 ROOT = Path(__file__).resolve().parents[1]
 STATE = Path(".rn-forge/kiln/state.json")
@@ -495,3 +496,40 @@ def test_s6_1_6_2_a_dirty_tree_is_refused(
     commands.init(**SELECTORS)
     assert capsys.readouterr().out.strip()
     assert not (repo / ".rn-forge").exists()
+
+
+_MINE = (
+    "; mine\n[importlinter]\nroot_packages =\n    other\n\n"
+    "[importlinter:contract:mine]\nname = mine\ntype = forbidden\n"
+    "source_modules =\n    a\nforbidden_modules =\n    b\n"
+)
+
+
+def test_s6_1_7_1_force_fences_and_keeps_the_contracts(repo: Path, fresh: Path) -> None:
+    (repo / ".importlinter").write_text(_MINE, encoding="utf-8")
+    _commit(repo)
+
+    commands.init(**SELECTORS, force=True, yes=True)
+
+    block = IMPORTLINTER_BLOCK
+    text = (repo / ".importlinter").read_text(encoding="utf-8")
+    assert block.extract(text) == block.extract(
+        (fresh / ".importlinter").read_text(encoding="utf-8")
+    )
+    after = text.split(block.end, 1)[1]
+    assert "; mine" in after
+    assert _MINE.split("\n\n", 1)[1] in after
+    assert "[importlinter]" not in after.splitlines()
+    assert "other" not in after
+    archives = (repo / ".rn-forge/kiln/backups").glob("*/.importlinter")
+    assert [a.read_bytes() for a in archives if a.read_bytes() == _MINE.encode()]
+
+
+def test_s6_1_7_2_without_force_it_is_still_refused(repo: Path) -> None:
+    (repo / ".importlinter").write_text(_MINE, encoding="utf-8")
+    _commit(repo)
+    before = _snapshot(repo)
+
+    with pytest.raises(AppException, match="core.block-unfenced"):
+        commands.init(**SELECTORS, yes=True)
+    assert _snapshot(repo) == before

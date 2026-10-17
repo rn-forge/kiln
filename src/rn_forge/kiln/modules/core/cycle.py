@@ -31,7 +31,7 @@ from rn_forge.kiln.modules.base import ModuleRegistry
 from rn_forge.kiln.modules.core import umbrella
 from rn_forge.kiln.modules.core.config.manager import PROVENANCE_KEY, ConfigManager
 
-__all__ = ["CycleRefused", "adoption_plan", "apply", "plan"]
+__all__ = ["CycleRefused", "adoption_plan", "apply", "fence", "plan", "unfenced"]
 
 STATE_SCHEMA_VERSION = "1"
 
@@ -212,6 +212,39 @@ def _unfenced(root: Path, artifacts: Sequence[generation.Artifact]) -> list[Find
         and _text(root / artifact.path).strip()
         and artifact.block.extract(_text(root / artifact.path)) is None
     ]
+
+
+def unfenced(root: Path, config: KilnConfig) -> list[Finding]:
+    """The `core.block-unfenced` findings for *config* in *root*, as `plan` would raise them."""
+    return _unfenced(root, _artifacts(ConfigManager(), config, root))
+
+
+def fence(root: Path, config: KilnConfig) -> list[str]:
+    """Fence each unfenced file `_unfenced` would report; return the paths rewritten.
+
+    The file becomes kiln's empty block, a blank line, then the file without
+    its `[importlinter]` section: that line and every line after it up to,
+    not including, the next line that starts with `[`.
+    """
+    artifacts = {a.path: a for a in _artifacts(ConfigManager(), config, root)}
+    rewritten = sorted(str(finding.path) for finding in unfenced(root, config))
+    for path in rewritten:
+        block = artifacts[path].block
+        assert block is not None
+        kept: list[str] = []
+        skipping = False
+        for line in _text(root / path).splitlines(keepends=True):
+            if line.rstrip("\r\n") == "[importlinter]":
+                skipping = True
+            elif skipping and line.startswith("["):
+                skipping = False
+            if not skipping:
+                kept.append(line)
+        (root / path).write_text(
+            block.begin.strip() + "\n" + block.end.strip() + "\n\n" + "".join(kept),
+            encoding="utf-8",
+        )
+    return rewritten
 
 
 def _text(path: Path) -> str:

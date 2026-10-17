@@ -322,9 +322,12 @@ def init(
     `--config` layer may list `packages`, each an existing directory with a
     `pyproject.toml` (S6.1.5).
 
-    `--force` approves every conflict at once: each conflicting target, and a
-    prior `config.toml` and `state.json`, is first copied to
-    `.rn-forge/kiln/backups/<UTC timestamp>/`. It never implies `--yes`.
+    `--force` first fences an unfenced `.importlinter` (S6.1.7): kiln's
+    `[importlinter]` section is dropped, the rest kept below the markers, and
+    the original archived. It also approves every conflict at once: each
+    conflicting target, and a prior `config.toml` and `state.json`, is first
+    copied to `.rn-forge/kiln/backups/<UTC timestamp>/`. It never implies
+    `--yes`.
 
     Raises:
         AppException: `--archetype` is missing, the current directory fails the
@@ -362,6 +365,13 @@ def init(
     )
     resolved = resolution.config
     _require_packages(root, resolved.packages)
+    if yes and not dry_run:
+        unfenced = cycle.unfenced(root, resolved)
+        if unfenced and not force:
+            raise cycle.CycleRefused(unfenced)
+        if unfenced:
+            _archive(root, [str(finding.path) for finding in unfenced], tag="-unfenced")
+            cycle.fence(root, resolved)
     planned = cycle.adoption_plan(root, resolved)
 
     if not yes or dry_run:
@@ -480,15 +490,19 @@ def _project_name(pyproject: Path) -> str | None:
     return _canonical(name) if isinstance(name, str) else None
 
 
-def _archive(root: Path, paths: Sequence[str]) -> None:
-    """Warn, then copy each existing repo-relative *paths* under a fresh timestamped backup directory."""
+def _archive(root: Path, paths: Sequence[str], tag: str = "") -> None:
+    """Warn, then copy each existing repo-relative *paths* under a fresh timestamped backup directory.
+
+    *tag* is appended to the directory name, so a copy that `generation.apply`'s
+    own backup (named by the bare timestamp) must not overwrite stays apart.
+    """
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     base = root / umbrella.BACKUPS
-    archive = base / stamp
+    archive = base / f"{stamp}{tag}"
     suffix = 0
     while archive.exists():
         suffix += 1
-        archive = base / f"{stamp}-{suffix}"
+        archive = base / f"{stamp}{tag}-{suffix}"
     console.warning(
         "--force: archiving {} target(s) to {} before overwriting",
         len(paths),
