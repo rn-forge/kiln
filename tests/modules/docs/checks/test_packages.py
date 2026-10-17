@@ -70,6 +70,12 @@ CASES = {
     "docs.package-readme-relative-link": {
         f"{PKG}/README.md": "# alpha\n\n[docs](docs/index.md)\n"
     },
+    "docs.packages-area-missing": {
+        "docs/_areas.yml": (
+            "version: 1\nareas:\n  - key: guides\n    title: Guides\n"
+            "    nav: children\n"
+        )
+    },
     "docs.package-unlisted": {
         "pyproject.toml": "[tool.uv.workspace]\nmembers = ['packages/*']\n",
         "packages/stray/pyproject.toml": "[project]\nname = 'stray'\n",

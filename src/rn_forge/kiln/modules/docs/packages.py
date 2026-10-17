@@ -9,10 +9,12 @@ from pathlib import Path
 from typing import Any, cast
 
 from pathspec.gitignore import GitIgnoreSpec
+from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding, Severity
 from rn_forge.commons.fs.documents import DocumentUtils
 
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.docs.areas import load_areas
 from rn_forge.kiln.modules.docs.markdown import is_external, links
 from rn_forge.kiln.modules.docs.policy import KEBAB_NAME
 
@@ -263,6 +265,25 @@ def _workspace_members(root: Path) -> list[str]:
     return members
 
 
+def _check_packages_area(root: Path) -> list[Finding]:
+    manifest = root / "docs" / "_areas.yml"
+    if not manifest.is_file():
+        return []
+    try:
+        areas = load_areas(root / "docs")
+    except AppException:
+        return []  # docs-structure reports the unreadable manifest itself
+    if any(area.nav == "include" for area in areas):
+        return []
+    return [
+        _error(
+            "packages-area-missing",
+            manifest,
+            "no area has nav: include, so the nav lists no package site",
+        )
+    ]
+
+
 def check_packages(root: Path, config: KilnConfig) -> list[Finding]:
     """Check the package docs sites of a repository.
 
@@ -282,6 +303,8 @@ def check_packages(root: Path, config: KilnConfig) -> list[Finding]:
         findings = [
             f for package in config.packages for f in _check_package(root, package)
         ]
+        if config.packages:
+            findings.extend(_check_packages_area(root))
         findings.extend(
             _error(
                 "package-unlisted",
