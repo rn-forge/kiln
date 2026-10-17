@@ -68,8 +68,10 @@ kiln owns the file:
 - **A block.** Kiln owns a fenced block; your content stays outside it.
 - **Seeded.** Kiln writes it once; yours is kept as is.
 
-Write down what to carry over before you apply. The originals are archived, but
-a list made now is the one you will check against at review.
+The plan lists each path and its kind, not its content. The list made here is of
+*which* files to read: for each conflict, read the repository's file now, and
+note what it holds that kiln's will not. The originals are archived, but a list
+made now is the one you will check against at review.
 
 ## 4. Apply
 
@@ -89,6 +91,11 @@ three things for you:
 - A `mkdocs.yml` without the derived-nav markers is refused without `--force`
   (`init.nav-unmarked`); with it, kiln places the markers around the nav's
   entries and `docs-generate` replaces them.
+
+The tree was clean, so `git diff` and `git status` now show every file kiln
+replaced, inserted into or created, against the repository's own version, and
+the originals are also under `.rn-forge/kiln/backups/`. Finish the carry-over
+list from that diff before section 5.
 
 `init` ends by running the checks, so it may exit non-zero on findings in files
 you have not reconciled yet. Read them in section 9; do not re-run `init`.
