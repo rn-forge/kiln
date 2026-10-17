@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import zipfile
 from pathlib import Path
@@ -94,3 +95,9 @@ def test_s6_1_12_adopt_is_shipped(capsys: pytest.CaptureFixture[str]) -> None:
         "Review",
     ):
         assert f". {heading}" in text
+
+
+def test_s6_1_15_no_prompt_names_itself_positionally() -> None:
+    for prompt_file in (ROOT / "src/rn_forge/kiln/prompts").glob("*.md"):
+        text = prompt_file.read_text(encoding="utf-8")
+        assert not re.search(r"kiln prompt [a-z]", text), prompt_file.name

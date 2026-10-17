@@ -18,9 +18,9 @@ examples, not rules.
   archetype's shape: `src/` layout or a `packages/` workspace, a
   `pyproject.toml`, tests, and a docs tree that is close to kiln's areas.
 - **Rebuild and port** (`kiln new`, then carry the specs and decisions over with
-  `kiln prompt port-docs`) when it does not: a different layout, a different
-  toolchain, or docs that share nothing with the standard. The rebuild route
-  in this prompt is not yet written.
+  `kiln prompt --name port-docs`) when it does not: a different layout, a
+  different toolchain, or docs that share nothing with the standard. The
+  rebuild route in this prompt is not yet written.
 
 If you cannot tell, run section 3's dry run: a plan with a handful of conflicts
 is an in-place adoption; a plan that replaces most of the repository is a
@@ -122,8 +122,8 @@ fails or, worse, stays silent.
 ## 7. Convert the specs to kiln's work model
 
 kiln keeps every repository's specs in one structure, so a reader never learns a
-second one. Convert by `kiln prompt port-docs`'s rules (content moves verbatim,
-nothing is dropped silently), and in particular:
+second one. Convert by `kiln prompt --name port-docs`'s rules (content moves
+verbatim, nothing is dropped silently), and in particular:
 
 - `### S…` story headings become `## S…`, and a `## Stories` heading over them
   goes: kiln derives a feature's stories table from `## S…` headings.

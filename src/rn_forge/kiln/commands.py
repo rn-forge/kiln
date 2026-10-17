@@ -835,10 +835,12 @@ def diff(artifact: str | None = None, json: bool = False) -> None:
 
 
 def prompt(name: str = "", json: bool = False) -> None:
-    """Print the shipped prompt NAME, or list the prompts when it is empty.
+    """Print the shipped prompt `--name`, or list the prompts when it is not given.
 
     A prompt is a one-time procedure shipped in the distribution; printing one
-    reads no repository and writes nothing.
+    reads no repository and writes nothing. A defaulted parameter is always an
+    option in this framework without a `typer.Argument` marker, which kiln's
+    commands never import, so this is `--name` rather than a bare positional.
 
     Raises:
         AppException: NAME is not a shipped prompt.
