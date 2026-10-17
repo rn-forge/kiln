@@ -615,6 +615,31 @@ def test_s6_1_16_2_without_a_config_name_the_directory_names_it(
     assert written["repository"]["name"] == "other-dir"
 
 
+def _before_block(repo: Path) -> str:
+    text = (repo / ".gitignore").read_text(encoding="utf-8")
+    return text.split(GITIGNORE_BLOCK.begin, 1)[0]
+
+
+def test_s6_1_19_1_a_group_left_with_only_comments_goes(repo: Path) -> None:
+    original = "# system files\n.DS_Store\n\n# mine\nnode_stuff/\n.pytest_cache\n"
+    (repo / ".gitignore").write_text(original, encoding="utf-8")
+    _commit(repo)
+
+    commands.init(**SELECTORS, yes=True)
+
+    assert _before_block(repo) == "# mine\nnode_stuff/\n\n"
+
+
+def test_s6_1_19_2_a_comment_only_group_is_kept(repo: Path) -> None:
+    original = "# header\n\n# mine\n.DS_Store\nnode_stuff/\n"
+    (repo / ".gitignore").write_text(original, encoding="utf-8")
+    _commit(repo)
+
+    commands.init(**SELECTORS, yes=True)
+
+    assert _before_block(repo) == "# header\n\n# mine\nnode_stuff/\n\n"
+
+
 def _unmark_nav(repo: Path) -> bytes:
     path = repo / "mkdocs.yml"
     lines = path.read_text(encoding="utf-8").splitlines(keepends=True)

@@ -17,7 +17,7 @@ import re
 import shutil
 import subprocess
 import tomllib
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from importlib import metadata
 from importlib.resources import files
@@ -479,18 +479,41 @@ def _dedupe_gitignore(root: Path) -> list[str]:
     if any(p.startswith("!") for p in patterns):
         return []
     held = {p.removesuffix("/") for line in body.splitlines() if (p := pattern(line))}
-    kept: list[str] = []
     dropped: list[str] = []
+    groups: list[list[str]] = [[]]
     for line in outside.splitlines(keepends=True):
+        if not line.strip():
+            groups.append([])
+            continue
         found = pattern(line)
         if found is not None and found.removesuffix("/") in held:
             dropped.append(line.rstrip("\r\n"))
+            groups[-1].append("")
         else:
-            kept.append(line)
+            groups[-1].append(line)
     if not dropped:
         return []
-    path.write_text(GITIGNORE_BLOCK.render("".join(kept), body), encoding="utf-8")
+    kept = [
+        "".join(lines)
+        for group in groups
+        if (lines := _surviving_group(group, pattern))
+    ]
+    path.write_text(GITIGNORE_BLOCK.render("\n".join(kept), body), encoding="utf-8")
     return dropped
+
+
+def _surviving_group(
+    group: list[str], pattern: Callable[[str], str | None]
+) -> list[str]:
+    """The lines of a `.gitignore` *group* to keep; `""` marks a dropped pattern.
+
+    A group that lost a pattern and has none left loses its comments too.
+    """
+    lines = [line for line in group if line]
+    lost = len(lines) < len(group)
+    if lost and not any(pattern(line) for line in lines):
+        return []
+    return lines
 
 
 def _require_packages(root: Path, packages: tuple[str, ...]) -> None:
