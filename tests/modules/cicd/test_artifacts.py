@@ -21,6 +21,7 @@ from rn_forge.tooling.generation import Action, ArtifactKind
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd import CICD
+from rn_forge.kiln.modules.cicd.artifacts import load_pins
 from rn_forge.kiln.modules.core import cycle
 
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
@@ -229,14 +230,6 @@ def test_s4_3_4_4_ci_entrypoint_fails_on_a_fixture_calling_uv(repo) -> None:
         }
     )
     assert _codes(root) == ["ci.entrypoint"]
-
-
-def test_s4_3_4_5_python_lib_matrix_lists_every_package_basename(
-    tmp_path: Path,
-) -> None:
-    rendered = _rendered(_root(tmp_path, "python-lib"))
-    jobs = yaml.safe_load(rendered[".github/workflows/ci.yml"])["jobs"]
-    assert jobs["release"]["strategy"]["matrix"]["package"] == ["alpha", "beta"]
 
 
 WEB_CONFIG = """
@@ -465,7 +458,11 @@ def _release_steps(root: Path) -> list[dict[str, object]]:
 
 
 def _release_roots(tmp_path: Path) -> list[Path]:
-    return [_root(tmp_path / archetype, archetype) for archetype in ARCHETYPES]
+    return [
+        _root(tmp_path / archetype, archetype)
+        for archetype in ARCHETYPES
+        if archetype != "python-lib"
+    ]
 
 
 def _step_index(steps: list[dict[str, object]], name: str) -> int:
@@ -527,6 +524,8 @@ UPSTREAM_PINS = {
     "setup-uv": ("c18668ad3cf93ea998bef934396af7bb5c839dc7", "v10.2.0"),
     "sonarqube-scan": ("d209202bc7d53ff1cc128f7f907dac145c9d6ae9", "v8.3.0"),
     "deploy-pages": ("368f82528645a54fb793d4d04e342629a3f51346", "v5.0.1"),
+    "upload-artifact": ("cf430e030ddbb5b0abf93d22962f4752f3646cd9", "v7.0.2"),
+    "download-artifact": ("9000827ccba6bdab643e8b6fd33ac0654aef8333", "v8.0.2"),
     "pnpm-setup": ("0ebf47130e4866e96fce0953f49152a61190b271", "v6.0.9"),
     "setup-node": ("820762786026740c76f36085b0efc47a31fe5020", "v7.0.0"),
 }
@@ -600,6 +599,7 @@ def test_s6_4_2_4_python_lib_jobs_and_validate_steps(tmp_path: Path) -> None:
         "suites",
         "sonar",
         "release",
+        "external-install",
         "ci-ok",
     ]
     runs = [step.get("run") for step in jobs["validate"]["steps"]]  # type: ignore[attr-defined]
@@ -748,3 +748,123 @@ def test_s6_4_3_6_ci_ok_and_sonar_need_the_declared_jobs(tmp_path: Path) -> None
     assert jobs["sonar"]["needs"] == ["validate", "verify", "postgres", "smoke"]
     assert set(jobs["ci-ok"]["needs"]) == set(jobs) - {"ci-ok"}  # type: ignore[arg-type]
     assert {"postgres", "smoke", "suites"} <= set(jobs["ci-ok"]["needs"])  # type: ignore[arg-type]
+
+
+def _marker_steps(job: dict[str, object]) -> list[dict[str, object]]:
+    return job["steps"][-2:]  # type: ignore[index,return-value]
+
+
+def test_s6_4_4_1_check_jobs_end_with_marker_steps(tmp_path: Path) -> None:
+    jobs = _lib_jobs(tmp_path)
+    markers = {
+        "verify": "${{ matrix.name }}.verify",
+        "postgres": "${{ matrix.name }}.postgres",
+        "smoke": "${{ matrix.marker }}",
+    }
+    for name, marker in markers.items():
+        touch, upload = _marker_steps(jobs[name])
+        assert touch["run"] == f'mkdir ok && touch "ok/{marker}"', name
+        assert str(upload["uses"]).startswith("actions/upload-artifact@"), name
+        assert upload["with"] == {  # type: ignore[comparison-overlap]
+            "name": f"ok-{marker}",
+            "path": "ok/",
+            "retention-days": 1,
+        }, name
+
+
+def test_s6_4_4_2_python_lib_release_job(tmp_path: Path) -> None:
+    release = _lib_jobs(tmp_path)["release"]
+    assert "strategy" not in release
+    assert release["needs"] == ["validate", "plan", "verify", "postgres", "smoke"]
+    assert release["if"] == (
+        "${{ !cancelled() && needs.validate.result == 'success' && "
+        "needs.plan.outputs.release-order != '[]' }}"
+    )
+    assert release["permissions"] == {"contents": "write"}
+    steps = release["steps"]  # type: ignore[assignment]
+    assert str(steps[0]["uses"]).startswith("actions/checkout@")  # type: ignore[index]
+    assert steps[1]["uses"] == "./.github/actions/setup"  # type: ignore[index]
+    download = steps[2]  # type: ignore[index]
+    assert str(download["uses"]).startswith("actions/download-artifact@")
+    assert download["with"] == {
+        "pattern": "ok-*",
+        "merge-multiple": True,
+        "path": "ok/",
+    }
+    assert steps[3]["run"] == "task ci:release"  # type: ignore[index]
+    assert steps[3]["env"] == {  # type: ignore[index]
+        "GH_TOKEN": "${{ github.token }}",
+        "PUBLISH": "${{ github.event_name == 'push' && github.ref_name == 'main' }}",
+        "SELECTED": "${{ needs.plan.outputs.release-order }}",
+    }
+    assert len(steps) == 4  # type: ignore[arg-type]
+
+
+def test_s6_4_4_3_release_task_is_pykit_s_script(tmp_path: Path) -> None:
+    script = "\n".join(
+        _ci_tasks_text(tmp_path)["tasks"]["release"]["cmds"]  # type: ignore[index]
+    )
+    for text in (
+        "releasable ok",
+        "--verify-tag",
+        "gh release delete",
+        "{{.DEVOPS}}",
+        "uv build",
+        "uv version",
+    ):
+        assert text in script, text
+    assert "uv run rn-forge-devops" not in script
+
+
+def test_s6_4_4_4_external_install(tmp_path: Path) -> None:
+    jobs = _lib_jobs(tmp_path)
+    job = jobs["external-install"]
+    assert job["needs"] == ["release"]
+    assert job["if"] == (
+        "${{ !cancelled() && needs.release.result == 'success' && "
+        "github.event_name == 'push' && github.ref_name == 'main' }}"
+    )
+    steps = job["steps"]  # type: ignore[assignment]
+    assert steps[0]["with"] == {"fetch-depth": 0}  # type: ignore[index]
+    last = steps[-1]  # type: ignore[index]
+    assert last["run"] == "task ci:external-install"
+    assert last["env"] == {
+        "REPOSITORY_URL": "${{ github.server_url }}/${{ github.repository }}"
+    }
+    assert "external-install" in jobs["ci-ok"]["needs"]  # type: ignore[operator]
+    script = "\n".join(
+        _ci_tasks_text(tmp_path)["tasks"]["external-install"]["cmds"]  # type: ignore[index]
+    )
+    assert "{{.DEVOPS}} released" in script
+    assert "$REPOSITORY_URL" in script
+
+
+def _ci_tasks_text(tmp_path: Path) -> dict[str, object]:
+    root = _root(tmp_path / "tasks", "python-lib")
+    from rn_forge.kiln.modules.tasks import TASKS
+
+    rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
+    return yaml.safe_load(rendered["tasks/ci.yml"])
+
+
+def test_s6_4_4_5_artifact_actions_are_pinned() -> None:
+    pins = load_pins()
+    assert pins["upload-artifact"] == {
+        "uses": "actions/upload-artifact",
+        "sha": "cf430e030ddbb5b0abf93d22962f4752f3646cd9",
+        "version": "v7.0.2",
+    }
+    assert pins["download-artifact"] == {
+        "uses": "actions/download-artifact",
+        "sha": "9000827ccba6bdab643e8b6fd33ac0654aef8333",
+        "version": "v8.0.2",
+    }
+    assert {"upload-artifact", "download-artifact"} <= set(UPSTREAM_PINS)
+
+
+def test_s6_4_4_6_other_archetypes_keep_the_per_package_release_steps(
+    tmp_path: Path,
+) -> None:
+    for archetype in ("python-app", "python-tool"):
+        steps = _release_steps(_root(tmp_path / archetype, archetype))
+        assert any(s.get("name") == "Publish GitHub Release" for s in steps)

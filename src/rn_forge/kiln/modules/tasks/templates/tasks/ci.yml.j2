@@ -52,3 +52,57 @@ tasks:
     desc: "CI only: run one workspace-wide pytest suite"
     cmds:
       - uv run pytest $SUITE_ARGS
+
+  release:
+    desc: "CI only: build and publish the releasable packages, prerequisites first"
+    cmds:
+      - |
+        set -euo pipefail
+        mapfile -t names < <(jq -r '.[]' <<<"$SELECTED")
+        releasable="$({{.DEVOPS}} releasable ok "${names[@]}")"
+        for name in $releasable; do
+          version="$(uv version --package "$name" --short)"
+          tag="$name-v$version"
+          if [ "$PUBLISH" != true ]; then
+            uv build --package "$name" --out-dir "dist/$name"
+            continue
+          fi
+          draft=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null || true)
+          if [ "$draft" = false ]; then
+            echo "Release $tag is already published, skipping."
+            continue
+          fi
+          remote_tag=$(git ls-remote --tags origin "refs/tags/$tag")
+          if [ -n "$remote_tag" ]; then
+            git fetch --no-tags origin "refs/tags/$tag"
+            worktree=$(mktemp -d)
+            git worktree add --detach "$worktree" FETCH_HEAD
+            uv build --directory "$worktree" --package "$name" --out-dir "$GITHUB_WORKSPACE/dist/$name"
+            git worktree remove "$worktree"
+          else
+            uv build --package "$name" --out-dir "dist/$name"
+          fi
+          if [ "$draft" = true ]; then
+            gh release delete "$tag" --yes
+          fi
+          if [ -n "$remote_tag" ]; then
+            gh release create "$tag" dist/"$name"/* --verify-tag --title "$name v$version" --generate-notes
+          else
+            gh release create "$tag" dist/"$name"/* --target "$GITHUB_SHA" --title "$name v$version" --generate-notes
+          fi
+        done
+
+  external-install:
+    desc: "CI only: install each released tag from git, outside the workspace"
+    cmds:
+      - |
+        set -euo pipefail
+        tmp=$(mktemp -d)
+        {{.DEVOPS}} released | while read -r name dir module version; do
+          tag="$name-v$version"
+          git fetch --no-tags origin "refs/tags/$tag"
+          uv venv -q "$tmp/$name"
+          VIRTUAL_ENV="$tmp/$name" uv pip install -q \
+            "$name @ git+$REPOSITORY_URL@$tag#subdirectory=$dir"
+          "$tmp/$name/bin/python" -c "import $module"
+        done

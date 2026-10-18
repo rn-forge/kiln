@@ -382,14 +382,15 @@ without rendering anything ([ADR-0006](../adr/ADR-0006.md)).
 `validate → sonar → release`, with the release job a matrix over the workspace
 members for `python-lib`.
 
-A `python-lib` workspace gets change-scoped verify and (still to build) an
-ordered release, planned by `rn-forge-devops` through the public `ci:*` task
-namespace, outside the root vocabulary ([ADR-0014](../adr/ADR-0014.md)):
+A `python-lib` workspace gets change-scoped verify and an ordered release,
+planned by `rn-forge-devops` through the public `ci:*` task namespace, outside
+the root vocabulary ([ADR-0014](../adr/ADR-0014.md)):
 
 - `ci` namespace: `ci:plan`, `ci:adapters`, `ci:verify -- <package>`,
-  `ci:postgres`, `ci:smoke` and `ci:suite`.
+  `ci:postgres`, `ci:smoke`, `ci:suite`, `ci:release` and
+  `ci:external-install`.
 - `python-lib` jobs, in order: `validate`, `plan`, `verify`, `postgres`,
-  `smoke`, `suites`, `sonar`, `release`, `ci-ok`.
+  `smoke`, `suites`, `sonar`, `release`, `external-install`, `ci-ok`.
 
 Planned for release-1, not yet built: a `node-lib` repository releases by
 `workflow_dispatch` (`[ci] release = "nx-dispatch"`), gated on a green CI run,
