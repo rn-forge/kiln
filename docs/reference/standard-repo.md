@@ -118,7 +118,7 @@ The assignment is normative:
 | `pyproject.toml` | **repo** — scaffolded once; tool settings are not kiln-owned | scaffolded |
 | `.editorconfig` | kiln | managed |
 | `.importlinter` | kiln | managed import-boundary contracts |
-| `Taskfile.yml`, `tasks/workspace.yml`, `tasks/quality.yml`, `tasks/docs.yml`, archetype namespace files (`tasks/api.yml`, `tasks/web.yml`); `tasks/ci.yml` for `python-lib` (release-1, not yet built) | kiln | managed |
+| `Taskfile.yml`, `tasks/workspace.yml`, `tasks/quality.yml`, `tasks/docs.yml`, archetype namespace files (`tasks/api.yml`, `tasks/web.yml`); `tasks/ci.yml` for `python-lib` | kiln | managed |
 | `tasks/self.yml` and any include declared `ownership = "repository"` | repo | seeded once, never rewritten |
 | `scripts/**` | **repo only** — a repo's own lints, wired via `[tasks.extra_refs]`. kiln and `cicd` generate nothing here ([ADR-0006](../adr/ADR-0006.md)) | repo |
 | `src/**`, `tests/**` | **repo** — scaffolded once; no doctor structure policing | scaffolded |
@@ -382,12 +382,18 @@ without rendering anything ([ADR-0006](../adr/ADR-0006.md)).
 `validate → sonar → release`, with the release job a matrix over the workspace
 members for `python-lib`.
 
-Planned for release-1, not yet built: a `python-lib` workspace gets
-change-scoped verify and an ordered release, planned by `rn-forge-devops`
-through internal `ci:*` tasks ([ADR-0014](../adr/ADR-0014.md)). A `node-lib`
-repository releases by `workflow_dispatch` (`[ci] release = "nx-dispatch"`),
-gated on a green CI run, and may call `nx start-ci-run` and `nx fix-ci`
-directly, the only `ci-entrypoint` exemption ([ADR-0015](../adr/ADR-0015.md)).
+A `python-lib` workspace gets change-scoped verify and (still to build) an
+ordered release, planned by `rn-forge-devops` through the public `ci:*` task
+namespace, outside the root vocabulary ([ADR-0014](../adr/ADR-0014.md)):
+
+- `ci` namespace: `ci:plan`, `ci:adapters`, `ci:verify -- <package>`.
+- `python-lib` jobs, in order: `validate`, `plan`, `verify`, `sonar`, `release`,
+  `ci-ok`.
+
+Planned for release-1, not yet built: a `node-lib` repository releases by
+`workflow_dispatch` (`[ci] release = "nx-dispatch"`), gated on a green CI run,
+and may call `nx start-ci-run` and `nx fix-ci` directly, the only
+`ci-entrypoint` exemption ([ADR-0015](../adr/ADR-0015.md)).
 
 The rules:
 

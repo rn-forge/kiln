@@ -9,6 +9,7 @@ from rn_forge.tooling.generation import Artifact, ArtifactKind
 from rn_forge.tooling.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
+from rn_forge.kiln.archetypes import PYKIT_GIT, RN_FORGE_TAGS
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs.config import DocsConfig
 from rn_forge.kiln.modules.python.artifacts import root_package
@@ -84,7 +85,18 @@ def render(config: KilnConfig) -> list[Artifact]:
                 ", ".join(sorted(known)),
             )
 
+    devops_name = "rn-forge-devops"
+    if devops_name in packages:
+        devops = f"uv run {devops_name}"
+    else:
+        source = (
+            f"{devops_name} @ {PYKIT_GIT}@{RN_FORGE_TAGS[devops_name]}"
+            f"#subdirectory=packages/{devops_name}"
+        )
+        devops = f'uvx --from "{source}" {devops_name}'
+
     context: dict[str, object] = {
+        "devops": devops,
         "kiln_version": __version__,
         "name": config.name,
         "package": root_package(config.name),
@@ -148,6 +160,14 @@ def render(config: KilnConfig) -> list[Artifact]:
                 "tasks/web.yml",
                 ArtifactKind.MANAGED,
                 engine.render("tasks/web.yml.j2", context),
+            )
+        )
+    if workspace:
+        artifacts.append(
+            Artifact(
+                "tasks/ci.yml",
+                ArtifactKind.MANAGED,
+                engine.render("tasks/ci.yml.j2", context),
             )
         )
     for include in tasks_config.includes:

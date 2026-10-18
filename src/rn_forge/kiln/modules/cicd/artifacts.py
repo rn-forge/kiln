@@ -21,6 +21,21 @@ SONAR_ORGANIZATION = "rn-forge"
 
 _PACKAGE = "rn_forge.kiln.modules.cicd"
 
+_PLAN_KEYS = (
+    "release-order",
+    "packages",
+    "postgres",
+    "smoke",
+    "suites",
+    "pytest-args",
+    "cov-args",
+    "test-paths",
+    "sonar-sources",
+    "sonar-tests",
+    "sonar",
+    "docs",
+)
+
 
 def load_pins() -> dict[str, dict[str, str]]:
     """The pinned action set, one table per action, from `pins.toml`."""
@@ -55,6 +70,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "docs": docs,
         "sonar": ci.sonar,
         "release": ci.release,
+        "plan_keys": _PLAN_KEYS,
         "pins": load_pins(),
         "organization": SONAR_ORGANIZATION,
         "web": web,

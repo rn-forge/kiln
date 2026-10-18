@@ -22,7 +22,8 @@ includes:
   quality: tasks/quality.yml
 {% if docs %}  docs: tasks/docs.yml
 {% endif %}  workspace: tasks/workspace.yml
-{% if web %}  api: tasks/api.yml
+{% if workspace %}  ci: tasks/ci.yml
+{% endif %}{% if web %}  api: tasks/api.yml
 {% endif %}{% if web_app %}  web: tasks/web.yml
 {% endif %}{% for include in includes %}  [[ include.namespace ]]: [[ include.taskfile ]]
 {% endfor %}

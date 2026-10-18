@@ -93,8 +93,9 @@ def test_s4_3_3_property1_renders_exactly_the_module_s_template_inventory_rows(
 ) -> None:
     root = _root(tmp_path, archetype)
     artifacts = TASKS.artifacts(KilnConfig.load(root), root)
+    expected = (*TASK_KEYS, "tasks/ci.yml") if archetype == "python-lib" else TASK_KEYS
     assert [(a.path, a.kind) for a in artifacts] == [
-        (path, ArtifactKind.MANAGED) for path in TASK_KEYS
+        (path, ArtifactKind.MANAGED) for path in expected
     ]
 
 
@@ -116,7 +117,8 @@ def test_s4_3_3_property2_into_an_empty_directory_only_creates(
     tmp_path: Path, archetype: str
 ) -> None:
     actions = _actions(_root(tmp_path, archetype), tmp_path)
-    tasks_actions = {key: actions[key] for key in TASK_KEYS}
+    keys = (*TASK_KEYS, "tasks/ci.yml") if archetype == "python-lib" else TASK_KEYS
+    tasks_actions = {key: actions[key] for key in keys}
     assert set(tasks_actions.values()) == {Action.CREATE}
 
 
@@ -177,7 +179,11 @@ def test_s4_3_3_1_task_list_json_lists_exactly_the_ten_root_verbs(
     cycle.apply(root, home=tmp_path / "home")
     result = _run_task(root, "--list", "--json")
     assert result.returncode == 0, result.stderr
-    names = {entry["name"] for entry in json.loads(result.stdout)["tasks"]}
+    names = {
+        entry["name"]
+        for entry in json.loads(result.stdout)["tasks"]
+        if not entry["name"].startswith("ci:")
+    }
     assert names == {
         "setup",
         "validate",
@@ -638,3 +644,61 @@ def test_s4_6_4_1_lint_runs_full_only_when_asked(
     asked = _run_task(root, "--dry", "lint", "KILN_DOCTOR_FULL=1")
     assert asked.returncode == 0, asked.stderr
     assert "kiln doctor . --full" in asked.stdout + asked.stderr
+
+
+def _ci_tasks(root: Path) -> dict[str, object]:
+    rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
+    return yaml.safe_load(rendered["tasks/ci.yml"])
+
+
+def test_s6_4_2_1_ci_yml_is_rendered_for_python_lib_only(tmp_path: Path) -> None:
+    for archetype in ARCHETYPES:
+        root = _root(tmp_path / archetype, archetype)
+        rendered = {
+            a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)
+        }
+        taskfile = yaml.safe_load(rendered["Taskfile.yml"])
+        if archetype == "python-lib":
+            assert "tasks/ci.yml" in rendered
+            assert taskfile["includes"]["ci"] == "tasks/ci.yml"
+        else:
+            assert "tasks/ci.yml" not in rendered, archetype
+            assert "ci" not in taskfile["includes"], archetype
+
+
+def test_s6_4_2_2_ci_tasks_are_described_and_not_internal(tmp_path: Path) -> None:
+    tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
+    for name in ("plan", "adapters", "verify"):
+        assert tasks[name]["desc"], name  # type: ignore[index]
+        assert "internal" not in tasks[name], name  # type: ignore[operator]
+
+
+def test_s6_4_2_3_devops_is_uvx_unless_the_workspace_has_the_member(
+    tmp_path: Path,
+) -> None:
+    uvx = _ci_tasks(_root(tmp_path / "a", "python-lib"))["vars"]["DEVOPS"]  # type: ignore[index]
+    assert uvx == (
+        'uvx --from "rn-forge-devops @ git+https://github.com/rn-forge/pykit'
+        '@rn-forge-devops-v0.1.0#subdirectory=packages/rn-forge-devops" '
+        "rn-forge-devops"
+    )
+    root = _root(tmp_path / "b", "python-lib")
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(
+        config.read_text(encoding="utf-8").replace(
+            '["packages/alpha", "packages/beta"]',
+            '["packages/alpha", "packages/rn-forge-devops"]',
+        ),
+        encoding="utf-8",
+    )
+    assert _ci_tasks(root)["vars"]["DEVOPS"] == "uv run rn-forge-devops"  # type: ignore[index]
+
+
+def test_s6_4_2_2_ci_tasks_pass_task_layout_and_list(tmp_path: Path) -> None:
+    root = _root(tmp_path, "python-lib")
+    cycle.apply(root, home=tmp_path / "home")
+    assert _codes(root) == []
+    listed = _run_task(root, "--list-all", "--json")
+    assert listed.returncode == 0, listed.stderr
+    names = {t["name"] for t in json.loads(listed.stdout)["tasks"]}
+    assert {"ci:plan", "ci:adapters", "ci:verify"} <= names

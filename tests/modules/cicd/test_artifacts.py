@@ -563,5 +563,98 @@ def test_s4_6_4_2_ci_sets_the_variable_on_default_branch_pushes(
         root = _root(tmp_path / archetype, archetype)
         jobs = yaml.safe_load(_rendered(root)[".github/workflows/ci.yml"])["jobs"]
         step = next(s for s in jobs["validate"]["steps"] if s["name"] == "Validate")
-        assert step["run"] == "task validate"
+        assert step["run"] == (
+            "task lint" if archetype == "python-lib" else "task validate"
+        )
         assert step["env"]["KILN_DOCTOR_FULL"] == KILN_DOCTOR_FULL_EXPRESSION, archetype
+
+
+def _lib_jobs(tmp_path: Path, **kwargs: object) -> dict[str, dict[str, object]]:
+    return _ci_jobs(_root(tmp_path, "python-lib", **kwargs))  # type: ignore[arg-type]
+
+
+PLAN_KEYS = (
+    "release-order",
+    "packages",
+    "postgres",
+    "smoke",
+    "suites",
+    "pytest-args",
+    "cov-args",
+    "test-paths",
+    "sonar-sources",
+    "sonar-tests",
+    "sonar",
+    "docs",
+)
+
+
+def test_s6_4_2_4_python_lib_jobs_and_validate_steps(tmp_path: Path) -> None:
+    jobs = _lib_jobs(tmp_path)
+    assert list(jobs) == ["validate", "plan", "verify", "sonar", "release", "ci-ok"]
+    runs = [step.get("run") for step in jobs["validate"]["steps"]]  # type: ignore[attr-defined]
+    for command in ("task setup", "task lint", "task ci:adapters", "task docs:build"):
+        assert command in runs, command
+    lint = next(s for s in jobs["validate"]["steps"] if s.get("run") == "task lint")  # type: ignore[attr-defined]
+    assert lint["env"]["KILN_DOCTOR_FULL"] == KILN_DOCTOR_FULL_EXPRESSION
+    no_sonar = list(_lib_jobs(tmp_path / "n", sonar=False))
+    assert no_sonar == ["validate", "plan", "verify", "release", "ci-ok"]
+    no_release = list(_lib_jobs(tmp_path / "r", release="none"))
+    assert no_release == ["validate", "plan", "verify", "sonar", "ci-ok"]
+    no_docs = _lib_jobs(tmp_path / "d", profile="none")
+    assert "task docs:build" not in [s.get("run") for s in no_docs["validate"]["steps"]]  # type: ignore[attr-defined]
+
+
+def test_s6_4_2_5_plan_job(tmp_path: Path) -> None:
+    plan = _lib_jobs(tmp_path)["plan"]
+    assert plan["permissions"] == {"contents": "read", "actions": "read"}
+    assert plan["outputs"] == {
+        key: f"${{{{ steps.plan.outputs.{key} }}}}" for key in PLAN_KEYS
+    }
+    checkout = plan["steps"][0]  # type: ignore[index]
+    assert checkout["with"]["fetch-depth"] == 0
+    step = next(s for s in plan["steps"] if s.get("id") == "plan")  # type: ignore[attr-defined]
+    assert step["run"] == 'task ci:plan >> "$GITHUB_OUTPUT"'
+    assert set(step["env"]) == {"GH_TOKEN", "EVENT_NAME", "BASE"}
+    assert step["env"]["GH_TOKEN"] == "${{ github.token }}"
+    assert step["env"]["EVENT_NAME"] == "${{ github.event_name }}"
+    assert step["env"]["BASE"] == (
+        "${{ github.event_name == 'pull_request' && "
+        "github.event.pull_request.base.sha || '' }}"
+    )
+
+
+def test_s6_4_2_6_verify_job(tmp_path: Path) -> None:
+    verify = _lib_jobs(tmp_path)["verify"]
+    assert verify["needs"] == ["validate", "plan"]
+    assert verify["if"] == (
+        "${{ !cancelled() && needs.validate.result == 'success' && "
+        "needs.plan.outputs.packages != '[]' }}"
+    )
+    assert verify["strategy"] == {
+        "fail-fast": False,
+        "matrix": {"include": "${{ fromJSON(needs.plan.outputs.packages) }}"},
+    }
+    assert verify["name"] == "verify (${{ matrix.name }})"
+    runs = [s.get("run") for s in verify["steps"]]  # type: ignore[attr-defined]
+    assert "task setup" in runs
+    step = next(
+        s for s in verify["steps"] if s.get("run", "").startswith("task ci:verify")
+    )  # type: ignore[attr-defined]
+    assert step["run"] == "task ci:verify -- ${{ matrix.name }}"
+    assert step["env"] == {"PYTEST_ARGS": "${{ needs.plan.outputs.pytest-args }}"}
+
+
+def test_s6_4_2_6_sonar_waits_for_verify(tmp_path: Path) -> None:
+    sonar = _lib_jobs(tmp_path)["sonar"]
+    assert sonar["needs"] == ["validate", "verify"]
+    assert str(sonar["if"]).startswith(
+        "${{ !cancelled() && !contains(needs.*.result, 'failure') && ("
+    )
+    assert "head.repo.full_name == github.repository" in str(sonar["if"])
+
+
+def test_s6_4_2_8_other_archetypes_keep_the_plain_pipeline(tmp_path: Path) -> None:
+    for archetype in ("python-app", "python-tool"):
+        jobs = _ci_jobs(_root(tmp_path / archetype, archetype))
+        assert list(jobs) == ["validate", "sonar", "release", "ci-ok"], archetype
