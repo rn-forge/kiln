@@ -118,7 +118,7 @@ The assignment is normative:
 | `pyproject.toml` | **repo** — scaffolded once; tool settings are not kiln-owned | scaffolded |
 | `.editorconfig` | kiln | managed |
 | `.importlinter` | kiln | managed import-boundary contracts |
-| `Taskfile.yml`, `tasks/workspace.yml`, `tasks/quality.yml`, `tasks/docs.yml`, archetype namespace files (`tasks/api.yml`, `tasks/web.yml`) | kiln | managed |
+| `Taskfile.yml`, `tasks/workspace.yml`, `tasks/quality.yml`, `tasks/docs.yml`, archetype namespace files (`tasks/api.yml`, `tasks/web.yml`); `tasks/ci.yml` for `python-lib` (release-1, not yet built) | kiln | managed |
 | `tasks/self.yml` and any include declared `ownership = "repository"` | repo | seeded once, never rewritten |
 | `scripts/**` | **repo only** — a repo's own lints, wired via `[tasks.extra_refs]`. kiln and `cicd` generate nothing here ([ADR-0006](../adr/ADR-0006.md)) | repo |
 | `src/**`, `tests/**` | **repo** — scaffolded once; no doctor structure policing | scaffolded |
@@ -127,11 +127,13 @@ The assignment is normative:
 | `docs/_areas.yml` | repo after scaffolding | **seeded** — repos may extend areas |
 | `docs/index.md`, `docs/<area>/index.md` | repo after scaffolding | **seeded** — written once |
 | `docs/specs/ideas.md`, `docs/reference/index.md` | repo after scaffolding | **seeded** — written once |
+| `docs/releases/index.md`, `docs/specs/index.md`, `docs/specs/epics/index.md` | repo after scaffolding | **seeded** — written once |
+| The spec board's Releases and Backlog, each release's Scope table, the epic list, and the summary table atop each epic and feature page | kiln, rewritten by `task docs:generate` ([ADR-0011](../adr/ADR-0011.md), [ADR-0013](../adr/ADR-0013.md)) | **derived region** |
 | `mkdocs.yml` | repo body, scaffolded by `kiln new`; the `# BEGIN derived nav` region → kiln, rewritten by `task docs:generate`. For `python-lib` the body carries the `monorepo` plugin | **derived region** |
 | `packages/<pkg>/mkdocs.yml` | `python-lib` only; repo, seeded once by `kiln generate package`; no managed block ([ADR-0008](../adr/ADR-0008.md)) | **seeded** |
 | `packages/<pkg>/docs/**` | `python-lib` only; repo, seeded once by `kiln generate package` | **seeded** |
 | `packages/<pkg>/CHANGELOG.md`, `packages/<pkg>/README.md` | `python-lib` only; repo, seeded once by `kiln generate package` | **seeded** |
-| `.github/workflows/ci.yml`, `docs.yml`; `.github/actions/setup`; `sonar-project.properties` | kiln (`cicd`) | managed |
+| `.github/workflows/ci.yml`, `docs.yml`; `.github/actions/setup`; `sonar-project.properties`; `tools/ci/*.mjs` for `node-lib` (release-1, not yet built) | kiln (`cicd`) | managed |
 | `CLAUDE.md`, `AGENTS.md` | bodies written once by `kiln new`, then repo; the `<!-- BEGIN rn-forge kiln -->` block in `CLAUDE.md` → kiln | block (`CLAUDE.md` only; `AGENTS.md` points at it) |
 | `.claude/**`, `.codex/**`, installed skills | not kiln's | — |
 | Repo-specific lints (`check_brand.py`, `check_gate_tags.py`, …) | repo, wired via `[tasks.extra_refs]` | repo |
@@ -175,7 +177,7 @@ select independent capabilities or implementations within that shape.
 | `python-lib` | uv workspace of independently published packages | `<package>-v<version>` |
 | `python-web-api` | API service without a separate frontend; optional embedded admin UI | `v<version>` |
 | `python-web-app` | API service and pnpm/Nx frontend workspace | `v<version>` |
-| `node-lib` | pnpm/Nx workspace of published libraries; deferred | `<package>-v<version>` |
+| `node-lib` | pnpm/Nx workspace of published libraries, one release group (release-1, not yet built; [ADR-0015](../adr/ADR-0015.md)) | `v<version>` |
 | `node-web-app` | pnpm/Nx frontend consuming remote APIs; deferred | `v<version>` |
 
 `lifecycle` is available to any Python archetype; it adds tooling's lifecycle
@@ -189,11 +191,14 @@ package gets its own docs site. In `python-lib`, every package carries
 `packages/<pkg>/docs/` and `packages/<pkg>/mkdocs.yml`, built standalone with
 `--strict` and included into the root site by `mkdocs-monorepo-plugin`. The root
 `docs/_areas.yml` declares them as an area of kind `include`, which has no
-directory under `docs/` and whose nav is one `!include` entry per package. The
-root `docs/` holds only cross-package material. Every other Python archetype has
-one root site: its internal workspace packages have no docs of their own, and
-their reference renders in the root site. A `python-lib` repository starts with
-no packages; `kiln generate package` adds them one at a time.
+directory under `docs/` and whose nav is one `!include` entry per package. Each
+area is a top tab with its own sidebar ([ADR-0013](../adr/ADR-0013.md)); an
+area's `nav` is `children`, `index-only`, `include` or `work`, and `work` lists
+the epic list and the epics in ranges of ten. The root `docs/` holds only
+cross-package material. Every other Python archetype has one root site: its
+internal workspace packages have no docs of their own, and their reference
+renders in the root site. A `python-lib` repository starts with no packages;
+`kiln generate package` adds them one at a time.
 
 ## 3. The dependency set
 
@@ -208,7 +213,8 @@ An archetype carries the libraries a repo of that shape is built on
 | `python-lib` | `rn-forge-commons` in each distributable | — (the `docs` group adds `mkdocs-monorepo-plugin`) |
 | `python-web-api` · `python-web-app`, `backend = "django"` | + `rn-forge-cli`, `rn-forge-web`, `rn-forge-django` | + `rn-forge-django[codegen]` |
 | `python-web-api` · `python-web-app`, `backend = "fastapi"` | + `rn-forge-cli`, `rn-forge-web`, `rn-forge-fastapi`, when that package exists | + `rn-forge-fastapi[codegen]` |
-| `node-lib` · `node-web-app` | — (deferred) | — |
+| `node-lib` | — | kiln, MkDocs and mdformat, through a root `pyproject.toml` with no package (release-1, not yet built) |
+| `node-web-app` | — (deferred) | — |
 
 The library roles below describe pykit, not architectural decisions owned by
 kiln (see [workspace architecture](../architecture/workspace.md)):
@@ -339,6 +345,8 @@ render-free checks are the ones `kiln doctor` runs by default.
 | `kiln.pin` | `rn-forge-kiln` is in the dev group with a pinned source, and the running kiln is the version `uv.lock` records |
 | `ci.unpinned` / `ci.permissions` | every `uses:` SHA-pinned with a version comment; every job has `permissions:` |
 | `docs.nav-stale` | the derived nav (`docs-generate`) differs from what regenerating it from the docs tree would write |
+| `docs.board-*` / `docs.epics-*` / `docs.scope-*` | the derived board, epic list and release Scope regions are present (`-markers`) and current (`-stale`) |
+| `docs.state-contradicts-work` | a work item's state agrees with its children and Iteration ([ADR-0011](../adr/ADR-0011.md)) |
 | `legacy.kiln-state` (error) | a pre-kiln `.rn-forge/kiln/` or `$RNF_HOME/kiln/` tree |
 
 `kiln doctor --all <paths>` runs the same checks across many repos and prints
@@ -372,7 +380,16 @@ without rendering anything ([ADR-0006](../adr/ADR-0006.md)).
 ## 8. CI shape
 
 `validate → sonar → release`, with the release job a matrix over the workspace
-members for `python-lib`. The rules:
+members for `python-lib`.
+
+Planned for release-1, not yet built: a `python-lib` workspace gets
+change-scoped verify and an ordered release, planned by `rn-forge-devops`
+through internal `ci:*` tasks ([ADR-0014](../adr/ADR-0014.md)). A `node-lib`
+repository releases by `workflow_dispatch` (`[ci] release = "nx-dispatch"`),
+gated on a green CI run, and may call `nx start-ci-run` and `nx fix-ci`
+directly, the only `ci-entrypoint` exemption ([ADR-0015](../adr/ADR-0015.md)).
+
+The rules:
 
 - Repeated setup lives in the committed composite action
   `.github/actions/setup`, not in a copy per job.
@@ -410,7 +427,8 @@ commit = "…"                     # the resolved commit
 name = "my-tool"
 archetype = "python-tool"  # python-app | python-tool | python-lib
                            # python-web-api | python-web-app
-                           # node-lib | node-web-app   (deferred)
+                           # node-lib (release-1, not yet built)
+                           # node-web-app   (deferred)
 lifecycle = false          # any python archetype; python-tool is the alias
                            # for python-app + lifecycle = true (ADR-0005)
 
@@ -423,6 +441,7 @@ external_url = ""          # external only; surfaced in the instructions block
 provider = "github"        # github only in v1; "ado" reserved
 sonar = true
 release = "tag-exists"     # tag-exists | none
+                           # nx-dispatch: node-lib default (release-1, not yet built)
 
 [tasks]
 includes = [{ namespace = "self", taskfile = "tasks/self.yml" }]
