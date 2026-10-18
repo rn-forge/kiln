@@ -28,3 +28,4 @@ it generates.
 | [0013](ADR-0013.md) | The docs site navigates by area tabs, and work pages open with derived summaries | the docs site of every generated repository, and kiln's |
 | [0014](ADR-0014.md) | A library workspace's CI is planned by rn-forge-devops, and its own members are exempt from the rn-forge dependency contract | `python-lib` repositories, and `rn-forge-deps` everywhere |
 | [0015](ADR-0015.md) | `node-lib` renders ngkit's CI: one release group, a dispatched release, and generated CI helpers | `node-lib` repositories |
+| [0016](ADR-0016.md) | Every archetype's CI follows one contract, planned by rn-forge-devops | the generated CI of every archetype |

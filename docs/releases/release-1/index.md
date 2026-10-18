@@ -9,8 +9,8 @@ and `python-lib` from authored templates, creates and ships the FastAPI web
 cells (`python-web-api`, and `python-web-app` with an Angular frontend), and
 regenerates its own repo. It proves that `python-lib`, with its package docs
 sites, can host pykit (F6.1): adopting pykit exercises the scaffolding, seeding,
-CI, docs and tasks end to end. The architecture baseline, package-site deploys
-and retiring taskkit are [release-2](../release-2/index.md).
+CI, docs and tasks end to end. The architecture baseline and retiring taskkit
+are [release-2](../release-2/index.md).
 
 ## Entry criteria
 
@@ -62,6 +62,7 @@ and retiring taskkit are [release-2](../release-2/index.md).
 | [F11.2 — `python-lib` repositories carry package docs sites](../../specs/epics/E11-package-docs/F11.2-python-lib-package-sites.md) | E11 | Closed |
 | [F11.3 — `kiln generate package`](../../specs/epics/E11-package-docs/F11.3-generate-package.md) | E11 | Closed |
 | [F11.4 — The docs rules are one standard, and kiln owns them](../../specs/epics/E11-package-docs/F11.4-cross-repository-rule.md) | E11 | Closed |
+| [F11.5 — CI deploys versioned package sites](../../specs/epics/E11-package-docs/F11.5-deploy-package-sites.md) | E11 | New |
 | [F13.1 — Derived regions, starting with the nav](../../specs/epics/E13-docs-work-model/F13.1-derived-regions.md) | E13 | Closed |
 | [F13.2 — The board and Scope regions, and metadata checks](../../specs/epics/E13-docs-work-model/F13.2-board-and-scope.md) | E13 | Closed |
 | [F13.3 — The seeded rules and kiln's own docs adopt the model](../../specs/epics/E13-docs-work-model/F13.3-adopt-the-model.md) | E13 | Closed |
@@ -112,8 +113,11 @@ of adopting pykit in place, on an unmerged pykit branch, wrote S6.1.6–S6.1.13:
 `init` fixes, the shipped `adopt` prompt proved by a second pykit run, a
 decision on kiln's area rules, and S6.1.14's rules taken from pykit's.
 Rebuilding a far-off repository and porting it is F6.5, not yet scheduled.
-F6.4's planner pin was met 2026-10-16 (`rn-forge-devops-v0.1.0`); S6.4.2 onward
-are outlines. F5.3's S5.3.2 and S5.3.3 are the owner's to run from a clean
+F6.4's planner pin was met 2026-10-16 (`rn-forge-devops-v0.1.0`); S6.4.6 and
+S11.5.1 were added 2026-10-18 to retire pykit's `main.yml`. S6.4.7 was added the
+same day, to bring `python-lib`'s release to [ADR-0016](../../adr/ADR-0016.md)'s
+rule (default branch only, after Sonar); it waits on a pykit change to
+`rn-forge-devops`. F5.3's S5.3.2 and S5.3.3 are the owner's to run from a clean
 clone, and S5.3.4 needs a target repository. F9.1 has no stories written
 ([board](../../specs/index.md#order)).
 
@@ -122,7 +126,7 @@ clone, and S5.3.4 needs a target repository. F9.1 has no stories written
 Commits whose subject names a scope ID, newest first:
 
 ```bash
-git log --format='%h %ad %s' --date=short -E --grep='[FS](3\.[1-4]|4\.[1-9]|5\.[1-3]|6\.[134]|7\.1|9\.1|11\.[1-4]|13\.[1-3]|14\.[12])'
+git log --format='%h %ad %s' --date=short -E --grep='[FS](3\.[1-4]|4\.[1-9]|5\.[1-3]|6\.[134]|7\.1|9\.1|11\.[1-5]|13\.[1-3]|14\.[12])'
 ```
 
 - `6feaf37` 2026-09-26 S4.5.9 kiln new assembles in persistent staging
@@ -142,7 +146,8 @@ Earlier release-1 work also landed in commits whose subjects name no ID:
 
 - E3's acceptance block passes.
 - E4's acceptance block passes.
-- F11.1–F11.4's acceptance blocks pass. F11.5 is release-2.
+- F11.1–F11.5's acceptance blocks pass. F11.5 was moved here 2026-10-18: it is
+  the last blocker to retiring pykit's hand-written `main.yml`.
 - E5's acceptance block passes: the FastAPI cells are proved and shipped.
 - F6.3's acceptance block passes.
 - F7.1's acceptance block passes: kiln pins pykit by release tag.
@@ -152,8 +157,10 @@ Earlier release-1 work also landed in commits whose subjects name no ID:
   Nothing in this release is checked inside pykit
   ([ADR-0009](../../adr/ADR-0009.md)).
 - F6.4's acceptance block passes: the pykit-shaped repository runs pykit's
-  workspace pipeline. Added 2026-10-14, when the owner chose to have pykit and
-  ngkit able to adopt kiln before release-1 ships.
+  workspace pipeline, and `python-lib` publishes only from the default branch
+  after the quality gate (S6.4.7, [ADR-0016](../../adr/ADR-0016.md)). Added
+  2026-10-14, when the owner chose to have pykit and ngkit able to adopt kiln
+  before release-1 ships.
 - E9's `node-lib` features pass their acceptance blocks: an ngkit-shaped
   repository passes its own gate and renders ngkit's CI. Added 2026-10-14.
 - Every open question on an in-scope feature is answered, as an ADR or as a

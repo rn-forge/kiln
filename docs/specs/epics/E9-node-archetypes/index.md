@@ -48,3 +48,7 @@ repository in scope uses it. The decisions are
    `uv` in every repository. A `node-lib` repository has a root
    `pyproject.toml` with no package, whose dev group pins the docs tooling and
    kiln.
+1. **`node-lib` meets [ADR-0016](../../../adr/ADR-0016.md)'s CI contract.** It
+   may keep its Nx-native affected CI ([ADR-0015](../../../adr/ADR-0015.md))
+   only while it does. Where ngkit's CI diverges is listed on
+   [F9.1](F9.1-node-lib-hosts-ngkit-ci.md#divergences-from-the-ci-contract).

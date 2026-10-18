@@ -51,6 +51,7 @@ nav:
   - Architecture:
     - architecture/index.md
     - The rn-forge workspace: architecture/workspace.md
+    - How a `python-lib` CI run flows: architecture/python-lib-ci.md
   - Guides:
     - guides/index.md
     - Development: guides/development.md

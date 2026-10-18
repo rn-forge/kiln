@@ -1,11 +1,12 @@
-# Release 2 — the architecture baseline, package-site deploys, and taskkit retired
+# Release 2 — the architecture baseline and taskkit retired
 
 |  |  |
 | -- | -- |
 | **Status** | planned |
 
-kiln deploys `python-lib`'s package docs sites (F11.5); it adds the architecture
-baseline records for Python and web (E12); and taskkit is retired (F6.2).
+kiln adds the architecture baseline records for Python and web (E12), and
+taskkit is retired (F6.2). Package-site deploys (F11.5) moved to
+[release-1](../release-1/index.md) on 2026-10-18.
 
 ## Entry criteria
 
@@ -18,7 +19,6 @@ baseline records for Python and web (E12); and taskkit is retired (F6.2).
 | Feature | Epic | State |
 | -- | -- | -- |
 | [F6.2 — Retire taskkit](../../specs/epics/E6-rebuild-the-repos/F6.2-retire-taskkit.md) | E6 | New |
-| [F11.5 — CI deploys versioned package sites](../../specs/epics/E11-package-docs/F11.5-deploy-package-sites.md) | E11 | New |
 | [F12.1 — The baseline module, and the Python records](../../specs/epics/E12-architecture-baseline/F12.1-python-baseline.md) | E12 | New |
 | [F12.2 — The web records](../../specs/epics/E12-architecture-baseline/F12.2-web-baseline.md) | E12 | New |
 
@@ -32,14 +32,13 @@ baseline records for Python and web (E12); and taskkit is retired (F6.2).
 ## Progress
 
 Nothing started. F12.1's S12.1.1 is an owner decision and comes first in E12.
-F11.5 waits on its entry criterion and its open question.
 
 ## Commits
 
 Commits whose subject names a scope ID, newest first:
 
 ```bash
-git log --format='%h %ad %s' --date=short -E --grep='[FS](6\.2|11\.5|12\.[1-2])'
+git log --format='%h %ad %s' --date=short -E --grep='[FS](6\.2|12\.[1-2])'
 ```
 
 - `a31d739` 2026-09-27 S5.3.6 complete the repository setup experience
@@ -52,7 +51,6 @@ git log --format='%h %ad %s' --date=short -E --grep='[FS](6\.2|11\.5|12\.[1-2])'
 ## Exit criteria
 
 - E5's acceptance block passes.
-- F11.5's acceptance holds.
 - F12.2's acceptance holds.
 - taskkit is archived.
 

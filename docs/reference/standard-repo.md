@@ -379,6 +379,11 @@ without rendering anything ([ADR-0006](../adr/ADR-0006.md)).
 
 ## 8. CI shape
 
+Every archetype's CI follows one contract: the same triggers, gating, change
+plan, Sonar gate, default-branch-only release and `ci-ok`, whatever the stack,
+planned by `rn-forge-devops` ([ADR-0016](../adr/ADR-0016.md)). Only what runs
+under each `task` differs.
+
 `validate → sonar → release`, with the release job a matrix over the workspace
 members for `python-lib`.
 
@@ -391,6 +396,9 @@ the root vocabulary ([ADR-0014](../adr/ADR-0014.md)):
   `ci:external-install`.
 - `python-lib` jobs, in order: `validate`, `plan`, `verify`, `postgres`,
   `smoke`, `suites`, `sonar`, `release`, `external-install`, `ci-ok`.
+
+[How a `python-lib` CI run flows](../architecture/python-lib-ci.md) walks
+through each event.
 
 Planned for release-1, not yet built: a `node-lib` repository releases by
 `workflow_dispatch` (`[ci] release = "nx-dispatch"`), gated on a green CI run,
@@ -411,6 +419,12 @@ The rules:
   `SONAR_TOKEN`. Validation stays required.
 - `sonar.qualitygate.wait=true`, and `release` depends on `sonar`. Submitting an
   analysis is not passing a gate.
+- Release runs only on the default branch, never on a pull request, and only for
+  units whose every check passed. A dispatched release on the default branch,
+  gated on a green CI run ([ADR-0015](../adr/ADR-0015.md)), satisfies this.
+  (`python-lib`'s generated `release` does not yet wait on `sonar` or skip
+  pull requests:
+  [S6.4.7](../specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md#s647-release-publishes-from-the-default-branch-after-the-quality-gate).)
 - Release is idempotent: the **release**, not the tag, is the record of what
   shipped, and the tag is created by the publish step itself. A failed publish
   is therefore resumable; a tag-first design made it permanent.

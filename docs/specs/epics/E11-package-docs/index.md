@@ -13,7 +13,7 @@
 | [F11.2 — `python-lib` repositories carry package docs sites](F11.2-python-lib-package-sites.md) | Closed | release-1 | 3 Closed · 1 Removed |
 | [F11.3 — `kiln generate package`](F11.3-generate-package.md) | Closed | release-1 | 1 Closed |
 | [F11.4 — The docs rules are one standard, and kiln owns them](F11.4-cross-repository-rule.md) | Closed | release-1 | 2 Closed |
-| [F11.5 — CI deploys versioned package sites](F11.5-deploy-package-sites.md) | New | release-2 | 1 New |
+| [F11.5 — CI deploys versioned package sites](F11.5-deploy-package-sites.md) | New | release-1 | 1 New |
 
 <!-- END derived features -->
 
@@ -33,10 +33,10 @@ repository's specs are accepted inside that repository
 **Dependencies.** F11.1 builds on the `docs` module as
 [S4.3.2](../E4-generator/F4.3-concern-modules.md#s432-docs) left it, and after
 [S13.1.1](../E13-docs-work-model/F13.1-derived-regions.md#s1311-the-nav-is-a-derived-region)
-made the nav a derived region. F11.2 needs F11.1. F11.5 needs F11.2 and its
-entry criterion. F11.3 needs F11.2 and the CLI's
-[S4.5.1–S4.5.2](../E4-generator/F4.5-cli.md). F11.4 needs nothing, but S11.4.2
-waits on S13.3.1. Downstream,
+made the nav a derived region. F11.2 needs F11.1. F11.5 needs F11.2 and
+[S6.4.4](../E6-rebuild-the-repos/F6.4-workspace-pipeline.md#s644-ordered-release-and-external-install).
+F11.3 needs F11.2 and the CLI's [S4.5.1–S4.5.2](../E4-generator/F4.5-cli.md).
+F11.4 needs nothing, but S11.4.2 waits on S13.3.1. Downstream,
 [S6.1.1](../E6-rebuild-the-repos/F6.1-pykit-skeleton.md) needs F11.1–F11.3, and
 [F4.4](../E4-generator/F4.4-render-matrix.md)'s `python-lib` cell needs S11.3.1.
 
