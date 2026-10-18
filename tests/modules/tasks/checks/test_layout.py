@@ -6,6 +6,7 @@ file, a `desc:` on every task, and the validate gate not shrinking.
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 import pytest
@@ -418,7 +419,21 @@ CELLS = {
 }
 
 
-@pytest.mark.parametrize("cell", [*CELLS, "python-lib"])
+@pytest.mark.parametrize(
+    "cell",
+    [
+        "python-app",
+        "python-tool",
+        "python-web-api",
+        pytest.param(
+            "python-web-app",
+            marks=pytest.mark.skipif(
+                shutil.which("pnpm") is None, reason="pnpm is not on PATH"
+            ),
+        ),
+        "python-lib",
+    ],
+)
 def test_s4_6_2_3_every_rendered_cell_passes(
     cell: str, rendered, tmp_path_factory: pytest.TempPathFactory
 ) -> None:
