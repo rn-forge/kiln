@@ -591,16 +591,26 @@ PLAN_KEYS = (
 
 def test_s6_4_2_4_python_lib_jobs_and_validate_steps(tmp_path: Path) -> None:
     jobs = _lib_jobs(tmp_path)
-    assert list(jobs) == ["validate", "plan", "verify", "sonar", "release", "ci-ok"]
+    assert list(jobs) == [
+        "validate",
+        "plan",
+        "verify",
+        "postgres",
+        "smoke",
+        "suites",
+        "sonar",
+        "release",
+        "ci-ok",
+    ]
     runs = [step.get("run") for step in jobs["validate"]["steps"]]  # type: ignore[attr-defined]
     for command in ("task setup", "task lint", "task ci:adapters", "task docs:build"):
         assert command in runs, command
     lint = next(s for s in jobs["validate"]["steps"] if s.get("run") == "task lint")  # type: ignore[attr-defined]
     assert lint["env"]["KILN_DOCTOR_FULL"] == KILN_DOCTOR_FULL_EXPRESSION
     no_sonar = list(_lib_jobs(tmp_path / "n", sonar=False))
-    assert no_sonar == ["validate", "plan", "verify", "release", "ci-ok"]
+    assert "sonar" not in no_sonar
     no_release = list(_lib_jobs(tmp_path / "r", release="none"))
-    assert no_release == ["validate", "plan", "verify", "sonar", "ci-ok"]
+    assert "release" not in no_release
     no_docs = _lib_jobs(tmp_path / "d", profile="none")
     assert "task docs:build" not in [s.get("run") for s in no_docs["validate"]["steps"]]  # type: ignore[attr-defined]
 
@@ -647,7 +657,7 @@ def test_s6_4_2_6_verify_job(tmp_path: Path) -> None:
 
 def test_s6_4_2_6_sonar_waits_for_verify(tmp_path: Path) -> None:
     sonar = _lib_jobs(tmp_path)["sonar"]
-    assert sonar["needs"] == ["validate", "verify"]
+    assert sonar["needs"] == ["validate", "verify", "postgres", "smoke"]
     assert str(sonar["if"]).startswith(
         "${{ !cancelled() && !contains(needs.*.result, 'failure') && ("
     )
@@ -658,3 +668,83 @@ def test_s6_4_2_8_other_archetypes_keep_the_plain_pipeline(tmp_path: Path) -> No
     for archetype in ("python-app", "python-tool"):
         jobs = _ci_jobs(_root(tmp_path / archetype, archetype))
         assert list(jobs) == ["validate", "sonar", "release", "ci-ok"], archetype
+
+
+def test_s6_4_3_2_declared_jobs_follow_verify(tmp_path: Path) -> None:
+    jobs = _lib_jobs(tmp_path)
+    names = list(jobs)
+    assert names[names.index("verify") + 1 : names.index("verify") + 4] == [
+        "postgres",
+        "smoke",
+        "suites",
+    ]
+    for name, key in (
+        ("postgres", "postgres"),
+        ("smoke", "smoke"),
+        ("suites", "suites"),
+    ):
+        job = jobs[name]
+        assert job["needs"] == ["validate", "plan"], name
+        assert job["if"] == (
+            "${{ !cancelled() && needs.validate.result == 'success' && "
+            f"needs.plan.outputs.{key} != '[]' }}}}"
+        ), name
+        assert job["strategy"] == {  # type: ignore[comparison-overlap]
+            "fail-fast": False,
+            "matrix": {"include": f"${{{{ fromJSON(needs.plan.outputs.{key}) }}}}"},
+        }, name
+
+
+def test_s6_4_3_3_postgres_job(tmp_path: Path) -> None:
+    job = _lib_jobs(tmp_path)["postgres"]
+    assert job["services"] == {
+        "postgres": {
+            "image": "postgres:17",
+            "env": {
+                "POSTGRES_USER": "ci",
+                "POSTGRES_PASSWORD": "ci",
+                "POSTGRES_DB": "ci",
+            },
+            "ports": ["5432:5432"],
+            "options": (
+                '--health-cmd "pg_isready -U ci" --health-interval 5s '
+                "--health-timeout 5s --health-retries 10"
+            ),
+        }
+    }
+    steps = job["steps"]  # type: ignore[assignment]
+    runs = [s.get("run") for s in steps]  # type: ignore[attr-defined]
+    assert runs.index("task setup") < runs.index(
+        "task ci:postgres -- ${{ matrix.name }}"
+    )
+    step = steps[runs.index("task ci:postgres -- ${{ matrix.name }}")]  # type: ignore[index]
+    assert step["env"] == {
+        "DSN_VAR": "${{ matrix.env }}",
+        "PYTEST_ARGS": "${{ needs.plan.outputs.pytest-args }}",
+    }
+
+
+def test_s6_4_3_4_smoke_job_does_not_sync(tmp_path: Path) -> None:
+    steps = _lib_jobs(tmp_path)["smoke"]["steps"]  # type: ignore[assignment]
+    runs = [s.get("run") for s in steps]  # type: ignore[attr-defined]
+    assert "task setup" not in runs
+    step = steps[runs.index("task ci:smoke -- ${{ matrix.name }}")]  # type: ignore[index]
+    assert step["env"] == {"EXTRA": "${{ matrix.extra }}"}
+
+
+def test_s6_4_3_5_suites_job(tmp_path: Path) -> None:
+    job = _lib_jobs(tmp_path)["suites"]
+    assert job["name"] == "suite (${{ matrix.name }})"
+    steps = job["steps"]  # type: ignore[assignment]
+    runs = [s.get("run") for s in steps]  # type: ignore[attr-defined]
+    assert runs.index("task setup") < runs.index("task ci:suite")
+    assert steps[runs.index("task ci:suite")]["env"] == {  # type: ignore[index]
+        "SUITE_ARGS": "${{ matrix.args }}"
+    }
+
+
+def test_s6_4_3_6_ci_ok_and_sonar_need_the_declared_jobs(tmp_path: Path) -> None:
+    jobs = _lib_jobs(tmp_path)
+    assert jobs["sonar"]["needs"] == ["validate", "verify", "postgres", "smoke"]
+    assert set(jobs["ci-ok"]["needs"]) == set(jobs) - {"ci-ok"}  # type: ignore[arg-type]
+    assert {"postgres", "smoke", "suites"} <= set(jobs["ci-ok"]["needs"])  # type: ignore[arg-type]

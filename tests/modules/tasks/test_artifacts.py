@@ -702,3 +702,24 @@ def test_s6_4_2_2_ci_tasks_pass_task_layout_and_list(tmp_path: Path) -> None:
     assert listed.returncode == 0, listed.stderr
     names = {t["name"] for t in json.loads(listed.stdout)["tasks"]}
     assert {"ci:plan", "ci:adapters", "ci:verify"} <= names
+
+
+def test_s6_4_3_1_postgres_smoke_and_suite_are_described_and_not_internal(
+    tmp_path: Path,
+) -> None:
+    tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
+    for name in ("postgres", "smoke", "suite"):
+        assert tasks[name]["desc"], name  # type: ignore[index]
+        assert "internal" not in tasks[name], name  # type: ignore[operator]
+
+
+def test_s6_4_3_2_commands_follow_the_story(tmp_path: Path) -> None:
+    tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
+    postgres = tasks["postgres"]["cmds"]  # type: ignore[index]
+    assert len(postgres) == 1
+    lines = postgres[0].splitlines()
+    assert lines[0] == 'export "$DSN_VAR=postgresql://ci:ci@localhost:5432/ci"'
+    assert "pytest -q $PYTEST_ARGS" in lines[1]
+    assert "{{.CLI_ARGS}}" in lines[1]
+    assert tasks["smoke"]["cmds"] == ['{{.DEVOPS}} smoke {{.CLI_ARGS}} "${EXTRA:-}"']  # type: ignore[index]
+    assert tasks["suite"]["cmds"] == ["uv run pytest $SUITE_ARGS"]  # type: ignore[index]

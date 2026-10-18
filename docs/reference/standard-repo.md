@@ -386,9 +386,10 @@ A `python-lib` workspace gets change-scoped verify and (still to build) an
 ordered release, planned by `rn-forge-devops` through the public `ci:*` task
 namespace, outside the root vocabulary ([ADR-0014](../adr/ADR-0014.md)):
 
-- `ci` namespace: `ci:plan`, `ci:adapters`, `ci:verify -- <package>`.
-- `python-lib` jobs, in order: `validate`, `plan`, `verify`, `sonar`, `release`,
-  `ci-ok`.
+- `ci` namespace: `ci:plan`, `ci:adapters`, `ci:verify -- <package>`,
+  `ci:postgres`, `ci:smoke` and `ci:suite`.
+- `python-lib` jobs, in order: `validate`, `plan`, `verify`, `postgres`,
+  `smoke`, `suites`, `sonar`, `release`, `ci-ok`.
 
 Planned for release-1, not yet built: a `node-lib` repository releases by
 `workflow_dispatch` (`[ci] release = "nx-dispatch"`), gated on a green CI run,

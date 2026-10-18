@@ -34,3 +34,21 @@ tasks:
       - uv run --directory packages/{{.CLI_ARGS}} --package {{.CLI_ARGS}} ruff check src $(test -d packages/{{.CLI_ARGS}}/tests && echo tests)
       - uv run --directory packages/{{.CLI_ARGS}} --package {{.CLI_ARGS}} pyright src
       - uv run --directory packages/{{.CLI_ARGS}} --package {{.CLI_ARGS}} pytest -q $PYTEST_ARGS
+
+  postgres:
+    desc: "CI only: a member's tests again against PostgreSQL (-- <package>)"
+    cmds:
+      - |
+        export "$DSN_VAR=postgresql://ci:ci@localhost:5432/ci"
+        uv run --directory packages/{{.CLI_ARGS}} --package {{.CLI_ARGS}} pytest -q $PYTEST_ARGS
+
+  smoke:
+    desc: "CI only: install one extra from the built wheel and import it (-- <package> [extra])"
+    silent: true
+    cmds:
+      - '{{.DEVOPS}} smoke {{.CLI_ARGS}} "${EXTRA:-}"'
+
+  suite:
+    desc: "CI only: run one workspace-wide pytest suite"
+    cmds:
+      - uv run pytest $SUITE_ARGS
