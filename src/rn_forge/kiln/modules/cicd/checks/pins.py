@@ -1,6 +1,7 @@
 """`ci-pins` — every action is pinned to a commit, and every job states its permissions.
 
-Two rules, over every `*.yml` under `.github/workflows/` and `.github/actions/`:
+Two rules, over every `*.yml` and `*.yaml` under `.github/workflows/` and
+`.github/actions/`:
 
 1. A `uses:` names a 40-hex-character commit SHA after `@`, with the version in
    a trailing `# <version>` comment. A local action (`uses: ./…`) is exempt.
@@ -74,7 +75,9 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
     for directory in _DIRS:
         if not (root / directory).is_dir():
             continue
-        for path in sorted((root / directory).rglob("*.yml")):
+        for path in sorted((root / directory).rglob("*")):
+            if not (path.is_file() and path.suffix in {".yml", ".yaml"}):
+                continue
             label = path.relative_to(root).as_posix()
             text = path.read_text(encoding="utf-8")
             findings.extend(_check_uses(label, text))
