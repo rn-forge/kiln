@@ -96,7 +96,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "devops": devops,
         "kiln_version": __version__,
         "name": config.name,
-        "package": root_package(config.name),
+        "package": config.module,
         "workspace": workspace,
         "packages": packages,
         "package_dirs": list(config.packages),

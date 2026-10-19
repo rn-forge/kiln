@@ -11,6 +11,7 @@ import inspect
 import json
 import subprocess
 import tomllib
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -449,6 +450,7 @@ def test_s4_5_9_6_no_retention_or_cleanup_flag_and_no_rnf_home() -> None:
         "docs",
         "backend",
         "frontend",
+        "module",
         "config",
         "allow_untested",
         "dry_run",
@@ -664,3 +666,67 @@ def test_s4_9_1_6_new_records_seeded_and_validates(tmp_path: Path) -> None:
     assert {path: (directory / path).read_bytes() for path in paths} == before
     assert main.read_text(encoding="utf-8") == "# edited\n"
     assert {path: entries()[path] for path in paths} == before_entries
+
+
+def test_s4_8_2_3_new_with_a_module(tmp_path: Path) -> None:
+    directory = tmp_path / "demo-tool"
+    commands.new(
+        directory,
+        archetype="python-tool",
+        docs="mkdocs",
+        module="rn_forge.demo",
+        yes=True,
+    )
+    package = directory / "src/rn_forge/demo"
+    for name in ("__init__.py", "py.typed", "main.py", "commands.py", "product.py"):
+        assert (package / name).is_file()
+    assert not (directory / "src/rn_forge/__init__.py").exists()
+    assert not (directory / "src/demo_tool").exists()
+    pyproject = tomllib.loads((directory / "pyproject.toml").read_text("utf-8"))
+    assert pyproject["tool"]["uv"]["build-backend"]["module-name"] == "rn_forge.demo"
+    assert pyproject["project"]["scripts"] == {"demo-tool": "rn_forge.demo.main:app"}
+
+    def read(path: str) -> str:
+        return (directory / path).read_text(encoding="utf-8")
+
+    assert ".parents[3] / " in read("src/rn_forge/demo/main.py")
+    assert "import rn_forge.demo\n" in read("tests/test_package.py")
+    assert "from rn_forge.demo.main import app" in read("tests/test_cli.py")
+    assert "--cov=rn_forge.demo " in read("tasks/quality.yml")
+    assert "::: rn_forge.demo" in read("docs/reference/python-api.md")
+    written = tomllib.loads(read(".rn-forge/kiln/config.toml"))
+    assert written["archetype"]["python-tool"]["module"] == "rn_forge.demo"
+    assert written["cli"]["commands"][0]["target"] == "rn_forge.demo.commands:hello"
+    assert written["lifecycle"]["product"] == "rn_forge.demo.product:PRODUCT"
+    assert checks.run(directory) == []
+
+
+def test_s4_8_2_3_new_without_a_module_is_unchanged(
+    rendered: Callable[[str], Path],
+) -> None:
+    root = rendered("python-tool")
+    written = tomllib.loads(
+        (root / ".rn-forge/kiln/config.toml").read_text(encoding="utf-8")
+    )
+    assert "module" not in written.get("archetype", {}).get("python-tool", {})
+    assert (root / "src/python_tool/py.typed").is_file()
+
+
+def test_s4_8_2_3_an_invalid_module_is_refused_before_writing(
+    tmp_path: Path,
+) -> None:
+    directory = tmp_path / "demo-tool"
+    with pytest.raises(AppException):
+        commands.new(directory, archetype="python-tool", module="Rn-Forge", yes=True)
+    assert not directory.exists()
+    assert not (tmp_path / ".staging").exists()
+
+
+def test_s4_8_2_3_module_on_another_archetype_is_refused(tmp_path: Path) -> None:
+    directory = tmp_path / "demo-lib"
+    with pytest.raises(AppException):
+        commands.new(
+            directory, archetype="python-lib", module="rn_forge.demo", yes=True
+        )
+    assert not directory.exists()
+    assert not (tmp_path / ".staging").exists()

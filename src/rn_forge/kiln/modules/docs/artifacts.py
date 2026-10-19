@@ -60,7 +60,7 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
     context = {
         "name": config.name,
         "archetype": config.archetype,
-        "module": config.name.replace("-", "_"),
+        "module": config.module,
         "kiln_version": __version__,
     }
     skipped = (

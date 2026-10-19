@@ -313,3 +313,65 @@ def test_s6_1_4_3_own_is_python_lib_only(tmp_path: Path, archetype: str) -> None
 def test_s6_1_4_4_an_unknown_value_is_refused(tmp_path: Path) -> None:
     with pytest.raises(AppException):
         _load(tmp_path, LIB_CONFIG + 'import_contracts = "none"\n')
+
+
+def _single(
+    tmp_path: Path, archetype: str, name: str = "demo-tool", body: str = ""
+) -> KilnConfig:
+    text = f"""
+schema_version = 1
+
+[repository]
+name = "{name}"
+archetype = "{archetype}"
+{body}"""
+    return _load(tmp_path, text)
+
+
+def test_s4_8_2_1_module_defaults_from_the_name(tmp_path: Path) -> None:
+    assert _single(tmp_path, "python-tool").module == "demo_tool"
+
+
+@pytest.mark.parametrize("archetype", ["python-tool", "python-app"])
+def test_s4_8_2_1_module_is_read_from_config(tmp_path: Path, archetype: str) -> None:
+    config = _single(
+        tmp_path,
+        archetype,
+        body=f'\n[archetype."{archetype}"]\nmodule = "rn_forge.demo"\n',
+    )
+    assert config.module == "rn_forge.demo"
+
+
+def test_s4_8_2_1_an_invalid_module_is_a_config_error(tmp_path: Path) -> None:
+    with pytest.raises(AppException):
+        _single(
+            tmp_path,
+            "python-tool",
+            body='\n[archetype."python-tool"]\nmodule = "Rn-Forge"\n',
+        )
+
+
+@pytest.mark.parametrize(
+    "archetype", ["python-lib", "python-web-api", "python-web-app"]
+)
+def test_s4_8_2_1_module_is_single_package_only(tmp_path: Path, archetype: str) -> None:
+    with pytest.raises(AppException):
+        _single(
+            tmp_path,
+            archetype,
+            body=f'\n[archetype."{archetype}"]\nmodule = "rn_forge.demo"\n',
+        )
+
+
+def test_s4_8_2_2_importlinter_names_the_declared_module(tmp_path: Path) -> None:
+    config = _single(
+        tmp_path,
+        "python-tool",
+        body='\n[archetype."python-tool"]\nmodule = "rn_forge.demo"\n',
+    )
+    [artifact] = _importlinter(config, tmp_path)
+    assert "root_package = rn_forge.demo\n" in artifact.content
+    assert (
+        "name = rn_forge.demo imports no framework or CLI toolkit directly"
+        in artifact.content
+    )

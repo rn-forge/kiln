@@ -12,6 +12,6 @@ from pathlib import Path
 
 from rn_forge.cli import CliApp
 
-CONFIG = Path(__file__).resolve().parents[2] / ".rn-forge" / "kiln" / "config.toml"
+CONFIG = Path(__file__).resolve().parents[{{ package.count(".") + 2 }}] / ".rn-forge" / "kiln" / "config.toml"
 
 app = CliApp.from_config(CONFIG)

@@ -12,6 +12,6 @@ from pathlib import Path
 
 from rn_forge.tooling.cli.lifecycle import build_tool_app
 
-CONFIG = Path(__file__).resolve().parents[2] / ".rn-forge" / "kiln" / "config.toml"
+CONFIG = Path(__file__).resolve().parents[{{ package.count(".") + 2 }}] / ".rn-forge" / "kiln" / "config.toml"
 
 app = build_tool_app(CONFIG)

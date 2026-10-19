@@ -11,6 +11,7 @@ from rn_forge.commons.lang.models import StrictModel
 
 __all__ = [
     "MODULE_PATTERN",
+    "AppConfig",
     "ArchetypeConfig",
     "LibConfig",
     "PackagesConfig",
@@ -37,6 +38,20 @@ class PackagesConfig(StrictModel):
                 raise ValueError(
                     f"modules: {module!r} is not a dotted import module name"
                 )
+        return self
+
+
+class AppConfig(PackagesConfig):
+    """`[archetype.python-app]` and `[archetype.python-tool]` — the one package's module."""
+
+    module: str | None = None
+
+    @model_validator(mode="after")
+    def _module_is_dotted(self) -> AppConfig:
+        if self.module is not None and not MODULE_PATTERN.match(self.module):
+            raise ValueError(
+                f"module: {self.module!r} is not a dotted import module name"
+            )
         return self
 
 
@@ -67,8 +82,8 @@ class WebAppConfig(StrictModel):
 class ArchetypeConfig(StrictModel):
     """Per-archetype settings, one table per archetype name."""
 
-    python_app: PackagesConfig | None = Field(default=None, alias="python-app")
-    python_tool: PackagesConfig | None = Field(default=None, alias="python-tool")
+    python_app: AppConfig | None = Field(default=None, alias="python-app")
+    python_tool: AppConfig | None = Field(default=None, alias="python-tool")
     python_lib: LibConfig | None = Field(default=None, alias="python-lib")
     python_web_api: WebApiConfig | None = Field(default=None, alias="python-web-api")
     python_web_app: WebAppConfig | None = Field(default=None, alias="python-web-app")
@@ -90,6 +105,11 @@ class ArchetypeConfig(StrictModel):
         if isinstance(section, PackagesConfig) and package in section.modules:
             return section.modules[package]
         return Path(package).name.replace("-", "_")
+
+    def module_of(self, archetype: str) -> str | None:
+        """The declared import module of a single-package *archetype*, or None."""
+        section = self._section(archetype)
+        return section.module if isinstance(section, AppConfig) else None
 
     def import_contracts_for(self, archetype: str) -> str:
         """Who writes *archetype*'s import contracts: `kiln`, or `own` for a library."""

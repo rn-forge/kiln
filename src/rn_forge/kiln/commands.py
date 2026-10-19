@@ -225,6 +225,7 @@ def new(
     docs: str = "mkdocs",
     backend: str | None = None,
     frontend: str | None = None,
+    module: str | None = None,
     config: str | None = None,
     allow_untested: bool = False,
     dry_run: bool = False,
@@ -243,7 +244,9 @@ def new(
     `--backend` and `--frontend` are omitted (left `None`) unless given, so a
     config-selected value or the archetype's own default survives; passing
     either for an archetype that does not declare it is refused, naming the
-    key.
+    key. `--module` sets the dotted import module of a `python-app` or
+    `python-tool` repository (a namespace package such as `rn_forge.agentkit`)
+    in place of the one derived from the name.
 
     Raises:
         AppException: `--archetype` is missing or unknown, a flag names an
@@ -262,6 +265,7 @@ def new(
         docs=docs,
         backend=backend,
         frontend=frontend,
+        module=module,
         config=config,
         allow_untested=allow_untested,
         allow_packages=False,
@@ -306,6 +310,7 @@ def init(
     docs: str = "mkdocs",
     backend: str | None = None,
     frontend: str | None = None,
+    module: str | None = None,
     config: str | None = None,
     force: bool = False,
     dry_run: bool = False,
@@ -318,8 +323,10 @@ def init(
     directory's.
 
     `new`'s configuration and first-apply flow, run in place and never
-    scaffolding. Requires a `.git` entry and a `pyproject.toml`; kiln renders
-    every managed path that is missing. Without `--yes` (or with `--dry-run`)
+    scaffolding. `--module` sets the dotted import module of a `python-app` or
+    `python-tool` repository in place of the one derived from the name.
+    Requires a `.git` entry and a `pyproject.toml`; kiln renders every managed
+    path that is missing. Without `--yes` (or with `--dry-run`)
     prints the resolved config and the artifact plan, and writes nothing. With
     `--yes`, the Git
     working tree must be clean (`init.dirty-tree`); it then writes
@@ -372,6 +379,7 @@ def init(
         docs=docs,
         backend=backend,
         frontend=frontend,
+        module=module,
         config=config,
         allow_untested=False,
         allow_packages=True,
@@ -626,6 +634,7 @@ def _resolve_config(
     docs: str,
     backend: str | None,
     frontend: str | None,
+    module: str | None,
     config: str | None,
     allow_untested: bool,
     allow_packages: bool,
@@ -661,7 +670,9 @@ def _resolve_config(
         frontend=frontend,
     )
     DictUtils.set(flags, "repository.name", name)
-    package = root_package(name)
+    if module is not None:
+        DictUtils.set(flags, f"archetype.{archetype}.module", module)
+    package = module or root_package(name)
     if archetype in {"python-tool", "python-app"}:
         DictUtils.set(
             flags,

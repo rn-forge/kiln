@@ -24,7 +24,6 @@ from tomlkit.items import InlineTable, Item
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import gitignore
-from rn_forge.kiln.modules.python.artifacts import root_package
 
 __all__ = [
     "SAMPLE_TEST",
@@ -130,8 +129,8 @@ def scaffold_backend(raw: Path, config: KilnConfig) -> None:
             },
         )
     else:
-        _uv_init(raw, name=config.name, bare=False)
-        _write_sample_test(raw, config.name)
+        _uv_init(raw, name=config.name, bare=False, module=config.module)
+        _write_sample_test(raw, config.name, config.module)
     (raw / gitignore.GITIGNORE).write_text(uv_gitignore(), encoding="utf-8")
 
 
@@ -315,11 +314,12 @@ def _reconcile_pyproject(root: Path, config: KilnConfig, relative: Path) -> None
     is_member = not is_root
     is_workspace_root = (workspace or web) and is_root
     name = _member_name(config, path, root, web=web, is_member=is_member)
-    module = (
-        config.module_for(path.parent.relative_to(root).as_posix())
-        if workspace and is_member
-        else name.replace("-", "_")
-    )
+    if workspace and is_member:
+        module = config.module_for(path.parent.relative_to(root).as_posix())
+    elif config.archetype in {"python-tool", "python-app"} and is_root:
+        module = config.module
+    else:
+        module = name.replace("-", "_")
     extra_dev = _extra_dev(config, web=web, is_member=is_member)
     _reconcile(
         path,
@@ -338,11 +338,7 @@ def _reconcile_pyproject(root: Path, config: KilnConfig, relative: Path) -> None
     if config.archetype in {"python-tool", "python-app"} and is_root:
         DocumentUtils.update(
             path,
-            {
-                "project": {
-                    "scripts": {config.name: f"{root_package(config.name)}.main:app"}
-                }
-            },
+            {"project": {"scripts": {config.name: f"{config.module}.main:app"}}},
         )
 
 

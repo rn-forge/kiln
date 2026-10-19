@@ -33,7 +33,7 @@ def render(config: KilnConfig) -> list[Artifact]:
     elif web:
         members = [root_package(f"{config.name}-api")]
     else:
-        members = [root_package(config.name)]
+        members = [config.module]
     forbidden = [m for m in _FORBIDDEN_FRAMEWORKS if m != config.backend]
     context: dict[str, object] = {
         "kiln_version": __version__,

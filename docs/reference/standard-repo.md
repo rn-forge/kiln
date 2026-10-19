@@ -483,6 +483,7 @@ modules = { "packages/rn-forge-commons" = "rn_forge.commons" }  # optional: dott
 
 [archetype.python-app]           # or [archetype.python-tool]
 packages = []                    # internal-only; never published
+module = "rn_forge.agentkit"  # optional: dotted import module; default is the repository name with '-' as '_'
 
 [archetype.python-web-api]
 backend = "fastapi"            # fastapi (shipped) | django (untested)

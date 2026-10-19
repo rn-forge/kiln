@@ -89,6 +89,18 @@ class KilnConfig:
         return section.module_for(self.archetype, package)
 
     @property
+    def module(self) -> str:
+        """The import module of a single-package repository: the declared one,
+        else the repository name with `-` as `_`."""
+        section = getattr(self.document, "archetype", None)
+        declared = (
+            section.module_of(self.archetype)
+            if isinstance(section, ArchetypeConfig)
+            else None
+        )
+        return declared or self.name.replace("-", "_")
+
+    @property
     def import_contracts(self) -> str:
         """`own` when a `python-lib` repo writes its own import contracts, else `kiln`."""
         section = getattr(self.document, "archetype", None)

@@ -55,7 +55,7 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
     engine = TemplateEngine(package="rn_forge.kiln.modules.python")
     if config.archetype in {"python-tool", "python-app"}:
         tool = config.archetype == "python-tool"
-        package = root_package(config.name)
+        package = config.module
         return _render(
             engine,
             root,
