@@ -106,3 +106,27 @@ tasks:
             "$name @ git+$REPOSITORY_URL@$tag#subdirectory=$dir"
           "$tmp/$name/bin/python" -c "import $module"
         done
+{% if docs %}
+  docs-publish:
+    desc: "CI only: deploy each released package's versioned site, then build the root site (SITE_DIR) with packages/ merged in"
+    cmds:
+      - |
+        set -euo pipefail
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        {{.DEVOPS}} released | while read -r _ dir _ version; do
+          config="$dir/mkdocs.yml"
+          [ -f "$config" ] || continue
+          first=$(uv run --group docs mike list --deploy-prefix "$dir" -F "$config" 2>/dev/null | wc -l || true)
+          uv run --group docs mike deploy --deploy-prefix "$dir" -F "$config" \
+            --alias-type copy --update-aliases --push "${version%.*}" latest
+          if [ "$first" -eq 0 ]; then
+            uv run --group docs mike set-default --deploy-prefix "$dir" -F "$config" --push latest
+          fi
+        done
+      - '{{.TASK_EXE}} docs:build -- "$SITE_DIR"'
+      - |
+        if git fetch origin gh-pages; then
+          git archive FETCH_HEAD packages | tar -x -C "$SITE_DIR"
+        fi
+{% endif %}

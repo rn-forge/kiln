@@ -791,3 +791,29 @@ def test_s6_4_6_5_packages_dir_layout_renders_as_before(tmp_path: Path) -> None:
             "cmd": "uv run --directory {{.ITEM}} --package {{base .ITEM}} pyright src",
         }
     ]
+
+
+def test_s11_5_1_1_docs_publish_runs_mike_builds_and_merges(tmp_path: Path) -> None:
+    task = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]["docs-publish"]  # type: ignore[index]
+    assert task["desc"]
+    assert "internal" not in task
+    script = "\n".join(task["cmds"])
+    assert "{{.DEVOPS}} released" in script
+    assert '"${version%.*}" latest' in script
+    for text in (
+        '--deploy-prefix "$dir"',
+        '-F "$config"',
+        "--alias-type copy --update-aliases --push",
+        "mike set-default",
+        "{{.TASK_EXE}} docs:build",
+        "git archive FETCH_HEAD packages",
+    ):
+        assert text in script, text
+    assert script.index("mike deploy") < script.index("docs:build")
+    assert script.index("docs:build") < script.index("git archive")
+    assert "packages/{{" not in script
+
+
+def test_s11_5_1_1_docs_publish_is_absent_without_docs(tmp_path: Path) -> None:
+    root = _root(tmp_path, "python-lib", profile="none")
+    assert "docs-publish" not in _ci_tasks(root)["tasks"]  # type: ignore[operator]

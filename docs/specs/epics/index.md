@@ -27,7 +27,7 @@ Jump to: [E1–E10](#e1e10) · [E11–E20](#e11e20)
 
 | Epic | State | Features | Iterations |
 | -- | -- | -- | -- |
-| [E11 — Package docs sites](E11-package-docs/index.md) | Active | 1 New · 4 Closed | release-1 |
+| [E11 — Package docs sites](E11-package-docs/index.md) | Active | 1 Active · 4 Closed | release-1 |
 | [E12 — The architecture baseline](E12-architecture-baseline/index.md) | New | 2 New | release-2 |
 | [E13 — The docs work model and derived regions](E13-docs-work-model/index.md) | Closed | 3 Closed | release-1 |
 | [E14 — Docs site navigation and work summaries](E14-site-navigation/index.md) | Closed | 2 Closed | release-1 |

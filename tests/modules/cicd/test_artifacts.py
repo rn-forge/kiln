@@ -34,6 +34,14 @@ CI_KEYS = (
 )
 WORKFLOWS = (".github/workflows/ci.yml", ".github/workflows/docs.yml")
 
+
+def _keys(archetype: str, keys: tuple[str, ...] = CI_KEYS) -> tuple[str, ...]:
+    """The rows `archetype` renders: a `python-lib` has no `docs.yml` (S11.5.1)."""
+    return tuple(
+        k for k in keys if archetype != "python-lib" or not k.endswith("/docs.yml")
+    )
+
+
 CONFIG = """
 schema_version = 1
 
@@ -101,7 +109,7 @@ def test_s4_3_4_property1_renders_exactly_the_module_s_template_inventory_rows(
     root = _root(tmp_path, archetype)
     artifacts = CICD.artifacts(KilnConfig.load(root), root)
     assert [(a.path, a.kind) for a in artifacts] == [
-        (path, ArtifactKind.MANAGED) for path in CI_KEYS
+        (path, ArtifactKind.MANAGED) for path in _keys(archetype)
     ]
 
 
@@ -123,7 +131,7 @@ def test_s4_3_4_property2_into_an_empty_directory_only_creates(
     tmp_path: Path, archetype: str
 ) -> None:
     actions = _actions(_root(tmp_path, archetype), tmp_path)
-    assert {actions[key] for key in CI_KEYS} == {Action.CREATE}
+    assert {actions[key] for key in _keys(archetype)} == {Action.CREATE}
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
@@ -133,7 +141,7 @@ def test_s4_3_4_property3_a_second_apply_is_unchanged(
     root = _root(tmp_path, archetype)
     cycle.apply(root, home=tmp_path / "home")
     actions = _actions(root, tmp_path)
-    assert {actions[key] for key in CI_KEYS} == {Action.UNCHANGED}
+    assert {actions[key] for key in _keys(archetype)} == {Action.UNCHANGED}
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
@@ -166,7 +174,7 @@ def test_s4_3_4_1_actionlint_passes_on_every_rendered_workflow(
     root = _root(tmp_path, archetype, sonar=sonar)
     cycle.apply(root, home=tmp_path / "home")
     result = subprocess.run(
-        ["actionlint", *WORKFLOWS],
+        ["actionlint", *_keys(archetype, WORKFLOWS)],
         cwd=root,
         capture_output=True,
         text=True,
@@ -600,6 +608,7 @@ def test_s6_4_2_4_python_lib_jobs_and_validate_steps(tmp_path: Path) -> None:
         "sonar",
         "release",
         "external-install",
+        "docs",
         "ci-ok",
     ]
     runs = [step.get("run") for step in jobs["validate"]["steps"]]  # type: ignore[attr-defined]
@@ -902,7 +911,79 @@ def test_s6_4_6_4_actionlint_passes_on_the_libs_fixture(tmp_path: Path) -> None:
     )
     cycle.apply(root, home=tmp_path / "home")
     result = subprocess.run(
-        ["actionlint", *WORKFLOWS],
+        ["actionlint", ".github/workflows/ci.yml"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_s11_5_1_2_python_lib_docs_job(tmp_path: Path) -> None:
+    jobs = _lib_jobs(tmp_path)
+    names = list(jobs)
+    assert names[names.index("release") :] == [
+        "release",
+        "external-install",
+        "docs",
+        "ci-ok",
+    ]
+    docs = jobs["docs"]
+    assert docs["needs"] == ["validate", "plan", "release"]
+    assert docs["if"] == (
+        "${{ !cancelled() && needs.validate.result == 'success' && "
+        "needs.release.result != 'failure' && "
+        "needs.plan.outputs.docs == 'true' && "
+        "github.event_name == 'push' && github.ref_name == 'main' }}"
+    )
+    assert docs["concurrency"] == {"group": "pages", "cancel-in-progress": False}
+    assert docs["permissions"] == {
+        "contents": "write",
+        "pages": "write",
+        "id-token": "write",
+    }
+    steps = docs["steps"]  # type: ignore[assignment]
+    assert str(steps[0]["uses"]).startswith("actions/checkout@")  # type: ignore[index]
+    assert steps[0]["with"] == {"fetch-depth": 0}  # type: ignore[index]
+    assert steps[1]["uses"] == "./.github/actions/setup"  # type: ignore[index]
+    publish = next(s for s in steps if s.get("run") == "task ci:docs-publish")  # type: ignore[attr-defined]
+    assert publish["env"] == {"SITE_DIR": "${{ runner.temp }}/site"}
+    uses = [str(s.get("uses", "")) for s in steps]  # type: ignore[attr-defined]
+    upload = next(u for u in uses if u.startswith("actions/upload-pages-artifact@"))
+    deploy = next(u for u in uses if u.startswith("actions/deploy-pages@"))
+    assert uses.index(upload) < uses.index(deploy)
+    assert "docs" in jobs["ci-ok"]["needs"]  # type: ignore[operator]
+    assert "docs" not in _lib_jobs(tmp_path / "n", profile="none")
+    no_release = _lib_jobs(tmp_path / "r", release="none")
+    assert no_release["docs"]["needs"] == ["validate", "plan"]
+    assert "release" not in str(no_release["docs"]["if"])
+
+
+def test_s11_5_1_3_python_lib_renders_no_docs_yml(tmp_path: Path) -> None:
+    rendered = _rendered(_root(tmp_path, "python-lib"))
+    assert ".github/workflows/docs.yml" not in rendered
+    assert ".github/workflows/ci.yml" in rendered
+
+
+def test_s11_5_1_4_other_archetypes_keep_docs_yml_and_plain_ci(
+    tmp_path: Path,
+) -> None:
+    for archetype in ("python-app", "python-tool"):
+        rendered = _rendered(_root(tmp_path / archetype, archetype))
+        assert ".github/workflows/docs.yml" in rendered, archetype
+        assert (
+            "docs" not in yaml.safe_load(rendered[".github/workflows/ci.yml"])["jobs"]
+        ), archetype
+
+
+def test_s11_5_1_2_actionlint_passes_on_the_docs_job(tmp_path: Path) -> None:
+    if shutil.which("actionlint") is None:
+        pytest.skip("actionlint is not on PATH")
+    root = _root(tmp_path, "python-lib")
+    cycle.apply(root, home=tmp_path / "home")
+    result = subprocess.run(
+        ["actionlint", ".github/workflows/ci.yml"],
         cwd=root,
         capture_output=True,
         text=True,

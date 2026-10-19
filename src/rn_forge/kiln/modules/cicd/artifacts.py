@@ -51,6 +51,8 @@ def _ci_config(config: KilnConfig) -> CiConfig:
 def render(config: KilnConfig) -> list[Artifact]:
     """Render the setup action, `ci.yml`, `docs.yml` and `sonar-project.properties`.
 
+    A `python-lib` renders no `docs.yml`: its `ci.yml` has the one Pages deploy.
+
     Raises:
         AppException: `ci.provider` is `ado`, which is reserved.
     """
@@ -60,12 +62,13 @@ def render(config: KilnConfig) -> list[Artifact]:
             "cicd.render: ci.provider = 'ado' is reserved for E8 and renders nothing yet"
         )
     docs = config.docs_profile == "mkdocs"
+    workspace = config.archetype == "python-lib"
     web = config.archetype in {"python-web-api", "python-web-app"}
     web_app = config.archetype == "python-web-app"
     context: dict[str, object] = {
         "kiln_version": __version__,
         "name": config.name,
-        "workspace": config.archetype == "python-lib",
+        "workspace": workspace,
         "packages": [Path(package).name for package in config.packages],
         "docs": docs,
         "sonar": ci.sonar,
@@ -85,7 +88,7 @@ def render(config: KilnConfig) -> list[Artifact]:
     rows = [
         (".github/actions/setup/action.yml", "action.yml.j2", True),
         (".github/workflows/ci.yml", "ci.yml.j2", True),
-        (".github/workflows/docs.yml", "docs.yml.j2", docs),
+        (".github/workflows/docs.yml", "docs.yml.j2", docs and not workspace),
         ("sonar-project.properties", "sonar-project.properties.j2", ci.sonar),
     ]
     return [

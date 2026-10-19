@@ -7,8 +7,8 @@ rules it must follow are in
 that built it is
 [F6.4](../specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md), and the
 `docs` job is
-[S11.5.1](../specs/epics/E11-package-docs/F11.5-deploy-package-sites.md#s1151-ci-deploys-versioned-package-sites),
-not yet built.
+[S11.5.1](../specs/epics/E11-package-docs/F11.5-deploy-package-sites.md#s1151-ci-deploys-versioned-package-sites).
+A `python-lib` renders no `docs.yml`; `docs` is its one Pages deploy.
 
 Every step runs a `task`; no step calls `uv`, `pytest` or another wrapped tool
 directly, so a laptop and CI run the same commands. The planner is the
@@ -54,7 +54,7 @@ A newer push to the same pull request cancels the run in progress. Pushes to
 | `sonar` | whole-workspace coverage, then the scan, waiting on the quality gate | runs; skipped for a fork's pull request | runs, on branch `main` | runs, on the dispatched branch |
 | `release` | each selected package whose checks passed is built | builds only | builds and publishes `<package>-v<version>` | builds only |
 | `external-install` | each new tag installs from git, outside the workspace, and imports | skipped | runs | skipped |
-| `docs` (S11.5.1) | each package tagged at this commit deployed with `mike`, then the root site plus `packages/` to Pages | skipped | runs | skipped |
+| `docs` | each package tagged at this commit deployed with `mike`, then the root site plus `packages/` to Pages | skipped | runs | skipped |
 | `ci-ok` | no job failed or was cancelled; a skipped job is not a failure | runs | runs | runs |
 
 ## Ordering and gating
@@ -64,7 +64,7 @@ validate ─► plan ─┬─► verify ───┐
                   ├─► postgres ─┼─► sonar
                   ├─► smoke ────┤
                   │             └─► release ─► external-install
-                  │                     └────► docs (S11.5.1)
+                  │                     └────► docs
                   └─► suites
 all of them ─► ci-ok
 ```
