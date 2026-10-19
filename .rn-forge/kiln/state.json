@@ -2,7 +2,7 @@
   "entries": {
     ".editorconfig": {
       "begin_marker": null,
-      "content_hash": "5e430f1266f0e380161887b15f9cbc77d80ed73f904e3b4a2762fbd045b83bfd",
+      "content_hash": "581805d10a931081d209a24676a6368b849ff0392a2020be9b23459937ac2dc0",
       "end_marker": null,
       "kind": "managed",
       "path": ".editorconfig"
@@ -58,7 +58,7 @@
     },
     "Taskfile.yml": {
       "begin_marker": null,
-      "content_hash": "66c778592f51d926f93dde1eb614c850d8e073cb32e85c4431a66fdcfaf035d9",
+      "content_hash": "d635dc2b7eb6396c960d5eb9fe2c19fd6912602671cd2a62433c25a4f562ce57",
       "end_marker": null,
       "kind": "managed",
       "path": "Taskfile.yml"
@@ -205,7 +205,7 @@
     },
     "tasks/quality.yml": {
       "begin_marker": null,
-      "content_hash": "e7fda4254aa3b71ad4ed44ea9b8bc01159d914ea0b6a71e97f2d0764dd1bbfe2",
+      "content_hash": "bd0edff796d5d0a283b6464ffd89c2dcea132a69f57ea7ba3150278d295ab2af",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/quality.yml"

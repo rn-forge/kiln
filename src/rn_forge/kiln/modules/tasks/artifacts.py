@@ -26,6 +26,7 @@ _WORKSPACE_TASKS = (
 _QUALITY_TASKS = (
     "quality:lint:python",
     "quality:lint:markdown",
+    "quality:lint:toml",
     "quality:lint:generated",
     "quality:lint:rn-forge-deps",
     "quality:lint:imports",
@@ -33,6 +34,7 @@ _QUALITY_TASKS = (
     "quality:lint:ci-entrypoint",
     "quality:format:python",
     "quality:format:markdown",
+    "quality:format:toml",
     "quality:typecheck:python",
     "quality:test:python",
     "quality:test:coverage",

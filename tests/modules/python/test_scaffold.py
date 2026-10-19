@@ -10,6 +10,8 @@ rn-forge dependency lines and the `docs` group so `rn-forge-deps` and
 from __future__ import annotations
 
 import re
+import subprocess
+import sys
 import tomllib
 from pathlib import Path
 from typing import Any
@@ -20,7 +22,7 @@ from rn_forge.commons.exceptions import AppException
 
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
-from rn_forge.kiln.modules.core import cycle
+from rn_forge.kiln.modules.core import CORE, cycle
 from rn_forge.kiln.modules.python import scaffold as python_scaffold
 from rn_forge.kiln.modules.python.checks import rn_forge_deps
 from rn_forge.kiln.modules.python.scaffold import (
@@ -43,6 +45,8 @@ archetype = "{archetype}"
 [docs]
 profile = "{docs_profile}"
 """
+
+TAPLO = Path(sys.executable).parent / "taplo"
 
 LIB_CONFIG = """
 schema_version = 1
@@ -237,6 +241,44 @@ def test_s5_3_6_4_dependency_lists_are_multiline_and_tables_spaced(
         for value in values:
             assert f'    "{value}",\n' in text, value
     assert re.search(r"[^\n]\n\[", text) is None  # every table follows a blank line
+
+
+_TAPLO_CELLS = [
+    ("python-tool", "pyproject.toml"),
+    ("python-lib", "pyproject.toml"),
+    ("python-lib", "packages/demo-alpha/pyproject.toml"),
+]
+
+
+@pytest.mark.parametrize(("archetype", "relative"), _TAPLO_CELLS)
+def test_s4_10_1_4_dev_group_has_taplo(
+    tmp_path: Path, archetype: str, relative: str
+) -> None:
+    root = _root(tmp_path, archetype)
+    scaffold(root, KilnConfig.load(root))
+    groups = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))[
+        "dependency-groups"
+    ]
+    assert "taplo" in groups["dev"]
+
+
+@pytest.mark.parametrize(("archetype", "relative"), _TAPLO_CELLS)
+def test_s4_10_1_5_reconciled_pyproject_is_taplo_clean(
+    tmp_path: Path, archetype: str, relative: str
+) -> None:
+    root = _root(tmp_path, archetype)
+    config = KilnConfig.load(root)
+    scaffold(root, config)
+    (taplo,) = (a for a in CORE.artifacts(config, root) if a.path == ".taplo.toml")
+    (root / ".taplo.toml").write_text(taplo.content, encoding="utf-8")
+    result = subprocess.run(
+        [str(TAPLO), "fmt", "--check", "--diff", relative],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_s5_3_6_4_readable_toml_round_trips_and_keeps_comments(

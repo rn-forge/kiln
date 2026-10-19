@@ -57,3 +57,7 @@ Two of those are easy to trip by accident:
   `.mdformat.toml`'s `exclude` as the single authority for exemptions.
   `.rn-forge/kiln/standard.md` is excluded on ownership grounds, not style: a
   formatter rewriting a kiln-owned file is two owners writing the same bytes.
+- **`quality:lint:toml`** runs taplo over the tree, with `.taplo.toml`'s
+  `exclude` as the single place a path is exempted. A repository created
+  before this check adopts it by adding `taplo` to its dev group, then running
+  `kiln apply` and `task format`.

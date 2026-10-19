@@ -48,6 +48,7 @@ In a workspace archetype, `build` and `version` take a package name after `--`
 quality:lint:python          quality:lint:generated
 quality:lint:rn-forge-deps   quality:lint:imports
 quality:lint:task-layout     quality:lint:ci-entrypoint
+quality:lint:toml
 quality:typecheck:python     quality:test:python
 ```
 
@@ -307,6 +308,7 @@ installed kiln, no `$RNF_HOME`, no bootstrap script — proves all of this:
 - the import contracts hold;
 - the task layout is intact and no gate has been removed from `validate`;
 - no workflow step invokes a wrapped tool;
+- every TOML file outside `.taplo.toml`'s `exclude` is taplo-formatted;
 - the docs tree matches the repo's `docs/_areas.yml`, the derived nav is
   current, every tracked Markdown file is mdformat-clean, and no link or
   anchor is broken (`mkdocs` profile). mdformat formats every Markdown file; a

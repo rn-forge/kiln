@@ -39,6 +39,13 @@ tasks:
 {% if overrides.get("quality:lint:markdown") %}      - [[ overrides["quality:lint:markdown"] ]]
 {% else %}      - uv run --group docs mdformat --check .
 {% endif %}
+  lint:toml:
+    desc: Check that every TOML file in the tree is taplo-formatted.
+    internal: true
+    cmds:
+{% if overrides.get("quality:lint:toml") %}      - [[ overrides["quality:lint:toml"] ]]
+{% else %}      - uv run taplo fmt --check
+{% endif %}
   lint:generated:
     desc: Fail if a kiln-generated file or block has drifted from the committed state.
     internal: true
@@ -125,6 +132,13 @@ tasks:
     cmds:
 {% if overrides.get("quality:format:markdown") %}      - [[ overrides["quality:format:markdown"] ]]
 {% else %}      - uv run --group docs mdformat .
+{% endif %}
+  format:toml:
+    desc: Format every TOML file in the tree with taplo.
+    internal: true
+    cmds:
+{% if overrides.get("quality:format:toml") %}      - [[ overrides["quality:format:toml"] ]]
+{% else %}      - uv run taplo fmt
 {% endif %}
   typecheck:python:
 {% if workspace %}    desc: Type-check every workspace package with pyright in strict mode.

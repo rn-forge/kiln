@@ -19,6 +19,12 @@ tasks:
     cmds:
       - uv run --group docs mdformat --check .
 
+  lint:toml:
+    desc: Check that every TOML file in the tree is taplo-formatted.
+    internal: true
+    cmds:
+      - uv run taplo fmt --check
+
   lint:generated:
     desc: Fail if a kiln-generated file or block has drifted from the committed state.
     internal: true
@@ -85,6 +91,12 @@ tasks:
     internal: true
     cmds:
       - uv run --group docs mdformat .
+
+  format:toml:
+    desc: Format every TOML file in the tree with taplo.
+    internal: true
+    cmds:
+      - uv run taplo fmt
 
   typecheck:python:
     desc: Type-check src/ with pyright in strict mode.

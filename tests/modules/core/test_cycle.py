@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import shutil
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -20,6 +22,7 @@ from rn_forge.kiln.modules.python import PYTHON
 
 CONFIG = 'schema_version = 1\n\n[repository]\nname = "demo"\narchetype = "python-app"\n'
 STATE = Path(".rn-forge/kiln/state.json")
+TAPLO = Path(sys.executable).parent / "taplo"
 
 
 @pytest.fixture
@@ -59,6 +62,7 @@ def test_s4_2_3_applying_core_into_an_empty_directory_only_creates_and_inserts(
     assert actions(root, home) == {
         ".editorconfig": Action.CREATE,
         ".mdformat.toml": Action.CREATE,
+        ".taplo.toml": Action.CREATE,
         "demo.code-workspace": Action.CREATE,
         ".gitignore#rn-forge kiln": Action.INSERT,
         ".importlinter#rn-forge kiln": Action.INSERT,
@@ -75,6 +79,7 @@ def test_s4_2_3_applying_core_into_an_empty_directory_only_creates_and_inserts(
     for path in (
         ".editorconfig",
         ".mdformat.toml",
+        ".taplo.toml",
         "demo.code-workspace",
         ".gitignore",
         ".importlinter",
@@ -113,6 +118,40 @@ def test_s5_3_1_mdformat_config_is_seeded_once(tmp_path: Path, home: Path) -> No
     existing_file.write_text(expected, encoding="utf-8")
     cycle.apply(existing, home=home)
     assert existing_file.read_text(encoding="utf-8") == expected
+
+
+def test_s4_10_1_1_taplo_config_is_seeded_once(tmp_path: Path, home: Path) -> None:
+    root = tmp_path / "absent"
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(CONFIG, encoding="utf-8")
+    cycle.apply(root, home=home)
+    seeded = root / ".taplo.toml"
+    assert seeded.is_file()
+    assert ".rn-forge/kiln/rendered/**" in seeded.read_text(encoding="utf-8")
+
+    existing = tmp_path / "present"
+    config = existing / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(CONFIG, encoding="utf-8")
+    expected = "include = []\n"
+    existing_file = existing / ".taplo.toml"
+    existing_file.write_text(expected, encoding="utf-8")
+    cycle.apply(existing, home=home)
+    assert existing_file.read_text(encoding="utf-8") == expected
+
+
+def test_s4_10_1_6_seeded_toml_is_taplo_clean(root: Path, home: Path) -> None:
+    cycle.apply(root, home=home)
+    for relative in (".mdformat.toml", ".taplo.toml"):
+        result = subprocess.run(
+            [str(TAPLO), "fmt", "--check", "--diff", relative],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_s5_3_6_5_workspace_file_is_one_relative_folder(

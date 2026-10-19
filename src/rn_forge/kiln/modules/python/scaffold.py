@@ -16,8 +16,10 @@ import tomllib
 from pathlib import Path
 from typing import Any, cast
 
+import tomlkit
 from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.runtime.subprocess import Process
+from tomlkit.items import InlineTable, Item
 
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
@@ -40,7 +42,15 @@ PYTEST_ADDOPTS = "-ra --import-mode=importlib"
 PYRIGHT_EXPECTED = {"typeCheckingMode": "strict", "reportMissingTypeStubs": False}
 RUFF_TEST_IGNORES = {"S101", "D", "ANN", "PLR2004"}
 
-_DEV_GROUP = ["import-linter", "pyright", "pytest", "pytest-cov", "pyyaml", "ruff"]
+_DEV_GROUP = [
+    "import-linter",
+    "pyright",
+    "pytest",
+    "pytest-cov",
+    "pyyaml",
+    "ruff",
+    "taplo",
+]
 """The dev tools every archetype's `pyproject.toml` names; `rn-forge-kiln` too,
 added separately since its distribution name differs from its PyPI-style
 default and it is the one the dependency check itself excludes from the
@@ -442,14 +452,30 @@ def _reconcile(
 
 
 def _multiline_lists(path: Path) -> None:
-    """Rewrite *path*'s non-empty dependency lists one entry per line."""
+    """Rewrite *path*'s non-empty dependency and author lists one entry per line.
+
+    Inline-table entries are respaced as `{ key = value }`, as taplo and uv write them.
+    """
     document = DocumentUtils.read_document(path)
-    arrays: list[Any] = [document.get("project", {}).get("dependencies")]
+    project = document.get("project", {})
+    arrays: list[Any] = [project.get("dependencies"), project.get("authors")]
     arrays += list(document.get("dependency-groups", {}).values())
     for array in arrays:
         if array:
+            for index, item in enumerate(array):
+                if isinstance(item, InlineTable):
+                    array[index] = _spaced(item)
             array.multiline(True)
     DocumentUtils.write_document(path, document)
+
+
+def _spaced(table: InlineTable) -> Any:
+    """*table* as `{ key = value }`, the spacing taplo and uv write."""
+    fields = cast("dict[str, Any]", table)
+    body = ", ".join(
+        f"{k} = {cast('Item', tomlkit.item(v)).as_string()}" for k, v in fields.items()
+    )
+    return tomlkit.parse(f"x = {{ {body} }}")["x"]
 
 
 def _existing_list(path: Path, *keys: str) -> list[str]:

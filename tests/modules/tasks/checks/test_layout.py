@@ -47,6 +47,10 @@ tasks:
     desc: Check markdown
     cmds: [mdformat --check .]
     internal: true
+  lint:toml:
+    desc: Check TOML
+    cmds: [taplo fmt --check]
+    internal: true
   typecheck:python:
     desc: Typecheck
     cmds: [pyright src]
@@ -69,6 +73,7 @@ GATE_REFS = "\n".join(
         "lint:task-layout",
         "lint:ci-entrypoint",
         "lint:markdown",
+        "lint:toml",
         "typecheck:python",
         "test:python",
     )

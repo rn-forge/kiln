@@ -1,33 +1,42 @@
 # The python-web-app archetype (kiln ADR-0005): a uv workspace API plus a
 # pnpm-managed Nx frontend workspace.
 name = "python-web-app"
-modules = ["core", "python", "frontend", "docs", "tasks", "cicd", "instructions"]
+modules = [
+    "core",
+    "python",
+    "frontend",
+    "docs",
+    "tasks",
+    "cicd",
+    "instructions",
+]
 # kiln itself is on the list: CI reaches it only through a committed `task` entrypoint.
 forbidden_tools = [
-  "uv",
-  "pytest",
-  "ruff",
-  "pyright",
-  "mkdocs",
-  "lint-imports",
-  "kiln",
-  "pnpm",
-  "npx",
-  "nx",
-  "ng",
+    "uv",
+    "pytest",
+    "ruff",
+    "pyright",
+    "mkdocs",
+    "lint-imports",
+    "kiln",
+    "pnpm",
+    "npx",
+    "nx",
+    "ng",
 ]
 required_validate = [
-  "quality:lint:python",
-  "quality:lint:generated",
-  "quality:lint:rn-forge-deps",
-  "quality:lint:imports",
-  "quality:lint:task-layout",
-  "quality:lint:ci-entrypoint",
-  "quality:lint:markdown",
-  "quality:typecheck:python",
-  "quality:test:python",
-  "web:lint",
-  "web:test",
+    "quality:lint:python",
+    "quality:lint:generated",
+    "quality:lint:rn-forge-deps",
+    "quality:lint:imports",
+    "quality:lint:task-layout",
+    "quality:lint:ci-entrypoint",
+    "quality:lint:markdown",
+    "quality:lint:toml",
+    "quality:typecheck:python",
+    "quality:test:python",
+    "web:lint",
+    "web:test",
 ]
 
 [dependencies]

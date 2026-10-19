@@ -44,7 +44,7 @@ tasks:
 {% endif %}{% for ref in extra_refs.get("validate", []) %}      - task: [[ ref ]]
 {% endfor %}
   lint:
-    desc: Every lint — Python, generated-file drift, dependencies, imports, task layout, CI entrypoints, docs.
+    desc: Every lint — Python, TOML, generated-file drift, dependencies, imports, task layout, CI entrypoints, docs.
     cmds:
       - task: quality:lint:python
       - task: quality:lint:generated
@@ -56,14 +56,16 @@ tasks:
       - task: quality:lint:docs-structure
       - task: quality:lint:docs-generate
 {% endif %}      - task: quality:lint:markdown
+      - task: quality:lint:toml
 {% if web_app %}      - task: web:lint
 {% endif %}{% for ref in extra_refs.get("lint", []) %}      - task: [[ ref ]]
 {% endfor %}
   format:
-    desc: Format Python code and Markdown prose in place.
+    desc: Format Python code, TOML and Markdown prose in place.
     cmds:
       - task: quality:format:python
       - task: quality:format:markdown
+      - task: quality:format:toml
 {% for ref in extra_refs.get("format", []) %}      - task: [[ ref ]]
 {% endfor %}
   typecheck:

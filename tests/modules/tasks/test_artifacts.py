@@ -19,6 +19,7 @@ import yaml
 from rn_forge.commons.exceptions import AppException
 from rn_forge.tooling.generation import Action, ArtifactKind
 
+from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.tasks import TASKS
@@ -169,6 +170,23 @@ def test_s4_3_3_property5_task_layout_fails_on_a_broken_gate(tmp_path: Path) -> 
         encoding="utf-8",
     )
     assert "gate.shrunk" in _codes(root)
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s4_10_1_2_lint_and_format_run_taplo(tmp_path: Path, archetype: str) -> None:
+    root = _root(tmp_path, archetype)
+    cycle.apply(root, home=tmp_path / "home")
+    quality = yaml.safe_load((root / "tasks/quality.yml").read_text(encoding="utf-8"))
+    assert quality["tasks"]["lint:toml"]["cmds"] == ["uv run taplo fmt --check"]
+    assert quality["tasks"]["format:toml"]["cmds"] == ["uv run taplo fmt"]
+    tasks = yaml.safe_load((root / "Taskfile.yml").read_text(encoding="utf-8"))["tasks"]
+    assert {"task": "quality:lint:toml"} in tasks["lint"]["cmds"]
+    assert {"task": "quality:format:toml"} in tasks["format"]["cmds"]
+
+
+@pytest.mark.parametrize("name", archetypes.shipped())
+def test_s4_10_1_3_lint_toml_is_a_required_gate(name: str) -> None:
+    assert "quality:lint:toml" in archetypes.load(name).required_validate
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)

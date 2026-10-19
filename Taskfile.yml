@@ -39,7 +39,7 @@ tasks:
       - task: docs:build
 
   lint:
-    desc: Every lint — Python, generated-file drift, dependencies, imports, task layout, CI entrypoints, docs.
+    desc: Every lint — Python, TOML, generated-file drift, dependencies, imports, task layout, CI entrypoints, docs.
     cmds:
       - task: quality:lint:python
       - task: quality:lint:generated
@@ -51,12 +51,14 @@ tasks:
       - task: quality:lint:docs-structure
       - task: quality:lint:docs-generate
       - task: quality:lint:markdown
+      - task: quality:lint:toml
 
   format:
-    desc: Format Python code and Markdown prose in place.
+    desc: Format Python code, TOML and Markdown prose in place.
     cmds:
       - task: quality:format:python
       - task: quality:format:markdown
+      - task: quality:format:toml
 
   typecheck:
     desc: Static type-check the package in pyright strict mode.
