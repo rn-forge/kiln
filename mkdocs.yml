@@ -87,6 +87,7 @@ nav:
         - F4.7 — Import contracts: specs/epics/E4-generator/F4.7-import-contracts.md
         - F4.8 — Self-hosting: specs/epics/E4-generator/F4.8-self-hosting.md
         - F4.9 — Seeded starter source: specs/epics/E4-generator/F4.9-seeded-starter-source.md
+        - F4.10 — TOML formatting: specs/epics/E4-generator/F4.10-toml-formatting.md
         - E4 design — the generator: specs/epics/E4-generator/design.md
       - E5 — The web archetypes:
         - specs/epics/E5-web-archetypes/index.md

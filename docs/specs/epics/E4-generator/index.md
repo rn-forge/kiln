@@ -18,6 +18,7 @@
 | [F4.7 — Import contracts](F4.7-import-contracts.md) | Closed | release-1 | 3 Closed |
 | [F4.8 — Self-hosting](F4.8-self-hosting.md) | New | release-1 | 3 New |
 | [F4.9 — Seeded starter source](F4.9-seeded-starter-source.md) | Active | release-1 | 5 Closed |
+| [F4.10 — TOML formatting](F4.10-toml-formatting.md) | New | release-1 | 1 New |
 
 <!-- END derived features -->
 
