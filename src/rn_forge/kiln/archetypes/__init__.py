@@ -46,7 +46,7 @@ RN_FORGE_TAGS = {
     "rn-forge-django": "rn-forge-django-v0.4.0",
     "rn-forge-fastapi": "rn-forge-fastapi-v0.2.0",
     "rn-forge-sqlalchemy": "rn-forge-sqlalchemy-v0.2.0",
-    "rn-forge-devops": "rn-forge-devops-v0.1.0",
+    "rn-forge-devops": "rn-forge-devops-v0.2.0",
 }
 """pykit's release tags, read from pykit on 2026-10-14. Moving a pin is a change here alone."""
 KILN_SOURCE = "git+https://github.com/rn-forge/kiln@feature/v1"

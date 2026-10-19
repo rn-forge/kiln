@@ -229,7 +229,7 @@ def test_s7_1_1_2_kiln_takes_pykit_by_tag() -> None:
 
 
 def test_s6_4_2_8_devops_is_pinned_and_in_no_archetype() -> None:
-    assert archetypes.RN_FORGE_TAGS["rn-forge-devops"] == "rn-forge-devops-v0.1.0"
+    assert archetypes.RN_FORGE_TAGS["rn-forge-devops"] == "rn-forge-devops-v0.2.0"
     for name in archetypes.shipped():
         dependencies = archetypes.load(name).dependencies
         assert "rn-forge-devops" not in (*dependencies.required, *dependencies.allowed)

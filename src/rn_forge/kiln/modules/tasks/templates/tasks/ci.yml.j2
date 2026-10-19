@@ -63,10 +63,6 @@ tasks:
         for name in $releasable; do
           version="$(uv version --package "$name" --short)"
           tag="$name-v$version"
-          if [ "$PUBLISH" != true ]; then
-            uv build --package "$name" --out-dir "dist/$name"
-            continue
-          fi
           draft=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null || true)
           if [ "$draft" = false ]; then
             echo "Release $tag is already published, skipping."

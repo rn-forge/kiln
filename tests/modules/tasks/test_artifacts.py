@@ -681,7 +681,7 @@ def test_s6_4_2_3_devops_is_uvx_unless_the_workspace_has_the_member(
     uvx = _ci_tasks(_root(tmp_path / "a", "python-lib"))["vars"]["DEVOPS"]  # type: ignore[index]
     assert uvx == (
         'uvx --from "rn-forge-devops @ git+https://github.com/rn-forge/pykit'
-        '@rn-forge-devops-v0.1.0#subdirectory=packages/rn-forge-devops" '
+        '@rn-forge-devops-v0.2.0#subdirectory=packages/rn-forge-devops" '
         "rn-forge-devops"
     )
     root = _root(tmp_path / "b", "python-lib")
@@ -817,3 +817,10 @@ def test_s11_5_1_1_docs_publish_runs_mike_builds_and_merges(tmp_path: Path) -> N
 def test_s11_5_1_1_docs_publish_is_absent_without_docs(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-lib", profile="none")
     assert "docs-publish" not in _ci_tasks(root)["tasks"]  # type: ignore[operator]
+
+
+def test_s6_4_7_4_release_task_always_publishes(tmp_path: Path) -> None:
+    task = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]["release"]  # type: ignore[index]
+    script = "\n".join(task["cmds"])
+    assert "PUBLISH" not in script
+    assert script.count("continue") == 1  # only the already-published skip remains

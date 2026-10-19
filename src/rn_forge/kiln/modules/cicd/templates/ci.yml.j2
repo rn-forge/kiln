@@ -336,11 +336,12 @@ jobs:
             ${{ steps.target.outputs.branch-arg }}
 {% endif %}{% if release == "tag-exists" and workspace %}
   # Tags created with GITHUB_TOKEN start no workflow, so every release is created
-  # here, prerequisites first. A failed check blocks its package and every
-  # selected package that depends on it; the rest still release.
+  # here, prerequisites first, only on a push to the default branch and after
+  # the quality gate. A failed check blocks its package and every selected
+  # package that depends on it; with Sonar on, it blocks the whole run.
   release:
-    needs: [validate, plan, verify, postgres, smoke]
-    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.plan.outputs.release-order != '[]' }}
+    needs: [validate, plan, verify, postgres, smoke{% if sonar %}, sonar{% endif %}]
+    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.plan.outputs.release-order != '[]' && github.event_name == 'push' && github.ref == 'refs/heads/main'{% if sonar %} && needs.sonar.result == 'success'{% endif %} }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -364,7 +365,6 @@ jobs:
       - name: Build and publish releases
         env:
           GH_TOKEN: ${{ github.token }}
-          PUBLISH: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
           SELECTED: ${{ needs.plan.outputs.release-order }}
         run: task ci:release
 

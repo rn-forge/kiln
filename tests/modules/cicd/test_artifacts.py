@@ -788,11 +788,6 @@ def test_s6_4_4_1_check_jobs_end_with_marker_steps(tmp_path: Path) -> None:
 def test_s6_4_4_2_python_lib_release_job(tmp_path: Path) -> None:
     release = _lib_jobs(tmp_path)["release"]
     assert "strategy" not in release
-    assert release["needs"] == ["validate", "plan", "verify", "postgres", "smoke"]
-    assert release["if"] == (
-        "${{ !cancelled() && needs.validate.result == 'success' && "
-        "needs.plan.outputs.release-order != '[]' }}"
-    )
     assert release["permissions"] == {"contents": "write"}
     steps = release["steps"]  # type: ignore[assignment]
     assert str(steps[0]["uses"]).startswith("actions/checkout@")  # type: ignore[index]
@@ -807,7 +802,6 @@ def test_s6_4_4_2_python_lib_release_job(tmp_path: Path) -> None:
     assert steps[3]["run"] == "task ci:release"  # type: ignore[index]
     assert steps[3]["env"] == {  # type: ignore[index]
         "GH_TOKEN": "${{ github.token }}",
-        "PUBLISH": "${{ github.event_name == 'push' && github.ref_name == 'main' }}",
         "SELECTED": "${{ needs.plan.outputs.release-order }}",
     }
     assert len(steps) == 4  # type: ignore[arg-type]
@@ -990,3 +984,93 @@ def test_s11_5_1_2_actionlint_passes_on_the_docs_job(tmp_path: Path) -> None:
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+RELEASE_IF = (
+    "${{ !cancelled() && needs.validate.result == 'success' && "
+    "needs.plan.outputs.release-order != '[]' && "
+    "github.event_name == 'push' && github.ref == 'refs/heads/main'%s }}"
+)
+
+
+def test_s6_4_7_1_release_needs_every_check_and_sonar(tmp_path: Path) -> None:
+    release = _lib_jobs(tmp_path)["release"]
+    assert release["needs"] == [
+        "validate",
+        "plan",
+        "verify",
+        "postgres",
+        "smoke",
+        "sonar",
+    ]
+
+
+def test_s6_4_7_2_release_runs_on_a_default_branch_push_only(tmp_path: Path) -> None:
+    release = _lib_jobs(tmp_path)["release"]
+    assert release["if"] == RELEASE_IF % " && needs.sonar.result == 'success'"
+    assert "pull_request" not in str(release["if"])
+    assert "workflow_dispatch" not in str(release["if"])
+
+
+def test_s6_4_7_3_release_waits_on_sonar_only_where_sonar_renders(
+    tmp_path: Path,
+) -> None:
+    release = _lib_jobs(tmp_path, sonar=False)["release"]
+    assert release["needs"] == ["validate", "plan", "verify", "postgres", "smoke"]
+    assert release["if"] == RELEASE_IF % ""
+    assert "sonar" not in str(release)
+
+
+def test_s6_4_7_4_release_has_no_publish_switch(tmp_path: Path) -> None:
+    text = _rendered(_root(tmp_path, "python-lib"))[".github/workflows/ci.yml"]
+    assert "PUBLISH" not in text
+    script = "\n".join(
+        _ci_tasks_text(tmp_path)["tasks"]["release"]["cmds"]  # type: ignore[index]
+    )
+    assert "PUBLISH" not in script
+    assert "gh release create" in script
+
+
+def test_s6_4_7_5_smoke_takes_an_empty_extra_row_unchanged(tmp_path: Path) -> None:
+    smoke = _lib_jobs(tmp_path)["smoke"]
+    assert smoke["strategy"]["matrix"] == {  # type: ignore[index]
+        "include": "${{ fromJSON(needs.plan.outputs.smoke) }}"
+    }
+    row = {"name": "alpha", "extra": "", "marker": "alpha.smoke"}
+    steps = smoke["steps"]  # type: ignore[assignment]
+    command = "task ci:smoke -- ${{ matrix.name }}"
+    run = next(s for s in steps if s.get("run") == command)  # type: ignore[attr-defined]
+    assert run["env"] == {"EXTRA": "${{ matrix.extra }}"}
+    # Every key the job reads from the matrix is on the empty-extra row.
+    used = set(re.findall(r"matrix\.(\w+)", str(smoke)))
+    assert used <= set(row)
+
+
+def test_s6_4_7_6_ci_ok_needs_every_job_and_tolerates_a_skipped_release(
+    tmp_path: Path,
+) -> None:
+    jobs = _lib_jobs(tmp_path)
+    ci_ok = jobs["ci-ok"]
+    assert set(ci_ok["needs"]) == set(jobs) - {"ci-ok"}  # type: ignore[arg-type]
+    (step,) = ci_ok["steps"]  # type: ignore[misc]
+    failed = "contains(needs.*.result, 'failure')"
+    cancelled = "contains(needs.*.result, 'cancelled')"
+    assert step["if"] == f"{failed} || {cancelled}"
+
+
+def test_s6_4_7_7_actionlint_passes_on_the_python_lib_workflows(
+    tmp_path: Path,
+) -> None:
+    if shutil.which("actionlint") is None:
+        pytest.skip("actionlint is not on PATH")
+    for name, kwargs in (("on", {}), ("off", {"sonar": False})):
+        root = _root(tmp_path / name, "python-lib", **kwargs)  # type: ignore[arg-type]
+        cycle.apply(root, home=tmp_path / name / "home")
+        result = subprocess.run(
+            ["actionlint", ".github/workflows/ci.yml"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 0, name + result.stdout + result.stderr

@@ -49,10 +49,10 @@ A newer push to the same pull request cancels the run in progress. Pushes to
 | `plan` | the selection above | runs | runs | runs, every package |
 | `verify`, one per selected package | ruff, pyright and pytest for that member | selected | selected | every package |
 | `postgres`, one per selected package that declares `[tool.workspace-ci.postgres]` | that member's tests against a PostgreSQL 17 service | selected | selected | every declaring package |
-| `smoke`, one per declared extra of a selected package | the built wheel, with that one extra, installs into a clean venv and imports | selected | selected | every declared extra |
+| `smoke`, one per selected package with no extra, plus one per declared extra | the built wheel, with no extra or with that one extra, installs into a clean venv and imports | selected | selected | every package and declared extra |
 | `suites` | the root `[tool.workspace-ci.suites]` pytest runs | always, all suites | always | always |
 | `sonar` | whole-workspace coverage, then the scan, waiting on the quality gate | runs; skipped for a fork's pull request | runs, on branch `main` | runs, on the dispatched branch |
-| `release` | each selected package whose checks passed is built | builds only | builds and publishes `<package>-v<version>` | builds only |
+| `release` | each selected package whose checks passed is built and published as `<package>-v<version>`, after `sonar` passed | skipped | builds and publishes | skipped |
 | `external-install` | each new tag installs from git, outside the workspace, and imports | skipped | runs | skipped |
 | `docs` | each package tagged at this commit deployed with `mike`, then the root site plus `packages/` to Pages | skipped | runs | skipped |
 | `ci-ok` | no job failed or was cancelled; a skipped job is not a failure | runs | runs | runs |
@@ -61,10 +61,8 @@ A newer push to the same pull request cancels the run in progress. Pushes to
 
 ```text
 validate ─► plan ─┬─► verify ───┐
-                  ├─► postgres ─┼─► sonar
-                  ├─► smoke ────┤
-                  │             └─► release ─► external-install
-                  │                     └────► docs
+                  ├─► postgres ─┼─► sonar ─► release ─► external-install
+                  ├─► smoke ────┘                 └───► docs
                   └─► suites
 all of them ─► ci-ok
 ```
@@ -72,8 +70,10 @@ all of them ─► ci-ok
 - Nothing runs unless `validate` passes.
 - `sonar` waits for `verify`, `postgres` and `smoke`, and runs only if none
   failed.
-- `release` waits for the same three but does not need them to succeed: it runs
-  whenever the selection is not empty, and decides per package.
+- `release` waits for the same three and for `sonar`. It runs only on a push to
+  `main`, when the selection is not empty and `sonar` succeeded (where
+  `[ci] sonar` is off, `sonar` is not rendered and the condition is absent).
+  Within a run it decides per package.
 - `ci-ok` is the one check branch protection requires, because job names change
   as members come and go.
 
@@ -81,15 +81,18 @@ all of them ─► ci-ok
 
 - Each passing `verify`, `postgres` and `smoke` leg uploads an `ok-<marker>`
   artifact. `release` publishes a package only when every one of its markers
-  exists and every selected package it requires is releasable too. A failed
-  `verify (rn-forge-django)` holds back django and everything above it; every
-  unrelated package still releases. The `release` job stays green when it
-  holds a package back; the run is red through `ci-ok`.
+  exists and every selected package it requires is releasable too. Because
+  `release` waits for `sonar`, and `sonar` runs only if no check failed, any
+  failed leg holds back the whole run's releases; the run is red through
+  `ci-ok`. The markers still guard a leg that was skipped for a package that
+  was not selected.
 - Releases follow version bumps. A tag that is already published is skipped; a
   draft is rebuilt from its tag and replaced. A merge that changes a package
   without bumping its version re-verifies it and publishes nothing.
-- Only a push to `main` publishes. A pull request or a dispatch builds every
-  releasable package, which proves it packages, and stops there.
+- Only a push to `main` publishes, and only after the quality gate. A pull
+  request or a dispatch does not run `release`; its packaging proof is
+  `smoke`, which installs every selected package's wheel with no extras and
+  imports it.
 
 ## Worked example: a docs-only pull request
 
