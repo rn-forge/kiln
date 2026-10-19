@@ -17,12 +17,14 @@ import re
 import shutil
 import subprocess
 import tomllib
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from importlib import metadata
 from importlib.resources import files
 from pathlib import Path
+from typing import Any, cast
 
+import tomlkit
 from rn_forge.cli import CliApp
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding, Severity
@@ -32,6 +34,7 @@ from rn_forge.commons.runtime.console import OutputMode, console
 from rn_forge.tooling import generation
 from rn_forge.tooling.generation import StateEntry
 from rn_forge.tooling.state import StateStore
+from tomlkit.items import Array
 
 from rn_forge.kiln import archetypes, checks
 from rn_forge.kiln import doctor as doctor_module
@@ -1082,10 +1085,21 @@ def _write_config(directory: Path, config: KilnConfig) -> None:
     """Write *config* as `directory`'s committed `config.toml`, with kiln's header."""
     config_path = directory / CONFIG_PATH
     config_path.parent.mkdir(parents=True, exist_ok=True)
-    config_path.write_text(
-        _CONFIG_HEADER + DocumentUtils.dumps(config.to_document(), ConfigFormat.TOML),
-        encoding="utf-8",
+    document = tomlkit.parse(
+        DocumentUtils.dumps(config.to_document(), ConfigFormat.TOML)
     )
+    _multiline_arrays(document)
+    config_path.write_text(_CONFIG_HEADER + tomlkit.dumps(document), encoding="utf-8")
+
+
+def _multiline_arrays(container: Mapping[str, Any]) -> None:
+    """Set every non-empty array under *container*, at any depth, to the multi-line form."""
+    for value in container.values():
+        if isinstance(value, Array):
+            if value:
+                value.multiline(True)
+        elif isinstance(value, Mapping):
+            _multiline_arrays(cast("Mapping[str, Any]", value))
 
 
 def _config_reresolve(

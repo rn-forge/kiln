@@ -13,12 +13,14 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tomllib
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 import pytest
+import tomlkit
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding, Severity
@@ -27,6 +29,7 @@ from rn_forge.tooling.generation import ArtifactKind, StateEntry
 from rn_forge.tooling.generation.artifacts import block_from_entry
 
 from rn_forge.kiln import commands
+from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK
 from rn_forge.kiln.modules.docs.nav import NAV_BLOCK
 from rn_forge.kiln.modules.python.artifacts import IMPORTLINTER_BLOCK
@@ -34,6 +37,7 @@ from rn_forge.kiln.modules.python.artifacts import IMPORTLINTER_BLOCK
 ROOT = Path(__file__).resolve().parents[1]
 STATE = Path(".rn-forge/kiln/state.json")
 CONFIG = Path(".rn-forge/kiln/config.toml")
+TAPLO = Path(sys.executable).parent / "taplo"
 SELECTORS: dict[str, Any] = {"archetype": "python-app", "docs": "mkdocs"}
 
 _IGNORE = shutil.ignore_patterns(
@@ -438,6 +442,46 @@ def test_s6_1_5_1_init_adopts_a_library_workspace_with_its_packages(
     written = tomllib.loads((lib_repo / CONFIG).read_text(encoding="utf-8"))
     assert written["archetype"]["python-lib"]["packages"] == packages
     assert _entries(lib_repo) == _entries(lib_fresh)
+
+
+def test_s6_6_1_1_written_config_is_taplo_clean(
+    lib_fresh: Path, tmp_path: Path
+) -> None:
+    source = tmp_path / "src"
+    (source / CONFIG).parent.mkdir(parents=True)
+    document = tomlkit.parse((lib_fresh / CONFIG).read_text(encoding="utf-8"))
+    document["archetype"]["python-lib"]["packages"] = [  # type: ignore[index]
+        f"packages/rn-forge-package-{n}" for n in range(1, 10)
+    ]
+    (source / CONFIG).write_text(tomlkit.dumps(document), encoding="utf-8")
+    config = KilnConfig.load(source)
+    out = tmp_path / "out"
+    out.mkdir()
+
+    commands._write_config(out, config)  # noqa: SLF001
+    shutil.copy(lib_fresh / ".taplo.toml", out / ".taplo.toml")
+    result = subprocess.run(
+        [str(TAPLO), "fmt", "--check", "--diff", str(CONFIG)],
+        cwd=out,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_s6_6_1_2_init_writes_packages_one_per_line(
+    lib_repo: Path, tmp_path: Path
+) -> None:
+    config = _packages_config(tmp_path, "packages/lib-alpha", "packages/lib-beta")
+
+    commands.init(archetype="python-lib", config=config, yes=True)
+
+    text = (lib_repo / CONFIG).read_text(encoding="utf-8")
+    assert (
+        'packages = [\n    "packages/lib-alpha",\n    "packages/lib-beta",\n]' in text
+    )
 
 
 @pytest.mark.parametrize("without_pyproject", [False, True])
