@@ -466,6 +466,10 @@ provider = "github"        # github only in v1; "ado" reserved
 sonar = true
 release = "tag-exists"     # tag-exists | none
                            # nx-dispatch: node-lib default (release-1, not yet built)
+node = false               # optional: install pnpm and Node in the setup action; python-web-app always does
+jobs = [{ name = "golden-render", task = "self:golden:render", events = ["pull_request"] }]
+                           # optional: extra jobs after validate, each running one task;
+                           # name is kebab-case and not a generated job's; events defaults to all three
 
 [tasks]
 includes = [{ namespace = "self", taskfile = "tasks/self.yml" }]

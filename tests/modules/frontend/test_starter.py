@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 from pathlib import Path
 from unittest import mock
@@ -210,7 +211,10 @@ def test_s4_9_3_3_scaffold_adds_the_ngkit_dependency(tmp_path: Path) -> None:
     assert cwd == str(workspace)
 
 
-@pytest.mark.skipif(shutil.which("pnpm") is None, reason="pnpm is not on PATH")
+@pytest.mark.skipif(
+    shutil.which("pnpm") is None and not os.environ.get("CI"),
+    reason="pnpm is not on PATH",
+)
 def test_s4_9_3_4_new_records_seeded(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

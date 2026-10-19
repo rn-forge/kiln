@@ -25,7 +25,7 @@ runs:
       with:
         version: 3.x
         repo-token: ${{ inputs.github-token }}
-{% if web_app %}
+{% if web_app or node %}
     - name: Install pnpm
       uses: [[ pins["pnpm-setup"].uses ]]@[[ pins["pnpm-setup"].sha ]] # [[ pins["pnpm-setup"].version ]]
 

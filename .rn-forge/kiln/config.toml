@@ -18,6 +18,12 @@ site_dir = ".docs-site"
 provider = "github"
 sonar = true
 release = "tag-exists"
+node = true
+
+[[ci.jobs]]
+name = "golden-render"
+task = "self:golden:render"
+events = ["pull_request"]
 
 [tasks]
 includes = [{ namespace = "self", taskfile = "tasks/self.yml" }]

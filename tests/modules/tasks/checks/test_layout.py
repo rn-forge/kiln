@@ -6,6 +6,7 @@ file, a `desc:` on every task, and the validate gate not shrinking.
 
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
 
@@ -433,7 +434,8 @@ CELLS = {
         pytest.param(
             "python-web-app",
             marks=pytest.mark.skipif(
-                shutil.which("pnpm") is None, reason="pnpm is not on PATH"
+                shutil.which("pnpm") is None and not os.environ.get("CI"),
+                reason="pnpm is not on PATH",
             ),
         ),
         "python-lib",

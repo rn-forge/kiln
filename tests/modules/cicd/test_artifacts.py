@@ -19,9 +19,11 @@ import yaml
 from rn_forge.commons.exceptions import AppException
 from rn_forge.tooling.generation import Action, ArtifactKind
 
+from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd import CICD
 from rn_forge.kiln.modules.cicd.artifacts import load_pins
+from rn_forge.kiln.modules.cicd.config import GENERATED_JOBS
 from rn_forge.kiln.modules.core import cycle
 
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
@@ -1074,3 +1076,135 @@ def test_s6_4_7_7_actionlint_passes_on_the_python_lib_workflows(
             check=False,
         )
         assert result.returncode == 0, name + result.stdout + result.stderr
+
+
+GOLDEN_RENDER = (
+    '\n[[ci.jobs]]\nname = "golden-render"\ntask = "self:golden:render"\n'
+    'events = ["pull_request"]\n'
+)
+
+
+def _with_ci(root: Path, extra: str) -> Path:
+    """Add `extra` to the `[ci]` section of `root`'s config."""
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    text = config.read_text(encoding="utf-8")
+    if "[ci]" not in text:
+        text += "\n[ci]\n"
+    ci_end = text.index("[ci]")
+    section_end = text.find("\n[", ci_end + 1)
+    if section_end == -1:
+        text += extra
+    else:
+        text = text[:section_end] + extra + text[section_end:]
+    config.write_text(text, encoding="utf-8")
+    return root
+
+
+def _action(root: Path) -> str:
+    return _rendered(root)[".github/actions/setup/action.yml"]
+
+
+def test_s4_8_3_1_node_off_renders_no_node_steps(tmp_path: Path) -> None:
+    action = _action(_root(tmp_path, "python-tool"))
+    assert "pnpm/action-setup" not in action
+    assert "actions/setup-node" not in action
+
+
+def test_s4_8_3_1_node_on_renders_node_steps(tmp_path: Path) -> None:
+    root = _with_ci(_root(tmp_path, "python-tool"), "node = true\n")
+    action = _action(root)
+    pins = load_pins()
+    for key in ("pnpm-setup", "setup-node"):
+        pin = pins[key]
+        assert f"uses: {pin['uses']}@{pin['sha']} # {pin['version']}" in action
+    assert "cache: pnpm" in action
+    cycle.apply(root, home=tmp_path / "home")
+    assert not [c for c in _codes(root) if c.startswith("ci.")]
+
+
+def test_s4_8_3_1_web_app_keeps_node(tmp_path: Path) -> None:
+    web = _action(
+        _web_root(tmp_path / "web", "python-web-app", extra='frontend = "angular"')
+    )
+    assert "pnpm/action-setup" in web
+    assert "actions/setup-node" in web
+    assert "cache: pnpm" in web
+    assert "\n\n\n" not in web
+
+
+def test_s4_8_3_2_declared_job_renders(tmp_path: Path) -> None:
+    root = _with_ci(_root(tmp_path, "python-tool"), GOLDEN_RENDER)
+    jobs = _ci_jobs(root)
+    job = jobs["golden-render"]
+    assert job["needs"] == "validate"
+    assert job["if"] == "${{ github.event_name == 'pull_request' }}"
+    assert isinstance(job["timeout-minutes"], int)
+    assert job["permissions"] == {"contents": "read"}
+    steps = job["steps"]  # type: ignore[index]
+    assert str(steps[0]["uses"]).startswith("actions/checkout@")  # type: ignore[index]
+    assert steps[1]["uses"] == SETUP_ACTION  # type: ignore[index]
+    assert [s.get("run") for s in steps[2:]] == [  # type: ignore[union-attr]
+        "task setup",
+        "task self:golden:render",
+    ]
+    assert "golden-render" in jobs["ci-ok"]["needs"]  # type: ignore[operator]
+    assert list(jobs)[-1] == "ci-ok"
+
+
+def test_s4_8_3_2_declared_job_defaults_to_every_event(tmp_path: Path) -> None:
+    extra = '\n[[ci.jobs]]\nname = "extra"\ntask = "validate"\n'
+    job = _ci_jobs(_with_ci(_root(tmp_path, "python-tool"), extra))["extra"]
+    assert "if" not in job
+
+
+def test_s4_8_3_2_declared_job_with_two_events_ors_them(tmp_path: Path) -> None:
+    extra = (
+        '\n[[ci.jobs]]\nname = "extra"\ntask = "validate"\n'
+        'events = ["push", "workflow_dispatch"]\n'
+    )
+    job = _ci_jobs(_with_ci(_root(tmp_path, "python-tool"), extra))["extra"]
+    assert job["if"] == (
+        "${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}"
+    )
+
+
+@pytest.mark.parametrize("name", ["sonar", "validate", "ci-ok", "Golden", "a_b"])
+def test_s4_8_3_2_declared_job_name_collision_is_refused(
+    tmp_path: Path, name: str
+) -> None:
+    extra = f'\n[[ci.jobs]]\nname = "{name}"\ntask = "validate"\n'
+    root = _with_ci(_root(tmp_path, "python-tool"), extra)
+    with pytest.raises(AppException):
+        KilnConfig.load(root)
+
+
+def test_s4_8_3_2_duplicate_declared_names_are_refused(tmp_path: Path) -> None:
+    extra = '\n[[ci.jobs]]\nname = "a"\ntask = "validate"\n' * 2
+    root = _with_ci(_root(tmp_path, "python-tool"), extra)
+    with pytest.raises(AppException):
+        KilnConfig.load(root)
+
+
+def test_s4_8_3_2_no_declared_jobs_is_unchanged(tmp_path: Path) -> None:
+    roots = [_root(tmp_path / a, a) for a in ARCHETYPES] + [
+        _web_root(tmp_path / "web", "python-web-app", extra='frontend = "angular"')
+    ]
+    for root in roots:
+        plain = _rendered(root)[".github/workflows/ci.yml"]
+        empty = _rendered(_with_ci(root, "jobs = []\n"))[".github/workflows/ci.yml"]
+        assert plain == empty, root.name
+        assert set(yaml.safe_load(plain)["jobs"]) <= GENERATED_JOBS, root.name
+        assert "\n\n\n" not in plain, root.name
+
+
+def test_s4_8_3_2_declared_job_task_must_resolve(tmp_path: Path) -> None:
+    extra = '\n[[ci.jobs]]\nname = "extra"\ntask = "nope:missing"\n'
+    root = _with_ci(_root(tmp_path, "python-tool"), extra)
+    cycle.apply(root, home=tmp_path / "home")
+    found = [
+        f
+        for f in checks.run(root, only="task-layout")
+        if f.code == "taskgraph.unresolved-ref"
+    ]
+    assert [f.path for f in found] == [".github/workflows/ci.yml"]
+    assert "nope:missing" in found[0].message

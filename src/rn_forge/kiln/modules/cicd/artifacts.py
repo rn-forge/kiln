@@ -78,6 +78,8 @@ def render(config: KilnConfig) -> list[Artifact]:
         "organization": SONAR_ORGANIZATION,
         "web": web,
         "web_app": web_app,
+        "node": ci.node,
+        "jobs": ci.jobs,
         "api_dir": config.api_dir,
         "web_dir": config.web_dir,
     }

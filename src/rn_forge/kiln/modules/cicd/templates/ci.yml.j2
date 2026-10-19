@@ -527,12 +527,34 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]
-{% endif %}
+{% endif %}{% for job in jobs %}
+  [[ job.name ]]:
+    needs: validate
+{% if job.events | length < 3 %}    if: ${{ {% for event in job.events %}github.event_name == '[[ event ]]'{% if not loop.last %} || {% endif %}{% endfor %} }}
+{% endif %}    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install dependencies
+        run: task setup
+
+      - name: Run [[ job.task ]]
+        run: task [[ job.task ]]
+{% endfor %}
   # The only check branch protection requires. Job and matrix names change as
   # the repo grows; this one does not. A skipped job (the fork-guarded scan, a
   # release on a pull request) is not a failure.
   ci-ok:
-    needs: [validate{% if workspace %}, plan, verify, postgres, smoke, suites{% endif %}{% if sonar %}, sonar{% endif %}{% if release == "tag-exists" %}, release{% if workspace %}, external-install{% endif %}{% endif %}{% if workspace and docs %}, docs{% endif %}]
+    needs: [validate{% if workspace %}, plan, verify, postgres, smoke, suites{% endif %}{% if sonar %}, sonar{% endif %}{% if release == "tag-exists" %}, release{% if workspace %}, external-install{% endif %}{% endif %}{% if workspace and docs %}, docs{% endif %}{% for job in jobs %}, [[ job.name ]]{% endfor %}]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
