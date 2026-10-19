@@ -60,11 +60,6 @@ def render(config: KilnConfig) -> list[Artifact]:
     workspace = config.archetype == "python-lib"
     web = config.archetype in {"python-web-api", "python-web-app"}
     web_app = config.archetype == "python-web-app"
-    for package in config.packages:
-        if not web and Path(package).parts[:-1] != ("packages",):
-            raise AppException(
-                "tasks.render: {} is not laid out as packages/<name>", package
-            )
     packages = [Path(package).name for package in config.packages]
     api_package = f"{config.name}-api" if web else None
     web_dir = config.web_dir
@@ -102,6 +97,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "package": root_package(config.name),
         "workspace": workspace,
         "packages": packages,
+        "package_dirs": list(config.packages),
         "docs": docs,
         "site_dir": _site_dir(config),
         "includes": tasks_config.includes,

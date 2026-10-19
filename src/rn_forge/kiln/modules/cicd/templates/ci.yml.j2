@@ -127,6 +127,7 @@ jobs:
 
       - name: Verify
         env:
+          PACKAGE_DIR: ${{ matrix.dir }}
           PYTEST_ARGS: ${{ needs.plan.outputs.pytest-args }}
         run: task ci:verify -- ${{ matrix.name }}
 
@@ -182,6 +183,7 @@ jobs:
 
       - name: Test against PostgreSQL
         env:
+          PACKAGE_DIR: ${{ matrix.dir }}
           DSN_VAR: ${{ matrix.env }}
           PYTEST_ARGS: ${{ needs.plan.outputs.pytest-args }}
         run: task ci:postgres -- ${{ matrix.name }}

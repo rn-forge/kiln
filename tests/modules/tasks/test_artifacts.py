@@ -329,12 +329,14 @@ def test_s5_1_2_python_web_app_renders_api_yml_and_web_yml(tmp_path: Path) -> No
 _UV_SHIM = 'uv() { shift; if [ "$1" = --directory ]; then d=$2; shift 2; fi; if [ "$1" = --package ]; then shift 2; fi; (cd "${d:-.}" && "$@"); }'
 
 
-def _ruff_commands(root: Path, task: str, item: str = "alpha") -> list[str]:
+def _ruff_commands(root: Path, task: str, item: str = "packages/alpha") -> list[str]:
     """The rendered `quality:<task>` commands, workspace loops expanded for *item*."""
     rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
     cmds = yaml.safe_load(rendered["tasks/quality.yml"])["tasks"][task]["cmds"]
     return [
-        (c["cmd"] if isinstance(c, dict) else c).replace("{{.ITEM}}", item)
+        (c["cmd"] if isinstance(c, dict) else c)
+        .replace("{{base .ITEM}}", Path(item).name)
+        .replace("{{.ITEM}}", item)
         for c in cmds
     ]
 
@@ -723,3 +725,69 @@ def test_s6_4_3_2_commands_follow_the_story(tmp_path: Path) -> None:
     assert "{{.CLI_ARGS}}" in lines[1]
     assert tasks["smoke"]["cmds"] == ['{{.DEVOPS}} smoke {{.CLI_ARGS}} "${EXTRA:-}"']  # type: ignore[index]
     assert tasks["suite"]["cmds"] == ["uv run pytest $SUITE_ARGS"]  # type: ignore[index]
+
+
+def _libs_root(tmp_path: Path) -> Path:
+    root = _root(tmp_path, "python-lib")
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(
+        config.read_text(encoding="utf-8").replace(
+            '["packages/alpha", "packages/beta"]', '["libs/alpha"]'
+        ),
+        encoding="utf-8",
+    )
+    return root
+
+
+def test_s6_4_6_2_ci_tasks_take_the_directory_from_package_dir(
+    tmp_path: Path,
+) -> None:
+    tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
+    for name in ("verify", "postgres"):
+        text = "\n".join(tasks[name]["cmds"])  # type: ignore[index]
+        assert "packages/{{.CLI_ARGS}}" not in text, name
+        assert '--directory "$PACKAGE_DIR"' in text, name
+        assert "--package {{.CLI_ARGS}}" in text, name
+    assert 'test -d "$PACKAGE_DIR/tests"' in tasks["verify"]["cmds"][0]  # type: ignore[index]
+
+
+def test_s6_4_6_3_quality_loops_use_the_configured_paths(tmp_path: Path) -> None:
+    rendered = {
+        a.path: a.content
+        for a in TASKS.artifacts(KilnConfig.load(_libs_root(tmp_path)), tmp_path)
+    }
+    quality = yaml.safe_load(rendered["tasks/quality.yml"])
+    assert quality["vars"]["PACKAGE_DIRS"] == "libs/alpha"
+    for name in QUALITY_PER_PACKAGE[:5]:
+        cmds = quality["tasks"][name]["cmds"]
+        text = "\n".join(c["cmd"] if isinstance(c, dict) else c for c in cmds)
+        assert "packages/" not in text, name
+        assert "--directory {{.ITEM}} --package {{base .ITEM}}" in text, name
+
+
+def test_s6_4_6_4_the_libs_fixture_renders_and_validates(tmp_path: Path) -> None:
+    root = _libs_root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    assert _codes(root) == []
+    assert _ruff_commands(root, "typecheck:python", "libs/alpha") == [
+        "uv run --directory libs/alpha --package alpha pyright src"
+    ]
+    if shutil.which("task") is None:
+        pytest.skip("task is not on PATH")
+    result = _run_task(root, "--dry", "validate")
+    assert result.returncode == 0, result.stderr
+
+
+def test_s6_4_6_5_packages_dir_layout_renders_as_before(tmp_path: Path) -> None:
+    root = _root(tmp_path, "python-lib")
+    cmds = yaml.safe_load(
+        {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}[
+            "tasks/quality.yml"
+        ]
+    )["tasks"]["typecheck:python"]["cmds"]
+    assert cmds == [
+        {
+            "for": {"var": "PACKAGE_DIRS", "split": " "},
+            "cmd": "uv run --directory {{.ITEM}} --package {{base .ITEM}} pyright src",
+        }
+    ]

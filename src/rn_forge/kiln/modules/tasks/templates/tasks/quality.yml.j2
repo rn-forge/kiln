@@ -12,7 +12,7 @@ version: "3"
 # scope they describe.
 
 vars:
-  PACKAGES: [[ packages | join(" ") ]]
+  PACKAGE_DIRS: [[ package_dirs | join(" ") ]]
 {% endif %}
 tasks:
   lint:python:
@@ -23,10 +23,10 @@ tasks:
     cmds:
 {% if overrides.get("quality:lint:python") %}      - [[ overrides["quality:lint:python"] ]]
 {% elif workspace and not packages %}      - echo "no packages to check; add one with 'kiln generate package <name>'"
-{% elif workspace %}      - for: { var: PACKAGES, split: " " }
-        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff check src $(test -d packages/{{.ITEM}}/tests && echo tests)
-      - for: { var: PACKAGES, split: " " }
-        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff format --check src $(test -d packages/{{.ITEM}}/tests && echo tests)
+{% elif workspace %}      - for: { var: PACKAGE_DIRS, split: " " }
+        cmd: uv run --directory {{.ITEM}} --package {{base .ITEM}} ruff check src $(test -d {{.ITEM}}/tests && echo tests)
+      - for: { var: PACKAGE_DIRS, split: " " }
+        cmd: uv run --directory {{.ITEM}} --package {{base .ITEM}} ruff format --check src $(test -d {{.ITEM}}/tests && echo tests)
 {% elif web %}      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff check src $(test -d [[ api_dir ]]/tests && echo tests)
       - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff format --check src $(test -d [[ api_dir ]]/tests && echo tests)
 {% else %}      - uv run ruff check src $(test -d tests && echo tests)
@@ -110,10 +110,10 @@ tasks:
     cmds:
 {% if overrides.get("quality:format:python") %}      - [[ overrides["quality:format:python"] ]]
 {% elif workspace and not packages %}      - echo "no packages to check; add one with 'kiln generate package <name>'"
-{% elif workspace %}      - for: { var: PACKAGES, split: " " }
-        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff check --fix src $(test -d packages/{{.ITEM}}/tests && echo tests)
-      - for: { var: PACKAGES, split: " " }
-        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} ruff format src $(test -d packages/{{.ITEM}}/tests && echo tests)
+{% elif workspace %}      - for: { var: PACKAGE_DIRS, split: " " }
+        cmd: uv run --directory {{.ITEM}} --package {{base .ITEM}} ruff check --fix src $(test -d {{.ITEM}}/tests && echo tests)
+      - for: { var: PACKAGE_DIRS, split: " " }
+        cmd: uv run --directory {{.ITEM}} --package {{base .ITEM}} ruff format src $(test -d {{.ITEM}}/tests && echo tests)
 {% elif web %}      - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff check --fix src $(test -d [[ api_dir ]]/tests && echo tests)
       - uv run --directory [[ api_dir ]] --package [[ api_package ]] ruff format src $(test -d [[ api_dir ]]/tests && echo tests)
 {% else %}      - uv run ruff check --fix src $(test -d tests && echo tests)
@@ -134,8 +134,8 @@ tasks:
     cmds:
 {% if overrides.get("quality:typecheck:python") %}      - [[ overrides["quality:typecheck:python"] ]]
 {% elif workspace and not packages %}      - echo "no packages to check; add one with 'kiln generate package <name>'"
-{% elif workspace %}      - for: { var: PACKAGES, split: " " }
-        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} pyright src
+{% elif workspace %}      - for: { var: PACKAGE_DIRS, split: " " }
+        cmd: uv run --directory {{.ITEM}} --package {{base .ITEM}} pyright src
 {% elif web %}      - uv run --directory [[ api_dir ]] --package [[ api_package ]] pyright src
 {% else %}      - uv run pyright src
 {% endif %}
@@ -147,8 +147,8 @@ tasks:
     cmds:
 {% if overrides.get("quality:test:python") %}      - [[ overrides["quality:test:python"] ]]
 {% elif workspace and not packages %}      - echo "no packages to check; add one with 'kiln generate package <name>'"
-{% elif workspace %}      - for: { var: PACKAGES, split: " " }
-        cmd: uv run --directory packages/{{.ITEM}} --package {{.ITEM}} pytest -q
+{% elif workspace %}      - for: { var: PACKAGE_DIRS, split: " " }
+        cmd: uv run --directory {{.ITEM}} --package {{base .ITEM}} pytest -q
 {% elif web %}      - uv run --directory [[ api_dir ]] --package [[ api_package ]] pytest -q
 {% else %}      - uv run pytest -q
 {% endif %}
@@ -172,10 +172,10 @@ tasks:
 {% if overrides.get("quality:test:coverage") %}      - [[ overrides["quality:test:coverage"] ]]
 {% elif workspace and not packages %}      - echo "no packages to check; add one with 'kiln generate package <name>'"
 {% elif workspace %}      - rm -f "{{.ROOT_DIR}}/.coverage" "{{.ROOT_DIR}}/.coverage."* coverage.xml
-      - for: { var: PACKAGES, split: " " }
+      - for: { var: PACKAGE_DIRS, split: " " }
         cmd: >-
-          COVERAGE_FILE="{{.ROOT_DIR}}/.coverage.{{.ITEM}}"
-          uv run --directory packages/{{.ITEM}} --package {{.ITEM}}
+          COVERAGE_FILE="{{.ROOT_DIR}}/.coverage.{{base .ITEM}}"
+          uv run --directory {{.ITEM}} --package {{base .ITEM}}
           coverage run --rcfile "{{.ROOT_DIR}}/pyproject.toml" --source src -m pytest -q
       - uv run coverage combine
       - uv run coverage xml -o coverage.xml

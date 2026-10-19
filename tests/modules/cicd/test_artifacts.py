@@ -652,7 +652,10 @@ def test_s6_4_2_6_verify_job(tmp_path: Path) -> None:
         s for s in verify["steps"] if s.get("run", "").startswith("task ci:verify")
     )  # type: ignore[attr-defined]
     assert step["run"] == "task ci:verify -- ${{ matrix.name }}"
-    assert step["env"] == {"PYTEST_ARGS": "${{ needs.plan.outputs.pytest-args }}"}
+    assert step["env"] == {
+        "PACKAGE_DIR": "${{ matrix.dir }}",
+        "PYTEST_ARGS": "${{ needs.plan.outputs.pytest-args }}",
+    }
 
 
 def test_s6_4_2_6_sonar_waits_for_verify(tmp_path: Path) -> None:
@@ -719,6 +722,7 @@ def test_s6_4_3_3_postgres_job(tmp_path: Path) -> None:
     )
     step = steps[runs.index("task ci:postgres -- ${{ matrix.name }}")]  # type: ignore[index]
     assert step["env"] == {
+        "PACKAGE_DIR": "${{ matrix.dir }}",
         "DSN_VAR": "${{ matrix.env }}",
         "PYTEST_ARGS": "${{ needs.plan.outputs.pytest-args }}",
     }
@@ -868,3 +872,40 @@ def test_s6_4_4_6_other_archetypes_keep_the_per_package_release_steps(
     for archetype in ("python-app", "python-tool"):
         steps = _release_steps(_root(tmp_path / archetype, archetype))
         assert any(s.get("name") == "Publish GitHub Release" for s in steps)
+
+
+def test_s6_4_6_1_verify_and_postgres_pass_the_matrix_dir_through_env(
+    tmp_path: Path,
+) -> None:
+    jobs = _lib_jobs(tmp_path)
+    for name, task in (("verify", "ci:verify"), ("postgres", "ci:postgres")):
+        assert jobs[name]["name"] == f"{name} (${{{{ matrix.name }}}})"
+        step = next(
+            s
+            for s in jobs[name]["steps"]
+            if s.get("run", "").startswith(f"task {task}")  # type: ignore[attr-defined]
+        )
+        assert step["run"] == f"task {task} -- ${{{{ matrix.name }}}}"
+        assert step["env"]["PACKAGE_DIR"] == "${{ matrix.dir }}"
+
+
+def test_s6_4_6_4_actionlint_passes_on_the_libs_fixture(tmp_path: Path) -> None:
+    if shutil.which("actionlint") is None:
+        pytest.skip("actionlint is not on PATH")
+    root = _root(tmp_path, "python-lib")
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(
+        config.read_text(encoding="utf-8").replace(
+            '["packages/alpha", "packages/beta"]', '["libs/alpha"]'
+        ),
+        encoding="utf-8",
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    result = subprocess.run(
+        ["actionlint", *WORKFLOWS],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
