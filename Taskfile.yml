@@ -47,6 +47,8 @@ tasks:
       - task: quality:lint:imports
       - task: quality:lint:task-layout
       - task: quality:lint:ci-entrypoint
+      - task: quality:lint:ci-pins
+      - task: quality:lint:ci-hooks
       - task: quality:lint:docs
       - task: quality:lint:docs-structure
       - task: quality:lint:docs-generate

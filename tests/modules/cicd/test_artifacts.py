@@ -1317,3 +1317,25 @@ def test_s4_11_1_8_actionlint_passes_on_a_declared_call(tmp_path: Path) -> None:
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(
+    ("archetype", "extra"),
+    [
+        ("python-app", ""),
+        ("python-tool", ""),
+        ("python-lib", ""),
+        ("python-web-api", ""),
+        ("python-web-app", 'frontend = "angular"'),
+    ],
+)
+def test_s4_11_2_5_every_cell_passes_ci_pins_and_ci_hooks(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    if archetype.startswith("python-web"):
+        root = _web_root(tmp_path, archetype, extra=extra)
+    else:
+        root = _root(tmp_path, archetype)
+    cycle.apply(root, home=tmp_path / "home")
+    assert checks.run(root, only="ci-pins") == []
+    assert checks.run(root, only="ci-hooks") == []

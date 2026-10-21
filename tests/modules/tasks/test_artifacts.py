@@ -842,3 +842,126 @@ def test_s6_4_7_4_release_task_always_publishes(tmp_path: Path) -> None:
     script = "\n".join(task["cmds"])
     assert "PUBLISH" not in script
     assert script.count("continue") == 1  # only the already-published skip remains
+
+
+NEW_LINTS = ("ci-pins", "ci-hooks")
+ENTRYPOINT_REF = {"task": "quality:lint:ci-entrypoint"}
+NEW_REFS = [{"task": f"quality:lint:{name}"} for name in NEW_LINTS]
+WEB_CELLS = (
+    ("python-web-api", ""),
+    ("python-web-app", 'frontend = "angular"'),
+)
+
+
+def _rendered_yaml(root: Path) -> tuple[dict[str, dict], dict[str, dict]]:
+    root_tasks = yaml.safe_load((root / "Taskfile.yml").read_text(encoding="utf-8"))
+    quality = yaml.safe_load((root / "tasks/quality.yml").read_text(encoding="utf-8"))
+    return root_tasks["tasks"], quality["tasks"]
+
+
+def _assert_new_lints(root: Path) -> None:
+    root_tasks, quality = _rendered_yaml(root)
+    cmds = root_tasks["lint"]["cmds"]
+    at = cmds.index(ENTRYPOINT_REF)
+    assert cmds[at : at + 3] == [ENTRYPOINT_REF, *NEW_REFS]
+    for name in NEW_LINTS:
+        task = quality[f"lint:{name}"]
+        assert task["internal"] is True
+        assert task["desc"].strip()
+        assert task["cmds"] == [f"uv run kiln doctor . --only {name}"]
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s4_11_2_1_lint_runs_ci_pins_and_ci_hooks_after_ci_entrypoint(
+    tmp_path: Path, archetype: str
+) -> None:
+    root = _root(tmp_path, archetype)
+    cycle.apply(root, home=tmp_path / "home")
+    _assert_new_lints(root)
+
+
+@pytest.mark.parametrize(("archetype", "extra"), WEB_CELLS)
+def test_s4_11_2_1_web_archetypes_run_them_too(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _web_root(tmp_path, archetype, "fastapi", extra=extra)
+    cycle.apply(root, home=tmp_path / "home")
+    _assert_new_lints(root)
+    if archetype == "python-web-app":
+        root_tasks, _ = _rendered_yaml(root)
+        assert root_tasks["lint"]["cmds"][-1] == {"task": "web:lint"}
+
+
+def test_s4_11_2_1_the_workspace_variant_runs_them_once_at_the_root(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path, "python-lib")
+    cycle.apply(root, home=tmp_path / "home")
+    _, quality = _rendered_yaml(root)
+    for name in NEW_LINTS:
+        task_text = yaml.safe_dump(quality[f"lint:{name}"])
+        assert "for:" not in task_text
+        assert "PACKAGE_DIRS" not in task_text
+
+
+@pytest.mark.parametrize("name", NEW_LINTS)
+def test_s4_11_2_2_command_overrides_accept_the_new_tasks(
+    tmp_path: Path, name: str
+) -> None:
+    root = _root(
+        tmp_path,
+        extra=(
+            f'\n[tasks]\n[tasks.command_overrides]\n"quality:lint:{name}" = "echo hi"\n'
+        ),
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    _, quality = _rendered_yaml(root)
+    assert quality[f"lint:{name}"]["cmds"] == ["echo hi"]
+
+
+def test_s4_11_2_2_an_unknown_override_key_is_still_refused(tmp_path: Path) -> None:
+    root = _root(
+        tmp_path,
+        extra='\n[tasks]\n[tasks.command_overrides]\nbogus = "echo hi"\n',
+    )
+    with pytest.raises(AppException, match="bogus"):
+        TASKS.artifacts(KilnConfig.load(root), root)
+
+
+@pytest.mark.parametrize("name", archetypes.shipped())
+def test_s4_11_2_3_required_validate_gains_both(name: str) -> None:
+    required = archetypes.load(name).required_validate
+    assert "quality:lint:ci-pins" in required
+    assert "quality:lint:ci-hooks" in required
+
+
+@pytest.mark.parametrize(
+    ("archetype", "extra"),
+    [(a, "") for a in ARCHETYPES] + list(WEB_CELLS),
+)
+def test_s4_11_2_4_task_layout_accepts_the_rendered_files(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    if archetype in ARCHETYPES:
+        root = _root(tmp_path, archetype)
+    else:
+        root = _web_root(tmp_path, archetype, "fastapi", extra=extra)
+    cycle.apply(root, home=tmp_path / "home")
+    assert _codes(root) == []
+
+
+@pytest.mark.parametrize("name", NEW_LINTS)
+def test_s4_11_2_4_gate_shrunk_fires_when_lint_drops_a_new_task(
+    tmp_path: Path, name: str
+) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    taskfile = root / "Taskfile.yml"
+    line = f"      - task: quality:lint:{name}\n"
+    text = taskfile.read_text(encoding="utf-8")
+    assert line in text
+    taskfile.write_text(text.replace(line, ""), encoding="utf-8")
+    findings = [f for f in TASKS.checks(KilnConfig.load(root), root)]
+    assert any(
+        f.code == "gate.shrunk" and f"quality:lint:{name}" in str(f) for f in findings
+    )

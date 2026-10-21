@@ -31,6 +31,8 @@ required_validate = [
     "quality:lint:imports",
     "quality:lint:task-layout",
     "quality:lint:ci-entrypoint",
+    "quality:lint:ci-pins",
+    "quality:lint:ci-hooks",
     "quality:lint:markdown",
     "quality:lint:toml",
     "quality:typecheck:python",

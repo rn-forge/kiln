@@ -57,6 +57,18 @@ tasks:
     cmds:
       - uv run kiln doctor . --only ci-entrypoint
 
+  lint:ci-pins:
+    desc: Fail if a CI action is not pinned to a commit, or a job lacks `permissions:`.
+    internal: true
+    cmds:
+      - uv run kiln doctor . --only ci-pins
+
+  lint:ci-hooks:
+    desc: Fail if a `[ci.hooks]` action or a declared job's workflow is missing or cannot be called.
+    internal: true
+    cmds:
+      - uv run kiln doctor . --only ci-hooks
+
   lint:docs:
     desc: Check the docs site for broken links, bad anchors, and orphan pages.
     internal: true

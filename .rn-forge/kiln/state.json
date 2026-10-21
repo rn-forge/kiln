@@ -58,7 +58,7 @@
     },
     "Taskfile.yml": {
       "begin_marker": null,
-      "content_hash": "d635dc2b7eb6396c960d5eb9fe2c19fd6912602671cd2a62433c25a4f562ce57",
+      "content_hash": "f25f448bcfa0d85b91e0af9126922ee868ea4eaaf732c2c696ff0a66b328f9c5",
       "end_marker": null,
       "kind": "managed",
       "path": "Taskfile.yml"
@@ -205,7 +205,7 @@
     },
     "tasks/quality.yml": {
       "begin_marker": null,
-      "content_hash": "bd0edff796d5d0a283b6464ffd89c2dcea132a69f57ea7ba3150278d295ab2af",
+      "content_hash": "c965131f5f4eb9f4a3c475fac10004c43a7522a00ca52d6d0d5933d51d774344",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/quality.yml"

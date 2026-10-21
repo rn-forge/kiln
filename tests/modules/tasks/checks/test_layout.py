@@ -44,6 +44,14 @@ tasks:
     desc: Check CI entrypoint
     cmds: [kiln doctor .]
     internal: true
+  lint:ci-pins:
+    desc: Check CI pins
+    cmds: [kiln doctor .]
+    internal: true
+  lint:ci-hooks:
+    desc: Check CI hooks
+    cmds: [kiln doctor .]
+    internal: true
   lint:markdown:
     desc: Check markdown
     cmds: [mdformat --check .]
@@ -73,6 +81,8 @@ GATE_REFS = "\n".join(
         "lint:imports",
         "lint:task-layout",
         "lint:ci-entrypoint",
+        "lint:ci-pins",
+        "lint:ci-hooks",
         "lint:markdown",
         "lint:toml",
         "typecheck:python",
@@ -172,6 +182,23 @@ def test_a_shrunk_gate_is_reported(repo) -> None:
     assert any(
         "not reachable from `validate`" in line and "test:python" in line
         for line in run(root)
+    )
+
+
+@pytest.mark.parametrize("name", ["ci-pins", "ci-hooks"])
+def test_s4_11_2_4_a_gate_missing_ci_pins_or_ci_hooks_is_reported(
+    repo, name: str
+) -> None:
+    root = compliant(
+        repo,
+        **{
+            "Taskfile.yml": TASKFILE.replace(
+                f"      - task: quality:lint:{name}\n", "", 1
+            )
+        },
+    )
+    assert any(
+        "not reachable from `validate`" in line and name in line for line in run(root)
     )
 
 

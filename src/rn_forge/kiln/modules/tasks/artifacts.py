@@ -32,6 +32,8 @@ _QUALITY_TASKS = (
     "quality:lint:imports",
     "quality:lint:task-layout",
     "quality:lint:ci-entrypoint",
+    "quality:lint:ci-pins",
+    "quality:lint:ci-hooks",
     "quality:format:python",
     "quality:format:markdown",
     "quality:format:toml",
