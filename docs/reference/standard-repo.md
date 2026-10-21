@@ -49,7 +49,8 @@ quality:lint:python          quality:lint:generated
 quality:lint:rn-forge-deps   quality:lint:imports
 quality:lint:task-layout     quality:lint:ci-entrypoint
 quality:lint:ci-pins         quality:lint:ci-hooks
-quality:lint:workflows       quality:lint:toml
+quality:lint:workflows       quality:lint:audit
+quality:lint:toml
 quality:typecheck:python     quality:test:python
 ```
 
@@ -293,8 +294,9 @@ CI runs the pinned kiln read-only ([ADR-0006](../adr/ADR-0006.md)): it never
 runs `kiln apply` and never writes a generated file. `task validate` runs
 `kiln doctor`'s ownership checks — `generated`, `task-layout`, `ci-entrypoint`,
 `ci-pins`, `ci-hooks` and `docs-generate` — the workflow linters `zizmor` and
-`actionlint` (`lint:workflows`), and the quality checks `rn-forge-deps`,
-`docs-structure` and `docs-site` through their own lint tasks.
+`actionlint` (`lint:workflows`), the dependency audit (`lint:audit`, which runs
+`pip-audit` against the lock and needs the network), and the quality checks
+`rn-forge-deps`, `docs-structure` and `docs-site` through their own lint tasks.
 `kiln doctor --full`, which adds a full render and diff, runs where the workflow
 asks for it: `lint` runs it when the `KILN_DOCTOR_FULL` task variable is set, by
 default on pushes to the default branch and on manual dispatch.
@@ -399,8 +401,9 @@ the root vocabulary ([ADR-0014](../adr/ADR-0014.md)):
 - `ci` namespace: `ci:plan`, `ci:adapters`, `ci:verify -- <package>`,
   `ci:postgres`, `ci:smoke`, `ci:suite`, `ci:release` and
   `ci:external-install`.
-- `python-lib` jobs, in order: `validate`, `plan`, `verify`, `postgres`,
-  `smoke`, `suites`, `sonar`, `release`, `external-install`, `ci-ok`.
+- `python-lib` jobs, in order: `validate`, `dependency-review`, `plan`,
+  `verify`, `postgres`, `smoke`, `suites`, `sonar`, `release`,
+  `external-install`, `ci-ok`.
 
 [How a `python-lib` CI run flows](../architecture/python-lib-ci.md) walks
 through each event.
@@ -422,6 +425,11 @@ The rules:
   pushes with the checkout token (`python-lib`'s `docs`, which runs
   `mike deploy --push`). The workflows pass `zizmor --offline` and
   `actionlint` in `task lint`.
+- Every archetype's CI has a `dependency-review` job after `validate`: it runs
+  on pull requests only, with `contents: read`, and `ci-ok` needs it, so a
+  skipped run on a push is a pass. `task lint` also audits the locked
+  dependencies with `pip-audit` (`lint:audit`); a vulnerability that cannot be
+  fixed is accepted in `[[tasks.audit.ignore]]` with a reason.
 - `UV_LOCKED: "1"` at workflow level: CI resolves the committed lockfile and
   never rewrites it.
 - The Sonar job is skipped for fork pull requests, whose workflows cannot see
@@ -494,6 +502,10 @@ lint = ["self:check:dist"]
 
 [tasks.command_overrides]
 "quality:test:python" = "uv run pytest -q -p no:randomly"
+
+# [[tasks.audit.ignore]]   # optional: a vulnerability the audit accepts; id and
+# id = "PYSEC-0000-0000"   # reason are both required, ids are unique
+# reason = "not reachable: we never parse untrusted input with it"
 
 [archetype.python-lib]
 packages = ["packages/rn-forge-commons", "packages/rn-forge-django"]

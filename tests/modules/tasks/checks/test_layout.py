@@ -56,6 +56,10 @@ tasks:
     desc: Check workflows
     cmds: [zizmor --offline .github]
     internal: true
+  lint:audit:
+    desc: Audit dependencies
+    cmds: [pip-audit]
+    internal: true
   lint:markdown:
     desc: Check markdown
     cmds: [mdformat --check .]
@@ -88,6 +92,7 @@ GATE_REFS = "\n".join(
         "lint:ci-pins",
         "lint:ci-hooks",
         "lint:workflows",
+        "lint:audit",
         "lint:markdown",
         "lint:toml",
         "typecheck:python",
@@ -218,6 +223,21 @@ def test_s4_11_3_8_a_gate_missing_workflows_is_reported(repo) -> None:
     )
     assert any(
         "not reachable from `validate`" in line and "workflows" in line
+        for line in run(root)
+    )
+
+
+def test_s4_11_5_7_a_gate_missing_audit_is_reported(repo) -> None:
+    root = compliant(
+        repo,
+        **{
+            "Taskfile.yml": TASKFILE.replace(
+                "      - task: quality:lint:audit\n", "", 1
+            )
+        },
+    )
+    assert any(
+        "not reachable from `validate`" in line and "audit" in line
         for line in run(root)
     )
 

@@ -199,7 +199,7 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
     off = _rendered(_root(tmp_path / "off", sonar=False))
     assert "sonar-project.properties" not in off
     jobs = yaml.safe_load(off[".github/workflows/ci.yml"])["jobs"]
-    assert set(jobs) == {"validate", "release", "ci-ok"}
+    assert set(jobs) == {"validate", "dependency-review", "release", "ci-ok"}
     assert jobs["release"]["needs"] == ["validate"]
     assert (
         "sonar"
@@ -213,7 +213,10 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
     expected = (
         on_ci.replace(sonar_job, "")
         .replace("needs: [validate, sonar]", "needs: [validate]")
-        .replace("needs: [validate, sonar, release]", "needs: [validate, release]")
+        .replace(
+            "needs: [validate, dependency-review, sonar, release]",
+            "needs: [validate, dependency-review, release]",
+        )
     )
     assert off[".github/workflows/ci.yml"] == expected
 
@@ -221,7 +224,7 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
 def test_s4_3_4_3_release_none_renders_no_release_job(tmp_path: Path) -> None:
     rendered = _rendered(_root(tmp_path, release="none"))
     jobs = yaml.safe_load(rendered[".github/workflows/ci.yml"])["jobs"]
-    assert set(jobs) == {"validate", "sonar", "ci-ok"}
+    assert set(jobs) == {"validate", "dependency-review", "sonar", "ci-ok"}
 
 
 def test_s4_3_4_4_ci_entrypoint_passes_on_the_rendered_workflows(
@@ -603,6 +606,7 @@ def test_s6_4_2_4_python_lib_jobs_and_validate_steps(tmp_path: Path) -> None:
     jobs = _lib_jobs(tmp_path)
     assert list(jobs) == [
         "validate",
+        "dependency-review",
         "plan",
         "verify",
         "postgres",
@@ -682,7 +686,13 @@ def test_s6_4_2_6_sonar_waits_for_verify(tmp_path: Path) -> None:
 def test_s6_4_2_8_other_archetypes_keep_the_plain_pipeline(tmp_path: Path) -> None:
     for archetype in ("python-app", "python-tool"):
         jobs = _ci_jobs(_root(tmp_path / archetype, archetype))
-        assert list(jobs) == ["validate", "sonar", "release", "ci-ok"], archetype
+        assert list(jobs) == [
+            "validate",
+            "dependency-review",
+            "sonar",
+            "release",
+            "ci-ok",
+        ], archetype
 
 
 def test_s6_4_3_2_declared_jobs_follow_verify(tmp_path: Path) -> None:
@@ -1615,3 +1625,60 @@ def test_s4_11_4_9_every_entry_has_a_cooldown(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "python-tool"), DEPENDABOT_HOOKS)
     for entry in _dependabot(root)["updates"]:  # type: ignore[attr-defined]
         assert entry["cooldown"]["default-days"] >= 7
+
+
+# S4.11.5 — dependency review.
+
+
+def _review_jobs(root: Path) -> dict[str, dict[str, object]]:
+    return yaml.safe_load(_rendered(root)[".github/workflows/ci.yml"])["jobs"]
+
+
+@pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
+def test_s4_11_5_8_dependency_review_job(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    jobs = _review_jobs(_cell_root(tmp_path, archetype, extra))
+    job = jobs["dependency-review"]
+    assert job["if"] == "${{ github.event_name == 'pull_request' }}"
+    assert job["needs"] == "validate"
+    assert job["permissions"] == {"contents": "read"}
+    assert isinstance(job["timeout-minutes"], int)
+    assert job["runs-on"] == "ubuntu-latest"
+    steps = job["steps"]
+    assert len(steps) == 2  # type: ignore[arg-type]
+    pins = load_pins()
+    checkout, review = steps  # type: ignore[misc]
+    assert checkout["uses"].startswith("actions/checkout@")
+    assert checkout["with"]["persist-credentials"] is False
+    assert review["uses"] == (
+        f"{pins['dependency-review']['uses']}@{pins['dependency-review']['sha']}"
+    )
+    assert all("actions/setup" not in str(s.get("uses", "")) for s in steps)  # type: ignore[attr-defined]
+
+
+def test_s4_11_5_8_dependency_review_is_pinned(tmp_path: Path) -> None:
+    pin = load_pins()["dependency-review"]
+    assert pin["uses"] == "actions/dependency-review-action"
+    assert re.fullmatch(r"[0-9a-f]{40}", pin["sha"])
+    assert pin["version"]
+    for archetype, extra in SECURITY_CELLS:
+        root = _cell_root(tmp_path / archetype, archetype, extra)
+        cycle.apply(root, home=tmp_path / archetype / "home")
+        assert checks.run(root, only="ci-pins") == [], archetype
+
+
+@pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
+def test_s4_11_5_8_ci_ok_needs_dependency_review(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    jobs = _review_jobs(_cell_root(tmp_path, archetype, extra))
+    assert "dependency-review" in jobs["ci-ok"]["needs"]  # type: ignore[operator]
+
+
+def test_s4_11_5_8_declared_jobs_cannot_take_the_name(tmp_path: Path) -> None:
+    assert "dependency-review" in GENERATED_JOBS
+    extra = f'\n[[ci.jobs]]\nname = "dependency-review"\nuses = "{CALL}"\n'
+    root = _with_ci(_root(tmp_path, "python-tool"), extra)
+    with pytest.raises(AppException):
+        KilnConfig.load(root)

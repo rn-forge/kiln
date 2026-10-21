@@ -21,6 +21,7 @@ required_validate = [
     "quality:lint:ci-pins",
     "quality:lint:ci-hooks",
     "quality:lint:workflows",
+    "quality:lint:audit",
     "quality:lint:markdown",
     "quality:lint:toml",
     "quality:typecheck:python",

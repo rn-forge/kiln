@@ -13,6 +13,7 @@ __all__ = ["GENERATED_JOBS", "CiConfig", "CiHooks", "CiJob"]
 GENERATED_JOBS = frozenset(
     {
         "validate",
+        "dependency-review",
         "plan",
         "verify",
         "postgres",

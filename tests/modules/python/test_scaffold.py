@@ -276,6 +276,18 @@ def test_s4_11_3_9_dev_group_has_zizmor_and_actionlint(
 
 
 @pytest.mark.parametrize(("archetype", "relative"), _TAPLO_CELLS)
+def test_s4_11_5_10_dev_group_has_pip_audit(
+    tmp_path: Path, archetype: str, relative: str
+) -> None:
+    root = _root(tmp_path, archetype)
+    scaffold(root, KilnConfig.load(root))
+    groups = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))[
+        "dependency-groups"
+    ]
+    assert "pip-audit" in groups["dev"]
+
+
+@pytest.mark.parametrize(("archetype", "relative"), _TAPLO_CELLS)
 def test_s4_10_1_5_reconciled_pyproject_is_taplo_clean(
     tmp_path: Path, archetype: str, relative: str
 ) -> None:

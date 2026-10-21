@@ -76,6 +76,27 @@ tasks:
       - uv run zizmor --offline .github
       - uv run actionlint
 
+  lint:audit:
+    desc: Fail if a locked dependency has a known vulnerability (pip-audit; needs the network).
+    internal: true
+    # `set -o pipefail`: go-task's shell takes only the last command's status
+    # from a pipeline, so a failing `uv export` would otherwise audit nothing
+    # and pass.
+    cmds:
+      - >-
+        set -o pipefail;
+        uv export --frozen --all-packages --all-groups --no-emit-workspace --no-header
+        --no-emit-package rn-forge-cli
+        --no-emit-package rn-forge-commons
+        --no-emit-package rn-forge-devops
+        --no-emit-package rn-forge-django
+        --no-emit-package rn-forge-fastapi
+        --no-emit-package rn-forge-sqlalchemy
+        --no-emit-package rn-forge-tooling
+        --no-emit-package rn-forge-web
+        --no-emit-package rn-forge-kiln
+        | uv run pip-audit --disable-pip --no-deps --strict -r /dev/stdin
+
   lint:docs:
     desc: Check the docs site for broken links, bad anchors, and orphan pages.
     internal: true

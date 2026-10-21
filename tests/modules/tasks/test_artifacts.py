@@ -23,6 +23,7 @@ from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.tasks import TASKS
+from rn_forge.kiln.modules.tasks.config import TasksConfig
 from rn_forge.kiln.modules.tasks.checks import layout
 
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
@@ -1059,4 +1060,190 @@ def test_s4_11_3_8_gate_shrunk_fires_when_lint_drops_workflows(
     findings = [f for f in TASKS.checks(KilnConfig.load(root), root)]
     assert any(
         f.code == "gate.shrunk" and "quality:lint:workflows" in str(f) for f in findings
+    )
+
+
+# S4.11.5 — dependency vulnerability audit.
+
+AUDIT_REF = {"task": "quality:lint:audit"}
+AUDIT_PREFIX = (
+    "uv export --frozen --all-packages --all-groups --no-emit-workspace --no-header"
+)
+AUDIT_SUFFIX = "| uv run pip-audit --disable-pip --no-deps --strict -r /dev/stdin"
+AUDIT_ALL_CELLS = [(a, "") for a in ARCHETYPES] + list(WEB_CELLS)
+
+
+def _audit_root(tmp_path: Path, archetype: str, extra: str = "") -> Path:
+    if archetype in ARCHETYPES:
+        return _root(tmp_path, archetype)
+    return _web_root(tmp_path, archetype, "fastapi", extra=extra)
+
+
+def _audit_cmd(root: Path) -> str:
+    _, quality = _rendered_yaml(root)
+    (cmd,) = quality["lint:audit"]["cmds"]
+    assert isinstance(cmd, str)
+    return cmd
+
+
+def _excluded(cmd: str) -> list[str]:
+    return re.findall(r"--no-emit-package (\S+)", cmd)
+
+
+@pytest.mark.parametrize(("archetype", "extra"), AUDIT_ALL_CELLS)
+def test_s4_11_5_1_lint_runs_audit_after_workflows(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _audit_root(tmp_path, archetype, extra)
+    cycle.apply(root, home=tmp_path / "home")
+    root_tasks, quality = _rendered_yaml(root)
+    cmds = root_tasks["lint"]["cmds"]
+    at = cmds.index(WORKFLOWS_REF)
+    assert cmds[at : at + 2] == [WORKFLOWS_REF, AUDIT_REF]
+    task = quality["lint:audit"]
+    assert task["internal"] is True
+    assert task["desc"].strip()
+    assert len(task["cmds"]) == 1
+    assert isinstance(task["cmds"][0], str)
+    assert "dependency vulnerabilities" in root_tasks["lint"]["desc"]
+
+
+def test_s4_11_5_1_the_command(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    cmd = _audit_cmd(root)
+    assert "\n" not in cmd
+    assert "  " not in cmd
+    assert "--ignore-vuln" not in cmd
+    names = _excluded(cmd)
+    expected = (
+        f"set -o pipefail; {AUDIT_PREFIX} "
+        + " ".join(f"--no-emit-package {n}" for n in names)
+        + f" {AUDIT_SUFFIX}"
+    )
+    assert cmd == expected
+
+
+def test_s4_11_5_2_the_excluded_set_is_every_rn_forge_distribution(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    names = _excluded(_audit_cmd(root))
+    assert names == [*sorted(archetypes.RN_FORGE_TAGS), "rn-forge-kiln"]
+    assert len(set(names)) == len(names)
+
+
+def test_s4_11_5_3_web_and_lib_cells_render_the_same_command(tmp_path: Path) -> None:
+    commands = set()
+    for archetype, extra in AUDIT_ALL_CELLS:
+        root = _audit_root(tmp_path / archetype, archetype, extra)
+        cycle.apply(root, home=tmp_path / archetype / "home")
+        commands.add(_audit_cmd(root))
+        _, quality = _rendered_yaml(root)
+        text = yaml.safe_dump(quality["lint:audit"])
+        assert "for:" not in text
+        assert "PACKAGE_DIRS" not in text
+    assert len(commands) == 1
+
+
+def test_s4_11_5_4_ignore_entries_become_flags(tmp_path: Path) -> None:
+    one = _root(
+        tmp_path / "one",
+        extra=(
+            '\n[[tasks.audit.ignore]]\nid = "GHSA-xxxx-xxxx-xxxx"\n'
+            'reason = "not reachable"\n'
+        ),
+    )
+    cycle.apply(one, home=tmp_path / "one" / "home")
+    assert _audit_cmd(one).endswith(f"{AUDIT_SUFFIX} --ignore-vuln GHSA-xxxx-xxxx-xxxx")
+    two = _root(
+        tmp_path / "two",
+        extra=(
+            '\n[[tasks.audit.ignore]]\nid = "PYSEC-2026-1"\nreason = "a"\n'
+            '\n[[tasks.audit.ignore]]\nid = "CVE-2026-2"\nreason = "b"\n'
+        ),
+    )
+    cycle.apply(two, home=tmp_path / "two" / "home")
+    assert _audit_cmd(two).endswith(
+        f"{AUDIT_SUFFIX} --ignore-vuln PYSEC-2026-1 --ignore-vuln CVE-2026-2"
+    )
+
+
+@pytest.mark.parametrize(
+    "entry",
+    [
+        'id = "PYSEC-1"',
+        'id = "PYSEC-1"\nreason = ""',
+        'id = "PYSEC-1"\nreason = "   "',
+        'reason = "why"',
+        'id = ""\nreason = "why"',
+        'id = "PYSEC-1"\nreason = "why"\nextra = "x"',
+        'id = "PYSEC-1"\nreason = "why"\n\n[[tasks.audit.ignore]]\n'
+        'id = "PYSEC-1"\nreason = "again"',
+    ],
+)
+def test_s4_11_5_5_ignore_entries_need_id_and_reason(
+    tmp_path: Path, entry: str
+) -> None:
+    root = _root(tmp_path, extra=f"\n[[tasks.audit.ignore]]\n{entry}\n")
+    with pytest.raises(AppException):
+        KilnConfig.load(root)
+
+
+def test_s4_11_5_5_an_id_with_shell_characters_is_refused(tmp_path: Path) -> None:
+    root = _root(
+        tmp_path,
+        extra='\n[[tasks.audit.ignore]]\nid = "x; rm"\nreason = "why"\n',
+    )
+    with pytest.raises(AppException):
+        KilnConfig.load(root)
+
+
+def test_s4_11_5_5_the_default_config_has_an_empty_list() -> None:
+    assert TasksConfig().audit.ignore == []
+
+
+def test_s4_11_5_6_command_override_is_accepted(tmp_path: Path) -> None:
+    root = _root(
+        tmp_path,
+        extra=(
+            '\n[tasks]\n[tasks.command_overrides]\n"quality:lint:audit" = "echo hi"\n'
+        ),
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    _, quality = _rendered_yaml(root)
+    assert quality["lint:audit"]["cmds"] == ["echo hi"]
+    assert "--ignore-vuln" not in yaml.safe_dump(quality["lint:audit"])
+
+
+@pytest.mark.parametrize("name", archetypes.shipped())
+def test_s4_11_5_7_required_validate_gains_it(name: str) -> None:
+    required = archetypes.load(name).required_validate
+    assert "quality:lint:audit" in required
+    assert required.index("quality:lint:audit") == (
+        required.index("quality:lint:workflows") + 1
+    )
+
+
+@pytest.mark.parametrize(("archetype", "extra"), AUDIT_ALL_CELLS)
+def test_s4_11_5_7_task_layout_accepts_the_rendered_files(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _audit_root(tmp_path, archetype, extra)
+    cycle.apply(root, home=tmp_path / "home")
+    assert _codes(root) == []
+
+
+def test_s4_11_5_7_gate_shrunk_fires_when_lint_drops_audit(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    taskfile = root / "Taskfile.yml"
+    line = "      - task: quality:lint:audit\n"
+    text = taskfile.read_text(encoding="utf-8")
+    assert line in text
+    taskfile.write_text(text.replace(line, ""), encoding="utf-8")
+    findings = [f for f in TASKS.checks(KilnConfig.load(root), root)]
+    assert any(
+        f.code == "gate.shrunk" and "quality:lint:audit" in str(f) for f in findings
     )

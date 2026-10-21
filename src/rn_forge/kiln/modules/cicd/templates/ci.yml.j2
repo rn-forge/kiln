@@ -77,7 +77,25 @@ jobs:
 {% if docs %}
       - name: Build docs
         run: task docs:build
-{% endif %}
+{% endif %}{% endif %}
+  # Fails a pull request that adds a dependency with a known vulnerability, from
+  # GitHub's dependency graph. Skipped on a push, which `ci-ok` treats as a pass.
+  dependency-review:
+    needs: validate
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
+        with:
+          persist-credentials: false
+
+      - name: Review dependency changes
+        uses: [[ pins["dependency-review"].uses ]]@[[ pins["dependency-review"].sha ]] # [[ pins["dependency-review"].version ]]
+{% if workspace %}
   plan:
     needs: validate
     runs-on: ubuntu-latest
@@ -563,7 +581,7 @@ jobs:
   # the repo grows; this one does not. A skipped job (the fork-guarded scan, a
   # release on a pull request) is not a failure.
   ci-ok:
-    needs: [validate{% if workspace %}, plan, verify, postgres, smoke, suites{% endif %}{% if sonar %}, sonar{% endif %}{% if release == "tag-exists" %}, release{% if workspace %}, external-install{% endif %}{% endif %}{% if workspace and docs %}, docs{% endif %}{% for job in jobs %}, [[ job.name ]]{% endfor %}]
+    needs: [validate, dependency-review{% if workspace %}, plan, verify, postgres, smoke, suites{% endif %}{% if sonar %}, sonar{% endif %}{% if release == "tag-exists" %}, release{% if workspace %}, external-install{% endif %}{% endif %}{% if workspace and docs %}, docs{% endif %}{% for job in jobs %}, [[ job.name ]]{% endfor %}]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

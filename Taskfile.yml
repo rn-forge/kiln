@@ -39,7 +39,7 @@ tasks:
       - task: docs:build
 
   lint:
-    desc: Every lint — Python, TOML, generated-file drift, dependencies, imports, task layout, CI entrypoints, workflow security, docs.
+    desc: Every lint — Python, TOML, generated-file drift, dependencies, imports, task layout, CI entrypoints, workflow security, dependency vulnerabilities, docs.
     cmds:
       - task: quality:lint:python
       - task: quality:lint:generated
@@ -50,6 +50,7 @@ tasks:
       - task: quality:lint:ci-pins
       - task: quality:lint:ci-hooks
       - task: quality:lint:workflows
+      - task: quality:lint:audit
       - task: quality:lint:docs
       - task: quality:lint:docs-structure
       - task: quality:lint:docs-generate

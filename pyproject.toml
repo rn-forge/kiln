@@ -81,6 +81,7 @@ extend-exclude = ["tests/fixtures"]
 dev = [
     "actionlint-py>=1.7.12.25",
     "import-linter>=2.3",
+    "pip-audit>=2.10.1",
     "pyright>=1.1.411",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",

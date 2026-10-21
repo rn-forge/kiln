@@ -44,6 +44,7 @@ RUFF_TEST_IGNORES = {"S101", "D", "ANN", "PLR2004"}
 _DEV_GROUP = [
     "actionlint-py",
     "import-linter",
+    "pip-audit",
     "pyright",
     "pytest",
     "pytest-cov",
