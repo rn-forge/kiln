@@ -403,3 +403,10 @@ def test_s5_3_5_3_the_scaffolded_bodies_are_mdformat_clean(
     result = _mdformat_check(root)
 
     assert result.returncode == 0, result.stderr
+
+
+def test_s4_12_1_8_the_claude_block_names_docs_lint(tmp_path: Path) -> None:
+    rendered = _rendered(_root(tmp_path))
+    for text in (rendered[BLOCK_KEY], rendered[".rn-forge/kiln/standard.md"]):
+        assert "docs:lint" in text
+        assert "docs:structure" not in text

@@ -51,10 +51,10 @@ are [release-2](../release-2/index.md).
 | [F4.9 — Seeded starter source](../../specs/epics/E4-generator/F4.9-seeded-starter-source.md) | E4 | Active |
 | [F4.10 — TOML formatting](../../specs/epics/E4-generator/F4.10-toml-formatting.md) | E4 | Closed |
 | [F4.11 — Generated CI enhancements](../../specs/epics/E4-generator/F4.11-ci-enhancements.md) | E4 | Active |
-| [F4.12 — The task files follow their owners](../../specs/epics/E4-generator/F4.12-task-files-by-owner.md) | E4 | New |
+| [F4.12 — The task files follow their owners](../../specs/epics/E4-generator/F4.12-task-files-by-owner.md) | E4 | Active |
 | [F5.1 — Library sets, and the modules gain the web shapes](../../specs/epics/E5-web-archetypes/F5.1-web-library-sets-and-modules.md) | E5 | Closed |
 | [F5.2 — `kiln new` end to end for the web archetypes](../../specs/epics/E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md) | E5 | Closed |
-| [F5.3 — Prove and ship the FastAPI cells](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) | E5 | Active |
+| [F5.3 — Prove and ship the FastAPI cells](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) | E5 | Closed |
 | [F6.1 — `python-lib` can host pykit](../../specs/epics/E6-rebuild-the-repos/F6.1-pykit-skeleton.md) | E6 | Closed |
 | [F6.3 — The generated CI matches the hardened upstream CI](../../specs/epics/E6-rebuild-the-repos/F6.3-hardened-ci.md) | E6 | Active |
 | [F6.4 — `python-lib` renders pykit's discovered workspace pipeline](../../specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md) | E6 | Active |
@@ -123,8 +123,8 @@ S11.5.1 were added 2026-10-18 to retire pykit's `main.yml`. S6.4.7 was added the
 same day, to bring `python-lib`'s release to [ADR-0016](../../adr/ADR-0016.md)'s
 rule (default branch only, after Sonar); it waits on a pykit change to
 `rn-forge-devops`. F5.3 closed 2026-10-21 on its two shipped cells, approved at
-kiln `c62d4e2`; its real-application proof moved to F6.5 (S6.5.3, apollo),
-which is not in this release. F9.1 has no stories written
+kiln `c62d4e2`; its real-application proof moved to F6.5 (S6.5.3, apollo), which
+is not in this release. F9.1 has no stories written
 ([board](../../specs/index.md#order)).
 
 ## Commits

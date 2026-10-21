@@ -4,6 +4,8 @@ version: "3"
 # The documentation site. A public namespace: `task docs:serve` is something a
 # developer runs directly while writing prose, so these four verbs are the only
 # non-root public tasks the vocabulary allows (kiln ADR-0007).
+# The `lint:*` tasks are the docs checks `docs:lint` runs, internal like
+# `quality`'s.
 
 vars:
   MKDOCS_SITE_DIR: .docs-site
@@ -24,7 +26,27 @@ tasks:
     cmds:
       - uv run kiln docs-generate .
 
-  structure:
+  lint:
+    desc: Every docs check — site links and anchors, the area model, the derived regions.
+    cmds:
+      - task: lint:site
+      - task: lint:structure
+      - task: lint:generate
+
+  lint:site:
+    desc: Check the docs site for broken links, bad anchors, and orphan pages.
+    internal: true
+    cmds:
+      - uv run kiln doctor . --only docs-site
+
+  lint:structure:
     desc: Check the docs tree matches the area model declared in docs/_areas.yml.
+    internal: true
     cmds:
       - uv run kiln doctor . --only docs-structure
+
+  lint:generate:
+    desc: Check the docs' derived regions are up to date.
+    internal: true
+    cmds:
+      - uv run kiln doctor . --only docs-generate

@@ -120,28 +120,7 @@ tasks:
 {% for name in audit_excluded %}        --no-emit-package [[ name ]]
 {% endfor %}        | uv run pip-audit --disable-pip --no-deps --strict -r /dev/stdin
 {% for id in audit_ignore %}        --ignore-vuln [[ id ]]
-{% endfor %}{% endif %}{% if docs %}
-  lint:docs:
-    desc: Check the docs site for broken links, bad anchors, and orphan pages.
-    internal: true
-    cmds:
-{% if overrides.get("quality:lint:docs") %}      - [[ overrides["quality:lint:docs"] ]]
-{% else %}      - uv run kiln doctor . --only docs-site
-{% endif %}
-  lint:docs-structure:
-    desc: Check the docs tree matches the area model.
-    internal: true
-    cmds:
-{% if overrides.get("quality:lint:docs-structure") %}      - [[ overrides["quality:lint:docs-structure"] ]]
-{% else %}      - task: :docs:structure
-{% endif %}
-  lint:docs-generate:
-    desc: Check the docs' derived regions are up to date.
-    internal: true
-    cmds:
-{% if overrides.get("quality:lint:docs-generate") %}      - [[ overrides["quality:lint:docs-generate"] ]]
-{% else %}      - uv run kiln doctor . --only docs-generate
-{% endif %}{% endif %}
+{% endfor %}{% endif %}
   format:python:
 {% if workspace %}    desc: Fix and format every workspace package in place with ruff.
 {% elif web %}    desc: Fix and format the API package in place with ruff.

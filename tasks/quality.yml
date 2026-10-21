@@ -97,24 +97,6 @@ tasks:
         --no-emit-package rn-forge-kiln
         | uv run pip-audit --disable-pip --no-deps --strict -r /dev/stdin
 
-  lint:docs:
-    desc: Check the docs site for broken links, bad anchors, and orphan pages.
-    internal: true
-    cmds:
-      - uv run kiln doctor . --only docs-site
-
-  lint:docs-structure:
-    desc: Check the docs tree matches the area model.
-    internal: true
-    cmds:
-      - task: :docs:structure
-
-  lint:docs-generate:
-    desc: Check the docs' derived regions are up to date.
-    internal: true
-    cmds:
-      - uv run kiln doctor . --only docs-generate
-
   format:python:
     desc: Fix and format src/ (and tests/, when present) in place with ruff.
     internal: true

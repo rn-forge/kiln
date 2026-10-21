@@ -51,7 +51,7 @@ The public surface for this repo is exactly:
 {% if docs %}| `task docs:build`     | strict MkDocs build into `.docs-site/`                |
 {% endif %}{% if docs %}| `task docs:serve`     | live-reload docs on `127.0.0.1:8080`                  |
 {% endif %}{% if docs %}| `task docs:generate`  | regenerate the docs' derived regions                  |
-{% endif %}{% if docs %}| `task docs:structure` | check the tree against `docs/_areas.yml`              |
+{% endif %}{% if docs %}| `task docs:lint`      | check the docs site, the area model and the derived regions |
 {% endif %}{% else %}| Verb                | What it does                                        |
 | ------------------- | --------------------------------------------------- |
 | `task setup`        | sync the venv with the dev and docs groups          |
@@ -67,7 +67,7 @@ The public surface for this repo is exactly:
 {% if docs %}| `task docs:build`   | strict MkDocs build into `.docs-site/`              |
 {% endif %}{% if docs %}| `task docs:serve`   | live-reload docs on `127.0.0.1:8080`                |
 {% endif %}{% if docs %}| `task docs:generate`| regenerate the docs' derived regions                |
-{% endif %}{% if docs %}| `task docs:structure` | check the tree against `docs/_areas.yml`          |
+{% endif %}{% if docs %}| `task docs:lint`    | check the docs site, the area model and the derived regions |
 {% endif %}{% if web %}| `task api:dev`      | run the API dev server on port 8000                 |
 {% endif %}{% if web and backend == "django" %}| `task api:migrate`  | apply the API's Django migrations                   |
 {% endif %}{% if web_app %}| `task web:lint`     | lint the frontend workspace with Nx                 |

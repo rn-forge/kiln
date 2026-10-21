@@ -233,3 +233,31 @@ def test_s6_4_2_8_devops_is_pinned_and_in_no_archetype() -> None:
     for name in archetypes.shipped():
         dependencies = archetypes.load(name).dependencies
         assert "rn-forge-devops" not in (*dependencies.required, *dependencies.allowed)
+
+
+@pytest.mark.parametrize("name", PYTHON_ARCHETYPES)
+def test_s4_12_1_6_required_validate_names_the_docs_tasks(tmp_path, name: str) -> None:
+    lines = [
+        "schema_version = 1",
+        "",
+        "[repository]",
+        'name = "demo"',
+        f'archetype = "{name}"',
+        "",
+        "[docs]",
+        'profile = "mkdocs"',
+    ]
+    if name in WEB_ARCHETYPES:
+        lines += ["", f'[archetype."{name}"]', 'backend = "fastapi"']
+    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True, exist_ok=True)
+    config.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    required = archetypes.for_config(KilnConfig.load(tmp_path)).required_validate
+    for task in (
+        "docs:lint:site",
+        "docs:lint:structure",
+        "docs:lint:generate",
+        "docs:build",
+    ):
+        assert task in required
+    assert not [t for t in required if t.startswith("quality:lint:docs")]

@@ -56,9 +56,9 @@ _MANIFEST = "archetype.toml"
 _TOOLING = "rn-forge-tooling"
 
 _MKDOCS_VALIDATE = (
-    "quality:lint:docs",
-    "quality:lint:docs-structure",
-    "quality:lint:docs-generate",
+    "docs:lint:site",
+    "docs:lint:structure",
+    "docs:lint:generate",
     "docs:build",
 )
 

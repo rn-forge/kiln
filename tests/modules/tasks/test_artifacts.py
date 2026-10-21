@@ -223,7 +223,8 @@ def test_s4_3_3_1_an_mkdocs_repo_also_lists_the_four_docs_verbs(tmp_path: Path) 
     result = _run_task(root, "--list", "--json")
     assert result.returncode == 0, result.stderr
     names = {entry["name"] for entry in json.loads(result.stdout)["tasks"]}
-    assert {"docs:build", "docs:serve", "docs:generate", "docs:structure"} <= names
+    assert {"docs:build", "docs:serve", "docs:generate", "docs:lint"} <= names
+    assert "docs:structure" not in names
 
 
 def test_s4_3_3_2_a_repo_owned_include_is_seeded_once_and_list_all_succeeds(
@@ -521,6 +522,7 @@ def test_s4_3_3_5_without_mkdocs_the_rendered_files_carry_no_docs_reference(
     assert "docs:build" not in taskfile
     assert "docs:" not in taskfile.split("tasks:", 1)[1]
     assert "quality:lint:docs" not in taskfile
+    assert "docs:lint" not in taskfile
     assert "lint:docs" not in quality
     assert not (root / "tasks" / "docs.yml").exists()
     assert _codes(root) == []
@@ -1333,3 +1335,126 @@ def test_s4_11_6_2_lib_publish_uploads_the_sbom(tmp_path: Path) -> None:
     assert build.count('dist/$name/$name.cdx.json"') == 2  # tag and worktree
     assert '--out-dir "$GITHUB_WORKSPACE/dist/$name"' in build
     assert '--out-dir "dist/$name"' in build
+
+
+DOCS_LINT_CHECKS = {
+    "lint:site": "docs-site",
+    "lint:structure": "docs-structure",
+    "lint:generate": "docs-generate",
+}
+
+
+def _s4_12_1_root(tmp_path: Path, archetype: str, extra: str = "") -> Path:
+    if archetype in ARCHETYPES:
+        return _root(tmp_path, archetype)
+    return _web_root(tmp_path, archetype, "fastapi", extra=extra)
+
+
+def _load(root: Path, path: str) -> dict:
+    return yaml.safe_load((root / path).read_text(encoding="utf-8"))
+
+
+def test_s4_12_1_1_docs_lint_runs_the_three_checks(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    tasks = _load(root, "tasks/docs.yml")["tasks"]
+    assert "internal" not in tasks["lint"]
+    assert tasks["lint"]["desc"].strip()
+    assert tasks["lint"]["cmds"] == [
+        {"task": "lint:site"},
+        {"task": "lint:structure"},
+        {"task": "lint:generate"},
+    ]
+    for name, check in DOCS_LINT_CHECKS.items():
+        assert tasks[name]["internal"] is True
+        assert tasks[name]["desc"].strip()
+        assert tasks[name]["cmds"] == [f"uv run kiln doctor . --only {check}"]
+    assert "structure" not in tasks
+
+
+@pytest.mark.parametrize(
+    ("archetype", "extra"), [(a, "") for a in ARCHETYPES] + list(WEB_CELLS)
+)
+def test_s4_12_1_2_root_lint_calls_docs_lint_once(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _s4_12_1_root(tmp_path, archetype, extra)
+    if archetype not in ARCHETYPES:
+        text = (root / ".rn-forge/kiln/config.toml").read_text(encoding="utf-8")
+        (root / ".rn-forge/kiln/config.toml").write_text(
+            text.replace('profile = "none"', 'profile = "mkdocs"'), encoding="utf-8"
+        )
+    cycle.apply(root, home=tmp_path / "home")
+    cmds = _load(root, "Taskfile.yml")["tasks"]["lint"]["cmds"]
+    assert cmds.count({"task": "docs:lint"}) == 1
+    at = cmds.index({"task": "docs:lint"})
+    assert cmds[at + 1] == {"task": "quality:lint:markdown"}
+    assert not any(c["task"].startswith("quality:lint:docs") for c in cmds)
+
+
+def test_s4_12_1_3_quality_yml_has_no_docs_task(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    quality = _load(root, "tasks/quality.yml")["tasks"]
+    assert not [key for key in quality if key.startswith("lint:docs")]
+
+
+def test_s4_12_1_4_without_mkdocs_lint_has_no_docs_ref(tmp_path: Path) -> None:
+    root = _root(tmp_path, profile="none")
+    cycle.apply(root, home=tmp_path / "home")
+    cmds = _load(root, "Taskfile.yml")["tasks"]["lint"]["cmds"]
+    assert not any(c["task"].startswith("docs:") for c in cmds)
+    assert not (root / "tasks" / "docs.yml").exists()
+
+
+@pytest.mark.parametrize("key", [f"docs:{name}" for name in DOCS_LINT_CHECKS])
+def test_s4_12_1_5_overrides_take_the_new_keys(tmp_path: Path, key: str) -> None:
+    root = _root(
+        tmp_path,
+        extra=f'\n[tasks]\n[tasks.command_overrides]\n"{key}" = "echo hi"\n',
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    tasks = _load(root, "tasks/docs.yml")["tasks"]
+    assert tasks[key.removeprefix("docs:")]["cmds"] == ["echo hi"]
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "docs:structure",
+        "docs:lint",
+        "quality:lint:docs",
+        "quality:lint:docs-structure",
+        "quality:lint:docs-generate",
+    ],
+)
+def test_s4_12_1_5_old_keys_are_refused(tmp_path: Path, key: str) -> None:
+    root = _root(
+        tmp_path,
+        extra=f'\n[tasks]\n[tasks.command_overrides]\n"{key}" = "echo hi"\n',
+    )
+    with pytest.raises(AppException, match=re.escape(key)):
+        TASKS.artifacts(KilnConfig.load(root), root)
+
+
+@pytest.mark.parametrize(
+    ("archetype", "extra"), [(a, "") for a in ARCHETYPES] + list(WEB_CELLS)
+)
+def test_s4_12_1_7_task_layout_accepts_the_rendered_files(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _s4_12_1_root(tmp_path, archetype, extra)
+    cycle.apply(root, home=tmp_path / "home")
+    assert _codes(root) == []
+
+
+def test_s4_12_1_7_gate_shrunk_fires_when_lint_drops_docs_lint(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    taskfile = root / "Taskfile.yml"
+    line = "      - task: docs:lint\n"
+    text = taskfile.read_text(encoding="utf-8")
+    assert line in text
+    taskfile.write_text(text.replace(line, ""), encoding="utf-8")
+    findings = list(TASKS.checks(KilnConfig.load(root), root))
+    assert any(f.code == "gate.shrunk" and "docs:lint:site" in str(f) for f in findings)

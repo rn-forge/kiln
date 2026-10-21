@@ -27,7 +27,7 @@ setup  validate  lint  format  typecheck  test  test:coverage  build  clean  ver
 plus, under `docs.profile = mkdocs`, four public docs verbs:
 
 ```text
-docs:build  docs:serve  docs:generate  docs:structure
+docs:build  docs:serve  docs:generate  docs:lint
 ```
 
 `validate` calls `lint`, `typecheck`, `test`, and — for `mkdocs` — `docs:build`.
@@ -57,8 +57,8 @@ quality:typecheck:python     quality:test:python
 plus, under `docs.profile = mkdocs`:
 
 ```text
-quality:lint:docs   quality:lint:docs-structure
-quality:lint:docs-generate   quality:lint:markdown   docs:build
+docs:lint:site   docs:lint:structure   docs:lint:generate
+quality:lint:markdown   docs:build
 ```
 
 An archetype adds to this list; it never removes from it.

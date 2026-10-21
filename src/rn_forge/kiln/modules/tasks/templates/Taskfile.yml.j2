@@ -56,9 +56,7 @@ tasks:
       - task: quality:lint:ci-hooks
       - task: quality:lint:workflows
       - task: quality:lint:audit
-{% if docs %}      - task: quality:lint:docs
-      - task: quality:lint:docs-structure
-      - task: quality:lint:docs-generate
+{% if docs %}      - task: docs:lint
 {% endif %}      - task: quality:lint:markdown
       - task: quality:lint:toml
 {% if web_app %}      - task: web:lint

@@ -51,21 +51,21 @@
     },
     ".rn-forge/kiln/standard.md": {
       "begin_marker": null,
-      "content_hash": "a2d110dbf281356641debe913cdd3f200c0b3401e9c360aa32f6e00986ed0a8e",
+      "content_hash": "3192495ae09dbafd1877db0a30a899143f7f51ac13c4e47d9e6f2ab01e1d18e0",
       "end_marker": null,
       "kind": "managed",
       "path": ".rn-forge/kiln/standard.md"
     },
     "CLAUDE.md#rn-forge kiln": {
       "begin_marker": "<!-- BEGIN rn-forge kiln -->",
-      "content_hash": "a2b9c3f6cd698c64d9e5dcfce52b1bef71ec6d16dad90f12b222d1578fee9ab7",
+      "content_hash": "0cfdee45c57a7abdfc6aad5a6bb52168ae206685d6a74229caea00bde86c9b30",
       "end_marker": "<!-- END rn-forge kiln -->",
       "kind": "block",
       "path": "CLAUDE.md"
     },
     "Taskfile.yml": {
       "begin_marker": null,
-      "content_hash": "cd24c5cfe5fea31a445a2b1e16c11efaac2462055f9d7821ce829716bb8706a6",
+      "content_hash": "f8248ee49f95a769c067268ebb7e06f2c320d62facd3ffc8639d378211492816",
       "end_marker": null,
       "kind": "managed",
       "path": "Taskfile.yml"
@@ -205,14 +205,14 @@
     },
     "tasks/docs.yml": {
       "begin_marker": null,
-      "content_hash": "9224e4153d37d3aeeedf5c74323919656388f752246a5a024d65af2d0de395ee",
+      "content_hash": "f38ab9f74c2e4e1ec2b388739bac290e7eb25faef6d3db0d25bbc461f1fe9f5e",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/docs.yml"
     },
     "tasks/quality.yml": {
       "begin_marker": null,
-      "content_hash": "e487830a3141f8f4bbae88c42ed59dcfa65d13e2e097d5ba0e2289e2ac55ca62",
+      "content_hash": "08d7b7358b6cd1614a319384815e23102c25d20cdbe48b53539822a0dfc0387a",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/quality.yml"

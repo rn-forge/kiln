@@ -43,12 +43,14 @@ _QUALITY_TASKS = (
     "quality:test:python",
     "quality:test:coverage",
 )
-_QUALITY_DOCS_TASKS = (
-    "quality:lint:docs",
-    "quality:lint:docs-structure",
-    "quality:lint:docs-generate",
+_DOCS_TASKS = (
+    "docs:build",
+    "docs:serve",
+    "docs:generate",
+    "docs:lint:site",
+    "docs:lint:structure",
+    "docs:lint:generate",
 )
-_DOCS_TASKS = ("docs:build", "docs:serve", "docs:generate", "docs:structure")
 
 
 def _tasks_config(config: KilnConfig) -> TasksConfig:
@@ -75,7 +77,6 @@ def render(config: KilnConfig) -> list[Artifact]:
     known = {
         *_WORKSPACE_TASKS,
         *_QUALITY_TASKS,
-        *(_QUALITY_DOCS_TASKS if docs else ()),
         *(_DOCS_TASKS if docs else ()),
     }
     for key in tasks_config.command_overrides:

@@ -37,7 +37,7 @@ The public surface for this repo is exactly:
 | `task docs:build`   | strict MkDocs build into `.docs-site/`              |
 | `task docs:serve`   | live-reload docs on `127.0.0.1:8080`                |
 | `task docs:generate`| regenerate the docs' derived regions                |
-| `task docs:structure` | check the tree against `docs/_areas.yml`          |
+| `task docs:lint`    | check the docs site, the area model and the derived regions |
 
 Every other task is `internal: true`. The root `Taskfile.yml` holds wrappers
 only: each of its commands is a `task:` call into a `tasks/*.yml` namespace.

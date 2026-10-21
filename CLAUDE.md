@@ -30,7 +30,7 @@ changing anything structural.
   `mkdocs` or `kiln` directly, in a workflow or in a document — the ten root
   verbs are
   `setup validate lint format typecheck test test:coverage build clean version`,
-  plus `docs:build docs:serve docs:generate docs:structure`.
+  plus `docs:build docs:serve docs:generate docs:lint`.
 - **Generated files** carry a provenance header naming kiln. They are owned by
   kiln, not by this repo: edit `.rn-forge/kiln/config.toml` and run
   `kiln apply`. An edit in place is drift, and `task lint` fails on it.

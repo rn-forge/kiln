@@ -51,9 +51,7 @@ tasks:
       - task: quality:lint:ci-hooks
       - task: quality:lint:workflows
       - task: quality:lint:audit
-      - task: quality:lint:docs
-      - task: quality:lint:docs-structure
-      - task: quality:lint:docs-generate
+      - task: docs:lint
       - task: quality:lint:markdown
       - task: quality:lint:toml
 
