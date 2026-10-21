@@ -53,13 +53,14 @@ tasks:
     cmds:
       - uv run pytest $SUITE_ARGS
 
-  release:
-    desc: "CI only: build and publish the releasable packages, prerequisites first"
+  release-build:
+    desc: "CI only: build the releasable packages and their SBOMs into dist/<package>/, prerequisites first"
     cmds:
       - |
         set -euo pipefail
         mapfile -t names < <(jq -r '.[]' <<<"$SELECTED")
         releasable="$({{.DEVOPS}} releasable ok "${names[@]}")"
+        built=0
         for name in $releasable; do
           version="$(uv version --package "$name" --short)"
           tag="$name-v$version"
@@ -74,10 +75,32 @@ tasks:
             worktree=$(mktemp -d)
             git worktree add --detach "$worktree" FETCH_HEAD
             uv build --directory "$worktree" --package "$name" --out-dir "$GITHUB_WORKSPACE/dist/$name"
+            uv export --format cyclonedx1.5 --frozen --no-default-groups --directory "$worktree" --package "$name" -q -o "$GITHUB_WORKSPACE/dist/$name/$name.cdx.json"
             git worktree remove "$worktree"
           else
             uv build --package "$name" --out-dir "dist/$name"
+            uv export --format cyclonedx1.5 --frozen --no-default-groups --package "$name" -q -o "dist/$name/$name.cdx.json"
           fi
+          built=$((built + 1))
+        done
+        printf 'built=%s\n' "$built" >> "$GITHUB_OUTPUT"
+
+  release-publish:
+    desc: "CI only: publish a GitHub release for each package release-build built, prerequisites first"
+    cmds:
+      - |
+        set -euo pipefail
+        mapfile -t names < <(jq -r '.[]' <<<"$SELECTED")
+        releasable="$({{.DEVOPS}} releasable ok "${names[@]}")"
+        for name in $releasable; do
+          version="$(uv version --package "$name" --short)"
+          tag="$name-v$version"
+          draft=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null || true)
+          if [ "$draft" = false ] || [ ! -d "dist/$name" ]; then
+            echo "Nothing to publish for $tag, skipping."
+            continue
+          fi
+          remote_tag=$(git ls-remote --tags origin "refs/tags/$tag")
           if [ "$draft" = true ]; then
             gh release delete "$tag" --yes
           fi

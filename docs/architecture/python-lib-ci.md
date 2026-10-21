@@ -52,7 +52,7 @@ A newer push to the same pull request cancels the run in progress. Pushes to
 | `smoke`, one per selected package with no extra, plus one per declared extra | the built wheel, with no extra or with that one extra, installs into a clean venv and imports | selected | selected | every package and declared extra |
 | `suites` | the root `[tool.workspace-ci.suites]` pytest runs | always, all suites | always | always |
 | `sonar` | whole-workspace coverage, then the scan, waiting on the quality gate | runs; skipped for a fork's pull request | runs, on branch `main` | runs, on the dispatched branch |
-| `release` | each selected package whose checks passed is built and published as `<package>-v<version>`, after `sonar` passed | skipped | builds and publishes | skipped |
+| `release` | each selected package whose checks passed is built with its SBOM (`task ci:release-build`), attested, then published (`task ci:release-publish`) as `<package>-v<version>`, after `sonar` passed | skipped | builds and publishes | skipped |
 | `external-install` | each new tag installs from git, outside the workspace, and imports | skipped | runs | skipped |
 | `docs` | each package tagged at this commit deployed with `mike`, then the root site plus `packages/` to Pages | skipped | runs | skipped |
 | `ci-ok` | no job failed or was cancelled; a skipped job is not a failure | runs | runs | runs |

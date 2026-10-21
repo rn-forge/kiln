@@ -27,6 +27,7 @@ tasks:
       UV_CACHE_DIR: /tmp/kiln-uv-cache
     cmds:
       - uv build
+      - uv export --format cyclonedx1.5 --frozen --no-default-groups -q -o dist/kiln.cdx.json
 
   clean:
     desc: Remove build outputs, tool caches, and the rendered docs site.

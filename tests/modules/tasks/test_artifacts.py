@@ -839,10 +839,11 @@ def test_s11_5_1_1_docs_publish_is_absent_without_docs(tmp_path: Path) -> None:
 
 
 def test_s6_4_7_4_release_task_always_publishes(tmp_path: Path) -> None:
-    task = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]["release"]  # type: ignore[index]
-    script = "\n".join(task["cmds"])
-    assert "PUBLISH" not in script
-    assert script.count("continue") == 1  # only the already-published skip remains
+    tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
+    for name in ("release-build", "release-publish"):
+        assert "PUBLISH" not in "\n".join(tasks[name]["cmds"])  # type: ignore[index]
+    publish = "\n".join(tasks["release-publish"]["cmds"])  # type: ignore[index]
+    assert publish.count("continue") == 1  # only the published skip remains
 
 
 NEW_LINTS = ("ci-pins", "ci-hooks")
@@ -1247,3 +1248,88 @@ def test_s4_11_5_7_gate_shrunk_fires_when_lint_drops_audit(tmp_path: Path) -> No
     assert any(
         f.code == "gate.shrunk" and "quality:lint:audit" in str(f) for f in findings
     )
+
+
+# S4.11.6 — build provenance and an SBOM.
+
+SBOM_CELLS = [(a, "") for a in ARCHETYPES] + list(WEB_CELLS)
+EXPORT = "uv export --format cyclonedx1.5 --frozen --no-default-groups"
+
+
+def _build_text(root: Path) -> str:
+    workspace = yaml.safe_load((root / "tasks/workspace.yml").read_text("utf-8"))
+    return "\n".join(workspace["tasks"]["build"]["cmds"])
+
+
+@pytest.mark.parametrize(("archetype", "extra"), SBOM_CELLS)
+def test_s4_11_6_1_build_writes_an_sbom(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _audit_root(tmp_path, archetype, extra)
+    cycle.apply(root, home=tmp_path / "home")
+    text = _build_text(root)
+    (line,) = [ln for ln in text.splitlines() if "uv export" in ln]
+    assert text.index("uv build") < text.index("uv export")
+    assert EXPORT in line
+    assert re.search(r'-o "?dist/\S*\.cdx\.json"?$', line), line
+    if archetype == "python-lib":
+        assert text.index("for package in") < text.index("uv export")
+        assert '--package "$package"' in line
+        assert "dist/$package.cdx.json" in line
+    elif archetype.startswith("python-web"):
+        assert "--package demo-api " in line
+        assert "-o dist/demo-api.cdx.json" in line
+    else:
+        assert "--package" not in line
+        assert "-o dist/demo.cdx.json" in line
+
+
+def test_s4_11_6_1_build_override_is_untouched(tmp_path: Path) -> None:
+    extra = '\n[tasks]\n[tasks.command_overrides]\n"workspace:build" = "echo hi"\n'
+    root = _root(tmp_path, extra=extra)
+    cycle.apply(root, home=tmp_path / "home")
+    workspace = yaml.safe_load((root / "tasks/workspace.yml").read_text("utf-8"))
+    assert workspace["tasks"]["build"]["cmds"] == ["echo hi"]
+    assert "uv export" not in (root / "tasks/workspace.yml").read_text("utf-8")
+
+
+def test_s4_11_6_2_lib_release_is_split(tmp_path: Path) -> None:
+    tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
+    assert "release" not in tasks
+    build = "\n".join(tasks["release-build"]["cmds"])  # type: ignore[index]
+    publish = "\n".join(tasks["release-publish"]["cmds"])  # type: ignore[index]
+    for name in ("release-build", "release-publish"):
+        assert tasks[name]["desc"], name  # type: ignore[index]
+        assert "internal" not in tasks[name], name  # type: ignore[operator]
+    for text in ("releasable ok", "uv build", "uv export --format cyclonedx1.5"):
+        assert text in build, text
+    assert "gh release create" not in build
+    assert "gh release delete" not in build
+    for text in (
+        "gh release create",
+        "--verify-tag",
+        "--target",
+        "gh release delete",
+        "continue",
+    ):
+        assert text in publish, text
+    assert "uv build" not in publish
+    assert "uv export" not in publish
+
+
+def test_s4_11_6_2_lib_build_reports_how_many_it_built(tmp_path: Path) -> None:
+    build = "\n".join(
+        _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]["release-build"]["cmds"]  # type: ignore[index]
+    )
+    assert "built=" in build
+    assert "$GITHUB_OUTPUT" in build
+
+
+def test_s4_11_6_2_lib_publish_uploads_the_sbom(tmp_path: Path) -> None:
+    tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
+    publish = "\n".join(tasks["release-publish"]["cmds"])  # type: ignore[index]
+    assert publish.count('dist/"$name"/*') == 2
+    build = "\n".join(tasks["release-build"]["cmds"])  # type: ignore[index]
+    assert build.count('dist/$name/$name.cdx.json"') == 2  # tag and worktree
+    assert '--out-dir "$GITHUB_WORKSPACE/dist/$name"' in build
+    assert '--out-dir "dist/$name"' in build

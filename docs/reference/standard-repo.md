@@ -399,8 +399,8 @@ planned by `rn-forge-devops` through the public `ci:*` task namespace, outside
 the root vocabulary ([ADR-0014](../adr/ADR-0014.md)):
 
 - `ci` namespace: `ci:plan`, `ci:adapters`, `ci:verify -- <package>`,
-  `ci:postgres`, `ci:smoke`, `ci:suite`, `ci:release` and
-  `ci:external-install`.
+  `ci:postgres`, `ci:smoke`, `ci:suite`, `ci:release-build`,
+  `ci:release-publish` and `ci:external-install`.
 - `python-lib` jobs, in order: `validate`, `dependency-review`, `plan`,
   `verify`, `postgres`, `smoke`, `suites`, `sonar`, `release`,
   `external-install`, `ci-ok`.
@@ -430,6 +430,13 @@ The rules:
   skipped run on a push is a pass. `task lint` also audits the locked
   dependencies with `pip-audit` (`lint:audit`); a vulnerability that cannot be
   fixed is accepted in `[[tasks.audit.ignore]]` with a reason.
+- The `release` job attests what it ships before it publishes: build provenance
+  (`actions/attest`) over each distribution and its CycloneDX SBOM, which
+  `task build` writes beside them as `*.cdx.json` and lists runtime
+  dependencies only. `id-token: write` and `attestations: write` are on that
+  job alone (and `python-lib` splits `ci:release` into `ci:release-build` and
+  `ci:release-publish` with the attestation between them). The release carries
+  the wheels, the sdists and the `*.cdx.json`, and nothing else.
 - `UV_LOCKED: "1"` at workflow level: CI resolves the committed lockfile and
   never rewrites it.
 - The Sonar job is skipped for fork pull requests, whose workflows cannot see

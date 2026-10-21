@@ -378,6 +378,8 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - name: Checkout
         uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
@@ -396,11 +398,30 @@ jobs:
           merge-multiple: true
           path: ok/
 
-      - name: Build and publish releases
+      - name: Build releases
+        id: build
         env:
           GH_TOKEN: ${{ github.token }}
           SELECTED: ${{ needs.plan.outputs.release-order }}
-        run: task ci:release
+        run: task ci:release-build
+
+      # Attested before anything is published, because the release, not the
+      # tag, is the record: a failure here leaves nothing published, and a
+      # rerun attests again. Skipped when every package was already released.
+      - name: Generate provenance
+        if: steps.build.outputs.built != '0'
+        uses: [[ pins["attest"].uses ]]@[[ pins["attest"].sha ]] # [[ pins["attest"].version ]]
+        with:
+          subject-path: |
+            dist/*/*.whl
+            dist/*/*.tar.gz
+            dist/*/*.cdx.json
+
+      - name: Publish releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SELECTED: ${{ needs.plan.outputs.release-order }}
+        run: task ci:release-publish
 
   # Package checks resolve internal dependencies from the workspace, which
   # never proves a tag installs on its own.
@@ -435,6 +456,8 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - name: Checkout
         uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
@@ -497,6 +520,17 @@ jobs:
         if: steps.check.outputs.should-release == 'true'
         run: task build
 
+      # Attested before the release is published, because the release, not the
+      # tag, is the record: a failure here leaves nothing published.
+      - name: Generate provenance
+        if: steps.check.outputs.should-release == 'true'
+        uses: [[ pins["attest"].uses ]]@[[ pins["attest"].sha ]] # [[ pins["attest"].version ]]
+        with:
+          subject-path: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/*.cdx.json
+
       - name: Delete the leftover draft
         if: steps.check.outputs.draft == 'true'
         env:
@@ -518,9 +552,9 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$TAGGED" = true ]; then
-            gh release create "$TAG" dist/*.whl dist/*.tar.gz --verify-tag --title "$TAG" --generate-notes
+            gh release create "$TAG" dist/*.whl dist/*.tar.gz dist/*.cdx.json --verify-tag --title "$TAG" --generate-notes
           else
-            gh release create "$TAG" dist/*.whl dist/*.tar.gz --target "$SOURCE_SHA" --title "$TAG" --generate-notes
+            gh release create "$TAG" dist/*.whl dist/*.tar.gz dist/*.cdx.json --target "$SOURCE_SHA" --title "$TAG" --generate-notes
           fi
 {% endif %}{% if workspace and docs %}
   # Runs on a push with no package change too, when `release` is skipped. The one

@@ -525,12 +525,12 @@ def test_s6_3_4_publish_targets_the_source_commit(tmp_path: Path) -> None:
         assert any(step.get("id") == "source" for step in steps)
 
 
-def test_s6_3_6_release_uploads_wheels_and_sdists_only(tmp_path: Path) -> None:
+def test_s6_3_6_release_uploads_distributions_and_sbom_only(tmp_path: Path) -> None:
     for root in _release_roots(tmp_path):
         steps = _release_steps(root)
         publish = steps[_step_index(steps, "Publish GitHub Release")]
         run = str(publish["run"])
-        assert "dist/*.whl dist/*.tar.gz" in run, root.name
+        assert "dist/*.whl dist/*.tar.gz dist/*.cdx.json" in run, root.name
         assert "dist/*" not in run.split(), root.name
 
 
@@ -580,6 +580,13 @@ def test_s4_6_4_2_ci_sets_the_variable_on_default_branch_pushes(
             "task lint" if archetype == "python-lib" else "task validate"
         )
         assert step["env"]["KILN_DOCTOR_FULL"] == KILN_DOCTOR_FULL_EXPRESSION, archetype
+
+
+RELEASE_PERMISSIONS = {
+    "contents": "write",
+    "id-token": "write",
+    "attestations": "write",
+}
 
 
 def _lib_jobs(tmp_path: Path, **kwargs: object) -> dict[str, dict[str, object]]:
@@ -801,7 +808,7 @@ def test_s6_4_4_1_check_jobs_end_with_marker_steps(tmp_path: Path) -> None:
 def test_s6_4_4_2_python_lib_release_job(tmp_path: Path) -> None:
     release = _lib_jobs(tmp_path)["release"]
     assert "strategy" not in release
-    assert release["permissions"] == {"contents": "write"}
+    assert release["permissions"] == RELEASE_PERMISSIONS
     steps = release["steps"]  # type: ignore[assignment]
     assert str(steps[0]["uses"]).startswith("actions/checkout@")  # type: ignore[index]
     assert steps[1]["uses"] == "./.github/actions/setup"  # type: ignore[index]
@@ -812,17 +819,22 @@ def test_s6_4_4_2_python_lib_release_job(tmp_path: Path) -> None:
         "merge-multiple": True,
         "path": "ok/",
     }
-    assert steps[3]["run"] == "task ci:release"  # type: ignore[index]
-    assert steps[3]["env"] == {  # type: ignore[index]
+    env = {
         "GH_TOKEN": "${{ github.token }}",
         "SELECTED": "${{ needs.plan.outputs.release-order }}",
     }
-    assert len(steps) == 4  # type: ignore[arg-type]
+    assert steps[3]["run"] == "task ci:release-build"  # type: ignore[index]
+    assert steps[3]["env"] == env  # type: ignore[index]
+    assert steps[5]["run"] == "task ci:release-publish"  # type: ignore[index]
+    assert steps[5]["env"] == env  # type: ignore[index]
+    assert len(steps) == 6  # type: ignore[arg-type]
 
 
 def test_s6_4_4_3_release_task_is_pykit_s_script(tmp_path: Path) -> None:
+    tasks = _ci_tasks_text(tmp_path)["tasks"]
     script = "\n".join(
-        _ci_tasks_text(tmp_path)["tasks"]["release"]["cmds"]  # type: ignore[index]
+        "\n".join(tasks[name]["cmds"])  # type: ignore[index]
+        for name in ("release-build", "release-publish")
     )
     for text in (
         "releasable ok",
@@ -890,7 +902,9 @@ def test_s6_4_4_6_other_archetypes_keep_the_per_package_release_steps(
 ) -> None:
     for archetype in ("python-app", "python-tool"):
         steps = _release_steps(_root(tmp_path / archetype, archetype))
-        assert any(s.get("name") == "Publish GitHub Release" for s in steps)
+        names = [s.get("name") for s in steps]
+        assert "Generate provenance" in names
+        assert "Publish GitHub Release" in names
 
 
 def test_s6_4_6_1_verify_and_postgres_pass_the_matrix_dir_through_env(
@@ -1043,8 +1057,10 @@ def test_s6_4_7_3_release_waits_on_sonar_only_where_sonar_renders(
 def test_s6_4_7_4_release_has_no_publish_switch(tmp_path: Path) -> None:
     text = _rendered(_root(tmp_path, "python-lib"))[".github/workflows/ci.yml"]
     assert "PUBLISH" not in text
+    tasks = _ci_tasks_text(tmp_path)["tasks"]
     script = "\n".join(
-        _ci_tasks_text(tmp_path)["tasks"]["release"]["cmds"]  # type: ignore[index]
+        "\n".join(tasks[name]["cmds"])  # type: ignore[index]
+        for name in ("release-build", "release-publish")
     )
     assert "PUBLISH" not in script
     assert "gh release create" in script
@@ -1682,3 +1698,121 @@ def test_s4_11_5_8_declared_jobs_cannot_take_the_name(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "python-tool"), extra)
     with pytest.raises(AppException):
         KilnConfig.load(root)
+
+
+# S4.11.6 — build provenance and an SBOM.
+
+SUBJECTS = "dist/*.whl\ndist/*.tar.gz\ndist/*.cdx.json\n"
+LIB_SUBJECTS = "dist/*/*.whl\ndist/*/*.tar.gz\ndist/*/*.cdx.json\n"
+SINGLE_RELEASE_CELLS = [(a, e) for a, e in SECURITY_CELLS if a != "python-lib"]
+
+
+@pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
+def test_s4_11_6_3_release_job_permissions(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _cell_root(tmp_path, archetype, extra)
+    allowed = {("ci.yml", "release"), ("ci.yml", "docs"), ("docs.yml", "deploy")}
+    for path, content in _rendered(root).items():
+        if not path.startswith(".github/workflows/"):
+            continue
+        workflow = Path(path).name
+        for name, job in yaml.safe_load(content)["jobs"].items():
+            permissions = job.get("permissions") or {}
+            if (workflow, name) == ("ci.yml", "release"):
+                assert permissions == RELEASE_PERMISSIONS, archetype
+                continue
+            assert "attestations" not in permissions, f"{workflow}:{name}"
+            if "id-token" in permissions:
+                assert (workflow, name) in allowed, f"{workflow}:{name}"
+
+
+@pytest.mark.parametrize(("archetype", "extra"), SINGLE_RELEASE_CELLS)
+def test_s4_11_6_4_single_package_release_attests_before_publishing(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    steps = _release_steps(_cell_root(tmp_path, archetype, extra))
+    names = [s.get("name") for s in steps]
+    build, provenance, draft, publish = (
+        names.index(n)
+        for n in (
+            "Build",
+            "Generate provenance",
+            "Delete the leftover draft",
+            "Publish GitHub Release",
+        )
+    )
+    assert build < provenance < draft < publish
+    pin = load_pins()["attest"]
+    step = steps[provenance]
+    assert step["uses"] == f"{pin['uses']}@{pin['sha']}"
+    assert step["if"] == "steps.check.outputs.should-release == 'true'"
+    assert step["with"] == {"subject-path": SUBJECTS}  # type: ignore[comparison-overlap]
+    run = str(steps[publish]["run"])
+    assert run.count("dist/*.whl dist/*.tar.gz dist/*.cdx.json") == 2
+
+
+def test_s4_11_6_4_lib_release_attests_between_build_and_publish(
+    tmp_path: Path,
+) -> None:
+    steps = _lib_jobs(tmp_path)["release"]["steps"]  # type: ignore[assignment]
+    tail = steps[3:]  # type: ignore[index]
+    assert [s["name"] for s in tail] == [
+        "Build releases",
+        "Generate provenance",
+        "Publish releases",
+    ]
+    build, provenance, publish = tail
+    env = {
+        "GH_TOKEN": "${{ github.token }}",
+        "SELECTED": "${{ needs.plan.outputs.release-order }}",
+    }
+    assert build["run"] == "task ci:release-build"
+    assert build["env"] == env
+    assert build["id"] == "build"
+    pin = load_pins()["attest"]
+    assert provenance["uses"] == f"{pin['uses']}@{pin['sha']}"
+    assert provenance["if"] == "steps.build.outputs.built != '0'"
+    assert provenance["with"] == {"subject-path": LIB_SUBJECTS}
+    assert publish["run"] == "task ci:release-publish"
+    assert publish["env"] == env
+
+
+def test_s4_11_6_5_attest_is_pinned(tmp_path: Path) -> None:
+    pin = load_pins()["attest"]
+    assert pin["uses"] == "actions/attest"
+    assert re.fullmatch(r"[0-9a-f]{40}", pin["sha"])
+    assert pin["version"]
+    assert "attest-provenance" not in load_pins()
+    for archetype, extra in SECURITY_CELLS:
+        root = _cell_root(tmp_path / archetype, archetype, extra)
+        cycle.apply(root, home=tmp_path / archetype / "home")
+        assert checks.run(root, only="ci-pins") == [], archetype
+
+
+@pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
+def test_s4_11_6_6_release_none_renders_no_attestation(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _cell_root(tmp_path, archetype, extra)
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    text = config.read_text(encoding="utf-8")
+    config.write_text(_release_none(text), encoding="utf-8")
+    rendered = _rendered(root)
+    assert "release" not in _ci_jobs(root)
+    for path, content in rendered.items():
+        assert "attest" not in content, path
+        if not path.startswith(".github/workflows/"):
+            continue
+        for name, job in yaml.safe_load(content)["jobs"].items():
+            if "id-token" in (job.get("permissions") or {}):
+                assert (Path(path).name, name) in {
+                    ("ci.yml", "docs"),
+                    ("docs.yml", "deploy"),
+                }, f"{path}:{name}"
+
+
+def _release_none(text: str) -> str:
+    if 'release = "tag-exists"' in text:
+        return text.replace('release = "tag-exists"', 'release = "none"')
+    return text + '\n[ci]\nrelease = "none"\n'

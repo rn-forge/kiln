@@ -57,9 +57,12 @@ tasks:
 {% elif workspace %}      - |
         for package in {{.CLI_ARGS | default .PACKAGES}}; do
           uv build --package "$package" --out-dir dist
+          uv export --format cyclonedx1.5 --frozen --no-default-groups --package "$package" -q -o "dist/$package.cdx.json"
         done
 {% elif web %}      - uv build --package [[ api_package ]] --out-dir dist
+      - uv export --format cyclonedx1.5 --frozen --no-default-groups --package [[ api_package ]] -q -o dist/[[ api_package ]].cdx.json
 {% else %}      - uv build
+      - uv export --format cyclonedx1.5 --frozen --no-default-groups -q -o dist/[[ name ]].cdx.json
 {% endif %}
   clean:
     desc: Remove build outputs, tool caches, and the rendered docs site.

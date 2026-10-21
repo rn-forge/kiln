@@ -182,6 +182,8 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -244,6 +246,17 @@ jobs:
         if: steps.check.outputs.should-release == 'true'
         run: task build
 
+      # Attested before the release is published, because the release, not the
+      # tag, is the record: a failure here leaves nothing published.
+      - name: Generate provenance
+        if: steps.check.outputs.should-release == 'true'
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: |
+            dist/*.whl
+            dist/*.tar.gz
+            dist/*.cdx.json
+
       - name: Delete the leftover draft
         if: steps.check.outputs.draft == 'true'
         env:
@@ -265,9 +278,9 @@ jobs:
         run: |
           set -euo pipefail
           if [ "$TAGGED" = true ]; then
-            gh release create "$TAG" dist/*.whl dist/*.tar.gz --verify-tag --title "$TAG" --generate-notes
+            gh release create "$TAG" dist/*.whl dist/*.tar.gz dist/*.cdx.json --verify-tag --title "$TAG" --generate-notes
           else
-            gh release create "$TAG" dist/*.whl dist/*.tar.gz --target "$SOURCE_SHA" --title "$TAG" --generate-notes
+            gh release create "$TAG" dist/*.whl dist/*.tar.gz dist/*.cdx.json --target "$SOURCE_SHA" --title "$TAG" --generate-notes
           fi
 
   # The only check branch protection requires. Job and matrix names change as

@@ -54,3 +54,8 @@ version = "v7.0.0"
 uses = "actions/dependency-review-action"
 sha = "a1d282b36b6f3519aa1f3fc636f609c47dddb294"
 version = "v5.0.0"
+
+[attest]
+uses = "actions/attest"
+sha = "1e69f48acb82d1966a394da916b4c1698aa569d6"
+version = "v4.2.2"
