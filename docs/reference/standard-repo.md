@@ -31,11 +31,11 @@ docs:build  docs:serve  docs:generate  docs:lint
 ```
 
 `validate` calls `lint`, `typecheck`, `test`, and — for `mkdocs` — `docs:build`.
-Web modules additionally expose their specified `api:*` and `web:*` tasks. Every
-task outside the declared public surface is `internal: true`. The root
-`Taskfile.yml` holds wrappers only: each of its `cmds:` entries is a `task:`
-call into a `tasks/*.yml` namespace. Every task carries a non-empty `desc:`.
-([ADR-0007](../adr/ADR-0007.md))
+Web modules additionally expose `api:dev` (and `api:migrate` for Django) and,
+for `python-web-app`, `web:dev`. Every task outside the declared public surface
+is `internal: true`. The root `Taskfile.yml` holds wrappers only: each of its
+`cmds:` entries is a `task:` call into a `tasks/*.yml` namespace. Every task
+carries a non-empty `desc:`. ([ADR-0007](../adr/ADR-0007.md))
 
 In a workspace archetype, `build` and `version` take a package name after `--`
 (`task version -- rn-forge-commons`); given none, they act on every member.

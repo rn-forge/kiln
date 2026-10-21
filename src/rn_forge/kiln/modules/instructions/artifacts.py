@@ -35,7 +35,7 @@ _ROOT_VERBS = (
     "`setup validate lint format typecheck test test:coverage build clean version`"
 )
 _DOCS_VERBS = "`docs:build docs:serve docs:generate docs:lint`"
-_WEB_VERBS = "`web:lint web:test web:build web:dev`"
+_WEB_VERBS = "`web:dev`"
 
 
 def _bullet(text: str) -> str:

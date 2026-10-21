@@ -70,9 +70,6 @@ The public surface for this repo is exactly:
 {% endif %}{% if docs %}| `task docs:lint`    | check the docs site, the area model and the derived regions |
 {% endif %}{% if web %}| `task api:dev`      | run the API dev server on port 8000                 |
 {% endif %}{% if web and backend == "django" %}| `task api:migrate`  | apply the API's Django migrations                   |
-{% endif %}{% if web_app %}| `task web:lint`     | lint the frontend workspace with Nx                 |
-{% endif %}{% if web_app %}| `task web:test`     | test the frontend workspace with Nx                 |
-{% endif %}{% if web_app %}| `task web:build`    | build the frontend workspace with Nx                |
 {% endif %}{% if web_app %}| `task web:dev`      | run the frontend dev server via Nx, proxying `/v1` to `api:dev` |
 {% endif %}{% endif %}
 {% if web_app %}**Frontend:** `{{ frontend }}`, managed by pnpm + Nx. Its one application is the

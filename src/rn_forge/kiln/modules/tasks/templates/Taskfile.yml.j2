@@ -25,6 +25,7 @@ includes:
   ci: tasks/ci.yml
 {% if web %}  api: tasks/api.yml
 {% endif %}{% if web_app %}  web: tasks/web.yml
+  node: tasks/node.yml
 {% endif %}{% for include in includes %}  [[ include.namespace ]]: [[ include.taskfile ]]
 {% endfor %}
 tasks:
@@ -32,7 +33,8 @@ tasks:
     desc: Install the project and its dev + docs dependency groups.
     cmds:
       - task: workspace:install
-{% for ref in extra_refs.get("setup", []) %}      - task: [[ ref ]]
+{% if web_app %}      - task: node:install
+{% endif %}{% for ref in extra_refs.get("setup", []) %}      - task: [[ ref ]]
 {% endfor %}
   validate:
     desc: The aggregate gate — lint, typecheck, test, docs build. Any failure fails.
@@ -59,7 +61,7 @@ tasks:
 {% if docs %}      - task: docs:lint
 {% endif %}      - task: quality:lint:markdown
       - task: quality:lint:toml
-{% if web_app %}      - task: web:lint
+{% if web_app %}      - task: node:lint
 {% endif %}{% for ref in extra_refs.get("lint", []) %}      - task: [[ ref ]]
 {% endfor %}
   format:
@@ -80,7 +82,7 @@ tasks:
     desc: Run the pytest suite.
     cmds:
       - task: quality:test:python
-{% if web_app %}      - task: web:test
+{% if web_app %}      - task: node:test
 {% endif %}{% for ref in extra_refs.get("test", []) %}      - task: [[ ref ]]
 {% endfor %}
   test:coverage:
@@ -94,7 +96,7 @@ tasks:
 {% else %}    desc: Build the wheel and sdist into dist/.
 {% endif %}    cmds:
       - task: workspace:build
-{% if web_app %}      - task: web:build
+{% if web_app %}      - task: node:build
 {% endif %}{% for ref in extra_refs.get("build", []) %}      - task: [[ ref ]]
 {% endfor %}
   version:

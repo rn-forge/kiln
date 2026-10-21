@@ -251,7 +251,8 @@ only when `ci.sonar`.
 | `tasks/quality.yml` (internal `lint:python lint:generated lint:imports lint:task-layout format:python typecheck:python test:python test:coverage`) | ✔ | ✔ | ✔ (per-package `uv run --package`) | ✔ (api side) |
 | `tasks/ci.yml` (internal `lint:entrypoint lint:pins lint:hooks lint:workflows`; `python-lib` also the public CI-only pipeline tasks) | ✔ | ✔ | ✔ | ✔ |
 | `tasks/api.yml` (public `api:dev`; `api:migrate` for django) |  |  |  | ✔ |
-| `tasks/web.yml` (public `web:lint web:test web:build web:dev` via `pnpm nx …`) |  |  |  | ✔ (`-app` only) |
+| `tasks/web.yml` (public `web:dev`) |  |  |  | ✔ (`-app` only) |
+| `tasks/node.yml` (internal `install lint test build` via `pnpm nx …`) |  |  |  | ✔ (`-app` only) |
 | `tasks/docs.yml` (`build serve generate lint`; internal `lint:site lint:structure lint:generate`) | d | d | d | d |
 | `.importlinter` contracts | ✔ | ✔ | ✔ | ✔ |
 | `README.md`, `CLAUDE.md`, `AGENTS.md` bodies (written once by `kiln new`); the kiln block in `CLAUDE.md` | ✔ | ✔ | ✔ | ✔ |

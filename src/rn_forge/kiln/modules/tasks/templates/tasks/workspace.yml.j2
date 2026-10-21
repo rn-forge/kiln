@@ -21,8 +21,7 @@ tasks:
 {% if overrides.get("workspace:install") %}      - [[ overrides["workspace:install"] ]]
 {% elif workspace %}      - uv sync --all-packages --group dev --group docs
 {% elif web %}      - uv sync --all-packages --group dev --group docs
-{% if web_app %}      - pnpm install --frozen-lockfile
-{% endif %}{% else %}      - uv sync --group dev --group docs
+{% else %}      - uv sync --group dev --group docs
 {% endif %}
   version:
 {% if workspace %}    desc: Print one package's version, or every package's when given no argument.

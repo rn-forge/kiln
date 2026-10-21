@@ -423,7 +423,8 @@ def test_s5_1_2_task_list_json_shows_api_and_web_verbs(tmp_path: Path) -> None:
     result = _run_task(root, "--list", "--json")
     assert result.returncode == 0, result.stderr
     names = {entry["name"] for entry in json.loads(result.stdout)["tasks"]}
-    assert {"api:dev", "web:lint", "web:test", "web:build", "web:dev"} <= names
+    assert {"api:dev", "web:dev"} <= names
+    assert {n for n in names if n.startswith("web:")} == {"web:dev"}
     assert "api:migrate" not in names  # fastapi, not django
 
 
@@ -446,7 +447,7 @@ def test_s5_1_2_task_layout_passes_on_both_web_archetypes(tmp_path: Path) -> Non
         assert _codes(root) == [], archetype
 
 
-def test_s5_1_2_gate_shrunk_fires_when_web_lint_drops_out_of_lint(
+def test_s5_1_2_gate_shrunk_fires_when_node_lint_drops_out_of_lint(
     tmp_path: Path,
 ) -> None:
     root = _web_root(
@@ -455,7 +456,7 @@ def test_s5_1_2_gate_shrunk_fires_when_web_lint_drops_out_of_lint(
     cycle.apply(root, home=tmp_path / "home")
     taskfile = root / "Taskfile.yml"
     taskfile.write_text(
-        taskfile.read_text(encoding="utf-8").replace("      - task: web:lint\n", ""),
+        taskfile.read_text(encoding="utf-8").replace("      - task: node:lint\n", ""),
         encoding="utf-8",
     )
     assert "gate.shrunk" in _codes(root)
@@ -893,7 +894,7 @@ def test_s4_11_2_1_web_archetypes_run_them_too(
     _assert_new_lints(root)
     if archetype == "python-web-app":
         root_tasks, _ = _rendered_yaml(root)
-        assert root_tasks["lint"]["cmds"][-1] == {"task": "web:lint"}
+        assert root_tasks["lint"]["cmds"][-1] == {"task": "node:lint"}
 
 
 def test_s4_11_2_1_the_workspace_variant_runs_them_once_at_the_root(
@@ -1005,7 +1006,7 @@ def test_s4_11_3_6_web_archetypes_run_it_too(
     _assert_workflows_lint(root)
     if archetype == "python-web-app":
         root_tasks, _ = _rendered_yaml(root)
-        assert root_tasks["lint"]["cmds"][-1] == {"task": "web:lint"}
+        assert root_tasks["lint"]["cmds"][-1] == {"task": "node:lint"}
 
 
 def test_s4_11_3_6_the_workspace_variant_runs_it_once_at_the_root(
@@ -1617,3 +1618,108 @@ def test_s4_12_2_8_an_include_cannot_take_ci(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     assert "taskgraph.reserved-namespace" in _codes(root)
+
+
+NODE_CHECKS = {
+    "install": ["pnpm install --frozen-lockfile"],
+    "lint": ["pnpm nx run-many -t lint"],
+    "test": ["pnpm nx run-many -t test"],
+    "build": ["pnpm nx run-many -t build"],
+}
+NODE_CELL = ("python-web-app", 'frontend = "angular"')
+
+
+def _node_root(tmp_path: Path, extra: str = "") -> Path:
+    return _web_root(
+        tmp_path, "python-web-app", "fastapi", extra=f'frontend = "angular"{extra}'
+    )
+
+
+def test_s4_12_3_1_node_yml_holds_the_toolchain(tmp_path: Path) -> None:
+    root = _node_root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    tasks = _load(root, "tasks/node.yml")["tasks"]
+    assert set(tasks) == set(NODE_CHECKS)
+    for name, cmds in NODE_CHECKS.items():
+        assert tasks[name]["internal"] is True
+        assert tasks[name]["desc"].strip()
+        assert tasks[name]["cmds"] == cmds
+    paths = [a.path for a in TASKS.artifacts(KilnConfig.load(root), root)]
+    assert paths.index("tasks/node.yml") == paths.index("tasks/web.yml") + 1
+    assert _load(root, "Taskfile.yml")["includes"]["node"] == "tasks/node.yml"
+
+
+def test_s4_12_3_2_web_yml_keeps_only_dev(tmp_path: Path) -> None:
+    root = _node_root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    tasks = _load(root, "tasks/web.yml")["tasks"]
+    assert set(tasks) == {"dev"}
+    assert tasks["dev"]["desc"] == "Run the frontend dev server."
+    assert tasks["dev"]["cmds"] == ["pnpm nx serve web"]
+    assert "internal" not in tasks["dev"]
+
+
+def test_s4_12_3_3_the_wrappers_call_node(tmp_path: Path) -> None:
+    root = _node_root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    tasks = _load(root, "Taskfile.yml")["tasks"]
+    setup = tasks["setup"]["cmds"]
+    assert setup[-2:] == [{"task": "workspace:install"}, {"task": "node:install"}]
+    for verb in ("lint", "test", "build"):
+        assert tasks[verb]["cmds"][-1] == {"task": f"node:{verb}"}
+    for task in tasks.values():
+        for cmd in task["cmds"]:
+            assert not cmd["task"].startswith("web:")
+
+
+def test_s4_12_3_4_workspace_install_has_no_pnpm(tmp_path: Path) -> None:
+    root = _node_root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    tasks = _load(root, "tasks/workspace.yml")["tasks"]
+    assert "pnpm" not in yaml.safe_dump(tasks)
+    assert any(".nx" in c for c in tasks["clean"]["cmds"])
+
+
+@pytest.mark.parametrize(
+    ("archetype", "extra"),
+    [(a, "") for a in ARCHETYPES] + [("python-web-api", "")],
+)
+def test_s4_12_3_5_only_python_web_app_renders_node_yml(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _s4_12_1_root(tmp_path, archetype, extra)
+    rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
+    assert "tasks/node.yml" not in rendered
+    assert "node" not in yaml.safe_load(rendered["Taskfile.yml"])["includes"]
+
+
+@pytest.mark.parametrize("name", NODE_CHECKS)
+def test_s4_12_3_6_overrides_take_the_node_keys(tmp_path: Path, name: str) -> None:
+    root = _node_root(
+        tmp_path,
+        extra=f'\n[tasks]\n[tasks.command_overrides]\n"node:{name}" = "echo hi"\n',
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    assert _load(root, "tasks/node.yml")["tasks"][name]["cmds"] == ["echo hi"]
+
+
+def test_s4_12_3_6_node_lint_is_unknown_on_python_tool(tmp_path: Path) -> None:
+    root = _root(
+        tmp_path,
+        extra='\n[tasks]\n[tasks.command_overrides]\n"node:lint" = "echo hi"\n',
+    )
+    with pytest.raises(AppException, match="node:lint"):
+        TASKS.artifacts(KilnConfig.load(root), root)
+
+
+def test_s4_12_3_7_node_tasks_must_be_internal(tmp_path: Path) -> None:
+    root = _node_root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    node = root / "tasks/node.yml"
+    text = node.read_text(encoding="utf-8")
+    start = text.index("  lint:\n")
+    head, tail = text[:start], text[start:]
+    node.write_text(
+        head + tail.replace("    internal: true\n", "", 1), encoding="utf-8"
+    )
+    assert "taskgraph.not-internal" in _codes(root)

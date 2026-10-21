@@ -278,7 +278,8 @@ def test_s5_1_2_python_web_app_block_has_frontend_clause_and_web_verbs(
     assert "frontend: `angular`" in block
     assert "Frontend:" in block
     assert "pnpm" in block
-    assert "web:lint web:test web:build web:dev" in block
+    assert "`web:dev`" in block
+    assert "web:lint" not in block
     assert "api:migrate" in block
 
 
@@ -297,9 +298,9 @@ def test_s5_1_2_standard_md_web_app_has_web_verb_rows_and_frontend_clause(
     )
     standard = _rendered(root)[".rn-forge/kiln/standard.md"]
     assert "task api:dev" in standard
-    assert "task web:lint" in standard
-    assert "task web:test" in standard
-    assert "task web:build" in standard
+    assert "task web:lint" not in standard
+    assert "task web:test" not in standard
+    assert "task web:build" not in standard
     assert "task web:dev" in standard
     assert "**Frontend:** `angular`" in standard
 

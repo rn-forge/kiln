@@ -45,6 +45,7 @@ _CI_TASKS = (
     "ci:lint:hooks",
     "ci:lint:workflows",
 )
+_NODE_TASKS = ("node:install", "node:lint", "node:test", "node:build")
 _DOCS_TASKS = (
     "docs:build",
     "docs:serve",
@@ -81,6 +82,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         *_QUALITY_TASKS,
         *_CI_TASKS,
         *(_DOCS_TASKS if docs else ()),
+        *(_NODE_TASKS if web_app else ()),
     }
     for key in tasks_config.command_overrides:
         if key not in known:
@@ -168,6 +170,13 @@ def render(config: KilnConfig) -> list[Artifact]:
                 "tasks/web.yml",
                 ArtifactKind.MANAGED,
                 engine.render("tasks/web.yml.j2", context),
+            )
+        )
+        artifacts.append(
+            Artifact(
+                "tasks/node.yml",
+                ArtifactKind.MANAGED,
+                engine.render("tasks/node.yml.j2", context),
             )
         )
     artifacts.append(
