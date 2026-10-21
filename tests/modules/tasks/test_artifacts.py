@@ -965,3 +965,98 @@ def test_s4_11_2_4_gate_shrunk_fires_when_lint_drops_a_new_task(
     assert any(
         f.code == "gate.shrunk" and f"quality:lint:{name}" in str(f) for f in findings
     )
+
+
+WORKFLOWS_REF = {"task": "quality:lint:workflows"}
+HOOKS_REF = {"task": "quality:lint:ci-hooks"}
+
+
+def _assert_workflows_lint(root: Path) -> None:
+    root_tasks, quality = _rendered_yaml(root)
+    cmds = root_tasks["lint"]["cmds"]
+    at = cmds.index(HOOKS_REF)
+    assert cmds[at : at + 2] == [HOOKS_REF, WORKFLOWS_REF]
+    task = quality["lint:workflows"]
+    assert task["internal"] is True
+    assert task["desc"].strip()
+    assert task["cmds"] == ["uv run zizmor --offline .github", "uv run actionlint"]
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s4_11_3_6_lint_runs_workflows_after_ci_hooks(
+    tmp_path: Path, archetype: str
+) -> None:
+    root = _root(tmp_path, archetype)
+    cycle.apply(root, home=tmp_path / "home")
+    _assert_workflows_lint(root)
+
+
+@pytest.mark.parametrize(("archetype", "extra"), WEB_CELLS)
+def test_s4_11_3_6_web_archetypes_run_it_too(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _web_root(tmp_path, archetype, "fastapi", extra=extra)
+    cycle.apply(root, home=tmp_path / "home")
+    _assert_workflows_lint(root)
+    if archetype == "python-web-app":
+        root_tasks, _ = _rendered_yaml(root)
+        assert root_tasks["lint"]["cmds"][-1] == {"task": "web:lint"}
+
+
+def test_s4_11_3_6_the_workspace_variant_runs_it_once_at_the_root(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path, "python-lib")
+    cycle.apply(root, home=tmp_path / "home")
+    _, quality = _rendered_yaml(root)
+    task_text = yaml.safe_dump(quality["lint:workflows"])
+    assert "for:" not in task_text
+    assert "PACKAGE_DIRS" not in task_text
+
+
+def test_s4_11_3_7_command_override_is_accepted(tmp_path: Path) -> None:
+    root = _root(
+        tmp_path,
+        extra=(
+            '\n[tasks]\n[tasks.command_overrides]\n"quality:lint:workflows" = "echo hi"\n'
+        ),
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    _, quality = _rendered_yaml(root)
+    assert quality["lint:workflows"]["cmds"] == ["echo hi"]
+
+
+@pytest.mark.parametrize("name", archetypes.shipped())
+def test_s4_11_3_8_required_validate_gains_it(name: str) -> None:
+    assert "quality:lint:workflows" in archetypes.load(name).required_validate
+
+
+@pytest.mark.parametrize(
+    ("archetype", "extra"),
+    [(a, "") for a in ARCHETYPES] + list(WEB_CELLS),
+)
+def test_s4_11_3_8_task_layout_accepts_the_rendered_files(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    if archetype in ARCHETYPES:
+        root = _root(tmp_path, archetype)
+    else:
+        root = _web_root(tmp_path, archetype, "fastapi", extra=extra)
+    cycle.apply(root, home=tmp_path / "home")
+    assert _codes(root) == []
+
+
+def test_s4_11_3_8_gate_shrunk_fires_when_lint_drops_workflows(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    taskfile = root / "Taskfile.yml"
+    line = "      - task: quality:lint:workflows\n"
+    text = taskfile.read_text(encoding="utf-8")
+    assert line in text
+    taskfile.write_text(text.replace(line, ""), encoding="utf-8")
+    findings = [f for f in TASKS.checks(KilnConfig.load(root), root)]
+    assert any(
+        f.code == "gate.shrunk" and "quality:lint:workflows" in str(f) for f in findings
+    )

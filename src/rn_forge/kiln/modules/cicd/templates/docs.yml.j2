@@ -32,9 +32,11 @@ jobs:
     steps:
       - name: Checkout
         uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
+        with:
+          persist-credentials: false
 
       - name: Set up the toolchain
-        uses: ./.github/actions/setup
+        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 

@@ -42,9 +42,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up the toolchain
-        uses: ./.github/actions/setup
+        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -65,9 +67,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up the toolchain
-        uses: ./.github/actions/setup
+        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -107,9 +111,10 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up the toolchain
-        uses: ./.github/actions/setup
+        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -161,9 +166,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up the toolchain
-        uses: ./.github/actions/setup
+        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -180,8 +187,9 @@ jobs:
         id: check
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          tag="v${{ steps.version.outputs.version }}"
+          tag="v$VERSION"
           draft=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null || true)
           if [ "$draft" = false ]; then
             printf '%s\n' "Release $tag already published; nothing to do."
@@ -224,21 +232,24 @@ jobs:
           TAG: ${{ steps.check.outputs.tag }}
         run: gh release delete "$TAG" --yes
 
-      # action-gh-release creates the tag itself from `tag_name`, at this commit,
-      # as part of publishing. Tagging in a separate earlier step is what made a
-      # failed upload unrecoverable. On a resumed release the tag already
-      # exists and is reused.
+      # `gh release create` makes the tag itself at `--target`, as part of
+      # publishing. Tagging in a separate earlier step is what made a failed
+      # upload unrecoverable. On a resumed release the tag already exists and
+      # is reused as it is.
       - name: Publish GitHub Release
         if: steps.check.outputs.should-release == 'true'
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          target_commitish: ${{ steps.source.outputs.sha }}
-          name: v${{ steps.version.outputs.version }}
-          generate_release_notes: true
-          files: |
-            dist/*.whl
-            dist/*.tar.gz
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.check.outputs.tag }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+          TAGGED: ${{ steps.check.outputs.tagged }}
+        run: |
+          set -euo pipefail
+          if [ "$TAGGED" = true ]; then
+            gh release create "$TAG" dist/*.whl dist/*.tar.gz --verify-tag --title "$TAG" --generate-notes
+          else
+            gh release create "$TAG" dist/*.whl dist/*.tar.gz --target "$SOURCE_SHA" --title "$TAG" --generate-notes
+          fi
 
   # The only check branch protection requires. Job and matrix names change as
   # the repo grows; this one does not. A skipped job (the fork-guarded scan, a

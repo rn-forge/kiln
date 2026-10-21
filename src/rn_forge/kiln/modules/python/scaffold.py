@@ -42,6 +42,7 @@ PYRIGHT_EXPECTED = {"typeCheckingMode": "strict", "reportMissingTypeStubs": Fals
 RUFF_TEST_IGNORES = {"S101", "D", "ANN", "PLR2004"}
 
 _DEV_GROUP = [
+    "actionlint-py",
     "import-linter",
     "pyright",
     "pytest",
@@ -49,6 +50,7 @@ _DEV_GROUP = [
     "pyyaml",
     "ruff",
     "taplo",
+    "zizmor",
 ]
 """The dev tools every archetype's `pyproject.toml` names; `rn-forge-kiln` too,
 added separately since its distribution name differs from its PyPI-style

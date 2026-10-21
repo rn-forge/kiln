@@ -69,6 +69,13 @@ tasks:
     cmds:
       - uv run kiln doctor . --only ci-hooks
 
+  lint:workflows:
+    desc: Fail on a workflow security finding (zizmor) or a workflow syntax error (actionlint).
+    internal: true
+    cmds:
+      - uv run zizmor --offline .github
+      - uv run actionlint
+
   lint:docs:
     desc: Check the docs site for broken links, bad anchors, and orphan pages.
     internal: true

@@ -52,6 +52,10 @@ tasks:
     desc: Check CI hooks
     cmds: [kiln doctor .]
     internal: true
+  lint:workflows:
+    desc: Check workflows
+    cmds: [zizmor --offline .github]
+    internal: true
   lint:markdown:
     desc: Check markdown
     cmds: [mdformat --check .]
@@ -83,6 +87,7 @@ GATE_REFS = "\n".join(
         "lint:ci-entrypoint",
         "lint:ci-pins",
         "lint:ci-hooks",
+        "lint:workflows",
         "lint:markdown",
         "lint:toml",
         "typecheck:python",
@@ -199,6 +204,21 @@ def test_s4_11_2_4_a_gate_missing_ci_pins_or_ci_hooks_is_reported(
     )
     assert any(
         "not reachable from `validate`" in line and name in line for line in run(root)
+    )
+
+
+def test_s4_11_3_8_a_gate_missing_workflows_is_reported(repo) -> None:
+    root = compliant(
+        repo,
+        **{
+            "Taskfile.yml": TASKFILE.replace(
+                "      - task: quality:lint:workflows\n", "", 1
+            )
+        },
+    )
+    assert any(
+        "not reachable from `validate`" in line and "workflows" in line
+        for line in run(root)
     )
 
 

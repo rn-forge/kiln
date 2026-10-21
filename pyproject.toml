@@ -79,6 +79,7 @@ extend-exclude = ["tests/fixtures"]
 
 [dependency-groups]
 dev = [
+    "actionlint-py>=1.7.12.25",
     "import-linter>=2.3",
     "pyright>=1.1.411",
     "pytest>=9.1.1",
@@ -86,6 +87,7 @@ dev = [
     "pyyaml>=6.0",
     "ruff>=0.15.21",
     "taplo>=0.9.3",
+    "zizmor>=1.31.1",
 ]
 docs = [
     "mdformat>=1.0.0",

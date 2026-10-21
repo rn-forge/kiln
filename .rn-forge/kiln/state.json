@@ -16,14 +16,14 @@
     },
     ".github/workflows/ci.yml": {
       "begin_marker": null,
-      "content_hash": "15cf595e279867932858a54bad18315b246724351199fffc8d038a045fe7ef09",
+      "content_hash": "84b09db73a7c03c2068e17aab5c3fea65b036580af96a39608f0f60bee491ec6",
       "end_marker": null,
       "kind": "managed",
       "path": ".github/workflows/ci.yml"
     },
     ".github/workflows/docs.yml": {
       "begin_marker": null,
-      "content_hash": "e7858eaa5ce37fa2371f0535dda880f9ee4a03874b383f3c815efab472a8da03",
+      "content_hash": "fdc2b8a28e105aae8b1085321989a760ae2ec404d390043faeafbedc20690106",
       "end_marker": null,
       "kind": "managed",
       "path": ".github/workflows/docs.yml"
@@ -58,7 +58,7 @@
     },
     "Taskfile.yml": {
       "begin_marker": null,
-      "content_hash": "f25f448bcfa0d85b91e0af9126922ee868ea4eaaf732c2c696ff0a66b328f9c5",
+      "content_hash": "de56addef1b9f961518ab241efbe2e3c15f30cf35c2d4b153883a322ae8fa466",
       "end_marker": null,
       "kind": "managed",
       "path": "Taskfile.yml"
@@ -205,7 +205,7 @@
     },
     "tasks/quality.yml": {
       "begin_marker": null,
-      "content_hash": "c965131f5f4eb9f4a3c475fac10004c43a7522a00ca52d6d0d5933d51d774344",
+      "content_hash": "c4461f7aa352828d296d7adc4bdcc5e248e3bec0c9adcc9da543dd6427d00e17",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/quality.yml"

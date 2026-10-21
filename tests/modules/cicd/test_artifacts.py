@@ -515,7 +515,7 @@ def test_s6_3_4_publish_targets_the_source_commit(tmp_path: Path) -> None:
         steps = _release_steps(root)
         publish = steps[_step_index(steps, "Publish GitHub Release")]
         assert (
-            publish["with"]["target_commitish"]  # type: ignore[index]
+            publish["env"]["SOURCE_SHA"]  # type: ignore[index]
             == "${{ steps.source.outputs.sha }}"
         )
         assert any(step.get("id") == "source" for step in steps)
@@ -525,9 +525,9 @@ def test_s6_3_6_release_uploads_wheels_and_sdists_only(tmp_path: Path) -> None:
     for root in _release_roots(tmp_path):
         steps = _release_steps(root)
         publish = steps[_step_index(steps, "Publish GitHub Release")]
-        files = publish["with"]["files"]  # type: ignore[index]
-        assert files == "dist/*.whl\ndist/*.tar.gz\n", root.name
-        assert "dist/*" not in files.splitlines(), root.name
+        run = str(publish["run"])
+        assert "dist/*.whl dist/*.tar.gz" in run, root.name
+        assert "dist/*" not in run.split(), root.name
 
 
 UPSTREAM_PINS = {
@@ -834,7 +834,10 @@ def test_s6_4_4_4_external_install(tmp_path: Path) -> None:
         "github.event_name == 'push' && github.ref_name == 'main' }}"
     )
     steps = job["steps"]  # type: ignore[assignment]
-    assert steps[0]["with"] == {"fetch-depth": 0}  # type: ignore[index]
+    assert steps[0]["with"] == {  # type: ignore[index]
+        "fetch-depth": 0,
+        "persist-credentials": False,
+    }
     last = steps[-1]  # type: ignore[index]
     assert last["run"] == "task ci:external-install"
     assert last["env"] == {
@@ -941,7 +944,10 @@ def test_s11_5_1_2_python_lib_docs_job(tmp_path: Path) -> None:
     }
     steps = docs["steps"]  # type: ignore[assignment]
     assert str(steps[0]["uses"]).startswith("actions/checkout@")  # type: ignore[index]
-    assert steps[0]["with"] == {"fetch-depth": 0}  # type: ignore[index]
+    assert steps[0]["with"] == {  # type: ignore[index]
+        "fetch-depth": 0,
+        "persist-credentials": True,
+    }
     assert steps[1]["uses"] == "./.github/actions/setup"  # type: ignore[index]
     publish = next(s for s in steps if s.get("run") == "task ci:docs-publish")  # type: ignore[attr-defined]
     assert publish["env"] == {"SITE_DIR": "${{ runner.temp }}/site"}
@@ -1339,3 +1345,146 @@ def test_s4_11_2_5_every_cell_passes_ci_pins_and_ci_hooks(
     cycle.apply(root, home=tmp_path / "home")
     assert checks.run(root, only="ci-pins") == []
     assert checks.run(root, only="ci-hooks") == []
+
+
+# S4.11.3 — workflow security.
+
+SECURITY_CELLS = [
+    ("python-app", ""),
+    ("python-tool", ""),
+    ("python-lib", ""),
+    ("python-web-api", ""),
+    ("python-web-app", 'frontend = "angular"'),
+]
+
+
+def _cell_root(tmp_path: Path, archetype: str, extra: str) -> Path:
+    if archetype.startswith("python-web"):
+        return _web_root(tmp_path, archetype, extra=extra)
+    return _root(tmp_path, archetype)
+
+
+def _checkouts(root: Path) -> list[tuple[str, str, dict[str, object]]]:
+    """Every `actions/checkout` step in the rendered workflows, as
+    (workflow, job, step)."""
+    found = []
+    for path, content in _rendered(root).items():
+        if not path.startswith(".github/workflows/"):
+            continue
+        for job_name, job in yaml.safe_load(content)["jobs"].items():
+            for step in job.get("steps", []):
+                if str(step.get("uses", "")).startswith("actions/checkout@"):
+                    found.append((path, job_name, step))
+    return found
+
+
+@pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
+def test_s4_11_3_1_checkouts_do_not_persist_credentials(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    checkouts = _checkouts(_cell_root(tmp_path, archetype, extra))
+    assert checkouts
+    for path, job, step in checkouts:
+        if archetype == "python-lib" and job == "docs":
+            continue
+        assert step["with"]["persist-credentials"] is False, f"{path}:{job}"  # type: ignore[index]
+
+
+def test_s4_11_3_1_the_python_lib_docs_job_keeps_credentials(tmp_path: Path) -> None:
+    persisting = [
+        (archetype, job)
+        for archetype, extra in SECURITY_CELLS
+        for _, job, step in _checkouts(
+            _cell_root(tmp_path / archetype, archetype, extra)
+        )
+        if step["with"]["persist-credentials"] is True  # type: ignore[index]
+    ]
+    assert persisting == [("python-lib", "docs")]
+    docs = _lib_jobs(tmp_path / "docs")["docs"]
+    assert docs["permissions"]["contents"] == "write"  # type: ignore[index]
+
+
+def test_s4_11_3_1_fetch_depth_is_kept(tmp_path: Path) -> None:
+    lib = _checkouts(_root(tmp_path, "python-lib"))
+    deep = {job for _, job, step in lib if step["with"].get("fetch-depth") == 0}  # type: ignore[union-attr]
+    assert {"plan", "sonar", "external-install"} <= deep
+
+
+def test_s4_11_3_2_the_release_version_is_read_through_env(tmp_path: Path) -> None:
+    for root in _release_roots(tmp_path):
+        steps = _release_steps(root)
+        for step in steps:
+            if "run" in step:
+                assert "${{" not in str(step["run"]), (root.name, step.get("name"))
+        check = steps[
+            _step_index(steps, "Check whether this version has been released")
+        ]
+        assert check["env"]["VERSION"] == "${{ steps.version.outputs.version }}"  # type: ignore[index]
+
+
+def test_s4_11_3_3_release_publishes_with_gh_release_create(tmp_path: Path) -> None:
+    for root in _release_roots(tmp_path):
+        steps = _release_steps(root)
+        publish = steps[_step_index(steps, "Publish GitHub Release")]
+        assert "uses" not in publish
+        assert "with" not in publish
+        run = str(publish["run"])
+        assert "gh release create" in run
+        assert "--generate-notes" in run
+        assert run.count("--verify-tag") == 1
+        assert run.count("--target") == 1
+        env = publish["env"]  # type: ignore[index]
+        assert env["GH_TOKEN"] == "${{ secrets.GITHUB_TOKEN }}"
+        assert env["TAG"] == "${{ steps.check.outputs.tag }}"
+        assert env["SOURCE_SHA"] == "${{ steps.source.outputs.sha }}"
+        assert env["TAGGED"] == "${{ steps.check.outputs.tagged }}"
+        for content in _rendered(root).values():
+            assert "softprops/action-gh-release" not in content
+
+
+def test_s4_11_3_3_gh_release_pin_is_removed() -> None:
+    assert "gh-release" not in load_pins()
+
+
+def test_s4_11_3_4_local_setup_uses_carry_a_reasoned_ignore(tmp_path: Path) -> None:
+    pattern = re.compile(r"# zizmor: ignore\[self-repository\] \S")
+    for archetype, extra in SECURITY_CELLS:
+        root = _cell_root(tmp_path / archetype, archetype, extra)
+        seen = 0
+        for path, content in _rendered(root).items():
+            if not path.startswith(".github/workflows/"):
+                continue
+            for line in content.splitlines():
+                if "uses: ./.github/actions/setup" in line:
+                    seen += 1
+                    assert pattern.search(line), f"{archetype}:{path}: {line}"
+        assert seen, archetype
+
+
+@pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
+def test_s4_11_3_5_zizmor_and_actionlint_pass_on_every_cell(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    if shutil.which("zizmor") is None or shutil.which("actionlint") is None:
+        pytest.skip("zizmor or actionlint is not on PATH")
+    root = _cell_root(tmp_path, archetype, extra)
+    cycle.apply(root, home=tmp_path / "home")
+    zizmor = subprocess.run(
+        ["zizmor", "--offline", str(root / ".github")],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert zizmor.returncode == 0, zizmor.stdout + zizmor.stderr
+    workflows = sorted(
+        str(p.relative_to(root)) for p in (root / ".github/workflows").glob("*.yml")
+    )
+    lint = subprocess.run(
+        ["actionlint", *workflows],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert lint.returncode == 0, lint.stdout + lint.stderr

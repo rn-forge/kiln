@@ -49,7 +49,7 @@ quality:lint:python          quality:lint:generated
 quality:lint:rn-forge-deps   quality:lint:imports
 quality:lint:task-layout     quality:lint:ci-entrypoint
 quality:lint:ci-pins         quality:lint:ci-hooks
-quality:lint:toml
+quality:lint:workflows       quality:lint:toml
 quality:typecheck:python     quality:test:python
 ```
 
@@ -292,8 +292,9 @@ only the root packages, and the repository's own contracts are its boundary.
 CI runs the pinned kiln read-only ([ADR-0006](../adr/ADR-0006.md)): it never
 runs `kiln apply` and never writes a generated file. `task validate` runs
 `kiln doctor`'s ownership checks — `generated`, `task-layout`, `ci-entrypoint`,
-`ci-pins`, `ci-hooks` and `docs-generate` — and the quality checks
-`rn-forge-deps`, `docs-structure` and `docs-site` through their own lint tasks.
+`ci-pins`, `ci-hooks` and `docs-generate` — the workflow linters `zizmor` and
+`actionlint` (`lint:workflows`), and the quality checks `rn-forge-deps`,
+`docs-structure` and `docs-site` through their own lint tasks.
 `kiln doctor --full`, which adds a full render and diff, runs where the workflow
 asks for it: `lint` runs it when the `KILN_DOCTOR_FULL` task variable is set, by
 default on pushes to the default branch and on manual dispatch.
@@ -417,6 +418,10 @@ The rules:
   declares least-privilege `permissions:`; the workflow declares
   `concurrency:` per ref. Dependabot watches kiln, not the generated
   workflows.
+- Every `actions/checkout` sets `persist-credentials: false`, except a job that
+  pushes with the checkout token (`python-lib`'s `docs`, which runs
+  `mike deploy --push`). The workflows pass `zizmor --offline` and
+  `actionlint` in `task lint`.
 - `UV_LOCKED: "1"` at workflow level: CI resolves the committed lockfile and
   never rewrites it.
 - The Sonar job is skipped for fork pull requests, whose workflows cannot see
