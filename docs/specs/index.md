@@ -58,11 +58,11 @@ theirs.
 ```text
 done:  E1 ─→ E2 ─→ E3 ─→ F4.1 ─→ F4.2 ─→ S4.3.1–S4.3.5 ─→ S4.5.1–S4.5.6
 done:  F5.1 ─→ F5.2 fastapi ─→ S5.2.4 frontend module ─→ S4.5.9 staged `new` ─→ S5.3.1 fresh-repo gate fixes ─→ S5.3.5 quality commands ─→ S5.3.6 setup experience
+done:  S4.4.1 matrix ─→ S5.3.7 README ─→ S5.3.2 ─→ S5.3.3 ─→ F5.3 shipped cells (S5.3.4 moved to S6.5.3)
        (Django deferred: F5.4)
 now:   ADRs accepted ─→ S13.1.1 derived nav ─→ F13.2 board/scope ─→ F13.3 adopt the model
        F11.1 checks ─→ F11.2 python-lib package sites ─→ F11.3 generate package   (S11.4.2 after S13.3.1)
        S12.1.1 accept ─→ S12.1.2–S12.1.4 baseline ─→ F4.4 · F12.1 ─→ F12.2 web records (release-2)
-       S4.4.1 matrix ─→ S5.3.7 README ─→ S5.3.2 ─→ S5.3.3 ─→ S5.3.4 ─→ E5 done
        F4.4 rest (S4.4.3 approval; S4.4.7–S4.4.9 goldens leave git) ──┐
        S5.3.1 + F11.1–F11.3 ─→ S6.1.1 python-lib hosts pykit          │
        S4.5.3–S4.5.7 ─→ F4.6 doctor ──────────────────────────────────┼─→ F4.8 self-host

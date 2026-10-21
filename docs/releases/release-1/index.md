@@ -122,8 +122,9 @@ F6.4's planner pin was met 2026-10-16 (`rn-forge-devops-v0.1.0`); S6.4.6 and
 S11.5.1 were added 2026-10-18 to retire pykit's `main.yml`. S6.4.7 was added the
 same day, to bring `python-lib`'s release to [ADR-0016](../../adr/ADR-0016.md)'s
 rule (default branch only, after Sonar); it waits on a pykit change to
-`rn-forge-devops`. F5.3's S5.3.2 and S5.3.3 are the owner's to run from a clean
-clone, and S5.3.4 needs a target repository. F9.1 has no stories written
+`rn-forge-devops`. F5.3 closed 2026-10-21 on its two shipped cells, approved at
+kiln `c62d4e2`; its real-application proof moved to F6.5 (S6.5.3, apollo),
+which is not in this release. F9.1 has no stories written
 ([board](../../specs/index.md#order)).
 
 ## Commits
