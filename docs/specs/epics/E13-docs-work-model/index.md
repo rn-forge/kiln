@@ -2,9 +2,8 @@
 
 |  |  |
 | -- | -- |
-| **State** | Closed |
+| **State** | Active |
 | **Start Date** | 2026-10-01 |
-| **Closed Date** | 2026-10-01 |
 
 <!-- BEGIN derived features -->
 
@@ -13,12 +12,18 @@
 | [F13.1 — Derived regions, starting with the nav](F13.1-derived-regions.md) | Closed | release-1 | 1 Closed |
 | [F13.2 — The board and Scope regions, and metadata checks](F13.2-board-and-scope.md) | Closed | release-1 | 2 Closed |
 | [F13.3 — The seeded rules and kiln's own docs adopt the model](F13.3-adopt-the-model.md) | Closed | release-1 | 2 Closed |
+| [F13.4 — Ideas live in a folder, one page per large idea](F13.4-ideas-folder.md) | New | release-1 | 1 New |
 
 <!-- END derived features -->
 
 Release: [release-1](../../../releases/release-1/index.md) · Decisions:
 [ADR-0003](../../../adr/ADR-0003.md) (revised),
-[ADR-0011](../../../adr/ADR-0011.md), [ADR-0012](../../../adr/ADR-0012.md)
+[ADR-0011](../../../adr/ADR-0011.md) (revision proposed 2026-10-21),
+[ADR-0012](../../../adr/ADR-0012.md)
+
+Reopened on 2026-10-21 for [F13.4](F13.4-ideas-folder.md), which replaces
+`ideas.md` with an `ideas/` folder before other repositories adopt the model.
+F13.1–F13.3 closed on 2026-10-01.
 
 kiln's docs model has two weaknesses. The `mkdocs.yml` nav is generated, but
 `state.json` hashes it as a kiln-owned block, so every new page makes the
