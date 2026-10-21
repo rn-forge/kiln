@@ -269,7 +269,9 @@ repository may add its own lint scripts.
 CI templates bake in the F5 fixes: SHA-pinned actions with version comments,
 least-privilege `permissions:` per job, `concurrency:` per ref, tag-exists
 release check (D22). The pin set lives in `modules/cicd/pins.toml`; Dependabot
-watches kiln, not the generated workflows (D21).
+watches kiln, not the generated workflows (D21). Superseded in part by S4.11.4
+(2026-10-20): Dependabot now covers only repository-owned actions and `uv`;
+generated files still do not use it.
 
 ## Steady state after release-1
 

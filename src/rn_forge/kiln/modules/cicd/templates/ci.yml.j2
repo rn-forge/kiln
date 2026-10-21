@@ -24,7 +24,9 @@ name: CI
 # The repeated toolchain setup lives in .github/actions/setup, committed beside
 # this file. Each job checks out first: GitHub can only run a local action from
 # the checked-out tree. Every `uses:` is pinned to a commit SHA with the version
-# in a trailing comment; Dependabot watches kiln's own repo, not this file.
+# in a trailing comment. Pins move in kiln (cicd/pins.toml), not here; Dependabot
+# (.github/dependabot.yml, also generated) watches only the repository's own
+# actions and its uv dependencies.
 
 on:
   push:

@@ -31,6 +31,7 @@ ARCHETYPES = ("python-app", "python-tool", "python-lib")
 CI_KEYS = (
     ".github/actions/setup/action.yml",
     ".github/workflows/ci.yml",
+    ".github/dependabot.yml",
     ".github/workflows/docs.yml",
     "sonar-project.properties",
 )
@@ -115,11 +116,11 @@ def test_s4_3_4_property1_renders_exactly_the_module_s_template_inventory_rows(
     ]
 
 
-def test_s4_3_4_property1_without_mkdocs_or_sonar_renders_two_rows(
+def test_s4_3_4_property1_without_mkdocs_or_sonar_renders_three_rows(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path, profile="none", sonar=False)
-    assert list(_rendered(root)) == list(CI_KEYS[:2])
+    assert list(_rendered(root)) == list(CI_KEYS[:3])
 
 
 def test_s4_3_4_property1_ado_is_reserved(tmp_path: Path) -> None:
@@ -1488,3 +1489,129 @@ def test_s4_11_3_5_zizmor_and_actionlint_pass_on_every_cell(
         check=False,
     )
     assert lint.returncode == 0, lint.stdout + lint.stderr
+
+
+DEPENDABOT = ".github/dependabot.yml"
+DEPENDABOT_HOOKS = (
+    '\n[ci.hooks]\nsetup = ["./.github/actions/b", "./.github/actions/a"]\n'
+)
+
+
+def _dependabot(root: Path) -> dict[str, object]:
+    return yaml.safe_load(_rendered(root)[DEPENDABOT])
+
+
+def _updates(root: Path) -> dict[str, dict[str, object]]:
+    return {u["package-ecosystem"]: u for u in _dependabot(root)["updates"]}  # type: ignore[attr-defined]
+
+
+@pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
+def test_s4_11_4_1_dependabot_is_a_managed_row(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _cell_root(tmp_path, archetype, extra)
+    artifacts = {a.path: a for a in CICD.artifacts(KilnConfig.load(root), root)}
+    assert artifacts[DEPENDABOT].kind is ArtifactKind.MANAGED
+    assert DEPENDABOT in CI_KEYS
+
+
+@pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
+def test_s4_11_4_2_no_hooks_renders_only_uv(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _cell_root(tmp_path, archetype, extra)
+    parsed = _dependabot(root)
+    assert parsed["version"] == 2
+    updates = parsed["updates"]
+    assert len(updates) == 1  # type: ignore[arg-type]
+    assert updates[0]["package-ecosystem"] == "uv"  # type: ignore[index]
+    assert updates[0]["directory"] == "/"  # type: ignore[index]
+    assert updates[0]["schedule"]["interval"] == "weekly"  # type: ignore[index]
+    assert "github-actions" not in _rendered(root)[DEPENDABOT]
+
+
+def test_s4_11_4_3_hooks_render_exactly_their_directories(tmp_path: Path) -> None:
+    root = _with_ci(_root(tmp_path, "python-tool"), DEPENDABOT_HOOKS)
+    updates = _dependabot(root)["updates"]
+    assert [u["package-ecosystem"] for u in updates] == ["github-actions", "uv"]  # type: ignore[index,union-attr]
+    actions = updates[0]  # type: ignore[index]
+    assert actions["directories"] == ["/.github/actions/b", "/.github/actions/a"]
+    assert "directory" not in actions
+    assert actions["schedule"]["interval"] == "weekly"
+
+
+@pytest.mark.parametrize(
+    "hooks",
+    [
+        DEPENDABOT_HOOKS,
+        '\n[ci.hooks]\nsetup = ["./.github/actions/one"]\n',
+    ],
+)
+def test_s4_11_4_3_never_the_root_or_the_setup_action(
+    tmp_path: Path, hooks: str
+) -> None:
+    root = _with_ci(_root(tmp_path, "python-tool"), hooks)
+    directories = _updates(root)["github-actions"]["directories"]
+    assert directories
+    for directory in directories:  # type: ignore[attr-defined]
+        assert directory not in {"/", "/.github/actions/setup"}
+        assert not directory.endswith("*")
+
+
+def test_s4_11_4_4_one_group_per_ecosystem_for_minor_and_patch(tmp_path: Path) -> None:
+    root = _with_ci(_root(tmp_path, "python-tool"), DEPENDABOT_HOOKS)
+    updates = _dependabot(root)["updates"]
+    assert len(updates) == 2  # type: ignore[arg-type]
+    for entry in updates:  # type: ignore[attr-defined]
+        groups = entry["groups"]
+        assert len(groups) == 1
+        assert next(iter(groups.values()))["update-types"] == ["minor", "patch"]
+
+
+@pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
+def test_s4_11_4_5_uv_directory_is_the_root(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _cell_root(tmp_path, archetype, extra)
+    assert _updates(root)["uv"]["directory"] == "/"
+
+
+@pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
+def test_s4_11_4_6_ci_comment_no_longer_says_kiln_only(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    ci = _rendered(_cell_root(tmp_path, archetype, extra))[".github/workflows/ci.yml"]
+    assert "Dependabot watches kiln's own repo" not in ci
+    assert "dependabot.yml" in ci
+
+
+@pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
+@pytest.mark.parametrize("hooks", ["", DEPENDABOT_HOOKS])
+def test_s4_11_4_7_the_file_passes_the_checks(
+    tmp_path: Path, archetype: str, extra: str, hooks: str
+) -> None:
+    root = _cell_root(tmp_path, archetype, extra)
+    if hooks:
+        root = _with_ci(root, hooks)
+        for name in ("a", "b"):
+            action = root / ".github" / "actions" / name / "action.yml"
+            action.parent.mkdir(parents=True)
+            action.write_text(
+                "name: x\nruns:\n  using: composite\n  steps: []\n", encoding="utf-8"
+            )
+    cycle.apply(root, home=tmp_path / "home")
+    assert (root / DEPENDABOT).is_file()
+    assert checks.run(root) == []
+    assert _actions(root, tmp_path)[DEPENDABOT] is Action.UNCHANGED
+
+
+def test_s4_11_4_8_ado_still_renders_nothing(tmp_path: Path) -> None:
+    root = _root(tmp_path, provider="ado")
+    with pytest.raises(AppException, match="E8"):
+        _rendered(root)
+
+
+def test_s4_11_4_9_every_entry_has_a_cooldown(tmp_path: Path) -> None:
+    root = _with_ci(_root(tmp_path, "python-tool"), DEPENDABOT_HOOKS)
+    for entry in _dependabot(root)["updates"]:  # type: ignore[attr-defined]
+        assert entry["cooldown"]["default-days"] >= 7

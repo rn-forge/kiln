@@ -14,9 +14,16 @@
       "kind": "managed",
       "path": ".github/actions/setup/action.yml"
     },
+    ".github/dependabot.yml": {
+      "begin_marker": null,
+      "content_hash": "8761a419d0359e5e969d9549315fdfc15bfb88fd10dfd8f2156c680dc75024af",
+      "end_marker": null,
+      "kind": "managed",
+      "path": ".github/dependabot.yml"
+    },
     ".github/workflows/ci.yml": {
       "begin_marker": null,
-      "content_hash": "84b09db73a7c03c2068e17aab5c3fea65b036580af96a39608f0f60bee491ec6",
+      "content_hash": "6ec22d566efee16f16b5efc321cf1f21b8d92f138a51e6b1132bc0e40883740a",
       "end_marker": null,
       "kind": "managed",
       "path": ".github/workflows/ci.yml"
