@@ -77,35 +77,6 @@ tasks:
 {% if overrides.get("quality:lint:task-layout") %}      - [[ overrides["quality:lint:task-layout"] ]]
 {% else %}      - uv run kiln doctor . --only task-layout
 {% endif %}
-  lint:ci-entrypoint:
-    desc: Fail if a CI step invokes a wrapped tool instead of `task`.
-    internal: true
-    cmds:
-{% if overrides.get("quality:lint:ci-entrypoint") %}      - [[ overrides["quality:lint:ci-entrypoint"] ]]
-{% else %}      - uv run kiln doctor . --only ci-entrypoint
-{% endif %}
-  lint:ci-pins:
-    desc: Fail if a CI action is not pinned to a commit, or a job lacks `permissions:`.
-    internal: true
-    cmds:
-{% if overrides.get("quality:lint:ci-pins") %}      - [[ overrides["quality:lint:ci-pins"] ]]
-{% else %}      - uv run kiln doctor . --only ci-pins
-{% endif %}
-  lint:ci-hooks:
-    desc: Fail if a `[ci.hooks]` action or a declared job's workflow is missing or cannot be called.
-    internal: true
-    cmds:
-{% if overrides.get("quality:lint:ci-hooks") %}      - [[ overrides["quality:lint:ci-hooks"] ]]
-{% else %}      - uv run kiln doctor . --only ci-hooks
-{% endif %}
-  lint:workflows:
-    desc: Fail on a workflow security finding (zizmor) or a workflow syntax error (actionlint).
-    internal: true
-    cmds:
-{% if overrides.get("quality:lint:workflows") %}      - [[ overrides["quality:lint:workflows"] ]]
-{% else %}      - uv run zizmor --offline .github
-      - uv run actionlint
-{% endif %}
   lint:audit:
     desc: Fail if a locked dependency has a known vulnerability (pip-audit; needs the network).
     internal: true

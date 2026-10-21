@@ -34,6 +34,7 @@ TASK_KEYS = (
     "tasks/quality.yml",
     "tasks/docs.yml",
 )
+CI_KEY = "tasks/ci.yml"
 
 CONFIG = """
 schema_version = 1
@@ -53,7 +54,7 @@ packages = ["packages/alpha", "packages/beta"]
 """
 
 INCLUDE_EXTRA = (
-    '\n[tasks]\nincludes = [{ namespace = "ci", taskfile = "tasks/ci.yml" }]\n'
+    '\n[tasks]\nincludes = [{ namespace = "extra", taskfile = "tasks/extra.yml" }]\n'
 )
 
 
@@ -95,22 +96,21 @@ def test_s4_3_3_property1_renders_exactly_the_module_s_template_inventory_rows(
 ) -> None:
     root = _root(tmp_path, archetype)
     artifacts = TASKS.artifacts(KilnConfig.load(root), root)
-    expected = (*TASK_KEYS, "tasks/ci.yml") if archetype == "python-lib" else TASK_KEYS
     assert [(a.path, a.kind) for a in artifacts] == [
-        (path, ArtifactKind.MANAGED) for path in expected
+        (path, ArtifactKind.MANAGED) for path in (*TASK_KEYS, CI_KEY)
     ]
 
 
 def test_s4_3_3_property1_without_mkdocs_omits_docs_yml(tmp_path: Path) -> None:
     root = _root(tmp_path, profile="none")
     artifacts = TASKS.artifacts(KilnConfig.load(root), root)
-    assert [a.path for a in artifacts] == list(TASK_KEYS[:-1])
+    assert [a.path for a in artifacts] == [*TASK_KEYS[:-1], CI_KEY]
 
 
 def test_s4_3_3_property1_one_seeded_artifact_per_include(tmp_path: Path) -> None:
     root = _root(tmp_path, extra=INCLUDE_EXTRA)
     artifacts = TASKS.artifacts(KilnConfig.load(root), root)
-    assert [a.path for a in artifacts] == [*TASK_KEYS, "tasks/ci.yml"]
+    assert [a.path for a in artifacts] == [*TASK_KEYS, CI_KEY, "tasks/extra.yml"]
     assert artifacts[-1].kind is ArtifactKind.SEEDED
 
 
@@ -119,8 +119,7 @@ def test_s4_3_3_property2_into_an_empty_directory_only_creates(
     tmp_path: Path, archetype: str
 ) -> None:
     actions = _actions(_root(tmp_path, archetype), tmp_path)
-    keys = (*TASK_KEYS, "tasks/ci.yml") if archetype == "python-lib" else TASK_KEYS
-    tasks_actions = {key: actions[key] for key in keys}
+    tasks_actions = {key: actions[key] for key in (*TASK_KEYS, CI_KEY)}
     assert set(tasks_actions.values()) == {Action.CREATE}
 
 
@@ -131,13 +130,13 @@ def test_s4_3_3_property3_a_second_apply_is_unchanged(
     root = _root(tmp_path, archetype)
     cycle.apply(root, home=tmp_path / "home")
     actions = _actions(root, tmp_path)
-    assert all(actions[key] is Action.UNCHANGED for key in TASK_KEYS)
+    assert all(actions[key] is Action.UNCHANGED for key in (*TASK_KEYS, CI_KEY))
 
 
 def test_s4_3_3_property3_an_include_reports_skip_once_present(tmp_path: Path) -> None:
     root = _root(tmp_path, extra=INCLUDE_EXTRA)
     cycle.apply(root, home=tmp_path / "home")
-    assert _actions(root, tmp_path)["tasks/ci.yml"] is Action.SKIP
+    assert _actions(root, tmp_path)["tasks/extra.yml"] is Action.SKIP
 
 
 def _normalized(text: str) -> str:
@@ -232,7 +231,7 @@ def test_s4_3_3_2_a_repo_owned_include_is_seeded_once_and_list_all_succeeds(
 ) -> None:
     root = _root(tmp_path, extra=INCLUDE_EXTRA)
     cycle.apply(root, home=tmp_path / "home")
-    include = root / "tasks" / "ci.yml"
+    include = root / "tasks" / "extra.yml"
     assert include.is_file()
     result = _run_task(root, "--list-all")
     assert result.returncode == 0, result.stderr
@@ -241,10 +240,10 @@ def test_s4_3_3_2_a_repo_owned_include_is_seeded_once_and_list_all_succeeds(
 def test_s4_3_3_2_an_edit_to_an_include_survives_apply(tmp_path: Path) -> None:
     root = _root(tmp_path, extra=INCLUDE_EXTRA)
     cycle.apply(root, home=tmp_path / "home")
-    include = root / "tasks" / "ci.yml"
+    include = root / "tasks" / "extra.yml"
     edited = include.read_text(encoding="utf-8") + "  hand-written: true\n"
     include.write_text(edited, encoding="utf-8")
-    assert _actions(root, tmp_path)["tasks/ci.yml"] is Action.SKIP
+    assert _actions(root, tmp_path)["tasks/extra.yml"] is Action.SKIP
     cycle.apply(root, home=tmp_path / "home")
     assert include.read_text(encoding="utf-8") == edited
 
@@ -674,19 +673,15 @@ def _ci_tasks(root: Path) -> dict[str, object]:
     return yaml.safe_load(rendered["tasks/ci.yml"])
 
 
-def test_s6_4_2_1_ci_yml_is_rendered_for_python_lib_only(tmp_path: Path) -> None:
+def test_s6_4_2_1_ci_yml_is_rendered_for_every_archetype(tmp_path: Path) -> None:
     for archetype in ARCHETYPES:
         root = _root(tmp_path / archetype, archetype)
         rendered = {
             a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)
         }
         taskfile = yaml.safe_load(rendered["Taskfile.yml"])
-        if archetype == "python-lib":
-            assert "tasks/ci.yml" in rendered
-            assert taskfile["includes"]["ci"] == "tasks/ci.yml"
-        else:
-            assert "tasks/ci.yml" not in rendered, archetype
-            assert "ci" not in taskfile["includes"], archetype
+        assert "tasks/ci.yml" in rendered, archetype
+        assert taskfile["includes"]["ci"] == "tasks/ci.yml", archetype
 
 
 def test_s6_4_2_2_ci_tasks_are_described_and_not_internal(tmp_path: Path) -> None:
@@ -849,8 +844,8 @@ def test_s6_4_7_4_release_task_always_publishes(tmp_path: Path) -> None:
 
 
 NEW_LINTS = ("ci-pins", "ci-hooks")
-ENTRYPOINT_REF = {"task": "quality:lint:ci-entrypoint"}
-NEW_REFS = [{"task": f"quality:lint:{name}"} for name in NEW_LINTS]
+ENTRYPOINT_REF = {"task": "ci:lint:entrypoint"}
+NEW_REFS = [{"task": f"ci:lint:{name.removeprefix('ci-')}"} for name in NEW_LINTS]
 WEB_CELLS = (
     ("python-web-api", ""),
     ("python-web-app", 'frontend = "angular"'),
@@ -863,13 +858,18 @@ def _rendered_yaml(root: Path) -> tuple[dict[str, dict], dict[str, dict]]:
     return root_tasks["tasks"], quality["tasks"]
 
 
+def _ci_rendered(root: Path) -> dict[str, dict]:
+    return yaml.safe_load((root / "tasks/ci.yml").read_text(encoding="utf-8"))["tasks"]
+
+
 def _assert_new_lints(root: Path) -> None:
-    root_tasks, quality = _rendered_yaml(root)
+    root_tasks, _ = _rendered_yaml(root)
+    ci = _ci_rendered(root)
     cmds = root_tasks["lint"]["cmds"]
     at = cmds.index(ENTRYPOINT_REF)
     assert cmds[at : at + 3] == [ENTRYPOINT_REF, *NEW_REFS]
     for name in NEW_LINTS:
-        task = quality[f"lint:{name}"]
+        task = ci[f"lint:{name.removeprefix('ci-')}"]
         assert task["internal"] is True
         assert task["desc"].strip()
         assert task["cmds"] == [f"uv run kiln doctor . --only {name}"]
@@ -901,9 +901,9 @@ def test_s4_11_2_1_the_workspace_variant_runs_them_once_at_the_root(
 ) -> None:
     root = _root(tmp_path, "python-lib")
     cycle.apply(root, home=tmp_path / "home")
-    _, quality = _rendered_yaml(root)
+    ci = _ci_rendered(root)
     for name in NEW_LINTS:
-        task_text = yaml.safe_dump(quality[f"lint:{name}"])
+        task_text = yaml.safe_dump(ci[f"lint:{name.removeprefix('ci-')}"])
         assert "for:" not in task_text
         assert "PACKAGE_DIRS" not in task_text
 
@@ -912,15 +912,15 @@ def test_s4_11_2_1_the_workspace_variant_runs_them_once_at_the_root(
 def test_s4_11_2_2_command_overrides_accept_the_new_tasks(
     tmp_path: Path, name: str
 ) -> None:
+    short = name.removeprefix("ci-")
     root = _root(
         tmp_path,
         extra=(
-            f'\n[tasks]\n[tasks.command_overrides]\n"quality:lint:{name}" = "echo hi"\n'
+            f'\n[tasks]\n[tasks.command_overrides]\n"ci:lint:{short}" = "echo hi"\n'
         ),
     )
     cycle.apply(root, home=tmp_path / "home")
-    _, quality = _rendered_yaml(root)
-    assert quality[f"lint:{name}"]["cmds"] == ["echo hi"]
+    assert _ci_rendered(root)[f"lint:{short}"]["cmds"] == ["echo hi"]
 
 
 def test_s4_11_2_2_an_unknown_override_key_is_still_refused(tmp_path: Path) -> None:
@@ -935,8 +935,8 @@ def test_s4_11_2_2_an_unknown_override_key_is_still_refused(tmp_path: Path) -> N
 @pytest.mark.parametrize("name", archetypes.shipped())
 def test_s4_11_2_3_required_validate_gains_both(name: str) -> None:
     required = archetypes.load(name).required_validate
-    assert "quality:lint:ci-pins" in required
-    assert "quality:lint:ci-hooks" in required
+    assert "ci:lint:pins" in required
+    assert "ci:lint:hooks" in required
 
 
 @pytest.mark.parametrize(
@@ -961,26 +961,27 @@ def test_s4_11_2_4_gate_shrunk_fires_when_lint_drops_a_new_task(
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     taskfile = root / "Taskfile.yml"
-    line = f"      - task: quality:lint:{name}\n"
+    short = name.removeprefix("ci-")
+    line = f"      - task: ci:lint:{short}\n"
     text = taskfile.read_text(encoding="utf-8")
     assert line in text
     taskfile.write_text(text.replace(line, ""), encoding="utf-8")
     findings = [f for f in TASKS.checks(KilnConfig.load(root), root)]
     assert any(
-        f.code == "gate.shrunk" and f"quality:lint:{name}" in str(f) for f in findings
+        f.code == "gate.shrunk" and f"ci:lint:{short}" in str(f) for f in findings
     )
 
 
-WORKFLOWS_REF = {"task": "quality:lint:workflows"}
-HOOKS_REF = {"task": "quality:lint:ci-hooks"}
+WORKFLOWS_REF = {"task": "ci:lint:workflows"}
+HOOKS_REF = {"task": "ci:lint:hooks"}
 
 
 def _assert_workflows_lint(root: Path) -> None:
-    root_tasks, quality = _rendered_yaml(root)
+    root_tasks, _ = _rendered_yaml(root)
     cmds = root_tasks["lint"]["cmds"]
     at = cmds.index(HOOKS_REF)
     assert cmds[at : at + 2] == [HOOKS_REF, WORKFLOWS_REF]
-    task = quality["lint:workflows"]
+    task = _ci_rendered(root)["lint:workflows"]
     assert task["internal"] is True
     assert task["desc"].strip()
     assert task["cmds"] == ["uv run zizmor --offline .github", "uv run actionlint"]
@@ -1012,8 +1013,7 @@ def test_s4_11_3_6_the_workspace_variant_runs_it_once_at_the_root(
 ) -> None:
     root = _root(tmp_path, "python-lib")
     cycle.apply(root, home=tmp_path / "home")
-    _, quality = _rendered_yaml(root)
-    task_text = yaml.safe_dump(quality["lint:workflows"])
+    task_text = yaml.safe_dump(_ci_rendered(root)["lint:workflows"])
     assert "for:" not in task_text
     assert "PACKAGE_DIRS" not in task_text
 
@@ -1022,17 +1022,16 @@ def test_s4_11_3_7_command_override_is_accepted(tmp_path: Path) -> None:
     root = _root(
         tmp_path,
         extra=(
-            '\n[tasks]\n[tasks.command_overrides]\n"quality:lint:workflows" = "echo hi"\n'
+            '\n[tasks]\n[tasks.command_overrides]\n"ci:lint:workflows" = "echo hi"\n'
         ),
     )
     cycle.apply(root, home=tmp_path / "home")
-    _, quality = _rendered_yaml(root)
-    assert quality["lint:workflows"]["cmds"] == ["echo hi"]
+    assert _ci_rendered(root)["lint:workflows"]["cmds"] == ["echo hi"]
 
 
 @pytest.mark.parametrize("name", archetypes.shipped())
 def test_s4_11_3_8_required_validate_gains_it(name: str) -> None:
-    assert "quality:lint:workflows" in archetypes.load(name).required_validate
+    assert "ci:lint:workflows" in archetypes.load(name).required_validate
 
 
 @pytest.mark.parametrize(
@@ -1056,13 +1055,13 @@ def test_s4_11_3_8_gate_shrunk_fires_when_lint_drops_workflows(
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     taskfile = root / "Taskfile.yml"
-    line = "      - task: quality:lint:workflows\n"
+    line = "      - task: ci:lint:workflows\n"
     text = taskfile.read_text(encoding="utf-8")
     assert line in text
     taskfile.write_text(text.replace(line, ""), encoding="utf-8")
     findings = [f for f in TASKS.checks(KilnConfig.load(root), root)]
     assert any(
-        f.code == "gate.shrunk" and "quality:lint:workflows" in str(f) for f in findings
+        f.code == "gate.shrunk" and "ci:lint:workflows" in str(f) for f in findings
     )
 
 
@@ -1225,7 +1224,7 @@ def test_s4_11_5_7_required_validate_gains_it(name: str) -> None:
     required = archetypes.load(name).required_validate
     assert "quality:lint:audit" in required
     assert required.index("quality:lint:audit") == (
-        required.index("quality:lint:workflows") + 1
+        required.index("ci:lint:workflows") + 1
     )
 
 
@@ -1458,3 +1457,163 @@ def test_s4_12_1_7_gate_shrunk_fires_when_lint_drops_docs_lint(tmp_path: Path) -
     taskfile.write_text(text.replace(line, ""), encoding="utf-8")
     findings = list(TASKS.checks(KilnConfig.load(root), root))
     assert any(f.code == "gate.shrunk" and "docs:lint:site" in str(f) for f in findings)
+
+
+# S4.12.2 — the CI checks live in `ci.yml`, which renders for every archetype.
+
+CI_LINT_CHECKS = {
+    "lint:entrypoint": ["uv run kiln doctor . --only ci-entrypoint"],
+    "lint:pins": ["uv run kiln doctor . --only ci-pins"],
+    "lint:hooks": ["uv run kiln doctor . --only ci-hooks"],
+    "lint:workflows": ["uv run zizmor --offline .github", "uv run actionlint"],
+}
+CI_PIPELINE_TASKS = {
+    "plan",
+    "adapters",
+    "verify",
+    "postgres",
+    "smoke",
+    "suite",
+    "release-build",
+    "release-publish",
+    "external-install",
+    "docs-publish",
+}
+ALL_CELLS = [(a, "") for a in ARCHETYPES] + list(WEB_CELLS)
+OLD_CI_KEYS = [
+    "quality:lint:ci-entrypoint",
+    "quality:lint:ci-pins",
+    "quality:lint:ci-hooks",
+    "quality:lint:workflows",
+]
+
+
+@pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
+def test_s4_12_2_1_every_archetype_renders_ci_yml(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _s4_12_1_root(tmp_path, archetype, extra)
+    rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
+    assert "tasks/ci.yml" in rendered
+    assert yaml.safe_load(rendered["Taskfile.yml"])["includes"]["ci"] == "tasks/ci.yml"
+
+
+@pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
+def test_s4_12_2_2_ci_yml_holds_the_four_checks(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _s4_12_1_root(tmp_path, archetype, extra)
+    cycle.apply(root, home=tmp_path / "home")
+    tasks = _load(root, "tasks/ci.yml")["tasks"]
+    for name, cmds in CI_LINT_CHECKS.items():
+        assert tasks[name]["internal"] is True
+        assert tasks[name]["desc"].strip()
+        assert tasks[name]["cmds"] == cmds
+
+
+@pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
+def test_s4_12_2_3_only_python_lib_has_the_pipeline_tasks(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _s4_12_1_root(tmp_path, archetype, extra)
+    cycle.apply(root, home=tmp_path / "home")
+    document = _load(root, "tasks/ci.yml")
+    others = {k for k in document["tasks"] if not k.startswith("lint:")}
+    if archetype == "python-lib":
+        assert others == CI_PIPELINE_TASKS
+        assert not any("internal" in document["tasks"][k] for k in others)
+        assert "DEVOPS" in document["vars"]
+    else:
+        assert others == set()
+        assert "vars" not in document
+
+
+@pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
+def test_s4_12_2_4_root_lint_calls_them_in_place(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _s4_12_1_root(tmp_path, archetype, extra)
+    cycle.apply(root, home=tmp_path / "home")
+    cmds = _load(root, "Taskfile.yml")["tasks"]["lint"]["cmds"]
+    refs = [c["task"] for c in cmds]
+    at = refs.index("ci:lint:entrypoint")
+    assert refs[at : at + 4] == [
+        "ci:lint:entrypoint",
+        "ci:lint:pins",
+        "ci:lint:hooks",
+        "ci:lint:workflows",
+    ]
+    assert not any(
+        r.startswith("quality:lint:ci") or r == "quality:lint:workflows" for r in refs
+    )
+
+
+@pytest.mark.parametrize("key", [f"ci:{name}" for name in CI_LINT_CHECKS])
+def test_s4_12_2_5_overrides_take_the_new_keys(tmp_path: Path, key: str) -> None:
+    root = _root(
+        tmp_path,
+        extra=f'\n[tasks]\n[tasks.command_overrides]\n"{key}" = "echo hi"\n',
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    tasks = _load(root, "tasks/ci.yml")["tasks"]
+    assert tasks[key.removeprefix("ci:")]["cmds"] == ["echo hi"]
+
+
+@pytest.mark.parametrize("key", OLD_CI_KEYS)
+def test_s4_12_2_5_old_keys_are_refused(tmp_path: Path, key: str) -> None:
+    root = _root(
+        tmp_path,
+        extra=f'\n[tasks]\n[tasks.command_overrides]\n"{key}" = "echo hi"\n',
+    )
+    with pytest.raises(AppException, match=re.escape(key)):
+        TASKS.artifacts(KilnConfig.load(root), root)
+
+
+@pytest.mark.parametrize("name", archetypes.shipped())
+def test_s4_12_2_6_required_validate_names_the_ci_tasks(name: str) -> None:
+    required = archetypes.load(name).required_validate
+    for task in ("entrypoint", "pins", "hooks", "workflows"):
+        assert f"ci:lint:{task}" in required
+    assert not [
+        r
+        for r in required
+        if r.startswith("quality:lint:ci-")
+        or r.endswith(":workflows")
+        and r.startswith("quality:")
+    ]
+
+
+@pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
+def test_s4_12_2_7_task_layout_accepts_the_rendered_files(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _s4_12_1_root(tmp_path, archetype, extra)
+    cycle.apply(root, home=tmp_path / "home")
+    assert _codes(root) == []
+
+
+@pytest.mark.parametrize("name", ["entrypoint", "pins", "hooks", "workflows"])
+def test_s4_12_2_7_gate_shrunk_fires(tmp_path: Path, name: str) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    taskfile = root / "Taskfile.yml"
+    line = f"      - task: ci:lint:{name}\n"
+    text = taskfile.read_text(encoding="utf-8")
+    assert line in text
+    taskfile.write_text(text.replace(line, ""), encoding="utf-8")
+    findings = list(TASKS.checks(KilnConfig.load(root), root))
+    assert any(
+        f.code == "gate.shrunk" and f"ci:lint:{name}" in str(f) for f in findings
+    )
+
+
+def test_s4_12_2_8_an_include_cannot_take_ci(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(
+        config.read_text(encoding="utf-8")
+        + '\n[tasks]\nincludes = [{ namespace = "ci", taskfile = "tasks/mine.yml" }]\n',
+        encoding="utf-8",
+    )
+    assert "taskgraph.reserved-namespace" in _codes(root)

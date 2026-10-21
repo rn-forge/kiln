@@ -47,9 +47,9 @@ In a workspace archetype, `build` and `version` take a package name after `--`
 ```text
 quality:lint:python          quality:lint:generated
 quality:lint:rn-forge-deps   quality:lint:imports
-quality:lint:task-layout     quality:lint:ci-entrypoint
-quality:lint:ci-pins         quality:lint:ci-hooks
-quality:lint:workflows       quality:lint:audit
+quality:lint:task-layout     ci:lint:entrypoint
+ci:lint:pins                 ci:lint:hooks
+ci:lint:workflows            quality:lint:audit
 quality:lint:toml
 quality:typecheck:python     quality:test:python
 ```

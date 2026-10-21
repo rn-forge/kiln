@@ -22,6 +22,7 @@ includes:
   quality: tasks/quality.yml
   docs: tasks/docs.yml
   workspace: tasks/workspace.yml
+  ci: tasks/ci.yml
   self: tasks/self.yml
 
 tasks:
@@ -46,10 +47,10 @@ tasks:
       - task: quality:lint:rn-forge-deps
       - task: quality:lint:imports
       - task: quality:lint:task-layout
-      - task: quality:lint:ci-entrypoint
-      - task: quality:lint:ci-pins
-      - task: quality:lint:ci-hooks
-      - task: quality:lint:workflows
+      - task: ci:lint:entrypoint
+      - task: ci:lint:pins
+      - task: ci:lint:hooks
+      - task: ci:lint:workflows
       - task: quality:lint:audit
       - task: docs:lint
       - task: quality:lint:markdown

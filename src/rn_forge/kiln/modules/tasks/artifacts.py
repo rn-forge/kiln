@@ -31,10 +31,6 @@ _QUALITY_TASKS = (
     "quality:lint:rn-forge-deps",
     "quality:lint:imports",
     "quality:lint:task-layout",
-    "quality:lint:ci-entrypoint",
-    "quality:lint:ci-pins",
-    "quality:lint:ci-hooks",
-    "quality:lint:workflows",
     "quality:lint:audit",
     "quality:format:python",
     "quality:format:markdown",
@@ -42,6 +38,12 @@ _QUALITY_TASKS = (
     "quality:typecheck:python",
     "quality:test:python",
     "quality:test:coverage",
+)
+_CI_TASKS = (
+    "ci:lint:entrypoint",
+    "ci:lint:pins",
+    "ci:lint:hooks",
+    "ci:lint:workflows",
 )
 _DOCS_TASKS = (
     "docs:build",
@@ -77,6 +79,7 @@ def render(config: KilnConfig) -> list[Artifact]:
     known = {
         *_WORKSPACE_TASKS,
         *_QUALITY_TASKS,
+        *_CI_TASKS,
         *(_DOCS_TASKS if docs else ()),
     }
     for key in tasks_config.command_overrides:
@@ -167,14 +170,13 @@ def render(config: KilnConfig) -> list[Artifact]:
                 engine.render("tasks/web.yml.j2", context),
             )
         )
-    if workspace:
-        artifacts.append(
-            Artifact(
-                "tasks/ci.yml",
-                ArtifactKind.MANAGED,
-                engine.render("tasks/ci.yml.j2", context),
-            )
+    artifacts.append(
+        Artifact(
+            "tasks/ci.yml",
+            ArtifactKind.MANAGED,
+            engine.render("tasks/ci.yml.j2", context),
         )
+    )
     for include in tasks_config.includes:
         artifacts.append(
             Artifact(

@@ -65,7 +65,7 @@
     },
     "Taskfile.yml": {
       "begin_marker": null,
-      "content_hash": "f8248ee49f95a769c067268ebb7e06f2c320d62facd3ffc8639d378211492816",
+      "content_hash": "a747e51abdcc9b04106aa8e9573e4e174cdbee5fa0093cb0096a8608435de842",
       "end_marker": null,
       "kind": "managed",
       "path": "Taskfile.yml"
@@ -203,6 +203,13 @@
       "kind": "managed",
       "path": "sonar-project.properties"
     },
+    "tasks/ci.yml": {
+      "begin_marker": null,
+      "content_hash": "993f34ea6eaedefab27d78790a6b3bfcf2fd3f2f45859d62e8fce1294ea498de",
+      "end_marker": null,
+      "kind": "managed",
+      "path": "tasks/ci.yml"
+    },
     "tasks/docs.yml": {
       "begin_marker": null,
       "content_hash": "f38ab9f74c2e4e1ec2b388739bac290e7eb25faef6d3db0d25bbc461f1fe9f5e",
@@ -212,7 +219,7 @@
     },
     "tasks/quality.yml": {
       "begin_marker": null,
-      "content_hash": "08d7b7358b6cd1614a319384815e23102c25d20cdbe48b53539822a0dfc0387a",
+      "content_hash": "529cbdd6b5d0cdbbb4f11c1f3e867f299b6bb208c80cce1ce822c548f355fa5d",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/quality.yml"

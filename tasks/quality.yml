@@ -51,31 +51,6 @@ tasks:
     cmds:
       - uv run kiln doctor . --only task-layout
 
-  lint:ci-entrypoint:
-    desc: Fail if a CI step invokes a wrapped tool instead of `task`.
-    internal: true
-    cmds:
-      - uv run kiln doctor . --only ci-entrypoint
-
-  lint:ci-pins:
-    desc: Fail if a CI action is not pinned to a commit, or a job lacks `permissions:`.
-    internal: true
-    cmds:
-      - uv run kiln doctor . --only ci-pins
-
-  lint:ci-hooks:
-    desc: Fail if a `[ci.hooks]` action or a declared job's workflow is missing or cannot be called.
-    internal: true
-    cmds:
-      - uv run kiln doctor . --only ci-hooks
-
-  lint:workflows:
-    desc: Fail on a workflow security finding (zizmor) or a workflow syntax error (actionlint).
-    internal: true
-    cmds:
-      - uv run zizmor --offline .github
-      - uv run actionlint
-
   lint:audit:
     desc: Fail if a locked dependency has a known vulnerability (pip-audit; needs the network).
     internal: true

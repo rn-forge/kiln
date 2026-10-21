@@ -22,8 +22,8 @@ includes:
   quality: tasks/quality.yml
 {% if docs %}  docs: tasks/docs.yml
 {% endif %}  workspace: tasks/workspace.yml
-{% if workspace %}  ci: tasks/ci.yml
-{% endif %}{% if web %}  api: tasks/api.yml
+  ci: tasks/ci.yml
+{% if web %}  api: tasks/api.yml
 {% endif %}{% if web_app %}  web: tasks/web.yml
 {% endif %}{% for include in includes %}  [[ include.namespace ]]: [[ include.taskfile ]]
 {% endfor %}
@@ -51,10 +51,10 @@ tasks:
       - task: quality:lint:rn-forge-deps
       - task: quality:lint:imports
       - task: quality:lint:task-layout
-      - task: quality:lint:ci-entrypoint
-      - task: quality:lint:ci-pins
-      - task: quality:lint:ci-hooks
-      - task: quality:lint:workflows
+      - task: ci:lint:entrypoint
+      - task: ci:lint:pins
+      - task: ci:lint:hooks
+      - task: ci:lint:workflows
       - task: quality:lint:audit
 {% if docs %}      - task: docs:lint
 {% endif %}      - task: quality:lint:markdown

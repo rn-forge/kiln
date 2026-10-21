@@ -40,22 +40,6 @@ tasks:
     desc: Check task layout
     cmds: [kiln doctor .]
     internal: true
-  lint:ci-entrypoint:
-    desc: Check CI entrypoint
-    cmds: [kiln doctor .]
-    internal: true
-  lint:ci-pins:
-    desc: Check CI pins
-    cmds: [kiln doctor .]
-    internal: true
-  lint:ci-hooks:
-    desc: Check CI hooks
-    cmds: [kiln doctor .]
-    internal: true
-  lint:workflows:
-    desc: Check workflows
-    cmds: [zizmor --offline .github]
-    internal: true
   lint:audit:
     desc: Audit dependencies
     cmds: [pip-audit]
@@ -80,23 +64,44 @@ tasks:
 
 QUALITY = QUALITY_HEAD
 
+CI_HEAD = """
+version: '3'
+tasks:
+  lint:entrypoint:
+    desc: Check CI entrypoint
+    cmds: [kiln doctor .]
+    internal: true
+  lint:pins:
+    desc: Check CI pins
+    cmds: [kiln doctor .]
+    internal: true
+  lint:hooks:
+    desc: Check CI hooks
+    cmds: [kiln doctor .]
+    internal: true
+  lint:workflows:
+    desc: Check workflows
+    cmds: [zizmor --offline .github]
+    internal: true
+"""
+
 GATE_REFS = "\n".join(
-    f"      - task: quality:{name}"
+    f"      - task: {name}"
     for name in (
-        "lint:python",
-        "lint:generated",
-        "lint:rn-forge-deps",
-        "lint:imports",
-        "lint:task-layout",
-        "lint:ci-entrypoint",
-        "lint:ci-pins",
-        "lint:ci-hooks",
-        "lint:workflows",
-        "lint:audit",
-        "lint:markdown",
-        "lint:toml",
-        "typecheck:python",
-        "test:python",
+        "quality:lint:python",
+        "quality:lint:generated",
+        "quality:lint:rn-forge-deps",
+        "quality:lint:imports",
+        "quality:lint:task-layout",
+        "ci:lint:entrypoint",
+        "ci:lint:pins",
+        "ci:lint:hooks",
+        "ci:lint:workflows",
+        "quality:lint:audit",
+        "quality:lint:markdown",
+        "quality:lint:toml",
+        "quality:typecheck:python",
+        "quality:test:python",
     )
 )
 
@@ -106,7 +111,7 @@ WRAPPER = "      - task: quality:lint:python"
 def taskfile(
     overrides: dict[str, str] | None = None,
     extra: str = "",
-    includes: str = "  quality: tasks/quality.yml\n",
+    includes: str = "  quality: tasks/quality.yml\n  ci: tasks/ci.yml\n",
 ) -> str:
     """A root Taskfile with exactly the ten verbs, each a wrapper.
 
@@ -132,7 +137,11 @@ def run(root: Path) -> list[str]:
 
 
 def compliant(repo, **overrides: str) -> Path:
-    files = {"Taskfile.yml": TASKFILE, "tasks__quality.yml": QUALITY}
+    files = {
+        "Taskfile.yml": TASKFILE,
+        "tasks__quality.yml": QUALITY,
+        "tasks__ci.yml": CI_HEAD,
+    }
     files.update(overrides)
     return repo(**files)
 
@@ -195,17 +204,13 @@ def test_a_shrunk_gate_is_reported(repo) -> None:
     )
 
 
-@pytest.mark.parametrize("name", ["ci-pins", "ci-hooks"])
+@pytest.mark.parametrize("name", ["pins", "hooks"])
 def test_s4_11_2_4_a_gate_missing_ci_pins_or_ci_hooks_is_reported(
     repo, name: str
 ) -> None:
     root = compliant(
         repo,
-        **{
-            "Taskfile.yml": TASKFILE.replace(
-                f"      - task: quality:lint:{name}\n", "", 1
-            )
-        },
+        **{"Taskfile.yml": TASKFILE.replace(f"      - task: ci:lint:{name}\n", "", 1)},
     )
     assert any(
         "not reachable from `validate`" in line and name in line for line in run(root)
@@ -216,9 +221,7 @@ def test_s4_11_3_8_a_gate_missing_workflows_is_reported(repo) -> None:
     root = compliant(
         repo,
         **{
-            "Taskfile.yml": TASKFILE.replace(
-                "      - task: quality:lint:workflows\n", "", 1
-            )
+            "Taskfile.yml": TASKFILE.replace("      - task: ci:lint:workflows\n", "", 1)
         },
     )
     assert any(
@@ -315,7 +318,7 @@ def test_s4_6_2_1_reserved_namespace_tasks_are_internal(repo) -> None:
             repo,
             **{
                 "Taskfile.yml": taskfile(
-                    includes=f"  quality: tasks/quality.yml\n  {namespace}: tasks/{namespace}.yml\n"
+                    includes=f"  quality: tasks/quality.yml\n  ci: tasks/ci.yml\n  {namespace}: tasks/{namespace}.yml\n"
                     if namespace != "quality"
                     else "  quality: tasks/quality.yml\n"
                 ),
@@ -331,7 +334,7 @@ def test_s4_6_2_1_reserved_namespace_tasks_are_internal(repo) -> None:
 
 def test_s4_6_2_1_a_public_docs_api_or_web_task_is_not_reported(repo) -> None:
     includes = "".join(
-        f"  {ns}: tasks/{ns}.yml\n" for ns in ("quality", "docs", "api", "web")
+        f"  {ns}: tasks/{ns}.yml\n" for ns in ("quality", "ci", "docs", "api", "web")
     )
     public = "version: '3'\ntasks:\n  dev:\n    desc: Dev\n    cmds: [true]\n"
     root = compliant(
@@ -351,7 +354,7 @@ def test_s4_6_2_1_an_include_must_exist(repo) -> None:
         repo,
         **{
             "Taskfile.yml": taskfile(
-                includes="  quality: tasks/quality.yml\n  docs: tasks/docs.yml\n"
+                includes="  quality: tasks/quality.yml\n  ci: tasks/ci.yml\n  docs: tasks/docs.yml\n"
             )
         },
     )
@@ -368,7 +371,7 @@ def test_s4_6_2_1_task_refs_resolve(repo) -> None:
         repo,
         **{
             "Taskfile.yml": taskfile(
-                includes="  quality: tasks/quality.yml\n  self: tasks/self.yml\n"
+                includes="  quality: tasks/quality.yml\n  ci: tasks/ci.yml\n  self: tasks/self.yml\n"
             ),
             "tasks__quality.yml": managed,
             "tasks__self.yml": OWNED,
@@ -392,7 +395,7 @@ def test_s4_6_2_1_no_cycles(repo) -> None:
         repo,
         **{
             "Taskfile.yml": taskfile(
-                includes="  quality: tasks/quality.yml\n  other: tasks/other.yml\n"
+                includes="  quality: tasks/quality.yml\n  ci: tasks/ci.yml\n  other: tasks/other.yml\n"
             ),
             "tasks__quality.yml": quality,
             "tasks__other.yml": other,
@@ -414,7 +417,7 @@ def test_s4_6_2_1_repository_owned_files_are_not_held_to_layout(repo) -> None:
         repo,
         **{
             "Taskfile.yml": taskfile(
-                includes="  quality: tasks/quality.yml\n  self: tasks/self.yml\n"
+                includes="  quality: tasks/quality.yml\n  ci: tasks/ci.yml\n  self: tasks/self.yml\n"
             ),
             "tasks__self.yml": OWNED,
         },
