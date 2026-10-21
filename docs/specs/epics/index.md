@@ -15,7 +15,7 @@ Jump to: [E1–E10](#e1e10) · [E11–E20](#e11e20)
 | [E1 — The canon and the hand-authored golden repos](E1-canon-and-golden-repos/index.md) | Closed | 5 Closed | — |
 | [E2 — The layer split lands in the goldens](E2-layer-split-and-golden-rename/index.md) | Closed | 9 Closed · 1 Removed | — |
 | [E3 — Realign the goldens and the canon with pykit](E3-realign-goldens-and-canon/index.md) | Closed | 4 Closed | release-1 |
-| [E4 — The generator](E4-generator/index.md) | Active | 3 Active · 8 Closed | release-1 |
+| [E4 — The generator](E4-generator/index.md) | Active | 3 Active · 1 New · 8 Closed | release-1 |
 | [E5 — The web archetypes](E5-web-archetypes/index.md) | Active | 1 Active · 1 New · 2 Closed | release-1 |
 | [E6 — Rebuild the repos, retire the old](E6-rebuild-the-repos/index.md) | Active | 3 Active · 2 New · 1 Closed | release-1, release-2 |
 | [E7 — pykit releases, and the pin flip](E7-pykit-release-pin-flip/index.md) | Active | 1 New · 1 Closed | release-1 |
@@ -29,7 +29,7 @@ Jump to: [E1–E10](#e1e10) · [E11–E20](#e11e20)
 | -- | -- | -- | -- |
 | [E11 — Package docs sites](E11-package-docs/index.md) | Active | 1 Active · 4 Closed | release-1 |
 | [E12 — The architecture baseline](E12-architecture-baseline/index.md) | New | 2 New | release-2 |
-| [E13 — The docs work model and derived regions](E13-docs-work-model/index.md) | Closed | 3 Closed | release-1 |
+| [E13 — The docs work model and derived regions](E13-docs-work-model/index.md) | Active | 1 New · 3 Closed | release-1 |
 | [E14 — Docs site navigation and work summaries](E14-site-navigation/index.md) | Closed | 2 Closed | release-1 |
 
 <!-- END derived epics -->

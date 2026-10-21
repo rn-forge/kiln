@@ -89,6 +89,7 @@ nav:
         - F4.9 — Seeded starter source: specs/epics/E4-generator/F4.9-seeded-starter-source.md
         - F4.10 — TOML formatting: specs/epics/E4-generator/F4.10-toml-formatting.md
         - F4.11 — Generated CI enhancements: specs/epics/E4-generator/F4.11-ci-enhancements.md
+        - F4.12 — The task files follow their owners: specs/epics/E4-generator/F4.12-task-files-by-owner.md
         - E4 design — the generator: specs/epics/E4-generator/design.md
       - E5 — The web archetypes:
         - specs/epics/E5-web-archetypes/index.md
