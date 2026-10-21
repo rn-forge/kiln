@@ -18,11 +18,13 @@ site_dir = ".docs-site"
 provider = "github"
 sonar = true
 release = "tag-exists"
-node = true
+
+[ci.hooks]
+setup = ["./.github/actions/setup-node"]
 
 [[ci.jobs]]
 name = "golden-render"
-task = "self:golden:render"
+uses = "./.github/workflows/golden-render.yml"
 events = ["pull_request"]
 
 [tasks]

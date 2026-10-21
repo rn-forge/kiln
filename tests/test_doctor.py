@@ -118,6 +118,16 @@ def _break_pins(root: Path) -> None:
     _reseed(root, ".github/workflows/ci.yml")
 
 
+def _break_hooks(root: Path) -> None:
+    _edit(
+        root,
+        ".rn-forge/kiln/config.toml",
+        lambda text: text.replace(
+            "setup = []", 'setup = ["./.github/actions/ghost"]', 1
+        ),
+    )
+
+
 def _break_structure(root: Path) -> None:
     _edit(root, "docs/_areas.yml", lambda text: text + "  - key: ghost\n")
 
@@ -136,6 +146,7 @@ BREAKS: dict[str, tuple[Callable[[Path], None], str]] = {
     "task-layout": (_break_layout, "taskgraph."),
     "ci-entrypoint": (_break_entrypoint, "ci.entrypoint"),
     "ci-pins": (_break_pins, "ci.unpinned"),
+    "ci-hooks": (_break_hooks, "ci.hook-missing"),
     "docs-structure": (_break_structure, "docs."),
     "docs-generate": (_break_derived, "docs.nav-stale"),
     "docs-site": (_break_site, "docs.broken-link"),

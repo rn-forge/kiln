@@ -39,9 +39,13 @@ class CicdModule:
 
     def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:
         """This module's render-free checks."""
-        from rn_forge.kiln.modules.cicd.checks import entrypoint, pins
+        from rn_forge.kiln.modules.cicd.checks import entrypoint, hooks, pins
 
-        return [*entrypoint.check(config, root), *pins.check(config, root)]
+        return [
+            *entrypoint.check(config, root),
+            *pins.check(config, root),
+            *hooks.check(config, root),
+        ]
 
 
 CICD = CicdModule()

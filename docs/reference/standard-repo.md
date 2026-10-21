@@ -291,8 +291,8 @@ only the root packages, and the repository's own contracts are its boundary.
 CI runs the pinned kiln read-only ([ADR-0006](../adr/ADR-0006.md)): it never
 runs `kiln apply` and never writes a generated file. `task validate` runs
 `kiln doctor`'s ownership checks — `generated`, `task-layout`, `ci-entrypoint`,
-`ci-pins` and `docs-generate` — and the quality checks `rn-forge-deps`,
-`docs-structure` and `docs-site` through their own lint tasks.
+`ci-pins`, `ci-hooks` and `docs-generate` — and the quality checks
+`rn-forge-deps`, `docs-structure` and `docs-site` through their own lint tasks.
 `kiln doctor --full`, which adds a full render and diff, runs where the workflow
 asks for it: `lint` runs it when the `KILN_DOCTOR_FULL` task variable is set, by
 default on pushes to the default branch and on manual dispatch.
@@ -346,6 +346,7 @@ render-free checks are the ones `kiln doctor` runs by default.
 | `gate.shrunk` | tasks reachable from `validate` ⊇ the archetype's `required_validate` |
 | `kiln.pin` | `rn-forge-kiln` is in the dev group with a pinned source, and the running kiln is the version `uv.lock` records |
 | `ci.unpinned` / `ci.permissions` | every `uses:` SHA-pinned with a version comment; every job has `permissions:` |
+| `ci.hook-missing` / `ci.hook-not-callable` | every `[ci.hooks]` action and declared job's workflow exists; a declared job's workflow has `workflow_call` in its `on:` |
 | `docs.nav-stale` | the derived nav (`docs-generate`) differs from what regenerating it from the docs tree would write |
 | `docs.board-*` / `docs.epics-*` / `docs.scope-*` | the derived board, epic list and release Scope regions are present (`-markers`) and current (`-stale`) |
 | `docs.state-contradicts-work` | a work item's state agrees with its children and Iteration ([ADR-0011](../adr/ADR-0011.md)) |
@@ -466,10 +467,18 @@ provider = "github"        # github only in v1; "ado" reserved
 sonar = true
 release = "tag-exists"     # tag-exists | none
                            # nx-dispatch: node-lib default (release-1, not yet built)
-node = false               # optional: install pnpm and Node in the setup action; python-web-app always does
-jobs = [{ name = "golden-render", task = "self:golden:render", events = ["pull_request"] }]
-                           # optional: extra jobs after validate, each running one task;
-                           # name is kebab-case and not a generated job's; events defaults to all three
+[ci.hooks]
+setup = ["./.github/actions/setup-node"]
+                           # optional: local composite actions the setup action runs as its
+                           # last steps; ./.github/actions/<name>, not setup, no repeats
+
+[[ci.jobs]]
+name = "golden-render"
+uses = "./.github/workflows/golden-render.yml"
+events = ["pull_request"]
+                           # optional: a reusable-workflow call after validate; uses is
+                           # ./.github/workflows/<file>.yml, not ci.yml; name is kebab-case
+                           # and not a generated job's; events defaults to all three
 
 [tasks]
 includes = [{ namespace = "self", taskfile = "tasks/self.yml" }]

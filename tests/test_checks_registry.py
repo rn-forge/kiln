@@ -19,6 +19,7 @@ def test_every_check_is_named_by_its_module() -> None:
         "task-layout",
         "ci-entrypoint",
         "ci-pins",
+        "ci-hooks",
         "docs-structure",
         "docs-generate",
         "docs-site",
