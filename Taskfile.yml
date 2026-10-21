@@ -20,6 +20,7 @@ env:
 
 includes:
   quality: tasks/quality.yml
+  python: tasks/python.yml
   docs: tasks/docs.yml
   workspace: tasks/workspace.yml
   ci: tasks/ci.yml
@@ -29,7 +30,7 @@ tasks:
   setup:
     desc: Install the project and its dev + docs dependency groups.
     cmds:
-      - task: workspace:install
+      - task: python:install
 
   validate:
     desc: The aggregate gate — lint, typecheck, test, docs build. Any failure fails.
@@ -42,16 +43,16 @@ tasks:
   lint:
     desc: Every lint — Python, TOML, generated-file drift, dependencies, imports, task layout, CI entrypoints, workflow security, dependency vulnerabilities, docs.
     cmds:
-      - task: quality:lint:python
+      - task: python:lint
       - task: quality:lint:generated
       - task: quality:lint:rn-forge-deps
-      - task: quality:lint:imports
+      - task: python:lint:imports
       - task: quality:lint:task-layout
       - task: ci:lint:entrypoint
       - task: ci:lint:pins
       - task: ci:lint:hooks
       - task: ci:lint:workflows
-      - task: quality:lint:audit
+      - task: python:lint:audit
       - task: docs:lint
       - task: quality:lint:markdown
       - task: quality:lint:toml
@@ -59,34 +60,34 @@ tasks:
   format:
     desc: Format Python code, TOML and Markdown prose in place.
     cmds:
-      - task: quality:format:python
+      - task: python:format
       - task: quality:format:markdown
       - task: quality:format:toml
 
   typecheck:
     desc: Static type-check the package in pyright strict mode.
     cmds:
-      - task: quality:typecheck:python
+      - task: python:typecheck
 
   test:
     desc: Run the pytest suite.
     cmds:
-      - task: quality:test:python
+      - task: python:test
 
   test:coverage:
     desc: Run the pytest suite with an XML coverage report (used by CI/Sonar).
     cmds:
-      - task: quality:test:coverage
+      - task: python:test:coverage
 
   build:
     desc: Build the wheel and sdist into dist/.
     cmds:
-      - task: workspace:build
+      - task: python:build
 
   version:
     desc: Print the package version from pyproject.toml.
     cmds:
-      - task: workspace:version
+      - task: python:version
 
   clean:
     desc: Remove build outputs, caches, and the rendered docs site.

@@ -12,20 +12,20 @@ forbidden_tools = [
     "kiln",
 ]
 required_validate = [
-    "quality:lint:python",
+    "python:lint",
     "quality:lint:generated",
     "quality:lint:rn-forge-deps",
-    "quality:lint:imports",
+    "python:lint:imports",
     "quality:lint:task-layout",
     "ci:lint:entrypoint",
     "ci:lint:pins",
     "ci:lint:hooks",
     "ci:lint:workflows",
-    "quality:lint:audit",
+    "python:lint:audit",
     "quality:lint:markdown",
     "quality:lint:toml",
-    "quality:typecheck:python",
-    "quality:test:python",
+    "python:typecheck",
+    "python:test",
 ]
 
 [dependencies]

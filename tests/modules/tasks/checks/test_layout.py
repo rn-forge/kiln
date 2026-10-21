@@ -20,10 +20,6 @@ from rn_forge.kiln.modules.tasks.config import ROOT_VERBS
 QUALITY_HEAD = """
 version: '3'
 tasks:
-  lint:python:
-    desc: Lint
-    cmds: [ruff check .]
-    internal: true
   lint:generated:
     desc: Check generated state
     cmds: [kiln doctor .]
@@ -32,17 +28,9 @@ tasks:
     desc: Check dependencies
     cmds: [kiln doctor .]
     internal: true
-  lint:imports:
-    desc: Check imports
-    cmds: [lint-imports]
-    internal: true
   lint:task-layout:
     desc: Check task layout
     cmds: [kiln doctor .]
-    internal: true
-  lint:audit:
-    desc: Audit dependencies
-    cmds: [pip-audit]
     internal: true
   lint:markdown:
     desc: Check markdown
@@ -52,17 +40,34 @@ tasks:
     desc: Check TOML
     cmds: [taplo fmt --check]
     internal: true
-  typecheck:python:
+"""
+
+QUALITY = QUALITY_HEAD
+
+PYTHON_HEAD = """
+version: '3'
+tasks:
+  lint:
+    desc: Lint
+    cmds: [ruff check .]
+    internal: true
+  lint:imports:
+    desc: Check imports
+    cmds: [lint-imports]
+    internal: true
+  lint:audit:
+    desc: Audit dependencies
+    cmds: [pip-audit]
+    internal: true
+  typecheck:
     desc: Typecheck
     cmds: [pyright src]
     internal: true
-  test:python:
+  test:
     desc: Test
     cmds: [pytest -q]
     internal: true
 """
-
-QUALITY = QUALITY_HEAD
 
 CI_HEAD = """
 version: '3'
@@ -88,30 +93,30 @@ tasks:
 GATE_REFS = "\n".join(
     f"      - task: {name}"
     for name in (
-        "quality:lint:python",
+        "python:lint",
         "quality:lint:generated",
         "quality:lint:rn-forge-deps",
-        "quality:lint:imports",
+        "python:lint:imports",
         "quality:lint:task-layout",
         "ci:lint:entrypoint",
         "ci:lint:pins",
         "ci:lint:hooks",
         "ci:lint:workflows",
-        "quality:lint:audit",
+        "python:lint:audit",
         "quality:lint:markdown",
         "quality:lint:toml",
-        "quality:typecheck:python",
-        "quality:test:python",
+        "python:typecheck",
+        "python:test",
     )
 )
 
-WRAPPER = "      - task: quality:lint:python"
+WRAPPER = "      - task: python:lint"
 
 
 def taskfile(
     overrides: dict[str, str] | None = None,
     extra: str = "",
-    includes: str = "  quality: tasks/quality.yml\n  ci: tasks/ci.yml\n",
+    includes: str = "  quality: tasks/quality.yml\n  python: tasks/python.yml\n  ci: tasks/ci.yml\n",
 ) -> str:
     """A root Taskfile with exactly the ten verbs, each a wrapper.
 
@@ -140,6 +145,7 @@ def compliant(repo, **overrides: str) -> Path:
     files = {
         "Taskfile.yml": TASKFILE,
         "tasks__quality.yml": QUALITY,
+        "tasks__python.yml": PYTHON_HEAD,
         "tasks__ci.yml": CI_HEAD,
     }
     files.update(overrides)
@@ -192,14 +198,10 @@ def test_a_shrunk_gate_is_reported(repo) -> None:
     """Dropping one `task:` ref from `validate` is exactly the failure."""
     root = compliant(
         repo,
-        **{
-            "Taskfile.yml": TASKFILE.replace(
-                "      - task: quality:test:python\n", "", 1
-            )
-        },
+        **{"Taskfile.yml": TASKFILE.replace("      - task: python:test\n", "", 1)},
     )
     assert any(
-        "not reachable from `validate`" in line and "test:python" in line
+        "not reachable from `validate`" in line and "python:test" in line
         for line in run(root)
     )
 
@@ -234,9 +236,7 @@ def test_s4_11_5_7_a_gate_missing_audit_is_reported(repo) -> None:
     root = compliant(
         repo,
         **{
-            "Taskfile.yml": TASKFILE.replace(
-                "      - task: quality:lint:audit\n", "", 1
-            )
+            "Taskfile.yml": TASKFILE.replace("      - task: python:lint:audit\n", "", 1)
         },
     )
     assert any(
@@ -318,7 +318,7 @@ def test_s4_6_2_1_reserved_namespace_tasks_are_internal(repo) -> None:
             repo,
             **{
                 "Taskfile.yml": taskfile(
-                    includes=f"  quality: tasks/quality.yml\n  ci: tasks/ci.yml\n  {namespace}: tasks/{namespace}.yml\n"
+                    includes=f"  quality: tasks/quality.yml\n  python: tasks/python.yml\n  ci: tasks/ci.yml\n  {namespace}: tasks/{namespace}.yml\n"
                     if namespace != "quality"
                     else "  quality: tasks/quality.yml\n"
                 ),
@@ -334,7 +334,8 @@ def test_s4_6_2_1_reserved_namespace_tasks_are_internal(repo) -> None:
 
 def test_s4_6_2_1_a_public_docs_api_or_web_task_is_not_reported(repo) -> None:
     includes = "".join(
-        f"  {ns}: tasks/{ns}.yml\n" for ns in ("quality", "ci", "docs", "api", "web")
+        f"  {ns}: tasks/{ns}.yml\n"
+        for ns in ("quality", "python", "ci", "docs", "api", "web")
     )
     public = "version: '3'\ntasks:\n  dev:\n    desc: Dev\n    cmds: [true]\n"
     root = compliant(
@@ -354,7 +355,7 @@ def test_s4_6_2_1_an_include_must_exist(repo) -> None:
         repo,
         **{
             "Taskfile.yml": taskfile(
-                includes="  quality: tasks/quality.yml\n  ci: tasks/ci.yml\n  docs: tasks/docs.yml\n"
+                includes="  quality: tasks/quality.yml\n  python: tasks/python.yml\n  ci: tasks/ci.yml\n  docs: tasks/docs.yml\n"
             )
         },
     )
@@ -371,7 +372,7 @@ def test_s4_6_2_1_task_refs_resolve(repo) -> None:
         repo,
         **{
             "Taskfile.yml": taskfile(
-                includes="  quality: tasks/quality.yml\n  ci: tasks/ci.yml\n  self: tasks/self.yml\n"
+                includes="  quality: tasks/quality.yml\n  python: tasks/python.yml\n  ci: tasks/ci.yml\n  self: tasks/self.yml\n"
             ),
             "tasks__quality.yml": managed,
             "tasks__self.yml": OWNED,
@@ -395,7 +396,7 @@ def test_s4_6_2_1_no_cycles(repo) -> None:
         repo,
         **{
             "Taskfile.yml": taskfile(
-                includes="  quality: tasks/quality.yml\n  ci: tasks/ci.yml\n  other: tasks/other.yml\n"
+                includes="  quality: tasks/quality.yml\n  python: tasks/python.yml\n  ci: tasks/ci.yml\n  other: tasks/other.yml\n"
             ),
             "tasks__quality.yml": quality,
             "tasks__other.yml": other,
@@ -417,7 +418,7 @@ def test_s4_6_2_1_repository_owned_files_are_not_held_to_layout(repo) -> None:
         repo,
         **{
             "Taskfile.yml": taskfile(
-                includes="  quality: tasks/quality.yml\n  ci: tasks/ci.yml\n  self: tasks/self.yml\n"
+                includes="  quality: tasks/quality.yml\n  python: tasks/python.yml\n  ci: tasks/ci.yml\n  self: tasks/self.yml\n"
             ),
             "tasks__self.yml": OWNED,
         },

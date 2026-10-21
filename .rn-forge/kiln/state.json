@@ -65,7 +65,7 @@
     },
     "Taskfile.yml": {
       "begin_marker": null,
-      "content_hash": "a747e51abdcc9b04106aa8e9573e4e174cdbee5fa0093cb0096a8608435de842",
+      "content_hash": "73872bc1a807a2acf640367502445bf80fe413f59d02d3a5edd0e293a3d3cafa",
       "end_marker": null,
       "kind": "managed",
       "path": "Taskfile.yml"
@@ -217,16 +217,23 @@
       "kind": "managed",
       "path": "tasks/docs.yml"
     },
+    "tasks/python.yml": {
+      "begin_marker": null,
+      "content_hash": "c5b582f46cb4d9c547f6cebe059f31f1bca152ac25b9f8e097be90d735d1f634",
+      "end_marker": null,
+      "kind": "managed",
+      "path": "tasks/python.yml"
+    },
     "tasks/quality.yml": {
       "begin_marker": null,
-      "content_hash": "529cbdd6b5d0cdbbb4f11c1f3e867f299b6bb208c80cce1ce822c548f355fa5d",
+      "content_hash": "6d5823513cfd455286023cfdaee700cd169f51d86acb7475cd9a20b752a1803b",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/quality.yml"
     },
     "tasks/workspace.yml": {
       "begin_marker": null,
-      "content_hash": "18cadfc31b9328f7b24e6df3a636567cee4bc04fd8c47c83fb039091afa4ac8c",
+      "content_hash": "35964321f49b7841a5b28195de1f8ac3e7dd42d51d033ba9841285077237662f",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/workspace.yml"

@@ -45,13 +45,13 @@ In a workspace archetype, `build` and `version` take a package name after `--`
 `kiln doctor`'s `gate.shrunk`:
 
 ```text
-quality:lint:python          quality:lint:generated
-quality:lint:rn-forge-deps   quality:lint:imports
+python:lint                  quality:lint:generated
+quality:lint:rn-forge-deps   python:lint:imports
 quality:lint:task-layout     ci:lint:entrypoint
 ci:lint:pins                 ci:lint:hooks
-ci:lint:workflows            quality:lint:audit
+ci:lint:workflows            python:lint:audit
 quality:lint:toml
-quality:typecheck:python     quality:test:python
+python:typecheck             python:test
 ```
 
 plus, under `docs.profile = mkdocs`:
@@ -121,7 +121,7 @@ The assignment is normative:
 | `pyproject.toml` | **repo** — scaffolded once; tool settings are not kiln-owned | scaffolded |
 | `.editorconfig` | kiln | managed |
 | `.importlinter` | kiln | managed import-boundary contracts |
-| `Taskfile.yml`, `tasks/workspace.yml`, `tasks/quality.yml`, `tasks/docs.yml`, archetype namespace files (`tasks/api.yml`, `tasks/web.yml`); `tasks/ci.yml` for `python-lib` | kiln | managed |
+| `Taskfile.yml`, `tasks/workspace.yml`, `tasks/quality.yml`, `tasks/python.yml`, `tasks/docs.yml`, `tasks/ci.yml`, archetype namespace files (`tasks/api.yml`; `tasks/web.yml` and `tasks/node.yml` for `python-web-app`) | kiln | managed |
 | `tasks/self.yml` and any include declared `ownership = "repository"` | repo | seeded once, never rewritten |
 | `scripts/**` | **repo only** — a repo's own lints, wired via `[tasks.extra_refs]`. kiln and `cicd` generate nothing here ([ADR-0006](../adr/ADR-0006.md)) | repo |
 | `src/**`, `tests/**` | **repo** — scaffolded once; no doctor structure policing | scaffolded |
@@ -282,8 +282,8 @@ framework or CLI toolkit *directly* (`typer`, `jinja2`, `click`, `django`,
 archetype's internal boundaries, such as a workspace's packages being
 independent of each other, and — inside pykit — the library layering itself:
 `rn_forge.commons` may not import `rn_forge.cli` or `rn_forge.tooling`, and
-`rn_forge.cli` may not import `rn_forge.tooling`. `quality:lint:imports` runs
-it; `task validate` reaches it. ([ADR-0002](../adr/ADR-0002.md))
+`rn_forge.cli` may not import `rn_forge.tooling`. `python:lint:imports` runs it;
+`task validate` reaches it. ([ADR-0002](../adr/ADR-0002.md))
 
 A `python-lib` repository may set `import_contracts = "own"`; kiln then renders
 only the root packages, and the repository's own contracts are its boundary.
@@ -304,8 +304,8 @@ default on pushes to the default branch and on manual dispatch.
 A cold clone with go-task and the pinned language toolchain — `uv sync`, but no
 installed kiln, no `$RNF_HOME`, no bootstrap script — proves all of this:
 
-- ruff is clean and everything is ruff-formatted — `lint:python` asserts both,
-  and `format:python` applies them in the order that makes them agree
+- ruff is clean and everything is ruff-formatted — `python:lint` asserts both,
+  and `python:format` applies them in the order that makes them agree
   (`check --fix`, then `format`);
 - the archetype's dependency set is present, allowed, and pinned as a direct
   URL;
@@ -508,7 +508,7 @@ includes = [{ namespace = "self", taskfile = "tasks/self.yml" }]
 lint = ["self:check:dist"]
 
 [tasks.command_overrides]
-"quality:test:python" = "uv run pytest -q -p no:randomly"
+"python:test" = "uv run pytest -q -p no:randomly"
 
 # [[tasks.audit.ignore]]   # optional: a vulnerability the audit accepts; id and
 # id = "PYSEC-0000-0000"   # reason are both required, ids are unique

@@ -692,7 +692,7 @@ def test_s4_8_2_3_new_with_a_module(tmp_path: Path) -> None:
     assert ".parents[3] / " in read("src/rn_forge/demo/main.py")
     assert "import rn_forge.demo\n" in read("tests/test_package.py")
     assert "from rn_forge.demo.main import app" in read("tests/test_cli.py")
-    assert "--cov=rn_forge.demo " in read("tasks/quality.yml")
+    assert "--cov=rn_forge.demo " in read("tasks/python.yml")
     assert "::: rn_forge.demo" in read("docs/reference/python-api.md")
     written = tomllib.loads(read(".rn-forge/kiln/config.toml"))
     assert written["archetype"]["python-tool"]["module"] == "rn_forge.demo"

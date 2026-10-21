@@ -72,5 +72,5 @@ def test_s4_7_1_3_independence_covers_every_concern_module() -> None:
 
 def test_s4_7_1_4_task_lint_runs_lint_imports() -> None:
     """`task lint` runs `lint-imports`."""
-    lines = (REPO / "tasks" / "quality.yml").read_text(encoding="utf-8").splitlines()
+    lines = (REPO / "tasks" / "python.yml").read_text(encoding="utf-8").splitlines()
     assert "- uv run lint-imports" in [line.strip() for line in lines]

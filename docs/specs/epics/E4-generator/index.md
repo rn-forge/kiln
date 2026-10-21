@@ -20,7 +20,7 @@
 | [F4.9 — Seeded starter source](F4.9-seeded-starter-source.md) | Active | release-1 | 5 Closed |
 | [F4.10 — TOML formatting](F4.10-toml-formatting.md) | Closed | release-1 | 1 Closed |
 | [F4.11 — Generated CI enhancements](F4.11-ci-enhancements.md) | Active | release-1 | 6 Closed |
-| [F4.12 — The task files follow their owners](F4.12-task-files-by-owner.md) | Active | release-1 | 1 New · 3 Closed |
+| [F4.12 — The task files follow their owners](F4.12-task-files-by-owner.md) | Closed | release-1 | 4 Closed |
 
 <!-- END derived features -->
 

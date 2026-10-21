@@ -17,27 +17,27 @@ from rn_forge.kiln.modules.tasks.config import TasksConfig
 
 __all__ = ["render"]
 
-_WORKSPACE_TASKS = (
-    "workspace:install",
-    "workspace:version",
-    "workspace:build",
-    "workspace:clean",
-)
+_WORKSPACE_TASKS = ("workspace:clean",)
 _QUALITY_TASKS = (
-    "quality:lint:python",
     "quality:lint:markdown",
     "quality:lint:toml",
     "quality:lint:generated",
     "quality:lint:rn-forge-deps",
-    "quality:lint:imports",
     "quality:lint:task-layout",
-    "quality:lint:audit",
-    "quality:format:python",
     "quality:format:markdown",
     "quality:format:toml",
-    "quality:typecheck:python",
-    "quality:test:python",
-    "quality:test:coverage",
+)
+_PYTHON_TASKS = (
+    "python:install",
+    "python:lint",
+    "python:lint:imports",
+    "python:lint:audit",
+    "python:format",
+    "python:typecheck",
+    "python:test",
+    "python:test:coverage",
+    "python:build",
+    "python:version",
 )
 _CI_TASKS = (
     "ci:lint:entrypoint",
@@ -80,6 +80,7 @@ def render(config: KilnConfig) -> list[Artifact]:
     known = {
         *_WORKSPACE_TASKS,
         *_QUALITY_TASKS,
+        *_PYTHON_TASKS,
         *_CI_TASKS,
         *(_DOCS_TASKS if docs else ()),
         *(_NODE_TASKS if web_app else ()),
@@ -146,6 +147,11 @@ def render(config: KilnConfig) -> list[Artifact]:
             "tasks/quality.yml",
             ArtifactKind.MANAGED,
             engine.render("tasks/quality.yml.j2", context),
+        ),
+        Artifact(
+            "tasks/python.yml",
+            ArtifactKind.MANAGED,
+            engine.render("tasks/python.yml.j2", context),
         ),
     ]
     if docs:

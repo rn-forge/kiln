@@ -114,7 +114,7 @@ For a primitive whose shell line is wrong for this repo — and only then:
 
 ```toml
 [tasks.command_overrides]
-"quality:test:python" = "uv run pytest -q -p no:randomly"
+"python:test" = "uv run pytest -q -p no:randomly"
 ```
 
 If you find yourself wanting a third override, the archetype is probably wrong.

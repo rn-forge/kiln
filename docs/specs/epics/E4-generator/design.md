@@ -247,8 +247,9 @@ only when `ci.sonar`.
 | -- | -- | -- | -- | -- |
 | `.editorconfig`, `.gitignore` block, instructions block, `.rn-forge/kiln/standard.md` | ✔ | ✔ | ✔ | ✔ |
 | `Taskfile.yml` (10 root wrappers: `setup validate lint format typecheck test test:coverage build clean version`; public `docs:build docs:serve docs:nav docs:lint` only for `mkdocs`) | ✔ | ✔ | ✔ | ✔ |
-| `tasks/workspace.yml` (`install`, `build`, `version`, `clean`) | ✔ | ✔ | ✔ | ✔ |
-| `tasks/quality.yml` (internal `lint:python lint:generated lint:imports lint:task-layout format:python typecheck:python test:python test:coverage`) | ✔ | ✔ | ✔ (per-package `uv run --package`) | ✔ (api side) |
+| `tasks/workspace.yml` (internal `clean`) | ✔ | ✔ | ✔ | ✔ |
+| `tasks/quality.yml` (internal `lint:generated lint:rn-forge-deps lint:task-layout lint:markdown lint:toml format:markdown format:toml`) | ✔ | ✔ | ✔ | ✔ |
+| `tasks/python.yml` (internal `install lint lint:imports lint:audit format typecheck test test:coverage build version`) | ✔ | ✔ | ✔ (per-package `uv run --package`) | ✔ (api side) |
 | `tasks/ci.yml` (internal `lint:entrypoint lint:pins lint:hooks lint:workflows`; `python-lib` also the public CI-only pipeline tasks) | ✔ | ✔ | ✔ | ✔ |
 | `tasks/api.yml` (public `api:dev`; `api:migrate` for django) |  |  |  | ✔ |
 | `tasks/web.yml` (public `web:dev`) |  |  |  | ✔ (`-app` only) |
