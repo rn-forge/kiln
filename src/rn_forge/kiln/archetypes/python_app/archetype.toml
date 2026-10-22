@@ -13,13 +13,8 @@ forbidden_tools = [
 ]
 required_validate = [
     "python:lint",
-    "quality:lint:generated",
-    "quality:lint:rn-forge-deps",
+    "kiln:doctor",
     "python:lint:imports",
-    "quality:lint:task-layout",
-    "ci:lint:entrypoint",
-    "ci:lint:pins",
-    "ci:lint:hooks",
     "ci:lint:workflows",
     "python:lint:audit",
     "quality:lint:markdown",

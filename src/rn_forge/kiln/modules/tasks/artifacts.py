@@ -21,9 +21,6 @@ _WORKSPACE_TASKS = ("workspace:clean",)
 _QUALITY_TASKS = (
     "quality:lint:markdown",
     "quality:lint:toml",
-    "quality:lint:generated",
-    "quality:lint:rn-forge-deps",
-    "quality:lint:task-layout",
     "quality:format:markdown",
     "quality:format:toml",
 )
@@ -39,21 +36,9 @@ _PYTHON_TASKS = (
     "python:build",
     "python:version",
 )
-_CI_TASKS = (
-    "ci:lint:entrypoint",
-    "ci:lint:pins",
-    "ci:lint:hooks",
-    "ci:lint:workflows",
-)
+_CI_TASKS = ("ci:lint:workflows",)
 _NODE_TASKS = ("node:install", "node:lint", "node:test", "node:build")
-_DOCS_TASKS = (
-    "docs:build",
-    "docs:serve",
-    "docs:generate",
-    "docs:lint:site",
-    "docs:lint:structure",
-    "docs:lint:generate",
-)
+_DOCS_TASKS = ("docs:build", "docs:serve", "docs:generate")
 
 
 def _tasks_config(config: KilnConfig) -> TasksConfig:
@@ -152,6 +137,11 @@ def render(config: KilnConfig) -> list[Artifact]:
             "tasks/python.yml",
             ArtifactKind.MANAGED,
             engine.render("tasks/python.yml.j2", context),
+        ),
+        Artifact(
+            "tasks/kiln.yml",
+            ArtifactKind.MANAGED,
+            engine.render("tasks/kiln.yml.j2", context),
         ),
     ]
     if docs:

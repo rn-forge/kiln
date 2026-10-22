@@ -50,7 +50,7 @@ policy and docs checks are `kiln doctor`, which comes from the dev group, so
 
 Two of those are easy to trip by accident:
 
-- **`quality:lint:generated`** compares every managed file against
+- **`kiln:doctor`'s `generated` check** compares every managed file against
   `.rn-forge/kiln/state.json`. Until `kiln apply` exists that baseline is
   hand-written, so re-seed it after editing a managed file.
 - **`quality:lint:markdown`** runs mdformat over the tree, with

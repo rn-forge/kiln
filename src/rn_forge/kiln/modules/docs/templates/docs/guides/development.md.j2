@@ -27,8 +27,8 @@ task docs:serve  # live docs on http://127.0.0.1:8080
 
 `setup`, `validate`, `lint`, `format`, `typecheck`, `test`, `test:coverage`,
 `build`, `clean`, `version` — plus the public `docs:build`, `docs:serve`,
-`docs:generate`, `docs:lint`. Every other task is `internal: true` and exists to
-be composed by a wrapper. That list is fixed by kiln ADR-0007, and
+`docs:generate`. Every other task is `internal: true` and exists to be composed
+by a wrapper. That list is fixed by kiln ADR-0007, and
 `kiln doctor --only task-layout` fails if a gate stops being reachable from
 `validate`.
 

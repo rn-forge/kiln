@@ -56,7 +56,7 @@ def test_s4_2_1_every_python_archetype_manifest_loads(name: str) -> None:
     assert "rn-forge-commons" in archetype.dependencies.required
     assert set(archetype.dependencies.required) <= set(archetype.dependencies.allowed)
     assert "kiln" in archetype.forbidden_tools
-    assert "quality:lint:generated" in archetype.required_validate
+    assert "kiln:doctor" in archetype.required_validate
     assert len(builtin().for_archetype(archetype)) == len(archetype.modules)
 
 
@@ -253,11 +253,5 @@ def test_s4_12_1_6_required_validate_names_the_docs_tasks(tmp_path, name: str) -
     config.parent.mkdir(parents=True, exist_ok=True)
     config.write_text("\n".join(lines) + "\n", encoding="utf-8")
     required = archetypes.for_config(KilnConfig.load(tmp_path)).required_validate
-    for task in (
-        "docs:lint:site",
-        "docs:lint:structure",
-        "docs:lint:generate",
-        "docs:build",
-    ):
-        assert task in required
-    assert not [t for t in required if t.startswith("quality:lint:docs")]
+    assert "docs:build" in required
+    assert not [t for t in required if t.startswith(("docs:lint", "quality:lint:docs"))]

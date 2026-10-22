@@ -246,15 +246,16 @@ only when `ci.sonar`.
 | Artifact | app | tool | lib | web |
 | -- | -- | -- | -- | -- |
 | `.editorconfig`, `.gitignore` block, instructions block, `.rn-forge/kiln/standard.md` | ✔ | ✔ | ✔ | ✔ |
-| `Taskfile.yml` (10 root wrappers: `setup validate lint format typecheck test test:coverage build clean version`; public `docs:build docs:serve docs:nav docs:lint` only for `mkdocs`) | ✔ | ✔ | ✔ | ✔ |
+| `Taskfile.yml` (10 root wrappers: `setup validate lint format typecheck test test:coverage build clean version`; public `docs:build docs:serve docs:generate` only for `mkdocs`) | ✔ | ✔ | ✔ | ✔ |
 | `tasks/workspace.yml` (internal `clean`) | ✔ | ✔ | ✔ | ✔ |
-| `tasks/quality.yml` (internal `lint:generated lint:rn-forge-deps lint:task-layout lint:markdown lint:toml format:markdown format:toml`) | ✔ | ✔ | ✔ | ✔ |
+| `tasks/quality.yml` (internal `lint:markdown lint:toml format:markdown format:toml`) | ✔ | ✔ | ✔ | ✔ |
 | `tasks/python.yml` (internal `install lint lint:imports lint:audit format typecheck test test:coverage build version`) | ✔ | ✔ | ✔ (per-package `uv run --package`) | ✔ (api side) |
-| `tasks/ci.yml` (internal `lint:entrypoint lint:pins lint:hooks lint:workflows`; `python-lib` also the public CI-only pipeline tasks) | ✔ | ✔ | ✔ | ✔ |
+| `tasks/kiln.yml` (internal `doctor`: kiln's checks, run once by `lint`) | ✔ | ✔ | ✔ | ✔ |
+| `tasks/ci.yml` (internal `lint:workflows`; `python-lib` also the public CI-only pipeline tasks) | ✔ | ✔ | ✔ | ✔ |
 | `tasks/api.yml` (public `api:dev`; `api:migrate` for django) |  |  |  | ✔ |
 | `tasks/web.yml` (public `web:dev`) |  |  |  | ✔ (`-app` only) |
 | `tasks/node.yml` (internal `install lint test build` via `pnpm nx …`) |  |  |  | ✔ (`-app` only) |
-| `tasks/docs.yml` (`build serve generate lint`; internal `lint:site lint:structure lint:generate`) | d | d | d | d |
+| `tasks/docs.yml` (`build serve generate`) | d | d | d | d |
 | `.importlinter` contracts | ✔ | ✔ | ✔ | ✔ |
 | `README.md`, `CLAUDE.md`, `AGENTS.md` bodies (written once by `kiln new`); the kiln block in `CLAUDE.md` | ✔ | ✔ | ✔ | ✔ |
 | `docs/_areas.yml`, `docs/_structure.md`, `docs/adr/_structure.md`, seeded index pages, `mkdocs.yml` nav block | d | d | d | d |

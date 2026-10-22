@@ -33,6 +33,7 @@ TASK_KEYS = (
     "tasks/workspace.yml",
     "tasks/quality.yml",
     "tasks/python.yml",
+    "tasks/kiln.yml",
     "tasks/docs.yml",
 )
 CI_KEY = "tasks/ci.yml"
@@ -215,13 +216,19 @@ def test_s4_3_3_1_task_list_json_lists_exactly_the_ten_root_verbs(
     }
 
 
-def test_s4_3_3_1_an_mkdocs_repo_also_lists_the_four_docs_verbs(tmp_path: Path) -> None:
+def test_s4_3_3_1_an_mkdocs_repo_also_lists_the_three_docs_verbs(
+    tmp_path: Path,
+) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     result = _run_task(root, "--list", "--json")
     assert result.returncode == 0, result.stderr
     names = {entry["name"] for entry in json.loads(result.stdout)["tasks"]}
-    assert {"docs:build", "docs:serve", "docs:generate", "docs:lint"} <= names
+    assert {n for n in names if n.startswith("docs:")} == {
+        "docs:build",
+        "docs:serve",
+        "docs:generate",
+    }
     assert "docs:structure" not in names
 
 
@@ -846,9 +853,6 @@ def test_s6_4_7_4_release_task_always_publishes(tmp_path: Path) -> None:
     assert publish.count("continue") == 1  # only the published skip remains
 
 
-NEW_LINTS = ("ci-pins", "ci-hooks")
-ENTRYPOINT_REF = {"task": "ci:lint:entrypoint"}
-NEW_REFS = [{"task": f"ci:lint:{name.removeprefix('ci-')}"} for name in NEW_LINTS]
 WEB_CELLS = (
     ("python-web-api", ""),
     ("python-web-app", 'frontend = "angular"'),
@@ -865,67 +869,6 @@ def _ci_rendered(root: Path) -> dict[str, dict]:
     return yaml.safe_load((root / "tasks/ci.yml").read_text(encoding="utf-8"))["tasks"]
 
 
-def _assert_new_lints(root: Path) -> None:
-    root_tasks, _ = _rendered_yaml(root)
-    ci = _ci_rendered(root)
-    cmds = root_tasks["lint"]["cmds"]
-    at = cmds.index(ENTRYPOINT_REF)
-    assert cmds[at : at + 3] == [ENTRYPOINT_REF, *NEW_REFS]
-    for name in NEW_LINTS:
-        task = ci[f"lint:{name.removeprefix('ci-')}"]
-        assert task["internal"] is True
-        assert task["desc"].strip()
-        assert task["cmds"] == [f"uv run kiln doctor . --only {name}"]
-
-
-@pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_11_2_1_lint_runs_ci_pins_and_ci_hooks_after_ci_entrypoint(
-    tmp_path: Path, archetype: str
-) -> None:
-    root = _root(tmp_path, archetype)
-    cycle.apply(root, home=tmp_path / "home")
-    _assert_new_lints(root)
-
-
-@pytest.mark.parametrize(("archetype", "extra"), WEB_CELLS)
-def test_s4_11_2_1_web_archetypes_run_them_too(
-    tmp_path: Path, archetype: str, extra: str
-) -> None:
-    root = _web_root(tmp_path, archetype, "fastapi", extra=extra)
-    cycle.apply(root, home=tmp_path / "home")
-    _assert_new_lints(root)
-    if archetype == "python-web-app":
-        root_tasks, _ = _rendered_yaml(root)
-        assert root_tasks["lint"]["cmds"][-1] == {"task": "node:lint"}
-
-
-def test_s4_11_2_1_the_workspace_variant_runs_them_once_at_the_root(
-    tmp_path: Path,
-) -> None:
-    root = _root(tmp_path, "python-lib")
-    cycle.apply(root, home=tmp_path / "home")
-    ci = _ci_rendered(root)
-    for name in NEW_LINTS:
-        task_text = yaml.safe_dump(ci[f"lint:{name.removeprefix('ci-')}"])
-        assert "for:" not in task_text
-        assert "PACKAGE_DIRS" not in task_text
-
-
-@pytest.mark.parametrize("name", NEW_LINTS)
-def test_s4_11_2_2_command_overrides_accept_the_new_tasks(
-    tmp_path: Path, name: str
-) -> None:
-    short = name.removeprefix("ci-")
-    root = _root(
-        tmp_path,
-        extra=(
-            f'\n[tasks]\n[tasks.command_overrides]\n"ci:lint:{short}" = "echo hi"\n'
-        ),
-    )
-    cycle.apply(root, home=tmp_path / "home")
-    assert _ci_rendered(root)[f"lint:{short}"]["cmds"] == ["echo hi"]
-
-
 def test_s4_11_2_2_an_unknown_override_key_is_still_refused(tmp_path: Path) -> None:
     root = _root(
         tmp_path,
@@ -933,13 +876,6 @@ def test_s4_11_2_2_an_unknown_override_key_is_still_refused(tmp_path: Path) -> N
     )
     with pytest.raises(AppException, match="bogus"):
         TASKS.artifacts(KilnConfig.load(root), root)
-
-
-@pytest.mark.parametrize("name", archetypes.shipped())
-def test_s4_11_2_3_required_validate_gains_both(name: str) -> None:
-    required = archetypes.load(name).required_validate
-    assert "ci:lint:pins" in required
-    assert "ci:lint:hooks" in required
 
 
 @pytest.mark.parametrize(
@@ -957,33 +893,15 @@ def test_s4_11_2_4_task_layout_accepts_the_rendered_files(
     assert _codes(root) == []
 
 
-@pytest.mark.parametrize("name", NEW_LINTS)
-def test_s4_11_2_4_gate_shrunk_fires_when_lint_drops_a_new_task(
-    tmp_path: Path, name: str
-) -> None:
-    root = _root(tmp_path)
-    cycle.apply(root, home=tmp_path / "home")
-    taskfile = root / "Taskfile.yml"
-    short = name.removeprefix("ci-")
-    line = f"      - task: ci:lint:{short}\n"
-    text = taskfile.read_text(encoding="utf-8")
-    assert line in text
-    taskfile.write_text(text.replace(line, ""), encoding="utf-8")
-    findings = [f for f in TASKS.checks(KilnConfig.load(root), root)]
-    assert any(
-        f.code == "gate.shrunk" and f"ci:lint:{short}" in str(f) for f in findings
-    )
-
-
 WORKFLOWS_REF = {"task": "ci:lint:workflows"}
-HOOKS_REF = {"task": "ci:lint:hooks"}
+KILN_REF = {"task": "kiln:doctor"}
 
 
 def _assert_workflows_lint(root: Path) -> None:
     root_tasks, _ = _rendered_yaml(root)
     cmds = root_tasks["lint"]["cmds"]
-    at = cmds.index(HOOKS_REF)
-    assert cmds[at : at + 2] == [HOOKS_REF, WORKFLOWS_REF]
+    at = cmds.index(KILN_REF)
+    assert cmds[at : at + 2] == [KILN_REF, WORKFLOWS_REF]
     task = _ci_rendered(root)["lint:workflows"]
     assert task["internal"] is True
     assert task["desc"].strip()
@@ -991,7 +909,7 @@ def _assert_workflows_lint(root: Path) -> None:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_11_3_6_lint_runs_workflows_after_ci_hooks(
+def test_s4_11_3_6_lint_runs_workflows_after_kiln_doctor(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _root(tmp_path, archetype)
@@ -1006,9 +924,6 @@ def test_s4_11_3_6_web_archetypes_run_it_too(
     root = _web_root(tmp_path, archetype, "fastapi", extra=extra)
     cycle.apply(root, home=tmp_path / "home")
     _assert_workflows_lint(root)
-    if archetype == "python-web-app":
-        root_tasks, _ = _rendered_yaml(root)
-        assert root_tasks["lint"]["cmds"][-1] == {"task": "node:lint"}
 
 
 def test_s4_11_3_6_the_workspace_variant_runs_it_once_at_the_root(
@@ -1339,13 +1254,6 @@ def test_s4_11_6_2_lib_publish_uploads_the_sbom(tmp_path: Path) -> None:
     assert '--out-dir "dist/$name"' in build
 
 
-DOCS_LINT_CHECKS = {
-    "lint:site": "docs-site",
-    "lint:structure": "docs-structure",
-    "lint:generate": "docs-generate",
-}
-
-
 def _s4_12_1_root(tmp_path: Path, archetype: str, extra: str = "") -> Path:
     if archetype in ARCHETYPES:
         return _root(tmp_path, archetype)
@@ -1354,44 +1262,6 @@ def _s4_12_1_root(tmp_path: Path, archetype: str, extra: str = "") -> Path:
 
 def _load(root: Path, path: str) -> dict:
     return yaml.safe_load((root / path).read_text(encoding="utf-8"))
-
-
-def test_s4_12_1_1_docs_lint_runs_the_three_checks(tmp_path: Path) -> None:
-    root = _root(tmp_path)
-    cycle.apply(root, home=tmp_path / "home")
-    tasks = _load(root, "tasks/docs.yml")["tasks"]
-    assert "internal" not in tasks["lint"]
-    assert tasks["lint"]["desc"].strip()
-    assert tasks["lint"]["cmds"] == [
-        {"task": "lint:site"},
-        {"task": "lint:structure"},
-        {"task": "lint:generate"},
-    ]
-    for name, check in DOCS_LINT_CHECKS.items():
-        assert tasks[name]["internal"] is True
-        assert tasks[name]["desc"].strip()
-        assert tasks[name]["cmds"] == [f"uv run kiln doctor . --only {check}"]
-    assert "structure" not in tasks
-
-
-@pytest.mark.parametrize(
-    ("archetype", "extra"), [(a, "") for a in ARCHETYPES] + list(WEB_CELLS)
-)
-def test_s4_12_1_2_root_lint_calls_docs_lint_once(
-    tmp_path: Path, archetype: str, extra: str
-) -> None:
-    root = _s4_12_1_root(tmp_path, archetype, extra)
-    if archetype not in ARCHETYPES:
-        text = (root / ".rn-forge/kiln/config.toml").read_text(encoding="utf-8")
-        (root / ".rn-forge/kiln/config.toml").write_text(
-            text.replace('profile = "none"', 'profile = "mkdocs"'), encoding="utf-8"
-        )
-    cycle.apply(root, home=tmp_path / "home")
-    cmds = _load(root, "Taskfile.yml")["tasks"]["lint"]["cmds"]
-    assert cmds.count({"task": "docs:lint"}) == 1
-    at = cmds.index({"task": "docs:lint"})
-    assert cmds[at + 1] == {"task": "quality:lint:markdown"}
-    assert not any(c["task"].startswith("quality:lint:docs") for c in cmds)
 
 
 def test_s4_12_1_3_quality_yml_has_no_docs_task(tmp_path: Path) -> None:
@@ -1407,17 +1277,6 @@ def test_s4_12_1_4_without_mkdocs_lint_has_no_docs_ref(tmp_path: Path) -> None:
     cmds = _load(root, "Taskfile.yml")["tasks"]["lint"]["cmds"]
     assert not any(c["task"].startswith("docs:") for c in cmds)
     assert not (root / "tasks" / "docs.yml").exists()
-
-
-@pytest.mark.parametrize("key", [f"docs:{name}" for name in DOCS_LINT_CHECKS])
-def test_s4_12_1_5_overrides_take_the_new_keys(tmp_path: Path, key: str) -> None:
-    root = _root(
-        tmp_path,
-        extra=f'\n[tasks]\n[tasks.command_overrides]\n"{key}" = "echo hi"\n',
-    )
-    cycle.apply(root, home=tmp_path / "home")
-    tasks = _load(root, "tasks/docs.yml")["tasks"]
-    assert tasks[key.removeprefix("docs:")]["cmds"] == ["echo hi"]
 
 
 @pytest.mark.parametrize(
@@ -1450,24 +1309,9 @@ def test_s4_12_1_7_task_layout_accepts_the_rendered_files(
     assert _codes(root) == []
 
 
-def test_s4_12_1_7_gate_shrunk_fires_when_lint_drops_docs_lint(tmp_path: Path) -> None:
-    root = _root(tmp_path)
-    cycle.apply(root, home=tmp_path / "home")
-    taskfile = root / "Taskfile.yml"
-    line = "      - task: docs:lint\n"
-    text = taskfile.read_text(encoding="utf-8")
-    assert line in text
-    taskfile.write_text(text.replace(line, ""), encoding="utf-8")
-    findings = list(TASKS.checks(KilnConfig.load(root), root))
-    assert any(f.code == "gate.shrunk" and "docs:lint:site" in str(f) for f in findings)
-
-
 # S4.12.2 — the CI checks live in `ci.yml`, which renders for every archetype.
 
 CI_LINT_CHECKS = {
-    "lint:entrypoint": ["uv run kiln doctor . --only ci-entrypoint"],
-    "lint:pins": ["uv run kiln doctor . --only ci-pins"],
-    "lint:hooks": ["uv run kiln doctor . --only ci-hooks"],
     "lint:workflows": ["uv run zizmor --offline .github", "uv run actionlint"],
 }
 CI_PIPELINE_TASKS = {
@@ -1502,7 +1346,7 @@ def test_s4_12_2_1_every_archetype_renders_ci_yml(
 
 
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
-def test_s4_12_2_2_ci_yml_holds_the_four_checks(
+def test_s4_12_2_2_ci_yml_holds_the_workflows_check(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
     root = _s4_12_1_root(tmp_path, archetype, extra)
@@ -1531,26 +1375,6 @@ def test_s4_12_2_3_only_python_lib_has_the_pipeline_tasks(
         assert "vars" not in document
 
 
-@pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
-def test_s4_12_2_4_root_lint_calls_them_in_place(
-    tmp_path: Path, archetype: str, extra: str
-) -> None:
-    root = _s4_12_1_root(tmp_path, archetype, extra)
-    cycle.apply(root, home=tmp_path / "home")
-    cmds = _load(root, "Taskfile.yml")["tasks"]["lint"]["cmds"]
-    refs = [c["task"] for c in cmds]
-    at = refs.index("ci:lint:entrypoint")
-    assert refs[at : at + 4] == [
-        "ci:lint:entrypoint",
-        "ci:lint:pins",
-        "ci:lint:hooks",
-        "ci:lint:workflows",
-    ]
-    assert not any(
-        r.startswith("quality:lint:ci") or r == "quality:lint:workflows" for r in refs
-    )
-
-
 @pytest.mark.parametrize("key", [f"ci:{name}" for name in CI_LINT_CHECKS])
 def test_s4_12_2_5_overrides_take_the_new_keys(tmp_path: Path, key: str) -> None:
     root = _root(
@@ -1575,7 +1399,7 @@ def test_s4_12_2_5_old_keys_are_refused(tmp_path: Path, key: str) -> None:
 @pytest.mark.parametrize("name", archetypes.shipped())
 def test_s4_12_2_6_required_validate_names_the_ci_tasks(name: str) -> None:
     required = archetypes.load(name).required_validate
-    for task in ("entrypoint", "pins", "hooks", "workflows"):
+    for task in ("workflows",):
         assert f"ci:lint:{task}" in required
     assert not [
         r
@@ -1595,7 +1419,7 @@ def test_s4_12_2_7_task_layout_accepts_the_rendered_files(
     assert _codes(root) == []
 
 
-@pytest.mark.parametrize("name", ["entrypoint", "pins", "hooks", "workflows"])
+@pytest.mark.parametrize("name", ["workflows"])
 def test_s4_12_2_7_gate_shrunk_fires(tmp_path: Path, name: str) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
@@ -1667,7 +1491,11 @@ def test_s4_12_3_3_the_wrappers_call_node(tmp_path: Path) -> None:
     tasks = _load(root, "Taskfile.yml")["tasks"]
     setup = tasks["setup"]["cmds"]
     assert setup == [{"task": "python:install"}, {"task": "node:install"}]
-    for verb in ("lint", "test", "build"):
+    lint = tasks["lint"]["cmds"]
+    assert lint[lint.index({"task": "python:lint:imports"}) + 1] == {
+        "task": "node:lint"
+    }
+    for verb in ("test", "build"):
         assert tasks[verb]["cmds"][-1] == {"task": f"node:{verb}"}
     for task in tasks.values():
         for cmd in task["cmds"]:
@@ -1740,9 +1568,6 @@ PYTHON_TASKS = (
     "version",
 )
 QUALITY_STAYS = {
-    "lint:generated",
-    "lint:rn-forge-deps",
-    "lint:task-layout",
     "lint:markdown",
     "lint:toml",
     "format:markdown",
@@ -1900,4 +1725,177 @@ def test_s4_12_4_10_task_layout_accepts_the_rendered_files(
 ) -> None:
     root = _s4_12_1_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
+    assert _codes(root) == []
+
+
+# S4.12.6 — one `kiln:doctor` replaces the per-check tasks.
+
+LINT_ORDER = [
+    "python:lint",
+    "python:lint:imports",
+    "quality:lint:markdown",
+    "quality:lint:toml",
+    "kiln:doctor",
+    "ci:lint:workflows",
+    "python:lint:audit",
+]
+REMOVED_KEYS = [
+    "quality:lint:generated",
+    "quality:lint:rn-forge-deps",
+    "quality:lint:task-layout",
+    "ci:lint:entrypoint",
+    "ci:lint:pins",
+    "ci:lint:hooks",
+    "docs:lint:site",
+    "docs:lint:structure",
+    "docs:lint:generate",
+    "docs:lint",
+    "kiln:doctor",
+]
+KILN_DOCTOR_CMDS = [
+    {"cmd": "uv run kiln doctor .", "if": '[ -z "{{.KILN_DOCTOR_FULL}}" ]'},
+    {"cmd": "uv run kiln doctor . --full", "if": '[ -n "{{.KILN_DOCTOR_FULL}}" ]'},
+]
+
+
+@pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
+def test_s4_12_6_1_kiln_yml_holds_one_internal_doctor_task(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _s4_12_1_root(tmp_path, archetype, extra)
+    cycle.apply(root, home=tmp_path / "home")
+    document = _load(root, "tasks/kiln.yml")
+    assert set(document["tasks"]) == {"doctor"}
+    assert "vars" not in document
+    doctor = document["tasks"]["doctor"]
+    assert doctor["internal"] is True
+    assert doctor["desc"].strip()
+    assert doctor["cmds"] == KILN_DOCTOR_CMDS
+    assert _load(root, "Taskfile.yml")["includes"]["kiln"] == "tasks/kiln.yml"
+
+
+@pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
+def test_s4_12_6_2_root_lint_runs_in_the_exact_order(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _s4_12_1_root(tmp_path, archetype, extra)
+    expected = list(LINT_ORDER)
+    if archetype == "python-web-app":
+        expected.insert(2, "node:lint")
+    for profile in ("mkdocs", "none"):
+        config = root / ".rn-forge/kiln/config.toml"
+        text = config.read_text(encoding="utf-8")
+        config.write_text(
+            re.sub(r'profile = "\w+"', f'profile = "{profile}"', text),
+            encoding="utf-8",
+        )
+        cycle.apply(root, home=tmp_path / "home")
+        cmds = _load(root, "Taskfile.yml")["tasks"]["lint"]["cmds"]
+        assert cmds == [{"task": name} for name in expected]
+
+
+@pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
+def test_s4_12_6_3_doctor_runs_once(tmp_path: Path, archetype: str, extra: str) -> None:
+    if shutil.which("task") is None:
+        pytest.skip("task is not on PATH")
+    root = _s4_12_1_root(tmp_path, archetype, extra)
+    cycle.apply(root, home=tmp_path / "home")
+    without = _run_task(root, "--dry", "lint")
+    assert without.returncode == 0, without.stderr
+    out = without.stdout + without.stderr
+    assert out.count("uv run kiln doctor .") == 1
+    assert "--full" not in out
+    asked = _run_task(root, "--dry", "lint", "KILN_DOCTOR_FULL=1")
+    assert asked.returncode == 0, asked.stderr
+    out = asked.stdout + asked.stderr
+    assert out.count("uv run kiln doctor . --full") == 1
+    assert out.count("uv run kiln doctor .") == 1
+
+
+def test_s4_12_6_4_docs_yml_holds_the_three_verbs(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    tasks = _load(root, "tasks/docs.yml")["tasks"]
+    assert set(tasks) == {"build", "serve", "generate"}
+    assert not any("internal" in task for task in tasks.values())
+
+
+@pytest.mark.parametrize("key", REMOVED_KEYS)
+def test_s4_12_6_5_removed_keys_are_refused(tmp_path: Path, key: str) -> None:
+    root = _root(
+        tmp_path,
+        extra=f'\n[tasks]\n[tasks.command_overrides]\n"{key}" = "echo hi"\n',
+    )
+    with pytest.raises(AppException, match=re.escape(key)):
+        TASKS.artifacts(KilnConfig.load(root), root)
+
+
+def test_s4_12_6_6_an_include_cannot_take_kiln(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(
+        config.read_text(encoding="utf-8")
+        + '\n[tasks]\nincludes = [{ namespace = "kiln", taskfile = "tasks/mine.yml" }]\n',
+        encoding="utf-8",
+    )
+    assert "taskgraph.reserved-namespace" in _codes(root)
+
+
+def test_s4_12_6_7_kiln_doctor_must_be_internal(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    path = root / "tasks/kiln.yml"
+    text = path.read_text(encoding="utf-8")
+    head, _, tail = text.partition("  doctor:\n")
+    path.write_text(
+        head + "  doctor:\n" + tail.replace("    internal: true\n", "", 1),
+        encoding="utf-8",
+    )
+    assert "taskgraph.not-internal" in _codes(root)
+
+
+def test_s4_12_6_8_gate_shrunk_names_kiln_doctor(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    taskfile = root / "Taskfile.yml"
+    line = "      - task: kiln:doctor\n"
+    text = taskfile.read_text(encoding="utf-8")
+    assert line in text
+    taskfile.write_text(text.replace(line, ""), encoding="utf-8")
+    findings = list(TASKS.checks(KilnConfig.load(root), root))
+    assert any(f.code == "gate.shrunk" and "kiln:doctor" in str(f) for f in findings)
+
+
+@pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
+def test_s4_12_6_9_task_layout_accepts_the_rendered_files(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _s4_12_1_root(tmp_path, archetype, extra)
+    cycle.apply(root, home=tmp_path / "home")
+    assert _codes(root) == []
+
+
+@pytest.mark.parametrize("name", archetypes.shipped())
+def test_s4_12_6_10_required_validate_names_kiln_doctor(name: str) -> None:
+    required = archetypes.load(name).required_validate
+    assert required[required.index("python:lint") + 1] == "kiln:doctor"
+    for gone in (
+        "quality:lint:generated",
+        "quality:lint:rn-forge-deps",
+        "quality:lint:task-layout",
+        "ci:lint:entrypoint",
+        "ci:lint:pins",
+        "ci:lint:hooks",
+    ):
+        assert gone not in required
+
+
+def test_s4_12_6_11_without_mkdocs_kiln_yml_still_renders(tmp_path: Path) -> None:
+    root = _root(tmp_path, profile="none")
+    cycle.apply(root, home=tmp_path / "home")
+    assert (root / "tasks/kiln.yml").is_file()
+    cmds = _load(root, "Taskfile.yml")["tasks"]["lint"]["cmds"]
+    assert {"task": "kiln:doctor"} in cmds
+    assert not (root / "tasks/docs.yml").exists()
     assert _codes(root) == []

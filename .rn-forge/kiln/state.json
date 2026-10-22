@@ -51,21 +51,21 @@
     },
     ".rn-forge/kiln/standard.md": {
       "begin_marker": null,
-      "content_hash": "3192495ae09dbafd1877db0a30a899143f7f51ac13c4e47d9e6f2ab01e1d18e0",
+      "content_hash": "73c5b20007d0014322791905675faf3daa1bfc089ddd67137ef62c42e5112749",
       "end_marker": null,
       "kind": "managed",
       "path": ".rn-forge/kiln/standard.md"
     },
     "CLAUDE.md#rn-forge kiln": {
       "begin_marker": "<!-- BEGIN rn-forge kiln -->",
-      "content_hash": "0cfdee45c57a7abdfc6aad5a6bb52168ae206685d6a74229caea00bde86c9b30",
+      "content_hash": "5260a388d0e2566960fed955de4441a2b879aa858ff898a4d006e33e811309a6",
       "end_marker": "<!-- END rn-forge kiln -->",
       "kind": "block",
       "path": "CLAUDE.md"
     },
     "Taskfile.yml": {
       "begin_marker": null,
-      "content_hash": "73872bc1a807a2acf640367502445bf80fe413f59d02d3a5edd0e293a3d3cafa",
+      "content_hash": "e47474567e14b62135894f50212f19c90bb33b2c34375dd3d64051f5fe8155ce",
       "end_marker": null,
       "kind": "managed",
       "path": "Taskfile.yml"
@@ -205,17 +205,24 @@
     },
     "tasks/ci.yml": {
       "begin_marker": null,
-      "content_hash": "993f34ea6eaedefab27d78790a6b3bfcf2fd3f2f45859d62e8fce1294ea498de",
+      "content_hash": "36e04a1ff0fc53881a143798e011b25f41d4d5637d748c9b736353d906e9077c",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/ci.yml"
     },
     "tasks/docs.yml": {
       "begin_marker": null,
-      "content_hash": "f38ab9f74c2e4e1ec2b388739bac290e7eb25faef6d3db0d25bbc461f1fe9f5e",
+      "content_hash": "65796136d59ece2c211e416055d0bb4b81ec7d3c119c20ab11aa03e4e8c88af9",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/docs.yml"
+    },
+    "tasks/kiln.yml": {
+      "begin_marker": null,
+      "content_hash": "8bdc1674130cd01a3d0b2cf01e5a1a14302009836652eb6a4cdac26fa5f77fa3",
+      "end_marker": null,
+      "kind": "managed",
+      "path": "tasks/kiln.yml"
     },
     "tasks/python.yml": {
       "begin_marker": null,
@@ -226,7 +233,7 @@
     },
     "tasks/quality.yml": {
       "begin_marker": null,
-      "content_hash": "6d5823513cfd455286023cfdaee700cd169f51d86acb7475cd9a20b752a1803b",
+      "content_hash": "5d1ff9e3979cae3db5ee43a86902b7a4d372494636be17e9993a3ad865e5dae0",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/quality.yml"

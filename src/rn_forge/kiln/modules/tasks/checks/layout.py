@@ -37,7 +37,7 @@ CODE = "taskgraph"
 ROOT_TASKFILE = Path("Taskfile.yml")
 STATE_PATH = Path(".rn-forge/kiln/state.json")
 
-RESERVED_NAMESPACES = frozenset({"quality", "workspace", "node", "python"})
+RESERVED_NAMESPACES = frozenset({"quality", "workspace", "node", "python", "kiln"})
 """Namespaces whose tasks are inner implementation and must be `internal`."""
 
 _TASK_CALL = re.compile(r"(?:^|[;&|(]\s*|\s)task\s+([A-Za-z][\w:-]*)")

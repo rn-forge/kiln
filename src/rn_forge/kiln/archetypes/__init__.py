@@ -55,12 +55,7 @@ KILN_SOURCE = "git+https://github.com/rn-forge/kiln@feature/v1"
 _MANIFEST = "archetype.toml"
 _TOOLING = "rn-forge-tooling"
 
-_MKDOCS_VALIDATE = (
-    "docs:lint:site",
-    "docs:lint:structure",
-    "docs:lint:generate",
-    "docs:build",
-)
+_MKDOCS_VALIDATE = ("docs:build",)
 
 
 class Dependencies(StrictModel):

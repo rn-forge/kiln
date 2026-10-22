@@ -24,10 +24,10 @@ The public surface is ten root verbs:
 setup  validate  lint  format  typecheck  test  test:coverage  build  clean  version
 ```
 
-plus, under `docs.profile = mkdocs`, four public docs verbs:
+plus, under `docs.profile = mkdocs`, three public docs verbs:
 
 ```text
-docs:build  docs:serve  docs:generate  docs:lint
+docs:build  docs:serve  docs:generate
 ```
 
 `validate` calls `lint`, `typecheck`, `test`, and — for `mkdocs` — `docs:build`.
@@ -45,21 +45,14 @@ In a workspace archetype, `build` and `version` take a package name after `--`
 `kiln doctor`'s `gate.shrunk`:
 
 ```text
-python:lint                  quality:lint:generated
-quality:lint:rn-forge-deps   python:lint:imports
-quality:lint:task-layout     ci:lint:entrypoint
-ci:lint:pins                 ci:lint:hooks
-ci:lint:workflows            python:lint:audit
-quality:lint:toml
-python:typecheck             python:test
+python:lint            kiln:doctor
+python:lint:imports    ci:lint:workflows
+python:lint:audit      quality:lint:markdown
+quality:lint:toml      python:typecheck
+python:test
 ```
 
-plus, under `docs.profile = mkdocs`:
-
-```text
-docs:lint:site   docs:lint:structure   docs:lint:generate
-quality:lint:markdown   docs:build
-```
+plus, under `docs.profile = mkdocs`, `docs:build`.
 
 An archetype adds to this list; it never removes from it.
 
@@ -122,7 +115,7 @@ The assignment is normative:
 | `pyproject.toml` | **repo** — scaffolded once; tool settings are not kiln-owned | scaffolded |
 | `.editorconfig` | kiln | managed |
 | `.importlinter` | kiln | managed import-boundary contracts |
-| `Taskfile.yml`, `tasks/workspace.yml`, `tasks/quality.yml`, `tasks/python.yml`, `tasks/docs.yml`, `tasks/ci.yml`, archetype namespace files (`tasks/api.yml`; `tasks/web.yml` and `tasks/node.yml` for `python-web-app`) | kiln | managed |
+| `Taskfile.yml`, `tasks/workspace.yml`, `tasks/quality.yml`, `tasks/python.yml`, `tasks/kiln.yml`, `tasks/docs.yml`, `tasks/ci.yml`, archetype namespace files (`tasks/api.yml`; `tasks/web.yml` and `tasks/node.yml` for `python-web-app`) | kiln | managed |
 | `tasks/self.yml` and any include declared `ownership = "repository"` | repo | seeded once, never rewritten |
 | `scripts/**` | **repo only** — a repo's own lints, wired via `[tasks.extra_refs]`. kiln and `cicd` generate nothing here ([ADR-0006](../adr/ADR-0006.md)) | repo |
 | `src/**`, `tests/**` | **repo** — scaffolded once; no doctor structure policing | scaffolded |
@@ -296,12 +289,13 @@ runs `kiln apply` and never writes a generated file. `task validate` runs every
 render-free `kiln doctor` check: the six ownership checks — `generated`,
 `task-layout`, `ci-entrypoint`, `ci-pins`, `ci-hooks` and `docs-generate` — and
 the three that read repository-owned content, `rn-forge-deps`, `docs-structure`
-and `docs-site` ([ADR-0003](../adr/ADR-0003.md)). It also runs the workflow
-linters `zizmor` and `actionlint` (`lint:workflows`) and the dependency audit
+and `docs-site` ([ADR-0003](../adr/ADR-0003.md)). The root `lint` runs them
+once, through the internal task `kiln:doctor`. It also runs the workflow linters
+`zizmor` and `actionlint` (`lint:workflows`) and the dependency audit
 (`lint:audit`, which runs `pip-audit` against the lock and needs the network).
 `kiln doctor --full`, which adds a full render and diff, runs where the workflow
-asks for it: `lint` runs it when the `KILN_DOCTOR_FULL` task variable is set, by
-default on pushes to the default branch and on manual dispatch.
+asks for it: `kiln:doctor` runs it when the `KILN_DOCTOR_FULL` task variable is
+set, by default on pushes to the default branch and on manual dispatch.
 
 A cold clone with go-task and the pinned language toolchain — `uv sync`, but no
 installed kiln, no `$RNF_HOME`, no bootstrap script — proves all of this:

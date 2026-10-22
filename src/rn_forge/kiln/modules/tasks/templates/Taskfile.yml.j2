@@ -21,6 +21,7 @@ env:
 includes:
   quality: tasks/quality.yml
   python: tasks/python.yml
+  kiln: tasks/kiln.yml
 {% if docs %}  docs: tasks/docs.yml
 {% endif %}  workspace: tasks/workspace.yml
   ci: tasks/ci.yml
@@ -47,23 +48,17 @@ tasks:
 {% endif %}{% for ref in extra_refs.get("validate", []) %}      - task: [[ ref ]]
 {% endfor %}
   lint:
-    desc: Every lint — Python, TOML, generated-file drift, dependencies, imports, task layout, CI entrypoints, workflow security, dependency vulnerabilities, docs.
+    desc: Every lint — Python, imports, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs), workflow security, dependency vulnerabilities.
     cmds:
       - task: python:lint
-      - task: quality:lint:generated
-      - task: quality:lint:rn-forge-deps
       - task: python:lint:imports
-      - task: quality:lint:task-layout
-      - task: ci:lint:entrypoint
-      - task: ci:lint:pins
-      - task: ci:lint:hooks
-      - task: ci:lint:workflows
-      - task: python:lint:audit
-{% if docs %}      - task: docs:lint
+{% if web_app %}      - task: node:lint
 {% endif %}      - task: quality:lint:markdown
       - task: quality:lint:toml
-{% if web_app %}      - task: node:lint
-{% endif %}{% for ref in extra_refs.get("lint", []) %}      - task: [[ ref ]]
+      - task: kiln:doctor
+      - task: ci:lint:workflows
+      - task: python:lint:audit
+{% for ref in extra_refs.get("lint", []) %}      - task: [[ ref ]]
 {% endfor %}
   format:
     desc: Format Python code, TOML and Markdown prose in place.
