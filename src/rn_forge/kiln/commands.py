@@ -121,7 +121,7 @@ def doctor(
     json: bool = False,
     all: bool = False,
 ) -> None:
-    """Run the render-free checks over each of PATHS' committed files.
+    """Run every render-free check over each of PATHS' committed files.
 
     Prints each finding and raises `AppException` if any is an error. `--full`
     also reports every managed artifact and block a fresh render would change;
@@ -334,7 +334,7 @@ def init(
     `--yes`, the Git
     working tree must be clean (`init.dirty-tree`); it then writes
     `config.toml`, then applies, recording byte-identical managed files in the
-    baseline without rewriting them, then runs `kiln doctor`'s checks.
+    baseline without rewriting them, then runs `kiln doctor`'s ownership checks.
 
     A `python-lib` workspace is adopted with its members: unlike `new`, the
     `--config` layer may list `packages`, each an existing directory with a
@@ -708,7 +708,7 @@ def apply(
     """Reconcile the current repository's rendered artifacts (kiln ADR-0004).
 
     Plans first, refusing any `--force` value that does not name a reported,
-    blocking change; then applies, then runs `kiln doctor`'s checks.
+    blocking change; then applies, then runs `kiln doctor`'s ownership checks.
 
     Raises:
         AppException: A `--force` value names no reported change or a
@@ -1210,8 +1210,8 @@ def _validate_force(planned: generation.Plan, force_values: tuple[str, ...]) -> 
 
 
 def _fail_on_errors(root: Path) -> None:
-    """Run `kiln doctor`'s checks over *root*, raising if any is an error."""
-    findings = checks.run(root)
+    """Run `kiln doctor`'s ownership checks over *root*, raising if any is an error."""
+    findings = checks.run(root, scope="ownership")
     for finding in findings:
         console.error("{}", finding)
     errors = [finding for finding in findings if finding.is_error]

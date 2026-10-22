@@ -103,10 +103,11 @@ Every path kiln writes or reads has exactly one of these kinds:
 - Paths kiln neither writes nor reads (`.claude/**`, `.codex/**`, installed
   skills) are not kiln's and have no kind.
 
-Two owners never write the same bytes. After scaffolding, doctor checks only
-kiln-owned files and blocks for artifact conformance. It does not require seeded
-files to remain present or compare repository-owned content with scaffold
-defaults. Explicit project validation tasks still run their configured checks.
+Two owners never write the same bytes. After scaffolding, doctor checks
+kiln-owned files and blocks for artifact conformance, and the three rules over
+repository-owned content that §6 names. It does not require seeded files to
+remain present or compare repository-owned content with scaffold defaults.
+Explicit project validation tasks still run their configured checks.
 
 The assignment is normative:
 
@@ -291,12 +292,13 @@ only the root packages, and the repository's own contracts are its boundary.
 ## 5. What `task validate` proves
 
 CI runs the pinned kiln read-only ([ADR-0006](../adr/ADR-0006.md)): it never
-runs `kiln apply` and never writes a generated file. `task validate` runs
-`kiln doctor`'s ownership checks — `generated`, `task-layout`, `ci-entrypoint`,
-`ci-pins`, `ci-hooks` and `docs-generate` — the workflow linters `zizmor` and
-`actionlint` (`lint:workflows`), the dependency audit (`lint:audit`, which runs
-`pip-audit` against the lock and needs the network), and the quality checks
-`rn-forge-deps`, `docs-structure` and `docs-site` through their own lint tasks.
+runs `kiln apply` and never writes a generated file. `task validate` runs every
+render-free `kiln doctor` check: the six ownership checks — `generated`,
+`task-layout`, `ci-entrypoint`, `ci-pins`, `ci-hooks` and `docs-generate` — and
+the three that read repository-owned content, `rn-forge-deps`, `docs-structure`
+and `docs-site` ([ADR-0003](../adr/ADR-0003.md)). It also runs the workflow
+linters `zizmor` and `actionlint` (`lint:workflows`) and the dependency audit
+(`lint:audit`, which runs `pip-audit` against the lock and needs the network).
 `kiln doctor --full`, which adds a full render and diff, runs where the workflow
 asks for it: `lint` runs it when the `KILN_DOCTOR_FULL` task variable is set, by
 default on pushes to the default branch and on manual dispatch.
@@ -337,7 +339,15 @@ kiln is modules under one contract ([ADR-0001](../adr/ADR-0001.md)): `core`,
 `python`, `docs`, `tasks`, `cicd` and `instructions`, each owning its config
 section, its `kiln new` options, its `artifacts()` and its `checks()`.
 `kiln doctor` collects every module's `Finding` rows into one report; a module's
-render-free checks are the ones `kiln doctor` runs by default.
+render-free checks are the ones `kiln doctor` runs by default. Six of the nine
+are **ownership** checks: they read only kiln-owned files and blocks, and
+`kiln new`, `kiln init`, `kiln apply` and `kiln config` fail on them alone.
+Three read repository-owned content against a rule this standard defines and
+kiln supplies the means to meet: `rn-forge-deps` (the dependency set, §3;
+`kiln config upgrade` and the scaffold), and `docs-structure` and `docs-site`
+(the area model and the links; `task docs:generate`). `kiln doctor` runs all
+nine, so a broken link or a dependency edit fails `task validate` and never a
+regeneration.
 
 | Code prefix | Check |
 | -- | -- |

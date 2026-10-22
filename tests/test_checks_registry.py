@@ -70,7 +70,7 @@ def test_running_one_check_is_a_subset_of_running_all(repo) -> None:
     assert set(only).issubset(set(every))
 
 
-def test_quality_checks_run_only_when_named(repo) -> None:
+def test_quality_checks_run_by_default(repo) -> None:
     root = repo(**{"pyproject.toml": "[project]\nname = 'x'\n"})
     assert [c.name for c in checks.CHECKS if c.scope == "quality"] == [
         "rn-forge-deps",
@@ -78,4 +78,7 @@ def test_quality_checks_run_only_when_named(repo) -> None:
         "docs-site",
     ]
     assert checks.run(root, only="rn-forge-deps")
-    assert not [f for f in checks.run(root) if f.code.startswith("deps.")]
+    assert [f for f in checks.run(root) if f.code.startswith("deps.")]
+    assert not [
+        f for f in checks.run(root, scope="ownership") if f.code.startswith("deps.")
+    ]

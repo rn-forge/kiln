@@ -140,6 +140,15 @@ def _break_site(root: Path) -> None:
     _edit(root, "docs/index.md", lambda text: text + "\n[x](missing.md)\n")
 
 
+def _break_quality(root: Path) -> None:
+    _break_site(root)
+    _edit(
+        root,
+        "pyproject.toml",
+        lambda text: re.sub(r'\s*"rn-forge-commons[^"]*",?', "", text),
+    )
+
+
 BREAKS: dict[str, tuple[Callable[[Path], None], str]] = {
     "generated": (_break_generated, "artifact."),
     "rn-forge-deps": (_break_deps, "deps."),
@@ -174,8 +183,9 @@ def test_s4_6_1_1_each_check_reports_only_its_own_code(copy: Path, name: str) ->
         str(f) for f in own
     ]
     if name in QUALITY:
-        # a quality check runs only when named
-        assert checks.run(copy) == []
+        # an ownership run skips a quality check
+        assert checks.run(copy, scope="ownership") == []
+        assert any(f.is_error and f.code.startswith(prefix) for f in checks.run(copy))
 
     for other in checks.names():
         if other != name and not (name in DOCS and other in DOCS):
@@ -275,14 +285,12 @@ def test_s4_6_5_2_repository_owned_pyproject_and_layout_are_silent(
     assert checks.run(copy) == []
 
 
-def test_s4_6_5_3_quality_checks_run_only_when_named(copy: Path) -> None:
-    _break_site(copy)
-    _edit(
-        copy,
-        "pyproject.toml",
-        lambda text: re.sub(r'\s*"rn-forge-commons[^"]*",?', "", text),
-    )
-    assert checks.run(copy) == []
+def test_s4_6_5_3_quality_checks_run_by_default(copy: Path) -> None:
+    _break_quality(copy)
+    assert checks.run(copy, scope="ownership") == []
+    assert {"docs.broken-link", "deps.required-missing"} <= {
+        f.code for f in checks.run(copy)
+    }
     assert checks.run(copy, only="docs-site")
     assert checks.run(copy, only="rn-forge-deps")
 
@@ -440,3 +448,61 @@ def test_s4_6_3_5_warnings_alone_exit_0(
 ) -> None:
     _warn_only(monkeypatch, "warned")
     commands.doctor([fleet / "clean", fleet / "warned"], all=True)
+
+
+def test_s4_12_5_1_bare_doctor_reports_the_quality_checks(
+    copy: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _break_quality(copy)
+    assert {"docs.broken-link", "deps.required-missing"} <= {
+        f.code for f in checks.run(copy)
+    }
+    with pytest.raises(AppException):
+        commands.doctor([copy], json=True)
+    payload: dict[str, Any] = json.loads(capsys.readouterr().out)
+    codes = {item["code"] for item in payload["findings"]}
+    assert {"docs.broken-link", "deps.required-missing"} <= codes
+
+
+def test_s4_12_5_2_the_ownership_scope_skips_them(copy: Path) -> None:
+    _break_quality(copy)
+    assert checks.run(copy, scope="ownership") == []
+    _break_generated(copy)
+    assert "artifact.drift" in {f.code for f in checks.run(copy, scope="ownership")}
+
+
+def test_s4_12_5_3_apply_does_not_fail_on_them(copy: Path) -> None:
+    _break_quality(copy)
+    commands._fail_on_errors(copy)
+    commands.apply()
+    _break_generated(copy)
+    with pytest.raises(AppException, match=r"check\(s\) failed"):
+        commands._fail_on_errors(copy)
+
+
+def test_s4_12_5_4_full_includes_them_and_the_render_findings(
+    copy: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _edit(
+        copy,
+        ".rn-forge/kiln/config.toml",
+        lambda text: text.replace("sonar = true", "sonar = false"),
+    )
+    _break_quality(copy)
+    with pytest.raises(AppException):
+        commands.doctor([copy], full=True, json=True)
+    payload: dict[str, Any] = json.loads(capsys.readouterr().out)
+    codes = {item["code"] for item in payload["findings"]}
+    assert {"artifact.stale", "docs.broken-link", "deps.required-missing"} <= codes
+
+
+def test_s4_12_5_5_all_includes_them(
+    fleet: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _break_site(fleet / "clean")
+    with pytest.raises(AppException):
+        commands.doctor([fleet / "clean", fleet / "warned"], all=True, json=True)
+    payload: dict[str, Any] = json.loads(capsys.readouterr().out)
+    first, second = payload["repos"]
+    assert "docs.broken-link" in {item["code"] for item in first["findings"]}
+    assert second["findings"] == []

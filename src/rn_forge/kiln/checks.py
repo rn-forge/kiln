@@ -32,9 +32,10 @@ CheckFunction = Callable[[KilnConfig, Path], list[Finding]]
 class Check:
     """One render-free check, and the module that owns it.
 
-    An `ownership` check reads only kiln-owned files and blocks and runs by
-    default. A `quality` check reads repository-owned content and runs only
-    when `--only` names it.
+    An `ownership` check reads only kiln-owned files and blocks;
+    `kiln new`, `kiln init`, `kiln apply` and `kiln config` fail on these
+    alone. A `quality` check reads repository-owned content against a rule the
+    standard defines; `kiln doctor` runs it with the rest.
     """
 
     name: str
@@ -62,8 +63,13 @@ def names() -> tuple[str, ...]:
     return tuple(check.name for check in CHECKS)
 
 
-def run(root: Path, only: str | None = None) -> list[Finding]:
-    """Run every ownership check over *root*, or just the one *only* names.
+def run(
+    root: Path,
+    only: str | None = None,
+    scope: Literal["ownership"] | None = None,
+) -> list[Finding]:
+    """Run every check over *root*, only the ownership checks when *scope* says
+    so, or just the one *only* names.
 
     Findings come in the order of the archetype's `modules`; checks of a module
     it does not list follow, in registry order.
@@ -71,7 +77,7 @@ def run(root: Path, only: str | None = None) -> list[Finding]:
     Raises:
         AppException: *only* names no check, or *root*'s config cannot be read.
     """
-    selected: Sequence[Check] = [c for c in CHECKS if c.scope == "ownership"]
+    selected: Sequence[Check] = [c for c in CHECKS if scope is None or c.scope == scope]
     if only is not None:
         selected = [check for check in CHECKS if check.name == only]
         if not selected:

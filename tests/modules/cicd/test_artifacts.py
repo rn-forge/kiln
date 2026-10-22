@@ -1627,7 +1627,7 @@ def test_s4_11_4_7_the_file_passes_the_checks(
             )
     cycle.apply(root, home=tmp_path / "home")
     assert (root / DEPENDABOT).is_file()
-    assert checks.run(root) == []
+    assert checks.run(root, scope="ownership") == []
     assert _actions(root, tmp_path)[DEPENDABOT] is Action.UNCHANGED
 
 
