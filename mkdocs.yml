@@ -105,6 +105,7 @@ nav:
         - F6.4 — `python-lib` renders pykit's discovered workspace pipeline: specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md
         - F6.5 — Rebuild an existing repository on kiln, and port it: specs/epics/E6-rebuild-the-repos/F6.5-rebuild-and-port.md
         - F6.6 — `kiln init` leaves the gate runnable: specs/epics/E6-rebuild-the-repos/F6.6-init-leaves-gate-runnable.md
+        - F6.7 — kiln ships the CI planner as `kiln-devops`: specs/epics/E6-rebuild-the-repos/F6.7-kiln-devops.md
       - E7 — pykit releases, and the pin flip:
         - specs/epics/E7-pykit-release-pin-flip/index.md
         - F7.1 — kiln renders and takes pykit by release tag: specs/epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md
