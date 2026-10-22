@@ -62,16 +62,16 @@ repository is written here in full, as this repository's own;
 
 ## Checks
 
-`kiln doctor --only docs-structure` enforces kiln's docs policy: every
+`kiln doctor`'s `docs-structure` check enforces kiln's docs policy: every
 non-optional area in `docs/_areas.yml` exists and has both a `_structure.md` and
 an `index.md`; ADRs are named `ADR-<nnnn>.md`, numbered without gaps, and carry
 a valid `**Status:**` line; every relative link resolves, including anchors; no
 shipped page links to a `_*.md` file; and `CLAUDE.md`/`AGENTS.md` both point at
 this file and at `docs/index.md`.
 
-`kiln doctor --only docs-generate` checks that the derived regions — the nav,
-the spec board, the epic list and each release's Scope table — are current, and
-that every epic, feature and release page's metadata table follows
+`kiln doctor`'s `docs-generate` check confirms that the derived regions — the
+nav, the spec board, the epic list and each release's Scope table — are current,
+and that every epic, feature and release page's metadata table follows
 `specs/_structure.md` and that no epic's or feature's state contradicts its
 work.
 

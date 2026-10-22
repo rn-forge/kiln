@@ -15,6 +15,7 @@ from rn_forge.tooling.generation import Action, ArtifactKind, StateEntry
 from rn_forge.tooling.state import StateStore
 
 from rn_forge.kiln import checks
+from rn_forge.kiln.modules.core.checks import generated
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import CORE, cycle, umbrella
 from rn_forge.kiln.modules.core.cycle import CycleRefused
@@ -193,7 +194,7 @@ def test_s4_2_3_a_freshly_applied_repo_passes_the_generated_check(
     root: Path, home: Path
 ) -> None:
     cycle.apply(root, home=home)
-    assert checks.run(root, only="generated") == []
+    assert generated.check(KilnConfig.load(root), root) == []
 
 
 def test_s4_2_3_a_second_apply_is_unchanged_and_leaves_state_byte_identical(
@@ -307,7 +308,9 @@ def test_s4_2_3_core_checks_report_what_doctor_only_generated_reports(
     (root / ".editorconfig").write_text("root = false\n", encoding="utf-8")
     (root / ".gitignore").write_text("", encoding="utf-8")
 
-    from_doctor = [str(finding) for finding in checks.run(root, only="generated")]
+    from_doctor = [
+        str(finding) for finding in generated.check(KilnConfig.load(root), root)
+    ]
     from_core = [str(finding) for finding in CORE.checks(KilnConfig.load(root), root)]
     assert len(from_doctor) == 2
     assert from_core == from_doctor

@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from rn_forge.kiln import checks
+from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs.checks import site
 from rn_forge.kiln.modules.docs.site import check_site
 
@@ -42,19 +43,23 @@ def _codes(root: Path) -> list[str]:
 def test_s11_1_2_1_a_root_link_into_a_package_page_resolves(repo) -> None:
     root = _repo(repo, "# Root\n\n[usage](alpha/index.md#usage)\n")
     assert check_site(root, packages=PACKAGES) == []
-    assert checks.run(root, only=site.NAME) == []
+    assert site.check(KilnConfig.load(root), root) == []
 
 
 def test_s11_1_2_2_a_root_link_to_a_missing_package_page_is_broken(repo) -> None:
     root = _repo(repo, "# Root\n\n[x](alpha/missing.md)\n")
     assert _codes(root) == ["docs.broken-link"]
-    assert [f.code for f in checks.run(root, only=site.NAME)] == ["docs.broken-link"]
+    assert [f.code for f in site.check(KilnConfig.load(root), root)] == [
+        "docs.broken-link"
+    ]
 
 
 def test_s11_1_2_2_a_root_link_to_a_missing_package_anchor_is_broken(repo) -> None:
     root = _repo(repo, "# Root\n\n[x](alpha/index.md#nope)\n")
     assert _codes(root) == ["docs.broken-anchor"]
-    assert [f.code for f in checks.run(root, only=site.NAME)] == ["docs.broken-anchor"]
+    assert [f.code for f in site.check(KilnConfig.load(root), root)] == [
+        "docs.broken-anchor"
+    ]
 
 
 @pytest.mark.parametrize("link", ["../../beta/docs/index.md", "../../../docs/index.md"])
@@ -97,7 +102,9 @@ def test_s11_1_2_5_only_a_python_lib_has_package_sites(repo) -> None:
         config.read_text(encoding="utf-8").replace("python-lib", "python-app"),
         encoding="utf-8",
     )
-    assert [f.code for f in checks.run(root, only=site.NAME)] == ["docs.broken-link"]
+    assert [f.code for f in site.check(KilnConfig.load(root), root)] == [
+        "docs.broken-link"
+    ]
 
 
 EXCLUDE = "exclude_docs: |\n  _*\n  plans/archive/\n"
@@ -122,7 +129,7 @@ def _excluding_repo(repo, old: str = "", new: str = "", index: str = "# Root\n")
 def test_s11_1_3_1_a_broken_link_in_an_excluded_page_is_not_reported(repo) -> None:
     root = _excluding_repo(repo, old="[x](gone.md)\n")
     assert check_site(root) == []
-    assert checks.run(root, only=site.NAME) == []
+    assert site.check(KilnConfig.load(root), root) == []
 
 
 def test_s11_1_3_1_the_same_link_in_a_shipping_page_is_broken(repo) -> None:

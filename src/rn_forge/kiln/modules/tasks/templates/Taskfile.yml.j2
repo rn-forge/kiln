@@ -2,8 +2,8 @@
 version: "3"
 
 # The only entrypoint. Nobody — human, agent or CI — invokes `uv`, `pytest`,
-# `ruff`, `pyright`, `mkdocs` or `kiln` directly; `kiln doctor --only ci-entrypoint`
-# enforces that for every workflow file.
+# `ruff`, `pyright`, `mkdocs` or `kiln` directly; `kiln doctor`'s `ci-entrypoint`
+# check enforces that for every workflow file.
 #
 # This file holds wrappers only: every task below is a list of calls into
 # tasks/*.yml. Anything that shells out lives in the namespace file that owns

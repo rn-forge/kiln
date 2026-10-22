@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from rn_forge.kiln import checks
+from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs import generate
 from rn_forge.kiln.modules.docs.checks import derived
 
@@ -31,13 +32,15 @@ def _site(repo, **extra: str):
 
 
 def test_s13_1_1_1_a_stale_nav_is_a_finding(repo) -> None:
-    findings = checks.run(_site(repo), only=derived.NAME)
+    root = _site(repo)
+    findings = derived.check(KilnConfig.load(root), root)
     assert [f.code for f in findings] == ["docs.nav-stale"]
     assert "task docs:generate" in findings[0].message
 
 
 def test_s13_1_1_1_a_repo_without_an_mkdocs_site_is_not_checked(repo) -> None:
-    assert checks.run(repo(docs="none"), only=derived.NAME) == []
+    root = repo(docs="none")
+    assert derived.check(KilnConfig.load(root), root) == []
 
 
 TABLE = "|  |  |\n| -- | -- |\n"
@@ -154,7 +157,8 @@ def test_s13_2_2_metadata_findings_are_reported_alongside_stale_regions(repo) ->
 
 
 def test_s13_2_2_the_check_reports_the_regions(repo) -> None:
-    assert [f.code for f in checks.run(_specs(repo), only=derived.NAME)][:1] == [
+    root = _specs(repo)
+    assert [f.code for f in derived.check(KilnConfig.load(root), root)][:1] == [
         "docs.board-stale"
     ]
 
@@ -184,13 +188,13 @@ def test_s11_1_1_2_the_nav_check_passes_python_lib_packages(repo) -> None:
     )
     assert generate.generate(root, ("packages/a",))[0] == [root / "mkdocs.yml"]
     assert "!include packages/a/mkdocs.yml" in (root / "mkdocs.yml").read_text()
-    assert checks.run(root, only=derived.NAME) == []
+    assert derived.check(KilnConfig.load(root), root) == []
 
 
 def test_s11_1_1_4_a_web_archetypes_api_dir_is_not_a_package_site(repo) -> None:
     root = _lib(repo, "python-web-api", "")
     generate.generate(root)
-    assert checks.run(root, only=derived.NAME) == []
+    assert derived.check(KilnConfig.load(root), root) == []
     assert "!include" not in (root / "mkdocs.yml").read_text()
 
 

@@ -18,6 +18,7 @@ from rn_forge.commons.findings import Finding, Severity
 from rn_forge.commons.runtime.console import OutputMode, console
 
 from rn_forge.kiln import checks, commands, doctor
+from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.core.checks.generated import digest
 
@@ -46,6 +47,12 @@ def _load(relative: str) -> ModuleType:
     sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
+
+
+def _run_one(root: Path, name: str) -> list[Finding]:
+    return next(c for c in checks.CHECKS if c.name == name).run(
+        KilnConfig.load(root), root
+    )
 
 
 @pytest.fixture
@@ -178,7 +185,7 @@ def test_s4_6_1_1_each_check_reports_only_its_own_code(copy: Path, name: str) ->
     assert checks.run(copy) == []
     breaker(copy)
 
-    own = checks.run(copy, only=name)
+    own = _run_one(copy, name)
     assert any(f.is_error and f.code.startswith(prefix) for f in own), [
         str(f) for f in own
     ]
@@ -189,7 +196,7 @@ def test_s4_6_1_1_each_check_reports_only_its_own_code(copy: Path, name: str) ->
 
     for other in checks.names():
         if other != name and not (name in DOCS and other in DOCS):
-            errors = [f for f in checks.run(copy, only=other) if f.is_error]
+            errors = [f for f in _run_one(copy, other) if f.is_error]
             assert errors == [], (other, [str(f) for f in errors])
 
 
@@ -210,11 +217,6 @@ def test_s4_6_1_2_full_reports_a_stale_artifact(copy: Path) -> None:
     assert changed <= {f.path for f in stale}
     with pytest.raises(AppException):
         commands.doctor([copy], full=True)
-
-
-def test_s4_6_1_2_full_and_only_cannot_be_combined(copy: Path) -> None:
-    with pytest.raises(AppException, match="--only and --full"):
-        commands.doctor([copy], only="generated", full=True)
 
 
 def test_s4_6_1_2_warnings_alone_exit_0(
@@ -291,8 +293,8 @@ def test_s4_6_5_3_quality_checks_run_by_default(copy: Path) -> None:
     assert {"docs.broken-link", "deps.required-missing"} <= {
         f.code for f in checks.run(copy)
     }
-    assert checks.run(copy, only="docs-site")
-    assert checks.run(copy, only="rn-forge-deps")
+    assert _run_one(copy, "docs-site")
+    assert _run_one(copy, "rn-forge-deps")
 
 
 def test_s4_6_5_4_a_sibling_under_rn_forge_is_ignored(copy: Path) -> None:

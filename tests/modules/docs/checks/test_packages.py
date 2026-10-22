@@ -91,7 +91,7 @@ def test_s11_2_3_1_each_code_has_a_fixture_reporting_only_it(repo, code: str) ->
 
 def test_s11_2_3_1_docs_structure_runs_the_package_checks(repo) -> None:
     root = _lib(repo, **CASES["docs.package-missing-index"])
-    found = [f.code for f in checks.run(root, only=structure.NAME)]
+    found = [f.code for f in structure.check(KilnConfig.load(root), root)]
     assert "docs.package-missing-index" in found
 
 
@@ -177,7 +177,7 @@ def test_s6_1_10_2_docs_site_runs_on_a_tagged_mkdocs(repo) -> None:
             "docs/index.md": "# Root\n",
         },
     )
-    checks.run(root, only=site.NAME)
+    site.check(KilnConfig.load(root), root)
 
 
 def test_s6_1_10_3_a_tagged_scalar_in_the_nav_is_not_a_page(tmp_path: Path) -> None:

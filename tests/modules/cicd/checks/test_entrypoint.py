@@ -11,6 +11,8 @@ from pathlib import Path
 import pytest
 
 from rn_forge.kiln import checks
+from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.cicd.checks import entrypoint
 
 CLEAN = """
 jobs:
@@ -24,7 +26,7 @@ jobs:
 
 
 def run(root: Path) -> list[str]:
-    return [str(f) for f in checks.run(root, only="ci-entrypoint")]
+    return [str(f) for f in entrypoint.check(KilnConfig.load(root), root)]
 
 
 def workflow(repo, body: str) -> Path:
@@ -62,7 +64,7 @@ def test_a_directly_invoked_tool_is_reported(repo, body: str, tool: str) -> None
 
 def test_a_finding_carries_its_line(repo) -> None:
     root = workflow(repo, "jobs:\n  a:\n    steps:\n      - run: uv sync\n")
-    findings = checks.run(root, only="ci-entrypoint")
+    findings = entrypoint.check(KilnConfig.load(root), root)
     assert [f.line for f in findings] == [4]
 
 

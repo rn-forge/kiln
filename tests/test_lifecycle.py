@@ -111,6 +111,17 @@ def test_s4_5_5_4_doctor_checks_the_repository(
     assert "kiln.home" not in captured.out + captured.err
 
 
+def test_s4_12_7_1_only_is_not_a_doctor_option(kiln_cli: CliApp, repo: Path) -> None:
+    assert kiln_cli.run(["doctor", str(repo), "--only", "generated"]) != 0
+
+
+def test_s4_12_7_2_doctor_help_lists_no_only(
+    kiln_cli: CliApp, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert kiln_cli.run(["doctor", "--help"]) == 0
+    assert "--only" not in capsys.readouterr().out
+
+
 def test_s4_5_5_root_config_carries_the_lifecycle_table() -> None:
     config = RootConfig.model_validate(
         {

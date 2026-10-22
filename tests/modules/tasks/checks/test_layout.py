@@ -13,6 +13,8 @@ from pathlib import Path
 import pytest
 
 from rn_forge.kiln import checks, commands
+from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.tasks.checks import layout
 from rn_forge.kiln.modules.tasks.config import ROOT_VERBS
 
 # The smallest graph that satisfies the gate for an archetype with no docs
@@ -118,7 +120,7 @@ TASKFILE = taskfile()
 
 
 def run(root: Path) -> list[str]:
-    return [str(f) for f in checks.run(root, only="task-layout")]
+    return [str(f) for f in layout.check(KilnConfig.load(root), root)]
 
 
 def compliant(repo, **overrides: str) -> Path:
@@ -253,11 +255,11 @@ OWNED = "version: '3'\ntasks:\n  go:\n    cmds: [echo hi]\n"
 
 
 def codes(root: Path) -> list[str]:
-    return [f.code for f in checks.run(root, only="task-layout")]
+    return [f.code for f in layout.check(KilnConfig.load(root), root)]
 
 
 def findings(root: Path, code: str):
-    return [f for f in checks.run(root, only="task-layout") if f.code == code]
+    return [f for f in layout.check(KilnConfig.load(root), root) if f.code == code]
 
 
 def declare(root: Path, namespace: str, taskfile_path: str) -> None:
@@ -499,4 +501,4 @@ def test_s4_6_2_3_every_rendered_cell_passes(
     else:
         archetype, flags = CELLS[cell]
         root = _render_cell(tmp_path_factory, cell, archetype, **flags)
-    assert checks.run(root, only="task-layout") == []
+    assert layout.check(KilnConfig.load(root), root) == []

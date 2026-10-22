@@ -21,6 +21,8 @@ from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.runtime.console import OutputMode, console
 
 from rn_forge.kiln import archetypes, checks, commands
+from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.docs.checks import derived
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK
 from rn_forge.kiln.modules.registry import builtin
@@ -523,7 +525,7 @@ def test_s13_1_1_4_new_writes_a_current_derived_nav(tmp_path: Path) -> None:
     target = tmp_path / "demo"
     commands.new(target, archetype="python-tool", docs="mkdocs", yes=True)
 
-    assert checks.run(target, only="docs-generate") == []
+    assert derived.check(KilnConfig.load(target), target) == []
     nav = (target / "mkdocs.yml").read_text(encoding="utf-8")
     assert "# BEGIN derived nav" in nav
     assert "guides/index.md" in nav
@@ -548,7 +550,7 @@ def test_s14_1_2_5_new_writes_a_current_epic_list(tmp_path: Path) -> None:
 
     page = target / "docs" / "specs" / "epics" / "index.md"
     assert "No epics yet." in page.read_text(encoding="utf-8")
-    assert checks.run(target, only="docs-generate") == []
+    assert derived.check(KilnConfig.load(target), target) == []
 
 
 def test_new_inside_a_uv_project_leaves_it_untouched(tmp_path: Path) -> None:

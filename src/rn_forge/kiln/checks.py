@@ -12,7 +12,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding
 
 from rn_forge.kiln import archetypes
@@ -59,31 +58,24 @@ CHECKS: tuple[Check, ...] = (
 
 
 def names() -> tuple[str, ...]:
-    """The name each check answers to on `--only`."""
+    """The name of each check, in registry order."""
     return tuple(check.name for check in CHECKS)
 
 
 def run(
     root: Path,
-    only: str | None = None,
     scope: Literal["ownership"] | None = None,
 ) -> list[Finding]:
-    """Run every check over *root*, only the ownership checks when *scope* says
-    so, or just the one *only* names.
+    """Run every check over *root*, or only the ownership checks when *scope*
+    says so.
 
     Findings come in the order of the archetype's `modules`; checks of a module
     it does not list follow, in registry order.
 
     Raises:
-        AppException: *only* names no check, or *root*'s config cannot be read.
+        AppException: *root*'s config cannot be read, or its archetype is unknown.
     """
     selected: Sequence[Check] = [c for c in CHECKS if scope is None or c.scope == scope]
-    if only is not None:
-        selected = [check for check in CHECKS if check.name == only]
-        if not selected:
-            raise AppException(
-                "Unknown check {!r} — this kiln runs {}", only, ", ".join(names())
-            )
 
     config = KilnConfig.load(root)
     modules = archetypes.for_config(config).modules

@@ -8,8 +8,15 @@ from pathlib import Path
 import pytest
 
 from rn_forge.commons.exceptions import AppException
-
+from rn_forge.commons.findings import Finding
 from rn_forge.kiln import checks
+from rn_forge.kiln.config import KilnConfig
+
+
+def _run_one(root: Path, name: str) -> list[Finding]:
+    return next(c for c in checks.CHECKS if c.name == name).run(
+        KilnConfig.load(root), root
+    )
 
 
 def test_every_check_is_named_by_its_module() -> None:
@@ -24,11 +31,6 @@ def test_every_check_is_named_by_its_module() -> None:
         "docs-generate",
         "docs-site",
     )
-
-
-def test_an_unknown_check_name_is_refused(repo) -> None:
-    with pytest.raises(AppException, match="Unknown check"):
-        checks.run(repo(), only="conjured")
 
 
 def test_a_repo_with_no_config_is_not_a_kiln_repo(tmp_path: Path) -> None:
@@ -51,7 +53,7 @@ def test_an_unknown_config_schema_version_is_refused(repo) -> None:
 
 def test_an_unknown_archetype_is_refused(repo) -> None:
     with pytest.raises(AppException, match="Unknown archetype"):
-        checks.run(repo(archetype="python-hovercraft"), only="rn-forge-deps")
+        checks.run(repo(archetype="python-hovercraft"))
 
 
 @pytest.mark.parametrize("archetype", ["python-app", "python-tool", "python-lib"])
@@ -64,7 +66,7 @@ def test_every_rendered_archetype_passes_every_check(
 
 def test_running_one_check_is_a_subset_of_running_all(repo) -> None:
     root = repo(**{"pyproject.toml": "[project]\nname = 'x'\n"})
-    only = [str(f) for f in checks.run(root, only="generated")]
+    only = [str(f) for f in _run_one(root, "generated")]
     every = [str(f) for f in checks.run(root)]
     assert only
     assert set(only).issubset(set(every))
@@ -77,7 +79,7 @@ def test_quality_checks_run_by_default(repo) -> None:
         "docs-structure",
         "docs-site",
     ]
-    assert checks.run(root, only="rn-forge-deps")
+    assert _run_one(root, "rn-forge-deps")
     assert [f for f in checks.run(root) if f.code.startswith("deps.")]
     assert not [
         f for f in checks.run(root, scope="ownership") if f.code.startswith("deps.")

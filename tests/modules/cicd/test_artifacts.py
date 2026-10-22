@@ -20,6 +20,8 @@ from rn_forge.commons.exceptions import AppException
 from rn_forge.tooling.generation import Action, ArtifactKind
 
 from rn_forge.kiln import checks
+from rn_forge.kiln.modules.cicd.checks import hooks as hooks_check
+from rn_forge.kiln.modules.cicd.checks import pins as pins_check
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd import CICD
 from rn_forge.kiln.modules.cicd.artifacts import load_pins
@@ -1370,8 +1372,8 @@ def test_s4_11_2_5_every_cell_passes_ci_pins_and_ci_hooks(
     else:
         root = _root(tmp_path, archetype)
     cycle.apply(root, home=tmp_path / "home")
-    assert checks.run(root, only="ci-pins") == []
-    assert checks.run(root, only="ci-hooks") == []
+    assert pins_check.check(KilnConfig.load(root), root) == []
+    assert hooks_check.check(KilnConfig.load(root), root) == []
 
 
 # S4.11.3 — workflow security.
@@ -1681,7 +1683,7 @@ def test_s4_11_5_8_dependency_review_is_pinned(tmp_path: Path) -> None:
     for archetype, extra in SECURITY_CELLS:
         root = _cell_root(tmp_path / archetype, archetype, extra)
         cycle.apply(root, home=tmp_path / archetype / "home")
-        assert checks.run(root, only="ci-pins") == [], archetype
+        assert pins_check.check(KilnConfig.load(root), root) == [], archetype
 
 
 @pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
@@ -1787,7 +1789,7 @@ def test_s4_11_6_5_attest_is_pinned(tmp_path: Path) -> None:
     for archetype, extra in SECURITY_CELLS:
         root = _cell_root(tmp_path / archetype, archetype, extra)
         cycle.apply(root, home=tmp_path / archetype / "home")
-        assert checks.run(root, only="ci-pins") == [], archetype
+        assert pins_check.check(KilnConfig.load(root), root) == [], archetype
 
 
 @pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)

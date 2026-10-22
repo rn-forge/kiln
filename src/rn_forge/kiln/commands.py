@@ -97,9 +97,9 @@ _PACKAGE_NAME = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
 _FLAG_NAMES = ("archetype", "docs", "backend", "frontend")
 
 
-def _findings(path: Path, only: str | None, full: bool) -> list[Finding]:
+def _findings(path: Path, full: bool) -> list[Finding]:
     root = path.resolve()
-    findings = checks.run(root, only)
+    findings = checks.run(root)
     if full:
         findings.extend(doctor_module.full(root))
     return findings
@@ -116,7 +116,6 @@ def _finding_json(finding: Finding) -> dict[str, str | None]:
 
 def doctor(
     paths: list[Path],
-    only: str | None = None,
     full: bool = False,
     json: bool = False,
     all: bool = False,
@@ -124,26 +123,23 @@ def doctor(
     """Run every render-free check over each of PATHS' committed files.
 
     Prints each finding and raises `AppException` if any is an error. `--full`
-    also reports every managed artifact and block a fresh render would change;
-    it cannot be combined with `--only`. `--json` prints the findings as one
-    JSON object. More than one path needs `--all`, which checks each
-    independently, reports a path whose config will not load as a `config.load`
-    error for that path alone, and prints a table of paths with their error and
-    warning counts.
+    also reports every managed artifact and block a fresh render would change.
+    `--json` prints the findings as one JSON object. More than one path needs
+    `--all`, which checks each independently, reports a path whose config will
+    not load as a `config.load` error for that path alone, and prints a table of
+    paths with their error and warning counts.
 
     Raises:
-        AppException: `--only` and `--full` are both given, several paths are
-            given without `--all`, or a finding is an error.
+        AppException: several paths are given without `--all`, or a finding is an
+            error.
     """
-    if only is not None and full:
-        raise AppException("--only and --full cannot be combined")
     if len(paths) > 1 and not all:
         raise AppException("several paths need --all")
     if json:
         console.set_mode(OutputMode.JSON)
 
     if not all:
-        findings = _findings(paths[0], only, full)
+        findings = _findings(paths[0], full)
         if console.mode is OutputMode.JSON:
             console.json({"findings": [_finding_json(f) for f in findings]})
         else:
@@ -157,7 +153,7 @@ def doctor(
     reports: list[tuple[Path, list[Finding]]] = []
     for path in paths:
         try:
-            reports.append((path, _findings(path, only, full)))
+            reports.append((path, _findings(path, full)))
         except AppException as exc:
             reports.append(
                 (path, [Finding("config.load", Severity.ERROR, str(exc), path=None)])
@@ -206,7 +202,7 @@ def doctor(
 def docs_generate(path: Path) -> None:
     """Regenerate the derived regions of PATH's docs, such as `mkdocs.yml`'s nav.
 
-    `kiln doctor --only docs-generate` is the check that they are current.
+    `kiln doctor` checks that they are current.
     """
     config = ConfigManager().load(path)
     packages = config.packages if config.archetype == "python-lib" else ()

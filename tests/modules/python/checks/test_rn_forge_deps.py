@@ -13,6 +13,8 @@ from pathlib import Path
 import pytest
 
 from rn_forge.kiln import archetypes, checks
+from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.python.checks import rn_forge_deps
 
 
 def pinned(distribution: str) -> str:
@@ -104,7 +106,7 @@ rn-forge-kiln = {{ path = "../kiln", editable = true }}
 
 
 def run(root: Path) -> list[str]:
-    return [str(f) for f in checks.run(root, only="rn-forge-deps")]
+    return [str(f) for f in rn_forge_deps.check(KilnConfig.load(root), root)]
 
 
 WEB_REQUIRED_URLS = [

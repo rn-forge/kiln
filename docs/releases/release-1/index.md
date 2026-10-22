@@ -51,7 +51,7 @@ are [release-2](../release-2/index.md).
 | [F4.9 — Seeded starter source](../../specs/epics/E4-generator/F4.9-seeded-starter-source.md) | E4 | Active |
 | [F4.10 — TOML formatting](../../specs/epics/E4-generator/F4.10-toml-formatting.md) | E4 | Closed |
 | [F4.11 — Generated CI enhancements](../../specs/epics/E4-generator/F4.11-ci-enhancements.md) | E4 | Active |
-| [F4.12 — The task files follow their owners](../../specs/epics/E4-generator/F4.12-task-files-by-owner.md) | E4 | Active |
+| [F4.12 — The task files follow their owners](../../specs/epics/E4-generator/F4.12-task-files-by-owner.md) | E4 | Closed |
 | [F5.1 — Library sets, and the modules gain the web shapes](../../specs/epics/E5-web-archetypes/F5.1-web-library-sets-and-modules.md) | E5 | Closed |
 | [F5.2 — `kiln new` end to end for the web archetypes](../../specs/epics/E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md) | E5 | Closed |
 | [F5.3 — Prove and ship the FastAPI cells](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) | E5 | Closed |

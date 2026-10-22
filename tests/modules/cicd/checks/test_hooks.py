@@ -7,13 +7,15 @@ from pathlib import Path
 import pytest
 
 from rn_forge.kiln import checks
+from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.cicd.checks import hooks
 
 HOOK = "./.github/actions/a"
 CALL = "./.github/workflows/x.yml"
 
 
 def _codes(root: Path) -> list[str]:
-    return sorted(f.code for f in checks.run(root, only="ci-hooks"))
+    return sorted(f.code for f in hooks.check(KilnConfig.load(root), root))
 
 
 def _append(root: Path, text: str) -> None:

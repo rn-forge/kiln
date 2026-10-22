@@ -1,8 +1,8 @@
 # Development
 
 Everything goes through `task`. Nobody — human, agent or CI — invokes `uv`,
-`pytest`, `ruff`, `pyright`, `mkdocs` or `kiln` directly;
-`kiln doctor --only ci-entrypoint` fails the build if a workflow step does.
+`pytest`, `ruff`, `pyright`, `mkdocs` or `kiln` directly; `kiln doctor`'s
+`ci-entrypoint` check fails the build if a workflow step does.
 
 ```bash
 task setup       # sync the venv with the dev and docs groups

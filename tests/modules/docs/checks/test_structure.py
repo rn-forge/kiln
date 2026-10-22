@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[4]
 
 
 def test_kiln_docs_pass_the_policy() -> None:
-    assert [str(f) for f in checks.run(ROOT, only=structure.NAME)] == []
+    assert [str(f) for f in structure.check(KilnConfig.load(ROOT), ROOT)] == []
 
 
 def test_a_repo_without_an_mkdocs_site_is_not_checked(repo) -> None:
@@ -62,7 +62,7 @@ def _packages_repo(repo, link: str) -> Path:
 def _link_codes(root: Path) -> list[str]:
     return [
         f.code
-        for f in checks.run(root, only=structure.NAME)
+        for f in structure.check(KilnConfig.load(root), root)
         if f.code in {"docs.broken-link", "docs.broken-anchor"}
     ]
 
@@ -105,7 +105,7 @@ def _excluding_repo(repo, old: str = "", new: str = "", underscore: str = "") ->
 def _structure_codes(root: Path) -> list[str]:
     return [
         f.code
-        for f in checks.run(root, only=structure.NAME)
+        for f in structure.check(KilnConfig.load(root), root)
         if f.code.startswith("docs.broken") or f.code == "docs.underscore-referenced"
     ]
 

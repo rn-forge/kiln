@@ -65,7 +65,7 @@
     },
     "Taskfile.yml": {
       "begin_marker": null,
-      "content_hash": "e47474567e14b62135894f50212f19c90bb33b2c34375dd3d64051f5fe8155ce",
+      "content_hash": "c75cd97a6f499dd3f8353eac37118b75f5f039c0f81f15a4126691c1f0407784",
       "end_marker": null,
       "kind": "managed",
       "path": "Taskfile.yml"
@@ -79,7 +79,7 @@
     },
     "docs/_structure.md": {
       "begin_marker": null,
-      "content_hash": "a802ebb8d313f5c64c7aa7b96c74b6d276672fb8ac11defcf3a4158caf8b5ba4",
+      "content_hash": "90a200f6e38e084a7b432947fd5802e08f94962e7d8bdbfdee3efaf6acf24510",
       "end_marker": null,
       "kind": "managed",
       "path": "docs/_structure.md"

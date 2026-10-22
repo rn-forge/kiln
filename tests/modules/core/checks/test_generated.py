@@ -9,6 +9,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from rn_forge.kiln import checks
+from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.core.checks import generated
 from rn_forge.kiln.modules.core.checks.generated import digest
 
 BEGIN = "<!-- BEGIN rn-forge kiln -->"
@@ -16,7 +18,7 @@ END = "<!-- END rn-forge kiln -->"
 
 
 def run(root: Path) -> list[str]:
-    return [str(f) for f in checks.run(root, only="generated")]
+    return [str(f) for f in generated.check(KilnConfig.load(root), root)]
 
 
 def managed_entry(path: str, content: str) -> dict[str, object]:
