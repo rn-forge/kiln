@@ -20,3 +20,4 @@ too.
 | openssf-scorecard | An OpenSSF Scorecard workflow in generated repositories | CI best-practices review, 2026-10-20 |
 | node-lib-ci-security | `node-lib` ([F9.1](epics/E9-node-archetypes/F9.1-node-lib-hosts-ngkit-ci.md)) equivalents of S4.11.3–S4.11.6: `zizmor` and `actionlint` run without a Python dev group, Dependabot `npm`, `pnpm audit`, build provenance | CI best-practices review, 2026-10-20 |
 | kiln-pins-freshness | Keep `cicd/pins.toml` current in kiln, which Dependabot cannot read: a Renovate regex manager, or a `self:pins` check task | CI best-practices review, 2026-10-20 |
+| pykit-direct-url-pin-check | A pykit-side check of the direct-URL pin rule for repositories that consume rn-forge without kiln; kiln's `rn-forge-deps` covers only repositories built with it. Not a release-1 dependency | [F4.12](epics/E4-generator/F4.12-task-files-by-owner.md), 2026-10-21 |
