@@ -71,7 +71,7 @@ are [release-2](../release-2/index.md).
 | [F13.1 — Derived regions, starting with the nav](../../specs/epics/E13-docs-work-model/F13.1-derived-regions.md) | E13 | Closed |
 | [F13.2 — The board and Scope regions, and metadata checks](../../specs/epics/E13-docs-work-model/F13.2-board-and-scope.md) | E13 | Closed |
 | [F13.3 — The seeded rules and kiln's own docs adopt the model](../../specs/epics/E13-docs-work-model/F13.3-adopt-the-model.md) | E13 | Closed |
-| [F13.4 — Ideas live in a folder, one page per large idea](../../specs/epics/E13-docs-work-model/F13.4-ideas-folder.md) | E13 | Active |
+| [F13.4 — Ideas live in a folder, one page per large idea](../../specs/epics/E13-docs-work-model/F13.4-ideas-folder.md) | E13 | Closed |
 | [F14.1 — Area tabs, the epic ranges and the epic list](../../specs/epics/E14-site-navigation/F14.1-tabbed-navigation.md) | E14 | Closed |
 | [F14.2 — Epic and feature summary tables](../../specs/epics/E14-site-navigation/F14.2-work-summaries.md) | E14 | Closed |
 

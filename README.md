@@ -26,7 +26,7 @@ rendered archetype cells match pykit's `feature/upgrade` branch, tool lifecycle
 surface included (E1–E3, done 2026-09-15). The
 [shared CLI integration](docs/specs/epics/E3-realign-goldens-and-canon/index.md#shared-cli-design)
 was proven by the hand-authored golden repos, which have since left git
-([S4.4.9](docs/specs/epics/E4-generator/F4.4-render-matrix.md#s449--the-goldens-leave-the-repository)).
+([S4.4.9](docs/specs/epics/E4-generator/F4.4-render-matrix.md#s449-the-goldens-leave-the-repository)).
 E4's render-free checks, module contract, config manager, apply cycle and
 concern modules exist, and so does the render matrix. E5's FastAPI and Angular
 cells pass their own gates in it. What is left is proving them from a clean

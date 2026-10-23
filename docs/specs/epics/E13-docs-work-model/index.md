@@ -2,8 +2,9 @@
 
 |  |  |
 | -- | -- |
-| **State** | Active |
+| **State** | Closed |
 | **Start Date** | 2026-10-01 |
+| **Closed Date** | 2026-10-23 |
 
 <!-- BEGIN derived features -->
 
@@ -12,18 +13,18 @@
 | [F13.1 — Derived regions, starting with the nav](F13.1-derived-regions.md) | Closed | release-1 | 1 Closed |
 | [F13.2 — The board and Scope regions, and metadata checks](F13.2-board-and-scope.md) | Closed | release-1 | 2 Closed |
 | [F13.3 — The seeded rules and kiln's own docs adopt the model](F13.3-adopt-the-model.md) | Closed | release-1 | 2 Closed |
-| [F13.4 — Ideas live in a folder, one page per large idea](F13.4-ideas-folder.md) | Active | release-1 | 1 Closed |
+| [F13.4 — Ideas live in a folder, one page per large idea](F13.4-ideas-folder.md) | Closed | release-1 | 1 Closed |
 
 <!-- END derived features -->
 
 Release: [release-1](../../../releases/release-1/index.md) · Decisions:
 [ADR-0003](../../../adr/ADR-0003.md) (revised),
-[ADR-0011](../../../adr/ADR-0011.md) (revision proposed 2026-10-21),
+[ADR-0011](../../../adr/ADR-0011.md) (revised),
 [ADR-0012](../../../adr/ADR-0012.md)
 
 Reopened on 2026-10-21 for [F13.4](F13.4-ideas-folder.md), which replaces
 `ideas.md` with an `ideas/` folder before other repositories adopt the model.
-F13.1–F13.3 closed on 2026-10-01.
+F13.1–F13.3 closed on 2026-10-01, and F13.4 on 2026-10-23.
 
 kiln's docs model has two weaknesses. The `mkdocs.yml` nav is generated, but
 `state.json` hashes it as a kiln-owned block, so every new page makes the
@@ -78,3 +79,17 @@ s=$(mktemp -d)
 uv run kiln new "$s/tool" --archetype python-tool --docs mkdocs --yes </dev/null
 (cd "$s/tool" && uv sync && task validate)
 ```
+
+**Acceptance as run (2026-10-23), after F13.4.** The goldens have left git
+([S4.4.9](../E4-generator/F4.4-render-matrix.md#s449-the-goldens-leave-the-repository)),
+so the block's golden loop and its `tests/fixtures/golden` path no longer apply.
+The rendered cells stand in for them, and for the fresh `kiln new`:
+
+- Both `absent` checks pass, with `.goldens/` excluded and the second one over
+  `.rn-forge` only.
+- `task validate` passes, `kiln doctor .` included.
+- `task self:golden:render`, then `kiln doctor .` in each of the five cells,
+  with the working tree's kiln: all pass. `task self:golden:validate` fails in
+  every cell with `the derived nav is stale`, because each cell pins
+  `kiln@feature/v1` from GitHub, and the remote does not have S13.4.1 yet. Run
+  it again after the push.
