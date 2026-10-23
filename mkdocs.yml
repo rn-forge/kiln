@@ -143,6 +143,7 @@ nav:
         - F14.2 — Epic and feature summary tables: specs/epics/E14-site-navigation/F14.2-work-summaries.md
     - Ideas:
       - specs/ideas/index.md
+      - kiln simplification: specs/ideas/kiln-simplification.md
   - Decisions: adr/index.md
   - Plans:
     - plans/index.md
