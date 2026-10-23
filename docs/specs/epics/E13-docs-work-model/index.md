@@ -69,7 +69,7 @@ absent() { local rc=0; rg -q --hidden --glob '!.git' "$@" </dev/null || rc=$?; [
 absent -e 'docs-nav|docs:nav|docs_nav|nav block' --glob '!docs/specs/**' --glob '!docs/plans/**' \
   --glob '!adr-refactor.md' --glob '!tests/modules/core/checks/test_generated.py' .
 absent -F 'generated nav' --glob '*.json' .rn-forge tests/fixtures/golden
-uv run kiln doctor . --only docs-generate
+uv run kiln doctor .
 task validate
 for g in python-app python-tool python-lib; do
   (cd "tests/fixtures/golden/$g" && task validate)
