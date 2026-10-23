@@ -49,7 +49,8 @@ Declared in `_areas.yml`, in nav order. These are the areas kiln seeds:
 - A choice between real alternatives → a new ADR under `adr/`; a change to one →
   that ADR, revised in place.
 - Work to do, or a record of work done → an epic under `specs/epics/`.
-- An idea not yet agreed as work → a row in `specs/ideas.md`.
+- An idea not yet agreed as work → a row in `specs/ideas/index.md`, and a page
+  beside it when the row is not enough.
 - What ships when → `releases/`.
 - An operational procedure → `runbooks/`.
 - An open question → the epic or feature it blocks, until it becomes an ADR or a
@@ -66,8 +67,9 @@ repository is written here in full, as this repository's own;
 non-optional area in `docs/_areas.yml` exists and has both a `_structure.md` and
 an `index.md`; ADRs are named `ADR-<nnnn>.md`, numbered without gaps, and carry
 a valid `**Status:**` line; every relative link resolves, including anchors; no
-shipped page links to a `_*.md` file; and `CLAUDE.md`/`AGENTS.md` both point at
-this file and at `docs/index.md`.
+shipped page links to a `_*.md` file; there is no `specs/ideas.md`, and every
+page under `specs/ideas/` is kebab-case and linked from its `index.md`; and
+`CLAUDE.md`/`AGENTS.md` both point at this file and at `docs/index.md`.
 
 `kiln doctor`'s `docs-generate` check confirms that the derived regions — the
 nav, the spec board, the epic list and each release's Scope table — are current,

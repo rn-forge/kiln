@@ -12,7 +12,7 @@
 | [F13.1 — Derived regions, starting with the nav](F13.1-derived-regions.md) | Closed | release-1 | 1 Closed |
 | [F13.2 — The board and Scope regions, and metadata checks](F13.2-board-and-scope.md) | Closed | release-1 | 2 Closed |
 | [F13.3 — The seeded rules and kiln's own docs adopt the model](F13.3-adopt-the-model.md) | Closed | release-1 | 2 Closed |
-| [F13.4 — Ideas live in a folder, one page per large idea](F13.4-ideas-folder.md) | New | release-1 | 1 New |
+| [F13.4 — Ideas live in a folder, one page per large idea](F13.4-ideas-folder.md) | Active | release-1 | 1 Closed |
 
 <!-- END derived features -->
 

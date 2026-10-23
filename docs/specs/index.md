@@ -13,7 +13,7 @@ Backlog sections below are derived from the epic, feature and release pages by
 | Release | Status | Features |
 | -- | -- | -- |
 | [Release 2 — the architecture baseline and taskkit retired](../releases/release-2/index.md) | planned | 3 New |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 7 Active · 4 New · 27 Closed |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 8 Active · 3 New · 27 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -36,7 +36,7 @@ Features with no Iteration, by State and epic.
 
 <!-- END derived board -->
 
-Ideas not yet agreed as work are parked in the [ideas list](ideas.md).
+Ideas not yet agreed as work are parked in the [ideas list](ideas/index.md).
 
 Every epic, by number, is on [the epic list](epics/index.md).
 
@@ -138,8 +138,9 @@ whoever builds the story — a person, or an agent of any size.
   row, and, when it has several stories, a `## Acceptance` block that
   exercises every story and fails loudly.
 - **Ideas are a parking lot.** An idea not yet agreed as work is a row in
-  `ideas.md`, with no ID and no state. Agreed work that is not ready is tagged
-  `deferred`, with entry criteria.
+  `ideas/index.md`, with no ID and no state, and a page beside it when the row
+  is not enough. Agreed work that is not ready is tagged `deferred`, with
+  entry criteria.
 - **Design lives with the work** — a `## Design` section on the feature, or the
   epic's `design.md`. Current behaviour belongs in
   [architecture](../architecture/index.md).

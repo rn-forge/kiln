@@ -466,3 +466,34 @@ def test_s4_4_7_3_indexes_link_the_pages(tmp_path: Path, archetype: str) -> None
     assert (reference in pages["docs/index.md"]) is (
         archetype in ("python-app", "python-tool")
     )
+
+
+IDEAS_INDEX = """\
+# Ideas
+
+Ideas not yet agreed as this repository's work. An entry takes no ID and no
+state, and does not authorize starting anything. An idea that needs more than
+its row has a page in this folder, named after the row and linked from its
+**Idea** cell. Promoting one moves its page, or its row's summary, into a new
+epic or feature and deletes both; a dropped idea's row and page are deleted too.
+
+[Back to the specs](../index.md)
+
+| Idea | Summary | Source |
+| -- | -- | -- |
+"""
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s13_4_1_5_seeds_the_ideas_index_not_ideas_md(
+    tmp_path: Path, archetype: str
+) -> None:
+    root = _root(tmp_path, archetype)
+    kinds = {a.key: a.kind for a in DOCS.artifacts(KilnConfig.load(root), root)}
+    assert kinds["docs/specs/ideas/index.md"] is ArtifactKind.SEEDED
+    assert "docs/specs/ideas.md" not in kinds
+
+
+def test_s13_4_1_5_seeded_ideas_index_is_the_template(tmp_path: Path) -> None:
+    rendered = _rendered(tmp_path, "python-tool")
+    assert rendered["docs/specs/ideas/index.md"] == IDEAS_INDEX

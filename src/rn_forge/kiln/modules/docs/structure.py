@@ -164,6 +164,34 @@ def _check_nested_naming(directory: Path, nested: NestedArea) -> list[Finding]:
     return findings
 
 
+def _check_ideas(docs_root: Path, policy: DocsPolicy) -> list[Finding]:
+    """No ideas file beside the folder, and every idea page named and listed."""
+    if policy.ideas is None:
+        return []
+    folder = docs_root / policy.ideas
+    findings: list[Finding] = []
+    moved = folder.with_suffix(".md")
+    if moved.exists():
+        findings.append(
+            _error("ideas-moved", moved, f"move it to {policy.ideas}/index.md")
+        )
+    if folder.is_dir():
+        index = folder / "index.md"
+        listed = _resolved_links(index) if index.exists() else set[Path]()
+        for page in _content_pages(folder):
+            if not policy.page_name.match(page.name):
+                findings.append(_error("kebab-case", page, "not kebab-case"))
+            if page.resolve() not in listed:
+                findings.append(
+                    _error(
+                        "idea-unlisted",
+                        page,
+                        f"is not linked from {policy.ideas}/index.md",
+                    )
+                )
+    return findings
+
+
 def _check_status(docs_root: Path, series: NumberedArea) -> list[Finding]:
     """Every page in the numbered series carries a status the policy allows."""
     directory = docs_root / series.path
@@ -319,6 +347,7 @@ def check_structure(
     return [
         *_check_areas(areas, docs_root),
         *_check_naming(areas, docs_root, policy),
+        *_check_ideas(docs_root, policy),
         *(_check_status(docs_root, policy.numbered) if policy.numbered else []),
         *_check_links(docs_root, package_mounts(repo_root, packages), excluded),
         *_check_no_underscore_refs(docs_root, excluded),

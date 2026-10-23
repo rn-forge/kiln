@@ -17,7 +17,8 @@
   `## Context` section — never in the cell.
 - Open questions, as a `## Open questions` section on the epic or feature they
   block.
-- Ideas not yet agreed as work, in `ideas.md`.
+- Ideas not yet agreed as work, in `ideas/`: a row each in `ideas/index.md`, and
+  a page beside the index, `ideas/<idea>.md`, for an idea its row cannot hold.
 - `epics/index.md`, the derived epic list. The specs tab lists every epic in
   ranges of ten, with its features and design.
 
@@ -157,14 +158,17 @@ until it is.
 
 ## Changing this area
 
-**Parking an idea:** add a row to `ideas.md`, and a section linked from the row
-if it needs more than a line. Do not elaborate an idea unless the owner asks. A
-dropped idea is deleted.
+**Parking an idea:** add a row to `ideas/index.md`. When the idea needs more
+than its row, also write `ideas/<idea>.md`, named after the row's **Idea** cell,
+opening with `# <Title>` and then `[Back to the ideas](index.md)`, and link it
+from that cell. It has no metadata table, ID or state. Do not elaborate an idea
+unless the owner asks. A dropped idea's row and page are deleted.
 
 **Adding an epic or a feature:**
 
 1. Take the next free ID. Never renumber a sibling. An idea promoted from
-   `ideas.md` carries its section into the new file, and its row is deleted.
+   `ideas/` carries its page, or its row's summary, into the new file; its row
+   and page are deleted.
 1. Create `epics/E<n>-<slug>/index.md`, `State` `New`; tag it `deferred`, with
    `Entry criteria`, when it is not scheduled.
 1. Write one feature file per feature, stories inline. Give a story its own file
@@ -245,7 +249,7 @@ in place, with one line saying why.
 | `Entry criteria`, `Source` | custom fields |
 | `**Acceptance:**` | Acceptance Criteria |
 | A commit subject naming an ID | an `AB#<id>` link |
-| `design.md`, ADRs, release pages, `ideas.md` | stay in the repository |
+| `design.md`, ADRs, release pages, `ideas/` | stay in the repository |
 
 ## Other repositories
 

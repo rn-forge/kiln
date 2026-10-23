@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import re
 
 import pytest
@@ -74,6 +75,7 @@ POLICY = DocsPolicy(
             page_shape="F<n>.<m>-<slug>.md",
         ),
     ),
+    ideas="specs/ideas",
 )
 
 
@@ -265,6 +267,65 @@ class TestCheckStructure:
             "docs.missing-instruction-file"
         ]
 
+    def test_s13_4_1_2_an_ideas_md_is_reported(self, repo):
+        write(repo / "docs/specs/ideas.md", "# Ideas\n")
+        found = [
+            f
+            for f in check_structure(repo, repo / "docs", POLICY)
+            if f.code == "docs.ideas-moved"
+        ]
+        assert len(found) == 1
+        assert (found[0].path or "").endswith("specs/ideas.md")
+        assert found[0].message == "move it to specs/ideas/index.md"
+
+    def test_s13_4_1_3_an_unlisted_idea_page_is_reported(self, repo):
+        write(repo / "docs/specs/ideas/index.md", "# Ideas\n\n- [A](alpha.md)\n")
+        write(repo / "docs/specs/ideas/alpha.md", "# Alpha\n")
+        write(repo / "docs/specs/ideas/beta.md", "# Beta\n")
+        found = [
+            f
+            for f in check_structure(repo, repo / "docs", POLICY)
+            if f.code == "docs.idea-unlisted"
+        ]
+        assert len(found) == 1
+        assert (found[0].path or "").endswith("ideas/beta.md")
+        assert found[0].message == "is not linked from specs/ideas/index.md"
+
+    def test_s13_4_1_3_listed_idea_pages_pass(self, repo):
+        write(
+            repo / "docs/specs/ideas/index.md",
+            "# Ideas\n\n- [A](alpha.md)\n- [B](beta.md)\n",
+        )
+        write(repo / "docs/specs/ideas/alpha.md", "# Alpha\n")
+        write(repo / "docs/specs/ideas/beta.md", "# Beta\n")
+        got = codes(check_structure(repo, repo / "docs", POLICY))
+        assert not {"docs.idea-unlisted", "docs.ideas-moved", "docs.kebab-case"} & set(
+            got
+        )
+
+    def test_s13_4_1_3_an_ideas_folder_without_an_index_reports_every_page(self, repo):
+        write(repo / "docs/specs/ideas/alpha.md", "# Alpha\n")
+        got = codes(check_structure(repo, repo / "docs", POLICY))
+        assert got.count("docs.idea-unlisted") == 1
+
+    def test_s13_4_1_4_an_idea_page_is_kebab_case(self, repo):
+        write(repo / "docs/specs/ideas/index.md", "# Ideas\n\n- [B](Big_Idea.md)\n")
+        write(repo / "docs/specs/ideas/Big_Idea.md", "# Big\n")
+        found = [
+            f
+            for f in check_structure(repo, repo / "docs", POLICY)
+            if f.code == "docs.kebab-case"
+        ]
+        assert len(found) == 1
+        assert (found[0].path or "").endswith("ideas/Big_Idea.md")
+
+    def test_s13_4_1_4_a_policy_without_ideas_checks_nothing(self, repo):
+        write(repo / "docs/specs/ideas.md", "# Ideas\n")
+        write(repo / "docs/specs/ideas/alpha.md", "# Alpha\n")
+        policy = dataclasses.replace(POLICY, ideas=None)
+        got = codes(check_structure(repo, repo / "docs", policy))
+        assert not {"docs.ideas-moved", "docs.idea-unlisted"} & set(got)
+
 
 class TestNav:
     def test_index_link_order_wins_over_alphabetical(self, repo):
@@ -333,7 +394,7 @@ class TestNav:
         write(repo / "docs/_areas.yml", "areas:\n  - key: specs\n    nav: work\n")
         write(repo / "docs/specs/index.md", "# Specs\n")
         write(repo / "docs/specs/_structure.md", "# S\n")
-        write(repo / "docs/specs/ideas.md", "# Ideas\n")
+        write(repo / "docs/specs/ideas/index.md", "# Ideas\n")
         if epics:
             write(repo / "docs/specs/epics/index.md", "# Epics\n")
             write(repo / "docs/specs/epics/E1-one/index.md", "# E1 \u2014 One\n")
@@ -366,15 +427,38 @@ class TestNav:
             "    - E11\u2013E20:\n"
             "      - E12 \u2014 Twelve:\n"
             f"        - {e}/E12-twelve/index.md\n"
-            "    - Ideas: specs/ideas.md\n"
+            "    - Ideas:\n      - specs/ideas/index.md\n"
         )
 
     def test_s14_1_3_2_a_work_area_without_epics_lists_index_and_root_pages(self, repo):
         self._specs(repo, epics=False)
         body = build_nav(repo / "docs")
         assert body.split("  - Specs:\n", 1)[1] == (
-            "    - specs/index.md\n    - Ideas: specs/ideas.md\n"
+            "    - specs/index.md\n    - Ideas:\n      - specs/ideas/index.md\n"
         )
+
+    def test_s13_4_1_1_ideas_folder_is_a_nav_section(self, repo):
+        self._specs(repo)
+        write(repo / "docs/specs/ideas/beta.md", "# Beta\n")
+        write(repo / "docs/specs/ideas/alpha.md", "# Alpha\n")
+        write(repo / "docs/specs/ideas/_draft.md", "# D\n")
+        body = build_nav(repo / "docs")
+        assert body.endswith(
+            "    - Ideas:\n"
+            "      - specs/ideas/index.md\n"
+            "      - Alpha: specs/ideas/alpha.md\n"
+            "      - Beta: specs/ideas/beta.md\n"
+        )
+        assert "_draft.md" not in body
+
+    def test_s13_4_1_1_a_root_ideas_md_is_still_listed(self, repo):
+        self._specs(repo, epics=False)
+        (repo / "docs/specs/ideas/index.md").unlink()
+        (repo / "docs/specs/ideas").rmdir()
+        write(repo / "docs/specs/ideas.md", "# Ideas\n")
+        body = build_nav(repo / "docs")
+        assert body.endswith("    - Ideas: specs/ideas.md\n")
+        assert "ideas/" not in body
 
     def test_update_nav_reports_staleness_without_writing(self, repo):
         before = (repo / "mkdocs.yml").read_text()

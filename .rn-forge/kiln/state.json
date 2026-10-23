@@ -79,7 +79,7 @@
     },
     "docs/_structure.md": {
       "begin_marker": null,
-      "content_hash": "90a200f6e38e084a7b432947fd5802e08f94962e7d8bdbfdee3efaf6acf24510",
+      "content_hash": "73c9762fdde99752ddaba57722a974578e2f2b84b977fd73f9e9fb054783bbed",
       "end_marker": null,
       "kind": "managed",
       "path": "docs/_structure.md"
@@ -177,7 +177,7 @@
     },
     "docs/specs/_structure.md": {
       "begin_marker": null,
-      "content_hash": "5f7e93ecd55b3e86420ada3993ecf38dcdf58be3ff342629390bb68134e6c6b0",
+      "content_hash": "af413ffc34c136783362876e2311a61c1003eaa87ade64dcc8dca9ecec9ad3a2",
       "end_marker": null,
       "kind": "managed",
       "path": "docs/specs/_structure.md"

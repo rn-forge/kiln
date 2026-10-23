@@ -146,6 +146,14 @@ def _work_entry(docs_root: Path, area: Area) -> NavEntry:
         for p in sorted(area_dir.glob("*.md"), key=lambda p: p.name)
         if _is_page(p)
     )
+    ideas_index = area_dir / "ideas" / "index.md"
+    if ideas_index.exists():
+        pages: list[str | NavEntry] = [
+            {page_title(p): f"{area.key}/ideas/{p.name}"}
+            for p in sorted((area_dir / "ideas").glob("*.md"), key=lambda p: p.name)
+            if _is_page(p)
+        ]
+        items.append({page_title(ideas_index): [f"{area.key}/ideas/index.md", *pages]})
     return {area.title: items}
 
 

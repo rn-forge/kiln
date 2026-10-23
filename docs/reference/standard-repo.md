@@ -123,7 +123,7 @@ The assignment is normative:
 | `docs/_structure.md`, `docs/<area>/_structure.md` for each area kiln seeds | kiln | managed — one rule set in every repo; an area a repo adds keeps its rules in its own, repo-owned `_structure.md` |
 | `docs/_areas.yml` | repo after scaffolding | **seeded** — repos may extend areas |
 | `docs/index.md`, `docs/<area>/index.md` | repo after scaffolding | **seeded** — written once |
-| `docs/specs/ideas.md`, `docs/reference/index.md` | repo after scaffolding | **seeded** — written once |
+| `docs/specs/ideas/index.md`, `docs/reference/index.md` | repo after scaffolding | **seeded** — written once |
 | `docs/releases/index.md`, `docs/specs/index.md`, `docs/specs/epics/index.md` | repo after scaffolding | **seeded** — written once |
 | The spec board's Releases and Backlog, each release's Scope table, the epic list, and the summary table atop each epic and feature page | kiln, rewritten by `task docs:generate` ([ADR-0011](../adr/ADR-0011.md), [ADR-0013](../adr/ADR-0013.md)) | **derived region** |
 | `mkdocs.yml` | repo body, scaffolded by `kiln new`; the `# BEGIN derived nav` region → kiln, rewritten by `task docs:generate`. For `python-lib` the body carries the `monorepo` plugin | **derived region** |

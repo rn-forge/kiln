@@ -96,6 +96,7 @@ class DocsPolicy:
         numbered: The numbered document series, when there is one.
         sequences: Sequence areas, if any.
         nested: Nested areas, if any.
+        ideas: The ideas folder, relative to the docs root, when there is one.
     """
 
     instruction_files: tuple[str, ...]
@@ -105,6 +106,7 @@ class DocsPolicy:
         default_factory=tuple[SequenceArea, ...]
     )
     nested: tuple[NestedArea, ...] = field(default_factory=tuple[NestedArea, ...])
+    ideas: str | None = None
 
     def __post_init__(self) -> None:
         if not self.instruction_files:
@@ -140,5 +142,6 @@ POLICY = DocsPolicy(
             page_shape="F<n>.<m>-<kebab-name>.md",
         ),
     ),
+    ideas="specs/ideas",
 )
 """kiln's docs policy, the one every generated repo is checked against."""
