@@ -58,7 +58,9 @@ nav:
   - Runbooks:
     - runbooks/index.md
     - Creating a repository: runbooks/creating-a-repo.md
+    - Recovering from drift: runbooks/recovering-from-drift.md
   - Reference:
+    - reference/index.md
     - Python API: reference/python-api.md
     - The standard repository: reference/standard-repo.md
   - Releases: releases/index.md

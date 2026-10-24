@@ -609,7 +609,7 @@ jobs:
 {% if job.events | length < 3 %}    if: ${{ {% for event in job.events %}github.event_name == '[[ event ]]'{% if not loop.last %} || {% endif %}{% endfor %} }}
 {% endif %}    permissions:
       contents: read
-    uses: [[ job.uses ]]
+    uses: [[ job.uses ]] # zizmor: ignore[self-repository] actionlint rejects the $/ form
 {% endfor %}
   # The only check branch protection requires. Job and matrix names change as
   # the repo grows; this one does not. A skipped job (the fork-guarded scan, a

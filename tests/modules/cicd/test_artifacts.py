@@ -342,7 +342,7 @@ SETUP_ACTION = "./.github/actions/setup"
 def _assert_checks_out_first(workflow: str, where: str) -> None:
     jobs = yaml.safe_load(workflow)["jobs"]
     for name, job in jobs.items():
-        steps = job["steps"]
+        steps = job.get("steps", [])
         for index, step in enumerate(steps):
             if step.get("uses") != SETUP_ACTION:
                 continue

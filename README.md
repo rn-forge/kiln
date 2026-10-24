@@ -56,13 +56,12 @@ text.
 - The policy and docs checks are `kiln doctor`, and `kiln docs-generate` writes
   the derived regions; no repo carries `scripts/**` for them
   ([ADR-0006](docs/adr/ADR-0006.md)).
-- This repo's own skeleton is a hand-copy of the rendered `python-tool` cell. It
-  regenerates itself once the generator exists; until then, keep them in step
-  by hand — a change to that cell's skeleton is usually a change here too.
-- **After changing any managed file, re-seed the state baseline.** There is no
-  `kiln apply` yet, so `.rn-forge/kiln/state.json` is written by hand;
-  `task lint` fails with `has drifted from the committed state` until it
-  agrees.
+- This repo generates its own skeleton: it is the `python-app` archetype with
+  `lifecycle = true` (S4.8.1). Change `.rn-forge/kiln/config.toml` or a
+  template, never a generated file.
+- **After changing a managed file's source, run `kiln apply`.** It rewrites the
+  file and `.rn-forge/kiln/state.json`; `task lint` fails with
+  `has drifted from the committed state` on an edit in place.
 - An ADR carries a decision and the alternatives rejected. The moment it starts
   enumerating — verbs, paths, dependency sets — it has become a spec and
   belongs in `docs/reference/standard-repo.md`.

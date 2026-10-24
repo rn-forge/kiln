@@ -16,7 +16,7 @@
 | [F4.5 — CLI](F4.5-cli.md) | Closed | release-1 | 10 Closed |
 | [F4.6 — doctor](F4.6-doctor.md) | Closed | release-1 | 5 Closed |
 | [F4.7 — Import contracts](F4.7-import-contracts.md) | Closed | release-1 | 3 Closed |
-| [F4.8 — Self-hosting](F4.8-self-hosting.md) | Active | release-1 | 1 New · 2 Closed |
+| [F4.8 — Self-hosting](F4.8-self-hosting.md) | Active | release-1 | 3 Closed |
 | [F4.9 — Seeded starter source](F4.9-seeded-starter-source.md) | Closed | release-1 | 5 Closed |
 | [F4.10 — TOML formatting](F4.10-toml-formatting.md) | Closed | release-1 | 1 Closed |
 | [F4.11 — Generated CI enhancements](F4.11-ci-enhancements.md) | Active | release-1 | 6 Closed |

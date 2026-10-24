@@ -1,14 +1,17 @@
 # The one hand-authored input kiln reads (kiln ADR-0004). Edit this, then run
 # `kiln apply`. Everything else under .rn-forge/kiln/ is kiln's.
 #
-# kiln's own config. It is not self-hosting yet: this file, and the state.json
-# beside it, are hand-authored in Phase B and become real output in Phase D,
-# when kiln regenerates its own skeleton.
+# kiln's own config. kiln generates its own skeleton from it: the `python-app`
+# archetype with `lifecycle = true`, the module declared below.
 schema_version = 1
 
 [repository]
 name = "kiln"
-archetype = "python-tool"
+archetype = "python-app"
+lifecycle = true
+
+[archetype."python-app"]
+module = "rn_forge.kiln"
 
 [docs]
 profile = "mkdocs"

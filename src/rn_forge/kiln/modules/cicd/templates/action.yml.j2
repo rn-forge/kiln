@@ -35,5 +35,5 @@ runs:
         cache: pnpm
 {% endif %}{% for hook in hooks.setup %}
     - name: Run [[ hook ]]
-      uses: [[ hook ]]
+      uses: [[ hook ]] # zizmor: ignore[self-repository] actionlint rejects the $/ form
 {% endfor -%}

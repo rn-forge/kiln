@@ -45,7 +45,7 @@ def test_s4_7_1_1_three_contracts() -> None:
         s.removeprefix(PREFIX) for s in _config().sections() if s.startswith(PREFIX)
     }
     assert sections == {
-        "no-kit-imports",
+        "frameworks-come-from-rn-forge",
         "render-free-checks",
         "concern-modules-are-independent",
     }

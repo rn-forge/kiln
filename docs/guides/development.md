@@ -13,10 +13,9 @@ task docs:serve  # live docs on http://127.0.0.1:8080
 
 ## This repo's own skeleton
 
-kiln's skeleton is a hand-copy of `tests/fixtures/golden/python-tool`, with the
-names changed. It regenerates itself once the generator exists
-([ADR-0005](../adr/ADR-0005.md)); until then, a change to the golden repo's
-skeleton is a change kiln should make here too, by hand.
+kiln generates its own skeleton from `.rn-forge/kiln/config.toml` (the
+`python-app` archetype, `lifecycle = true`). Change the config or a template and
+run `kiln apply`; never edit a generated file.
 
 ## Changing a golden repo
 
