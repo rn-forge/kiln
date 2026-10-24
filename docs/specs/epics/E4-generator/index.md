@@ -17,7 +17,7 @@
 | [F4.6 — doctor](F4.6-doctor.md) | Closed | release-1 | 5 Closed |
 | [F4.7 — Import contracts](F4.7-import-contracts.md) | Closed | release-1 | 3 Closed |
 | [F4.8 — Self-hosting](F4.8-self-hosting.md) | Active | release-1 | 1 New · 2 Closed |
-| [F4.9 — Seeded starter source](F4.9-seeded-starter-source.md) | Active | release-1 | 5 Closed |
+| [F4.9 — Seeded starter source](F4.9-seeded-starter-source.md) | Closed | release-1 | 5 Closed |
 | [F4.10 — TOML formatting](F4.10-toml-formatting.md) | Closed | release-1 | 1 Closed |
 | [F4.11 — Generated CI enhancements](F4.11-ci-enhancements.md) | Active | release-1 | 6 Closed |
 | [F4.12 — The task files follow their owners](F4.12-task-files-by-owner.md) | Closed | release-1 | 7 Closed |
@@ -40,8 +40,9 @@ F5.2 are built after S4.5.2 and before F4.4, and
 [E11](../E11-package-docs/index.md)'s F11.1–F11.3 before F4.4, whose
 `python-lib` cell needs `kiln generate package` ([board](../../index.md#order)).
 
-**Where it stands (2026-10-13).** F4.1, F4.2 and F4.3 are done — S4.3.6, the
-owner's Sonar decisions, closed on 2026-10-13. F4.6–F4.9 have not started.
+**Where it stands (2026-10-24).** F4.1–F4.7, F4.9 (closed 2026-10-24), F4.10 and
+F4.12 are closed. F4.8 has S4.8.1 left, and F4.11's stories are all closed with
+the feature awaiting the owner.
 
 **F4.5 (closed 2026-10-13).** Every command is on the declared app: `new`
 (staged, seeded, from a path or a `git+` config source), `apply`, `diff`,

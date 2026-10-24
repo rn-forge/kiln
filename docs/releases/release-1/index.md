@@ -48,7 +48,7 @@ are [release-2](../release-2/index.md).
 | [F4.6 — doctor](../../specs/epics/E4-generator/F4.6-doctor.md) | E4 | Closed |
 | [F4.7 — Import contracts](../../specs/epics/E4-generator/F4.7-import-contracts.md) | E4 | Closed |
 | [F4.8 — Self-hosting](../../specs/epics/E4-generator/F4.8-self-hosting.md) | E4 | Active |
-| [F4.9 — Seeded starter source](../../specs/epics/E4-generator/F4.9-seeded-starter-source.md) | E4 | Active |
+| [F4.9 — Seeded starter source](../../specs/epics/E4-generator/F4.9-seeded-starter-source.md) | E4 | Closed |
 | [F4.10 — TOML formatting](../../specs/epics/E4-generator/F4.10-toml-formatting.md) | E4 | Closed |
 | [F4.11 — Generated CI enhancements](../../specs/epics/E4-generator/F4.11-ci-enhancements.md) | E4 | Active |
 | [F4.12 — The task files follow their owners](../../specs/epics/E4-generator/F4.12-task-files-by-owner.md) | E4 | Closed |
@@ -110,8 +110,8 @@ As of 2026-10-16. E3 shipped 2026-09-15; F4.1–F4.7, F5.1, F5.2, F6.3, F7.1,
 F11.1–F11.4, F13.1–F13.3 and F14.1–F14.2 are closed, the last eight on
 2026-10-16 when their acceptance blocks passed. F6.3's and F11.2's blocks were
 corrected for goldens that now render into `.goldens/working`, and F14.1's
-sidebar check found E1 missing from its range until S14.1.3 was corrected. Every
-story is closed in F4.9; the feature awaits the owner. F4.8 has one story, not
+sidebar check found E1 missing from its range until S14.1.3 was corrected. F4.9
+closed on 2026-10-24, when its acceptance block passed. F4.8 has one story, not
 started. F6.1 has S6.1.1 open: its fifth run, after the script was corrected and
 pykit landed its F16.4, fails only because pykit's `rn-forge-devops` has no
 `docs/guides/`; it stays open for in-place adoption. S6.1.5 is closed, and run 1
