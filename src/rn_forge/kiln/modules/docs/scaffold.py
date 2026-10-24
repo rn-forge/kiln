@@ -8,11 +8,15 @@ from __future__ import annotations
 
 import textwrap
 import tomllib
+from functools import cache
 from pathlib import Path
 
 from rn_forge.tooling.templates import TemplateEngine
 
 from rn_forge.kiln.config import KilnConfig
+
+# One engine per process, so Jinja compiles each template once.
+_engine = cache(TemplateEngine)
 
 __all__ = ["PACKAGE_SEEDS", "add_package", "scaffold"]
 
@@ -41,7 +45,7 @@ def scaffold(root: Path, config: KilnConfig) -> None:
         if config.archetype == "python-lib"
         else ["src", *(f"{package}/src" for package in config.packages)]
     )
-    engine = TemplateEngine(package="rn_forge.kiln.modules.docs")
+    engine = _engine(package="rn_forge.kiln.modules.docs")
     target.write_text(
         engine.render(
             "mkdocs.yml.j2",
@@ -84,7 +88,7 @@ def add_package(root: Path, config: KilnConfig, name: str) -> list[Path]:
             links, width=_WRAP, break_long_words=False, break_on_hyphens=False
         ),
     }
-    engine = TemplateEngine(package="rn_forge.kiln.modules.docs")
+    engine = _engine(package="rn_forge.kiln.modules.docs")
     written: list[Path] = []
     for seed in PACKAGE_SEEDS:
         target = root / package / seed

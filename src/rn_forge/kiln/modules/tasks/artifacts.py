@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import cache
 from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
@@ -14,6 +15,9 @@ from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs.config import DocsConfig
 from rn_forge.kiln.modules.python.artifacts import root_package
 from rn_forge.kiln.modules.tasks.config import TasksConfig
+
+# One engine per process, so Jinja compiles each template once.
+_engine = cache(TemplateEngine)
 
 __all__ = ["render"]
 
@@ -112,7 +116,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "web_dir": web_dir,
         "web_project": Path(web_dir).name if web_dir else None,
     }
-    engine = TemplateEngine(
+    engine = _engine(
         package="rn_forge.kiln.modules.tasks",
         variable_start_string="[[",
         variable_end_string="]]",

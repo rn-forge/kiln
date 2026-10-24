@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from functools import cache
 from pathlib import Path
 
 from rn_forge.commons.fs.blocks import ManagedBlock
@@ -13,6 +14,9 @@ from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd.config import CiConfig
 from rn_forge.kiln.modules.docs.config import DocsConfig
+
+# One engine per process, so Jinja compiles each template once.
+_engine = cache(TemplateEngine)
 
 __all__ = ["KILN_BLOCK", "context", "render"]
 
@@ -168,7 +172,7 @@ def context(config: KilnConfig) -> dict[str, object]:
 
 def render(config: KilnConfig) -> list[Artifact]:
     """Render the kiln block in `CLAUDE.md` and `.rn-forge/kiln/standard.md`."""
-    engine = TemplateEngine(package=_PACKAGE)
+    engine = _engine(package=_PACKAGE)
     values = context(config)
     return [
         Artifact(

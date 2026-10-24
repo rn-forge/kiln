@@ -87,8 +87,11 @@ def _codes(root: Path) -> list[str]:
 
 
 def _run_task(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
+    # The generated CI sets KILN_DOCTOR_FULL on push and dispatch; a test asks
+    # for it explicitly, never inherits it.
+    env = {k: v for k, v in os.environ.items() if k != "KILN_DOCTOR_FULL"}
     return subprocess.run(
-        ["task", *args], cwd=root, capture_output=True, text=True, check=False
+        ["task", *args], cwd=root, capture_output=True, text=True, check=False, env=env
     )
 
 

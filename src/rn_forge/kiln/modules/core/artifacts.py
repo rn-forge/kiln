@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+from functools import cache
+
 from rn_forge.commons.fs.blocks import ManagedBlock
 from rn_forge.tooling.generation import Artifact, ArtifactKind
 from rn_forge.tooling.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
+
+# One engine per process, so Jinja compiles each template once.
+_engine = cache(TemplateEngine)
 
 __all__ = ["GITIGNORE_BLOCK", "render"]
 
@@ -17,7 +22,7 @@ GITIGNORE_BLOCK = ManagedBlock("rn-forge kiln")
 
 def render(config: KilnConfig) -> list[Artifact]:
     """Render `.editorconfig`, `.mdformat.toml`, `.taplo.toml`, the workspace file and the `.gitignore` block."""
-    engine = TemplateEngine(package="rn_forge.kiln.modules.core")
+    engine = _engine(package="rn_forge.kiln.modules.core")
     context = {"kiln_version": __version__}
     return [
         Artifact(

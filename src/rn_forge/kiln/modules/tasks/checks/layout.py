@@ -121,7 +121,7 @@ def include_map(document: object) -> dict[str, str]:
 
 
 def _load_yaml(path: Path) -> object:
-    return yaml.safe_load(path.read_text(encoding="utf-8"))
+    return yaml.load(path.read_text(encoding="utf-8"), Loader=yaml.CSafeLoader)
 
 
 def load_graph(root: Path) -> tuple[dict[str, object], set[str]]:

@@ -79,6 +79,13 @@ def write_state(tmp_path: Path):
     return build
 
 
+# The flags `kiln new` needs for an archetype beyond `--archetype` and `--docs`.
+FLAGS: dict[str, dict[str, str]] = {
+    "python-web-api": {"backend": "fastapi"},
+    "python-web-app": {"backend": "fastapi", "frontend": "angular"},
+}
+
+
 @pytest.fixture(scope="session")
 def rendered(tmp_path_factory: pytest.TempPathFactory) -> Callable[[str], Path]:
     """Return `(archetype) -> Path` to a repository `kiln new` rendered once.
@@ -95,7 +102,13 @@ def rendered(tmp_path_factory: pytest.TempPathFactory) -> Callable[[str], Path]:
         parent = tmp_path_factory.mktemp(archetype)
         with pytest.MonkeyPatch.context() as patch:
             patch.chdir(parent)
-            commands.new(Path(archetype), archetype=archetype, docs="mkdocs", yes=True)
+            commands.new(
+                Path(archetype),
+                archetype=archetype,
+                docs="mkdocs",
+                yes=True,
+                **FLAGS.get(archetype, {}),
+            )
         root = parent / archetype
         if archetype == "python-lib":
             for args in (

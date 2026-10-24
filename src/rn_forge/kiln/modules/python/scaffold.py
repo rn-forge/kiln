@@ -13,6 +13,7 @@ import re
 import shutil
 import tempfile
 import tomllib
+from functools import cache
 from pathlib import Path
 from typing import Any, cast
 
@@ -261,10 +262,12 @@ def _write_sample_test(package: Path, name: str, module: str | None = None) -> N
     path.write_text(sample_test(name, module), encoding="utf-8")
 
 
+@cache
 def uv_gitignore() -> str:
     """The `.gitignore` body uv writes into a new Git repository.
 
-    Captured in a temporary directory: the target itself never gets a `.git/`.
+    Captured in a temporary directory, once per process: the target itself
+    never gets a `.git/`.
 
     Raises:
         AppException: `uv` is not on `PATH`, or exits non-zero.

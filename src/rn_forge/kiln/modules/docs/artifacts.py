@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import cache
 from pathlib import Path
 
 from rn_forge.tooling.generation import Artifact, ArtifactKind
@@ -9,6 +10,9 @@ from rn_forge.tooling.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
+
+# One engine per process, so Jinja compiles each template once.
+_engine = cache(TemplateEngine)
 
 __all__ = ["SEEDS", "render"]
 
@@ -56,7 +60,7 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
     """Render the seeded docs tree, for an `mkdocs` repo at *root*."""
     if config.docs_profile != "mkdocs":
         return []
-    engine = TemplateEngine(package="rn_forge.kiln.modules.docs")
+    engine = _engine(package="rn_forge.kiln.modules.docs")
     context = {
         "name": config.name,
         "archetype": config.archetype,

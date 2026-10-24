@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import cache
 from pathlib import Path
 
 from rn_forge.commons.fs.documents import DocumentError, DocumentUtils
@@ -10,6 +11,9 @@ from rn_forge.tooling.templates import TemplateEngine
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.frontend.angular import SCAFFOLD_APP_DIR
+
+# One engine per process, so Jinja compiles each template once.
+_engine = cache(TemplateEngine)
 
 __all__ = ["render"]
 
@@ -49,7 +53,7 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
         return []
     if not _has_ngkit(root):
         return []
-    engine = TemplateEngine(package="rn_forge.kiln.modules.frontend")
+    engine = _engine(package="rn_forge.kiln.modules.frontend")
     return [
         Artifact(
             f"{web_dir}/{relative}",

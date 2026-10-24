@@ -67,7 +67,9 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
                     path=job.uses,
                 )
             )
-        elif not _calls(yaml.safe_load(path.read_text(encoding="utf-8"))):
+        elif not _calls(
+            yaml.load(path.read_text(encoding="utf-8"), Loader=yaml.CSafeLoader)
+        ):
             findings.append(
                 Finding(
                     NOT_CALLABLE,

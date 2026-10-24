@@ -55,7 +55,7 @@ def _check_uses(label: str, text: str) -> list[Finding]:
 
 
 def _check_permissions(label: str, text: str) -> list[Finding]:
-    jobs = documents.table(yaml.safe_load(text), "jobs")
+    jobs = documents.table(yaml.load(text, Loader=yaml.CSafeLoader), "jobs")
     return [
         Finding(
             PERMISSIONS,

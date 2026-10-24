@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from rn_forge.kiln import checks, commands
+from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.tasks.checks import layout
 from rn_forge.kiln.modules.tasks.config import ROOT_VERBS
@@ -458,25 +458,6 @@ def test_s4_6_2_2_unresolved_ref_in_a_managed_block(repo, write_state) -> None:
     assert (unresolved.path, unresolved.line) == ("CLAUDE.md", 7)
 
 
-def _render_cell(tmp_path_factory, name: str, archetype: str, **flags: str) -> Path:
-    parent = tmp_path_factory.mktemp(name)
-    with pytest.MonkeyPatch.context() as patch:
-        patch.chdir(parent)
-        commands.new(Path(name), archetype=archetype, docs="mkdocs", yes=True, **flags)
-    return parent / name
-
-
-CELLS = {
-    "python-app": ("python-app", {}),
-    "python-tool": ("python-tool", {}),
-    "python-web-api": ("python-web-api", {"backend": "fastapi"}),
-    "python-web-app": (
-        "python-web-app",
-        {"backend": "fastapi", "frontend": "angular"},
-    ),
-}
-
-
 @pytest.mark.parametrize(
     "cell",
     [
@@ -493,12 +474,6 @@ CELLS = {
         "python-lib",
     ],
 )
-def test_s4_6_2_3_every_rendered_cell_passes(
-    cell: str, rendered, tmp_path_factory: pytest.TempPathFactory
-) -> None:
-    if cell == "python-lib":
-        root = rendered("python-lib")
-    else:
-        archetype, flags = CELLS[cell]
-        root = _render_cell(tmp_path_factory, cell, archetype, **flags)
+def test_s4_6_2_3_every_rendered_cell_passes(cell: str, rendered) -> None:
+    root = rendered(cell)
     assert layout.check(KilnConfig.load(root), root) == []

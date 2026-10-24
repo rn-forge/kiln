@@ -11,7 +11,6 @@ from unittest import mock
 import pytest
 from rn_forge.tooling.generation import ArtifactKind
 
-from rn_forge.kiln import commands
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.frontend import FRONTEND
 from rn_forge.kiln.modules.frontend.angular import NGKIT_URL, scaffold_angular
@@ -215,19 +214,8 @@ def test_s4_9_3_3_scaffold_adds_the_ngkit_dependency(tmp_path: Path) -> None:
     shutil.which("pnpm") is None and not os.environ.get("CI"),
     reason="pnpm is not on PATH",
 )
-def test_s4_9_3_4_new_records_seeded(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.chdir(tmp_path)
-    directory = tmp_path / "demo"
-    commands.new(
-        directory,
-        archetype="python-web-app",
-        docs="none",
-        backend="fastapi",
-        frontend="angular",
-        yes=True,
-    )
+def test_s4_9_3_4_new_records_seeded(rendered) -> None:
+    directory = rendered("python-web-app")
     entries = json.loads(
         (directory / ".rn-forge" / "kiln" / "state.json").read_text(encoding="utf-8")
     )["entries"]
