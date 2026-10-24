@@ -11,6 +11,8 @@
 | -- | -- | -- | -- |
 | [F7.1 — kiln renders and takes pykit by release tag](F7.1-tag-pins.md) | Closed | release-1 | 2 Closed |
 | [F7.2 — A tagged kiln release, taken by each repository](F7.2-kiln-release-and-config-upgrade.md) | New | release-1 | — |
+| [F7.3 — kiln takes pykit's document, template and Markdown helpers](F7.3-adopt-pykit-extraction.md) | New | release-1 | 6 New |
+| [F7.4 — kiln runs beside a repository, not inside its lock](F7.4-kiln-runs-beside-the-repository.md) | New | release-1 | 4 New |
 
 <!-- END derived features -->
 
@@ -32,5 +34,10 @@ pin alignment.
    `kiln upgrade` ([ADR-0006](../../../adr/ADR-0006.md)).
 1. Flip the rn-forge source value in kiln's defaults from branch to tag.
 1. Run `kiln config upgrade --apply` in each repo.
+1. Run kiln beside each repository, pinned in `config.toml`, so kiln's pykit
+   pins and a repository's are independent
+   ([F7.4](F7.4-kiln-runs-beside-the-repository.md)).
+1. Take pykit's later releases when kiln needs what they add, and delete what
+   kiln wrote in their place ([F7.3](F7.3-adopt-pykit-extraction.md)).
 
 Once released, consumers pin release tags (D46).
