@@ -62,6 +62,12 @@ text.
 - **After changing a managed file's source, run `kiln apply`.** It rewrites the
   file and `.rn-forge/kiln/state.json`; `task lint` fails with
   `has drifted from the committed state` on an edit in place.
+- **A template change lands on this repo in the same change.** Run `kiln apply`
+  here after editing a template, so kiln's own generated files match a fresh
+  render, and prove it with `task lint KILN_DOCTOR_FULL=1`. CI runs that full
+  check only on `main` and on dispatch, so a pull request that skips the apply
+  passes and then fails on `main`. Never hand-copy a rendered file into this
+  repo; S4.8.1 retired that.
 - An ADR carries a decision and the alternatives rejected. The moment it starts
   enumerating — verbs, paths, dependency sets — it has become a spec and
   belongs in `docs/reference/standard-repo.md`.
