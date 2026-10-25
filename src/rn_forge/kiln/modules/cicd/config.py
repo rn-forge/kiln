@@ -99,6 +99,9 @@ class CiConfig(StrictModel):
     """`ado` is reserved."""
     sonar: bool = True
     release: Literal["tag-exists", "none"] = "tag-exists"
+    doctor_full: Literal["default-branch", "every-run"] = "default-branch"
+    """When CI runs `kiln doctor --full`: pushes to the default branch and
+    dispatch, or every run."""
     hooks: CiHooks = Field(default_factory=CiHooks)
     jobs: list[CiJob] = Field(default_factory=list[CiJob])
     """Extra jobs, each calling one reusable workflow after `validate`."""

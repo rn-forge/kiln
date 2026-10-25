@@ -158,7 +158,8 @@ included — is a subprocess or nothing.
 CI runs the pinned kiln read-only: it never runs `kiln apply`
 and never writes a generated file. `task validate` runs `kiln doctor` on every
 run; `kiln doctor --full` runs where the workflow asks, through `lint` with
-the `KILN_DOCTOR_FULL` task variable set.
+the `KILN_DOCTOR_FULL` task variable set. `[ci] doctor_full` chooses
+where: pushes to the default branch and dispatch by default, or every run.
 Branch protection requires `ci-ok` and nothing else.
 
 `task validate` proves: ruff is clean and formatted; the archetype's

@@ -81,6 +81,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "docs": docs,
         "sonar": ci.sonar,
         "release": ci.release,
+        "doctor_full": ci.doctor_full,
         "plan_keys": _PLAN_KEYS,
         "pins": load_pins(),
         "organization": SONAR_ORGANIZATION,

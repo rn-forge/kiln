@@ -57,7 +57,7 @@ jobs:
       - name: Validate
         run: task validate
         env:
-          KILN_DOCTOR_FULL: ${{ ((github.event_name == 'push' && github.ref_name == github.event.repository.default_branch) || github.event_name == 'workflow_dispatch') && '1' || '' }}
+          KILN_DOCTOR_FULL: "1"
 
   # Fails a pull request that adds a dependency with a known vulnerability, from
   # GitHub's dependency graph. Skipped on a push, which `ci-ok` treats as a pass.

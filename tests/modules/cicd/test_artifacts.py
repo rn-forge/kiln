@@ -1955,3 +1955,56 @@ def test_s4_11_7_7_actionlint_passes_on_a_docs_hook(tmp_path: Path) -> None:
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def _ci_workflow(root: Path) -> dict[str, object]:
+    return yaml.safe_load(_rendered(root)[".github/workflows/ci.yml"])
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s4_11_8_1_default_is_byte_identical(tmp_path: Path, archetype: str) -> None:
+    plain = _rendered(_root(tmp_path / "plain", archetype))
+    named = _rendered(
+        _with_ci(
+            _root(tmp_path / "named", archetype), 'doctor_full = "default-branch"\n'
+        )
+    )
+    assert plain[".github/workflows/ci.yml"] == named[".github/workflows/ci.yml"]
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s4_11_8_2_every_run_sets_the_variable(tmp_path: Path, archetype: str) -> None:
+    default = _ci_workflow(_root(tmp_path / "default", archetype))
+    every = _ci_workflow(
+        _with_ci(_root(tmp_path / "every", archetype), 'doctor_full = "every-run"\n')
+    )
+    steps = every["jobs"]["validate"]["steps"]  # type: ignore[index]
+    step = next(s for s in steps if s["name"] == "Validate")
+    assert step["env"] == {"KILN_DOCTOR_FULL": "1"}
+    step["env"] = next(
+        s
+        for s in default["jobs"]["validate"]["steps"]  # type: ignore[index]
+        if s["name"] == "Validate"
+    )["env"]
+    assert every == default
+
+
+def test_s4_11_8_3_bad_value_is_refused(tmp_path: Path) -> None:
+    root = _with_ci(_root(tmp_path, "python-tool"), 'doctor_full = "always"\n')
+    with pytest.raises(AppException, match=r"ci\.doctor_full"):
+        KilnConfig.load(root)
+
+
+def test_s4_11_8_4_actionlint_passes_on_every_run(tmp_path: Path) -> None:
+    if shutil.which("actionlint") is None:
+        pytest.skip("actionlint is not on PATH")
+    root = _with_ci(_root(tmp_path, "python-app"), 'doctor_full = "every-run"\n')
+    cycle.apply(root, home=tmp_path / "home")
+    result = subprocess.run(
+        ["actionlint", ".github/workflows/ci.yml"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

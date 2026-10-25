@@ -70,7 +70,7 @@ jobs:
       - name: Validate
         run: {% if workspace %}task lint{% else %}task validate{% endif %}
         env:
-          KILN_DOCTOR_FULL: ${{ ((github.event_name == 'push' && github.ref_name == github.event.repository.default_branch) || github.event_name == 'workflow_dispatch') && '1' || '' }}
+          KILN_DOCTOR_FULL: {% if doctor_full == "every-run" %}"1"{% else %}${{ ((github.event_name == 'push' && github.ref_name == github.event.repository.default_branch) || github.event_name == 'workflow_dispatch') && '1' || '' }}{% endif %}
 {% if workspace %}
       - name: Check adapters
         run: task ci:adapters

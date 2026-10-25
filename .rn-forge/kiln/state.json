@@ -23,7 +23,7 @@
     },
     ".github/workflows/ci.yml": {
       "begin_marker": null,
-      "content_hash": "a5c7e07c4363412db1dd170b6367fce8d65d8eee464dfcab1b19a2fa5c2986a3",
+      "content_hash": "fadb9aea20ddd623316de543b4a8be6c6ed0c5268d52f25c65da1b95ecae012d",
       "end_marker": null,
       "kind": "managed",
       "path": ".github/workflows/ci.yml"
@@ -58,7 +58,7 @@
     },
     ".rn-forge/kiln/standard.md": {
       "begin_marker": null,
-      "content_hash": "c7edacad363e153a5715fe9f445b149e4cb83c8547e999300ae8391104689e57",
+      "content_hash": "5c48678221c2d3fdf10b9c00b735347e6bc6a001dc6ca2b4de8f8d6a9e2ee8d8",
       "end_marker": null,
       "kind": "managed",
       "path": ".rn-forge/kiln/standard.md"
@@ -303,7 +303,7 @@
     }
   },
   "metadata": {
-    "config_hash": "f1b5726edafd4e3c1c08bd5a5762a70eaeb289f848bed41ad9c17ab32a5e22ef",
+    "config_hash": "90ff3f37aafcc8982adc750f76c02f6d07e9560531a1e5b7317df143e2844a35",
     "kiln_version": "0.1.0"
   },
   "schema_version": "1"

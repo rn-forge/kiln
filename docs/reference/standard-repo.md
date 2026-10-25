@@ -296,6 +296,8 @@ once, through the internal task `kiln:doctor`. It also runs the workflow linters
 `kiln doctor --full`, which adds a full render and diff, runs where the workflow
 asks for it: `kiln:doctor` runs it when the `KILN_DOCTOR_FULL` task variable is
 set, by default on pushes to the default branch and on manual dispatch.
+`[ci] doctor_full` chooses where: pushes to the default branch and dispatch by
+default, or every run.
 
 A cold clone with go-task and the pinned language toolchain — `uv sync`, but no
 installed kiln, no `$RNF_HOME`, no bootstrap script — proves all of this:
