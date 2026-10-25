@@ -41,8 +41,10 @@ F5.2 are built after S4.5.2 and before F4.4, and
 `python-lib` cell needs `kiln generate package` ([board](../../index.md#order)).
 
 **Where it stands (2026-10-24).** F4.1–F4.7, F4.9 (closed 2026-10-24), F4.10 and
-F4.12 are closed. F4.8 has S4.8.1 left, and F4.11's stories are all closed with
-the feature awaiting the owner.
+F4.12 are closed. F4.8's and F4.11's stories are all closed. Both features wait
+on a pull-request run of kiln's CI that runs `golden-render`; the dispatch half
+passed on 2026-10-25. F4.11 also waits on the Dependabot tab and a real
+release's attestation checks.
 
 **F4.5 (closed 2026-10-13).** Every command is on the declared app: `new`
 (staged, seeded, from a path or a `git+` config source), `apply`, `diff`,

@@ -113,22 +113,22 @@ F11.1–F11.4, F13.1–F13.3 and F14.1–F14.2 are closed, the last eight on
 2026-10-16 when their acceptance blocks passed. F6.3's and F11.2's blocks were
 corrected for goldens that now render into `.goldens/working`, and F14.1's
 sidebar check found E1 missing from its range until S14.1.3 was corrected. F4.9
-closed on 2026-10-24, when its acceptance block passed. F4.8 has one story, not
-started. F6.1 has S6.1.1 open: its fifth run, after the script was corrected and
-pykit landed its F16.4, fails only because pykit's `rn-forge-devops` has no
-`docs/guides/`; it stays open for in-place adoption. S6.1.5 is closed, and run 1
-of adopting pykit in place, on an unmerged pykit branch, wrote S6.1.6–S6.1.13:
-`init` fixes, the shipped `adopt` prompt proved by a second pykit run, a
-decision on kiln's area rules, and S6.1.14's rules taken from pykit's.
-Rebuilding a far-off repository and porting it is F6.5, not yet scheduled.
-F6.4's planner pin was met 2026-10-16 (`rn-forge-devops-v0.1.0`); S6.4.6 and
-S11.5.1 were added 2026-10-18 to retire pykit's `main.yml`. S6.4.7 was added the
-same day, to bring `python-lib`'s release to [ADR-0016](../../adr/ADR-0016.md)'s
-rule (default branch only, after Sonar); it waits on a pykit change to
-`rn-forge-devops`. F5.3 closed 2026-10-21 on its two shipped cells, approved at
-kiln `c62d4e2`; its real-application proof moved to F6.5 (S6.5.3, apollo), which
-is not in this release. F9.1 has no stories written
-([board](../../specs/index.md#order)).
+closed on 2026-10-24, when its acceptance block passed. F4.8's stories are
+closed; it waits on a pull-request CI run that runs `golden-render`. F6.1 has
+S6.1.1 open: its fifth run, after the script was corrected and pykit landed its
+F16.4, fails only because pykit's `rn-forge-devops` has no `docs/guides/`; it
+stays open for in-place adoption. S6.1.5 is closed, and run 1 of adopting pykit
+in place, on an unmerged pykit branch, wrote S6.1.6–S6.1.13: `init` fixes, the
+shipped `adopt` prompt proved by a second pykit run, a decision on kiln's area
+rules, and S6.1.14's rules taken from pykit's. Rebuilding a far-off repository
+and porting it is F6.5, not yet scheduled. F6.4's planner pin was met 2026-10-16
+(`rn-forge-devops-v0.1.0`); S6.4.6 and S11.5.1 were added 2026-10-18 to retire
+pykit's `main.yml`. S6.4.7 was added the same day, to bring `python-lib`'s
+release to [ADR-0016](../../adr/ADR-0016.md)'s rule (default branch only, after
+Sonar); it waits on a pykit change to `rn-forge-devops`. F5.3 closed 2026-10-21
+on its two shipped cells, approved at kiln `c62d4e2`; its real-application proof
+moved to F6.5 (S6.5.3, apollo), which is not in this release. F9.1 has no
+stories written ([board](../../specs/index.md#order)).
 
 ## Commits
 
