@@ -79,12 +79,14 @@ jobs:
 
   sonar:
     needs: validate
-    # A fork's pull request cannot see SONAR_TOKEN, so an unconditional scan job
-    # fails on every external contribution. Validation stays required; the scan
-    # is skipped where its credential cannot exist.
+    # The scan runs on a same-repository pull request and on main, nowhere else.
+    # A fork's pull request cannot see SONAR_TOKEN, and SonarQube Cloud's free
+    # plan keeps no readable result for any other branch, so the quality-gate
+    # wait fails there. Validation stays required; the scan is skipped.
     if: >-
-      github.event_name != 'pull_request' ||
-      github.event.pull_request.head.repo.full_name == github.repository
+      (github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository) ||
+      (github.event_name != 'pull_request' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -105,9 +107,9 @@ jobs:
       - name: Install dependencies
         run: task setup
 
-      # A push or dispatch names its branch, so the analysis lands on that
-      # branch rather than the project's main. A pull request keeps the
-      # scanner's own detection. A tag has no branch to analyse.
+      # A push or dispatch names its branch (main, by the job's `if`), so the
+      # analysis lands on it explicitly. A pull request keeps the scanner's own
+      # detection. A tag has no branch to analyse.
       - name: Resolve the analysis target
         id: target
         env:

@@ -469,6 +469,18 @@ def test_s6_3_3_ref_text_reaches_run_only_through_env(tmp_path: Path) -> None:
             assert "github.head_ref" not in run, root.name
 
 
+def test_s6_3_8_sonar_runs_only_on_a_pull_request_or_main(tmp_path: Path) -> None:
+    for root in _ci_ok_roots(tmp_path):
+        if root.name == "nosonar":
+            continue
+        condition = " ".join(str(_ci_jobs(root)["sonar"]["if"]).split())
+        assert (
+            "(github.event_name == 'pull_request' && "
+            "github.event.pull_request.head.repo.full_name == github.repository) || "
+            "(github.event_name != 'pull_request' && github.ref == 'refs/heads/main')"
+        ) in condition, root.name
+
+
 def _release_steps(root: Path) -> list[dict[str, object]]:
     return _ci_jobs(root)["release"]["steps"]  # type: ignore[return-value]
 
