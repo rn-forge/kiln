@@ -50,13 +50,13 @@ are [release-2](../release-2/index.md).
 | [F4.8 — Self-hosting](../../specs/epics/E4-generator/F4.8-self-hosting.md) | E4 | Closed |
 | [F4.9 — Seeded starter source](../../specs/epics/E4-generator/F4.9-seeded-starter-source.md) | E4 | Closed |
 | [F4.10 — TOML formatting](../../specs/epics/E4-generator/F4.10-toml-formatting.md) | E4 | Closed |
-| [F4.11 — Generated CI enhancements](../../specs/epics/E4-generator/F4.11-ci-enhancements.md) | E4 | Active |
+| [F4.11 — Generated CI enhancements](../../specs/epics/E4-generator/F4.11-ci-enhancements.md) | E4 | Closed |
 | [F4.12 — The task files follow their owners](../../specs/epics/E4-generator/F4.12-task-files-by-owner.md) | E4 | Closed |
 | [F5.1 — Library sets, and the modules gain the web shapes](../../specs/epics/E5-web-archetypes/F5.1-web-library-sets-and-modules.md) | E5 | Closed |
 | [F5.2 — `kiln new` end to end for the web archetypes](../../specs/epics/E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md) | E5 | Closed |
 | [F5.3 — Prove and ship the FastAPI cells](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) | E5 | Closed |
 | [F6.1 — `python-lib` can host pykit](../../specs/epics/E6-rebuild-the-repos/F6.1-pykit-skeleton.md) | E6 | Closed |
-| [F6.3 — The generated CI matches the hardened upstream CI](../../specs/epics/E6-rebuild-the-repos/F6.3-hardened-ci.md) | E6 | Active |
+| [F6.3 — The generated CI matches the hardened upstream CI](../../specs/epics/E6-rebuild-the-repos/F6.3-hardened-ci.md) | E6 | Closed |
 | [F6.4 — `python-lib` renders pykit's discovered workspace pipeline](../../specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md) | E6 | Active |
 | [F6.6 — `kiln init` leaves the gate runnable](../../specs/epics/E6-rebuild-the-repos/F6.6-init-leaves-gate-runnable.md) | E6 | Active |
 | [F6.7 — kiln ships the CI planner as `kiln-devops`](../../specs/epics/E6-rebuild-the-repos/F6.7-kiln-devops.md) | E6 | New |
@@ -69,7 +69,7 @@ are [release-2](../release-2/index.md).
 | [F11.2 — `python-lib` repositories carry package docs sites](../../specs/epics/E11-package-docs/F11.2-python-lib-package-sites.md) | E11 | Closed |
 | [F11.3 — `kiln generate package`](../../specs/epics/E11-package-docs/F11.3-generate-package.md) | E11 | Closed |
 | [F11.4 — The docs rules are one standard, and kiln owns them](../../specs/epics/E11-package-docs/F11.4-cross-repository-rule.md) | E11 | Closed |
-| [F11.5 — CI deploys versioned package sites](../../specs/epics/E11-package-docs/F11.5-deploy-package-sites.md) | E11 | Active |
+| [F11.5 — CI deploys versioned package sites](../../specs/epics/E11-package-docs/F11.5-deploy-package-sites.md) | E11 | Closed |
 | [F13.1 — Derived regions, starting with the nav](../../specs/epics/E13-docs-work-model/F13.1-derived-regions.md) | E13 | Closed |
 | [F13.2 — The board and Scope regions, and metadata checks](../../specs/epics/E13-docs-work-model/F13.2-board-and-scope.md) | E13 | Closed |
 | [F13.3 — The seeded rules and kiln's own docs adopt the model](../../specs/epics/E13-docs-work-model/F13.3-adopt-the-model.md) | E13 | Closed |
@@ -105,6 +105,8 @@ are [release-2](../release-2/index.md).
   are exempt from the rn-forge dependency contract (F6.1, F6.4).
 - [ADR-0015](../../adr/ADR-0015.md) — added 2026-10-14: `node-lib` renders
   ngkit's CI (E9).
+- [ADR-0018](../../adr/ADR-0018.md) — accepted 2026-10-25: rn-forge dependencies
+  are version ranges from pykit's package index (F7.3).
 
 ## Progress
 
@@ -114,7 +116,8 @@ F11.1–F11.4, F13.1–F13.3 and F14.1–F14.2 are closed, the last eight on
 corrected for goldens that now render into `.goldens/working`, and F14.1's
 sidebar check found E1 missing from its range until S14.1.3 was corrected. F4.9
 closed on 2026-10-24, when its acceptance block passed. F4.8 closed on
-2026-10-25, when its pull-request CI run passed. F6.1 has S6.1.1 open: its fifth
+2026-10-25, when its pull-request CI run passed, and F4.11, F6.3 and F11.5 the
+same day, when their acceptance blocks passed. F6.1 has S6.1.1 open: its fifth
 run, after the script was corrected and pykit landed its F16.4, fails only
 because pykit's `rn-forge-devops` has no `docs/guides/`; it stays open for
 in-place adoption. S6.1.5 is closed, and run 1 of adopting pykit in place, on an

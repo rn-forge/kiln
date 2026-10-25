@@ -19,7 +19,7 @@
 | [F4.8 — Self-hosting](F4.8-self-hosting.md) | Closed | release-1 | 3 Closed |
 | [F4.9 — Seeded starter source](F4.9-seeded-starter-source.md) | Closed | release-1 | 5 Closed |
 | [F4.10 — TOML formatting](F4.10-toml-formatting.md) | Closed | release-1 | 1 Closed |
-| [F4.11 — Generated CI enhancements](F4.11-ci-enhancements.md) | Active | release-1 | 8 Closed |
+| [F4.11 — Generated CI enhancements](F4.11-ci-enhancements.md) | Closed | release-1 | 8 Closed |
 | [F4.12 — The task files follow their owners](F4.12-task-files-by-owner.md) | Closed | release-1 | 7 Closed |
 
 <!-- END derived features -->
@@ -40,12 +40,10 @@ F5.2 are built after S4.5.2 and before F4.4, and
 [E11](../E11-package-docs/index.md)'s F11.1–F11.3 before F4.4, whose
 `python-lib` cell needs `kiln generate package` ([board](../../index.md#order)).
 
-**Where it stands (2026-10-25).** F4.1–F4.7, F4.8 (closed 2026-10-25), F4.9
-(closed 2026-10-24), F4.10 and F4.12 are closed. F4.11 has two new stories:
-S4.11.7 (a `docs` hook, for pykit's package index) and S4.11.8 (kiln's pull
-requests run `kiln doctor --full`). Beyond them, the feature waits on the
-Dependabot tab and a real release's attestation checks; `dependency-review`
-passed on 2026-10-25.
+**Where it stands (2026-10-25).** Every feature is closed: F4.1–F4.7, F4.8 and
+F4.11 (both closed 2026-10-25, when their acceptance blocks passed), F4.9
+(closed 2026-10-24), F4.10 and F4.12. The epic's acceptance block is the owner's
+to run.
 
 **F4.5 (closed 2026-10-13).** Every command is on the declared app: `new`
 (staged, seeded, from a path or a `git+` config source), `apply`, `diff`,

@@ -30,3 +30,4 @@ it generates.
 | [0015](ADR-0015.md) | `node-lib` renders ngkit's CI: one release group, a dispatched release, and generated CI helpers | `node-lib` repositories |
 | [0016](ADR-0016.md) | Every archetype's CI follows one contract, planned by rn-forge-devops | the generated CI of every archetype |
 | [0017](ADR-0017.md) | kiln ships the CI planner as `kiln-devops` (proposed) | the generated CI of every archetype, and kiln's distribution |
+| [0018](ADR-0018.md) | rn-forge dependencies are version ranges from pykit's package index | the rn-forge requirements kiln renders, and `rn-forge-deps` everywhere |
