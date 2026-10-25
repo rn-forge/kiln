@@ -43,9 +43,9 @@ F5.2 are built after S4.5.2 and before F4.4, and
 **Where it stands (2026-10-25).** F4.1–F4.7, F4.8 (closed 2026-10-25), F4.9
 (closed 2026-10-24), F4.10 and F4.12 are closed. F4.11 has two new stories:
 S4.11.7 (a `docs` hook, for pykit's package index) and S4.11.8 (kiln's pull
-requests run `kiln doctor --full`). Beyond them, the feature waits on
-`dependency-review` passing once the repository's dependency graph is on, the
-Dependabot tab, and a real release's attestation checks.
+requests run `kiln doctor --full`). Beyond them, the feature waits on the
+Dependabot tab and a real release's attestation checks; `dependency-review`
+passed on 2026-10-25.
 
 **F4.5 (closed 2026-10-13).** Every command is on the declared app: `new`
 (staged, seeded, from a path or a `git+` config source), `apply`, `diff`,
