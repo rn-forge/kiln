@@ -1830,3 +1830,128 @@ def _release_none(text: str) -> str:
     if 'release = "tag-exists"' in text:
         return text.replace('release = "tag-exists"', 'release = "none"')
     return text + '\n[ci]\nrelease = "none"\n'
+
+
+DOCS_HOOKS = '\n[ci.hooks]\ndocs = ["./.github/actions/a", "./.github/actions/b"]\n'
+
+
+def _docs_hook_steps(*names: str) -> list[dict[str, object]]:
+    return [
+        {
+            "name": f"Run ./.github/actions/{n}",
+            "uses": f"./.github/actions/{n}",
+            "env": {"SITE_DIR": "${{ runner.temp }}/site"},
+        }
+        for n in names
+    ]
+
+
+def _job_steps(root: Path, workflow: str, job: str) -> list[dict[str, object]]:
+    return yaml.safe_load(_rendered(root)[workflow])["jobs"][job]["steps"]
+
+
+def test_s4_11_7_1_docs_hooks_render_before_the_upload(tmp_path: Path) -> None:
+    root = _with_ci(_root(tmp_path, "python-lib"), DOCS_HOOKS)
+    steps = _job_steps(root, ".github/workflows/ci.yml", "docs")
+    names = [s["name"] for s in steps]
+    upload = names.index("Upload Pages artifact")
+    assert steps[upload - 2 : upload] == _docs_hook_steps("a", "b")
+    assert names[upload - 3] == "Deploy the package sites and build the root site"
+
+
+def test_s4_11_7_1_docs_hooks_render_in_docs_yml(tmp_path: Path) -> None:
+    root = _with_ci(_root(tmp_path, "python-tool"), DOCS_HOOKS)
+    steps = _job_steps(root, ".github/workflows/docs.yml", "build")
+    names = [s["name"] for s in steps]
+    upload = names.index("Upload Pages artifact")
+    assert steps[upload - 2 : upload] == _docs_hook_steps("a", "b")
+    assert names[upload - 3] == "Build docs site"
+
+
+@pytest.mark.parametrize("archetype", ["python-lib", "python-tool"])
+def test_s4_11_7_2_no_docs_hooks_is_byte_identical(
+    tmp_path: Path, archetype: str
+) -> None:
+    root = _root(tmp_path, archetype)
+    plain = _rendered(root)
+    empty = _rendered(_with_ci(root, "hooks = { docs = [] }\n"))
+    for workflow in WORKFLOWS:
+        assert plain.get(workflow) == empty.get(workflow), workflow
+
+
+def test_s4_11_7_3_docs_hooks_are_not_setup_hooks(tmp_path: Path) -> None:
+    root = _with_ci(_root(tmp_path, "python-tool"), DOCS_HOOKS)
+    assert "Run ./" not in _action(root)
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "./.github/actions/setup",
+        ".github/actions/x",
+        "./actions/x",
+        "./.github/actions/X",
+        "./.github/actions/a/b",
+        "./.github/workflows/x.yml",
+    ],
+)
+def test_s4_11_7_4_bad_docs_hook_paths_are_refused(tmp_path: Path, path: str) -> None:
+    root = _with_ci(
+        _root(tmp_path, "python-tool"), f'\n[ci.hooks]\ndocs = ["{path}"]\n'
+    )
+    with pytest.raises(AppException, match=r"ci\.hooks\.docs"):
+        KilnConfig.load(root)
+
+
+def test_s4_11_7_4_duplicate_docs_hooks_are_refused(tmp_path: Path) -> None:
+    extra = '\n[ci.hooks]\ndocs = ["./.github/actions/a", "./.github/actions/a"]\n'
+    with pytest.raises(AppException):
+        KilnConfig.load(_with_ci(_root(tmp_path / "dup", "python-tool"), extra))
+    both = (
+        '\n[ci.hooks]\nsetup = ["./.github/actions/a"]\n'
+        'docs = ["./.github/actions/a"]\n'
+    )
+    KilnConfig.load(_with_ci(_root(tmp_path / "both", "python-tool"), both))
+
+
+def test_s4_11_7_5_docs_hooks_without_docs_are_refused(tmp_path: Path) -> None:
+    root = _with_ci(_root(tmp_path, "python-tool", profile="none"), DOCS_HOOKS)
+    with pytest.raises(AppException, match="nothing deploys Pages"):
+        _rendered(root)
+
+
+def test_s4_11_7_6_dependabot_covers_docs_hooks(tmp_path: Path) -> None:
+    extra = (
+        '\n[ci.hooks]\nsetup = ["./.github/actions/a"]\n'
+        'docs = ["./.github/actions/b", "./.github/actions/a"]\n'
+    )
+    root = _with_ci(_root(tmp_path, "python-tool"), extra)
+    assert _updates(root)["github-actions"]["directories"] == [
+        "/.github/actions/a",
+        "/.github/actions/b",
+    ]
+
+
+def test_s4_11_7_7_actionlint_passes_on_a_docs_hook(tmp_path: Path) -> None:
+    if shutil.which("actionlint") is None:
+        pytest.skip("actionlint is not on PATH")
+    root = _with_ci(
+        _root(tmp_path, "python-lib"),
+        '\n[ci.hooks]\ndocs = ["./.github/actions/a"]\n',
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    action = root / ".github" / "actions" / "a" / "action.yml"
+    action.parent.mkdir(parents=True)
+    action.write_text(
+        "name: x\ndescription: x\nruns:\n  using: composite\n  steps:\n"
+        "    - run: echo hi\n      shell: bash\n",
+        encoding="utf-8",
+    )
+    result = subprocess.run(
+        ["actionlint", ".github/workflows/ci.yml"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

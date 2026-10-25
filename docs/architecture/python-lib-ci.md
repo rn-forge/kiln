@@ -54,7 +54,7 @@ A newer push to the same pull request cancels the run in progress. Pushes to
 | `sonar` | whole-workspace coverage, then the scan, waiting on the quality gate | runs; skipped for a fork's pull request | runs, on branch `main` | runs, on the dispatched branch |
 | `release` | each selected package whose checks passed is built with its SBOM (`task ci:release-build`), attested, then published (`task ci:release-publish`) as `<package>-v<version>`, after `sonar` passed | skipped | builds and publishes | skipped |
 | `external-install` | each new tag installs from git, outside the workspace, and imports | skipped | runs | skipped |
-| `docs` | each package tagged at this commit deployed with `mike`, then the root site plus `packages/` to Pages | skipped | runs | skipped |
+| `docs` | each package tagged at this commit deployed with `mike`, then the root site plus `packages/` to Pages; `[ci.hooks] docs` actions run before the upload | skipped | runs | skipped |
 | `ci-ok` | no job failed or was cancelled; a skipped job is not a failure | runs | runs | runs |
 
 ## Ordering and gating

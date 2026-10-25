@@ -19,7 +19,7 @@
 | [F4.8 — Self-hosting](F4.8-self-hosting.md) | Closed | release-1 | 3 Closed |
 | [F4.9 — Seeded starter source](F4.9-seeded-starter-source.md) | Closed | release-1 | 5 Closed |
 | [F4.10 — TOML formatting](F4.10-toml-formatting.md) | Closed | release-1 | 1 Closed |
-| [F4.11 — Generated CI enhancements](F4.11-ci-enhancements.md) | Active | release-1 | 2 New · 6 Closed |
+| [F4.11 — Generated CI enhancements](F4.11-ci-enhancements.md) | Active | release-1 | 1 New · 7 Closed |
 | [F4.12 — The task files follow their owners](F4.12-task-files-by-owner.md) | Closed | release-1 | 7 Closed |
 
 <!-- END derived features -->

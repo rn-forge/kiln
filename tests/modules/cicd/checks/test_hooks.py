@@ -92,3 +92,20 @@ def test_s4_11_1_9_no_hooks_or_jobs_is_clean(repo) -> None:
 
 def test_s4_11_1_9_the_check_is_registered() -> None:
     assert "ci-hooks" in checks.names()
+
+
+def _docs_hook(root: Path) -> None:
+    _append(root, f'\n[ci.hooks]\ndocs = ["{HOOK}"]\n')
+
+
+def test_s4_11_7_8_missing_docs_hook_action_is_reported(repo) -> None:
+    root = repo()
+    _docs_hook(root)
+    assert _codes(root) == ["ci.hook-missing"]
+
+
+def test_s4_11_7_8_present_docs_hook_is_clean(repo) -> None:
+    root = repo()
+    _docs_hook(root)
+    _write(root, ".github/actions/a/action.yml", "name: a\n")
+    assert _codes(root) == []

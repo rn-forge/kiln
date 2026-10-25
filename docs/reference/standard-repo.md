@@ -496,6 +496,10 @@ release = "tag-exists"     # tag-exists | none
 setup = ["./.github/actions/setup-node"]
                            # optional: local composite actions the setup action runs as its
                            # last steps; ./.github/actions/<name>, not setup, no repeats
+docs = ["./.github/actions/publish-index"]
+                           # optional: same rules; every job that uploads the Pages artifact runs
+                           # them after the site is built and before the upload, with SITE_DIR set
+                           # to the site directory; needs a docs site
 
 [[ci.jobs]]
 name = "golden-render"

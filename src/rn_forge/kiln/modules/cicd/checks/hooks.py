@@ -2,7 +2,7 @@
 
 Two rules:
 
-1. Every `[ci.hooks]` `setup` entry has an `action.yml` or `action.yaml`.
+1. Every `[ci.hooks]` `setup` and `docs` entry has an `action.yml` or `action.yaml`.
 2. Every `[[ci.jobs]]` `uses` file exists, and its `on:` includes `workflow_call`.
 """
 
@@ -43,7 +43,7 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
     section = getattr(config.document, "ci", None)
     ci = section if isinstance(section, CiConfig) else CiConfig()
     findings: list[Finding] = []
-    for entry in ci.hooks.setup:
+    for entry in dict.fromkeys([*ci.hooks.setup, *ci.hooks.docs]):
         directory = root / entry
         if not any(
             (directory / name).is_file() for name in ("action.yml", "action.yaml")

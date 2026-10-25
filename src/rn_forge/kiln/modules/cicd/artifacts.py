@@ -58,7 +58,7 @@ def render(config: KilnConfig) -> list[Artifact]:
     A `python-lib` renders no `docs.yml`: its `ci.yml` has the one Pages deploy.
 
     Raises:
-        AppException: `ci.provider` is `ado`, which is reserved.
+        AppException: `ci.provider` is `ado`, which is reserved, or `ci.hooks.docs` is set without a docs site.
     """
     ci = _ci_config(config)
     if ci.provider == "ado":
@@ -66,6 +66,10 @@ def render(config: KilnConfig) -> list[Artifact]:
             "cicd.render: ci.provider = 'ado' is reserved for E8 and renders nothing yet"
         )
     docs = config.docs_profile == "mkdocs"
+    if ci.hooks.docs and not docs:
+        raise AppException(
+            "cicd.render: ci.hooks.docs is set but nothing deploys Pages (docs profile is not mkdocs)"
+        )
     workspace = config.archetype == "python-lib"
     web = config.archetype in {"python-web-api", "python-web-app"}
     web_app = config.archetype == "python-web-app"

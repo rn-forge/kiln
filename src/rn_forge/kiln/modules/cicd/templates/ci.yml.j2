@@ -598,7 +598,12 @@ jobs:
           SITE_DIR: ${{ runner.temp }}/site
         run: task ci:docs-publish
 
-      - name: Upload Pages artifact
+{% for hook in hooks.docs %}      - name: Run [[ hook ]]
+        uses: [[ hook ]] # zizmor: ignore[self-repository] actionlint rejects the $/ form
+        env:
+          SITE_DIR: ${{ runner.temp }}/site
+
+{% endfor %}      - name: Upload Pages artifact
         uses: [[ pins["upload-pages-artifact"].uses ]]@[[ pins["upload-pages-artifact"].sha ]] # [[ pins["upload-pages-artifact"].version ]]
         with:
           path: ${{ runner.temp }}/site

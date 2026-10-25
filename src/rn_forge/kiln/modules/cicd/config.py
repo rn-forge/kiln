@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from typing import Literal
 
-from pydantic import Field, field_validator
+from pydantic import Field, ValidationInfo, field_validator
 from rn_forge.commons.lang.models import StrictModel
 
 __all__ = ["GENERATED_JOBS", "CiConfig", "CiHooks", "CiJob"]
@@ -41,18 +41,22 @@ class CiHooks(StrictModel):
     setup: list[str] = Field(default_factory=list[str])
     """Local composite actions the generated setup action runs as its last steps."""
 
-    @field_validator("setup")
+    docs: list[str] = Field(default_factory=list[str])
+    """Local composite actions every Pages-uploading job runs before the upload, with `SITE_DIR` set."""
+
+    @field_validator("setup", "docs")
     @classmethod
-    def _entries_are_valid(cls, value: list[str]) -> list[str]:
+    def _entries_are_valid(cls, value: list[str], info: ValidationInfo) -> list[str]:
+        field = f"ci.hooks.{info.field_name}"
         for entry in value:
             if not _HOOK.match(entry):
                 raise ValueError(
-                    f"ci.hooks.setup entry {entry!r} is not ./.github/actions/<name>"
+                    f"{field} entry {entry!r} is not ./.github/actions/<name>"
                 )
             if entry == _SETUP_ACTION:
-                raise ValueError("ci.hooks.setup cannot name kiln's own setup action")
+                raise ValueError(f"{field} cannot name kiln's own setup action")
         if len(set(value)) != len(value):
-            raise ValueError("ci.hooks.setup entries must be unique")
+            raise ValueError(f"{field} entries must be unique")
         return value
 
 
