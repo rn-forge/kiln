@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from functools import cache
 from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.generation import Artifact, ArtifactKind
+from rn_forge.commons.generation.templated import TemplateArtifact, render_artifacts
 from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
@@ -15,9 +15,6 @@ from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs.config import DocsConfig
 from rn_forge.kiln.modules.python.artifacts import root_package
 from rn_forge.kiln.modules.tasks.config import TasksConfig
-
-# One engine per process, so Jinja compiles each template once.
-_engine = cache(TemplateEngine)
 
 __all__ = ["render"]
 
@@ -124,82 +121,33 @@ def render(config: KilnConfig) -> list[Artifact]:
         "web_dir": web_dir,
         "web_project": Path(web_dir).name if web_dir else None,
     }
-    engine = _engine(
+    engine = TemplateEngine.cached(
         package="rn_forge.kiln.modules.tasks",
         variable_start_string="[[",
         variable_end_string="]]",
     )
-    artifacts = [
-        Artifact(
-            "Taskfile.yml",
-            ArtifactKind.MANAGED,
-            engine.render("Taskfile.yml.j2", context),
-        ),
-        Artifact(
-            "tasks/workspace.yml",
-            ArtifactKind.MANAGED,
-            engine.render("tasks/workspace.yml.j2", context),
-        ),
-        Artifact(
-            "tasks/quality.yml",
-            ArtifactKind.MANAGED,
-            engine.render("tasks/quality.yml.j2", context),
-        ),
-        Artifact(
-            "tasks/python.yml",
-            ArtifactKind.MANAGED,
-            engine.render("tasks/python.yml.j2", context),
-        ),
-        Artifact(
-            "tasks/kiln.yml",
-            ArtifactKind.MANAGED,
-            engine.render("tasks/kiln.yml.j2", context),
-        ),
-    ]
-    if docs:
-        artifacts.append(
-            Artifact(
-                "tasks/docs.yml",
-                ArtifactKind.MANAGED,
-                engine.render("tasks/docs.yml.j2", context),
-            )
-        )
-    if web:
-        artifacts.append(
-            Artifact(
-                "tasks/api.yml",
-                ArtifactKind.MANAGED,
-                engine.render("tasks/api.yml.j2", context),
-            )
-        )
-    if web_app:
-        artifacts.append(
-            Artifact(
-                "tasks/web.yml",
-                ArtifactKind.MANAGED,
-                engine.render("tasks/web.yml.j2", context),
-            )
-        )
-        artifacts.append(
-            Artifact(
-                "tasks/node.yml",
-                ArtifactKind.MANAGED,
-                engine.render("tasks/node.yml.j2", context),
-            )
-        )
-    artifacts.append(
-        Artifact(
-            "tasks/ci.yml",
-            ArtifactKind.MANAGED,
-            engine.render("tasks/ci.yml.j2", context),
-        )
+    return render_artifacts(
+        engine,
+        context,
+        [
+            TemplateArtifact("Taskfile.yml"),
+            TemplateArtifact("tasks/workspace.yml"),
+            TemplateArtifact("tasks/quality.yml"),
+            TemplateArtifact("tasks/python.yml"),
+            TemplateArtifact("tasks/kiln.yml"),
+            TemplateArtifact("tasks/docs.yml", enabled=docs),
+            TemplateArtifact("tasks/api.yml", enabled=web),
+            TemplateArtifact("tasks/web.yml", enabled=web_app),
+            TemplateArtifact("tasks/node.yml", enabled=web_app),
+            TemplateArtifact("tasks/ci.yml"),
+            *(
+                TemplateArtifact(
+                    include.taskfile,
+                    ArtifactKind.SEEDED,
+                    template="tasks/include.yml.j2",
+                    context={"kiln_version": __version__},
+                )
+                for include in tasks_config.includes
+            ),
+        ],
     )
-    for include in tasks_config.includes:
-        artifacts.append(
-            Artifact(
-                include.taskfile,
-                ArtifactKind.SEEDED,
-                engine.render("tasks/include.yml.j2", {"kiln_version": __version__}),
-            )
-        )
-    return artifacts

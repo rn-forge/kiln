@@ -2,22 +2,19 @@
 
 from __future__ import annotations
 
-from functools import cache
 from importlib.resources import files
 from pathlib import Path
 from typing import cast
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import DocumentUtils
-from rn_forge.commons.generation import Artifact, ArtifactKind
+from rn_forge.commons.generation import Artifact
+from rn_forge.commons.generation.templated import TemplateArtifact, render_artifacts
 from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd.config import CiConfig
-
-# One engine per process, so Jinja compiles each template once.
-_engine = cache(TemplateEngine)
 
 __all__ = ["SONAR_ORGANIZATION", "load_pins", "render"]
 
@@ -96,7 +93,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "web_dir": config.web_dir,
     }
     # GitHub's own `${{ }}` expressions fill these templates, so Jinja's variables use `[[ ]]`.
-    engine = _engine(
+    engine = TemplateEngine.cached(
         package=_PACKAGE, variable_start_string="[[", variable_end_string="]]"
     )
     rows = [
@@ -106,8 +103,11 @@ def render(config: KilnConfig) -> list[Artifact]:
         (".github/workflows/docs.yml", "docs.yml.j2", docs and not workspace),
         ("sonar-project.properties", "sonar-project.properties.j2", ci.sonar),
     ]
-    return [
-        Artifact(path, ArtifactKind.MANAGED, engine.render(template, context))
-        for path, template, enabled in rows
-        if enabled
-    ]
+    return render_artifacts(
+        engine,
+        context,
+        [
+            TemplateArtifact(path, template=template, enabled=enabled)
+            for path, template, enabled in rows
+        ],
+    )

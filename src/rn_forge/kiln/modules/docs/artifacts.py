@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-from functools import cache
 from pathlib import Path
 
 from rn_forge.commons.generation import Artifact, ArtifactKind
+from rn_forge.commons.generation.templated import TemplateArtifact, render_artifacts
 from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
-
-# One engine per process, so Jinja compiles each template once.
-_engine = cache(TemplateEngine)
 
 __all__ = ["SEEDS", "render"]
 
@@ -60,7 +57,7 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
     """Render the seeded docs tree, for an `mkdocs` repo at *root*."""
     if config.docs_profile != "mkdocs":
         return []
-    engine = _engine(package="rn_forge.kiln.modules.docs")
+    engine = TemplateEngine.cached(package="rn_forge.kiln.modules.docs")
     context = {
         "name": config.name,
         "archetype": config.archetype,
@@ -72,11 +69,14 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
     )
     if config.archetype not in ("python-app", "python-tool"):
         skipped += _APP_TOOL_ONLY
-    return [
-        Artifact(path, _kind(path), engine.render(f"{path}.j2", context))
-        for path in SEEDS
-        if not path.startswith(skipped)
-    ]
+    return render_artifacts(
+        engine,
+        context,
+        [
+            TemplateArtifact(path, _kind(path), enabled=not path.startswith(skipped))
+            for path in SEEDS
+        ],
+    )
 
 
 def _kind(path: str) -> ArtifactKind:

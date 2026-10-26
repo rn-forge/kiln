@@ -3,20 +3,17 @@
 from __future__ import annotations
 
 import re
-from functools import cache
 from pathlib import Path
 
 from rn_forge.commons.fs.blocks import ManagedBlock
 from rn_forge.commons.generation import Artifact, ArtifactKind
+from rn_forge.commons.generation.templated import TemplateArtifact, render_artifacts
 from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd.config import CiConfig
 from rn_forge.kiln.modules.docs.config import DocsConfig
-
-# One engine per process, so Jinja compiles each template once.
-_engine = cache(TemplateEngine)
 
 __all__ = ["KILN_BLOCK", "context", "render"]
 
@@ -172,18 +169,18 @@ def context(config: KilnConfig) -> dict[str, object]:
 
 def render(config: KilnConfig) -> list[Artifact]:
     """Render the kiln block in `CLAUDE.md` and `.rn-forge/kiln/standard.md`."""
-    engine = _engine(package=_PACKAGE)
+    engine = TemplateEngine.cached(package=_PACKAGE)
     values = context(config)
-    return [
-        Artifact(
-            "CLAUDE.md",
-            ArtifactKind.BLOCK,
-            engine.render("block.md.j2", values),
-            block=KILN_BLOCK,
-        ),
-        Artifact(
-            ".rn-forge/kiln/standard.md",
-            ArtifactKind.MANAGED,
-            engine.render("standard.md.j2", values),
-        ),
-    ]
+    return render_artifacts(
+        engine,
+        values,
+        [
+            TemplateArtifact(
+                "CLAUDE.md",
+                ArtifactKind.BLOCK,
+                template="block.md.j2",
+                block=KILN_BLOCK,
+            ),
+            TemplateArtifact(".rn-forge/kiln/standard.md", template="standard.md.j2"),
+        ],
+    )

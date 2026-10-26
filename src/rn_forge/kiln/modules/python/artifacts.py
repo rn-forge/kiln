@@ -2,17 +2,13 @@
 
 from __future__ import annotations
 
-from functools import cache
-
 from rn_forge.commons.fs.blocks import ManagedBlock
 from rn_forge.commons.generation import Artifact, ArtifactKind
+from rn_forge.commons.generation.templated import TemplateArtifact, render_artifacts
 from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
-
-# One engine per process, so Jinja compiles each template once.
-_engine = cache(TemplateEngine)
 
 __all__ = ["IMPORTLINTER_BLOCK", "render", "root_package"]
 
@@ -30,7 +26,7 @@ _FORBIDDEN_FRAMEWORKS = ("typer", "jinja2", "click", "django", "fastapi")
 
 def render(config: KilnConfig) -> list[Artifact]:
     """Render `.importlinter` for *config*."""
-    engine = _engine(package="rn_forge.kiln.modules.python")
+    engine = TemplateEngine.cached(package="rn_forge.kiln.modules.python")
     workspace = config.archetype == "python-lib"
     web = config.archetype in {"python-web-api", "python-web-app"}
     if workspace:
@@ -49,11 +45,15 @@ def render(config: KilnConfig) -> list[Artifact]:
     }
     if not workspace:
         context["package"] = members[0]
-    return [
-        Artifact(
-            ".importlinter",
-            ArtifactKind.BLOCK,
-            engine.render("importlinter.j2", context),
-            block=IMPORTLINTER_BLOCK,
-        )
-    ]
+    return render_artifacts(
+        engine,
+        context,
+        [
+            TemplateArtifact(
+                ".importlinter",
+                ArtifactKind.BLOCK,
+                template="importlinter.j2",
+                block=IMPORTLINTER_BLOCK,
+            )
+        ],
+    )

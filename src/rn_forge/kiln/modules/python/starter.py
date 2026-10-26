@@ -3,17 +3,14 @@
 from __future__ import annotations
 
 from collections.abc import Collection, Mapping
-from functools import cache
 from pathlib import Path
 
 from rn_forge.commons.generation import Artifact, ArtifactKind
+from rn_forge.commons.generation.templated import TemplateArtifact, render_artifacts
 from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.python.artifacts import root_package
-
-# One engine per process, so Jinja compiles each template once.
-_engine = cache(TemplateEngine)
 
 __all__ = ["render", "seedable"]
 
@@ -56,7 +53,7 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
     Returns `SEEDED` artifacts, or `[]` for an archetype with no starter or a
     package that already holds product code.
     """
-    engine = _engine(package="rn_forge.kiln.modules.python")
+    engine = TemplateEngine.cached(package="rn_forge.kiln.modules.python")
     if config.archetype in {"python-tool", "python-app"}:
         tool = config.archetype == "python-tool"
         package = config.module
@@ -114,9 +111,11 @@ def _render(
         return []
     files = {f"{base}src/{package_dir}/{n}": t for n, t in src.items()}
     files |= {f"{base}tests/{n}": t for n, t in tests.items()}
-    return [
-        Artifact(
-            path, ArtifactKind.SEEDED, engine.render(f"starter/{template}", context)
-        )
-        for path, template in files.items()
-    ]
+    return render_artifacts(
+        engine,
+        context,
+        [
+            TemplateArtifact(path, ArtifactKind.SEEDED, template=f"starter/{template}")
+            for path, template in files.items()
+        ],
+    )

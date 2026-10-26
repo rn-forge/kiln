@@ -12,7 +12,6 @@ which `CliApp` maps to exit code 1.
 
 from __future__ import annotations
 
-import difflib
 import re
 import shutil
 import subprocess
@@ -948,31 +947,10 @@ def _diffs(root: Path, changes: Sequence[generation.Change]) -> list[tuple[str, 
         artifact = change.artifact
         if artifact is None or artifact.kind is generation.ArtifactKind.SEEDED:
             continue
-        disk = _disk_content(root, artifact)
-        fresh = artifact.content
-        if disk == fresh:
-            continue
-        text = "".join(
-            difflib.unified_diff(
-                (disk or "").splitlines(keepends=True),
-                fresh.splitlines(keepends=True),
-                fromfile=artifact.path,
-                tofile=artifact.path,
-            )
-        )
-        results.append((artifact.path, text))
+        text = generation.diff(root, change)
+        if text:
+            results.append((artifact.path, text))
     return results
-
-
-def _disk_content(root: Path, artifact: generation.Artifact) -> str | None:
-    """*artifact*'s current on-disk content — a block's body, for a block artifact."""
-    path = root / artifact.path
-    if not path.is_file():
-        return None
-    text = path.read_text(encoding="utf-8")
-    if artifact.block is None:
-        return text
-    return artifact.block.extract(text)
 
 
 def _flag_layer(
