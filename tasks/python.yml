@@ -43,7 +43,7 @@ tasks:
         --no-emit-package rn-forge-sqlalchemy
         --no-emit-package rn-forge-tooling
         --no-emit-package rn-forge-web
-        | uv run pip-audit --disable-pip --no-deps --strict -r /dev/stdin
+        | uv run pip-audit --disable-pip --require-hashes --strict -r /dev/stdin
 
   format:
     desc: Fix and format src/ (and tests/, when present) in place with ruff.

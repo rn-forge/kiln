@@ -180,8 +180,12 @@ def test_s4_10_1_2_lint_and_format_run_taplo(tmp_path: Path, archetype: str) -> 
     root = _root(tmp_path, archetype)
     cycle.apply(root, home=tmp_path / "home")
     quality = YamlUtils.load((root / "tasks/quality.yml").read_text(encoding="utf-8"))
-    assert quality["tasks"]["lint:toml"]["cmds"] == ["uv run taplo fmt --check"]
-    assert quality["tasks"]["format:toml"]["cmds"] == ["uv run taplo fmt"]
+    assert quality["tasks"]["lint:toml"]["cmds"] == [
+        "{{.FILES}} '*.toml' | xargs -0 -r uv run taplo fmt --check"
+    ]
+    assert quality["tasks"]["format:toml"]["cmds"] == [
+        "{{.FILES}} '*.toml' | xargs -0 -r uv run taplo fmt"
+    ]
     tasks = YamlUtils.load((root / "Taskfile.yml").read_text(encoding="utf-8"))["tasks"]
     assert {"task": "quality:lint:toml"} in tasks["lint"]["cmds"]
     assert {"task": "quality:format:toml"} in tasks["format"]["cmds"]
@@ -992,7 +996,9 @@ AUDIT_REF = {"task": "python:lint:audit"}
 AUDIT_PREFIX = (
     "uv export --frozen --all-packages --all-groups --no-emit-workspace --no-header"
 )
-AUDIT_SUFFIX = "| uv run pip-audit --disable-pip --no-deps --strict -r /dev/stdin"
+AUDIT_SUFFIX = (
+    "| uv run pip-audit --disable-pip --require-hashes --strict -r /dev/stdin"
+)
 AUDIT_ALL_CELLS = [(a, "") for a in ARCHETYPES] + list(WEB_CELLS)
 
 
@@ -1625,7 +1631,7 @@ def test_s4_12_4_3_quality_is_repository_wide(
     cycle.apply(root, home=tmp_path / "home")
     quality = _load(root, "tasks/quality.yml")
     assert set(quality["tasks"]) == QUALITY_STAYS
-    assert "vars" not in quality
+    assert set(quality["vars"]) == {"FILES"}
 
 
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)

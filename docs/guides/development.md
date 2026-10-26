@@ -52,11 +52,12 @@ Two of those are easy to trip by accident:
 - **`kiln:doctor`'s `generated` check** compares every managed file against
   `.rn-forge/kiln/state.json`. Until `kiln apply` exists that baseline is
   hand-written, so re-seed it after editing a managed file.
-- **`quality:lint:markdown`** runs mdformat over the tree, with
-  `.mdformat.toml`'s `exclude` as the single authority for exemptions.
+- **`quality:lint:markdown`** runs mdformat over the files git lists — tracked
+  and untracked, less what `.gitignore` ignores — so it must run from a git
+  repository's root. `.mdformat.toml`'s `exclude` exempts files git does list.
   `.rn-forge/kiln/standard.md` is excluded on ownership grounds, not style: a
   formatter rewriting a kiln-owned file is two owners writing the same bytes.
-- **`quality:lint:toml`** runs taplo over the tree, with `.taplo.toml`'s
-  `exclude` as the single place a path is exempted. A repository created
-  before this check adopts it by adding `taplo` to its dev group, then running
-  `kiln apply` and `task format`.
+- **`quality:lint:toml`** runs taplo over the same git file list, with
+  `.taplo.toml`'s `exclude` for files git lists but the repo does not format.
+  A repository created before this check adopts it by adding `taplo` to its
+  dev group, then running `kiln apply` and `task format`.

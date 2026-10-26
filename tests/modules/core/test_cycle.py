@@ -115,7 +115,7 @@ def test_s5_3_1_mdformat_config_is_seeded_once(tmp_path: Path, home: Path) -> No
     cycle.apply(root, home=home)
     seeded = root / ".mdformat.toml"
     assert seeded.is_file()
-    assert ".rn-forge/kiln/rendered/**" in seeded.read_text(encoding="utf-8")
+    assert ".rn-forge/kiln/standard.md" in seeded.read_text(encoding="utf-8")
 
     existing = tmp_path / "present"
     config = existing / ".rn-forge" / "kiln" / "config.toml"
@@ -136,7 +136,7 @@ def test_s4_10_1_1_taplo_config_is_seeded_once(tmp_path: Path, home: Path) -> No
     cycle.apply(root, home=home)
     seeded = root / ".taplo.toml"
     assert seeded.is_file()
-    assert ".rn-forge/kiln/rendered/**" in seeded.read_text(encoding="utf-8")
+    assert 'include = ["**/*.toml"]' in seeded.read_text(encoding="utf-8")
 
     existing = tmp_path / "present"
     config = existing / ".rn-forge" / "kiln" / "config.toml"

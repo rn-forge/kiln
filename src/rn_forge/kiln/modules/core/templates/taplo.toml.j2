@@ -1,29 +1,13 @@
 # Seeded by kiln — this file is yours.
 #
-# Taplo formats every TOML file in the tree; `task lint` checks it and
-# `task format` applies it. Even Better TOML reads this file too, so the
-# editor and the gate agree. `exclude` is authoritative — taplo runs over
-# the tree, not over a file list.
+# Taplo formats every TOML file git lists — tracked and untracked, less what
+# `.gitignore` ignores; `task lint` checks it and `task format` applies it. Even
+# Better TOML reads this file too, so the editor and the gate agree. `exclude` is
+# for files git does list but this repo does not format.
 #
 # The style matches what `uv init`, `uv add` and kiln itself write into
 # `pyproject.toml`: 4-space indent, one item per line, trailing comma.
 include = ["**/*.toml"]
-exclude = [
-    "**/.venv/**",
-    # Tool caches — the same set `task clean` removes and `.gitignore` ignores.
-    "**/.uv-cache/**",
-    "**/.pytest_cache/**",
-    "**/.ruff_cache/**",
-    "**/.import_linter_cache/**",
-    "**/node_modules/**",
-    ".docs-site/**",
-    "site/**",
-    "dist/**",
-    ".nx/**",
-    ".rn-forge/kiln/rendered/**",
-    # `kiln apply` keeps the managed files it replaced here.
-    ".rn-forge/kiln/backups/**",
-]
 
 [formatting]
 indent_string = "    "

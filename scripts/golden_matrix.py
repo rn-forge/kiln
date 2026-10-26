@@ -82,8 +82,9 @@ def render_cell(cell: Cell, dest: Path, kiln_cmd: list[str]) -> None:
     for flag, value in cell.flags:
         new += [f"--{flag}", value]
     _require([*new, "--yes"], dest.parent)
+    # `task lint` formats the files git lists, so every cell is a repository.
+    _require(["git", "init", "-q"], built)
     if cell.archetype == "python-lib":
-        _require(["git", "init", "-q"], built)
         _require(["git", "remote", "add", "origin", LIB_ORIGIN], built)
         for package in LIB_PACKAGES:
             _require([*kiln_cmd, "generate", "package", package], built)

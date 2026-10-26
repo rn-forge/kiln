@@ -68,7 +68,7 @@ tasks:
         set -o pipefail;
         uv export --frozen --all-packages --all-groups --no-emit-workspace --no-header
 {% for name in audit_excluded %}        --no-emit-package [[ name ]]
-{% endfor %}        | uv run pip-audit --disable-pip --no-deps --strict -r /dev/stdin
+{% endfor %}        | uv run pip-audit --disable-pip --require-hashes --strict -r /dev/stdin
 {% for id in audit_ignore %}        --ignore-vuln [[ id ]]
 {% endfor %}{% endif %}
   format:

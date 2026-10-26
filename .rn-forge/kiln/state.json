@@ -275,14 +275,14 @@
     },
     "tasks/python.yml": {
       "begin_marker": null,
-      "content_hash": "54f15e8c9ebe75139e735f39544a0cf940dcc33f5d7d010ef5e533ec1d53d060",
+      "content_hash": "c73ce7a995492a17941715ebea0f0e680c16f106cf174e3e2cf9a8c6b89180c8",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/python.yml"
     },
     "tasks/quality.yml": {
       "begin_marker": null,
-      "content_hash": "e7922ae6a2d721db852f51de82f2df13feac314768bd4431edfde033743e8466",
+      "content_hash": "416cf3c5057ce83942343c5db524fb39b65eedd22167ec4e144bf82ada343256",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/quality.yml"
