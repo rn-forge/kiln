@@ -13,8 +13,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import yaml
 from rn_forge.commons.findings import Finding, Severity
+from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.commons.lang.collections import DictUtils
 
 from rn_forge.kiln.config import KilnConfig
@@ -55,9 +55,7 @@ def _check_uses(label: str, text: str) -> list[Finding]:
 
 
 def _check_permissions(label: str, text: str) -> list[Finding]:
-    jobs = DictUtils.get_mapping(
-        DictUtils.as_mapping(yaml.load(text, Loader=yaml.CSafeLoader)), "jobs"
-    )
+    jobs = DictUtils.get_mapping(DictUtils.as_mapping(YamlUtils.load(text)), "jobs")
     return [
         Finding(
             PERMISSIONS,

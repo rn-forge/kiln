@@ -47,7 +47,6 @@ _DEV_GROUP = [
     "pyright",
     "pytest",
     "pytest-cov",
-    "pyyaml",
     "ruff",
     "taplo",
     "zizmor",

@@ -90,3 +90,16 @@ ignore_imports =
     rn_forge.kiln.modules.tasks.artifacts -> rn_forge.kiln.modules.python.artifacts
     rn_forge.kiln.modules.instructions.artifacts -> rn_forge.kiln.modules.cicd.config
     rn_forge.kiln.modules.instructions.artifacts -> rn_forge.kiln.modules.docs.config
+
+; kiln reads YAML, TOML and Markdown through rn-forge-commons. A direct
+; parser import is how kiln once shipped an undeclared PyYAML (F7.3).
+[importlinter:contract:documents-come-from-rn-forge]
+name = rn_forge.kiln imports no YAML, TOML or Markdown parser directly
+type = forbidden
+source_modules =
+    rn_forge.kiln
+forbidden_modules =
+    yaml
+    ruamel
+    tomlkit
+allow_indirect_imports = True

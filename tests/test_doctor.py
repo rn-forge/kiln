@@ -6,6 +6,7 @@ import importlib.util
 import json
 import re
 import shutil
+import subprocess
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -102,7 +103,7 @@ def _break_layout(root: Path) -> None:
     _edit(
         root,
         "Taskfile.yml",
-        lambda text: text + "  build:\n    desc: Build\n    cmds: [uv build]\n",
+        lambda text: text + "  stray:\n    desc: Stray\n    cmds: [uv build]\n",
     )
     _reseed(root, "Taskfile.yml")
 
@@ -515,3 +516,21 @@ def test_s7_3_2_1_invalid_state_is_an_app_exception(copy: Path) -> None:
     with pytest.raises(AppException, match=r"state\.json") as raised:
         checks.run(copy)
     assert not isinstance(raised.value, json.JSONDecodeError)
+
+
+def test_s7_3_3_1_doctor_needs_no_pyyaml(copy: Path) -> None:
+    def run(prelude: str) -> subprocess.CompletedProcess[str]:
+        code = f"import sys; {prelude}from rn_forge.kiln.main import app; app()"
+        return subprocess.run(
+            [sys.executable, "-c", code, "doctor"],
+            cwd=copy,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    assert any((copy / ".github" / "workflows").glob("*.yml"))
+    plain = run("")
+    blocked = run("sys.modules['yaml'] = None; ")
+    assert blocked.returncode == plain.returncode
+    assert "yaml" not in blocked.stderr

@@ -11,8 +11,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import cast
 
-import yaml
 from rn_forge.commons.findings import Finding, Severity
+from rn_forge.commons.fs.documents import YamlUtils
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd.config import CiConfig
@@ -29,8 +29,7 @@ def _calls(workflow: object) -> bool:
     if not isinstance(workflow, dict):
         return False
     table = cast("dict[object, object]", workflow)
-    # YAML 1.1 reads the key `on` as the boolean True.
-    triggers = table.get("on", table.get(True))
+    triggers = table.get("on")
     if isinstance(triggers, str):
         return triggers == "workflow_call"
     if isinstance(triggers, (list, dict)):
@@ -67,9 +66,7 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
                     path=job.uses,
                 )
             )
-        elif not _calls(
-            yaml.load(path.read_text(encoding="utf-8"), Loader=yaml.CSafeLoader)
-        ):
+        elif not _calls(YamlUtils.read_file(path, encoding="utf-8")):
             findings.append(
                 Finding(
                     NOT_CALLABLE,

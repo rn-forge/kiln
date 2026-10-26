@@ -15,7 +15,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
-import yaml
+from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.generation import Action, ArtifactKind
 
@@ -200,7 +200,7 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
     on = _rendered(_root(tmp_path / "on"))
     off = _rendered(_root(tmp_path / "off", sonar=False))
     assert "sonar-project.properties" not in off
-    jobs = yaml.safe_load(off[".github/workflows/ci.yml"])["jobs"]
+    jobs = YamlUtils.load(off[".github/workflows/ci.yml"])["jobs"]
     assert set(jobs) == {"validate", "dependency-review", "release", "ci-ok"}
     assert jobs["release"]["needs"] == ["validate"]
     assert (
@@ -225,7 +225,7 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
 
 def test_s4_3_4_3_release_none_renders_no_release_job(tmp_path: Path) -> None:
     rendered = _rendered(_root(tmp_path, release="none"))
-    jobs = yaml.safe_load(rendered[".github/workflows/ci.yml"])["jobs"]
+    jobs = YamlUtils.load(rendered[".github/workflows/ci.yml"])["jobs"]
     assert set(jobs) == {"validate", "dependency-review", "sonar", "ci-ok"}
 
 
@@ -340,7 +340,7 @@ SETUP_ACTION = "./.github/actions/setup"
 
 
 def _assert_checks_out_first(workflow: str, where: str) -> None:
-    jobs = yaml.safe_load(workflow)["jobs"]
+    jobs = YamlUtils.load(workflow)["jobs"]
     for name, job in jobs.items():
         steps = job.get("steps", [])
         for index, step in enumerate(steps):
@@ -371,7 +371,7 @@ def test_s4_4_5_2_setup_action_has_no_checkout(tmp_path: Path) -> None:
     action = _rendered(_root(tmp_path))[".github/actions/setup/action.yml"]
     assert "actions/checkout@" not in action
     assert "fetch-depth" not in action
-    parsed = yaml.safe_load(action)
+    parsed = YamlUtils.load(action)
     assert "fetch-depth" not in parsed["inputs"]
 
 
@@ -400,7 +400,7 @@ def test_s6_3_1_every_job_has_a_timeout(tmp_path: Path) -> None:
         }
         assert workflows
         for path, content in workflows.items():
-            for name, job in yaml.safe_load(content)["jobs"].items():
+            for name, job in YamlUtils.load(content)["jobs"].items():
                 timeout = job.get("timeout-minutes")
                 assert isinstance(timeout, int), f"{root.name}:{path}:{name}"
 
@@ -415,7 +415,7 @@ def _ci_ok_roots(tmp_path: Path) -> list[Path]:
 
 
 def _ci_jobs(root: Path) -> dict[str, dict[str, object]]:
-    return yaml.safe_load(_rendered(root)[".github/workflows/ci.yml"])["jobs"]
+    return YamlUtils.load(_rendered(root)[".github/workflows/ci.yml"])["jobs"]
 
 
 def test_s6_3_2_ci_ok_needs_every_other_job(tmp_path: Path) -> None:
@@ -560,7 +560,7 @@ UPSTREAM_PINS = {
 
 
 def test_s6_3_5_setup_uv_enables_the_cache(tmp_path: Path) -> None:
-    action = yaml.safe_load(
+    action = YamlUtils.load(
         _rendered(_root(tmp_path))[".github/actions/setup/action.yml"]
     )
     install = next(
@@ -570,7 +570,7 @@ def test_s6_3_5_setup_uv_enables_the_cache(tmp_path: Path) -> None:
 
 
 def test_s7_4_4_1_uv_cache_follows_the_kiln_pin(tmp_path: Path) -> None:
-    action = yaml.safe_load(
+    action = YamlUtils.load(
         _rendered(_root(tmp_path))[".github/actions/setup/action.yml"]
     )
     install = next(
@@ -601,7 +601,7 @@ def test_s4_6_4_2_ci_sets_the_variable_on_default_branch_pushes(
 ) -> None:
     for archetype in ARCHETYPES:
         root = _root(tmp_path / archetype, archetype)
-        jobs = yaml.safe_load(_rendered(root)[".github/workflows/ci.yml"])["jobs"]
+        jobs = YamlUtils.load(_rendered(root)[".github/workflows/ci.yml"])["jobs"]
         step = next(s for s in jobs["validate"]["steps"] if s["name"] == "Validate")
         assert step["run"] == (
             "task lint" if archetype == "python-lib" else "task validate"
@@ -906,7 +906,7 @@ def _ci_tasks_text(tmp_path: Path) -> dict[str, object]:
     from rn_forge.kiln.modules.tasks import TASKS
 
     rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
-    return yaml.safe_load(rendered["tasks/ci.yml"])
+    return YamlUtils.load(rendered["tasks/ci.yml"])
 
 
 def test_s6_4_4_5_artifact_actions_are_pinned() -> None:
@@ -1027,7 +1027,7 @@ def test_s11_5_1_4_other_archetypes_keep_docs_yml_and_plain_ci(
         rendered = _rendered(_root(tmp_path / archetype, archetype))
         assert ".github/workflows/docs.yml" in rendered, archetype
         assert (
-            "docs" not in yaml.safe_load(rendered[".github/workflows/ci.yml"])["jobs"]
+            "docs" not in YamlUtils.load(rendered[".github/workflows/ci.yml"])["jobs"]
         ), archetype
 
 
@@ -1189,7 +1189,7 @@ def test_s4_8_3_2_no_declared_jobs_is_unchanged(tmp_path: Path) -> None:
         plain = _rendered(root)[".github/workflows/ci.yml"]
         empty = _rendered(_with_ci(root, "jobs = []\n"))[".github/workflows/ci.yml"]
         assert plain == empty, root.name
-        assert set(yaml.safe_load(plain)["jobs"]) <= GENERATED_JOBS, root.name
+        assert set(YamlUtils.load(plain)["jobs"]) <= GENERATED_JOBS, root.name
         assert "\n\n\n" not in plain, root.name
 
 
@@ -1198,7 +1198,7 @@ CALL = "./.github/workflows/golden-render.yml"
 
 
 def _hook_steps(action: str) -> list[dict[str, str]]:
-    return yaml.safe_load(action)["runs"]["steps"]
+    return YamlUtils.load(action)["runs"]["steps"]
 
 
 def test_s4_11_1_1_setup_hooks_render_last_and_in_order(tmp_path: Path) -> None:
@@ -1425,7 +1425,7 @@ def _checkouts(root: Path) -> list[tuple[str, str, dict[str, object]]]:
     for path, content in _rendered(root).items():
         if not path.startswith(".github/workflows/"):
             continue
-        for job_name, job in yaml.safe_load(content)["jobs"].items():
+        for job_name, job in YamlUtils.load(content)["jobs"].items():
             for step in job.get("steps", []):
                 if str(step.get("uses", "")).startswith("actions/checkout@"):
                     found.append((path, job_name, step))
@@ -1551,7 +1551,7 @@ DEPENDABOT_HOOKS = (
 
 
 def _dependabot(root: Path) -> dict[str, object]:
-    return yaml.safe_load(_rendered(root)[DEPENDABOT])
+    return YamlUtils.load(_rendered(root)[DEPENDABOT])
 
 
 def _updates(root: Path) -> dict[str, dict[str, object]]:
@@ -1674,7 +1674,7 @@ def test_s4_11_4_9_every_entry_has_a_cooldown(tmp_path: Path) -> None:
 
 
 def _review_jobs(root: Path) -> dict[str, dict[str, object]]:
-    return yaml.safe_load(_rendered(root)[".github/workflows/ci.yml"])["jobs"]
+    return YamlUtils.load(_rendered(root)[".github/workflows/ci.yml"])["jobs"]
 
 
 @pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
@@ -1744,7 +1744,7 @@ def test_s4_11_6_3_release_job_permissions(
         if not path.startswith(".github/workflows/"):
             continue
         workflow = Path(path).name
-        for name, job in yaml.safe_load(content)["jobs"].items():
+        for name, job in YamlUtils.load(content)["jobs"].items():
             permissions = job.get("permissions") or {}
             if (workflow, name) == ("ci.yml", "release"):
                 assert permissions == RELEASE_PERMISSIONS, archetype
@@ -1831,7 +1831,7 @@ def test_s4_11_6_6_release_none_renders_no_attestation(
         assert "attest" not in content, path
         if not path.startswith(".github/workflows/"):
             continue
-        for name, job in yaml.safe_load(content)["jobs"].items():
+        for name, job in YamlUtils.load(content)["jobs"].items():
             if "id-token" in (job.get("permissions") or {}):
                 assert (Path(path).name, name) in {
                     ("ci.yml", "docs"),
@@ -1860,7 +1860,7 @@ def _docs_hook_steps(*names: str) -> list[dict[str, object]]:
 
 
 def _job_steps(root: Path, workflow: str, job: str) -> list[dict[str, object]]:
-    return yaml.safe_load(_rendered(root)[workflow])["jobs"][job]["steps"]
+    return YamlUtils.load(_rendered(root)[workflow])["jobs"][job]["steps"]
 
 
 def test_s4_11_7_1_docs_hooks_render_before_the_upload(tmp_path: Path) -> None:
@@ -1971,7 +1971,7 @@ def test_s4_11_7_7_actionlint_passes_on_a_docs_hook(tmp_path: Path) -> None:
 
 
 def _ci_workflow(root: Path) -> dict[str, object]:
-    return yaml.safe_load(_rendered(root)[".github/workflows/ci.yml"])
+    return YamlUtils.load(_rendered(root)[".github/workflows/ci.yml"])
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)

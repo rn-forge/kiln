@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 import pytest
-import yaml
+from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.generation import Action, ArtifactKind
 
@@ -179,10 +179,10 @@ def test_s4_3_3_property5_task_layout_fails_on_a_broken_gate(tmp_path: Path) -> 
 def test_s4_10_1_2_lint_and_format_run_taplo(tmp_path: Path, archetype: str) -> None:
     root = _root(tmp_path, archetype)
     cycle.apply(root, home=tmp_path / "home")
-    quality = yaml.safe_load((root / "tasks/quality.yml").read_text(encoding="utf-8"))
+    quality = YamlUtils.load((root / "tasks/quality.yml").read_text(encoding="utf-8"))
     assert quality["tasks"]["lint:toml"]["cmds"] == ["uv run taplo fmt --check"]
     assert quality["tasks"]["format:toml"]["cmds"] == ["uv run taplo fmt"]
-    tasks = yaml.safe_load((root / "Taskfile.yml").read_text(encoding="utf-8"))["tasks"]
+    tasks = YamlUtils.load((root / "Taskfile.yml").read_text(encoding="utf-8"))["tasks"]
     assert {"task": "quality:lint:toml"} in tasks["lint"]["cmds"]
     assert {"task": "quality:format:toml"} in tasks["format"]["cmds"]
 
@@ -363,7 +363,7 @@ _UV_SHIM = 'uv() { shift; if [ "$1" = --directory ]; then d=$2; shift 2; fi; if 
 def _ruff_commands(root: Path, task: str, item: str = "packages/alpha") -> list[str]:
     """The rendered `python:<task>` commands, workspace loops expanded for *item*."""
     rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
-    cmds = yaml.safe_load(rendered["tasks/python.yml"])["tasks"][task]["cmds"]
+    cmds = YamlUtils.load(rendered["tasks/python.yml"])["tasks"][task]["cmds"]
     return [
         (c["cmd"] if isinstance(c, dict) else c)
         .replace("{{base .ITEM}}", Path(item).name)
@@ -590,7 +590,7 @@ def _docs_build_cmds(tmp_path: Path, archetype: str, packages: list[str]) -> lis
         text += f'\n[archetype."{archetype}"]\npackages = [{quoted}]\n'
     config.write_text(text, encoding="utf-8")
     rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
-    return yaml.safe_load(rendered["tasks/docs.yml"])["tasks"]["build"]["cmds"]
+    return YamlUtils.load(rendered["tasks/docs.yml"])["tasks"]["build"]["cmds"]
 
 
 def test_s11_2_2_6_python_lib_builds_one_standalone_site_per_package(
@@ -633,7 +633,7 @@ def _quality_tasks(tmp_path: Path, packages: bool) -> dict[str, list[object]]:
     if not packages:
         config.write_text(text.split("[archetype")[0], encoding="utf-8")
     rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
-    tasks = yaml.safe_load(rendered["tasks/python.yml"])["tasks"]
+    tasks = YamlUtils.load(rendered["tasks/python.yml"])["tasks"]
     return {name: tasks[name]["cmds"] for name in QUALITY_PER_PACKAGE}
 
 
@@ -683,7 +683,7 @@ def test_s4_6_4_1_lint_runs_full_only_when_asked(
 
 def _ci_tasks(root: Path) -> dict[str, object]:
     rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
-    return yaml.safe_load(rendered["tasks/ci.yml"])
+    return YamlUtils.load(rendered["tasks/ci.yml"])
 
 
 def test_s6_4_2_1_ci_yml_is_rendered_for_every_archetype(tmp_path: Path) -> None:
@@ -692,7 +692,7 @@ def test_s6_4_2_1_ci_yml_is_rendered_for_every_archetype(tmp_path: Path) -> None
         rendered = {
             a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)
         }
-        taskfile = yaml.safe_load(rendered["Taskfile.yml"])
+        taskfile = YamlUtils.load(rendered["Taskfile.yml"])
         assert "tasks/ci.yml" in rendered, archetype
         assert taskfile["includes"]["ci"] == "tasks/ci.yml", archetype
 
@@ -785,7 +785,7 @@ def test_s6_4_6_3_quality_loops_use_the_configured_paths(tmp_path: Path) -> None
         a.path: a.content
         for a in TASKS.artifacts(KilnConfig.load(_libs_root(tmp_path)), tmp_path)
     }
-    python = yaml.safe_load(rendered["tasks/python.yml"])
+    python = YamlUtils.load(rendered["tasks/python.yml"])
     assert python["vars"]["PACKAGE_DIRS"] == "libs/alpha"
     for name in QUALITY_PER_PACKAGE[:5]:
         cmds = python["tasks"][name]["cmds"]
@@ -809,7 +809,7 @@ def test_s6_4_6_4_the_libs_fixture_renders_and_validates(tmp_path: Path) -> None
 
 def test_s6_4_6_5_packages_dir_layout_renders_as_before(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-lib")
-    cmds = yaml.safe_load(
+    cmds = YamlUtils.load(
         {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}[
             "tasks/python.yml"
         ]
@@ -863,13 +863,13 @@ WEB_CELLS = (
 
 
 def _rendered_yaml(root: Path) -> tuple[dict[str, dict], dict[str, dict]]:
-    root_tasks = yaml.safe_load((root / "Taskfile.yml").read_text(encoding="utf-8"))
-    python = yaml.safe_load((root / "tasks/python.yml").read_text(encoding="utf-8"))
+    root_tasks = YamlUtils.load((root / "Taskfile.yml").read_text(encoding="utf-8"))
+    python = YamlUtils.load((root / "tasks/python.yml").read_text(encoding="utf-8"))
     return root_tasks["tasks"], python["tasks"]
 
 
 def _ci_rendered(root: Path) -> dict[str, dict]:
-    return yaml.safe_load((root / "tasks/ci.yml").read_text(encoding="utf-8"))["tasks"]
+    return YamlUtils.load((root / "tasks/ci.yml").read_text(encoding="utf-8"))["tasks"]
 
 
 def test_s4_11_2_2_an_unknown_override_key_is_still_refused(tmp_path: Path) -> None:
@@ -934,7 +934,7 @@ def test_s4_11_3_6_the_workspace_variant_runs_it_once_at_the_root(
 ) -> None:
     root = _root(tmp_path, "python-lib")
     cycle.apply(root, home=tmp_path / "home")
-    task_text = yaml.safe_dump(_ci_rendered(root)["lint:workflows"])
+    task_text = YamlUtils.serialize(_ci_rendered(root)["lint:workflows"])
     assert "for:" not in task_text
     assert "PACKAGE_DIRS" not in task_text
 
@@ -1064,7 +1064,7 @@ def test_s4_11_5_3_web_and_lib_cells_render_the_same_command(tmp_path: Path) -> 
         cycle.apply(root, home=tmp_path / archetype / "home")
         commands.add(_audit_cmd(root))
         _, python = _rendered_yaml(root)
-        text = yaml.safe_dump(python["lint:audit"])
+        text = YamlUtils.serialize(python["lint:audit"])
         assert "for:" not in text
         assert "PACKAGE_DIRS" not in text
     assert len(commands) == 1
@@ -1137,7 +1137,7 @@ def test_s4_11_5_6_command_override_is_accepted(tmp_path: Path) -> None:
     cycle.apply(root, home=tmp_path / "home")
     _, python = _rendered_yaml(root)
     assert python["lint:audit"]["cmds"] == ["echo hi"]
-    assert "--ignore-vuln" not in yaml.safe_dump(python["lint:audit"])
+    assert "--ignore-vuln" not in YamlUtils.serialize(python["lint:audit"])
 
 
 @pytest.mark.parametrize("name", archetypes.shipped())
@@ -1179,7 +1179,7 @@ EXPORT = "uv export --format cyclonedx1.5 --frozen --no-default-groups"
 
 
 def _build_text(root: Path) -> str:
-    python = yaml.safe_load((root / "tasks/python.yml").read_text("utf-8"))
+    python = YamlUtils.load((root / "tasks/python.yml").read_text("utf-8"))
     return "\n".join(python["tasks"]["build"]["cmds"])
 
 
@@ -1210,9 +1210,9 @@ def test_s4_11_6_1_build_override_is_untouched(tmp_path: Path) -> None:
     extra = '\n[tasks]\n[tasks.command_overrides]\n"python:build" = "echo hi"\n'
     root = _root(tmp_path, extra=extra)
     cycle.apply(root, home=tmp_path / "home")
-    python = yaml.safe_load((root / "tasks/python.yml").read_text("utf-8"))
+    python = YamlUtils.load((root / "tasks/python.yml").read_text("utf-8"))
     assert python["tasks"]["build"]["cmds"] == ["echo hi"]
-    assert "uv export" not in yaml.safe_dump(python["tasks"]["build"])
+    assert "uv export" not in YamlUtils.serialize(python["tasks"]["build"])
 
 
 def test_s4_11_6_2_lib_release_is_split(tmp_path: Path) -> None:
@@ -1264,7 +1264,7 @@ def _s4_12_1_root(tmp_path: Path, archetype: str, extra: str = "") -> Path:
 
 
 def _load(root: Path, path: str) -> dict:
-    return yaml.safe_load((root / path).read_text(encoding="utf-8"))
+    return YamlUtils.load((root / path).read_text(encoding="utf-8"))
 
 
 def test_s4_12_1_3_quality_yml_has_no_docs_task(tmp_path: Path) -> None:
@@ -1345,7 +1345,7 @@ def test_s4_12_2_1_every_archetype_renders_ci_yml(
     root = _s4_12_1_root(tmp_path, archetype, extra)
     rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
     assert "tasks/ci.yml" in rendered
-    assert yaml.safe_load(rendered["Taskfile.yml"])["includes"]["ci"] == "tasks/ci.yml"
+    assert YamlUtils.load(rendered["Taskfile.yml"])["includes"]["ci"] == "tasks/ci.yml"
 
 
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
@@ -1509,7 +1509,7 @@ def test_s4_12_3_4_workspace_install_has_no_pnpm(tmp_path: Path) -> None:
     root = _node_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "tasks/workspace.yml")["tasks"]
-    assert "pnpm" not in yaml.safe_dump(tasks)
+    assert "pnpm" not in YamlUtils.serialize(tasks)
     assert any(".nx" in c for c in tasks["clean"]["cmds"])
 
 
@@ -1523,7 +1523,7 @@ def test_s4_12_3_5_only_python_web_app_renders_node_yml(
     root = _s4_12_1_root(tmp_path, archetype, extra)
     rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
     assert "tasks/node.yml" not in rendered
-    assert "node" not in yaml.safe_load(rendered["Taskfile.yml"])["includes"]
+    assert "node" not in YamlUtils.load(rendered["Taskfile.yml"])["includes"]
 
 
 @pytest.mark.parametrize("name", NODE_CHECKS)

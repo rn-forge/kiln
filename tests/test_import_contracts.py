@@ -40,7 +40,7 @@ def test_s4_7_1_1_contracts_are_kept(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_s4_7_1_1_three_contracts() -> None:
-    """The file holds exactly the three named contracts."""
+    """The file holds exactly the named contracts."""
     sections = {
         s.removeprefix(PREFIX) for s in _config().sections() if s.startswith(PREFIX)
     }
@@ -48,6 +48,7 @@ def test_s4_7_1_1_three_contracts() -> None:
         "frameworks-come-from-rn-forge",
         "render-free-checks",
         "concern-modules-are-independent",
+        "documents-come-from-rn-forge",
     }
 
 

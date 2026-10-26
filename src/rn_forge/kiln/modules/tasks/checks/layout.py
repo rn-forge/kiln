@@ -21,9 +21,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-import yaml
 from rn_forge.commons.findings import Finding, Severity
-from rn_forge.commons.fs.documents import DocumentUtils
+from rn_forge.commons.fs.documents import DocumentUtils, YamlUtils
 from rn_forge.commons.lang.collections import DictUtils, ListUtils
 
 from rn_forge.kiln import archetypes
@@ -124,7 +123,7 @@ def include_map(document: object) -> dict[str, str]:
 
 
 def _load_yaml(path: Path) -> object:
-    return yaml.load(path.read_text(encoding="utf-8"), Loader=yaml.CSafeLoader)
+    return YamlUtils.read_file(path, encoding="utf-8")
 
 
 def load_graph(root: Path) -> tuple[dict[str, object], set[str]]:

@@ -14,7 +14,7 @@ from pathlib import Path
 from types import ModuleType
 
 import pytest
-import yaml
+from rn_forge.commons.fs.documents import YamlUtils
 
 from rn_forge.kiln import archetypes
 
@@ -168,11 +168,11 @@ def test_s4_4_1_3_missing_cell_is_a_fail_row(
 
 
 def test_s4_4_1_task_layout() -> None:
-    tasks = yaml.safe_load((ROOT / "tasks" / "self.yml").read_text(encoding="utf-8"))
+    tasks = YamlUtils.load((ROOT / "tasks" / "self.yml").read_text(encoding="utf-8"))
     for name in ("golden:render", "golden:validate"):
         assert str(tasks["tasks"][name]["desc"]).strip()
         assert not tasks["tasks"][name].get("internal")
-    root = yaml.safe_load((ROOT / "Taskfile.yml").read_text(encoding="utf-8"))
+    root = YamlUtils.load((ROOT / "Taskfile.yml").read_text(encoding="utf-8"))
     assert root["includes"]["self"] == "tasks/self.yml"
 
 
