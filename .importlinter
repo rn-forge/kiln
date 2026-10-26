@@ -102,4 +102,6 @@ forbidden_modules =
     yaml
     ruamel
     tomlkit
+    markdown
+    markdown_it
 allow_indirect_imports = True

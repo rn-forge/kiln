@@ -8,9 +8,9 @@ import re
 import pytest
 
 from rn_forge.commons.exceptions import AppException
+from rn_forge.commons.text.markdown import MarkdownUtils
 
 from rn_forge.kiln.modules.docs.areas import Area, load_areas
-from rn_forge.kiln.modules.docs.markdown import headings, is_external, links, slugify
 from rn_forge.kiln.modules.docs.nav import (
     NAV_BLOCK,
     build_nav,
@@ -108,24 +108,6 @@ def repo(tmp_path):
 
 def codes(findings):
     return sorted(finding.code for finding in findings)
-
-
-class TestMarkdown:
-    def test_links_ignores_fenced_code(self):
-        assert links("[a](a.md)\n```\n[b](b.md)\n```\n") == ["a.md"]
-
-    def test_headings_are_slugified(self):
-        assert headings("# Hello, World!\n## A B\n") == {"hello-world", "a-b"}
-
-    def test_slugify_matches_mkdocs(self):
-        assert slugify("  What's *this*? ") == "whats-this"
-
-    @pytest.mark.parametrize(
-        ("link", "expected"),
-        [("https://x", True), ("mailto:a@b", True), ("a.md", False)],
-    )
-    def test_is_external(self, link, expected):
-        assert is_external(link) is expected
 
 
 class TestAreas:
@@ -504,6 +486,20 @@ class TestCheckSite:
         write(navved / "docs/guides/setup.md", "# Setup\n\n[gone](missing.md)\n")
         assert "docs.broken-link" in codes(check_site(navved))
 
+    def test_s7_3_5_1_link_in_inline_code_is_not_checked(self, navved):
+        write(
+            navved / "docs/guides/setup.md",
+            "# Setup\n\nWrite `[gone](missing.md)` to link.\n",
+        )
+        assert "docs.broken-link" not in codes(check_site(navved))
+
+    def test_s7_3_5_2_link_text_with_brackets_is_checked(self, navved):
+        write(
+            navved / "docs/guides/setup.md",
+            "# Setup\n\n[No deleted `[cli]` keys](missing.md)\n",
+        )
+        assert "docs.broken-link" in codes(check_site(navved))
+
     def test_gitignored_generated_subtree_is_skipped(self, navved):
         write(navved / ".gitignore", "docs/api/\n")
         write(navved / "docs/guides/setup.md", "# Setup\n\n[api](../api/index.md)\n")
@@ -515,29 +511,35 @@ class TestCheckSite:
 
 class TestMarkdownAgreesWithTheRenderer:
     def test_non_ascii_heading_slug_matches_the_renderer(self):
-        assert slugify("Résumé") == "resume"
-        assert headings("# Résumé\n") == {"resume"}
+        assert MarkdownUtils.slugify("Résumé") == "resume"
+        assert MarkdownUtils.anchors("# Résumé\n") == {"resume"}
 
     def test_repeated_headings_get_the_renderer_suffixes(self):
         text = "## Consequences\n\n## Consequences\n\n## Consequences\n"
-        assert headings(text) == {"consequences", "consequences_1", "consequences_2"}
+        assert MarkdownUtils.anchors(text) == {
+            "consequences",
+            "consequences_1",
+            "consequences_2",
+        }
 
     def test_headings_inside_fenced_code_are_not_headings(self):
         text = "# Real\n\n```bash\n# not a heading\n```\n"
-        assert headings(text) == {"real"}
+        assert MarkdownUtils.anchors(text) == {"real"}
 
     def test_trailing_hashes_are_not_part_of_the_slug(self):
-        assert headings("## Closed ##\n") == {"closed"}
+        assert MarkdownUtils.anchors("## Closed ##\n") == {"closed"}
 
     def test_reference_links_resolve_through_their_definition(self):
         text = "See [the guide][g] and [setup][].\n\n[g]: guides/index.md\n[setup]: setup.md\n"
-        assert links(text) == ["guides/index.md", "setup.md"]
+        assert MarkdownUtils.links(text) == ["guides/index.md", "setup.md"]
 
     def test_a_reference_with_no_definition_is_not_a_link(self):
-        assert links("See [nothing][missing].\n") == []
+        assert MarkdownUtils.links("See [nothing][missing].\n") == []
 
     def test_tilde_fences_are_stripped_too(self):
-        assert links("~~~\n[x](inside.md)\n~~~\n\n[y](outside.md)\n") == ["outside.md"]
+        assert MarkdownUtils.links("~~~\n[x](inside.md)\n~~~\n\n[y](outside.md)\n") == [
+            "outside.md"
+        ]
 
 
 class TestGenerate:

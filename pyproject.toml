@@ -25,10 +25,6 @@ dependencies = [
     "rn-forge-commons[pydantic,markdown,templates] @ git+https://github.com/rn-forge/pykit@rn-forge-commons-v0.7.0#subdirectory=packages/rn-forge-commons",
     "rn-forge-cli @ git+https://github.com/rn-forge/pykit@rn-forge-cli-v0.1.1#subdirectory=packages/rn-forge-cli",
     "rn-forge-tooling @ git+https://github.com/rn-forge/pykit@rn-forge-tooling-v0.3.0#subdirectory=packages/rn-forge-tooling",
-    # The docs checks ask Python-Markdown what anchor a heading gets rather than
-    # guessing; mkdocs already brings it, but a check that only works inside a
-    # docs build is not a check.
-    "markdown>=3.7",
     # The docs checks read `exclude_docs` the way MkDocs does, with its matcher.
     "pathspec>=1.1",
 ]

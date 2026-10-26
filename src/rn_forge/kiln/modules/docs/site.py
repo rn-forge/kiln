@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Any
 
 from rn_forge.commons.findings import Finding, Severity
+from rn_forge.commons.text.markdown import MarkdownUtils
 
-from rn_forge.kiln.modules.docs.markdown import headings, is_external, links
 from rn_forge.kiln.modules.docs.packages import (
     excluded_docs,
     package_mounts,
@@ -114,13 +114,13 @@ class Site:
         """Every heading anchor in *path*, or an empty set if it does not exist."""
         if not path.exists():
             return set()
-        return headings(path.read_text(encoding="utf-8"))
+        return MarkdownUtils.anchors(path.read_text(encoding="utf-8"))
 
     def linked_pages(self, path: Path) -> set[Path]:
         """Every existing Markdown page *path* links to."""
         targets: set[Path] = set()
-        for link in links(path.read_text(encoding="utf-8")):
-            if is_external(link):
+        for link in MarkdownUtils.links(path.read_text(encoding="utf-8")):
+            if MarkdownUtils.is_external(link):
                 continue
             target, _, _anchor = link.partition("#")
             if not target.endswith(".md"):
@@ -174,8 +174,8 @@ class Site:
         """Every relative link and anchor in a shipping page resolves."""
         findings: list[Finding] = []
         for path in self.markdown_files():
-            for link in links(path.read_text(encoding="utf-8")):
-                if is_external(link):
+            for link in MarkdownUtils.links(path.read_text(encoding="utf-8")):
+                if MarkdownUtils.is_external(link):
                     continue
                 target, _, anchor = link.partition("#")
                 resolved = (

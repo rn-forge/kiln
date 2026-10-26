@@ -15,10 +15,10 @@ from pathlib import Path
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.blocks import ManagedBlock
 from rn_forge.commons.fs.documents import YamlUtils
+from rn_forge.commons.text.markdown import MarkdownUtils
 
 from rn_forge.kiln.modules.docs.areas import Area, load_areas
-from rn_forge.kiln.modules.docs.markdown import is_external, links
-from rn_forge.kiln.modules.docs.work import epic_range, range_label
+from rn_forge.kiln.modules.docs.work import epic_range, range_label, title_markup
 
 __all__ = [
     "ACRONYMS",
@@ -47,11 +47,10 @@ def title_from_filename(name: str) -> str:
 
 
 def page_title(path: Path) -> str:
-    """The text of *path*'s first `# ` heading, else its filename's title."""
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if line.startswith("# "):
-            return line.removeprefix("# ").strip()
-    return title_from_filename(path.name)
+    """The text of *path*'s first level-1 heading, else its filename's title."""
+    return title_markup(path.read_text(encoding="utf-8")) or title_from_filename(
+        path.name
+    )
 
 
 def _linked_order(index_path: Path) -> list[str]:
@@ -59,8 +58,9 @@ def _linked_order(index_path: Path) -> list[str]:
         return []
     return [
         link.partition("#")[0]
-        for link in links(index_path.read_text(encoding="utf-8"))
-        if not is_external(link) and link.partition("#")[0].endswith(".md")
+        for link in MarkdownUtils.links(index_path.read_text(encoding="utf-8"))
+        if not MarkdownUtils.is_external(link)
+        and link.partition("#")[0].endswith(".md")
     ]
 
 

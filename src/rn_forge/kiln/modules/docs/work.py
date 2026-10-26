@@ -10,8 +10,7 @@ from pathlib import Path
 
 from rn_forge.commons.findings import Finding, Severity
 from rn_forge.commons.fs.blocks import HTML_COMMENT, ManagedBlock
-
-from rn_forge.kiln.modules.docs.markdown import slugify, strip_fenced_code
+from rn_forge.commons.text.markdown import MarkdownUtils
 
 __all__ = [
     "BOARD_BLOCK",
@@ -44,6 +43,7 @@ __all__ = [
     "render_features",
     "render_scope",
     "render_stories",
+    "title_markup",
     "validate",
 ]
 
@@ -87,13 +87,10 @@ _COUNT_ORDER = ("Active", "New", "Closed", "Removed")
 _NO_FEATURES = "—"
 _PER_FEATURE = "Per feature; see the epic."
 
-_HEADER_RE = re.compile(r"^\|\s*\|\s*\|\s*$")
-_DELIMITER_RE = re.compile(r"^\|\s*:?-+:?\s*\|\s*:?-+:?\s*\|\s*$")
-_ROW_RE = re.compile(r"^\|\s*\*\*(.+?)\*\*\s*\|(.*)\|\s*$")
+_BOLD_KEY_RE = re.compile(r"^\*\*(.+?)\*\*$")
 _FEATURE_ID_RE = re.compile(r"F\d+\.\d+")
 _FEATURE_FILE_RE = re.compile(r"^F\d+\.\d+-.*\.md$")
 _RELEASE_RE = re.compile(r"release-(\d+)")
-_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 _NUMBER_RE = re.compile(r"\d+")
 
 
@@ -162,28 +159,34 @@ class Work:
     releases: tuple[Release, ...]
 
 
-def _cells(line: str) -> list[str]:
-    return [cell.strip() for cell in line.strip().strip("|").split("|")]
-
-
 def _metadata(lines: list[str]) -> tuple[list[tuple[str, str]], int] | None:
     """The metadata pairs and the index of the first line after the table."""
-    i = next((n for n, line in enumerate(lines) if line.startswith("# ")), None)
-    if i is None:
+    text = "\n".join(lines)
+    title = next((h for h in MarkdownUtils.headings(text) if h.level == 1), None)
+    if title is None:
         return None
-    i += 1
-    while i < len(lines) and not lines[i].strip():
-        i += 1
-    if i + 1 >= len(lines):
+    first = next(
+        (n for n in range(title.line + 1, len(lines)) if lines[n].strip()), None
+    )
+    if first is None:
         return None
-    if not (_HEADER_RE.match(lines[i]) and _DELIMITER_RE.match(lines[i + 1])):
+    table = next(
+        (
+            t
+            for t in MarkdownUtils.tables(text)
+            if t.start == first and t.header == ("", "")
+        ),
+        None,
+    )
+    if table is None:
         return None
-    i += 2
     pairs: list[tuple[str, str]] = []
-    while i < len(lines) and (row := _ROW_RE.match(lines[i])):
-        pairs.append((row.group(1).strip(), row.group(2).strip()))
-        i += 1
-    return pairs, i
+    for row in table.rows:
+        key = _BOLD_KEY_RE.match(row[0])
+        if key is None:
+            break
+        pairs.append((key.group(1).strip(), row[1]))
+    return pairs, table.start + 2 + len(pairs)
 
 
 def read_metadata(text: str) -> list[tuple[str, str]] | None:
@@ -198,11 +201,19 @@ def metadata_end(lines: list[str]) -> int | None:
     return None if found is None else found[1]
 
 
+def title_markup(text: str) -> str | None:
+    """The source text of the first level-1 heading, markup kept, or `None`."""
+    heading = next((h for h in MarkdownUtils.headings(text) if h.level == 1), None)
+    if heading is None:
+        return None
+    line = text.splitlines()[heading.line].strip()
+    if not line.startswith("#"):
+        return heading.text
+    return re.sub(r"\s+#+$", "", line.lstrip("#").strip())
+
+
 def _title(lines: list[str]) -> str:
-    return next(
-        (line.removeprefix("# ").strip() for line in lines if line.startswith("# ")),
-        "",
-    )
+    return title_markup("\n".join(lines)) or ""
 
 
 def _page(path: Path) -> tuple[Page, list[str], int]:
@@ -232,41 +243,25 @@ def _feature_rows(lines: list[str]) -> tuple[tuple[FeatureRow, ...], bool]:
 
     Lines inside a derived features fence are not hand-written rows.
     """
-    lines = _outside_fence(lines)
-    i = 0
-    while i < len(lines):
-        if not lines[i].lstrip().startswith("|"):
-            i += 1
+    for table in MarkdownUtils.tables("\n".join(_outside_fence(lines))):
+        if not any(_FEATURE_ID_RE.search(row[0]) for row in table.rows):
             continue
-        start = i
-        while i < len(lines) and lines[i].lstrip().startswith("|"):
-            i += 1
-        block = lines[start:i]
-        if len(block) < 3:
-            continue
-        headers = _cells(block[0])
-        body = [_cells(line) for line in block[2:]]
-        if not any(row and _FEATURE_ID_RE.search(row[0]) for row in body):
-            continue
+        headers = table.header
         state = headers.index("State") if "State" in headers else None
         tags = headers.index("Tags") if "Tags" in headers else None
-
-        def cell(row: list[str], column: int | None) -> str:
-            return row[column] if column is not None and column < len(row) else ""
-
         rows: list[FeatureRow] = []
-        for row in body:
-            found = _FEATURE_ID_RE.search(row[0]) if row else None
+        for row in table.rows:
+            found = _FEATURE_ID_RE.search(row[0])
             if found is None:
                 continue
-            link = _LINK_RE.search(row[0])
-            target = link.group(1).partition("#")[0].rsplit("/", 1)[-1] if link else ""
+            targets = MarkdownUtils.links(row[0])
+            target = targets[0].partition("#")[0].rsplit("/", 1)[-1] if targets else ""
             rows.append(
                 FeatureRow(
                     found.group(0),
                     target if _FEATURE_FILE_RE.match(target) else None,
-                    cell(row, state),
-                    cell(row, tags),
+                    row[state] if state is not None else "",
+                    row[tags] if tags is not None else "",
                 )
             )
         return tuple(rows), state is not None
@@ -282,7 +277,7 @@ def read_stories(text: str) -> tuple[Story, ...]:
     A heading inside fenced code is ignored. A story's state and dependencies
     come from the first `**State:**` line before the next `## ` heading.
     """
-    lines = strip_fenced_code(text).splitlines()
+    lines = MarkdownUtils.strip_fenced_code(text).splitlines()
     stories: list[Story] = []
     for i, line in enumerate(lines):
         heading = STORY_HEADING_RE.match(line)
@@ -755,7 +750,8 @@ def render_epics(work: Work) -> str:
         ranges.setdefault(epic_range(epic.number), []).append(epic)
     labels = {span: range_label(*span) for span in ranges}
     jump = " \u00b7 ".join(
-        f"[{labels[span]}](#{slugify(labels[span])})" for span in sorted(ranges)
+        f"[{labels[span]}](#{MarkdownUtils.slugify(labels[span])})"
+        for span in sorted(ranges)
     )
     lines = ["", f"Jump to: {jump}"]
     for span in sorted(ranges):
@@ -795,7 +791,7 @@ def render_stories(feature: Feature) -> str:
     for story in feature.stories:
         text = f"{story.id} \u2014 {story.title}"
         lines.append(
-            f"| [{text.replace('|', chr(92) + '|')}](#{slugify(text)}) "
+            f"| [{text.replace('|', chr(92) + '|')}](#{MarkdownUtils.slugify(text)}) "
             f"| {story.state or _NO_FEATURES} | {story.depends_on or _NO_FEATURES} |"
         )
     lines.append("")

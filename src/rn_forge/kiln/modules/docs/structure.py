@@ -8,9 +8,9 @@ from pathlib import Path
 from pathspec.gitignore import GitIgnoreSpec
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding, Severity
+from rn_forge.commons.text.markdown import MarkdownUtils
 
 from rn_forge.kiln.modules.docs.areas import Area, load_areas
-from rn_forge.kiln.modules.docs.markdown import headings, is_external, links
 from rn_forge.kiln.modules.docs.packages import (
     excluded_docs,
     package_mounts,
@@ -223,12 +223,12 @@ def _check_links(
     findings: list[Finding] = []
     for path in _shipping_pages(docs_root, excluded):
         text = path.read_text(encoding="utf-8")
-        for link in links(text):
-            if is_external(link):
+        for link in MarkdownUtils.links(text):
+            if MarkdownUtils.is_external(link):
                 continue
             target, _, anchor = link.partition("#")
             if not target:
-                if anchor and anchor not in headings(text):
+                if anchor and anchor not in MarkdownUtils.anchors(text):
                     findings.append(
                         _error(
                             "broken-anchor", path, f"#{anchor} not found in same page"
@@ -242,7 +242,8 @@ def _check_links(
             if (
                 anchor
                 and resolved.suffix == ".md"
-                and anchor not in headings(resolved.read_text(encoding="utf-8"))
+                and anchor
+                not in MarkdownUtils.anchors(resolved.read_text(encoding="utf-8"))
             ):
                 findings.append(
                     _error("broken-anchor", path, f"{link} anchor not found")
@@ -259,7 +260,7 @@ def _check_no_underscore_refs(
             continue
         findings.extend(
             _error("underscore-referenced", path, f"links to {link}")
-            for link in links(path.read_text(encoding="utf-8"))
+            for link in MarkdownUtils.links(path.read_text(encoding="utf-8"))
             if (name := Path(link.partition("#")[0]).name).startswith("_")
             and not name.startswith("__")
         )
@@ -269,8 +270,8 @@ def _check_no_underscore_refs(
 def _resolved_links(path: Path) -> set[Path]:
     return {
         (path.parent / link.partition("#")[0]).resolve()
-        for link in links(path.read_text(encoding="utf-8"))
-        if not is_external(link)
+        for link in MarkdownUtils.links(path.read_text(encoding="utf-8"))
+        if not MarkdownUtils.is_external(link)
     }
 
 
