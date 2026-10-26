@@ -311,7 +311,11 @@ def test_s4_2_3_core_checks_report_what_doctor_only_generated_reports(
     from_doctor = [
         str(finding) for finding in generated.check(KilnConfig.load(root), root)
     ]
-    from_core = [str(finding) for finding in CORE.checks(KilnConfig.load(root), root)]
+    from_core = [
+        str(finding)
+        for finding in CORE.checks(KilnConfig.load(root), root)
+        if not finding.code.startswith("kiln.pin")
+    ]
     assert len(from_doctor) == 2
     assert from_core == from_doctor
 

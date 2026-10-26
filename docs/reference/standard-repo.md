@@ -353,7 +353,7 @@ regeneration.
 | `taskgraph.unresolved-ref` | task references in managed workflows and managed instruction blocks resolve |
 | `ci.entrypoint` | no forbidden tool, `kiln` included, invoked directly in a workflow |
 | `gate.shrunk` | tasks reachable from `validate` ⊇ the archetype's `required_validate` |
-| `kiln.pin` | `rn-forge-kiln` is in the dev group with a pinned source, and the running kiln is the version `uv.lock` records |
+| `kiln.pin-missing` / `kiln.pin-mismatch` | `[kiln] ref` is set, and a tag ref names the running kiln's version |
 | `ci.unpinned` / `ci.permissions` | every `uses:` SHA-pinned with a version comment; every job has `permissions:` |
 | `ci.hook-missing` / `ci.hook-not-callable` | every `[ci.hooks]` action and declared job's workflow exists; a declared job's workflow has `workflow_call` in its `on:` |
 | `docs.nav-stale` | the derived nav (`docs-generate`) differs from what regenerating it from the docs tree would write |

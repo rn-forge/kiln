@@ -42,9 +42,9 @@ class CoreModule:
 
     def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:
         """The committed-state baseline check."""
-        from rn_forge.kiln.modules.core.checks import generated
+        from rn_forge.kiln.modules.core.checks import generated, pin
 
-        return generated.check(config, root)
+        return [*generated.check(config, root), *pin.check(config, root)]
 
 
 CORE = CoreModule()
