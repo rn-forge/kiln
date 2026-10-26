@@ -334,6 +334,7 @@ def _reconcile_pyproject(root: Path, config: KilnConfig, relative: Path) -> None
         mkdocs=config.docs_profile == "mkdocs",
         lib=workspace,
         extra_dev=extra_dev,
+        index=is_root and bool(required),
     )
     if config.archetype in {"python-tool", "python-app"} and is_root:
         DocumentUtils.update(
@@ -397,6 +398,7 @@ def _reconcile(
     mkdocs: bool,
     lib: bool = False,
     extra_dev: tuple[str, ...] = (),
+    index: bool = False,
 ) -> None:
     test_glob = "**/tests/*" if is_workspace_root else "tests/*"
     tool: dict[str, object] = {
@@ -415,6 +417,10 @@ def _reconcile(
         # pykit's workspace sources resolve per tag; see F7.1 S7.1.2.
         uv = cast("dict[str, object]", tool.setdefault("uv", {}))
         uv["no-sources"] = True
+    if index:
+        # rn-forge requirements are ranges on pykit's index; kiln ADR-0018.
+        uv = cast("dict[str, object]", tool.setdefault("uv", {}))
+        uv["index"] = [{"name": "rn-forge", "url": archetypes.PYKIT_INDEX}]
     project: dict[str, object] = {"requires-python": REQUIRES_PYTHON}
     if (is_root and not is_workspace_root) or (lib and not is_root):
         project["readme"] = "README.md"

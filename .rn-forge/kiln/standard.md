@@ -113,23 +113,28 @@ that a rule rather than a preference.
 The web archetypes add `rn-forge-web` — framework-free inbound HTTP, on commons
 alone — beneath `rn-forge-django` or `rn-forge-fastapi`.
 
-rn-forge distributions are git sources — pykit publishes GitHub Releases, not to
-PyPI — declared as direct URLs in `dependencies`, never as `[tool.uv.sources]`
-overrides, which do not survive into a built wheel. Each names its
-package's release tag:
+rn-forge requirements are version ranges on pykit's package index — pykit
+publishes GitHub Releases, not to PyPI — declared in `dependencies`, never as
+`[tool.uv.sources]` overrides, which do not survive into a built wheel. The
+floor is kiln's pin for the package and the ceiling is the next breaking
+release, and the root declares the index once:
 
 ```toml
 dependencies = [
-  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@rn-forge-commons-v0.5.0#subdirectory=packages/rn-forge-commons",
-  "rn-forge-cli @ git+https://github.com/rn-forge/pykit@rn-forge-cli-v0.1.0#subdirectory=packages/rn-forge-cli",
-  "rn-forge-tooling @ git+https://github.com/rn-forge/pykit@rn-forge-tooling-v0.2.0#subdirectory=packages/rn-forge-tooling",
+  "rn-forge-commons>=0.7.0,<0.8",
+  "rn-forge-cli>=0.1.1,<0.2",
+  "rn-forge-tooling>=0.3.0,<0.4",
 ]
+
+[[tool.uv.index]]
+name = "rn-forge"
+url = "https://rn-forge.github.io/pykit/simple/"
 ```
 
 The dependency source is config: `git` + ref, which is CI-capable, or a local
 `path`, which is not. `kiln doctor`'s `rn-forge-deps` check enforces required,
-allowed and pinned-and-direct, accepts a branch or path source with a warning,
-and refuses one in a publish job. Flipping to tags is
+allowed and pinned-or-ranged, accepts a branch or path source with a warning,
+and refuses one in a publish job. A breaking pykit release is
 `kiln config upgrade --apply`, not a template change.
 
 Every root outside `python-lib` sets `[tool.uv] no-sources = true`. pykit's

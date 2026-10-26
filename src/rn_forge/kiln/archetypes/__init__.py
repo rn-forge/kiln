@@ -28,6 +28,7 @@ __all__ = [
     "RN_FORGE_TAGS",
     "Archetype",
     "Dependencies",
+    "ceiling",
     "for_config",
     "load",
     "pyproject_paths",
@@ -43,16 +44,17 @@ PYKIT_GIT = "git+https://github.com/rn-forge/pykit"
 PYKIT_INDEX = "https://rn-forge.github.io/pykit/simple/"
 """pykit's PEP 503 index of its GitHub Release files (kiln ADR-0018)."""
 RN_FORGE_TAGS = {
-    "rn-forge-commons": "rn-forge-commons-v0.5.0",
-    "rn-forge-cli": "rn-forge-cli-v0.1.0",
-    "rn-forge-tooling": "rn-forge-tooling-v0.2.0",
-    "rn-forge-web": "rn-forge-web-v0.2.0",
-    "rn-forge-django": "rn-forge-django-v0.4.0",
-    "rn-forge-fastapi": "rn-forge-fastapi-v0.2.0",
-    "rn-forge-sqlalchemy": "rn-forge-sqlalchemy-v0.2.0",
+    "rn-forge-commons": "rn-forge-commons-v0.7.0",
+    "rn-forge-cli": "rn-forge-cli-v0.1.1",
+    "rn-forge-tooling": "rn-forge-tooling-v0.3.0",
+    "rn-forge-web": "rn-forge-web-v0.2.1",
+    "rn-forge-django": "rn-forge-django-v0.5.1",
+    "rn-forge-fastapi": "rn-forge-fastapi-v0.3.2",
+    "rn-forge-sqlalchemy": "rn-forge-sqlalchemy-v0.2.1",
     "rn-forge-devops": "rn-forge-devops-v0.2.0",
 }
-"""pykit's release tags, read from pykit on 2026-10-14. Moving a pin is a change here alone."""
+"""pykit's release tags, read from pykit on 2026-10-25. A requirement's floor is its tag's version
+([ADR-0018](https://github.com/rn-forge/kiln/blob/main/docs/adr/ADR-0018.md))."""
 KILN_GIT = "git+https://github.com/rn-forge/kiln"
 KILN_REF = "feature/v1"
 """The ref `kiln new` and `kiln init` pin. F7.2's release-1 cut makes it `v<version>`."""
@@ -153,14 +155,20 @@ def for_config(config: KilnConfig) -> Archetype:
     )
 
 
+def ceiling(version: str) -> str:
+    """The next breaking version after *version*: the next minor before 1.0, the next major after."""
+    major, minor, _ = (int(part) for part in version.split("."))
+    return f"0.{minor + 1}" if major == 0 else str(major + 1)
+
+
 def requirement(distribution: str) -> str:
-    """The pinned PEP 508 requirement line pykit's *distribution* resolves to.
+    """The version range pykit's *distribution* resolves to from `PYKIT_INDEX`.
 
     Raises:
         KeyError: *distribution* has no release tag in `RN_FORGE_TAGS`.
     """
-    tag = RN_FORGE_TAGS[distribution]
-    return f"{distribution} @ {PYKIT_GIT}@{tag}#subdirectory=packages/{distribution}"
+    version = RN_FORGE_TAGS[distribution].rpartition("-v")[2]
+    return f"{distribution}>={version},<{ceiling(version)}"
 
 
 def pyproject_paths(config: KilnConfig) -> tuple[Path, ...]:

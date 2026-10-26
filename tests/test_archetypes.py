@@ -182,11 +182,14 @@ def test_s5_1_1_5_a_web_app_table_under_a_python_app_config_is_rejected(
         KilnConfig.load(root)
 
 
-def test_s7_1_1_1_requirement_names_the_release_tag() -> None:
-    assert archetypes.requirement("rn-forge-cli") == (
-        "rn-forge-cli @ git+https://github.com/rn-forge/pykit"
-        "@rn-forge-cli-v0.1.0#subdirectory=packages/rn-forge-cli"
-    )
+def test_s7_3_6_1_requirement_is_a_range() -> None:
+    assert archetypes.requirement("rn-forge-cli") == "rn-forge-cli>=0.1.1,<0.2"
+
+
+def test_s7_3_6_2_ceiling() -> None:
+    assert archetypes.ceiling("0.7.0") == "0.8"
+    assert archetypes.ceiling("0.1.1") == "0.2"
+    assert archetypes.ceiling("1.4.2") == "2"
 
 
 def test_s7_1_1_1_every_tag_is_pinned() -> None:

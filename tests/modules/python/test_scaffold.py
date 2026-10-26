@@ -147,6 +147,42 @@ def test_s4_3_7_root_dependencies_match_archetype_order(
     ]
 
 
+@pytest.mark.parametrize(
+    "archetype", ["python-tool", "python-app", "python-web-api", "python-web-app"]
+)
+def test_s7_3_6_3_root_declares_the_index(tmp_path: Path, archetype: str) -> None:
+    root = _root(tmp_path, archetype)
+    if archetype.startswith("python-web"):
+        config = root / ".rn-forge" / "kiln" / "config.toml"
+        config.write_text(
+            config.read_text(encoding="utf-8")
+            + f'\n[archetype."{archetype}"]\nbackend = "fastapi"\n',
+            encoding="utf-8",
+        )
+    config = KilnConfig.load(root)
+    scaffold(root, config)
+    document = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    assert document["tool"]["uv"]["index"] == [
+        {"name": "rn-forge", "url": archetypes.PYKIT_INDEX}
+    ]
+
+
+def test_s7_3_6_4_pykit_shaped_root_declares_no_index(tmp_path: Path) -> None:
+    """The shipped python-lib requires commons, so the empty set is patched in."""
+    root = _root(tmp_path, "python-lib")
+    config = KilnConfig.load(root)
+    shipped = archetypes.for_config(config)
+    empty = shipped.model_copy(
+        update={
+            "dependencies": shipped.dependencies.model_copy(update={"required": []})
+        }
+    )
+    with mock.patch.object(archetypes, "for_config", return_value=empty):
+        scaffold(root, config)
+    document = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
+    assert "index" not in document.get("tool", {}).get("uv", {})
+
+
 def test_s4_3_7_workspace_members_carry_dependencies_root_does_not(
     tmp_path: Path,
 ) -> None:

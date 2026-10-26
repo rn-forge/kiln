@@ -223,28 +223,36 @@ commons alone, and sits beneath `rn-forge-django` and `rn-forge-fastapi`. A repo
 takes the highest layer it actually needs; the configured dependency check
 enforces its required list.
 
-Every rn-forge requirement is a **PEP 508 direct URL** in `dependencies`:
+Every rn-forge requirement is a **version range** on pykit's package index
+([ADR-0018](../adr/ADR-0018.md)), and the root declares the index once:
 
 ```toml
-dependencies = [
-  "rn-forge-commons @ git+https://github.com/rn-forge/pykit@rn-forge-commons-v0.5.0#subdirectory=packages/rn-forge-commons",
-]
+[project]
+dependencies = ["rn-forge-commons>=0.7.0,<0.8"]
+
+[[tool.uv.index]]
+name = "rn-forge"
+url = "https://rn-forge.github.io/pykit/simple/"
 ```
 
+The floor is the version in kiln's pin table, and the ceiling is the next
+breaking release: the next minor before 1.0, the next major from 1.0. uv's
+default `first-index` strategy means an `rn-forge-*` name never resolves from
+PyPI. A pinned git direct URL is still accepted. A bare name, or a range with no
+ceiling, is not.
+
 Never `[tool.uv.sources]` — that is a *local* override which does not survive
-into a built wheel, so a consumer of a published package could not resolve the
-dependency at all. An `[tool.uv.sources]` entry for an rn-forge package is
+into a built wheel. An `[tool.uv.sources]` entry for an rn-forge package is
 rejected outright.
 
 The repository's own workspace members are the exception
-([ADR-0014](../adr/ADR-0014.md)). A member's dependency on a sibling keeps its
-pinned direct URL in `dependencies`, may add a `{ workspace = true }` source for
-local development, and is outside the allowed set. A dependency group may name a
-sibling bare.
+([ADR-0014](../adr/ADR-0014.md)). A member's dependency on a sibling is a range
+or a pinned direct URL in `dependencies`, may add a `{ workspace = true }`
+source for local development, needs no index entry, and is outside the allowed
+set. A dependency group may name a sibling bare.
 
-rn-forge requirements name each package's release tag, from kiln's pin table
-([E7](../specs/epics/E7-pykit-release-pin-flip/index.md)). A new kiln release
-moves the pins; `kiln config upgrade --apply` takes them into a repository.
+A breaking pykit release moves kiln's pin table; `kiln config upgrade --apply`
+takes it into a repository. An additive release needs only `uv lock --upgrade`.
 
 Every root outside `python-lib` sets `[tool.uv] no-sources = true`. pykit's tags
 sit on different commits, and pykit's own workspace sources would otherwise make
@@ -252,8 +260,8 @@ uv resolve a shared dependency once per tag. A repository scaffolded before kiln
 did this adds the line by hand.
 
 `kiln doctor`'s `rn-forge-deps` check enforces three rules — **required**,
-**allowed**, **pinned-and-direct**. Its required and allowed lists are config,
-so pykit — which *contains* commons and cannot depend on it — renders an empty
+**allowed**, **pinned-or-ranged**. Its required and allowed lists are config, so
+pykit — which *contains* commons and cannot depend on it — renders an empty
 required list rather than needing an exemption.
 
 kiln is not a dependency. `[kiln] ref` in `config.toml` pins it, and `task` runs
