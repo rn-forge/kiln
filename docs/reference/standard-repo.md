@@ -256,19 +256,18 @@ did this adds the line by hand.
 so pykit — which *contains* commons and cannot depend on it — renders an empty
 required list rather than needing an exemption.
 
-kiln itself is a **dev** dependency of every generated repo, `rn-forge-kiln`
-pinned the same way ([ADR-0006](../adr/ADR-0006.md)). A pykit workspace that
-takes kiln lists every pykit member kiln reaches in
-`[tool.uv] override-dependencies`, so kiln resolves to the workspace copies.
+kiln is not a dependency. `[kiln] ref` in `config.toml` pins it, and `task` runs
+it with `uvx` in its own environment ([ADR-0006](../adr/ADR-0006.md)). A
+repository's lock holds none of kiln's dependencies, and kiln's pykit pins never
+constrain the repository's.
 
 ## 4. The import boundary
 
 `rn-forge-commons`, `rn-forge-cli` and `rn-forge-tooling` are the only rn-forge
 packages a repo may import (plus its own framework runtime package). Every other
-rn-forge component — kiln included, although it is a dev dependency — is a
-subprocess or nothing. That rule is enforced at the dependency declaration, in
-§3: import-linter rejects subpackages of external packages, so it cannot express
-it.
+rn-forge component — kiln included — is a subprocess or nothing. That rule is
+enforced at the dependency declaration, in §3: import-linter rejects subpackages
+of external packages, so it cannot express it.
 
 What `.importlinter` enforces is the complement — product code imports no
 framework or CLI toolkit *directly* (`typer`, `jinja2`, `click`, `django`,
@@ -483,6 +482,9 @@ archetype = "python-tool"  # python-app | python-tool | python-lib
                            # node-web-app   (deferred)
 lifecycle = false          # any python archetype; python-tool is the alias
                            # for python-app + lifecycle = true (ADR-0005)
+
+[kiln]
+ref = "v0.1.0"             # the kiln release tag this repository runs
 
 [docs]
 profile = "mkdocs"         # mkdocs | external | none

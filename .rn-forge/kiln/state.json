@@ -58,7 +58,7 @@
     },
     ".rn-forge/kiln/standard.md": {
       "begin_marker": null,
-      "content_hash": "5c48678221c2d3fdf10b9c00b735347e6bc6a001dc6ca2b4de8f8d6a9e2ee8d8",
+      "content_hash": "db28439fa0964b849316c8e5a3a6ab27729c0dbdb1f94007feb971d7f7f38626",
       "end_marker": null,
       "kind": "managed",
       "path": ".rn-forge/kiln/standard.md"
@@ -72,7 +72,7 @@
     },
     "CLAUDE.md#rn-forge kiln": {
       "begin_marker": "<!-- BEGIN rn-forge kiln -->",
-      "content_hash": "f44f07a9a111d7c88a30a815cfa8e7a1a7f532e5c8c8596ae4a9d700b40b6882",
+      "content_hash": "a2647c8c24abc7b79518f4a83a67f1af4befbfdd2d9a1e8ed4811f5341c7e4c0",
       "end_marker": "<!-- END rn-forge kiln -->",
       "kind": "block",
       "path": "CLAUDE.md"
@@ -275,7 +275,7 @@
     },
     "tasks/python.yml": {
       "begin_marker": null,
-      "content_hash": "cd527b6bbf3e53e39753efcc106220d5de8a3c7af1062ffdb3d86c48d064fa64",
+      "content_hash": "54f15e8c9ebe75139e735f39544a0cf940dcc33f5d7d010ef5e533ec1d53d060",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/python.yml"

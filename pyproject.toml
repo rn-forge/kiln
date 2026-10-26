@@ -31,6 +31,9 @@ dependencies = [
     "markdown>=3.7",
     # The docs checks read `exclude_docs` the way MkDocs does, with its matcher.
     "pathspec>=1.1",
+    # The CI and task checks read YAML. Declared here until F7.3's S7.3.3 reads
+    # it through rn-forge-commons; repositories no longer carry it for kiln.
+    "pyyaml>=6.0",
 ]
 
 [project.scripts]
@@ -85,7 +88,6 @@ dev = [
     "pyright>=1.1.411",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
-    "pyyaml>=6.0",
     "ruff>=0.15.21",
     "taplo>=0.9.3",
     "zizmor>=1.31.1",

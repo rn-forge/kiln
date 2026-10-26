@@ -18,7 +18,8 @@ changing anything structural.
   where; [docs/index.md](docs/index.md) is the reader's entry point. Run
   `task docs:generate` after adding a page.
 {% elif docs_profile == "external" %}{{ docs_bullet }}
-{% endif %}- **kiln is a pinned dev dependency.** CI runs it read-only through
-  `task validate` — `kiln doctor` on every run, `kiln doctor --full` where the
-  workflow asks — and never runs `kiln apply`.
+{% endif %}- **kiln is pinned by `[kiln] ref`** in `.rn-forge/kiln/config.toml`, and runs
+  in its own environment, outside this repo's lock. CI runs it read-only
+  through `task validate` — `kiln doctor` on every run, `kiln doctor --full`
+  where the workflow asks — and never runs `kiln apply`.
 

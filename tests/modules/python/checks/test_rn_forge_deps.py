@@ -12,6 +12,8 @@ from pathlib import Path
 
 import pytest
 
+from rn_forge.commons.findings import Severity
+
 from rn_forge.kiln import archetypes, checks
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.python.checks import rn_forge_deps
@@ -90,7 +92,7 @@ dependencies = [
 ]
 """
 
-# How a repo takes kiln: a dev dependency, from a path source.
+# How a repo used to take kiln: a dev dependency, from a path source.
 KILN_FROM_PATH = f"""
 [project]
 name = "example"
@@ -255,9 +257,21 @@ def test_an_app_may_not_take_the_tooling_layer(repo) -> None:
     assert any("rn-forge-tooling" in line for line in reported)
 
 
-def test_kiln_itself_is_outside_the_contract(repo) -> None:
-    """kiln is the dev tool running the check; doctor's `kiln.pin` owns its source."""
-    assert run(repo(lifecycle=True, **{"pyproject.toml": KILN_FROM_PATH})) == []
+def test_s7_4_2_2_kiln_in_a_group_is_an_error(repo) -> None:
+    root = repo(lifecycle=True, **{"pyproject.toml": KILN_FROM_PATH})
+    found = [
+        f
+        for f in rn_forge_deps.check(KilnConfig.load(root), root)
+        if f.code == "deps.kiln-in-lock"
+    ]
+    assert [f.severity for f in found] == [Severity.ERROR]
+    assert "dependency-groups.dev" in found[0].message
+
+
+def test_s7_4_2_3_kilns_own_project_is_not_a_dependency() -> None:
+    root = Path(__file__).resolve().parents[4]
+    findings = rn_forge_deps.check(KilnConfig.load(root), root)
+    assert [f for f in findings if f.code == "deps.kiln-in-lock"] == []
 
 
 def _lib_root(tmp_path: Path, packages: str) -> Path:

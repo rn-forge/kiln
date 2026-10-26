@@ -54,10 +54,7 @@ _DEV_GROUP = [
     "taplo",
     "zizmor",
 ]
-"""The dev tools every archetype's `pyproject.toml` names; `rn-forge-kiln` too,
-added separately since its distribution name differs from its PyPI-style
-default and it is the one the dependency check itself excludes from the
-rn-forge contract."""
+"""The dev tools every archetype's `pyproject.toml` names."""
 
 _DOCS_GROUP = [
     "mdformat>=1.0.0",
@@ -438,11 +435,7 @@ def _reconcile(
     updates: dict[str, object] = {"project": project, "tool": tool}
     if is_root:
         coverage = ["coverage[toml]>=7.6"] if lib else []
-        dev = [
-            *_DEV_GROUP,
-            *coverage,
-            f"rn-forge-kiln @ {archetypes.KILN_GIT}@{archetypes.KILN_REF}",
-        ]
+        dev = [*_DEV_GROUP, *coverage]
         mkdocs_group = _DOCS_GROUP_MKDOCS_LIB if lib else _DOCS_GROUP_MKDOCS
         docs = [*_DOCS_GROUP, *(mkdocs_group if mkdocs else [])]
         updates["dependency-groups"] = {

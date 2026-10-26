@@ -37,8 +37,9 @@ changing anything structural.
 - **Docs rules:** [docs/\_structure.md](docs/_structure.md) says what belongs
   where; [docs/index.md](docs/index.md) is the reader's entry point. Run
   `task docs:generate` after adding a page.
-- **kiln is a pinned dev dependency.** CI runs it read-only through
-  `task validate` — `kiln doctor` on every run, `kiln doctor --full` where the
-  workflow asks — and never runs `kiln apply`.
+- **kiln is pinned by `[kiln] ref`** in `.rn-forge/kiln/config.toml`, and runs
+  in its own environment, outside this repo's lock. CI runs it read-only
+  through `task validate` — `kiln doctor` on every run, `kiln doctor --full`
+  where the workflow asks — and never runs `kiln apply`.
 
 <!-- END rn-forge kiln -->

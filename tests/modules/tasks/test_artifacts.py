@@ -1053,7 +1053,7 @@ def test_s4_11_5_2_the_excluded_set_is_every_rn_forge_distribution(
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     names = _excluded(_audit_cmd(root))
-    assert names == [*sorted(archetypes.RN_FORGE_TAGS), "rn-forge-kiln"]
+    assert names == sorted(archetypes.RN_FORGE_TAGS)
     assert len(set(names)) == len(names)
 
 

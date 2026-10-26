@@ -43,7 +43,6 @@ tasks:
         --no-emit-package rn-forge-sqlalchemy
         --no-emit-package rn-forge-tooling
         --no-emit-package rn-forge-web
-        --no-emit-package rn-forge-kiln
         | uv run pip-audit --disable-pip --no-deps --strict -r /dev/stdin
 
   format:

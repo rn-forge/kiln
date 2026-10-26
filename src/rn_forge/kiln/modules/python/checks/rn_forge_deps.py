@@ -15,9 +15,10 @@ Three rules, all read from `pyproject.toml`:
    dependency group, which never reaches a wheel; in `dependencies` it still
    needs the URL.
 
-`rn-forge-kiln` is outside all three: it is the dev tool that runs this
-check, not a library the repo is built on, and its own pin is a separate
-`doctor` rule.
+A fourth rule keeps kiln out of the lock: `rn-forge-kiln` in any dependency,
+optional dependency or dependency group is an error, because kiln runs from
+`[kiln] ref` in its own environment (F7.4). The root project's own
+`[project] name` is not a dependency, so kiln's own repository passes.
 """
 
 from __future__ import annotations
@@ -48,7 +49,7 @@ PINNED_GIT_URL = re.compile(r"^git\+[^@\s]+@[^#\s]+")
 CODEGEN_EXTRA = re.compile(r"^\s*[A-Za-z0-9][A-Za-z0-9._-]*\[[^\]]*\bcodegen\b[^\]]*\]")
 
 KILN = "rn-forge-kiln"
-"""The generator itself: a dev dependency the contract does not govern."""
+"""The generator itself: never a dependency of the repo it runs beside."""
 
 
 def distribution(requirement: str) -> str:
@@ -107,6 +108,33 @@ def every_dependency(document: dict[str, object]) -> list[str]:
     to develop with is exactly the coupling kiln ADR-0002 is about.
     """
     return [*published_dependencies(document), *group_dependencies(document)]
+
+
+def _check_kiln_not_in_lock(label: str, document: dict[str, object]) -> list[Finding]:
+    """`rn-forge-kiln` in any dependency list puts kiln's own tree in the lock."""
+    lists: dict[str, list[str]] = {
+        "dependencies": runtime_dependencies(document),
+        **{
+            f"optional-dependencies.{name}": documents.strings(group)
+            for name, group in documents.table(
+                document, "project", "optional-dependencies"
+            ).items()
+        },
+        **{
+            f"dependency-groups.{name}": documents.strings(group)
+            for name, group in documents.table(document, "dependency-groups").items()
+        },
+    }
+    return [
+        Finding(
+            f"{CODE}.kiln-in-lock",
+            Severity.ERROR,
+            f"{KILN} is in {group}; kiln runs from [kiln] ref (F7.4), so remove it",
+            path=label,
+        )
+        for group, requirements in lists.items()
+        if any(distribution(r) == KILN for r in requirements)
+    ]
 
 
 def _check_allowed(
@@ -245,6 +273,7 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
                 label, document, tuple(archetype.dependencies.allowed), members
             )
         )
+        findings.extend(_check_kiln_not_in_lock(label, document))
         findings.extend(_check_direct_url(label, document, members))
         findings.extend(_check_no_shadowing_source(label, document, members))
         findings.extend(_check_no_codegen_in_runtime(label, document))

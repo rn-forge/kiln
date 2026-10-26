@@ -205,7 +205,10 @@ otherwise make uv resolve a shared dependency once per tag. A repository
 scaffolded before kiln did this adds the line by hand.
 
 {% endif %}
-kiln itself is a dev dependency, `rn-forge-kiln`, pinned the same way.
+kiln is not a dependency. `[kiln] ref` in `config.toml` pins it, and `task` runs
+it with `uvx` in its own environment (kiln ADR-0006). A
+repository's lock holds none of kiln's dependencies, and kiln's pykit pins never
+constrain the repository's.
 
 ## 4. The import boundary
 

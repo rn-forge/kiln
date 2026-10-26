@@ -114,7 +114,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "extra_refs": tasks_config.extra_refs,
         "overrides": tasks_config.command_overrides,
         "audit_ignore": [entry.id for entry in tasks_config.audit.ignore],
-        "audit_excluded": [*sorted(RN_FORGE_TAGS), "rn-forge-kiln"],
+        "audit_excluded": sorted(RN_FORGE_TAGS),
         "web": web,
         "web_app": web_app,
         "backend": config.backend,

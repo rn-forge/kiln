@@ -159,30 +159,21 @@ contradict). Never edit a derived region by hand.
 
 ## 8. Make the gate runnable
 
-`task validate` runs kiln's checks, so kiln must be a dev dependency of the
-repository: add it, pinned. While kiln is not released, use the editable
-checkout (`uv add --dev --editable <kiln>`). A workspace that publishes
-libraries kiln itself depends on needs the override that makes kiln take the
-workspace copies rather than the published ones (ADR-0006; run 1: pykit's
-commons, cli and tooling). In the root `pyproject.toml`, written before
-`uv add --dev --editable <kiln>`, list every workspace member kiln depends on,
-with the extras the workspace already uses (an override replaces the
-requirement, extras included):
+`task validate` runs kiln's checks through the kiln that `[kiln] ref` in
+`.rn-forge/kiln/config.toml` pins. `kiln init` writes that ref; confirm it is
+there. kiln is not a dependency: the tasks run it with `uvx`, in its own
+environment, so the repository's lock and `pyproject.toml` do not change for it.
+If the repository already lists `rn-forge-kiln` in a dependency group, or
+carries an `override-dependencies` entry only so kiln resolves, remove them
+(`deps.kiln-in-lock`).
 
-```toml
-[tool.uv]
-override-dependencies = ["rn-forge-commons[all]", "rn-forge-cli", "rn-forge-tooling"]
-```
-
-Adding a dependency changes the repository's lock, so an agent should expect to
-need the owner's approval for it (run 2: it was refused until approved). Then
-`task setup`.
+Then `task setup`.
 
 ## 9. Run the gate and sort what is left
 
 ```bash
 task validate
-uv run kiln doctor . --full
+KILN_DOCTOR_FULL=1 task validate
 ```
 
 Sort each finding by who owns the file:
