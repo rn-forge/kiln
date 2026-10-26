@@ -62,8 +62,8 @@ are [release-2](../release-2/index.md).
 | [F6.7 — kiln ships the CI planner as `kiln-devops`](../../specs/epics/E6-rebuild-the-repos/F6.7-kiln-devops.md) | E6 | New |
 | [F7.1 — kiln renders and takes pykit by release tag](../../specs/epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md) | E7 | Closed |
 | [F7.2 — A tagged kiln release, taken by each repository](../../specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md) | E7 | New |
-| [F7.3 — kiln takes pykit's document, template and Markdown helpers](../../specs/epics/E7-pykit-release-pin-flip/F7.3-adopt-pykit-extraction.md) | E7 | Active |
-| [F7.4 — kiln runs beside a repository, not inside its lock](../../specs/epics/E7-pykit-release-pin-flip/F7.4-kiln-runs-beside-the-repository.md) | E7 | Active |
+| [F7.3 — kiln takes pykit's document, template and Markdown helpers](../../specs/epics/E7-pykit-release-pin-flip/F7.3-adopt-pykit-extraction.md) | E7 | Closed |
+| [F7.4 — kiln runs beside a repository, not inside its lock](../../specs/epics/E7-pykit-release-pin-flip/F7.4-kiln-runs-beside-the-repository.md) | E7 | Closed |
 | [F9.1 — `node-lib` renders ngkit's CI](../../specs/epics/E9-node-archetypes/F9.1-node-lib-hosts-ngkit-ci.md) | E9 | New |
 | [F11.1 — The docs checks learn package sites](../../specs/epics/E11-package-docs/F11.1-checks-learn-package-sites.md) | E11 | Closed |
 | [F11.2 — `python-lib` repositories carry package docs sites](../../specs/epics/E11-package-docs/F11.2-python-lib-package-sites.md) | E11 | Closed |
@@ -105,6 +105,9 @@ are [release-2](../release-2/index.md).
   are exempt from the rn-forge dependency contract (F6.1, F6.4).
 - [ADR-0015](../../adr/ADR-0015.md) — added 2026-10-14: `node-lib` renders
   ngkit's CI (E9).
+- [ADR-0017](../../adr/ADR-0017.md) — added 2026-10-22, revised 2026-10-26: the
+  CI planner ships inside kiln as `kiln-devops`, reached through the
+  `[kiln] ref` pin and not the repository's lock (F6.7, F7.4).
 - [ADR-0018](../../adr/ADR-0018.md) — accepted 2026-10-25: rn-forge dependencies
   are version ranges from pykit's package index (F7.3).
 
@@ -117,7 +120,8 @@ corrected for goldens that now render into `.goldens/working`, and F14.1's
 sidebar check found E1 missing from its range until S14.1.3 was corrected. F4.9
 closed on 2026-10-24, when its acceptance block passed. F4.8 closed on
 2026-10-25, when its pull-request CI run passed, and F4.11, F6.3 and F11.5 the
-same day, when their acceptance blocks passed. F6.1 has S6.1.1 open: its fifth
+same day, when their acceptance blocks passed. F7.3 and F7.4 closed on
+2026-10-26, when their acceptance blocks passed. F6.1 has S6.1.1 open: its fifth
 run, after the script was corrected and pykit landed its F16.4, fails only
 because pykit's `rn-forge-devops` has no `docs/guides/`; it stays open for
 in-place adoption. S6.1.5 is closed, and run 1 of adopting pykit in place, on an

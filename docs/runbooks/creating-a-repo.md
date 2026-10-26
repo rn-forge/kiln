@@ -72,18 +72,14 @@ git add -A
 git commit -m "Initial commit from kiln new"
 ```
 
-**Pre-release workaround: a local kiln.** A generated `pyproject.toml` takes
-`rn-forge-kiln` from its remote Git source, and a shipped cell must resolve that
-way. Until that ref resolves for you, point the new repo at a local checkout by
-hand, in its own `pyproject.toml`:
+**Pre-release workaround: a local kiln.** kiln is not a dependency of the
+generated repo: `[kiln] ref` in `.rn-forge/kiln/config.toml` pins it, and `task`
+runs it beside the repo with `uvx` (F7.4). Until that ref resolves for you, set
+`[kiln] ref` by hand to a ref that does, or run a local checkout against the
+repo with `uv run --project ../kiln kiln <command>`.
 
-```toml
-[tool.uv.sources]
-rn-forge-kiln = { path = "../kiln", editable = true }
-```
-
-This is a development aid, not evidence that the repo bootstraps. kiln never
-writes it for you, and it comes out before the repo is shared.
+This is a development aid, not evidence that the repo bootstraps. It comes out
+before the repo is shared.
 
 What it does, in order, is the apply sequence in
 [the workspace architecture](../architecture/workspace.md#apply-sequence). Step
