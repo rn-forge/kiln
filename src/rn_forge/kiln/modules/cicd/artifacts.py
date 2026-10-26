@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import tomllib
 from functools import cache
 from importlib.resources import files
 from pathlib import Path
+from typing import cast
 
 from rn_forge.commons.exceptions import AppException
+from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.generation import Artifact, ArtifactKind
 from rn_forge.commons.text.templates import TemplateEngine
 
@@ -43,8 +44,10 @@ _PLAN_KEYS = (
 
 def load_pins() -> dict[str, dict[str, str]]:
     """The pinned action set, one table per action, from `pins.toml`."""
-    text = files(_PACKAGE).joinpath("pins.toml").read_text(encoding="utf-8")
-    return tomllib.loads(text)
+    return cast(
+        "dict[str, dict[str, str]]",
+        DocumentUtils.read(files(_PACKAGE).joinpath("pins.toml")),
+    )
 
 
 def _ci_config(config: KilnConfig) -> CiConfig:

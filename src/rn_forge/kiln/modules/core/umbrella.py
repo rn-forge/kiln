@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import json
-import tomllib
 from pathlib import Path
 
 from rn_forge.commons.findings import Finding, Severity
+from rn_forge.commons.fs.documents import DocumentError, DocumentUtils
 from rn_forge.commons.fs.paths import PathUtils
 
 from rn_forge.kiln.config import CONFIG_PATH
@@ -62,14 +61,10 @@ def _declares_schema_version(tree: Path) -> bool:
     config = tree / "config.toml"
     state = tree / "state.json"
     try:
-        if config.is_file() and "schema_version" in tomllib.loads(
-            config.read_text(encoding="utf-8")
-        ):
+        if config.is_file() and "schema_version" in DocumentUtils.read(config):
             return True
-        if state.is_file() and "schema_version" in json.loads(
-            state.read_text(encoding="utf-8")
-        ):
+        if state.is_file() and "schema_version" in DocumentUtils.read(state):
             return True
-    except tomllib.TOMLDecodeError, json.JSONDecodeError:
+    except DocumentError:
         return False
     return False

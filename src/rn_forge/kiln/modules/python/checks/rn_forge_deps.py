@@ -24,13 +24,14 @@ optional dependency or dependency group is an error, because kiln runs from
 from __future__ import annotations
 
 import re
-import tomllib
 from pathlib import Path
 from typing import cast
 
 from rn_forge.commons.findings import Finding, Severity
+from rn_forge.commons.fs.documents import DocumentUtils
+from rn_forge.commons.lang.collections import DictUtils, ListUtils
 
-from rn_forge.kiln import archetypes, documents
+from rn_forge.kiln import archetypes
 from rn_forge.kiln.archetypes import RN_FORGE_PREFIX
 from rn_forge.kiln.config import KilnConfig
 
@@ -66,7 +67,7 @@ def governed(name: str) -> bool:
 
 def runtime_dependencies(document: dict[str, object]) -> list[str]:
     """`[project] dependencies` — what a consumer of this package would install."""
-    return documents.strings(documents.table(document, "project").get("dependencies"))
+    return DictUtils.get_strings(document, "project.dependencies")
 
 
 def workspace_members(config: KilnConfig, root: Path) -> frozenset[str]:
@@ -76,9 +77,7 @@ def workspace_members(config: KilnConfig, root: Path) -> frozenset[str]:
         path = root / package / "pyproject.toml"
         if not path.exists():
             continue
-        name = documents.table(
-            tomllib.loads(path.read_text(encoding="utf-8")), "project"
-        ).get("name")
+        name = DictUtils.get_mapping(DocumentUtils.read(path), "project").get("name")
         if isinstance(name, str):
             found.add(distribution(name))
     return frozenset(found)
@@ -87,17 +86,17 @@ def workspace_members(config: KilnConfig, root: Path) -> frozenset[str]:
 def published_dependencies(document: dict[str, object]) -> list[str]:
     """Runtime and optional-dependency requirements — what a wheel carries."""
     found = list(runtime_dependencies(document))
-    optional = documents.table(document, "project", "optional-dependencies")
+    optional = DictUtils.get_mapping(document, "project.optional-dependencies")
     for group in optional.values():
-        found.extend(documents.strings(group))
+        found.extend(ListUtils.as_strings(group))
     return found
 
 
 def group_dependencies(document: dict[str, object]) -> list[str]:
     """Every dependency-group requirement, flattened."""
     found: list[str] = []
-    for group in documents.table(document, "dependency-groups").values():
-        found.extend(documents.strings(group))
+    for group in DictUtils.get_mapping(document, "dependency-groups").values():
+        found.extend(ListUtils.as_strings(group))
     return found
 
 
@@ -115,14 +114,16 @@ def _check_kiln_not_in_lock(label: str, document: dict[str, object]) -> list[Fin
     lists: dict[str, list[str]] = {
         "dependencies": runtime_dependencies(document),
         **{
-            f"optional-dependencies.{name}": documents.strings(group)
-            for name, group in documents.table(
-                document, "project", "optional-dependencies"
+            f"optional-dependencies.{name}": ListUtils.as_strings(group)
+            for name, group in DictUtils.get_mapping(
+                document, "project.optional-dependencies"
             ).items()
         },
         **{
-            f"dependency-groups.{name}": documents.strings(group)
-            for name, group in documents.table(document, "dependency-groups").items()
+            f"dependency-groups.{name}": ListUtils.as_strings(group)
+            for name, group in DictUtils.get_mapping(
+                document, "dependency-groups"
+            ).items()
         },
     }
     return [
@@ -241,7 +242,7 @@ def _check_no_shadowing_source(
             f"remove it and pin the URL in `dependencies` instead",
             path=label,
         )
-        for name, source in documents.table(document, "tool", "uv", "sources").items()
+        for name, source in DictUtils.get_mapping(document, "tool.uv.sources").items()
         if governed(name) and not _is_workspace_source(name, source, members)
     ]
 
@@ -267,7 +268,7 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
                 )
             )
             continue
-        document = tomllib.loads(path.read_text(encoding="utf-8"))
+        document = DocumentUtils.read(path)
         findings.extend(
             _check_allowed(
                 label, document, tuple(archetype.dependencies.allowed), members

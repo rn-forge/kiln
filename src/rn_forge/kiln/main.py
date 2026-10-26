@@ -9,13 +9,11 @@ from inside other repos' environments.
 
 from __future__ import annotations
 
-import tomllib
 from importlib.resources import files
 
+from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.tooling.cli.lifecycle import build_tool_app
 
-SURFACE = tomllib.loads(
-    files("rn_forge.kiln").joinpath("cli.toml").read_text(encoding="utf-8")
-)
+SURFACE = DocumentUtils.read(files("rn_forge.kiln").joinpath("cli.toml"))
 
 app = build_tool_app(SURFACE)

@@ -15,8 +15,8 @@ from pathlib import Path
 
 import yaml
 from rn_forge.commons.findings import Finding, Severity
+from rn_forge.commons.lang.collections import DictUtils
 
-from rn_forge.kiln import documents
 from rn_forge.kiln.config import KilnConfig
 
 __all__ = ["NAME", "check"]
@@ -55,7 +55,9 @@ def _check_uses(label: str, text: str) -> list[Finding]:
 
 
 def _check_permissions(label: str, text: str) -> list[Finding]:
-    jobs = documents.table(yaml.load(text, Loader=yaml.CSafeLoader), "jobs")
+    jobs = DictUtils.get_mapping(
+        DictUtils.as_mapping(yaml.load(text, Loader=yaml.CSafeLoader)), "jobs"
+    )
     return [
         Finding(
             PERMISSIONS,
@@ -64,7 +66,7 @@ def _check_permissions(label: str, text: str) -> list[Finding]:
             path=label,
         )
         for name, spec in jobs.items()
-        if "permissions" not in documents.mapping(spec)
+        if "permissions" not in DictUtils.as_mapping(spec)
     ]
 
 

@@ -18,14 +18,15 @@ references into it resolve, and is otherwise left alone.
 
 from __future__ import annotations
 
-import json
 import re
 from pathlib import Path
 
 import yaml
 from rn_forge.commons.findings import Finding, Severity
+from rn_forge.commons.fs.documents import DocumentUtils
+from rn_forge.commons.lang.collections import DictUtils, ListUtils
 
-from rn_forge.kiln import archetypes, documents
+from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.tasks.config import ROOT_VERBS, TasksConfig
 
@@ -47,11 +48,11 @@ _BLOCK_SCALAR = re.compile(r"^[|>][+-]?\d*$")
 
 def task_specs(document: object) -> dict[str, object]:
     """The `tasks:` mapping of a Taskfile, or empty if there isn't one."""
-    return documents.table(document, "tasks")
+    return DictUtils.get_mapping(DictUtils.as_mapping(document), "tasks")
 
 
 def _check_desc(label: str, name: str, spec: object) -> list[Finding]:
-    if str(documents.mapping(spec).get("desc", "")).strip():
+    if str(DictUtils.as_mapping(spec).get("desc", "")).strip():
         return []
     return [
         Finding(
@@ -78,9 +79,9 @@ def _check_wrapper_only(label: str, name: str, spec: object) -> list[Finding]:
         ]
     findings: list[Finding] = []
     for index, entry in enumerate(
-        documents.sequence(documents.mapping(spec).get("cmds"))
+        ListUtils.as_list(DictUtils.as_mapping(spec).get("cmds"))
     ):
-        if "task" in documents.mapping(entry):
+        if "task" in DictUtils.as_mapping(entry):
             continue
         shown = entry if isinstance(entry, str) else type(entry).__name__
         findings.append(
@@ -99,8 +100,8 @@ def _check_wrapper_only(label: str, name: str, spec: object) -> list[Finding]:
 def task_refs(spec: object) -> list[str]:
     """The `task:` targets a task calls, in order."""
     refs: list[str] = []
-    for entry in documents.sequence(documents.mapping(spec).get("cmds")):
-        target = documents.mapping(entry).get("task")
+    for entry in ListUtils.as_list(DictUtils.as_mapping(spec).get("cmds")):
+        target = DictUtils.as_mapping(entry).get("task")
         if isinstance(target, str):
             refs.append(target)
     return refs
@@ -109,11 +110,13 @@ def task_refs(spec: object) -> list[str]:
 def include_map(document: object) -> dict[str, str]:
     """The root file's `includes:`, namespace to path (posix, no `./`)."""
     includes: dict[str, str] = {}
-    for namespace, value in documents.table(document, "includes").items():
+    for namespace, value in DictUtils.get_mapping(
+        DictUtils.as_mapping(document), "includes"
+    ).items():
         path = (
             value
             if isinstance(value, str)
-            else documents.mapping(value).get("taskfile")
+            else DictUtils.as_mapping(value).get("taskfile")
         )
         if isinstance(path, str):
             includes[namespace] = Path(path).as_posix()
@@ -236,7 +239,7 @@ def _check_surface(root_tasks: dict[str, object]) -> list[Finding]:
 
 
 def _check_internal(path: str, name: str, spec: object) -> list[Finding]:
-    if documents.mapping(spec).get("internal") is True:
+    if DictUtils.as_mapping(spec).get("internal") is True:
         return []
     return [
         Finding(
@@ -388,9 +391,10 @@ def _check_owned_text(root: Path, graph: dict[str, object]) -> list[Finding]:
     state_path = root / STATE_PATH
     if not state_path.exists():
         return []
-    entries = json.loads(state_path.read_text(encoding="utf-8")).get("entries", {})
+    entries = DictUtils.get_mapping(DocumentUtils.read(state_path), "entries")
     findings: list[Finding] = []
-    for _, entry in sorted(entries.items()):
+    for _, raw in sorted(entries.items()):
+        entry = DictUtils.as_mapping(raw)
         relative = str(entry.get("path", ""))
         path = root / relative
         if not path.is_file():

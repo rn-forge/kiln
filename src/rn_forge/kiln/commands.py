@@ -16,25 +16,21 @@ import difflib
 import re
 import shutil
 import subprocess
-import tomllib
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from importlib import metadata
 from importlib.resources import files
 from pathlib import Path
-from typing import Any, cast
 
-import tomlkit
 from rn_forge.cli import CliApp
 from rn_forge.commons import generation
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding, Severity
-from rn_forge.commons.fs.documents import ConfigFormat, DocumentUtils
+from rn_forge.commons.fs.documents import ConfigFormat, DocumentError, DocumentUtils
 from rn_forge.commons.fs.state import StateStore
 from rn_forge.commons.generation import StateEntry
 from rn_forge.commons.lang.collections import DictUtils
 from rn_forge.commons.runtime.console import OutputMode, console
-from tomlkit.items import Array
 
 from rn_forge.kiln import archetypes, checks
 from rn_forge.kiln import doctor as doctor_module
@@ -84,8 +80,8 @@ __all__ = [
 _DISTRIBUTION = "rn-forge-kiln"
 
 _CONFIG_HEADER = (
-    "# The one hand-authored input kiln reads (kiln ADR-0004). Edit this, then run\n"
-    "# `kiln apply`. Everything else under .rn-forge/kiln/ is kiln's.\n"
+    "The one hand-authored input kiln reads (kiln ADR-0004). Edit this, then run\n"
+    "`kiln apply`. Everything else under .rn-forge/kiln/ is kiln's."
 )
 
 _INIT_FILES = ("pyproject.toml",)
@@ -593,8 +589,8 @@ def _project_name(pyproject: Path) -> str | None:
     if not pyproject.is_file():
         return None
     try:
-        document = tomllib.loads(pyproject.read_text(encoding="utf-8"))
-    except tomllib.TOMLDecodeError:
+        document = DocumentUtils.read(pyproject)
+    except DocumentError:
         return None
     name = document.get("project", {}).get("name")
     return _canonical(name) if isinstance(name, str) else None
@@ -1085,21 +1081,15 @@ def _write_config(directory: Path, config: KilnConfig) -> None:
     """Write *config* as `directory`'s committed `config.toml`, with kiln's header."""
     config_path = directory / CONFIG_PATH
     config_path.parent.mkdir(parents=True, exist_ok=True)
-    document = tomlkit.parse(
-        DocumentUtils.dumps(config.to_document(), ConfigFormat.TOML)
+    config_path.write_text(
+        DocumentUtils.dumps(
+            config.to_document(),
+            ConfigFormat.TOML,
+            header=_CONFIG_HEADER,
+            multiline_arrays=True,
+        ),
+        encoding="utf-8",
     )
-    _multiline_arrays(document)
-    config_path.write_text(_CONFIG_HEADER + tomlkit.dumps(document), encoding="utf-8")
-
-
-def _multiline_arrays(container: Mapping[str, Any]) -> None:
-    """Set every non-empty array under *container*, at any depth, to the multi-line form."""
-    for value in container.values():
-        if isinstance(value, Array):
-            if value:
-                value.multiline(True)
-        elif isinstance(value, Mapping):
-            _multiline_arrays(cast("Mapping[str, Any]", value))
 
 
 def _config_reresolve(

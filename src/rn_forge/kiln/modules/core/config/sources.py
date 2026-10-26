@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import subprocess
 import tempfile
-import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from rn_forge.commons.exceptions import AppException
+from rn_forge.commons.fs.documents import DocumentError, DocumentUtils
 
 from rn_forge.kiln.modules.core.config.schema import SourceConfig
 
@@ -87,8 +87,8 @@ def fetch(source: Source, base: Path) -> Fetched:
 def _read_layer(path: Path) -> dict[str, Any]:
     file = path / _LAYER_FILE if path.is_dir() else path
     try:
-        document = tomllib.loads(file.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError) as error:
+        document = DocumentUtils.read(file)
+    except (OSError, DocumentError) as error:
         raise AppException("config source {}: {}", file, error) from error
     # A layer supplies values; the record of where it came from is kiln's to write.
     document.pop("source", None)

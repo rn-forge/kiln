@@ -12,15 +12,13 @@ import os
 import re
 import shutil
 import tempfile
-import tomllib
 from functools import cache
 from pathlib import Path
 from typing import Any, cast
 
-import tomlkit
 from rn_forge.commons.fs.documents import DocumentUtils
+from rn_forge.commons.lang.collections import DictUtils
 from rn_forge.commons.runtime.subprocess import Process
-from tomlkit.items import InlineTable, Item
 
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
@@ -456,25 +454,16 @@ def _multiline_lists(path: Path) -> None:
     Inline-table entries are respaced as `{ key = value }`, as taplo and uv write them.
     """
     document = DocumentUtils.read_document(path)
-    project = document.get("project", {})
-    arrays: list[Any] = [project.get("dependencies"), project.get("authors")]
-    arrays += list(document.get("dependency-groups", {}).values())
-    for array in arrays:
-        if array:
-            for index, item in enumerate(array):
-                if isinstance(item, InlineTable):
-                    array[index] = _spaced(item)
-            array.multiline(True)
-    DocumentUtils.write_document(path, document)
-
-
-def _spaced(table: InlineTable) -> Any:
-    """*table* as `{ key = value }`, the spacing taplo and uv write."""
-    fields = cast("dict[str, Any]", table)
-    body = ", ".join(
-        f"{k} = {cast('Item', tomlkit.item(v)).as_string()}" for k, v in fields.items()
+    DocumentUtils.multiline_arrays(
+        document,
+        "project.dependencies",
+        "project.authors",
+        *(
+            f"dependency-groups.{name}"
+            for name in DictUtils.as_mapping(document.get("dependency-groups"))
+        ),
     )
-    return tomlkit.parse(f"x = {{ {body} }}")["x"]
+    DocumentUtils.write_document(path, document)
 
 
 def _existing_list(path: Path, *keys: str) -> list[str]:
@@ -483,13 +472,6 @@ def _existing_list(path: Path, *keys: str) -> list[str]:
     `DocumentUtils.update` deep-merges tables but replaces lists wholesale, so
     callers that mean to extend a list read it first.
     """
-    if not path.is_file():
-        return []
-    value: object = tomllib.loads(path.read_text(encoding="utf-8"))
-    for key in keys:
-        value = (
-            cast("dict[str, object]", value).get(key)
-            if isinstance(value, dict)
-            else None
-        )
-    return cast("list[str]", value) if isinstance(value, list) else []
+    return DictUtils.get_strings(
+        DocumentUtils.read(path, missing_ok=True), ".".join(keys)
+    )

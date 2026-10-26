@@ -15,12 +15,12 @@ Three artifact kinds; two are checked:
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding, Severity
 from rn_forge.commons.fs.blocks import HTML_COMMENT, ManagedBlock
+from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.fs.hashing import ContentHash
 
 from rn_forge.kiln.config import KilnConfig
@@ -158,7 +158,7 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
             )
         ]
 
-    state = json.loads(state_path.read_text(encoding="utf-8"))
+    state = DocumentUtils.read(state_path)
     declared = state.get("schema_version")
     if declared != SCHEMA_VERSION:
         return [

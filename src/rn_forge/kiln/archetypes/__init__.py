@@ -7,13 +7,13 @@ profile then adjust what the manifest states.
 
 from __future__ import annotations
 
-import tomllib
 from importlib.resources import files
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pydantic import Field
 from rn_forge.commons.exceptions import AppException
+from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.lang.models import StrictModel
 
 if TYPE_CHECKING:
@@ -113,7 +113,7 @@ def load(name: str) -> Archetype:
         raise AppException(
             "Unknown archetype {!r} — this kiln ships {}", name, ", ".join(shipped())
         )
-    document = tomllib.loads(manifest.read_text(encoding="utf-8"))
+    document = DocumentUtils.read(manifest)
     return Archetype.parse(document, source=f"archetype {name!r}")
 
 

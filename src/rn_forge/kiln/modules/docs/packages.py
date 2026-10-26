@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-import tomllib
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, cast
@@ -11,7 +10,7 @@ from typing import Any, cast
 from pathspec.gitignore import GitIgnoreSpec
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding, Severity
-from rn_forge.commons.fs.documents import DocumentUtils
+from rn_forge.commons.fs.documents import DocumentError, DocumentUtils
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs.areas import load_areas
@@ -121,8 +120,8 @@ def _toml(path: Path) -> dict[str, Any]:
     if not path.is_file():
         return {}
     try:
-        return tomllib.loads(path.read_text(encoding="utf-8"))
-    except tomllib.TOMLDecodeError:
+        return DocumentUtils.read(path, missing_ok=True)
+    except DocumentError:
         return {}
 
 

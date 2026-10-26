@@ -7,10 +7,10 @@ derived-nav fence, which `kiln docs-generate` fills.
 from __future__ import annotations
 
 import textwrap
-import tomllib
 from functools import cache
 from pathlib import Path
 
+from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln.config import KilnConfig
@@ -103,7 +103,7 @@ def add_package(root: Path, config: KilnConfig, name: str) -> list[Path]:
 
 
 def _project_urls(pyproject: Path) -> dict[str, str]:
-    document = tomllib.loads(pyproject.read_text(encoding="utf-8"))
+    document = DocumentUtils.read(pyproject)
     return {
         key: str(value) for key, value in document["project"].get("urls", {}).items()
     }

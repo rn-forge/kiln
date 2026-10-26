@@ -508,3 +508,10 @@ def test_s4_12_5_5_all_includes_them(
     first, second = payload["repos"]
     assert "docs.broken-link" in {item["code"] for item in first["findings"]}
     assert second["findings"] == []
+
+
+def test_s7_3_2_1_invalid_state_is_an_app_exception(copy: Path) -> None:
+    (copy / ".rn-forge" / "kiln" / "state.json").write_text("{", encoding="utf-8")
+    with pytest.raises(AppException, match=r"state\.json") as raised:
+        checks.run(copy)
+    assert not isinstance(raised.value, json.JSONDecodeError)

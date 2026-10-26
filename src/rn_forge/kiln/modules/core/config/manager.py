@@ -7,19 +7,18 @@ committed one from its recorded source, keeping every repo override.
 
 from __future__ import annotations
 
-import json
-import tomllib
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
 from rn_forge.commons.exceptions import AppException
+from rn_forge.commons.fs.documents import DocumentError, DocumentUtils
 from rn_forge.commons.lang.collections import DictUtils
 from rn_forge.commons.lang.types import JsonValue
 from rn_forge.commons.runtime.console import console
 
-from rn_forge.kiln import archetypes, documents
+from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
 from rn_forge.kiln.modules.base import KilnModule, ModuleRegistry
 from rn_forge.kiln.modules.core.config.schema import (
@@ -194,7 +193,9 @@ class ConfigManager:
                     for module in disabled
                 ),
             )
-        foreign = [key for key in documents.table(document, "archetype") if key != name]
+        foreign = [
+            key for key in DictUtils.get_mapping(document, "archetype") if key != name
+        ]
         if foreign:
             raise AppException(
                 "{}: [archetype.{}] belongs to a different archetype than {!r}",
@@ -345,8 +346,8 @@ def _read_config(root: Path) -> dict[str, Any]:
     if not path.exists():
         raise AppException("{}: not found — this is not a kiln repo", label)
     try:
-        return tomllib.loads(path.read_text(encoding="utf-8"))
-    except tomllib.TOMLDecodeError as invalid:
+        return DocumentUtils.read(path)
+    except DocumentError as invalid:
         raise AppException("{}: is not valid TOML — {}", label, invalid) from invalid
 
 
@@ -354,9 +355,9 @@ def _recorded_provenance(root: Path) -> dict[str, Provenance]:
     path = root / _STATE_PATH
     if not path.is_file():
         return {}
-    state = json.loads(path.read_text(encoding="utf-8"))
-    recorded = documents.table(state, "metadata", PROVENANCE_KEY)
+    state = DocumentUtils.read(path)
+    recorded = DictUtils.get_mapping(state, f"metadata.{PROVENANCE_KEY}")
     return {
         key: Provenance(str(entry.get("layer")), cast(JsonValue, entry.get("value")))
-        for key, entry in ((k, documents.mapping(v)) for k, v in recorded.items())
+        for key, entry in ((k, DictUtils.as_mapping(v)) for k, v in recorded.items())
     }
