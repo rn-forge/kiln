@@ -569,6 +569,19 @@ def test_s6_3_5_setup_uv_enables_the_cache(tmp_path: Path) -> None:
     assert install["with"]["enable-cache"] is True
 
 
+def test_s7_4_4_1_uv_cache_follows_the_kiln_pin(tmp_path: Path) -> None:
+    action = yaml.safe_load(
+        _rendered(_root(tmp_path))[".github/actions/setup/action.yml"]
+    )
+    install = next(
+        step for step in action["runs"]["steps"] if step["name"] == "Install uv"
+    )
+    assert install["with"]["cache-dependency-glob"].split() == [
+        "**/uv.lock",
+        ".rn-forge/kiln/config.toml",
+    ]
+
+
 def test_s6_3_5_pins_match_the_upstream_versions() -> None:
     pins_file = Path(sys.modules[CICD.__module__].__file__ or "").parent / "pins.toml"
     pins = tomllib.loads(pins_file.read_text(encoding="utf-8"))

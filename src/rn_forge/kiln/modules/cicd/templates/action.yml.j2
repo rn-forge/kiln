@@ -19,6 +19,10 @@ runs:
       with:
         python-version: "3.14"
         enable-cache: true
+        # The kiln pin lives in config.toml, so a pin change saves a fresh cache.
+        cache-dependency-glob: |
+          **/uv.lock
+          .rn-forge/kiln/config.toml
 
     - name: Install go-task
       uses: [[ pins["setup-task"].uses ]]@[[ pins["setup-task"].sha ]] # [[ pins["setup-task"].version ]]
