@@ -8,12 +8,14 @@ Three rules, all read from `pyproject.toml`:
    anywhere — dependencies, optional dependencies or dependency groups. A
    workspace member of this repo is exempt: it is this repo's own package, not
    an external kit.
-3. **Pinned, and in the published metadata.** Every rn-forge requirement is a
-   PEP 508 direct URL naming a tag or a rev, not a `[tool.uv.sources]` entry
-   (a local override that does not survive into a built wheel). A workspace
-   member may carry a `{ workspace = true }` source and may be named bare in a
-   dependency group, which never reaches a wheel; in `dependencies` it still
-   needs the URL.
+3. **Pinned or ranged, and in the published metadata.** Every rn-forge
+   requirement is a PEP 508 direct URL naming a tag or a rev, or a version range
+   with a ceiling resolved from pykit's index, which the root then declares. It
+   is never a `[tool.uv.sources]` entry (a local override that does not survive
+   into a built wheel). A workspace member may carry a `{ workspace = true }`
+   source and may be named bare in a dependency group, which never reaches a
+   wheel; in `dependencies` it still needs the URL or a range, and a range on a
+   member needs no index.
 
 A fourth rule keeps kiln out of the lock: `rn-forge-kiln` in any dependency,
 optional dependency or dependency group is an error, because kiln runs from
@@ -49,6 +51,10 @@ PINNED_GIT_URL = re.compile(r"^git\+[^@\s]+@[^#\s]+")
 # A requirement naming a `[codegen]` extra, among possibly other extras.
 CODEGEN_EXTRA = re.compile(r"^\s*[A-Za-z0-9][A-Za-z0-9._-]*\[[^\]]*\bcodegen\b[^\]]*\]")
 
+# The version specifier after a requirement's name and extras, up to a marker.
+# `rn-forge-web[auth]>=0.2.1,<0.3; python_version>"3"` → `>=0.2.1,<0.3`.
+SPECIFIER = re.compile(r"^\s*[A-Za-z0-9][A-Za-z0-9._-]*(?:\[[^\]]*\])?\s*([^;@]*)")
+
 KILN = "rn-forge-kiln"
 """The generator itself: never a dependency of the repo it runs beside."""
 
@@ -57,6 +63,19 @@ def distribution(requirement: str) -> str:
     """The normalized distribution name a PEP 508 requirement names."""
     match = REQUIREMENT_NAME.match(requirement)
     return match.group(1).lower().replace("_", "-") if match else ""
+
+
+def _specifier(requirement: str) -> str:
+    """The version specifier a requirement carries, or "" when it has none."""
+    match = SPECIFIER.match(requirement)
+    return match.group(1).strip() if match else ""
+
+
+def _has_ceiling(specifier: str) -> bool:
+    """Whether a clause of *specifier* caps the version: `<...` or `==...`."""
+    return any(
+        clause.strip().startswith(("<", "==")) for clause in specifier.split(",")
+    )
 
 
 def governed(name: str) -> bool:
@@ -160,11 +179,16 @@ def _check_allowed(
     ]
 
 
-def _check_direct_url(
+def _check_source(
     label: str, document: dict[str, object], members: frozenset[str]
-) -> list[Finding]:
-    """Every rn-forge requirement carries its own pinned source."""
+) -> tuple[list[Finding], bool]:
+    """Every rn-forge requirement carries a pinned source or a bounded range.
+
+    Returns the findings, and whether an accepted range named a distribution
+    outside *members*, which is the case that needs the index.
+    """
     findings: list[Finding] = []
+    needs_index = False
     published = published_dependencies(document)
     grouped = [
         r for r in group_dependencies(document) if distribution(r) not in members
@@ -174,29 +198,44 @@ def _check_direct_url(
         if not governed(name):
             continue
         url = requirement.partition(" @ ")[2].strip()
-        if not url:
+        if url:
+            if not PINNED_GIT_URL.match(url):
+                findings.append(
+                    Finding(
+                        f"{CODE}.unpinned",
+                        Severity.ERROR,
+                        f"`{name}` resolves to {url!r}, which names no tag or rev "
+                        f"— pin it, or the build changes without the repo changing",
+                        path=label,
+                    )
+                )
+            continue
+        spec = _specifier(requirement)
+        if spec and _has_ceiling(spec):
+            needs_index = needs_index or name not in members
+        elif spec:
+            findings.append(
+                Finding(
+                    f"{CODE}.no-ceiling",
+                    Severity.ERROR,
+                    f"`{name}` is declared as {spec!r}, which has no ceiling — "
+                    f"add the next breaking version, e.g. <0.8 (kiln ADR-0018)",
+                    path=label,
+                )
+            )
+        else:
             findings.append(
                 Finding(
                     f"{CODE}.not-direct",
                     Severity.ERROR,
-                    f"`{name}` is declared without a direct URL — a "
-                    f"[tool.uv.sources] override does not survive into a built "
-                    f"wheel, so a consumer of this package could not resolve it",
+                    f"`{name}` is declared without a direct URL or a version "
+                    f"range — a [tool.uv.sources] override does not survive into "
+                    f"a built wheel, so a consumer of this package could not "
+                    f"resolve it",
                     path=label,
                 )
             )
-            continue
-        if not PINNED_GIT_URL.match(url):
-            findings.append(
-                Finding(
-                    f"{CODE}.unpinned",
-                    Severity.ERROR,
-                    f"`{name}` resolves to {url!r}, which names no tag or rev — "
-                    f"pin it, or the build changes without the repo changing",
-                    path=label,
-                )
-            )
-    return findings
+    return findings, needs_index
 
 
 def _check_no_codegen_in_runtime(
@@ -247,6 +286,14 @@ def _check_no_shadowing_source(
     ]
 
 
+def _declares_index(document: dict[str, object]) -> bool:
+    """Whether `[[tool.uv.index]]` lists pykit's index."""
+    return any(
+        DictUtils.as_mapping(entry).get("url") == archetypes.PYKIT_INDEX
+        for entry in DictUtils.get_list(document, "tool.uv.index")
+    )
+
+
 def check(config: KilnConfig, root: Path) -> list[Finding]:
     """Hold every `pyproject.toml` in the repo to the archetype's contract."""
     archetype = archetypes.for_config(config)
@@ -254,6 +301,8 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
     findings: list[Finding] = []
     declared: set[str] = set()
     members = workspace_members(config, root)
+    needs_index = False
+    root_document: dict[str, object] = {}
 
     for relative in archetypes.pyproject_paths(config):
         label = relative.as_posix()
@@ -275,10 +324,26 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
             )
         )
         findings.extend(_check_kiln_not_in_lock(label, document))
-        findings.extend(_check_direct_url(label, document, members))
+        source_findings, ranged = _check_source(label, document, members)
+        findings.extend(source_findings)
+        needs_index = needs_index or ranged
+        if relative == Path("pyproject.toml"):
+            root_document = document
         findings.extend(_check_no_shadowing_source(label, document, members))
         findings.extend(_check_no_codegen_in_runtime(label, document))
         declared.update(distribution(r) for r in runtime_dependencies(document))
+
+    if needs_index and not _declares_index(root_document):
+        findings.append(
+            Finding(
+                f"{CODE}.no-index",
+                Severity.ERROR,
+                f"an rn-forge requirement is a version range, and no "
+                f"[[tool.uv.index]] names {archetypes.PYKIT_INDEX} — add it as "
+                f'name = "rn-forge" (kiln ADR-0018)',
+                path="pyproject.toml",
+            )
+        )
 
     if config.archetype == "python-lib" and not config.packages:
         return findings

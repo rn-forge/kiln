@@ -354,6 +354,8 @@ regeneration.
 | `ci.entrypoint` | no forbidden tool, `kiln` included, invoked directly in a workflow |
 | `gate.shrunk` | tasks reachable from `validate` ⊇ the archetype's `required_validate` |
 | `kiln.pin-missing` / `kiln.pin-mismatch` | `[kiln] ref` is set, and a tag ref names the running kiln's version |
+| `deps.no-ceiling` | an rn-forge version range has a ceiling (`<…` or `==…`) |
+| `deps.no-index` | a range on a package outside the workspace has pykit's `[[tool.uv.index]]` declared at the root |
 | `ci.unpinned` / `ci.permissions` | every `uses:` SHA-pinned with a version comment; every job has `permissions:` |
 | `ci.hook-missing` / `ci.hook-not-callable` | every `[ci.hooks]` action and declared job's workflow exists; a declared job's workflow has `workflow_call` in its `on:` |
 | `docs.nav-stale` | the derived nav (`docs-generate`) differs from what regenerating it from the docs tree would write |

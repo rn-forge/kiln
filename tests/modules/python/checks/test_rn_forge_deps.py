@@ -20,7 +20,11 @@ from rn_forge.kiln.modules.python.checks import rn_forge_deps
 
 
 def pinned(distribution: str) -> str:
-    return archetypes.requirement(distribution)
+    tag = archetypes.RN_FORGE_TAGS[distribution]
+    return (
+        f"{distribution} @ {archetypes.PYKIT_GIT}@{tag}"
+        f"#subdirectory=packages/{distribution}"
+    )
 
 
 # The python-tool archetype's whole required set — the fixtures below are
@@ -75,7 +79,7 @@ SOURCE_OVERRIDE_ONLY = f"""
 [project]
 name = "example"
 version = "0.1.0"
-dependencies = ["rn-forge-commons>=0.2.2", "{REQUIRED_URLS[1]}", "{REQUIRED_URLS[2]}"]
+dependencies = ["rn-forge-commons", "{REQUIRED_URLS[1]}", "{REQUIRED_URLS[2]}"]
 
 [tool.uv.sources]
 rn-forge-commons = {{ git = "https://github.com/rn-forge/pykit", subdirectory = "packages/rn-forge-commons", tag = "rn-forge-commons-v0.2.2" }}
@@ -394,3 +398,68 @@ def test_s6_1_2_4_membership_is_by_name_not_prefix(tmp_path: Path) -> None:
 
 def test_s6_1_2_5_an_extra_on_a_member_in_a_group_may_be_bare(tmp_path: Path) -> None:
     assert run(_workspace_root(tmp_path, tooling_group=False)) == []
+
+
+INDEX_TABLE = f"""
+[[tool.uv.index]]
+name = "rn-forge"
+url = "{archetypes.PYKIT_INDEX}"
+"""
+
+
+def _ranged(commons: str = "rn-forge-commons>=0.7.0,<0.8", index: bool = True) -> str:
+    deps = [commons, "rn-forge-cli>=0.1.1,<0.2", "rn-forge-tooling>=0.3.0,<0.4"]
+    block = ", ".join(f'"{d}"' for d in deps)
+    text = f'[project]\nname = "example"\nversion = "0.1.0"\ndependencies = [{block}]\n'
+    return text + (INDEX_TABLE if index else "")
+
+
+def _findings(root: Path) -> list[tuple[str, str, str | None]]:
+    return [
+        (f.code, f.message, f.path)
+        for f in rn_forge_deps.check(KilnConfig.load(root), root)
+    ]
+
+
+def test_s7_3_7_1_a_range_with_a_ceiling_passes(repo) -> None:
+    root = repo(lifecycle=True, **{"pyproject.toml": _ranged()})
+    assert _findings(root) == []
+
+
+def test_s7_3_7_2_an_exact_version_passes(repo) -> None:
+    root = repo(
+        lifecycle=True,
+        **{"pyproject.toml": _ranged(commons="rn-forge-commons==0.7.0")},
+    )
+    assert _findings(root) == []
+
+
+def test_s7_3_7_3_a_range_with_no_ceiling_is_refused(repo) -> None:
+    root = repo(
+        lifecycle=True,
+        **{"pyproject.toml": _ranged(commons="rn-forge-commons>=0.7.0")},
+    )
+    found = _findings(root)
+    assert [code for code, _, _ in found] == ["deps.no-ceiling"]
+    assert "rn-forge-commons" in found[0][1]
+
+
+def test_s7_3_7_4_a_bare_name_is_still_refused(repo) -> None:
+    root = repo(
+        lifecycle=True, **{"pyproject.toml": _ranged(commons="rn-forge-commons")}
+    )
+    assert [code for code, _, _ in _findings(root)] == ["deps.not-direct"]
+
+
+def test_s7_3_7_5_a_range_needs_the_index(repo) -> None:
+    root = repo(lifecycle=True, **{"pyproject.toml": _ranged(index=False)})
+    found = _findings(root)
+    assert [(code, path) for code, _, path in found] == [
+        ("deps.no-index", "pyproject.toml")
+    ]
+    assert archetypes.PYKIT_INDEX in found[0][1]
+
+
+def test_s7_3_7_6_a_member_range_needs_no_index(tmp_path: Path) -> None:
+    root = _workspace_root(tmp_path, tooling_cli="rn-forge-cli>=0.1.0,<0.2")
+    assert run(root) == []

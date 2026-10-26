@@ -23,6 +23,7 @@ __all__ = [
     "KILN_GIT",
     "KILN_REF",
     "PYKIT_GIT",
+    "PYKIT_INDEX",
     "RN_FORGE_PREFIX",
     "RN_FORGE_TAGS",
     "Archetype",
@@ -39,6 +40,8 @@ RN_FORGE_PREFIX = "rn-forge-"
 
 PYKIT_GIT = "git+https://github.com/rn-forge/pykit"
 """pykit's git source, without a ref."""
+PYKIT_INDEX = "https://rn-forge.github.io/pykit/simple/"
+"""pykit's PEP 503 index of its GitHub Release files (kiln ADR-0018)."""
 RN_FORGE_TAGS = {
     "rn-forge-commons": "rn-forge-commons-v0.5.0",
     "rn-forge-cli": "rn-forge-cli-v0.1.0",
