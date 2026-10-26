@@ -4,12 +4,15 @@ version: "3"
 # kiln's own checks on this repository — the files it generates and the
 # standard's rules on the rest — run once, by `lint`. Internal.
 
+vars:
+  KILN: 'uv run kiln'
+
 tasks:
   doctor:
     desc: Run kiln's checks on this repository — generated files, task layout, CI, dependencies, docs.
     internal: true
     cmds:
-      - cmd: uv run kiln doctor .
+      - cmd: '{{.KILN}} doctor .'
         if: '[ -z "{{.KILN_DOCTOR_FULL}}" ]'
-      - cmd: uv run kiln doctor . --full
+      - cmd: '{{.KILN}} doctor . --full'
         if: '[ -n "{{.KILN_DOCTOR_FULL}}" ]'

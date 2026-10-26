@@ -261,14 +261,14 @@
     },
     "tasks/docs.yml": {
       "begin_marker": null,
-      "content_hash": "b9f5757e19bd456238cdf5e81a1aa48d77ff573db68e487e9290716f4259234b",
+      "content_hash": "1552ad16c55b90ca8cb2aeb2dc6c40a53fccfc257bb70c46d798c53e04643f79",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/docs.yml"
     },
     "tasks/kiln.yml": {
       "begin_marker": null,
-      "content_hash": "80042fb0a76c75d5f4ae46999e1fc08dc45f2d6153af024fa929ed03f97aaa6e",
+      "content_hash": "8325c197cc4f38258381eaaf3cee7eb89818c3743762f16464b523a18c036608",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/kiln.yml"

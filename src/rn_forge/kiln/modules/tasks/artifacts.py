@@ -10,7 +10,7 @@ from rn_forge.tooling.generation import Artifact, ArtifactKind
 from rn_forge.tooling.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
-from rn_forge.kiln.archetypes import PYKIT_GIT, RN_FORGE_TAGS
+from rn_forge.kiln.archetypes import KILN_REF, PYKIT_GIT, RN_FORGE_TAGS, kiln_command
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs.config import DocsConfig
 from rn_forge.kiln.modules.python.artifacts import root_package
@@ -92,8 +92,16 @@ def render(config: KilnConfig) -> list[Artifact]:
         )
         devops = f'uvx --from "{source}" {devops_name}'
 
+    # Follows `devops`' rule: kiln's own repository runs its working tree.
+    pin = getattr(config.document, "kiln", None)
+    if config.module == "rn_forge.kiln":
+        kiln = "uv run kiln"
+    else:
+        kiln = kiln_command(pin.ref if pin is not None else KILN_REF)
+
     context: dict[str, object] = {
         "devops": devops,
+        "kiln": kiln,
         "kiln_version": __version__,
         "name": config.name,
         "package": config.module,

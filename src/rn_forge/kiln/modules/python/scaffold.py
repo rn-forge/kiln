@@ -438,7 +438,11 @@ def _reconcile(
     updates: dict[str, object] = {"project": project, "tool": tool}
     if is_root:
         coverage = ["coverage[toml]>=7.6"] if lib else []
-        dev = [*_DEV_GROUP, *coverage, f"rn-forge-kiln @ {archetypes.KILN_SOURCE}"]
+        dev = [
+            *_DEV_GROUP,
+            *coverage,
+            f"rn-forge-kiln @ {archetypes.KILN_GIT}@{archetypes.KILN_REF}",
+        ]
         mkdocs_group = _DOCS_GROUP_MKDOCS_LIB if lib else _DOCS_GROUP_MKDOCS
         docs = [*_DOCS_GROUP, *(mkdocs_group if mkdocs else [])]
         updates["dependency-groups"] = {

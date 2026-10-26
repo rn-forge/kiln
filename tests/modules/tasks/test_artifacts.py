@@ -1756,8 +1756,8 @@ REMOVED_KEYS = [
     "kiln:doctor",
 ]
 KILN_DOCTOR_CMDS = [
-    {"cmd": "uv run kiln doctor .", "if": '[ -z "{{.KILN_DOCTOR_FULL}}" ]'},
-    {"cmd": "uv run kiln doctor . --full", "if": '[ -n "{{.KILN_DOCTOR_FULL}}" ]'},
+    {"cmd": "{{.KILN}} doctor .", "if": '[ -z "{{.KILN_DOCTOR_FULL}}" ]'},
+    {"cmd": "{{.KILN}} doctor . --full", "if": '[ -n "{{.KILN_DOCTOR_FULL}}" ]'},
 ]
 
 
@@ -1769,7 +1769,6 @@ def test_s4_12_6_1_kiln_yml_holds_one_internal_doctor_task(
     cycle.apply(root, home=tmp_path / "home")
     document = _load(root, "tasks/kiln.yml")
     assert set(document["tasks"]) == {"doctor"}
-    assert "vars" not in document
     doctor = document["tasks"]["doctor"]
     assert doctor["internal"] is True
     assert doctor["desc"].strip()
@@ -1806,13 +1805,46 @@ def test_s4_12_6_3_doctor_runs_once(tmp_path: Path, archetype: str, extra: str) 
     without = _run_task(root, "--dry", "lint")
     assert without.returncode == 0, without.stderr
     out = without.stdout + without.stderr
-    assert out.count("uv run kiln doctor .") == 1
+    assert out.count("kiln doctor .") == 1
     assert "--full" not in out
     asked = _run_task(root, "--dry", "lint", "KILN_DOCTOR_FULL=1")
     assert asked.returncode == 0, asked.stderr
     out = asked.stdout + asked.stderr
-    assert out.count("uv run kiln doctor . --full") == 1
-    assert out.count("uv run kiln doctor .") == 1
+    assert out.count("kiln doctor . --full") == 1
+    assert out.count("kiln doctor .") == 1
+
+
+def test_s7_4_1_1_kiln_yml_runs_the_pinned_kiln(tmp_path: Path) -> None:
+    root = _root(tmp_path, extra='\n[kiln]\nref = "v9.9.9"\n')
+    cycle.apply(root, home=tmp_path / "home")
+    assert _load(root, "tasks/kiln.yml")["vars"]["KILN"] == (
+        'uvx --from "rn-forge-kiln @ git+https://github.com/rn-forge/kiln@v9.9.9" kiln'
+    )
+
+
+def test_s7_4_1_2_kiln_itself_runs_its_working_tree(tmp_path: Path) -> None:
+    root = _root(
+        tmp_path, extra='\n[archetype."python-tool"]\nmodule = "rn_forge.kiln"\n'
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    assert _load(root, "tasks/kiln.yml")["vars"]["KILN"] == "uv run kiln"
+
+
+def test_s7_4_1_3_an_unpinned_config_runs_kilns_own_ref(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    assert _load(root, "tasks/kiln.yml")["vars"]["KILN"] == archetypes.kiln_command(
+        archetypes.KILN_REF
+    )
+    assert archetypes.KILN_REF in _load(root, "tasks/kiln.yml")["vars"]["KILN"]
+
+
+def test_s7_4_1_4_docs_generate_runs_the_pinned_kiln(tmp_path: Path) -> None:
+    root = _root(tmp_path, extra='\n[kiln]\nref = "v9.9.9"\n')
+    cycle.apply(root, home=tmp_path / "home")
+    docs = _load(root, "tasks/docs.yml")
+    assert docs["vars"]["KILN"] == _load(root, "tasks/kiln.yml")["vars"]["KILN"]
+    assert docs["tasks"]["generate"]["cmds"] == ["{{.KILN}} docs-generate ."]
 
 
 def test_s4_12_6_4_docs_yml_holds_the_three_verbs(tmp_path: Path) -> None:

@@ -7,6 +7,7 @@ version: "3"
 
 vars:
   MKDOCS_SITE_DIR: .docs-site
+  KILN: 'uv run kiln'
 
 tasks:
   build:
@@ -22,4 +23,4 @@ tasks:
   generate:
     desc: Regenerate the docs' derived regions.
     cmds:
-      - uv run kiln docs-generate .
+      - '{{.KILN}} docs-generate .'

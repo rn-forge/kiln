@@ -20,7 +20,8 @@ if TYPE_CHECKING:
     from rn_forge.kiln.config import KilnConfig
 
 __all__ = [
-    "KILN_SOURCE",
+    "KILN_GIT",
+    "KILN_REF",
     "PYKIT_GIT",
     "RN_FORGE_PREFIX",
     "RN_FORGE_TAGS",
@@ -49,8 +50,15 @@ RN_FORGE_TAGS = {
     "rn-forge-devops": "rn-forge-devops-v0.2.0",
 }
 """pykit's release tags, read from pykit on 2026-10-14. Moving a pin is a change here alone."""
-KILN_SOURCE = "git+https://github.com/rn-forge/kiln@feature/v1"
-"""kiln's own git source, for the `rn-forge-kiln` dev dependency it scaffolds."""
+KILN_GIT = "git+https://github.com/rn-forge/kiln"
+KILN_REF = "feature/v1"
+"""The ref `kiln new` and `kiln init` pin. F7.2's release-1 cut makes it `v<version>`."""
+
+
+def kiln_command(ref: str) -> str:
+    """The command that runs kiln at *ref*, in its own environment."""
+    return f'uvx --from "rn-forge-kiln @ {KILN_GIT}@{ref}" kiln'
+
 
 _MANIFEST = "archetype.toml"
 _TOOLING = "rn-forge-tooling"

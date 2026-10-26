@@ -7,6 +7,7 @@ version: "3"
 
 vars:
   MKDOCS_SITE_DIR: [[ site_dir ]]
+  KILN: '[[ kiln ]]'
 
 tasks:
   build:
@@ -27,5 +28,5 @@ tasks:
     desc: Regenerate the docs' derived regions.
     cmds:
 {% if overrides.get("docs:generate") %}      - [[ overrides["docs:generate"] ]]
-{% else %}      - uv run kiln docs-generate .
+{% else %}      - '{{.KILN}} docs-generate .'
 {% endif -%}

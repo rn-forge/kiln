@@ -271,6 +271,33 @@ def test_s4_5_1_config_layer_merges_beneath_flags_and_records_source(
     assert written["source"]["location"] == str(layer_dir)
 
 
+def test_s7_4_1_5_new_pins_kiln(tmp_path: Path) -> None:
+    directory = tmp_path / "demo-pinned"
+    commands.new(directory, archetype="python-tool", docs="none", yes=True)
+    written = tomllib.loads(
+        (directory / ".rn-forge" / "kiln" / "config.toml").read_text(encoding="utf-8")
+    )
+    assert written["kiln"] == {"ref": archetypes.KILN_REF}
+
+
+def test_s7_4_1_6_a_config_layer_pin_wins(tmp_path: Path) -> None:
+    layer_dir = tmp_path / "layer"
+    layer_dir.mkdir()
+    (layer_dir / "config.toml").write_text('[kiln]\nref = "v1.2.3"\n', encoding="utf-8")
+    directory = tmp_path / "demo-layer-pin"
+    commands.new(
+        directory,
+        archetype="python-tool",
+        docs="none",
+        config=str(layer_dir),
+        yes=True,
+    )
+    written = tomllib.loads(
+        (directory / ".rn-forge" / "kiln" / "config.toml").read_text(encoding="utf-8")
+    )
+    assert written["kiln"]["ref"] == "v1.2.3"
+
+
 def test_s6_1_16_3_new_takes_the_name_from_config(tmp_path: Path) -> None:
     layer_dir = tmp_path / "layer"
     layer_dir.mkdir()

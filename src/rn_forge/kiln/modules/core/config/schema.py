@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "SCHEMA_VERSION",
+    "KilnPin",
     "RepositoryConfig",
     "RootConfig",
     "SourceConfig",
@@ -36,6 +37,13 @@ class RepositoryConfig(StrictModel):
     """Whether the repo installs itself; `python-tool` implies it."""
 
 
+class KilnPin(StrictModel):
+    """`[kiln]` — the kiln this repository runs."""
+
+    ref: str
+    """A kiln release tag, `v<version>`; a branch only before kiln's first release."""
+
+
 class SourceConfig(StrictModel):
     """`[source]` — the layer the config was resolved from, as last resolved."""
 
@@ -52,6 +60,7 @@ class RootConfig(StrictModel):
     schema_version: int
     source: SourceConfig | None = None
     repository: RepositoryConfig
+    kiln: KilnPin | None = None
     cli: dict[str, Any] | None = None
     """rn-forge-cli's declared command line, carried as written."""
     lifecycle: dict[str, Any] | None = None

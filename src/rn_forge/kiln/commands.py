@@ -648,8 +648,10 @@ def _resolve_config(
             the config is invalid, or a `python-lib` config lists packages
             without *allow_packages*.
     """
+    layer_pins_kiln = False
     if config:
         fetched = fetch(Source.parse(config), Path.cwd())
+        layer_pins_kiln = bool(DictUtils.get(fetched.document, "kiln.ref"))
         configured = DictUtils.get(fetched.document, "repository.name")
         if isinstance(configured, str):
             if configured != name:
@@ -669,6 +671,8 @@ def _resolve_config(
         frontend=frontend,
     )
     DictUtils.set(flags, "repository.name", name)
+    if not layer_pins_kiln:
+        DictUtils.set(flags, "kiln.ref", archetypes.KILN_REF)
     if module is not None:
         DictUtils.set(flags, f"archetype.{archetype}.module", module)
     package = module or root_package(name)
