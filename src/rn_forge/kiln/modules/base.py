@@ -18,7 +18,7 @@ from rn_forge.commons.findings import Finding
 from rn_forge.commons.lang.models import StrictModel
 
 if TYPE_CHECKING:
-    from rn_forge.tooling.generation import Artifact
+    from rn_forge.commons.generation import Artifact
 
     from rn_forge.kiln.archetypes import Archetype
     from rn_forge.kiln.config import KilnConfig

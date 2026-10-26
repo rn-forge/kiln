@@ -6,8 +6,8 @@ from functools import cache
 from pathlib import Path
 
 from rn_forge.commons.fs.documents import DocumentError, DocumentUtils
-from rn_forge.tooling.generation import Artifact, ArtifactKind
-from rn_forge.tooling.templates import TemplateEngine
+from rn_forge.commons.generation import Artifact, ArtifactKind
+from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.frontend.angular import SCAFFOLD_APP_DIR

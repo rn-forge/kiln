@@ -6,8 +6,8 @@ from functools import cache
 from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
-from rn_forge.tooling.generation import Artifact, ArtifactKind
-from rn_forge.tooling.templates import TemplateEngine
+from rn_forge.commons.generation import Artifact, ArtifactKind
+from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
 from rn_forge.kiln.archetypes import KILN_REF, PYKIT_GIT, RN_FORGE_TAGS, kiln_command

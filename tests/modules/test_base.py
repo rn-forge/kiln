@@ -21,7 +21,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from rn_forge.commons.findings import Finding
-from rn_forge.tooling.generation import Artifact
+from rn_forge.commons.generation import Artifact
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.base import ModuleRegistry, Option

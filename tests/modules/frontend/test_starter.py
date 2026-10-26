@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
-from rn_forge.tooling.generation import ArtifactKind
+from rn_forge.commons.generation import ArtifactKind
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.frontend import FRONTEND

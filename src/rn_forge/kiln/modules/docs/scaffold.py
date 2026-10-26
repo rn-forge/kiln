@@ -11,7 +11,7 @@ import tomllib
 from functools import cache
 from pathlib import Path
 
-from rn_forge.tooling.templates import TemplateEngine
+from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln.config import KilnConfig
 

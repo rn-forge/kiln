@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 import yaml
 from rn_forge.commons.exceptions import AppException
-from rn_forge.tooling.generation import Action, ArtifactKind
+from rn_forge.commons.generation import Action, ArtifactKind
 
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig

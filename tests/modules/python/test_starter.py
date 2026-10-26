@@ -9,7 +9,7 @@ import tomllib
 from pathlib import Path
 
 import pytest
-from rn_forge.tooling.generation import Artifact, ArtifactKind
+from rn_forge.commons.generation import Artifact, ArtifactKind
 
 from rn_forge.kiln import commands
 from rn_forge.kiln.config import KilnConfig

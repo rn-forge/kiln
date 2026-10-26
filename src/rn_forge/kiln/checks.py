@@ -1,7 +1,7 @@
 """The render-free checks, and the registry `kiln doctor` runs them from.
 
 `.importlinter` forbids anything under `rn_forge.kiln.modules.*.checks` from
-importing `jinja2` or `rn_forge.tooling.generation`. `kiln doctor --full` is
+importing `jinja2` or `rn_forge.commons.generation`. `kiln doctor --full` is
 where the render-dependent checks live.
 """
 

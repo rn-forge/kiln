@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 from rn_forge.commons.exceptions import AppException
-from rn_forge.tooling.generation import Action, Artifact, ArtifactKind
+from rn_forge.commons.generation import Action, Artifact, ArtifactKind
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle

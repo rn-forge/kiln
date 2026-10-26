@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from rn_forge.commons.findings import Finding, Severity
-from rn_forge.tooling.generation import Action, ArtifactKind
+from rn_forge.commons.generation import Action, ArtifactKind
 
 from rn_forge.kiln.modules.core import cycle
 

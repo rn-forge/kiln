@@ -42,7 +42,7 @@ allow_indirect_imports = False
 ; The second contract is kiln ADR-0006's: `kiln doctor` runs on every CI run, so
 ; it must not drag the generator in. A module's `checks/` package is the
 ; render-free half of that module. It names Jinja only, because
-; `rn_forge.tooling.generation` is a subpackage of an external package and
+; `rn_forge.commons.generation` is a subpackage of an external package and
 ; cannot be a forbidden module. The engine half of the rule is
 ; tests/test_checks_are_render_free.py, which imports the checks and asserts
 ; the engine never loaded. The block above forbids Jinja everywhere today; it has to
