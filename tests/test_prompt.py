@@ -101,3 +101,34 @@ def test_s6_1_15_no_prompt_names_itself_positionally() -> None:
     for prompt_file in (ROOT / "src/rn_forge/kiln/prompts").glob("*.md"):
         text = prompt_file.read_text(encoding="utf-8")
         assert not re.search(r"kiln prompt [a-z]", text), prompt_file.name
+
+
+def _adopt_sections() -> dict[str, str]:
+    text = (ROOT / "src/rn_forge/kiln/prompts/adopt.md").read_text(encoding="utf-8")
+    parts = re.split(r"^## (\d+)\. ", text, flags=re.MULTILINE)
+    return {parts[i]: " ".join(parts[i + 1].split()) for i in range(1, len(parts), 2)}
+
+
+def test_s6_6_3_1_adopt_names_what_init_now_does(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    commands.prompt("adopt")
+    text = " ".join(capsys.readouterr().out.split())
+    assert "task format" in text
+    assert "separate commit" in text
+    assert "init.kiln-dev-dependency-missing" not in text
+
+
+def test_s6_6_3_2_adopt_says_where_quality_findings_appear() -> None:
+    sections = _adopt_sections()
+    bullet = next(
+        part
+        for part in sections["6"].split(" - ")
+        if "docs.packages-area-missing" in part
+    )
+    assert "task lint" in bullet
+    assert (
+        "`init`'s closing check, like a plain `kiln doctor`, runs only the "
+        "ownership checks; `task lint` also runs `rn-forge-deps`, "
+        "`docs-structure` and `docs-site`, so read its findings too."
+    ) in sections["9"]

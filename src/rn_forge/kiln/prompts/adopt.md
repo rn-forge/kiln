@@ -6,11 +6,11 @@ reconciling instructions, specs and the gate.
 
 `kiln init` settles everything every repository hits and that has one right
 answer: a missing file is created, a duplicate `.gitignore` line is dropped, an
-unfenced `.importlinter` is fenced, the derived-nav markers are placed. It
-reports what it cannot settle. This prompt is the rest, the judgement. It prints
-guidance and installs nothing, and it is written from the first in-place
-adoption (run 1: pykit, a `python-lib` workspace). Facts from that run are
-examples, not rules.
+unfenced `.importlinter` is fenced, the derived-nav markers are placed, the task
+tools the repository lacks are added to its dependency groups. It reports what
+it cannot settle. This prompt is the rest, the judgement. It prints guidance and
+installs nothing, and it is written from the first in-place adoption (run 1:
+pykit, a `python-lib` workspace). Facts from that run are examples, not rules.
 
 ## 1. Choose the route
 
@@ -50,6 +50,11 @@ rebuild.
     (`init.package-missing` otherwise). Use `import_contracts = "own"` when the
     repository already has `.importlinter` contracts worth keeping; kiln then
     renders only the root packages (run 1: pykit's layering contracts).
+
+    `init` records the file as `[source]`, and `kiln config-update` re-reads it
+    from there. For a one-off file kept outside the repository or git-ignored,
+    delete the `[source]` table from `.rn-forge/kiln/config.toml` after `init`
+    (run 3: pykit's `dist/pykit-kiln.toml`, which `task clean` also deletes).
 
 ## 3. Preview and sort the plan
 
@@ -99,6 +104,11 @@ list from that diff before section 5.
 
 `init` ends by running the checks, so it may exit non-zero on findings in files
 you have not reconciled yet. Read them in section 9; do not re-run `init`.
+Commit `init`'s change on its own. Then run `task setup` and `task format`, and
+commit the formatting as a separate commit: `init` formats nothing, and a
+repository that predates kiln's TOML and Markdown style fails
+`quality:lint:toml` until then (run 3: pykit's member `pyproject.toml` files and
+its seeded `.mdformat.toml`).
 
 ## 5. Reconcile the files kiln inserted a block into
 
@@ -128,8 +138,10 @@ fails or, worse, stays silent.
 
 - `docs/_areas.yml` in a library needs an area with `nav: include` for the
   package sites (conventionally `packages`). Without it the derived nav drops
-  every package site; `docs.packages-area-missing` reports it. Put the area
-  where you want Packages in the nav (run 1: first, so Packages follows Home).
+  every package site; `docs.packages-area-missing` reports it in `task lint`
+  (`kiln doctor`'s `docs-structure` check), not in `init`'s closing check. Put
+  the area where you want Packages in the nav (run 1: first, so Packages
+  follows Home).
 - The nav lists packages in the order of `packages` in
   `.rn-forge/kiln/config.toml`; reorder that list, not the nav.
 - Page titles in the nav come from each page's H1. If a title reads wrong, fix
@@ -161,11 +173,12 @@ contradict). Never edit a derived region by hand.
 
 `task validate` runs kiln's checks through the kiln that `[kiln] ref` in
 `.rn-forge/kiln/config.toml` pins. `kiln init` writes that ref; confirm it is
-there. kiln is not a dependency: the tasks run it with `uvx`, in its own
-environment, so the repository's lock and `pyproject.toml` do not change for it.
-If the repository already lists `rn-forge-kiln` in a dependency group, or
-carries an `override-dependencies` entry only so kiln resolves, remove them
-(`deps.kiln-in-lock`).
+there. Before kiln's first release the ref is a branch, and `kiln.pin-mismatch`
+only starts checking once it is a `v<version>` tag. kiln is not a dependency:
+the tasks run it with `uvx`, in its own environment, so the repository's lock
+and `pyproject.toml` do not change for it. If the repository already lists
+`rn-forge-kiln` in a dependency group, or carries an `override-dependencies`
+entry only so kiln resolves, remove them (`deps.kiln-in-lock`).
 
 Then `task setup`.
 
@@ -185,6 +198,10 @@ Sort each finding by who owns the file:
 - **A hand-written CI workflow** is retired when the generated one runs its jobs
   (run 1: pykit's `main.yml` failed `ci-entrypoint` with direct `uv` steps,
   and retires with the generated workflows).
+
+`init`'s closing check, like a plain `kiln doctor`, runs only the ownership
+checks; `task lint` also runs `rn-forge-deps`, `docs-structure` and `docs-site`,
+so read its findings too.
 
 Done when both commands exit `0`.
 

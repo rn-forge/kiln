@@ -58,6 +58,7 @@ nav:
   - Runbooks:
     - runbooks/index.md
     - Creating a repository: runbooks/creating-a-repo.md
+    - Adopting an existing repo: runbooks/adopting-a-repo.md
     - Recovering from drift: runbooks/recovering-from-drift.md
   - Reference:
     - reference/index.md

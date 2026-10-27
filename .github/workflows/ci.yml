@@ -4,9 +4,10 @@ name: CI
 # validate → sonar → release.
 #
 # Every step goes through `task`; `kiln doctor`'s ci-entrypoint rule fails the
-# build if a step invokes uv/pytest/ruff/pyright/mkdocs/kiln directly. kiln is
-# not installed here and never will be: what CI checks is the committed
-# .rn-forge/kiln/state.json baseline, through `task validate`.
+# build if a step invokes uv/pytest/ruff/pyright/mkdocs/kiln directly. kiln runs
+# here only as the version `[kiln] ref` pins, read-only, through
+# `task validate`: it checks the tree against the committed
+# .rn-forge/kiln/state.json and never runs `kiln apply`.
 #
 # The repeated toolchain setup lives in .github/actions/setup, committed beside
 # this file. Each job checks out first: GitHub can only run a local action from
