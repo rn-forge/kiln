@@ -23,11 +23,16 @@ from rn_forge.commons.runtime.subprocess import Process
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import gitignore
+from rn_forge.kiln.modules.python.checks.rn_forge_deps import distribution
 
 __all__ = [
+    "DOCS_TASK_TOOLS",
     "SAMPLE_TEST",
+    "TASK_TOOLS",
     "add_package",
+    "add_task_tools",
     "github_remote",
+    "missing_task_tools",
     "reconcile_backend",
     "sample_test",
     "scaffold",
@@ -69,6 +74,25 @@ _DOCS_GROUP_MKDOCS_LIB = [
 ]
 """`_DOCS_GROUP_MKDOCS` plus the monorepo plugin, for `python-lib`, which
 includes each package's site."""
+
+TASK_TOOLS = (
+    "actionlint-py",
+    "import-linter",
+    "pip-audit",
+    "pyright",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "taplo",
+    "zizmor",
+)
+"""The tools `task lint`, `task typecheck` and `task test` invoke through `uv run`.
+
+kiln is not listed: `{{.KILN}}` runs the pinned release with `uvx`, outside the
+repository's lock."""
+DOCS_TASK_TOOLS = ("mdformat",)
+"""The `docs` group tool `quality:lint:markdown` runs; it counts unless `docs.profile`
+is `none`."""
 
 
 def scaffold(root: Path, config: KilnConfig) -> None:
@@ -227,6 +251,49 @@ def _join_workspace(pyproject: Path, relative: str, name: str) -> None:
         },
     )
     _multiline_lists(pyproject)
+
+
+def missing_task_tools(root: Path, config: KilnConfig) -> list[str]:
+    """The task tools no dependency group of *root*'s `pyproject.toml` names.
+
+    In `TASK_TOOLS` order, then `DOCS_TASK_TOOLS` when the docs profile is not
+    `none`. A missing `[dependency-groups]` table means every tool is missing.
+    """
+    document = DocumentUtils.read_document(root / "pyproject.toml")
+    groups = DictUtils.as_mapping(document.get("dependency-groups"))
+    present = {
+        distribution(entry)
+        for group in groups.values()
+        for entry in cast("list[object]", group)
+        if isinstance(entry, str)
+    }
+    wanted = [*TASK_TOOLS, *(DOCS_TASK_TOOLS if config.docs_profile != "none" else ())]
+    return [tool for tool in wanted if tool not in present]
+
+
+def add_task_tools(root: Path, config: KilnConfig) -> list[str]:
+    """Append each task tool *root* lacks to its dependency groups; return the names.
+
+    A name is added bare, as `_DEV_GROUP` writes it: to `docs` for a
+    `DOCS_TASK_TOOLS` tool, to `dev` for the rest. A missing group is created.
+    Comments survive, and nothing is written when no tool is missing.
+    """
+    added = missing_task_tools(root, config)
+    if not added:
+        return added
+    path = root / "pyproject.toml"
+    document = DocumentUtils.read_document(path)
+    if "dependency-groups" not in document:
+        document["dependency-groups"] = {}
+    groups = document["dependency-groups"]
+    for tool in added:
+        name = "docs" if tool in DOCS_TASK_TOOLS else "dev"
+        if name not in groups:
+            groups[name] = []
+        groups[name].append(tool)
+    DocumentUtils.write_document(path, document)
+    _multiline_lists(path)
+    return added
 
 
 SAMPLE_TEST = Path("tests") / "test_package.py"

@@ -14,7 +14,7 @@
 | [F6.3 — The generated CI matches the hardened upstream CI](F6.3-hardened-ci.md) | Closed | release-1 | 8 Closed |
 | [F6.4 — `python-lib` renders pykit's discovered workspace pipeline](F6.4-workspace-pipeline.md) | Active | release-1 | 1 Active · 6 Closed |
 | [F6.5 — Rebuild an existing repository on kiln, and port it](F6.5-rebuild-and-port.md) | New | — | 3 New |
-| [F6.6 — `kiln init` leaves the gate runnable](F6.6-init-leaves-gate-runnable.md) | Active | release-1 | 2 New · 1 Closed |
+| [F6.6 — `kiln init` leaves the gate runnable](F6.6-init-leaves-gate-runnable.md) | Active | release-1 | 1 New · 2 Closed |
 | [F6.7 — kiln ships the CI planner as `kiln-devops`](F6.7-kiln-devops.md) | Active | release-1 | 5 New · 1 Closed |
 
 <!-- END derived features -->

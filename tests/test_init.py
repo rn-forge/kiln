@@ -484,6 +484,32 @@ def test_s6_6_1_2_init_writes_packages_one_per_line(
     )
 
 
+def test_s6_6_2_5_init_adds_missing_tools(lib_repo: Path, tmp_path: Path) -> None:
+    pyproject = lib_repo / "pyproject.toml"
+    document = tomlkit.parse(pyproject.read_text(encoding="utf-8"))
+    document["dependency-groups"]["dev"].remove("taplo")  # type: ignore[index]
+    pyproject.write_text(tomlkit.dumps(document), encoding="utf-8")
+    _commit(lib_repo)
+    config = _packages_config(tmp_path, "packages/lib-alpha", "packages/lib-beta")
+
+    commands.init(archetype="python-lib", config=config, yes=True)
+
+    groups = tomllib.loads(pyproject.read_text(encoding="utf-8"))["dependency-groups"]
+    assert "taplo" in groups["dev"]
+    assert not [e for g in groups.values() for e in g if "rn-forge-kiln" in str(e)]
+
+
+def test_s6_6_2_6_nothing_added_when_every_tool_is_present(
+    lib_repo: Path, tmp_path: Path
+) -> None:
+    before = (lib_repo / "pyproject.toml").read_bytes()
+    config = _packages_config(tmp_path, "packages/lib-alpha", "packages/lib-beta")
+
+    commands.init(archetype="python-lib", config=config, yes=True)
+
+    assert (lib_repo / "pyproject.toml").read_bytes() == before
+
+
 @pytest.mark.parametrize("without_pyproject", [False, True])
 def test_s6_1_5_2_a_listed_package_must_exist(
     lib_repo: Path, tmp_path: Path, without_pyproject: bool

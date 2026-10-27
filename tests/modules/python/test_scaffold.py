@@ -19,6 +19,7 @@ from unittest import mock
 
 import pytest
 from rn_forge.commons.exceptions import AppException
+from rn_forge.commons.fs.documents import DocumentUtils
 
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
@@ -26,8 +27,12 @@ from rn_forge.kiln.modules.core import CORE, cycle
 from rn_forge.kiln.modules.python import scaffold as python_scaffold
 from rn_forge.kiln.modules.python.checks import rn_forge_deps
 from rn_forge.kiln.modules.python.scaffold import (
+    DOCS_TASK_TOOLS,
     SAMPLE_TEST,
+    TASK_TOOLS,
     add_package,
+    add_task_tools,
+    missing_task_tools,
     reconcile_backend,
     sample_test,
     scaffold,
@@ -661,3 +666,102 @@ def test_s7_1_2_1_build_backend_survives(tmp_path: Path) -> None:
     uv = _uv(root / "pyproject.toml")
     assert "build-backend" in uv
     assert uv["no-sources"] is True
+
+
+def _without(root: Path, group: str, *tools: str) -> None:
+    """Drop every entry naming one of *tools* from *group* of the root `pyproject.toml`."""
+    path = root / "pyproject.toml"
+    document = DocumentUtils.read_document(path)
+    entries = document["dependency-groups"][group]
+    for entry in [
+        e for e in entries if isinstance(e, str) and e.split(">")[0] in tools
+    ]:
+        entries.remove(entry)
+    DocumentUtils.write_document(path, document)
+
+
+@pytest.mark.parametrize(("archetype", "relative"), _TAPLO_CELLS)
+def test_s6_6_2_1_missing_task_tools(
+    tmp_path: Path, archetype: str, relative: str
+) -> None:
+    root = _root(tmp_path, archetype)
+    config = KilnConfig.load(root)
+    scaffold(root, config)
+    assert missing_task_tools(root, config) == []
+
+    _without(root, "dev", "ruff")
+    assert missing_task_tools(root, config) == ["ruff"]
+    _without(root, "dev", "zizmor")
+    assert missing_task_tools(root, config) == ["ruff", "zizmor"]
+    _without(root, "docs", "mdformat")
+    assert missing_task_tools(root, config) == ["ruff", "zizmor", "mdformat"]
+
+    none = KilnConfig.load(_root(tmp_path / "none", archetype, docs_profile="none"))
+    assert "mdformat" not in missing_task_tools(root, none)
+
+
+@pytest.mark.parametrize(("archetype", "relative"), _TAPLO_CELLS)
+def test_s6_6_2_2_add_task_tools_appends_bare_names(
+    tmp_path: Path, archetype: str, relative: str
+) -> None:
+    root = _root(tmp_path, archetype)
+    config = KilnConfig.load(root)
+    scaffold(root, config)
+    path = root / "pyproject.toml"
+    document = DocumentUtils.read_document(path)
+    document["dependency-groups"]["dev"].comment("kept: a repo comment")
+    DocumentUtils.write_document(path, document)
+    _without(root, "dev", "taplo")
+    _without(root, "docs", "mdformat")
+    before = tomllib.loads(path.read_text(encoding="utf-8"))["dependency-groups"]
+
+    assert add_task_tools(root, config) == ["taplo", "mdformat"]
+
+    text = path.read_text(encoding="utf-8")
+    groups = tomllib.loads(text)["dependency-groups"]
+    assert groups["dev"] == [*before["dev"], "taplo"]
+    assert groups["docs"] == [*before["docs"], "mdformat"]
+    assert "kept: a repo comment" in text
+    (taplo,) = (a for a in CORE.artifacts(config, root) if a.path == ".taplo.toml")
+    (root / ".taplo.toml").write_text(taplo.content, encoding="utf-8")
+    result = subprocess.run(
+        [str(TAPLO), "fmt", "--check", "--diff", "pyproject.toml"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize(("archetype", "relative"), _TAPLO_CELLS)
+def test_s6_6_2_3_add_task_tools_creates_a_missing_group(
+    tmp_path: Path, archetype: str, relative: str
+) -> None:
+    root = _root(tmp_path, archetype)
+    config = KilnConfig.load(root)
+    scaffold(root, config)
+    path = root / "pyproject.toml"
+    document = DocumentUtils.read_document(path)
+    del document["dependency-groups"]
+    DocumentUtils.write_document(path, document)
+
+    add_task_tools(root, config)
+
+    groups = tomllib.loads(path.read_text(encoding="utf-8"))["dependency-groups"]
+    assert groups == {"dev": list(TASK_TOOLS), "docs": list(DOCS_TASK_TOOLS)}
+
+
+@pytest.mark.parametrize(("archetype", "relative"), _TAPLO_CELLS)
+def test_s6_6_2_4_add_task_tools_is_idempotent(
+    tmp_path: Path, archetype: str, relative: str
+) -> None:
+    root = _root(tmp_path, archetype)
+    config = KilnConfig.load(root)
+    scaffold(root, config)
+    _without(root, "dev", "pytest-cov")
+    assert add_task_tools(root, config) == ["pytest-cov"]
+    after = (root / "pyproject.toml").read_bytes()
+
+    assert add_task_tools(root, config) == []
+    assert (root / "pyproject.toml").read_bytes() == after

@@ -55,6 +55,7 @@ from rn_forge.kiln.modules.python.scaffold import (
     add_package as python_add_package,
 )
 from rn_forge.kiln.modules.python.scaffold import (
+    add_task_tools,
     github_remote,
     reconcile_backend,
     scaffold_backend,
@@ -431,6 +432,12 @@ def init(
     if resolved.docs_profile == "mkdocs" and (root / "mkdocs.yml").is_file():
         packages = resolved.packages if resolved.archetype == "python-lib" else ()
         generate.generate(root, packages)
+    if "python" in archetypes.for_config(resolved).modules:
+        added = add_task_tools(root, resolved)
+        if added:
+            console.info(
+                "added {} to pyproject.toml's dependency groups", ", ".join(added)
+            )
     _fail_on_errors(root)
     _report(root, resolved, _change_rows(result.changes))
 
