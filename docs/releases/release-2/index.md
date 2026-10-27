@@ -19,6 +19,7 @@ taskkit is retired (F6.2). Package-site deploys (F11.5) moved to
 | Feature | Epic | State |
 | -- | -- | -- |
 | [F6.2 — Retire taskkit](../../specs/epics/E6-rebuild-the-repos/F6.2-retire-taskkit.md) | E6 | New |
+| [F7.5 — kiln takes pykit from PyPI](../../specs/epics/E7-pykit-release-pin-flip/F7.5-pykit-from-pypi.md) | E7 | New |
 | [F12.1 — The baseline module, and the Python records](../../specs/epics/E12-architecture-baseline/F12.1-python-baseline.md) | E12 | New |
 | [F12.2 — The web records](../../specs/epics/E12-architecture-baseline/F12.2-web-baseline.md) | E12 | New |
 

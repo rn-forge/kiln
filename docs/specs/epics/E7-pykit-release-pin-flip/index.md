@@ -13,6 +13,8 @@
 | [F7.2 — A tagged kiln release, taken by each repository](F7.2-kiln-release-and-config-upgrade.md) | New | release-1 | — |
 | [F7.3 — kiln takes pykit's document, template and Markdown helpers](F7.3-adopt-pykit-extraction.md) | Closed | release-1 | 7 Closed |
 | [F7.4 — kiln runs beside a repository, not inside its lock](F7.4-kiln-runs-beside-the-repository.md) | Closed | release-1 | 4 Closed |
+| [F7.5 — kiln takes pykit from PyPI](F7.5-pykit-from-pypi.md) | New | release-2 | 5 New |
+| [F7.6 — The `python-lib` release job publishes to PyPI](F7.6-release-to-pypi.md) | New | release-1 | 7 New |
 
 <!-- END derived features -->
 
@@ -47,5 +49,8 @@ pin alignment.
 1. Render pykit by version range from its package index, and accept ranges in
    `rn-forge-deps` ([ADR-0018](../../../adr/ADR-0018.md), F7.3's S7.3.6 and
    S7.3.7).
+1. Render the `python-lib` release job's PyPI upload, which pykit's cutover
+   needs ([F7.6](F7.6-release-to-pypi.md)), and take pykit from PyPI once it
+   publishes there ([F7.5](F7.5-pykit-from-pypi.md)). Both follow pykit's E21.
 
 Once released, consumers pin release tags (D46).

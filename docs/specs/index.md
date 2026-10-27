@@ -12,8 +12,8 @@ Backlog sections below are derived from the epic, feature and release pages by
 
 | Release | Status | Features |
 | -- | -- | -- |
-| [Release 2 — the architecture baseline and taskkit retired](../releases/release-2/index.md) | planned | 3 New |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 2 Active · 3 New · 35 Closed |
+| [Release 2 — the architecture baseline and taskkit retired](../releases/release-2/index.md) | planned | 4 New |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 3 Active · 3 New · 35 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -53,6 +53,8 @@ theirs.
 | pykit publishes the workspace planner as the `rn-forge-devops` console script ([ADR-0014](../adr/ADR-0014.md)) | [F6.4](epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md): `task ci:plan` in a library workspace | yes (2026-10-16): `rn-forge-devops-v0.1.0`, released from pykit `4dadf2b`; `uvx` runs it from the tag outside the workspace |
 | `rn-forge-devops plan` emits a no-extras smoke entry for every selected package ([ADR-0016](../adr/ADR-0016.md)); pykit writes the story and releases a new `rn-forge-devops` tag | [S6.4.7](epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md#s647-release-publishes-from-the-default-branch-after-the-quality-gate): `smoke` covers a pull request once release stops running there | yes (2026-10-19): `rn-forge-devops-v0.2.0`, released from pykit `4770dc6` |
 | pykit tags `rn-forge-commons` 0.7.0 and `rn-forge-tooling` 0.3.0, with every package that depends on them re-tagged on those pins, so they resolve together | [F7.3](epics/E7-pykit-release-pin-flip/F7.3-adopt-pykit-extraction.md): every story | yes (2026-10-25): pykit's Release 6, from pykit `main` `9557668`: `rn-forge-commons-v0.7.0` and `rn-forge-tooling-v0.3.0`, with `cli-v0.1.1`, `data-v0.1.1`, `web-v0.2.1`, `django-v0.5.1`, `fastapi-v0.3.2`, `sqlalchemy-v0.2.1` re-tagged on commons 0.7. `rn-forge-devops-v0.3.0` came in the same release; it does not depend on commons |
+| pykit's `main.yml` uploads to PyPI by trusted publishing, with a TestPyPI dry run and changelog release notes (pykit F21.3) | [F7.6](epics/E7-pykit-release-pin-flip/F7.6-release-to-pypi.md): the behaviour kiln renders | no (2026-10-26): pykit E21 is `New`, in its Release 7 |
+| Every `rn-forge-*` package kiln renders is on pypi.org (pykit S21.3.3) | [F7.5](epics/E7-pykit-release-pin-flip/F7.5-pykit-from-pypi.md): every story | no (2026-10-26) |
 
 ## Order
 

@@ -114,6 +114,8 @@ nav:
         - F7.2 — A tagged kiln release, taken by each repository: specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md
         - F7.3 — kiln takes pykit's document, template and Markdown helpers: specs/epics/E7-pykit-release-pin-flip/F7.3-adopt-pykit-extraction.md
         - F7.4 — kiln runs beside a repository, not inside its lock: specs/epics/E7-pykit-release-pin-flip/F7.4-kiln-runs-beside-the-repository.md
+        - F7.5 — kiln takes pykit from PyPI: specs/epics/E7-pykit-release-pin-flip/F7.5-pykit-from-pypi.md
+        - F7.6 — The `python-lib` release job publishes to PyPI: specs/epics/E7-pykit-release-pin-flip/F7.6-release-to-pypi.md
       - E8 — The Azure DevOps CI provider:
         - specs/epics/E8-ado-provider/index.md
       - E9 — The node archetypes:
