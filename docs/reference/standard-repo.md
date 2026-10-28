@@ -465,6 +465,20 @@ The rules:
   (`python-lib`'s generated `release` does not yet wait on `sonar` or skip
   pull requests:
   [S6.4.7](../specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md#s647-release-publishes-from-the-default-branch-after-the-quality-gate).)
+- `[ci] release = "pypi"` (`python-lib` only) does everything `tag-exists` does
+  and uploads each package to pypi.org by trusted publishing
+  (`uv publish --trusted-publishing always`) first, unless pypi.org already
+  has the version, so a published GitHub release implies the version is on
+  PyPI. The package's `CHANGELOG.md` section is the release notes, and a
+  per-package release is never "Latest". A `workflow_dispatch` with `testpypi`
+  set runs the release job in the `testpypi` environment instead: it uploads
+  every package to test.pypi.org unless that has the version, and creates no
+  tags and no GitHub releases. `external-install` then installs
+  `name==version` from PyPI, retrying up to ten times. Once per repository,
+  the owner creates the GitHub environments `pypi` (deployment branch `main`)
+  and `testpypi`, and adds a trusted publisher per package on pypi.org and
+  test.pypi.org, naming workflow `ci.yml` and the environment; kiln does not
+  automate either.
 - Release is idempotent: the **release**, not the tag, is the record of what
   shipped, and the tag is created by the publish step itself. A failed publish
   is therefore resumable; a tag-first design made it permanent.
@@ -505,7 +519,8 @@ external_url = ""          # external only; surfaced in the instructions block
 [ci]
 provider = "github"        # github only in v1; "ado" reserved
 sonar = true
-release = "tag-exists"     # tag-exists | none
+release = "tag-exists"     # tag-exists | pypi | none
+                           # pypi: python-lib only; tag-exists plus a PyPI upload (section 8)
                            # nx-dispatch: node-lib default (release-1, not yet built)
 [ci.hooks]
 setup = ["./.github/actions/setup-node"]

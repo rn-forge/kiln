@@ -27,7 +27,7 @@ is a kiln ADR; this file states the rule.
   and no local state: that is `python-tool`.
 {% endif %}{% if docs %}- **Docs profile:** `mkdocs` — the full area model, a derived nav, and a
   strict site build inside `task validate`.
-{% endif %}- **CI:** GitHub Actions, Sonar {% if sonar %}on{% else %}off{% endif %}{% if release == "tag-exists" %}, release by tag-exists check{% if workspace %}, per package{% endif %}{% endif %}.
+{% endif %}- **CI:** GitHub Actions, Sonar {% if sonar %}on{% else %}off{% endif %}{% if release == "pypi" %}, release to PyPI by trusted publishing, per package{% elif release == "tag-exists" %}, release by tag-exists check{% if workspace %}, per package{% endif %}{% endif %}.
 
 ## 1. One entrypoint
 
@@ -247,7 +247,15 @@ the `KILN_DOCTOR_FULL` task variable set. `[ci] doctor_full` chooses
 where: pushes to the default branch and dispatch by default, or every run.
 Branch protection requires `ci-ok` and nothing else.
 
-{% if docs %}`task validate` proves: ruff is clean and formatted{% if workspace %} in every package{% endif %}; the archetype's
+{% if release == "pypi" %}`[ci] release = "pypi"` makes each package's release job upload to pypi.org by
+trusted publishing before it creates the GitHub release, so a published release
+implies the version is on PyPI. A dispatch with `testpypi` set uploads every
+package to TestPyPI instead and creates no tag or release. Once per repository,
+the owner creates the GitHub environments `pypi` (deployment branch `main`) and
+`testpypi`, and adds a trusted publisher per package on pypi.org and on
+test.pypi.org, naming workflow `ci.yml` and the environment.
+
+{% endif %}{% if docs %}`task validate` proves: ruff is clean and formatted{% if workspace %} in every package{% endif %}; the archetype's
 dependency set is present, allowed and pinned; the import contracts hold; the
 task layout and validate gate are intact; no workflow step invokes a wrapped
 tool; the docs tree matches `docs/_areas.yml`; the derived nav is current; no link

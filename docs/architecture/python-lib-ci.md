@@ -91,10 +91,15 @@ all of them ─► ci-ok
 - Releases follow version bumps. A tag that is already published is skipped; a
   draft is rebuilt from its tag and replaced. A merge that changes a package
   without bumping its version re-verifies it and publishes nothing.
+- With `[ci] release = "pypi"`, `release-publish` uploads a package's wheel and
+  sdist to PyPI before it creates that package's GitHub release, unless PyPI
+  already has the version. A rerun resumes: what PyPI and GitHub have is
+  skipped. A dispatch with `testpypi` set builds every releasable package from
+  `HEAD`, uploads each to TestPyPI, and creates no tag or release.
 - Only a push to `main` publishes, and only after the quality gate. A pull
-  request or a dispatch does not run `release`; its packaging proof is
-  `smoke`, which installs every selected package's wheel with no extras and
-  imports it.
+  request or a dispatch (other than a `testpypi` one) does not run `release`;
+  its packaging proof is `smoke`, which installs every selected package's
+  wheel with no extras and imports it.
 
 ## Worked example: a docs-only pull request
 
