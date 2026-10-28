@@ -71,6 +71,8 @@ class CiJob(StrictModel):
         min_length=1,
     )
     """The events the job runs on; default all three."""
+    contents: Literal["read", "write"] = "read"
+    """The job's `contents` permission; `write` for a job that creates releases."""
 
     @field_validator("uses")
     @classmethod

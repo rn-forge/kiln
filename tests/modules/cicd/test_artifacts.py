@@ -2118,3 +2118,22 @@ def test_s7_6_4_5_pypi_keeps_every_tag_exists_job(tmp_path: Path, sonar: bool) -
         assert pypi[name].get("needs") == plain[name].get("needs"), name
     assert "release" in pypi["ci-ok"]["needs"]  # type: ignore[operator]
     assert "external-install" in pypi["ci-ok"]["needs"]  # type: ignore[operator]
+
+
+def test_s7_6_6_1_declared_job_can_write_contents(tmp_path: Path) -> None:
+    extra = f'\n[[ci.jobs]]\nname = "extra"\nuses = "{CALL}"\ncontents = "write"\n'
+    job = _ci_jobs(_with_ci(_root(tmp_path, "python-tool"), extra))["extra"]
+    assert job["permissions"] == {"contents": "write"}
+
+
+def test_s7_6_6_2_declared_job_reads_by_default(tmp_path: Path) -> None:
+    extra = f'\n[[ci.jobs]]\nname = "extra"\nuses = "{CALL}"\n'
+    job = _ci_jobs(_with_ci(_root(tmp_path, "python-tool"), extra))["extra"]
+    assert job["permissions"] == {"contents": "read"}
+
+
+def test_s7_6_6_3_bad_contents_is_refused(tmp_path: Path) -> None:
+    extra = f'\n[[ci.jobs]]\nname = "extra"\nuses = "{CALL}"\ncontents = "admin"\n'
+    root = _with_ci(_root(tmp_path, "python-tool"), extra)
+    with pytest.raises(AppException):
+        KilnConfig.load(root)

@@ -571,7 +571,7 @@ jobs:
     needs: validate
 {% if job.events | length < 3 %}    if: ${{ {% for event in job.events %}github.event_name == '[[ event ]]'{% if not loop.last %} || {% endif %}{% endfor %} }}
 {% endif %}    permissions:
-      contents: read
+      contents: [[ job.contents ]]
     uses: [[ job.uses ]] # zizmor: ignore[self-repository] actionlint rejects the $/ form
 {% endfor %}
   # The only check branch protection requires. Job and matrix names change as

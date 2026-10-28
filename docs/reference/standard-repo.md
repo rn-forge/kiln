@@ -520,9 +520,11 @@ docs = ["./.github/actions/publish-index"]
 name = "golden-render"
 uses = "./.github/workflows/golden-render.yml"
 events = ["pull_request"]
+contents = "read"          # read | write; the job's contents permission, read by default
                            # optional: a reusable-workflow call after validate; uses is
                            # ./.github/workflows/<file>.yml, not ci.yml; name is kebab-case
-                           # and not a generated job's; events defaults to all three
+                           # and not a generated job's; events defaults to all three;
+                           # contents = "write" for a job that creates releases
 
 [tasks]
 includes = [{ namespace = "self", taskfile = "tasks/self.yml" }]
