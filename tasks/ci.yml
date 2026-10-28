@@ -19,3 +19,18 @@ tasks:
     desc: "CI only: print the Sonar branch argument for this run as a $GITHUB_OUTPUT line"
     cmds:
       - '{{.DEVOPS}} sonar-target'
+
+  release-state:
+    desc: "CI only: print the release's state for this version as $GITHUB_OUTPUT lines"
+    cmds:
+      - '{{.DEVOPS}} release-state "v$({{.TASK_EXE}} version)"'
+
+  release-source:
+    desc: "CI only: check out the tagged source of a resumed release (with TAG), print its commit"
+    cmds:
+      - '{{.DEVOPS}} release-source "$TAG"'
+
+  release-publish:
+    desc: "CI only: publish the GitHub release for TAG, from the built distributions, at SOURCE_SHA"
+    cmds:
+      - '{{.DEVOPS}} release-publish "$TAG" --title "$TAG" --target "$SOURCE_SHA" dist/*.whl dist/*.tar.gz dist/*.cdx.json'

@@ -511,21 +511,39 @@ def _step_index(steps: list[dict[str, object]], name: str) -> int:
     return next(i for i, step in enumerate(steps) if step.get("name") == name)
 
 
+def test_s6_7_5_6_the_release_job_is_task_calls(tmp_path: Path) -> None:
+    for root in _release_roots(tmp_path):
+        steps = _release_steps(root)
+        assert [s["name"] for s in steps] == [
+            "Checkout",
+            "Set up the toolchain",
+            "Check whether this version has been released",
+            "Check out the release source",
+            "Build",
+            "Generate provenance",
+            "Publish GitHub Release",
+        ], root.name
+        for step in steps:
+            assert "\n" not in str(step.get("run", "")), (root.name, step["name"])
+
+
 def test_s6_3_4_check_step_outputs_the_tag_state(tmp_path: Path) -> None:
     for root in _release_roots(tmp_path):
         steps = _release_steps(root)
         check = next(step for step in steps if step.get("id") == "check")
-        run = str(check["run"])
-        for output in ("should-release=", "tagged=", "draft="):
-            assert f"{output}" in run, root.name
-            assert "$GITHUB_OUTPUT" in run
+        assert check["env"] == {"GH_TOKEN": "${{ secrets.GITHUB_TOKEN }}"}, root.name
+        assert check["run"] == 'task ci:release-state >> "$GITHUB_OUTPUT"', root.name
 
 
 def test_s6_3_4_checkout_of_the_tag_precedes_build(tmp_path: Path) -> None:
     for root in _release_roots(tmp_path):
         steps = _release_steps(root)
-        index = _step_index(steps, "Check out the tagged source")
-        assert steps[index]["if"] == "steps.check.outputs.tagged == 'true'"
+        index = _step_index(steps, "Check out the release source")
+        step = steps[index]
+        assert step["id"] == "source"
+        assert step["if"] == "steps.check.outputs.should-release == 'true'"
+        assert step["env"] == {"TAG": "${{ steps.check.outputs.tag }}"}
+        assert step["run"] == 'task ci:release-source >> "$GITHUB_OUTPUT"'
         check = next(i for i, s in enumerate(steps) if s.get("id") == "check")
         assert check < index < _step_index(steps, "Build"), root.name
 
@@ -533,13 +551,11 @@ def test_s6_3_4_checkout_of_the_tag_precedes_build(tmp_path: Path) -> None:
 def test_s6_3_4_draft_is_deleted_before_publish(tmp_path: Path) -> None:
     for root in _release_roots(tmp_path):
         steps = _release_steps(root)
-        index = _step_index(steps, "Delete the leftover draft")
-        assert steps[index]["if"] == "steps.check.outputs.draft == 'true'"
-        assert (
-            _step_index(steps, "Build")
-            < index
-            < _step_index(steps, "Publish GitHub Release")
-        ), root.name
+        names = [s["name"] for s in steps]
+        assert "Delete the leftover draft" not in names, root.name
+        publish = steps[_step_index(steps, "Publish GitHub Release")]
+        assert publish["run"] == "task ci:release-publish", root.name
+        assert _step_index(steps, "Build") < names.index("Publish GitHub Release")
 
 
 def test_s6_3_4_publish_targets_the_source_commit(tmp_path: Path) -> None:
@@ -557,7 +573,9 @@ def test_s6_3_6_release_uploads_distributions_and_sbom_only(tmp_path: Path) -> N
     for root in _release_roots(tmp_path):
         steps = _release_steps(root)
         publish = steps[_step_index(steps, "Publish GitHub Release")]
-        run = str(publish["run"])
+        assert publish["run"] == "task ci:release-publish", root.name
+        tasks = _ci_tasks_text_of(root)["tasks"]
+        run = " ".join(tasks["release-publish"]["cmds"])  # type: ignore[index]
         assert "dist/*.whl dist/*.tar.gz dist/*.cdx.json" in run, root.name
         assert "dist/*" not in run.split(), root.name
 
@@ -879,8 +897,7 @@ def test_s6_4_4_3_release_task_is_pykit_s_script(tmp_path: Path) -> None:
     )
     for text in (
         "releasable ok",
-        "--verify-tag",
-        "gh release delete",
+        "release-publish",
         "{{.DEVOPS}}",
         "uv build",
         "uv version",
@@ -915,12 +932,15 @@ def test_s6_4_4_4_external_install(tmp_path: Path) -> None:
     assert "$REPOSITORY_URL" in script
 
 
-def _ci_tasks_text(tmp_path: Path) -> dict[str, object]:
-    root = _root(tmp_path / "tasks", "python-lib")
+def _ci_tasks_text_of(root: Path) -> dict[str, object]:
     from rn_forge.kiln.modules.tasks import TASKS
 
     rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
     return YamlUtils.load(rendered["tasks/ci.yml"])
+
+
+def _ci_tasks_text(tmp_path: Path) -> dict[str, object]:
+    return _ci_tasks_text_of(_root(tmp_path / "tasks", "python-lib"))
 
 
 def test_s6_4_4_5_artifact_actions_are_pinned() -> None:
@@ -1104,7 +1124,7 @@ def test_s6_4_7_4_release_has_no_publish_switch(tmp_path: Path) -> None:
         for name in ("release-build", "release-publish")
     )
     assert "PUBLISH" not in script
-    assert "gh release create" in script
+    assert "release-publish" in script
 
 
 def test_s6_4_7_5_smoke_takes_an_empty_extra_row_unchanged(tmp_path: Path) -> None:
@@ -1484,10 +1504,10 @@ def test_s4_11_3_2_the_release_version_is_read_through_env(tmp_path: Path) -> No
         for step in steps:
             if "run" in step:
                 assert "${{" not in str(step["run"]), (root.name, step.get("name"))
-        check = steps[
-            _step_index(steps, "Check whether this version has been released")
+        tasks = _ci_tasks_text_of(root)["tasks"]
+        assert tasks["release-state"]["cmds"] == [  # type: ignore[index]
+            '{{.DEVOPS}} release-state "v$({{.TASK_EXE}} version)"'
         ]
-        assert check["env"]["VERSION"] == "${{ steps.version.outputs.version }}"  # type: ignore[index]
 
 
 def test_s4_11_3_3_release_publishes_with_gh_release_create(tmp_path: Path) -> None:
@@ -1496,16 +1516,13 @@ def test_s4_11_3_3_release_publishes_with_gh_release_create(tmp_path: Path) -> N
         publish = steps[_step_index(steps, "Publish GitHub Release")]
         assert "uses" not in publish
         assert "with" not in publish
-        run = str(publish["run"])
-        assert "gh release create" in run
-        assert "--generate-notes" in run
-        assert run.count("--verify-tag") == 1
-        assert run.count("--target") == 1
+        assert publish["run"] == "task ci:release-publish"
         env = publish["env"]  # type: ignore[index]
-        assert env["GH_TOKEN"] == "${{ secrets.GITHUB_TOKEN }}"
-        assert env["TAG"] == "${{ steps.check.outputs.tag }}"
-        assert env["SOURCE_SHA"] == "${{ steps.source.outputs.sha }}"
-        assert env["TAGGED"] == "${{ steps.check.outputs.tagged }}"
+        assert env == {
+            "GH_TOKEN": "${{ secrets.GITHUB_TOKEN }}",
+            "TAG": "${{ steps.check.outputs.tag }}",
+            "SOURCE_SHA": "${{ steps.source.outputs.sha }}",
+        }
         for content in _rendered(root).values():
             assert "softprops/action-gh-release" not in content
 
@@ -1774,23 +1791,17 @@ def test_s4_11_6_4_single_package_release_attests_before_publishing(
 ) -> None:
     steps = _release_steps(_cell_root(tmp_path, archetype, extra))
     names = [s.get("name") for s in steps]
-    build, provenance, draft, publish = (
+    build, provenance, publish = (
         names.index(n)
-        for n in (
-            "Build",
-            "Generate provenance",
-            "Delete the leftover draft",
-            "Publish GitHub Release",
-        )
+        for n in ("Build", "Generate provenance", "Publish GitHub Release")
     )
-    assert build < provenance < draft < publish
+    assert build < provenance < publish
     pin = load_pins()["attest"]
     step = steps[provenance]
     assert step["uses"] == f"{pin['uses']}@{pin['sha']}"
     assert step["if"] == "steps.check.outputs.should-release == 'true'"
     assert step["with"] == {"subject-path": SUBJECTS}  # type: ignore[comparison-overlap]
-    run = str(steps[publish]["run"])
-    assert run.count("dist/*.whl dist/*.tar.gz dist/*.cdx.json") == 2
+    assert steps[publish]["run"] == "task ci:release-publish"
 
 
 def test_s4_11_6_4_lib_release_attests_between_build_and_publish(

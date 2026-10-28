@@ -42,3 +42,44 @@ def test_s6_7_2_unsupported_event() -> None:
 def test_s6_7_4_3_a_schedule_trigger_raises() -> None:
     with pytest.raises(ValueError):
         github.sonar_branch("schedule", "branch", "main")
+
+
+def test_s6_7_5_1_release_state_covers_every_case() -> None:
+    cases = [
+        (None, False, ("true", "false", "false")),
+        ("true", True, ("true", "true", "true")),
+        ("true", False, ("true", "true", "false")),
+        ("false", True, ("false", "false", "true")),
+    ]
+    for draft, tagged, (should, is_draft, is_tagged) in cases:
+        state = github.release_state("v1.2.3", draft, tagged)
+        assert list(state) == ["tag", "should-release", "draft", "tagged"]
+        assert state == {
+            "tag": "v1.2.3",
+            "should-release": should,
+            "draft": is_draft,
+            "tagged": is_tagged,
+        }
+
+
+def test_s6_7_5_2_publish_commands_covers_every_case() -> None:
+    files = ["dist/b.whl", "dist/a.tar.gz"]
+
+    def call(draft: str | None, tagged: bool) -> list[list[str]]:
+        return github.publish_commands("v1", "Title", "abc123", files, draft, tagged)
+
+    assert call("false", True) == []
+    assert call("true", True) == [
+        ["gh", "release", "delete", "v1", "--yes"],
+        [
+            "gh", "release", "create", "v1", *files, "--verify-tag",
+            "--title", "Title", "--generate-notes",
+        ],
+    ]  # fmt: skip
+    assert call(None, False) == [
+        [
+            "gh", "release", "create", "v1", *files, "--target", "abc123",
+            "--title", "Title", "--generate-notes",
+        ]
+    ]  # fmt: skip
+    assert call("true", False)[0][:3] == ["gh", "release", "delete"]

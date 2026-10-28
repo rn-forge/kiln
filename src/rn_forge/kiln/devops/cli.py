@@ -37,7 +37,45 @@ def _parser() -> argparse.ArgumentParser:
         "sonar-target",
         help="print the `$GITHUB_OUTPUT` line with the Sonar branch argument",
     )
+    state = commands.add_parser(
+        "release-state", help="print the release's state as `$GITHUB_OUTPUT` lines"
+    )
+    state.add_argument("tag", metavar="TAG")
+    source = commands.add_parser(
+        "release-source", help="check out the tag when it exists and print its commit"
+    )
+    source.add_argument("tag", metavar="TAG")
+    publish = commands.add_parser(
+        "release-publish", help="publish the GitHub release unless it is published"
+    )
+    publish.add_argument("tag", metavar="TAG")
+    publish.add_argument("--title", required=True)
+    publish.add_argument("--target", required=True, metavar="SHA")
+    publish.add_argument("files", nargs="+", metavar="FILE")
     return parser
+
+
+def _release(args: argparse.Namespace) -> int:
+    tag: str = args.tag
+    if args.command == "release-source":
+        print(f"sha={github.release_source(tag)}")
+        return 0
+    draft = github.release_draft(tag)
+    tagged = github.remote_tag_exists(tag)
+    if args.command == "release-state":
+        for line in github.output_lines(github.release_state(tag, draft, tagged)):
+            print(line)
+        if draft == "false":
+            github.already_published(tag)
+        return 0
+    commands = github.publish_commands(
+        tag, args.title, args.target, args.files, draft, tagged
+    )
+    if not commands:
+        github.already_published(tag)
+    for command in commands:
+        github.run(command)
+    return 0
 
 
 def _releasable(workspace: ci.Workspace, args: argparse.Namespace) -> int:
@@ -88,6 +126,8 @@ def main(argv: list[str] | None = None) -> int:
         except ValueError as error:
             sys.exit(str(error))
         return 0
+    if args.command.startswith("release-"):
+        return _release(args)
 
     try:
         workspace = uv.load_workspace(uv.find_root(Path.cwd()))

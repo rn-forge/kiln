@@ -1249,18 +1249,43 @@ def test_s4_11_6_2_lib_release_is_split(tmp_path: Path) -> None:
         assert "internal" not in tasks[name], name  # type: ignore[operator]
     for text in ("releasable ok", "uv build", "uv export --format cyclonedx1.5"):
         assert text in build, text
-    assert "gh release create" not in build
-    assert "gh release delete" not in build
-    for text in (
-        "gh release create",
-        "--verify-tag",
-        "--target",
-        "gh release delete",
-        "continue",
-    ):
+    assert "gh release" not in build
+    for text in ("release-publish", "--title", "--target", "continue"):
         assert text in publish, text
+    assert "gh release" not in publish
     assert "uv build" not in publish
     assert "uv export" not in publish
+
+
+def test_s6_7_5_5_lib_publish_calls_release_publish(tmp_path: Path) -> None:
+    tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
+    publish = "\n".join(tasks["release-publish"]["cmds"])  # type: ignore[index]
+    assert 'if [ ! -d "dist/$name" ]; then' in publish
+    assert "continue" in publish
+    assert (
+        '{{.DEVOPS}} release-publish "$name-v$version" --title "$name v$version"'
+        ' --target "$GITHUB_SHA" dist/"$name"/*'
+    ) in publish.replace('"$tag"', '"$name-v$version"')
+    assert "gh release" not in publish
+    for name in ("release-state", "release-source"):
+        assert name not in tasks
+
+
+def test_s6_7_5_4_single_package_release_tasks(tmp_path: Path) -> None:
+    expected = {
+        "release-state": ['{{.DEVOPS}} release-state "v$({{.TASK_EXE}} version)"'],
+        "release-source": ['{{.DEVOPS}} release-source "$TAG"'],
+        "release-publish": [
+            '{{.DEVOPS}} release-publish "$TAG" --title "$TAG" --target "$SOURCE_SHA"'
+            " dist/*.whl dist/*.tar.gz dist/*.cdx.json"
+        ],
+    }
+    for archetype in ("python-app", "python-tool"):
+        tasks = _ci_tasks(_root(tmp_path / archetype, archetype))["tasks"]
+        for name, cmds in expected.items():
+            assert tasks[name]["cmds"] == cmds, (archetype, name)  # type: ignore[index]
+            assert tasks[name]["desc"].startswith("CI only:"), name  # type: ignore[index]
+            assert "internal" not in tasks[name], (archetype, name)  # type: ignore[operator]
 
 
 def test_s4_11_6_2_lib_build_reports_how_many_it_built(tmp_path: Path) -> None:
@@ -1274,7 +1299,7 @@ def test_s4_11_6_2_lib_build_reports_how_many_it_built(tmp_path: Path) -> None:
 def test_s4_11_6_2_lib_publish_uploads_the_sbom(tmp_path: Path) -> None:
     tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
     publish = "\n".join(tasks["release-publish"]["cmds"])  # type: ignore[index]
-    assert publish.count('dist/"$name"/*') == 2
+    assert publish.count('dist/"$name"/*') == 1
     build = "\n".join(tasks["release-build"]["cmds"])  # type: ignore[index]
     assert build.count('dist/$name/$name.cdx.json"') == 2  # tag and worktree
     assert '--out-dir "$GITHUB_WORKSPACE/dist/$name"' in build
@@ -1393,10 +1418,15 @@ def test_s4_12_2_3_only_python_lib_has_the_pipeline_tasks(
     cycle.apply(root, home=tmp_path / "home")
     document = _load(root, "tasks/ci.yml")
     assert "sonar-target" in document["tasks"]
+    single = {"release-state", "release-source", "release-publish"}
+    if archetype != "python-lib":
+        assert single <= set(document["tasks"])
     others = {
         k
         for k in document["tasks"]
-        if not k.startswith("lint:") and k != "sonar-target"
+        if not k.startswith("lint:")
+        and k != "sonar-target"
+        and not (archetype != "python-lib" and k in single)
     }
     if archetype == "python-lib":
         assert others == CI_PIPELINE_TASKS

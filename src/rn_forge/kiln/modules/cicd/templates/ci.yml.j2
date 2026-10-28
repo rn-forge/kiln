@@ -464,52 +464,20 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Read version
-        id: version
-        run: |
-          version="$(task version)"
-          printf 'version=%s\n' "$version" >> "$GITHUB_OUTPUT"
-
-      # The *release* is the record of what shipped, not the tag. Checking
-      # the tag instead would make a half-finished publish permanent: the tag
-      # would exist, the release would not, and every rerun would skip.
+      # The release, not the tag, is the record of what shipped.
       - name: Check whether this version has been released
         id: check
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          tag="v$VERSION"
-          draft=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null || true)
-          if [ "$draft" = false ]; then
-            printf '%s\n' "Release $tag already published; nothing to do."
-            printf 'should-release=false\n' >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          printf 'should-release=true\n' >> "$GITHUB_OUTPUT"
-          printf 'draft=%s\n' "$([ "$draft" = true ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
-          if [ -n "$(git ls-remote --tags origin "refs/tags/$tag")" ]; then
-            printf 'tagged=true\n' >> "$GITHUB_OUTPUT"
-          else
-            printf 'tagged=false\n' >> "$GITHUB_OUTPUT"
-          fi
-          printf 'tag=%s\n' "$tag" >> "$GITHUB_OUTPUT"
+        run: task ci:release-state >> "$GITHUB_OUTPUT"
 
-      # A tag without a published release is a release that failed after
-      # tagging; rebuilding from `HEAD` would ship a different commit under
-      # that version.
-      - name: Check out the tagged source
-        if: steps.check.outputs.tagged == 'true'
-        env:
-          TAG: ${{ steps.check.outputs.tag }}
-        run: |
-          git fetch --no-tags origin "refs/tags/$TAG:refs/tags/$TAG" && git checkout --detach "$TAG"
-
-      - name: Record the source commit
+      # A tag without a published release is a failed release: rebuild from it.
+      - name: Check out the release source
         id: source
         if: steps.check.outputs.should-release == 'true'
-        run: |
-          printf 'sha=%s\n' "$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        env:
+          TAG: ${{ steps.check.outputs.tag }}
+        run: task ci:release-source >> "$GITHUB_OUTPUT"
 
       - name: Build
         if: steps.check.outputs.should-release == 'true'
@@ -526,31 +494,14 @@ jobs:
             dist/*.tar.gz
             dist/*.cdx.json
 
-      - name: Delete the leftover draft
-        if: steps.check.outputs.draft == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.check.outputs.tag }}
-        run: gh release delete "$TAG" --yes
-
-      # `gh release create` makes the tag itself at `--target`, as part of
-      # publishing. Tagging in a separate earlier step is what made a failed
-      # upload unrecoverable. On a resumed release the tag already exists and
-      # is reused as it is.
+      # Publishing makes the tag at the source commit; a resumed release reuses its tag.
       - name: Publish GitHub Release
         if: steps.check.outputs.should-release == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.check.outputs.tag }}
           SOURCE_SHA: ${{ steps.source.outputs.sha }}
-          TAGGED: ${{ steps.check.outputs.tagged }}
-        run: |
-          set -euo pipefail
-          if [ "$TAGGED" = true ]; then
-            gh release create "$TAG" dist/*.whl dist/*.tar.gz dist/*.cdx.json --verify-tag --title "$TAG" --generate-notes
-          else
-            gh release create "$TAG" dist/*.whl dist/*.tar.gz dist/*.cdx.json --target "$SOURCE_SHA" --title "$TAG" --generate-notes
-          fi
+        run: task ci:release-publish
 {% endif %}{% if workspace and docs %}
   # Runs on a push with no package change too, when `release` is skipped. The one
   # job that deploys Pages for a workspace: a root-only deploy landing after it

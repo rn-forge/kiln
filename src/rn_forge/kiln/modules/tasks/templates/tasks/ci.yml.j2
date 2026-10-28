@@ -25,7 +25,22 @@ tasks:
     desc: "CI only: print the Sonar branch argument for this run as a $GITHUB_OUTPUT line"
     cmds:
       - '{{.DEVOPS}} sonar-target'
-{% if workspace %}
+{% if not workspace %}
+  release-state:
+    desc: "CI only: print the release's state for this version as $GITHUB_OUTPUT lines"
+    cmds:
+      - '{{.DEVOPS}} release-state "v$({{.TASK_EXE}} version)"'
+
+  release-source:
+    desc: "CI only: check out the tagged source of a resumed release (with TAG), print its commit"
+    cmds:
+      - '{{.DEVOPS}} release-source "$TAG"'
+
+  release-publish:
+    desc: "CI only: publish the GitHub release for TAG, from the built distributions, at SOURCE_SHA"
+    cmds:
+      - '{{.DEVOPS}} release-publish "$TAG" --title "$TAG" --target "$SOURCE_SHA" dist/*.whl dist/*.tar.gz dist/*.cdx.json'
+{% endif %}{% if workspace %}
   plan:
     desc: "CI only: print the plan's outputs for $GITHUB_OUTPUT"
     silent: true
@@ -80,13 +95,12 @@ tasks:
         for name in $releasable; do
           version="$(uv version --package "$name" --short)"
           tag="$name-v$version"
-          draft=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null || true)
-          if [ "$draft" = false ]; then
+          state="$({{.DEVOPS}} release-state "$tag")"
+          if grep -qx 'should-release=false' <<<"$state"; then
             echo "Release $tag is already published, skipping."
             continue
           fi
-          remote_tag=$(git ls-remote --tags origin "refs/tags/$tag")
-          if [ -n "$remote_tag" ]; then
+          if grep -qx 'tagged=true' <<<"$state"; then
             git fetch --no-tags origin "refs/tags/$tag"
             worktree=$(mktemp -d)
             git worktree add --detach "$worktree" FETCH_HEAD
@@ -111,20 +125,11 @@ tasks:
         for name in $releasable; do
           version="$(uv version --package "$name" --short)"
           tag="$name-v$version"
-          draft=$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null || true)
-          if [ "$draft" = false ] || [ ! -d "dist/$name" ]; then
+          if [ ! -d "dist/$name" ]; then
             echo "Nothing to publish for $tag, skipping."
             continue
           fi
-          remote_tag=$(git ls-remote --tags origin "refs/tags/$tag")
-          if [ "$draft" = true ]; then
-            gh release delete "$tag" --yes
-          fi
-          if [ -n "$remote_tag" ]; then
-            gh release create "$tag" dist/"$name"/* --verify-tag --title "$name v$version" --generate-notes
-          else
-            gh release create "$tag" dist/"$name"/* --target "$GITHUB_SHA" --title "$name v$version" --generate-notes
-          fi
+          {{.DEVOPS}} release-publish "$tag" --title "$name v$version" --target "$GITHUB_SHA" dist/"$name"/*
         done
 
   external-install:

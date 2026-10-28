@@ -8,7 +8,8 @@ pinned kiln (`uvx` beside the repository, `uv run` in kiln's own), per
 
 Run `kiln-devops` from inside a uv workspace. Its root is the nearest directory
 at or above the current one whose `pyproject.toml` declares
-`[tool.uv.workspace]`.
+`[tool.uv.workspace]`. `sonar-target` and the three `release-*` subcommands load
+no workspace and run in any repository.
 
 | Subcommand | Does |
 | -- | -- |
@@ -18,6 +19,38 @@ at or above the current one whose `pyproject.toml` declares
 | `smoke PACKAGE [EXTRA]` | Builds the package and its internal requirements as wheels, installs one extra into a clean venv from the wheels' metadata, and imports the configured modules, or the package's own module when it has no smoke table. |
 | `adapters` | Checks each package that declares `adapters`: every name has a module or subpackage under the package's source directory and an extra of the same name, and none is repeated. Prints one line per problem to stderr and exits 1 if there are any. |
 | `sonar-target` | Prints the `branch-arg=` line for the Sonar scan, from the `EVENT_NAME`, `REF_TYPE` and `REF_NAME` environment variables. |
+| `release-state TAG` | Prints the release's state for `TAG` as `$GITHUB_OUTPUT` lines. |
+| `release-source TAG` | Checks out `TAG` when `origin` has it, and prints the checked-out commit. |
+| `release-publish TAG --title TITLE --target SHA FILE...` | Publishes the GitHub release for `TAG` unless it is already published. |
+
+## The release subcommands
+
+They run `git` and `gh` in the current repository. Every command they run writes
+its own stdout to stderr, so a subcommand's stdout carries only the lines below.
+A command that fails ends the subcommand with that command's exit status.
+
+`release-state TAG` reads the release with
+`gh release view TAG --json isDraft --jq .isDraft` (a failure means there is no
+release) and whether `git ls-remote --tags origin refs/tags/TAG` prints
+anything. It prints `tag=TAG`, `should-release=`, `draft=` and `tagged=`, in
+that order, each `true` or `false`. A published release gives
+`should-release=false`, and `Release TAG already published; nothing to do.` goes
+to stderr.
+
+`release-source TAG`, if the tag exists on `origin`, runs
+`git fetch --no-tags origin refs/tags/TAG:refs/tags/TAG` and
+`git checkout --detach TAG`. It prints `sha=<git rev-parse HEAD>`. A tag without
+a published release is a release that failed after tagging, and it rebuilds from
+that tag, because `HEAD` would ship a different commit under the same version.
+
+`release-publish TAG --title TITLE --target SHA FILE...` reads the state as
+`release-state` does. A published release writes the same message to stderr and
+exits 0. A draft is deleted first (`gh release delete TAG --yes`). Then it runs
+`gh release create TAG FILE... --verify-tag --title TITLE --generate-notes` when
+the tag exists, and
+`gh release create TAG FILE... --target SHA --title TITLE --generate-notes`
+otherwise. It prints nothing. The release, not the tag, is the record of what
+shipped, and `gh release create` makes the tag at `--target`.
 
 ## What it discovers
 
