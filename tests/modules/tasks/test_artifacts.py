@@ -2038,3 +2038,26 @@ def test_s7_6_4_6_release_tasks_upload(tmp_path: Path) -> None:
         text = _release_script(plain, task)
         for forbidden in ("twine", "TESTPYPI", "--upload", "upload="):
             assert forbidden not in text, (task, forbidden)
+
+
+def test_s7_6_5_1_external_install_from_pypi(tmp_path: Path) -> None:
+    pypi = _root(tmp_path / "pypi", "python-lib", extra='\n[ci]\nrelease = "pypi"\n')
+    task = _ci_tasks(pypi)["tasks"]["external-install"]  # type: ignore[index]
+    script = "\n".join(task["cmds"])
+    assert task["desc"] == (
+        "CI only: install each released version from PyPI, outside the workspace"
+    )
+    assert (
+        'VIRTUAL_ENV="$tmp/$name" uv pip install -q --refresh --no-config'
+        ' "$name==$version"'
+    ) in script
+    assert "seq 1 10" in script
+    assert "sleep 30" in script
+    assert "-eq 10" in script
+    assert "exit 1" in script
+    assert "git+" not in script
+    assert '"$tmp/$name/bin/python" -c "import $module"' in script
+    plain = _ci_tasks(_root(tmp_path / "plain", "python-lib"))["tasks"]
+    plain_task = plain["external-install"]  # type: ignore[index]
+    assert "git+" in "\n".join(plain_task["cmds"])
+    assert "PyPI" not in plain_task["desc"]
