@@ -708,17 +708,26 @@ def test_s6_4_2_2_ci_tasks_are_described_and_not_internal(tmp_path: Path) -> Non
         assert "internal" not in tasks[name], name  # type: ignore[operator]
 
 
-def test_s6_4_2_3_devops_is_uvx_unless_the_workspace_has_the_member(
-    tmp_path: Path,
-) -> None:
-    uvx = _ci_tasks(_root(tmp_path / "a", "python-lib"))["vars"]["DEVOPS"]  # type: ignore[index]
-    assert uvx == (
-        'uvx --from "rn-forge-devops @ git+https://github.com/rn-forge/pykit'
-        '@rn-forge-devops-v0.2.0#subdirectory=packages/rn-forge-devops" '
-        "rn-forge-devops"
+def test_s6_7_3_1_devops_is_kiln_devops(tmp_path: Path) -> None:
+    expected = archetypes.kiln_command(archetypes.KILN_REF).replace(
+        " kiln", " kiln-devops"
     )
-    root = _root(tmp_path / "b", "python-lib")
-    config = root / ".rn-forge" / "kiln" / "config.toml"
+    assert expected.endswith("@" + archetypes.KILN_REF + '" kiln-devops')
+    for archetype in ARCHETYPES:
+        root = _root(tmp_path / archetype, archetype)
+        assert _ci_tasks(root)["vars"]["DEVOPS"] == expected, archetype  # type: ignore[index]
+    pinned = _root(tmp_path / "pinned", extra='\n[kiln]\nref = "v9.9.9"\n')
+    assert _ci_tasks(pinned)["vars"]["DEVOPS"] == (  # type: ignore[index]
+        'uvx --from "rn-forge-kiln @ git+https://github.com/rn-forge/kiln@v9.9.9" '
+        "kiln-devops"
+    )
+    own = _root(
+        tmp_path / "own",
+        extra='\n[archetype."python-tool"]\nmodule = "rn_forge.kiln"\n',
+    )
+    assert _ci_tasks(own)["vars"]["DEVOPS"] == "uv run kiln-devops"  # type: ignore[index]
+    member = _root(tmp_path / "member", "python-lib")
+    config = member / ".rn-forge" / "kiln" / "config.toml"
     config.write_text(
         config.read_text(encoding="utf-8").replace(
             '["packages/alpha", "packages/beta"]',
@@ -726,7 +735,7 @@ def test_s6_4_2_3_devops_is_uvx_unless_the_workspace_has_the_member(
         ),
         encoding="utf-8",
     )
-    assert _ci_tasks(root)["vars"]["DEVOPS"] == "uv run rn-forge-devops"  # type: ignore[index]
+    assert _ci_tasks(member)["vars"]["DEVOPS"] == expected  # type: ignore[index]
 
 
 def test_s6_4_2_2_ci_tasks_pass_task_layout_and_list(tmp_path: Path) -> None:
@@ -1378,10 +1387,9 @@ def test_s4_12_2_3_only_python_lib_has_the_pipeline_tasks(
     if archetype == "python-lib":
         assert others == CI_PIPELINE_TASKS
         assert not any("internal" in document["tasks"][k] for k in others)
-        assert "DEVOPS" in document["vars"]
     else:
         assert others == set()
-        assert "vars" not in document
+    assert "DEVOPS" in document["vars"]
 
 
 @pytest.mark.parametrize("key", [f"ci:{name}" for name in CI_LINT_CHECKS])

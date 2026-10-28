@@ -254,7 +254,7 @@
     },
     "tasks/ci.yml": {
       "begin_marker": null,
-      "content_hash": "c13d41ad393ee090970e6f40a3f2a5bb0495ef73a8a3da5d7e993fb178f3eef9",
+      "content_hash": "57af9d5e4c7ca81df1b47617603b92ce0103f192acf78a4dc1d38ddb21819d54",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/ci.yml"
@@ -275,7 +275,7 @@
     },
     "tasks/python.yml": {
       "begin_marker": null,
-      "content_hash": "c73ce7a995492a17941715ebea0f0e680c16f106cf174e3e2cf9a8c6b89180c8",
+      "content_hash": "50ecc19f966379a4991c97b793e0daa711dc98a213380724280730dfc4120b6b",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/python.yml"

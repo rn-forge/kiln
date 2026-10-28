@@ -8,10 +8,10 @@ version: "3"
 # are public tasks, not `internal`: a workflow step runs them from the command
 # line, which go-task refuses for an internal task. They are CI's, not a
 # developer's; the ten root verbs do not change.
-
+{% endif %}
 vars:
   DEVOPS: '[[ devops ]]'
-{% endif %}
+
 tasks:
   lint:workflows:
     desc: Fail on a workflow security finding (zizmor) or a workflow syntax error (actionlint).

@@ -51,7 +51,6 @@ RN_FORGE_TAGS = {
     "rn-forge-django": "rn-forge-django-v0.5.1",
     "rn-forge-fastapi": "rn-forge-fastapi-v0.3.2",
     "rn-forge-sqlalchemy": "rn-forge-sqlalchemy-v0.2.1",
-    "rn-forge-devops": "rn-forge-devops-v0.2.0",
 }
 """pykit's release tags, read from pykit on 2026-10-25. A requirement's floor is its tag's version
 ([ADR-0018](https://github.com/rn-forge/kiln/blob/main/docs/adr/ADR-0018.md))."""
@@ -60,9 +59,9 @@ KILN_REF = "feature/v1"
 """The ref `kiln new` and `kiln init` pin. F7.2's release-1 cut makes it `v<version>`."""
 
 
-def kiln_command(ref: str) -> str:
-    """The command that runs kiln at *ref*, in its own environment."""
-    return f'uvx --from "rn-forge-kiln @ {KILN_GIT}@{ref}" kiln'
+def kiln_command(ref: str, script: str = "kiln") -> str:
+    """The command that runs kiln's *script* at *ref*, in its own environment."""
+    return f'uvx --from "rn-forge-kiln @ {KILN_GIT}@{ref}" {script}'
 
 
 _MANIFEST = "archetype.toml"

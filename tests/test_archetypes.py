@@ -203,7 +203,6 @@ def test_s7_1_1_1_every_tag_is_pinned() -> None:
         "rn-forge-django",
         "rn-forge-fastapi",
         "rn-forge-sqlalchemy",
-        "rn-forge-devops",
     }
     for key, tag in archetypes.RN_FORGE_TAGS.items():
         assert re.fullmatch(rf"{key}-v\d+\.\d+\.\d+", tag)
@@ -231,11 +230,8 @@ def test_s7_1_1_2_kiln_takes_pykit_by_tag() -> None:
         assert re.search(rf"@{name.group(0)}-v\d+\.\d+\.\d+#", requirement), requirement
 
 
-def test_s6_4_2_8_devops_is_pinned_and_in_no_archetype() -> None:
-    assert archetypes.RN_FORGE_TAGS["rn-forge-devops"] == "rn-forge-devops-v0.2.0"
-    for name in archetypes.shipped():
-        dependencies = archetypes.load(name).dependencies
-        assert "rn-forge-devops" not in (*dependencies.required, *dependencies.allowed)
+def test_s6_7_3_2_devops_is_not_pinned() -> None:
+    assert "rn-forge-devops" not in archetypes.RN_FORGE_TAGS
 
 
 @pytest.mark.parametrize("name", PYTHON_ARCHETYPES)

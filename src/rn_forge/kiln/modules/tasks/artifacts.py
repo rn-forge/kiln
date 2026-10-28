@@ -10,7 +10,7 @@ from rn_forge.commons.generation.templated import TemplateArtifact, render_artif
 from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
-from rn_forge.kiln.archetypes import KILN_REF, PYKIT_GIT, RN_FORGE_TAGS, kiln_command
+from rn_forge.kiln.archetypes import KILN_REF, RN_FORGE_TAGS, kiln_command
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs.config import DocsConfig
 from rn_forge.kiln.modules.python.artifacts import root_package
@@ -79,22 +79,15 @@ def render(config: KilnConfig) -> list[Artifact]:
                 ", ".join(sorted(known)),
             )
 
-    devops_name = "rn-forge-devops"
-    if devops_name in packages:
-        devops = f"uv run {devops_name}"
-    else:
-        source = (
-            f"{devops_name} @ {PYKIT_GIT}@{RN_FORGE_TAGS[devops_name]}"
-            f"#subdirectory=packages/{devops_name}"
-        )
-        devops = f'uvx --from "{source}" {devops_name}'
-
-    # Follows `devops`' rule: kiln's own repository runs its working tree.
+    # Kiln's own repository runs its working tree.
     pin = getattr(config.document, "kiln", None)
+    ref = pin.ref if pin is not None else KILN_REF
     if config.module == "rn_forge.kiln":
         kiln = "uv run kiln"
+        devops = "uv run kiln-devops"
     else:
-        kiln = kiln_command(pin.ref if pin is not None else KILN_REF)
+        kiln = kiln_command(ref)
+        devops = kiln_command(ref, "kiln-devops")
 
     context: dict[str, object] = {
         "devops": devops,

@@ -4,6 +4,9 @@ version: "3"
 # The CI module's check on the workflows it generates (zizmor and actionlint),
 # internal, run by `lint`.
 
+vars:
+  DEVOPS: 'uv run kiln-devops'
+
 tasks:
   lint:workflows:
     desc: Fail on a workflow security finding (zizmor) or a workflow syntax error (actionlint).
