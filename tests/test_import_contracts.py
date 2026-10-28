@@ -49,6 +49,8 @@ def test_s4_7_1_1_three_contracts() -> None:
         "render-free-checks",
         "concern-modules-are-independent",
         "documents-come-from-rn-forge",
+        "devops-core-has-no-adapter",
+        "kiln-never-imports-devops",
     }
 
 
@@ -75,3 +77,29 @@ def test_s4_7_1_4_task_lint_runs_lint_imports() -> None:
     """`task lint` runs `lint-imports`."""
     lines = (REPO / "tasks" / "python.yml").read_text(encoding="utf-8").splitlines()
     assert "- uv run lint-imports" in [line.strip() for line in lines]
+
+
+def test_s6_7_2_4_devops_contracts_exist() -> None:
+    """The planner's two contracts exist, with the modules F6.7 names."""
+    assert _lines("devops-core-has-no-adapter", "source_modules") == [
+        "rn_forge.kiln.devops.ci"
+    ]
+    assert _lines("devops-core-has-no-adapter", "forbidden_modules") == [
+        "rn_forge.kiln.devops.uv",
+        "rn_forge.kiln.devops.github",
+    ]
+    assert _lines("kiln-never-imports-devops", "source_modules") == [
+        f"rn_forge.kiln.{m}"
+        for m in (
+            "archetypes",
+            "checks",
+            "commands",
+            "config",
+            "doctor",
+            "main",
+            "modules",
+        )
+    ]
+    assert _lines("kiln-never-imports-devops", "forbidden_modules") == [
+        "rn_forge.kiln.devops"
+    ]

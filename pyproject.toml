@@ -25,12 +25,14 @@ dependencies = [
     "rn-forge-commons[pydantic,markdown,templates] @ git+https://github.com/rn-forge/pykit@rn-forge-commons-v0.7.0#subdirectory=packages/rn-forge-commons",
     "rn-forge-cli @ git+https://github.com/rn-forge/pykit@rn-forge-cli-v0.1.1#subdirectory=packages/rn-forge-cli",
     "rn-forge-tooling @ git+https://github.com/rn-forge/pykit@rn-forge-tooling-v0.3.0#subdirectory=packages/rn-forge-tooling",
+    "packaging>=24",
     # The docs checks read `exclude_docs` the way MkDocs does, with its matcher.
     "pathspec>=1.1",
 ]
 
 [project.scripts]
 kiln = "rn_forge.kiln.main:app"
+kiln-devops = "rn_forge.kiln.devops.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/rn-forge/kiln"

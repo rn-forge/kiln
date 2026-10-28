@@ -1132,6 +1132,7 @@ name = "rn-forge-kiln"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "packaging" },
     { name = "pathspec" },
     { name = "rn-forge-cli" },
     { name = "rn-forge-commons", extra = ["markdown", "pydantic", "templates"] },
@@ -1161,6 +1162,7 @@ docs = [
 
 [package.metadata]
 requires-dist = [
+    { name = "packaging", specifier = ">=24" },
     { name = "pathspec", specifier = ">=1.1" },
     { name = "rn-forge-cli", git = "https://github.com/rn-forge/pykit?subdirectory=packages%2Frn-forge-cli&rev=rn-forge-cli-v0.1.1" },
     { name = "rn-forge-commons", extras = ["pydantic", "markdown", "templates"], git = "https://github.com/rn-forge/pykit?subdirectory=packages%2Frn-forge-commons&rev=rn-forge-commons-v0.7.0" },

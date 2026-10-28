@@ -62,6 +62,7 @@ nav:
     - Recovering from drift: runbooks/recovering-from-drift.md
   - Reference:
     - reference/index.md
+    - kiln-devops subcommands: reference/kiln-devops.md
     - Python API: reference/python-api.md
     - The standard repository: reference/standard-repo.md
   - Releases: releases/index.md

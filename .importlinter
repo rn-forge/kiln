@@ -91,6 +91,34 @@ ignore_imports =
     rn_forge.kiln.modules.instructions.artifacts -> rn_forge.kiln.modules.cicd.config
     rn_forge.kiln.modules.instructions.artifacts -> rn_forge.kiln.modules.docs.config
 
+; The fifth and sixth contracts are kiln ADR-0017's: the CI planner,
+; `rn_forge.kiln.devops`, keeps its core (`ci`) free of the uv and GitHub
+; adapters, and kiln's own code never imports it, since generated tasks reach it
+; only as the `kiln-devops` command line.
+
+[importlinter:contract:devops-core-has-no-adapter]
+name = the planner core imports no adapter
+type = forbidden
+source_modules =
+    rn_forge.kiln.devops.ci
+forbidden_modules =
+    rn_forge.kiln.devops.uv
+    rn_forge.kiln.devops.github
+
+[importlinter:contract:kiln-never-imports-devops]
+name = kiln reaches the planner only as a command line
+type = forbidden
+source_modules =
+    rn_forge.kiln.archetypes
+    rn_forge.kiln.checks
+    rn_forge.kiln.commands
+    rn_forge.kiln.config
+    rn_forge.kiln.doctor
+    rn_forge.kiln.main
+    rn_forge.kiln.modules
+forbidden_modules =
+    rn_forge.kiln.devops
+
 ; kiln reads YAML, TOML and Markdown through rn-forge-commons. A direct
 ; parser import is how kiln once shipped an undeclared PyYAML (F7.3).
 [importlinter:contract:documents-come-from-rn-forge]
