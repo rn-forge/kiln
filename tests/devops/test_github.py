@@ -37,3 +37,8 @@ def test_s6_7_2_tag_ref_is_unsupported(event: str) -> None:
 def test_s6_7_2_unsupported_event() -> None:
     with pytest.raises(ValueError, match="unsupported event"):
         github.sonar_branch("schedule", "branch", "main")
+
+
+def test_s6_7_4_3_a_schedule_trigger_raises() -> None:
+    with pytest.raises(ValueError):
+        github.sonar_branch("schedule", "branch", "main")

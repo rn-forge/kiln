@@ -738,6 +738,15 @@ def test_s6_7_3_1_devops_is_kiln_devops(tmp_path: Path) -> None:
     assert _ci_tasks(member)["vars"]["DEVOPS"] == expected  # type: ignore[index]
 
 
+def test_s6_7_4_2_sonar_target_is_a_public_task_everywhere(tmp_path: Path) -> None:
+    for archetype in ARCHETYPES:
+        task = _ci_tasks(_root(tmp_path / archetype, archetype))["tasks"][  # type: ignore[index]
+            "sonar-target"
+        ]
+        assert task["cmds"] == ["{{.DEVOPS}} sonar-target"], archetype
+        assert "internal" not in task, archetype
+
+
 def test_s6_4_2_2_ci_tasks_pass_task_layout_and_list(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-lib")
     cycle.apply(root, home=tmp_path / "home")
@@ -1383,7 +1392,12 @@ def test_s4_12_2_3_only_python_lib_has_the_pipeline_tasks(
     root = _s4_12_1_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     document = _load(root, "tasks/ci.yml")
-    others = {k for k in document["tasks"] if not k.startswith("lint:")}
+    assert "sonar-target" in document["tasks"]
+    others = {
+        k
+        for k in document["tasks"]
+        if not k.startswith("lint:") and k != "sonar-target"
+    }
     if archetype == "python-lib":
         assert others == CI_PIPELINE_TASKS
         assert not any("internal" in document["tasks"][k] for k in others)

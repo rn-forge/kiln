@@ -345,16 +345,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-          if [ "$EVENT_NAME" = pull_request ]; then
-            printf 'branch-arg=\n' >> "$GITHUB_OUTPUT"
-          elif [ "$REF_TYPE" = tag ]; then
-            printf '%s\n' "Sonar analyses branches, not tags: $REF_NAME" >&2
-            exit 1
-          else
-            printf 'branch-arg=-Dsonar.branch.name=%s\n' "$REF_NAME" >> "$GITHUB_OUTPUT"
-          fi
+        run: task ci:sonar-target >> "$GITHUB_OUTPUT"
 
       - name: Test with coverage
         run: task test:coverage

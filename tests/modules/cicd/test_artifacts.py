@@ -469,6 +469,20 @@ def test_s6_3_3_ref_text_reaches_run_only_through_env(tmp_path: Path) -> None:
             assert "github.head_ref" not in run, root.name
 
 
+def test_s6_7_4_1_the_target_step_is_a_task_call(tmp_path: Path) -> None:
+    for root in _ci_ok_roots(tmp_path):
+        if root.name == "nosonar":
+            continue
+        step = next(s for s in _sonar_steps(root) if s.get("id") == "target")
+        assert step["name"] == "Resolve the analysis target", root.name
+        assert step["env"] == {
+            "EVENT_NAME": "${{ github.event_name }}",
+            "REF_TYPE": "${{ github.ref_type }}",
+            "REF_NAME": "${{ github.ref_name }}",
+        }, root.name
+        assert step["run"] == 'task ci:sonar-target >> "$GITHUB_OUTPUT"', root.name
+
+
 def test_s6_3_8_sonar_runs_only_on_a_pull_request_or_main(tmp_path: Path) -> None:
     for root in _ci_ok_roots(tmp_path):
         if root.name == "nosonar":

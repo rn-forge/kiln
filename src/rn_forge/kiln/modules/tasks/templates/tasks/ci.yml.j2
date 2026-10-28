@@ -20,7 +20,12 @@ tasks:
 {% if overrides.get("ci:lint:workflows") %}      - [[ overrides["ci:lint:workflows"] ]]
 {% else %}      - uv run zizmor --offline .github
       - uv run actionlint
-{% endif %}{% if workspace %}
+{% endif %}
+  sonar-target:
+    desc: "CI only: print the Sonar branch argument for this run as a $GITHUB_OUTPUT line"
+    cmds:
+      - '{{.DEVOPS}} sonar-target'
+{% if workspace %}
   plan:
     desc: "CI only: print the plan's outputs for $GITHUB_OUTPUT"
     silent: true

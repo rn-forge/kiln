@@ -14,3 +14,8 @@ tasks:
     cmds:
       - uv run zizmor --offline .github
       - uv run actionlint
+
+  sonar-target:
+    desc: "CI only: print the Sonar branch argument for this run as a $GITHUB_OUTPUT line"
+    cmds:
+      - '{{.DEVOPS}} sonar-target'
