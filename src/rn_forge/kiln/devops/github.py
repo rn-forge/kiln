@@ -115,6 +115,7 @@ def publish_commands(
     files: Sequence[str],
     draft: str | None,
     tagged: bool,
+    notes: str | None = None,
 ) -> list[list[str]]:
     """Return the `gh` commands that publish `tag`, or `[]` when it is already published.
 
@@ -130,6 +131,8 @@ def publish_commands(
         files: The assets to upload, in order.
         draft: The result of `release_draft(tag)`.
         tagged: The result of `remote_tag_exists(tag)`.
+        notes: A file holding the release notes. The release is then not marked
+            "Latest"; without it, GitHub generates the notes.
     """
     if draft == "false":
         return []
@@ -137,9 +140,13 @@ def publish_commands(
     if draft == "true":
         commands.append(["gh", "release", "delete", tag, "--yes"])
     where = ["--verify-tag"] if tagged else ["--target", target]
+    text = (
+        ["--generate-notes"]
+        if notes is None
+        else ["--notes-file", notes, "--latest=false"]
+    )
     commands.append(
-        ["gh", "release", "create", tag, *files, *where]
-        + ["--title", title, "--generate-notes"]
+        ["gh", "release", "create", tag, *files, *where] + ["--title", title, *text]
     )
     return commands
 

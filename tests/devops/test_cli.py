@@ -164,6 +164,20 @@ def test_s6_7_5_3_release_publish_replaces_a_draft_and_prints_nothing(
     ]  # fmt: skip
 
 
+def test_s7_6_3_2_release_publish_passes_notes_file_through(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = _release_stubs(monkeypatch, None, False)
+    argv = ["release-publish", "v1", "--title", "T", "--target", "abc"]
+    assert cli.main([*argv, "--notes-file", "n.md", "a.whl"]) == 0
+    assert calls == [
+        [
+            "gh", "release", "create", "v1", "a.whl", "--target", "abc",
+            "--title", "T", "--notes-file", "n.md", "--latest=false",
+        ]
+    ]  # fmt: skip
+
+
 def test_s6_7_5_3_release_publish_of_a_published_release_runs_nothing(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

@@ -83,3 +83,13 @@ def test_s6_7_5_2_publish_commands_covers_every_case() -> None:
         ]
     ]  # fmt: skip
     assert call("true", False)[0][:3] == ["gh", "release", "delete"]
+
+
+def test_s7_6_3_1_publish_commands_with_notes_are_not_latest() -> None:
+    files = ["dist/a.whl"]
+    notes = ["--title", "T", "--notes-file", "n.md", "--latest=false"]
+    for tagged, where in ((True, ["--verify-tag"]), (False, ["--target", "abc"])):
+        commands = github.publish_commands(
+            "v1", "T", "abc", files, None, tagged, notes="n.md"
+        )
+        assert commands == [["gh", "release", "create", "v1", *files, *where, *notes]]

@@ -51,6 +51,7 @@ def _parser() -> argparse.ArgumentParser:
     publish.add_argument("tag", metavar="TAG")
     publish.add_argument("--title", required=True)
     publish.add_argument("--target", required=True, metavar="SHA")
+    publish.add_argument("--notes-file", default=None, metavar="FILE")
     publish.add_argument("files", nargs="+", metavar="FILE")
     changelog = commands.add_parser(
         "notes", help="print a version's section of a changelog"
@@ -74,7 +75,7 @@ def _release(args: argparse.Namespace) -> int:
             github.already_published(tag)
         return 0
     commands = github.publish_commands(
-        tag, args.title, args.target, args.files, draft, tagged
+        tag, args.title, args.target, args.files, draft, tagged, args.notes_file
     )
     if not commands:
         github.already_published(tag)

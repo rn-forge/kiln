@@ -1264,11 +1264,26 @@ def test_s6_7_5_5_lib_publish_calls_release_publish(tmp_path: Path) -> None:
     assert "continue" in publish
     assert (
         '{{.DEVOPS}} release-publish "$name-v$version" --title "$name v$version"'
-        ' --target "$GITHUB_SHA" dist/"$name"/*'
+        ' --target "$GITHUB_SHA" --notes-file "$notes" dist/"$name"/*'
     ) in publish.replace('"$tag"', '"$name-v$version"')
     assert "gh release" not in publish
     for name in ("release-state", "release-source"):
         assert name not in tasks
+
+
+def test_s7_6_3_3_lib_publish_carries_the_changelog(tmp_path: Path) -> None:
+    tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
+    publish = "\n".join(tasks["release-publish"]["cmds"])  # type: ignore[index]
+    assert 'notes="$(mktemp)"' in publish
+    assert '{{.DEVOPS}} notes "$dir/CHANGELOG.md" "$version" > "$notes"' in publish
+    assert (
+        '{{.DEVOPS}} release-publish "$name-v$version" --title "$name v$version"'
+        ' --target "$GITHUB_SHA" --notes-file "$notes" dist/"$name"/*'
+    ) in publish.replace('"$tag"', '"$name-v$version"')
+    assert "--generate-notes" not in publish
+    for archetype in ("python-app", "python-tool"):
+        single = _ci_tasks(_root(tmp_path / archetype, archetype))["tasks"]
+        assert "--notes-file" not in "\n".join(single["release-publish"]["cmds"])  # type: ignore[index]
 
 
 def test_s6_7_5_4_single_package_release_tasks(tmp_path: Path) -> None:

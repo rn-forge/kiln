@@ -129,7 +129,10 @@ tasks:
             echo "Nothing to publish for $tag, skipping."
             continue
           fi
-          {{.DEVOPS}} release-publish "$tag" --title "$name v$version" --target "$GITHUB_SHA" dist/"$name"/*
+          dir="$(uv workspace dir --package "$name")"
+          notes="$(mktemp)"
+          {{.DEVOPS}} notes "$dir/CHANGELOG.md" "$version" > "$notes"
+          {{.DEVOPS}} release-publish "$tag" --title "$name v$version" --target "$GITHUB_SHA" --notes-file "$notes" dist/"$name"/*
         done
 
   external-install:

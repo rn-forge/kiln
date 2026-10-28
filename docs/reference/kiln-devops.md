@@ -21,7 +21,7 @@ subcommands load no workspace and run in any repository.
 | `sonar-target` | Prints the `branch-arg=` line for the Sonar scan, from the `EVENT_NAME`, `REF_TYPE` and `REF_NAME` environment variables. |
 | `release-state TAG` | Prints the release's state for `TAG` as `$GITHUB_OUTPUT` lines. |
 | `release-source TAG` | Checks out `TAG` when `origin` has it, and prints the checked-out commit. |
-| `release-publish TAG --title TITLE --target SHA FILE...` | Publishes the GitHub release for `TAG` unless it is already published. |
+| `release-publish TAG --title TITLE --target SHA [--notes-file FILE] FILE...` | Publishes the GitHub release for `TAG` unless it is already published. |
 | `notes CHANGELOG VERSION` | Prints the body of the `## [VERSION]` section of a Keep a Changelog file, up to the next `## [` heading. The heading is `## [VERSION]` alone or followed by ` - <date>`; the version matches exactly. A missing heading or an empty body prints the reason to stderr and exits 1. |
 
 ## The release subcommands
@@ -50,8 +50,10 @@ exits 0. A draft is deleted first (`gh release delete TAG --yes`). Then it runs
 `gh release create TAG FILE... --verify-tag --title TITLE --generate-notes` when
 the tag exists, and
 `gh release create TAG FILE... --target SHA --title TITLE --generate-notes`
-otherwise. It prints nothing. The release, not the tag, is the record of what
-shipped, and `gh release create` makes the tag at `--target`.
+otherwise. With `--notes-file FILE`, `--generate-notes` becomes
+`--notes-file FILE --latest=false`. It prints nothing. The release, not the tag,
+is the record of what shipped, and `gh release create` makes the tag at
+`--target`.
 
 ## What it discovers
 
