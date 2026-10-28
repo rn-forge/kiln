@@ -2007,3 +2007,34 @@ def test_s4_12_6_11_without_mkdocs_kiln_yml_still_renders(tmp_path: Path) -> Non
     assert {"task": "kiln:doctor"} in cmds
     assert not (root / "tasks/docs.yml").exists()
     assert _codes(root) == []
+
+
+TWINE = (
+    'uvx --from twine==6.2.0 twine check --strict dist/"$name"/*.whl'
+    ' dist/"$name"/*.tar.gz'
+)
+
+
+def _release_script(root: Path, task: str) -> str:
+    return "\n".join(_ci_tasks(root)["tasks"][task]["cmds"])  # type: ignore[index]
+
+
+def test_s7_6_4_6_release_tasks_upload(tmp_path: Path) -> None:
+    pypi = _root(tmp_path / "pypi", "python-lib", extra='\n[ci]\nrelease = "pypi"\n')
+    build = _release_script(pypi, "release-build")
+    publish = _release_script(pypi, "release-publish")
+    assert build.count("uv build") == 3
+    assert build.count(TWINE) == build.count("uv build")
+    for position in [m.start() for m in re.finditer("uv build", build)]:
+        assert TWINE in build[position:].split("uv export")[0]
+    testpypi = build[build.index('"${TESTPYPI:-}" = true') :]
+    assert testpypi.index("uv build") < testpypi.index("release-state")
+    assert "continue" in testpypi.split("release-state")[0]
+    assert "upload=pypi" in publish
+    assert 'if [ "${TESTPYPI:-}" = true ]; then upload=testpypi; fi' in publish
+    assert '--notes-file "$notes" --upload "$upload" dist/"$name"/*' in publish
+    plain = _root(tmp_path / "plain", "python-lib")
+    for task in ("release-build", "release-publish"):
+        text = _release_script(plain, task)
+        for forbidden in ("twine", "TESTPYPI", "--upload", "upload="):
+            assert forbidden not in text, (task, forbidden)

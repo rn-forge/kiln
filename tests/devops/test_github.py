@@ -93,3 +93,79 @@ def test_s7_6_3_1_publish_commands_with_notes_are_not_latest() -> None:
             "v1", "T", "abc", files, None, tagged, notes="n.md"
         )
         assert commands == [["gh", "release", "create", "v1", *files, *where, *notes]]
+
+
+PYPI_FILES = ["dist/a/a.whl", "dist/a/a.cdx.json", "dist/a/a.tar.gz"]
+
+
+def test_s7_6_4_7_upload_to_pypi_when_not_on_the_index() -> None:
+    assert github.upload_commands("pypi", "a", "1.0", PYPI_FILES, False) == [
+        [
+            "uv", "publish", "--trusted-publishing", "always",
+            "dist/a/a.whl", "dist/a/a.tar.gz",
+        ]
+    ]  # fmt: skip
+
+
+def test_s7_6_4_8_upload_to_testpypi_names_the_index() -> None:
+    assert github.upload_commands("testpypi", "a", "1.0", PYPI_FILES, False) == [
+        [
+            "uv", "publish", "--trusted-publishing", "always",
+            "--publish-url", "https://test.pypi.org/legacy/",
+            "dist/a/a.whl", "dist/a/a.tar.gz",
+        ]
+    ]  # fmt: skip
+
+
+@pytest.mark.parametrize("index", ["pypi", "testpypi"])
+def test_s7_6_4_9_nothing_is_uploaded_when_the_index_has_the_version(
+    index: str,
+) -> None:
+    assert github.upload_commands(index, "a", "1.0", PYPI_FILES, True) == []
+
+
+def test_s7_6_4_10_only_wheels_and_sdists_are_uploaded() -> None:
+    (command,) = github.upload_commands(
+        "pypi", "a", "1.0", ["x.cdx.json", "x.whl", "notes.md"], False
+    )
+    assert command[-1:] == ["x.whl"]
+    assert not any(part.endswith((".cdx.json", ".md")) for part in command)
+
+
+class _Response:
+    status = 200
+
+    def __enter__(self) -> "_Response":
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        return None
+
+
+def test_s7_6_4_11_on_index_reads_the_json_endpoint(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    urls: list[str] = []
+
+    def urlopen(url: str, **kwargs: object) -> _Response:
+        urls.append(url)
+        return _Response()
+
+    monkeypatch.setattr(github.urllib.request, "urlopen", urlopen)
+    assert github.on_index("pypi.org", "a", "1.0") is True
+    assert urls == ["https://pypi.org/pypi/a/1.0/json"]
+
+
+@pytest.mark.parametrize(("code", "expected"), [(404, False), (500, None)])
+def test_s7_6_4_12_on_index_is_false_on_404_and_raises_otherwise(
+    monkeypatch: pytest.MonkeyPatch, code: int, expected: bool | None
+) -> None:
+    def urlopen(url: str, **kwargs: object) -> _Response:
+        raise github.urllib.error.HTTPError(url, code, "x", None, None)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(github.urllib.request, "urlopen", urlopen)
+    if expected is None:
+        with pytest.raises(github.urllib.error.HTTPError):
+            github.on_index("test.pypi.org", "a", "1.0")
+    else:
+        assert github.on_index("test.pypi.org", "a", "1.0") is expected

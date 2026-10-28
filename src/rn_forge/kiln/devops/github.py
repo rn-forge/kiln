@@ -6,7 +6,10 @@ import json
 import os
 import subprocess
 import sys
+import urllib.error
+import urllib.request
 from collections.abc import Mapping, Sequence
+from typing import Literal
 
 
 def output_lines(outputs: Mapping[str, object]) -> list[str]:
@@ -149,6 +152,48 @@ def publish_commands(
         ["gh", "release", "create", tag, *files, *where] + ["--title", title, *text]
     )
     return commands
+
+
+def upload_commands(
+    index: Literal["pypi", "testpypi"],
+    name: str,
+    version: str,
+    files: Sequence[str],
+    on_index: bool,
+) -> list[list[str]]:
+    """Return the `uv publish` command that uploads `files` to `index`, or `[]` when it already has the version.
+
+    Only wheels and sdists are uploaded; any other file is ignored.
+
+    Args:
+        index: The index to upload to.
+        name: The package name.
+        version: The package version.
+        files: The built files, in order.
+        on_index: The result of `on_index` for `name` and `version`.
+    """
+    if on_index:
+        return []
+    command = ["uv", "publish", "--trusted-publishing", "always"]
+    if index == "testpypi":
+        command += ["--publish-url", "https://test.pypi.org/legacy/"]
+    return [command + [f for f in files if f.endswith((".whl", ".tar.gz"))]]
+
+
+def on_index(host: str, name: str, version: str) -> bool:
+    """Return whether the index at `host` (`pypi.org` or `test.pypi.org`) has `name` at `version`.
+
+    Raises:
+        urllib.error.URLError: For any answer other than 200 and 404.
+    """
+    url = f"https://{host}/pypi/{name}/{version}/json"
+    try:
+        with urllib.request.urlopen(url, timeout=30) as response:
+            return response.status == 200
+    except urllib.error.HTTPError as error:
+        if error.code == 404:
+            return False
+        raise
 
 
 def already_published(tag: str) -> None:

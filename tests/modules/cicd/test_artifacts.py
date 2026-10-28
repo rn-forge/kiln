@@ -1154,13 +1154,14 @@ def test_s6_4_7_6_ci_ok_needs_every_job_and_tolerates_a_skipped_release(
     assert step["if"] == f"{failed} || {cancelled}"
 
 
+@pytest.mark.parametrize("release", ["tag-exists", "pypi"])
 def test_s6_4_7_7_actionlint_passes_on_the_python_lib_workflows(
-    tmp_path: Path,
+    tmp_path: Path, release: str
 ) -> None:
     if shutil.which("actionlint") is None:
         pytest.skip("actionlint is not on PATH")
     for name, kwargs in (("on", {}), ("off", {"sonar": False})):
-        root = _root(tmp_path / name, "python-lib", **kwargs)  # type: ignore[arg-type]
+        root = _root(tmp_path / name, "python-lib", release=release, **kwargs)  # type: ignore[arg-type]
         cycle.apply(root, home=tmp_path / name / "home")
         result = subprocess.run(
             ["actionlint", ".github/workflows/ci.yml"],
@@ -2046,3 +2047,74 @@ def test_s4_11_8_4_actionlint_passes_on_every_run(tmp_path: Path) -> None:
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def _pypi_root(tmp_path: Path, archetype: str = "python-lib", **kwargs: object) -> Path:
+    return _root(tmp_path, archetype, release="pypi", **kwargs)  # type: ignore[arg-type]
+
+
+def _ci_text(root: Path) -> dict[str, object]:
+    return YamlUtils.load(_rendered(root)[".github/workflows/ci.yml"])
+
+
+def test_s7_6_4_1_dispatch_takes_testpypi(tmp_path: Path) -> None:
+    on = _ci_text(_pypi_root(tmp_path / "pypi"))["on"]
+    assert on["workflow_dispatch"] == {  # type: ignore[index]
+        "inputs": {
+            "testpypi": {
+                "type": "boolean",
+                "default": False,
+                "description": "Upload every package to TestPyPI; no tags or releases",
+            }
+        }
+    }
+    plain = _ci_text(_root(tmp_path / "plain", "python-lib"))["on"]
+    assert plain["workflow_dispatch"] == {}  # type: ignore[index]
+
+
+def test_s7_6_4_2_release_job_environment(tmp_path: Path) -> None:
+    release = _ci_jobs(_pypi_root(tmp_path))["release"]
+    assert release["environment"] == "${{ inputs.testpypi && 'testpypi' || 'pypi' }}"
+    assert release["permissions"] == RELEASE_PERMISSIONS
+    plain = _lib_jobs(tmp_path / "plain")["release"]
+    assert "environment" not in plain
+    push = "github.event_name == 'push' && github.ref == 'refs/heads/main'"
+    dispatch = "github.event_name == 'workflow_dispatch' && inputs.testpypi"
+    expected = str(plain["if"]).replace(push, f"(({push}) || ({dispatch}))")
+    assert f"(({push}) || ({dispatch}))" in str(release["if"])
+    assert release["if"] == expected
+
+
+def test_s7_6_4_3_release_steps_pass_testpypi(tmp_path: Path) -> None:
+    steps = _release_steps(_pypi_root(tmp_path))
+    expected = "${{ github.event_name == 'workflow_dispatch' && inputs.testpypi }}"
+    for name in ("Build releases", "Publish releases"):
+        step = steps[_step_index(steps, name)]
+        assert step["env"]["TESTPYPI"] == expected, name  # type: ignore[index]
+    provenance = steps[_step_index(steps, "Generate provenance")]
+    assert str(provenance["if"]).endswith(" && env.TESTPYPI != 'true'")
+    plain = _release_steps(_lib_root(tmp_path / "plain"))
+    for step in plain:
+        assert "TESTPYPI" not in str(step)
+
+
+def _lib_root(path: Path) -> Path:
+    return _root(path, "python-lib")
+
+
+def test_s7_6_4_4_pypi_needs_a_workspace(tmp_path: Path) -> None:
+    root = _pypi_root(tmp_path, "python-tool")
+    with pytest.raises(ValueError, match=r"ci\.release"):
+        _rendered(root)
+
+
+@pytest.mark.parametrize("sonar", [True, False])
+def test_s7_6_4_5_pypi_keeps_every_tag_exists_job(tmp_path: Path, sonar: bool) -> None:
+    plain = _ci_jobs(_root(tmp_path / "plain", "python-lib", sonar=sonar))
+    pypi = _ci_jobs(_pypi_root(tmp_path / "pypi", sonar=sonar))
+    assert list(pypi) == list(plain)
+    assert pypi["ci-ok"]["needs"] == plain["ci-ok"]["needs"]
+    for name in plain:
+        assert pypi[name].get("needs") == plain[name].get("needs"), name
+    assert "release" in pypi["ci-ok"]["needs"]  # type: ignore[operator]
+    assert "external-install" in pypi["ci-ok"]["needs"]  # type: ignore[operator]

@@ -21,7 +21,7 @@ subcommands load no workspace and run in any repository.
 | `sonar-target` | Prints the `branch-arg=` line for the Sonar scan, from the `EVENT_NAME`, `REF_TYPE` and `REF_NAME` environment variables. |
 | `release-state TAG` | Prints the release's state for `TAG` as `$GITHUB_OUTPUT` lines. |
 | `release-source TAG` | Checks out `TAG` when `origin` has it, and prints the checked-out commit. |
-| `release-publish TAG --title TITLE --target SHA [--notes-file FILE] FILE...` | Publishes the GitHub release for `TAG` unless it is already published. |
+| `release-publish TAG --title TITLE --target SHA [--notes-file FILE] [--upload {pypi,testpypi}] FILE...` | Publishes the GitHub release for `TAG` unless it is already published. |
 | `notes CHANGELOG VERSION` | Prints the body of the `## [VERSION]` section of a Keep a Changelog file, up to the next `## [` heading. The heading is `## [VERSION]` alone or followed by ` - <date>`; the version matches exactly. A missing heading or an empty body prints the reason to stderr and exits 1. |
 
 ## The release subcommands
@@ -54,6 +54,15 @@ otherwise. With `--notes-file FILE`, `--generate-notes` becomes
 `--notes-file FILE --latest=false`. It prints nothing. The release, not the tag,
 is the record of what shipped, and `gh release create` makes the tag at
 `--target`.
+
+With `--upload pypi`, a release that is not yet published first uploads the
+`*.whl` and `*.tar.gz` among the FILEs with
+`uv publish --trusted-publishing always`, unless
+`https://pypi.org/pypi/<name>/<version>/json` answers 200; `<name>` and
+`<version>` come from `TAG` (`<name>-v<version>`). A failed upload ends the
+subcommand before any `gh` command. With `--upload testpypi`, it does only the
+upload, to `https://test.pypi.org/legacy/` and checked against test.pypi.org: no
+release state is read and no `gh` command runs.
 
 ## What it discovers
 

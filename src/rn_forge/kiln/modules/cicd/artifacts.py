@@ -59,6 +59,7 @@ def render(config: KilnConfig) -> list[Artifact]:
 
     Raises:
         AppException: `ci.provider` is `ado`, which is reserved, or `ci.hooks.docs` is set without a docs site.
+        ValueError: `ci.release` is `pypi` outside a library workspace.
     """
     ci = _ci_config(config)
     if ci.provider == "ado":
@@ -66,6 +67,8 @@ def render(config: KilnConfig) -> list[Artifact]:
             "cicd.render: ci.provider = 'ado' is reserved for E8 and renders nothing yet"
         )
     docs = config.docs_profile == "mkdocs"
+    if ci.release == "pypi" and config.archetype != "python-lib":
+        raise ValueError("ci.release = 'pypi' needs a library workspace")
     if ci.hooks.docs and not docs:
         raise AppException(
             "cicd.render: ci.hooks.docs is set but nothing deploys Pages (docs profile is not mkdocs)"

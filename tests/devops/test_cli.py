@@ -222,3 +222,87 @@ def test_s7_6_2_8_cli_notes_exits_1_on_missing_version(
     captured = capsys.readouterr()
     assert "2.0.0" in captured.err
     assert captured.out == ""
+
+
+def _upload_stubs(
+    monkeypatch: pytest.MonkeyPatch,
+    draft: str | None,
+    tagged: bool,
+    on_index: bool,
+    upload_status: int = 0,
+) -> list[list[str]]:
+    calls: list[list[str]] = []
+
+    def run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        calls.append(command)
+        status = upload_status if command[0] == "uv" else 0
+        return subprocess.CompletedProcess(command, status)
+
+    def release_draft(tag: str) -> str | None:
+        calls.append(["release_draft", tag])
+        return draft
+
+    def remote_tag_exists(tag: str) -> bool:
+        calls.append(["remote_tag_exists", tag])
+        return tagged
+
+    def on_index_stub(host: str, name: str, version: str) -> bool:
+        calls.append(["on_index", host, name, version])
+        return on_index
+
+    monkeypatch.setattr(github, "release_draft", release_draft)
+    monkeypatch.setattr(github, "remote_tag_exists", remote_tag_exists)
+    monkeypatch.setattr(github, "on_index", on_index_stub)
+    monkeypatch.setattr(github.subprocess, "run", run)
+    return calls
+
+
+PUBLISH = ["release-publish", "pkg-a-v1.2.0", "--title", "T", "--target", "abc"]
+
+
+def test_s7_6_4_13_upload_pypi_runs_before_gh_release_create(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = _upload_stubs(monkeypatch, None, False, False)
+    assert cli.main([*PUBLISH, "--upload", "pypi", "a.whl", "a.cdx.json"]) == 0
+    commands = [c for c in calls if c[0] in ("uv", "gh")]
+    assert ["on_index", "pypi.org", "pkg-a", "1.2.0"] in calls
+    assert commands[0] == ["uv", "publish", "--trusted-publishing", "always", "a.whl"]
+    assert commands[1][:4] == ["gh", "release", "create", "pkg-a-v1.2.0"]
+    assert len(commands) == 2
+
+
+def test_s7_6_4_14_upload_pypi_skips_a_version_already_on_the_index(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = _upload_stubs(monkeypatch, None, False, True)
+    assert cli.main([*PUBLISH, "--upload", "pypi", "a.whl"]) == 0
+    assert [c[0] for c in calls if c[0] in ("uv", "gh")] == ["gh"]
+
+
+def test_s7_6_4_15_upload_pypi_leaves_a_published_release_alone(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = _upload_stubs(monkeypatch, "false", True, False)
+    assert cli.main([*PUBLISH, "--upload", "pypi", "a.whl"]) == 0
+    assert [c for c in calls if c[0] in ("uv", "gh", "on_index")] == []
+
+
+def test_s7_6_4_16_upload_testpypi_runs_no_gh_and_no_release_check(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = _upload_stubs(monkeypatch, "false", True, False)
+    assert cli.main([*PUBLISH, "--upload", "testpypi", "a.whl"]) == 0
+    assert ["on_index", "test.pypi.org", "pkg-a", "1.2.0"] in calls
+    assert [c[0] for c in calls if c[0] not in ("on_index",)] == ["uv"]
+    assert "--publish-url" in calls[-1]
+
+
+def test_s7_6_4_17_a_failed_upload_exits_before_any_gh_command(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = _upload_stubs(monkeypatch, None, False, False, upload_status=3)
+    with pytest.raises(SystemExit) as exit_info:
+        cli.main([*PUBLISH, "--upload", "pypi", "a.whl"])
+    assert exit_info.value.code == 3
+    assert [c for c in calls if c[0] == "gh"] == []

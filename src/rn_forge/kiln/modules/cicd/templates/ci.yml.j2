@@ -34,8 +34,14 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  workflow_dispatch: {}
-
+{% if release == "pypi" %}  workflow_dispatch:
+    inputs:
+      testpypi:
+        type: boolean
+        default: false
+        description: Upload every package to TestPyPI; no tags or releases
+{% else %}  workflow_dispatch: {}
+{% endif %}
 permissions:
   contents: read
 
@@ -361,17 +367,21 @@ jobs:
           args: >
             -Dsonar.qualitygate.wait=true
             ${{ steps.target.outputs.branch-arg }}
-{% endif %}{% if release == "tag-exists" and workspace %}
+{% endif %}{% if release != "none" and workspace %}
   # Tags created with GITHUB_TOKEN start no workflow, so every release is created
   # here, prerequisites first, only on a push to the default branch and after
   # the quality gate. A failed check blocks its package and every selected
   # package that depends on it; with Sonar on, it blocks the whole run.
   release:
     needs: [validate, plan, verify, postgres, smoke{% if sonar %}, sonar{% endif %}]
-    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.plan.outputs.release-order != '[]' && github.event_name == 'push' && github.ref == 'refs/heads/main'{% if sonar %} && needs.sonar.result == 'success'{% endif %} }}
+    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.plan.outputs.release-order != '[]' && {% if release == "pypi" %}((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.testpypi)){% else %}github.event_name == 'push' && github.ref == 'refs/heads/main'{% endif %}{% if sonar %} && needs.sonar.result == 'success'{% endif %} }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    permissions:
+{% if release == "pypi" %}    environment: ${{ inputs.testpypi && 'testpypi' || 'pypi' }}
+    # The provenance step's `if:` reads this; a step's own `env:` is not in scope there.
+    env:
+      TESTPYPI: ${{ github.event_name == 'workflow_dispatch' && inputs.testpypi }}
+{% endif %}    permissions:
       contents: write
       id-token: write
       attestations: write
@@ -397,14 +407,15 @@ jobs:
         id: build
         env:
           GH_TOKEN: ${{ github.token }}
-          SELECTED: ${{ needs.plan.outputs.release-order }}
+{% if release == "pypi" %}          TESTPYPI: ${{ github.event_name == 'workflow_dispatch' && inputs.testpypi }}
+{% endif %}          SELECTED: ${{ needs.plan.outputs.release-order }}
         run: task ci:release-build
 
       # Attested before anything is published, because the release, not the
       # tag, is the record: a failure here leaves nothing published, and a
       # rerun attests again. Skipped when every package was already released.
       - name: Generate provenance
-        if: steps.build.outputs.built != '0'
+        if: steps.build.outputs.built != '0'{% if release == "pypi" %} && env.TESTPYPI != 'true'{% endif %}
         uses: [[ pins["attest"].uses ]]@[[ pins["attest"].sha ]] # [[ pins["attest"].version ]]
         with:
           subject-path: |
@@ -415,7 +426,8 @@ jobs:
       - name: Publish releases
         env:
           GH_TOKEN: ${{ github.token }}
-          SELECTED: ${{ needs.plan.outputs.release-order }}
+{% if release == "pypi" %}          TESTPYPI: ${{ github.event_name == 'workflow_dispatch' && inputs.testpypi }}
+{% endif %}          SELECTED: ${{ needs.plan.outputs.release-order }}
         run: task ci:release-publish
 
   # Package checks resolve internal dependencies from the workspace, which
@@ -443,7 +455,7 @@ jobs:
         env:
           REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
         run: task ci:external-install
-{% elif release == "tag-exists" %}
+{% elif release != "none" %}
   release:
     needs: [validate{% if sonar %}, sonar{% endif %}]
     if: github.event_name == 'push' && github.ref_name == 'main'
@@ -507,8 +519,8 @@ jobs:
   # job that deploys Pages for a workspace: a root-only deploy landing after it
   # would remove the package sites, so there is no separate docs.yml.
   docs:
-    needs: [validate, plan{% if release == "tag-exists" %}, release{% endif %}]
-    if: ${{ !cancelled() && needs.validate.result == 'success' && {% if release == "tag-exists" %}needs.release.result != 'failure' && {% endif %}needs.plan.outputs.docs == 'true' && github.event_name == 'push' && github.ref_name == 'main' }}
+    needs: [validate, plan{% if release != "none" %}, release{% endif %}]
+    if: ${{ !cancelled() && needs.validate.result == 'success' && {% if release != "none" %}needs.release.result != 'failure' && {% endif %}needs.plan.outputs.docs == 'true' && github.event_name == 'push' && github.ref_name == 'main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     concurrency:
@@ -566,7 +578,7 @@ jobs:
   # the repo grows; this one does not. A skipped job (the fork-guarded scan, a
   # release on a pull request) is not a failure.
   ci-ok:
-    needs: [validate, dependency-review{% if workspace %}, plan, verify, postgres, smoke, suites{% endif %}{% if sonar %}, sonar{% endif %}{% if release == "tag-exists" %}, release{% if workspace %}, external-install{% endif %}{% endif %}{% if workspace and docs %}, docs{% endif %}{% for job in jobs %}, [[ job.name ]]{% endfor %}]
+    needs: [validate, dependency-review{% if workspace %}, plan, verify, postgres, smoke, suites{% endif %}{% if sonar %}, sonar{% endif %}{% if release != "none" %}, release{% if workspace %}, external-install{% endif %}{% endif %}{% if workspace and docs %}, docs{% endif %}{% for job in jobs %}, [[ job.name ]]{% endfor %}]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

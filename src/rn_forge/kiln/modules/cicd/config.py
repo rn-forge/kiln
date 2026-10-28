@@ -98,7 +98,7 @@ class CiConfig(StrictModel):
     provider: Literal["github", "ado"] = "github"
     """`ado` is reserved."""
     sonar: bool = True
-    release: Literal["tag-exists", "none"] = "tag-exists"
+    release: Literal["tag-exists", "pypi", "none"] = "tag-exists"
     doctor_full: Literal["default-branch", "every-run"] = "default-branch"
     """When CI runs `kiln doctor --full`: pushes to the default branch and
     dispatch, or every run."""

@@ -52,6 +52,7 @@ def _parser() -> argparse.ArgumentParser:
     publish.add_argument("--title", required=True)
     publish.add_argument("--target", required=True, metavar="SHA")
     publish.add_argument("--notes-file", default=None, metavar="FILE")
+    publish.add_argument("--upload", choices=["pypi", "testpypi"], default=None)
     publish.add_argument("files", nargs="+", metavar="FILE")
     changelog = commands.add_parser(
         "notes", help="print a version's section of a changelog"
@@ -61,10 +62,24 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _upload(args: argparse.Namespace) -> None:
+    name, _, version = args.tag.rpartition("-v")
+    host = "test.pypi.org" if args.upload == "testpypi" else "pypi.org"
+    on_index = github.on_index(host, name, version)
+    for command in github.upload_commands(
+        args.upload, name, version, args.files, on_index
+    ):
+        github.run(command)
+
+
 def _release(args: argparse.Namespace) -> int:
     tag: str = args.tag
     if args.command == "release-source":
         print(f"sha={github.release_source(tag)}")
+        return 0
+    upload: str | None = getattr(args, "upload", None)
+    if upload == "testpypi":
+        _upload(args)
         return 0
     draft = github.release_draft(tag)
     tagged = github.remote_tag_exists(tag)
@@ -79,6 +94,8 @@ def _release(args: argparse.Namespace) -> int:
     )
     if not commands:
         github.already_published(tag)
+    elif upload:
+        _upload(args)
     for command in commands:
         github.run(command)
     return 0

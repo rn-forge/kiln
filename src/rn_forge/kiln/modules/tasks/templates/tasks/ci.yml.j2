@@ -95,7 +95,14 @@ tasks:
         for name in $releasable; do
           version="$(uv version --package "$name" --short)"
           tag="$name-v$version"
-          state="$({{.DEVOPS}} release-state "$tag")"
+{% if release == "pypi" %}          if [ "${TESTPYPI:-}" = true ]; then
+            uv build --package "$name" --out-dir "dist/$name"
+            uvx --from twine==6.2.0 twine check --strict dist/"$name"/*.whl dist/"$name"/*.tar.gz
+            uv export --format cyclonedx1.5 --frozen --no-default-groups --package "$name" -q -o "dist/$name/$name.cdx.json"
+            built=$((built + 1))
+            continue
+          fi
+{% endif %}          state="$({{.DEVOPS}} release-state "$tag")"
           if grep -qx 'should-release=false' <<<"$state"; then
             echo "Release $tag is already published, skipping."
             continue
@@ -105,11 +112,13 @@ tasks:
             worktree=$(mktemp -d)
             git worktree add --detach "$worktree" FETCH_HEAD
             uv build --directory "$worktree" --package "$name" --out-dir "$GITHUB_WORKSPACE/dist/$name"
-            uv export --format cyclonedx1.5 --frozen --no-default-groups --directory "$worktree" --package "$name" -q -o "$GITHUB_WORKSPACE/dist/$name/$name.cdx.json"
+{% if release == "pypi" %}            uvx --from twine==6.2.0 twine check --strict dist/"$name"/*.whl dist/"$name"/*.tar.gz
+{% endif %}            uv export --format cyclonedx1.5 --frozen --no-default-groups --directory "$worktree" --package "$name" -q -o "$GITHUB_WORKSPACE/dist/$name/$name.cdx.json"
             git worktree remove "$worktree"
           else
             uv build --package "$name" --out-dir "dist/$name"
-            uv export --format cyclonedx1.5 --frozen --no-default-groups --package "$name" -q -o "dist/$name/$name.cdx.json"
+{% if release == "pypi" %}            uvx --from twine==6.2.0 twine check --strict dist/"$name"/*.whl dist/"$name"/*.tar.gz
+{% endif %}            uv export --format cyclonedx1.5 --frozen --no-default-groups --package "$name" -q -o "dist/$name/$name.cdx.json"
           fi
           built=$((built + 1))
         done
@@ -129,10 +138,12 @@ tasks:
             echo "Nothing to publish for $tag, skipping."
             continue
           fi
-          dir="$(uv workspace dir --package "$name")"
+{% if release == "pypi" %}          upload=pypi
+          if [ "${TESTPYPI:-}" = true ]; then upload=testpypi; fi
+{% endif %}          dir="$(uv workspace dir --package "$name")"
           notes="$(mktemp)"
           {{.DEVOPS}} notes "$dir/CHANGELOG.md" "$version" > "$notes"
-          {{.DEVOPS}} release-publish "$tag" --title "$name v$version" --target "$GITHUB_SHA" --notes-file "$notes" dist/"$name"/*
+          {{.DEVOPS}} release-publish "$tag" --title "$name v$version" --target "$GITHUB_SHA" --notes-file "$notes" {% if release == "pypi" %}--upload "$upload" {% endif %}dist/"$name"/*
         done
 
   external-install:
