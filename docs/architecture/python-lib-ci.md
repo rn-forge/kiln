@@ -12,7 +12,9 @@ A `python-lib` renders no `docs.yml`; `docs` is its one Pages deploy.
 
 Every step runs a `task`; no step calls `uv`, `pytest` or another wrapped tool
 directly, so a laptop and CI run the same commands. The planner is the
-`rn-forge-devops` console script, reached through `task ci:plan`.
+`kiln-devops` console script ([ADR-0017](../adr/ADR-0017.md)), reached through
+`task ci:plan`. The tasks run it with `uvx` from the `[kiln] ref` pin, so it is
+not in the workspace's lock; kiln's own repository runs it with `uv run`.
 
 ## Triggers
 

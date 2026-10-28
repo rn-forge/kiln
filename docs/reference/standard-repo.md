@@ -403,15 +403,16 @@ without rendering anything ([ADR-0006](../adr/ADR-0006.md)).
 
 Every archetype's CI follows one contract: the same triggers, gating, change
 plan, Sonar gate, default-branch-only release and `ci-ok`, whatever the stack,
-planned by `rn-forge-devops` ([ADR-0016](../adr/ADR-0016.md)). Only what runs
-under each `task` differs.
+planned by `kiln-devops` ([ADR-0016](../adr/ADR-0016.md),
+[ADR-0017](../adr/ADR-0017.md)). Only what runs under each `task` differs.
 
 `validate → sonar → release`, with the release job a matrix over the workspace
 members for `python-lib`.
 
 A `python-lib` workspace gets change-scoped verify and an ordered release,
-planned by `rn-forge-devops` through the public `ci:*` task namespace, outside
-the root vocabulary ([ADR-0014](../adr/ADR-0014.md)):
+planned by `kiln-devops` ([ADR-0017](../adr/ADR-0017.md)) through the public
+`ci:*` task namespace, outside the root vocabulary
+([ADR-0014](../adr/ADR-0014.md)):
 
 - `ci` namespace: `ci:plan`, `ci:adapters`, `ci:verify -- <package>`,
   `ci:postgres`, `ci:smoke`, `ci:suite`, `ci:release-build`,
