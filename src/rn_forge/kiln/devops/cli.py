@@ -6,7 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from rn_forge.kiln.devops import ci, github, uv
+from rn_forge.kiln.devops import ci, github, notes, uv
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -52,6 +52,11 @@ def _parser() -> argparse.ArgumentParser:
     publish.add_argument("--title", required=True)
     publish.add_argument("--target", required=True, metavar="SHA")
     publish.add_argument("files", nargs="+", metavar="FILE")
+    changelog = commands.add_parser(
+        "notes", help="print a version's section of a changelog"
+    )
+    changelog.add_argument("changelog", metavar="CHANGELOG")
+    changelog.add_argument("version", metavar="VERSION")
     return parser
 
 
@@ -75,6 +80,16 @@ def _release(args: argparse.Namespace) -> int:
         github.already_published(tag)
     for command in commands:
         github.run(command)
+    return 0
+
+
+def _notes(args: argparse.Namespace) -> int:
+    try:
+        text = Path(args.changelog).read_text(encoding="utf-8")
+        print(notes.changelog_section(text, args.version))
+    except (OSError, ValueError) as error:
+        print(error, file=sys.stderr)
+        return 1
     return 0
 
 
@@ -126,6 +141,8 @@ def main(argv: list[str] | None = None) -> int:
         except ValueError as error:
             sys.exit(str(error))
         return 0
+    if args.command == "notes":
+        return _notes(args)
     if args.command.startswith("release-"):
         return _release(args)
 

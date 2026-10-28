@@ -8,8 +8,8 @@ pinned kiln (`uvx` beside the repository, `uv run` in kiln's own), per
 
 Run `kiln-devops` from inside a uv workspace. Its root is the nearest directory
 at or above the current one whose `pyproject.toml` declares
-`[tool.uv.workspace]`. `sonar-target` and the three `release-*` subcommands load
-no workspace and run in any repository.
+`[tool.uv.workspace]`. `sonar-target`, `notes` and the three `release-*`
+subcommands load no workspace and run in any repository.
 
 | Subcommand | Does |
 | -- | -- |
@@ -22,6 +22,7 @@ no workspace and run in any repository.
 | `release-state TAG` | Prints the release's state for `TAG` as `$GITHUB_OUTPUT` lines. |
 | `release-source TAG` | Checks out `TAG` when `origin` has it, and prints the checked-out commit. |
 | `release-publish TAG --title TITLE --target SHA FILE...` | Publishes the GitHub release for `TAG` unless it is already published. |
+| `notes CHANGELOG VERSION` | Prints the body of the `## [VERSION]` section of a Keep a Changelog file, up to the next `## [` heading. The heading is `## [VERSION]` alone or followed by ` - <date>`; the version matches exactly. A missing heading or an empty body prints the reason to stderr and exits 1. |
 
 ## The release subcommands
 

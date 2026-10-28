@@ -188,3 +188,23 @@ def test_s6_7_5_3_a_failing_command_ends_with_its_exit_status(
     with pytest.raises(SystemExit) as exit_info:
         cli.main(argv)
     assert exit_info.value.code == 7
+
+
+def test_s7_6_2_7_cli_notes_prints_section(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    changelog = tmp_path / "CHANGELOG.md"
+    changelog.write_text("## [1.0.0] - 2026-01-01\n\n- Done.\n", encoding="utf-8")
+    assert cli.main(["notes", str(changelog), "1.0.0"]) == 0
+    assert capsys.readouterr().out == "- Done.\n"
+
+
+def test_s7_6_2_8_cli_notes_exits_1_on_missing_version(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    changelog = tmp_path / "CHANGELOG.md"
+    changelog.write_text("## [1.0.0]\n\n- Done.\n", encoding="utf-8")
+    assert cli.main(["notes", str(changelog), "2.0.0"]) == 1
+    captured = capsys.readouterr()
+    assert "2.0.0" in captured.err
+    assert captured.out == ""
