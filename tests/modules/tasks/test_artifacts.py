@@ -1631,6 +1631,94 @@ def test_s4_12_3_7_node_tasks_must_be_internal(tmp_path: Path) -> None:
     assert "taskgraph.not-internal" in _codes(root)
 
 
+NODE_LIB_CHECKS = {
+    **NODE_CHECKS,
+    "typecheck": ["pnpm nx run-many -t typecheck"],
+    "e2e": ["pnpm nx run-many -t e2e"],
+}
+
+
+def _node_lib_root(tmp_path: Path) -> Path:
+    return _root(tmp_path, "node-lib")
+
+
+def test_s9_1_9_1_node_yml_adds_typecheck_and_e2e_for_node_lib(
+    tmp_path: Path,
+) -> None:
+    root = _node_lib_root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    tasks = _load(root, "tasks/node.yml")["tasks"]
+    assert set(tasks) == set(NODE_LIB_CHECKS)
+    for name, cmds in NODE_LIB_CHECKS.items():
+        assert tasks[name]["internal"] is True
+        assert tasks[name]["desc"].strip()
+        assert tasks[name]["cmds"] == cmds
+    assert _load(root, "Taskfile.yml")["includes"]["node"] == "tasks/node.yml"
+
+
+def test_s9_1_9_1_python_web_app_keeps_four_node_tasks(tmp_path: Path) -> None:
+    root = _node_root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    assert set(_load(root, "tasks/node.yml")["tasks"]) == set(NODE_CHECKS)
+
+
+@pytest.mark.parametrize("name", ["typecheck", "e2e"])
+def test_s9_1_9_1_node_lib_overrides_take_the_new_keys(
+    tmp_path: Path, name: str
+) -> None:
+    config = '\n[tasks]\n[tasks.command_overrides]\n"node:{}" = "echo hi"\n'
+    root = _root(tmp_path, "node-lib", extra=config.format(name))
+    cycle.apply(root, home=tmp_path / "home")
+    assert _load(root, "tasks/node.yml")["tasks"][name]["cmds"] == ["echo hi"]
+
+
+def test_s9_1_9_2_node_lib_root_verbs_wrap_node(tmp_path: Path) -> None:
+    root = _node_lib_root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    tasks = _load(root, "Taskfile.yml")["tasks"]
+    assert {"task": "node:install"} in tasks["setup"]["cmds"]
+    assert {"task": "node:lint"} in tasks["lint"]["cmds"]
+    assert tasks["typecheck"]["cmds"] == [{"task": "node:typecheck"}]
+    assert tasks["test"]["cmds"] == [{"task": "node:test"}]
+    assert tasks["test:coverage"]["cmds"] == [{"task": "node:test"}]
+    assert tasks["build"]["cmds"] == [{"task": "node:build"}]
+    assert {"task": "typecheck"} in tasks["validate"]["cmds"]
+
+
+def test_s9_1_9_2_node_lib_calls_no_python_task_that_needs_a_package(
+    tmp_path: Path,
+) -> None:
+    root = _node_lib_root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    tasks = _load(root, "Taskfile.yml")["tasks"]
+    called = {cmd["task"] for task in tasks.values() for cmd in task["cmds"]}
+    assert {t for t in called if t.startswith("python:")} <= {
+        "python:install",
+        "python:version",
+    }
+    assert {"task": "python:format"} not in tasks["format"]["cmds"]
+
+
+def test_s9_1_9_2_python_web_app_typecheck_and_coverage_stay_python(
+    tmp_path: Path,
+) -> None:
+    root = _node_root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    tasks = _load(root, "Taskfile.yml")["tasks"]
+    assert tasks["typecheck"]["cmds"] == [{"task": "python:typecheck"}]
+    assert tasks["test:coverage"]["cmds"] == [{"task": "python:test:coverage"}]
+
+
+def test_s9_1_9_3_node_lib_taskfile_includes_no_python_or_api(
+    tmp_path: Path,
+) -> None:
+    root = _node_lib_root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    includes = _load(root, "Taskfile.yml")["includes"]
+    assert "api" not in includes
+    assert "node" in includes
+
+
 PYTHON_TASKS = (
     "install",
     "lint",

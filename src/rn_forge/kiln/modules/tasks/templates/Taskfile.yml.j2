@@ -42,8 +42,8 @@ tasks:
     desc: The aggregate gate — lint, typecheck, test, docs build. Any failure fails.
     cmds:
       - task: lint
-{% if not node_lib %}      - task: typecheck
-{% endif %}      - task: test
+      - task: typecheck
+      - task: test
 {% if docs %}      - task: docs:build
 {% endif %}{% for ref in extra_refs.get("validate", []) %}      - task: [[ ref ]]
 {% endfor %}
@@ -63,16 +63,17 @@ tasks:
   format:
     desc: Format Python code, TOML and Markdown prose in place.
     cmds:
-      - task: python:format
-      - task: quality:format:markdown
+{% if not node_lib %}      - task: python:format
+{% endif %}      - task: quality:format:markdown
       - task: quality:format:toml
 {% for ref in extra_refs.get("format", []) %}      - task: [[ ref ]]
 {% endfor %}
   typecheck:
     desc: Static type-check the package in pyright strict mode.
     cmds:
-      - task: python:typecheck
-{% for ref in extra_refs.get("typecheck", []) %}      - task: [[ ref ]]
+{% if node_lib %}      - task: node:typecheck
+{% else %}      - task: python:typecheck
+{% endif %}{% for ref in extra_refs.get("typecheck", []) %}      - task: [[ ref ]]
 {% endfor %}
   test:
     desc: Run the pytest suite.
@@ -84,8 +85,9 @@ tasks:
   test:coverage:
     desc: Run the pytest suite with an XML coverage report (used by CI/Sonar).
     cmds:
-      - task: python:test:coverage
-{% for ref in extra_refs.get("test:coverage", []) %}      - task: [[ ref ]]
+{% if node_lib %}      - task: node:test
+{% else %}      - task: python:test:coverage
+{% endif %}{% for ref in extra_refs.get("test:coverage", []) %}      - task: [[ ref ]]
 {% endfor %}
   build:
 {% if workspace %}    desc: Build one package's wheel and sdist into dist/ (pass -- <package>), or every package's.

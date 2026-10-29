@@ -32,4 +32,18 @@ tasks:
     cmds:
 {% if overrides.get("node:build") %}      - [[ overrides["node:build"] ]]
 {% else %}      - pnpm nx run-many -t build
-{% endif -%}
+{% endif %}{% if node_lib %}
+  typecheck:
+    desc: Type-check the workspace with Nx.
+    internal: true
+    cmds:
+{% if overrides.get("node:typecheck") %}      - [[ overrides["node:typecheck"] ]]
+{% else %}      - pnpm nx run-many -t typecheck
+{% endif %}
+  e2e:
+    desc: Run the workspace's end-to-end tests with Nx.
+    internal: true
+    cmds:
+{% if overrides.get("node:e2e") %}      - [[ overrides["node:e2e"] ]]
+{% else %}      - pnpm nx run-many -t e2e
+{% endif %}{% endif -%}
