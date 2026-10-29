@@ -91,6 +91,19 @@ tasks:
     desc: "CI only: install Playwright's system dependencies, the browsers being cached"
     cmds:
       - pnpm exec playwright install-deps
+
+  coverage:
+    desc: "CI only: run every project's tests, print the lcov reports found as a reports=<list> $GITHUB_OUTPUT line"
+    cmds:
+      - |
+        set -eu
+        pnpm exec nx run-many -t test >&2
+        reports=$(find coverage -name lcov.info | sort | paste -sd, -)
+        if [ -z "$reports" ]; then
+          echo "::error::No lcov.info found under coverage/"
+          exit 1
+        fi
+        echo "reports=$reports"
 {% endif %}{% if workspace %}
   plan:
     desc: "CI only: print the plan's outputs for $GITHUB_OUTPUT"

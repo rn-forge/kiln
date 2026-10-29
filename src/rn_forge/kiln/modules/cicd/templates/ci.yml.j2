@@ -14,7 +14,7 @@ name: CI
 #           each on its own `<package>-v<version>` tag.
 # external-install: installs each new tag from git, outside the workspace.
 {% if docs %}# docs:     deploys each released package's versioned site and the root site to Pages.
-{% endif %}{% elif node_lib %}# validate → ci-cloud or ci-local → ci-ok.
+{% endif %}{% elif node_lib %}# validate → ci-cloud or ci-local → sonar → ci-ok.
 #
 # ci-cloud:  `nx affected` distributed over Nx Cloud agents (.nx/workflows/agents.yaml).
 # ci-local:  the same on the runner, when `USE_NX_CLOUD` is `false` or dispatch unchecks it.
@@ -189,7 +189,43 @@ jobs:
       - uses: [[ pins["nx-set-shas"].uses ]]@[[ pins["nx-set-shas"].sha ]] # [[ pins["nx-set-shas"].version ]]
 
       - run: task ci:affected -- lint test build e2e
-{% else %}{% if workspace %}
+{% if sonar %}
+  # Scans one tree, so it runs after either path. Skipped for Dependabot and fork
+  # pull requests: GitHub sandboxes both (no Actions secrets), so SONAR_TOKEN is
+  # not available there; the next push to main still scans the merged code.
+  sonar:
+    needs: [validate, ci-cloud, ci-local]
+    if: ${{ always() && github.actor != 'dependabot[bot]' && (needs.ci-cloud.result == 'success' || needs.ci-local.result == 'success') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
+        with:
+          fetch-depth: 0 # Sonar needs full history, not a shallow clone
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate coverage and discover the lcov reports
+        id: coverage
+        run: task ci:coverage >> "$GITHUB_OUTPUT"
+
+      - name: SonarQube Cloud Scan
+        uses: [[ pins["sonarqube-scan"].uses ]]@[[ pins["sonarqube-scan"].sha ]] # [[ pins["sonarqube-scan"].version ]]
+        with:
+          # Without qualitygate.wait the job passes on submitting the analysis,
+          # so a failed quality gate would never fail CI.
+          args: >
+            -Dsonar.javascript.lcov.reportPaths=${{ steps.coverage.outputs.reports }}
+            -Dsonar.qualitygate.wait=true
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+{% endif %}{% else %}{% if workspace %}
   plan:
     needs: validate
     runs-on: ubuntu-latest
@@ -665,7 +701,7 @@ jobs:
   # the repo grows; this one does not. A skipped job (the fork-guarded scan, a
   # release on a pull request) is not a failure.
   ci-ok:
-    needs: [validate, dependency-review{% if node_lib %}, ci-cloud, ci-local{% endif %}{% if workspace %}, plan, verify, postgres, smoke, suites{% endif %}{% if sonar and not node_lib %}, sonar{% endif %}{% if release != "none" and not node_lib %}, release{% if workspace %}, external-install{% endif %}{% endif %}{% if workspace and docs %}, docs{% endif %}{% for job in jobs %}, [[ job.name ]]{% endfor %}]
+    needs: [validate, dependency-review{% if node_lib %}, ci-cloud, ci-local{% endif %}{% if sonar and node_lib %}, sonar{% endif %}{% if workspace %}, plan, verify, postgres, smoke, suites{% endif %}{% if sonar and not node_lib %}, sonar{% endif %}{% if release != "none" and not node_lib %}, release{% if workspace %}, external-install{% endif %}{% endif %}{% if workspace and docs %}, docs{% endif %}{% for job in jobs %}, [[ job.name ]]{% endfor %}]
     if: {% if node_lib %}${{ always() }}{% else %}always(){% endif %}
     runs-on: ubuntu-latest
     timeout-minutes: 5

@@ -3,12 +3,16 @@ sonar.projectKey=rn-forge_[[ name ]]
 sonar.projectName=[[ name ]]
 sonar.organization=[[ organization ]]
 
-{% if web %}sonar.sources=[[ api_dir ]]/src{% if web_app %},[[ web_dir ]]/src{% endif %}
+{% if node_lib %}sonar.sources=libs,apps
+sonar.tests=libs,apps
+sonar.test.inclusions=**/*.spec.ts
+sonar.exclusions=**/node_modules/**,**/dist/**,**/*.stories.ts,**/.storybook/**,**/.venv/**{% elif web %}sonar.sources=[[ api_dir ]]/src{% if web_app %},[[ web_dir ]]/src{% endif %}
 sonar.tests=[[ api_dir ]]/tests
 {% elif workspace %}sonar.sources={% for package in packages %}packages/[[ package ]]/src{% if not loop.last %},{% endif %}{% endfor %}
 sonar.tests={% for package in packages %}packages/[[ package ]]/tests{% if not loop.last %},{% endif %}{% endfor %}
 {% else %}sonar.sources=src
 sonar.tests=tests
 {% endif %}
-sonar.python.version=3.14
+{% if not node_lib %}sonar.python.version=3.14
 sonar.python.coverage.reportPaths=coverage.xml
+{% endif %}

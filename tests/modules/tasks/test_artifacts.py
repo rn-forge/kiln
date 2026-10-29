@@ -2303,3 +2303,54 @@ def test_s9_1_2_5_other_archetypes_render_no_affected_tasks(tmp_path: Path) -> N
     for archetype in ARCHETYPES:
         tasks = _ci_tasks(_root(tmp_path / archetype, archetype))["tasks"]
         assert not set(NODE_LIB_CI_TASKS) & set(tasks), archetype  # type: ignore[arg-type]
+
+
+# S9.1.3 — node Sonar.
+
+
+def _coverage_run(
+    tmp_path: Path, lcov: tuple[str, ...]
+) -> subprocess.CompletedProcess[str]:
+    root = _node_lib_root(tmp_path / "cell")
+    cycle.apply(root, home=tmp_path / "home")
+    stub = tmp_path / "bin"
+    stub.mkdir()
+    pnpm = stub / "pnpm"
+    pnpm.write_text('#!/bin/sh\necho "pnpm $*"\n')
+    pnpm.chmod(0o755)
+    repo = tmp_path / "work"
+    for name in lcov:
+        (repo / name).parent.mkdir(parents=True, exist_ok=True)
+        (repo / name).write_text("")
+    repo.mkdir(exist_ok=True)
+    return subprocess.run(
+        ["task", "-t", str(root / "Taskfile.yml"), "--dir", str(repo), "ci:coverage"],
+        capture_output=True,
+        text=True,
+        env={**os.environ, "PATH": f"{stub}:{os.environ['PATH']}"},
+    )
+
+
+def test_s9_1_3_2_coverage_runs_tests_and_prints_the_reports(tmp_path: Path) -> None:
+    if shutil.which("task") is None:
+        pytest.skip("task is not on PATH")
+    done = _coverage_run(
+        tmp_path, ("coverage/b/lcov.info", "coverage/a/lcov.info", "coverage/a/x.txt")
+    )
+    assert done.returncode == 0, done.stderr
+    assert done.stdout == "reports=coverage/a/lcov.info,coverage/b/lcov.info\n"
+    assert "pnpm exec nx run-many -t test" in done.stderr
+
+
+def test_s9_1_3_2_coverage_fails_without_an_lcov_report(tmp_path: Path) -> None:
+    if shutil.which("task") is None:
+        pytest.skip("task is not on PATH")
+    done = _coverage_run(tmp_path, ())
+    assert done.returncode != 0
+    assert "::error::No lcov.info found under coverage/" in done.stdout + done.stderr
+
+
+def test_s9_1_3_2_coverage_is_described_and_public(tmp_path: Path) -> None:
+    task = _ci_tasks(_node_lib_root(tmp_path))["tasks"]["coverage"]  # type: ignore[index]
+    assert task["desc"]
+    assert "internal" not in task
