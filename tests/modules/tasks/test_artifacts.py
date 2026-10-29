@@ -2149,3 +2149,157 @@ def test_s7_6_5_1_external_install_from_pypi(tmp_path: Path) -> None:
     plain_task = plain["external-install"]  # type: ignore[index]
     assert "git+" in "\n".join(plain_task["cmds"])
     assert "PyPI" not in plain_task["desc"]
+
+
+# S9.1.2 — affected CI.
+
+NODE_LIB_CI_TASKS = ("affected", "has-e2e", "playwright", "playwright:deps")
+
+
+def _affected_rule(tmp_path: Path) -> str:
+    """The `outside_projects` function the `ci:affected` task defines."""
+    cmd = _ci_tasks(_node_lib_root(tmp_path))["tasks"]["affected"]["cmds"][0]  # type: ignore[index]
+    match = re.search(r"^outside_projects\(\) \{\n.*?^\}\n", cmd, re.M | re.S)
+    assert match
+    return match.group(0)
+
+
+def _git(repo: Path, *args: str) -> str:
+    return subprocess.run(
+        ["git", "-c", "user.name=t", "-c", "user.email=t@t", *args],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+
+
+def _commit(repo: Path, *files: str) -> str:
+    for name in files:
+        path = repo / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(path.read_text() + "x\n" if path.exists() else "x\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-m", "c")
+    return _git(repo, "rev-parse", "HEAD")
+
+
+def _outside(tmp_path: Path, *changed: str) -> list[str]:
+    """What the rule reports for `changed`, in a repository of two projects."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q")
+    base = _commit(
+        repo, "libs/a/src/a.ts", "libs/b/src/b.ts", "docs/guide.md", "README.md"
+    )
+    head = _commit(repo, *changed)
+    script = f'{_affected_rule(tmp_path)}\noutside_projects "$1" "$2" libs/a libs/b'
+    done = subprocess.run(
+        ["bash", "-c", script, "bash", base, head],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return done.stdout.split()
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="git is not on PATH")
+@pytest.mark.parametrize(
+    ("changed", "outside"),
+    [
+        (("libs/a/src/a.ts",), []),
+        (("libs/a/src/a.ts", "libs/b/src/b.ts"), []),
+        (("docs/guide.md", "docs/new.png"), []),
+        (("README.md", "libs/a/CHANGELOG.md"), []),
+        (("tools/ci/x.mjs",), ["tools/ci/x.mjs"]),
+        ((".github/actions/setup/action.yml",), [".github/actions/setup/action.yml"]),
+        (("libs/a/src/a.ts", "package.json"), ["package.json"]),
+        (("libs/ab/src/x.ts",), ["libs/ab/src/x.ts"]),
+    ],
+)
+def test_s9_1_2_5_changed_file_rule(
+    tmp_path: Path, changed: tuple[str, ...], outside: list[str]
+) -> None:
+    assert _outside(tmp_path, *changed) == outside
+
+
+def test_s9_1_2_5_affected_selects_run_many_or_affected(tmp_path: Path) -> None:
+    if shutil.which("task") is None or shutil.which("jq") is None:
+        pytest.skip("task or jq is not on PATH")
+    root = _node_lib_root(tmp_path / "cell")
+    cycle.apply(root, home=tmp_path / "home")
+    stub = tmp_path / "bin"
+    stub.mkdir()
+    pnpm = stub / "pnpm"
+    pnpm.write_text(
+        "#!/bin/sh\n"
+        'case "$*" in\n'
+        '  "exec nx show projects --json") echo \'["a","b"]\' ;;\n'
+        '  "exec nx show project a --json") echo \'{"root":"libs/a"}\' ;;\n'
+        '  "exec nx show project b --json") echo \'{"root":"libs/b"}\' ;;\n'
+        '  *) echo "pnpm $*" ;;\n'
+        "esac\n"
+    )
+    pnpm.chmod(0o755)
+    repo = tmp_path / "work"
+    repo.mkdir()
+    _git(repo, "init", "-q")
+    base = _commit(repo, "libs/a/a.ts", "libs/b/b.ts")
+    inside = _commit(repo, "libs/a/a.ts")
+    outside = _commit(repo, "package.json")
+
+    def selected(event: str, nx_base: str, nx_head: str) -> str:
+        env = {
+            **os.environ,
+            "PATH": f"{stub}:{os.environ['PATH']}",
+            "GITHUB_EVENT_NAME": event,
+            "NX_BASE": nx_base,
+            "NX_HEAD": nx_head,
+        }
+        done = subprocess.run(
+            [
+                "task",
+                "-t",
+                str(root / "Taskfile.yml"),
+                "--dir",
+                str(repo),
+                "ci:affected",
+                "--",
+                "lint test",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+            env=env,
+        )
+        return done.stdout.strip()
+
+    assert (
+        selected("pull_request", base, inside) == "pnpm exec nx affected -t lint test"
+    )
+    assert (
+        selected("pull_request", base, outside) == "pnpm exec nx run-many -t lint test"
+    )
+    assert (
+        selected("workflow_dispatch", base, inside)
+        == "pnpm exec nx run-many -t lint test"
+    )
+
+
+def test_s9_1_2_5_node_lib_ci_tasks_are_described_and_public(tmp_path: Path) -> None:
+    tasks = _ci_tasks(_node_lib_root(tmp_path))["tasks"]
+    for name in NODE_LIB_CI_TASKS:
+        assert tasks[name]["desc"], name  # type: ignore[index]
+        assert "internal" not in tasks[name], name  # type: ignore[operator]
+    assert tasks["has-e2e"]["cmds"] == [  # type: ignore[index]
+        "echo \"has-e2e=$(pnpm exec nx show projects --with-target e2e --json | jq 'length > 0')\""
+    ]
+    assert tasks["playwright"]["cmds"] == ["pnpm exec playwright install --with-deps"]  # type: ignore[index]
+    assert tasks["playwright:deps"]["cmds"] == ["pnpm exec playwright install-deps"]  # type: ignore[index]
+
+
+def test_s9_1_2_5_other_archetypes_render_no_affected_tasks(tmp_path: Path) -> None:
+    for archetype in ARCHETYPES:
+        tasks = _ci_tasks(_root(tmp_path / archetype, archetype))["tasks"]
+        assert not set(NODE_LIB_CI_TASKS) & set(tasks), archetype  # type: ignore[arg-type]

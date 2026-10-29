@@ -3,6 +3,7 @@
 name = "node-lib"
 modules = ["core", "python", "node", "docs", "tasks", "cicd", "instructions"]
 forbidden_tools = ["uv", "mkdocs", "kiln", "pnpm", "npx", "nx", "ng"]
+entrypoint_exempt = ["pnpm exec nx fix-ci"]
 required_validate = [
     "kiln:doctor",
     "ci:lint:workflows",

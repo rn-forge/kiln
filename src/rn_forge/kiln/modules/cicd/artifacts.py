@@ -23,6 +23,8 @@ SONAR_ORGANIZATION = "rn-forge"
 
 _PACKAGE = "rn_forge.kiln.modules.cicd"
 
+_NX_CLOUD_IMAGE = "ubuntu22.04-node24.14-v1"
+
 _NODE_HELPERS = (
     "resolve-dist-workspace-deps",
     "verify-dist-manifest",
@@ -60,7 +62,7 @@ def _ci_config(config: KilnConfig) -> CiConfig:
 
 
 def render(config: KilnConfig) -> list[Artifact]:
-    """Render the setup action, `ci.yml`, `dependabot.yml`, `docs.yml`, `sonar-project.properties` and, for `node-lib`, `tools/ci/*.mjs`.
+    """Render the setup action, `ci.yml`, `dependabot.yml`, `docs.yml`, `sonar-project.properties` and, for `node-lib`, `.nx/workflows/agents.yaml` and `tools/ci/*.mjs`.
 
     A `python-lib` renders no `docs.yml`: its `ci.yml` has the one Pages deploy.
 
@@ -99,6 +101,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "web": web,
         "web_app": web_app,
         "node_lib": node_lib,
+        "nx_cloud_image": _NX_CLOUD_IMAGE,
         "hooks": ci.hooks,
         "jobs": ci.jobs,
         "api_dir": config.api_dir,
@@ -113,6 +116,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         (".github/workflows/ci.yml", "ci.yml.j2", True),
         (".github/dependabot.yml", "dependabot.yml.j2", True),
         (".github/workflows/docs.yml", "docs.yml.j2", docs and not workspace),
+        (".nx/workflows/agents.yaml", "agents.yaml.j2", node_lib),
         ("sonar-project.properties", "sonar-project.properties.j2", ci.sonar),
         *(
             (f"tools/ci/{name}.mjs", f"tools/ci/{name}.mjs.j2", node_lib)

@@ -44,8 +44,14 @@ def _invocation_pattern(forbidden: tuple[str, ...]) -> re.Pattern[str]:
 
 
 def _check_command_line(
-    label: str, lineno: int, command: str, pattern: re.Pattern[str]
+    label: str,
+    lineno: int,
+    command: str,
+    pattern: re.Pattern[str],
+    exempt: frozenset[str],
 ) -> list[Finding]:
+    if command.strip() in exempt:
+        return []
     return [
         Finding(
             CODE,
@@ -58,7 +64,9 @@ def _check_command_line(
     ]
 
 
-def _check_file(path: Path, label: str, pattern: re.Pattern[str]) -> list[Finding]:
+def _check_file(
+    path: Path, label: str, pattern: re.Pattern[str], exempt: frozenset[str]
+) -> list[Finding]:
     findings: list[Finding] = []
     lines = path.read_text(encoding="utf-8").splitlines()
     index = 0
@@ -69,7 +77,9 @@ def _check_file(path: Path, label: str, pattern: re.Pattern[str]) -> list[Findin
             continue
         indent, remainder = match.groups()
         if remainder and not BLOCK_SCALAR.match(remainder.strip()):
-            findings.extend(_check_command_line(label, index + 1, remainder, pattern))
+            findings.extend(
+                _check_command_line(label, index + 1, remainder, pattern, exempt)
+            )
             index += 1
             continue
         # Block scalar: consume subsequent, more-indented lines as the body.
@@ -79,14 +89,18 @@ def _check_file(path: Path, label: str, pattern: re.Pattern[str]) -> list[Findin
             line = lines[index]
             if line.strip() and (len(line) - len(line.lstrip())) <= base_indent:
                 break
-            findings.extend(_check_command_line(label, index + 1, line, pattern))
+            findings.extend(
+                _check_command_line(label, index + 1, line, pattern, exempt)
+            )
             index += 1
     return findings
 
 
 def check(config: KilnConfig, root: Path) -> list[Finding]:
     """Scan every CI definition for a directly invoked tool."""
-    pattern = _invocation_pattern(tuple(archetypes.for_config(config).forbidden_tools))
+    archetype = archetypes.for_config(config)
+    pattern = _invocation_pattern(tuple(archetype.forbidden_tools))
+    exempt = frozenset(archetype.entrypoint_exempt)
 
     findings: list[Finding] = []
     for ci_dir in _CI_DIRS.get(config.ci_provider, ()):
@@ -96,6 +110,8 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
         for path in sorted(directory.rglob("*")):
             if path.is_file() and path.suffix in {".yml", ".yaml"}:
                 findings.extend(
-                    _check_file(path, path.relative_to(root).as_posix(), pattern)
+                    _check_file(
+                        path, path.relative_to(root).as_posix(), pattern, exempt
+                    )
                 )
     return findings

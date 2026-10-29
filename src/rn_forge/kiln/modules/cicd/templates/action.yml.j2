@@ -24,7 +24,10 @@ runs:
         run_install: false
 
     - if: ${{ inputs.start-ci-run != '' }}
-      run: pnpm dlx nx start-ci-run ${{ inputs.start-ci-run }}
+      env:
+        START_CI_RUN: ${{ inputs.start-ci-run }}
+      # Unquoted on purpose: the input holds several arguments.
+      run: pnpm dlx nx start-ci-run $START_CI_RUN
       shell: bash
 
     - uses: [[ pins["setup-node"].uses ]]@[[ pins["setup-node"].sha ]] # [[ pins["setup-node"].version ]]

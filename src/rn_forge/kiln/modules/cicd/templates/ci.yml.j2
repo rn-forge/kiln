@@ -14,7 +14,11 @@ name: CI
 #           each on its own `<package>-v<version>` tag.
 # external-install: installs each new tag from git, outside the workspace.
 {% if docs %}# docs:     deploys each released package's versioned site and the root site to Pages.
-{% endif %}{% else %}# validate → sonar → release.
+{% endif %}{% elif node_lib %}# validate → ci-cloud or ci-local → ci-ok.
+#
+# ci-cloud:  `nx affected` distributed over Nx Cloud agents (.nx/workflows/agents.yaml).
+# ci-local:  the same on the runner, when `USE_NX_CLOUD` is `false` or dispatch unchecks it.
+{% else %}# validate → sonar → release.
 {% endif %}#
 # Every step goes through `task`; `kiln doctor`'s ci-entrypoint rule fails the
 # build if a step invokes uv/pytest/ruff/pyright/mkdocs/kiln directly. kiln runs
@@ -34,7 +38,14 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-{% if release == "pypi" %}  workflow_dispatch:
+{% if node_lib %}  workflow_dispatch:
+    inputs:
+      use-nx-cloud:
+        description: 'Use Nx Cloud distributed CI (uncheck to validate locally, e.g. if Nx Cloud is having issues)'
+        required: false
+        type: boolean
+        default: true
+{% elif release == "pypi" %}  workflow_dispatch:
     inputs:
       testpypi:
         type: boolean
@@ -102,7 +113,83 @@ jobs:
 
       - name: Review dependency changes
         uses: [[ pins["dependency-review"].uses ]]@[[ pins["dependency-review"].sha ]] # [[ pins["dependency-review"].version ]]
-{% if workspace %}
+{% if node_lib %}
+  # Default path: distributes lint/test/build/e2e across Nx Cloud agents (.nx/workflows/agents.yaml)
+  # This job excludes playwright as they are managed by Nx Cloud agents
+  ci-cloud:
+    needs: validate
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.use-nx-cloud) || (github.event_name != 'workflow_dispatch' && vars.USE_NX_CLOUD != 'false') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+    env:
+      NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+    steps:
+      - uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
+        with:
+          filter: tree:0
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          start-ci-run: >-
+            --distribute-on="${{ vars.NX_CLOUD_AGENTS || '3' }} linux-medium" --stop-agents-after="lint,test,build,e2e-ci"
+
+      - uses: [[ pins["nx-set-shas"].uses ]]@[[ pins["nx-set-shas"].sha ]] # [[ pins["nx-set-shas"].version ]]
+
+      - run: task ci:affected -- lint test build e2e-ci
+
+      # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
+      - run: pnpm exec nx fix-ci
+        if: always()
+
+  # Fallback path to run the pipeline on github runner when Nx Cloud is not available
+  # Enable by setting repo variable USE_NX_CLOUD=false, or with "use-nx-cloud" unchecked when runnning manually
+  ci-local:
+    needs: validate
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.use-nx-cloud == false) || (github.event_name != 'workflow_dispatch' && vars.USE_NX_CLOUD == 'false') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
+        with:
+          filter: tree:0
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Browsers are only needed when some project has an e2e target
+      - name: Detect e2e projects
+        id: e2e
+        run: task ci:has-e2e >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        if: steps.e2e.outputs.has-e2e == 'true'
+        uses: [[ pins["cache"].uses ]]@[[ pins["cache"].sha ]] # [[ pins["cache"].version ]]
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - run: task ci:playwright
+        if: steps.e2e.outputs.has-e2e == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
+      - run: task ci:playwright:deps
+        if: steps.e2e.outputs.has-e2e == 'true' && steps.playwright-cache.outputs.cache-hit == 'true'
+
+      - uses: [[ pins["nx-set-shas"].uses ]]@[[ pins["nx-set-shas"].sha ]] # [[ pins["nx-set-shas"].version ]]
+
+      - run: task ci:affected -- lint test build e2e
+{% else %}{% if workspace %}
   plan:
     needs: validate
     runs-on: ubuntu-latest
@@ -566,7 +653,7 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]
-{% endif %}{% for job in jobs %}
+{% endif %}{% endif %}{% for job in jobs %}
   [[ job.name ]]:
     needs: validate
 {% if job.events | length < 3 %}    if: ${{ {% for event in job.events %}github.event_name == '[[ event ]]'{% if not loop.last %} || {% endif %}{% endfor %} }}
@@ -578,12 +665,26 @@ jobs:
   # the repo grows; this one does not. A skipped job (the fork-guarded scan, a
   # release on a pull request) is not a failure.
   ci-ok:
-    needs: [validate, dependency-review{% if workspace %}, plan, verify, postgres, smoke, suites{% endif %}{% if sonar %}, sonar{% endif %}{% if release != "none" %}, release{% if workspace %}, external-install{% endif %}{% endif %}{% if workspace and docs %}, docs{% endif %}{% for job in jobs %}, [[ job.name ]]{% endfor %}]
-    if: always()
+    needs: [validate, dependency-review{% if node_lib %}, ci-cloud, ci-local{% endif %}{% if workspace %}, plan, verify, postgres, smoke, suites{% endif %}{% if sonar and not node_lib %}, sonar{% endif %}{% if release != "none" and not node_lib %}, release{% if workspace %}, external-install{% endif %}{% endif %}{% if workspace and docs %}, docs{% endif %}{% for job in jobs %}, [[ job.name ]]{% endfor %}]
+    if: {% if node_lib %}${{ always() }}{% else %}always(){% endif %}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}
     steps:
-      - name: Every job passed or was skipped
+{% if node_lib %}      - name: Check needed jobs
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          bad=$(jq -r 'to_entries[] | select(.value.result | IN("failure", "cancelled")) | .key' <<<"$NEEDS" | paste -sd, -)
+          if [ -n "$bad" ]; then
+            echo "::error::Failed or cancelled: $bad"
+            exit 1
+          fi
+          if ! jq -e '[.["ci-cloud"].result, .["ci-local"].result] | index("success")' <<<"$NEEDS" >/dev/null; then
+            echo "::error::Neither ci-cloud nor ci-local succeeded"
+            exit 1
+          fi
+{% else %}      - name: Every job passed or was skipped
         if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
         run: exit 1
+{% endif %}

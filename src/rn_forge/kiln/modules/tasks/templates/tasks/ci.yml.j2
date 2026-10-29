@@ -25,7 +25,7 @@ tasks:
     desc: "CI only: print the Sonar branch argument for this run as a $GITHUB_OUTPUT line"
     cmds:
       - '{{.DEVOPS}} sonar-target'
-{% if not workspace %}
+{% if not workspace and not node_lib %}
   release-state:
     desc: "CI only: print the release's state for this version as $GITHUB_OUTPUT lines"
     cmds:
@@ -40,6 +40,57 @@ tasks:
     desc: "CI only: publish the GitHub release for TAG, from the built distributions, at SOURCE_SHA"
     cmds:
       - '{{.DEVOPS}} release-publish "$TAG" --title "$TAG" --target "$SOURCE_SHA" dist/*.whl dist/*.tar.gz dist/*.cdx.json'
+{% endif %}{% if node_lib %}
+  affected:
+    desc: "CI only: run Nx targets (-- <targets>) on the affected projects, or on all of them for a dispatch or a change outside every project"
+    cmds:
+      - |
+        set -euo pipefail
+        outside_projects() {
+          base="$1" head="$2"
+          shift 2
+          git diff --name-only "$base" "$head" | while IFS= read -r file; do
+            case "$file" in docs/* | *.md) continue ;; esac
+            inside=false
+            for root in "$@"; do
+              if [ "$root" = . ]; then inside=true; break; fi
+              case "$file" in "$root"/*) inside=true; break ;; esac
+            done
+            if [ "$inside" = false ]; then echo "$file"; fi
+          done
+        }
+        all=false
+        if [ "${GITHUB_EVENT_NAME:-}" = workflow_dispatch ]; then
+          all=true
+        else
+          roots=()
+          for project in $(pnpm exec nx show projects --json | jq -r '.[]'); do
+            roots+=("$(pnpm exec nx show project "$project" --json | jq -r '.root')")
+          done
+          if [ -n "$(outside_projects "$NX_BASE" "$NX_HEAD" "${roots[@]}")" ]; then
+            all=true
+          fi
+        fi
+        if [ "$all" = true ]; then
+          pnpm exec nx run-many -t {{.CLI_ARGS}}
+        else
+          pnpm exec nx affected -t {{.CLI_ARGS}}
+        fi
+
+  has-e2e:
+    desc: "CI only: print whether any project has an e2e target, as a $GITHUB_OUTPUT line"
+    cmds:
+      - echo "has-e2e=$(pnpm exec nx show projects --with-target e2e --json | jq 'length > 0')"
+
+  playwright:
+    desc: "CI only: install Playwright's browsers and their system dependencies"
+    cmds:
+      - pnpm exec playwright install --with-deps
+
+  playwright:deps:
+    desc: "CI only: install Playwright's system dependencies, the browsers being cached"
+    cmds:
+      - pnpm exec playwright install-deps
 {% endif %}{% if workspace %}
   plan:
     desc: "CI only: print the plan's outputs for $GITHUB_OUTPUT"

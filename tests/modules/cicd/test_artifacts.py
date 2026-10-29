@@ -2165,7 +2165,7 @@ def test_s9_1_1_1_node_lib_action_inputs_and_steps(tmp_path: Path) -> None:
 
     assert [s.get("uses", s.get("run")) for s in steps] == [
         uses("pnpm-setup"),
-        "pnpm dlx nx start-ci-run ${{ inputs.start-ci-run }}",
+        "pnpm dlx nx start-ci-run $START_CI_RUN",
         uses("setup-node"),
         "pnpm install --frozen-lockfile",
         uses("setup-uv"),
@@ -2291,3 +2291,172 @@ def test_s9_1_10_3_a_hand_edit_is_drift(tmp_path: Path) -> None:
     helper.write_text(helper.read_text() + "// edit\n", encoding="utf-8")
     codes = [f.code for f in checks.run(root)]
     assert "artifact.drift" in codes
+
+
+# S9.1.2 — affected CI.
+
+CI_YML = ".github/workflows/ci.yml"
+AGENTS = ".nx/workflows/agents.yaml"
+
+
+def _node_lib_ci(tmp_path: Path) -> dict[str, object]:
+    return YamlUtils.load(_rendered(_root(tmp_path, "node-lib"))[CI_YML])
+
+
+def test_s9_1_2_1_node_lib_jobs_are_the_affected_set(tmp_path: Path) -> None:
+    jobs = _node_lib_ci(tmp_path)["jobs"]
+    assert list(jobs) == [  # type: ignore[arg-type]
+        "validate",
+        "dependency-review",
+        "ci-cloud",
+        "ci-local",
+        "ci-ok",
+    ]
+    assert jobs["ci-cloud"]["needs"] == "validate"  # type: ignore[index]
+    assert jobs["ci-local"]["needs"] == "validate"  # type: ignore[index]
+    python = _ci_jobs(_root(tmp_path / "py", "python-tool"))
+    assert jobs["validate"] == python["validate"]  # type: ignore[index]
+    assert jobs["dependency-review"] == python["dependency-review"]  # type: ignore[index]
+
+
+def test_s9_1_2_2_triggers_and_concurrency(tmp_path: Path) -> None:
+    ci = _node_lib_ci(tmp_path)
+    triggers = ci[True] if True in ci else ci["on"]  # type: ignore[index]
+    assert triggers["push"] == {"branches": ["main"]}  # type: ignore[index]
+    assert triggers["pull_request"] == {"branches": ["main"]}  # type: ignore[index]
+    assert triggers["workflow_dispatch"] == {  # type: ignore[index]
+        "inputs": {
+            "use-nx-cloud": {
+                "description": "Use Nx Cloud distributed CI (uncheck to validate locally, e.g. if Nx Cloud is having issues)",
+                "required": False,
+                "type": "boolean",
+                "default": True,
+            }
+        }
+    }
+    assert ci["concurrency"] == {
+        "group": "ci-${{ github.ref }}",
+        "cancel-in-progress": "${{ github.event_name == 'pull_request' }}",
+    }
+    assert ci["permissions"] == {"contents": "read"}
+    for name in ("ci-cloud", "ci-local"):
+        assert ci["jobs"][name]["permissions"] == {  # type: ignore[index]
+            "actions": "read",
+            "contents": "read",
+        }
+
+
+def test_s9_1_2_3_ci_cloud_matches_ngkit(tmp_path: Path) -> None:
+    job = _node_lib_ci(tmp_path)["jobs"]["ci-cloud"]  # type: ignore[index]
+    pins = load_pins()
+    assert job["if"] == (
+        "${{ (github.event_name == 'workflow_dispatch' && inputs.use-nx-cloud) "
+        "|| (github.event_name != 'workflow_dispatch' && vars.USE_NX_CLOUD != 'false') }}"
+    )
+    assert job["env"] == {
+        "NX_CLOUD_ACCESS_TOKEN": "${{ secrets.NX_CLOUD_ACCESS_TOKEN }}"
+    }
+    checkout, setup, shas, affected, fix = job["steps"]
+    assert checkout["with"] == {
+        "filter": "tree:0",
+        "fetch-depth": 0,
+        "persist-credentials": False,
+    }
+    assert setup["uses"].startswith("./.github/actions/setup")
+    assert setup["with"]["github-token"] == "${{ secrets.GITHUB_TOKEN }}"
+    assert setup["with"]["start-ci-run"] == (
+        "--distribute-on=\"${{ vars.NX_CLOUD_AGENTS || '3' }} linux-medium\" "
+        '--stop-agents-after="lint,test,build,e2e-ci"'
+    )
+    assert shas["uses"].startswith(f"nrwl/nx-set-shas@{pins['nx-set-shas']['sha']}")
+    assert affected == {"run": "task ci:affected -- lint test build e2e-ci"}
+    assert fix == {"run": "pnpm exec nx fix-ci", "if": "always()"}
+
+
+def test_s9_1_2_4_ci_local_matches_ngkit(tmp_path: Path) -> None:
+    job = _node_lib_ci(tmp_path)["jobs"]["ci-local"]  # type: ignore[index]
+    pins = load_pins()
+    assert job["if"] == (
+        "${{ (github.event_name == 'workflow_dispatch' && inputs.use-nx-cloud == false) "
+        "|| (github.event_name != 'workflow_dispatch' && vars.USE_NX_CLOUD == 'false') }}"
+    )
+    assert "env" not in job
+    checkout, setup, e2e, cache, install, deps, shas, affected = job["steps"]
+    assert checkout["with"] == {
+        "filter": "tree:0",
+        "fetch-depth": 0,
+        "persist-credentials": False,
+    }
+    assert setup["with"] == {"github-token": "${{ secrets.GITHUB_TOKEN }}"}
+    assert e2e["id"] == "e2e"
+    assert e2e["run"] == 'task ci:has-e2e >> "$GITHUB_OUTPUT"'
+    assert cache["uses"].startswith(f"actions/cache@{pins['cache']['sha']}")
+    assert cache["id"] == "playwright-cache"
+    assert cache["with"]["path"] == "~/.cache/ms-playwright"
+    assert install["run"] == "task ci:playwright"
+    assert install["if"] == (
+        "steps.e2e.outputs.has-e2e == 'true' "
+        "&& steps.playwright-cache.outputs.cache-hit != 'true'"
+    )
+    assert deps["run"] == "task ci:playwright:deps"
+    assert deps["if"] == (
+        "steps.e2e.outputs.has-e2e == 'true' "
+        "&& steps.playwright-cache.outputs.cache-hit == 'true'"
+    )
+    assert shas["uses"].startswith("nrwl/nx-set-shas@")
+    assert affected == {"run": "task ci:affected -- lint test build e2e"}
+
+
+def test_s9_1_2_6_ci_ok_needs_every_job_and_checks_both_paths(tmp_path: Path) -> None:
+    ok = _node_lib_ci(tmp_path)["jobs"]["ci-ok"]  # type: ignore[index]
+    assert ok["needs"] == ["validate", "dependency-review", "ci-cloud", "ci-local"]
+    assert ok["if"] == "${{ always() }}"
+    assert ok["permissions"] == {}
+    (step,) = ok["steps"]
+    assert step["env"] == {"NEEDS": "${{ toJSON(needs) }}"}
+    assert (
+        '[.["ci-cloud"].result, .["ci-local"].result] | index("success")' in step["run"]
+    )
+    assert "Neither ci-cloud nor ci-local succeeded" in step["run"]
+
+
+def test_s9_1_2_6_declared_jobs_join_ci_ok(tmp_path: Path) -> None:
+    extra = f'\n[[ci.jobs]]\nname = "extra"\nuses = "{CALL}"\n'
+    jobs = _ci_jobs(_with_ci(_root(tmp_path, "node-lib"), extra))
+    assert jobs["ci-ok"]["needs"][-1] == "extra"  # type: ignore[index]
+
+
+def test_s9_1_2_7_agents_yaml_is_ngkits_under_t1(tmp_path: Path) -> None:
+    lines = _rendered(_root(tmp_path, "node-lib"))[AGENTS].splitlines()
+    assert lines[0].startswith("# Generated by kiln ")
+    assert "ci-template" not in "\n".join(lines)
+    assert "image: 'ubuntu22.04-node24.14-v1'" in lines[4]
+    if not (NGKIT / ".git").exists():
+        pytest.skip("no ngkit checkout beside this repository")
+    golden = subprocess.run(
+        ["git", "-C", str(NGKIT), "show", f"{NGKIT_REF}:{AGENTS}"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.splitlines()
+    assert golden[0].startswith("# ci-template:")
+    assert golden[1:] == lines[1:]
+
+
+@pytest.mark.parametrize(
+    ("archetype", "extra"),
+    [
+        ("python-app", ""),
+        ("python-tool", ""),
+        ("python-lib", ""),
+        ("python-web-api", ""),
+        ("python-web-app", 'frontend = "angular"'),
+    ],
+)
+def test_s9_1_2_other_archetypes_render_no_node_lib_ci(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    rendered = _rendered(_cell_root(tmp_path, archetype, extra))
+    assert AGENTS not in rendered
+    assert "use-nx-cloud" not in rendered[CI_YML]
+    assert "nx-set-shas" not in rendered[CI_YML]

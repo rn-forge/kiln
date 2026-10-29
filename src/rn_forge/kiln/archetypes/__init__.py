@@ -88,6 +88,8 @@ class Archetype(StrictModel):
     dependencies: Dependencies
     forbidden_tools: list[str]
     """Tools a CI step may never invoke directly."""
+    entrypoint_exempt: list[str] = Field(default_factory=list)
+    """Workflow `run:` texts, stripped, that `ci-entrypoint` lets through."""
     required_validate: list[str]
     """Tasks that must stay reachable from `validate` — the `gate.shrunk` rule."""
     untested: dict[str, list[str]] = Field(default_factory=dict)
