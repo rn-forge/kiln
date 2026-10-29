@@ -76,6 +76,7 @@ def render(config: KilnConfig) -> list[Artifact]:
     workspace = config.archetype == "python-lib"
     web = config.archetype in {"python-web-api", "python-web-app"}
     web_app = config.archetype == "python-web-app"
+    node_lib = config.archetype == "node-lib"
     context: dict[str, object] = {
         "kiln_version": __version__,
         "name": config.name,
@@ -90,6 +91,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "organization": SONAR_ORGANIZATION,
         "web": web,
         "web_app": web_app,
+        "node_lib": node_lib,
         "hooks": ci.hooks,
         "jobs": ci.jobs,
         "api_dir": config.api_dir,

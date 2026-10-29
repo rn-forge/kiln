@@ -25,3 +25,14 @@ updates:
     groups:
       python:
         update-types: [minor, patch]
+{%- if node_lib %}
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      npm:
+        update-types: [minor, patch]
+{%- endif %}

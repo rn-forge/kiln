@@ -2137,3 +2137,91 @@ def test_s7_6_6_3_bad_contents_is_refused(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "python-tool"), extra)
     with pytest.raises(AppException):
         KilnConfig.load(root)
+
+
+# S9.1.1 — the node setup action.
+
+SETUP_ACTION = ".github/actions/setup/action.yml"
+
+
+def _node_lib_action(tmp_path: Path, hooks: str = "") -> dict[str, object]:
+    root = _root(tmp_path, "node-lib")
+    if hooks:
+        root = _with_ci(root, hooks)
+    return YamlUtils.load(_rendered(root)[SETUP_ACTION])
+
+
+def test_s9_1_1_1_node_lib_action_inputs_and_steps(tmp_path: Path) -> None:
+    action = _node_lib_action(tmp_path)
+    inputs = action["inputs"]
+    assert list(inputs) == ["start-ci-run", "registry-url", "github-token"]  # type: ignore[arg-type]
+    assert inputs["start-ci-run"]["default"] == ""  # type: ignore[index]
+    assert inputs["registry-url"]["default"] == ""  # type: ignore[index]
+    pins = load_pins()
+    steps = action["runs"]["steps"]  # type: ignore[index]
+
+    def uses(key: str) -> str:
+        return f"{pins[key]['uses']}@{pins[key]['sha']}"
+
+    assert [s.get("uses", s.get("run")) for s in steps] == [
+        uses("pnpm-setup"),
+        "pnpm dlx nx start-ci-run ${{ inputs.start-ci-run }}",
+        uses("setup-node"),
+        "pnpm install --frozen-lockfile",
+        uses("setup-uv"),
+        uses("setup-task"),
+    ]
+    assert steps[0]["with"] == {"run_install": False}
+    assert steps[1]["if"] == "${{ inputs.start-ci-run != '' }}"
+    assert steps[2]["with"] == {
+        "node-version-file": ".nvmrc",
+        "cache": "pnpm",
+        "registry-url": "${{ inputs.registry-url }}",
+    }
+    assert steps[4]["if"] == (
+        "${{ hashFiles('**/uv.lock', '!**/node_modules/**') != '' }}"
+    )
+    assert steps[4]["with"]["cache-dependency-glob"] == "**/uv.lock"
+    assert steps[5]["with"]["repo-token"] == "${{ inputs.github-token }}"
+
+
+def test_s9_1_1_1_hooks_follow_the_setup_task_step(tmp_path: Path) -> None:
+    steps = _node_lib_action(tmp_path, HOOKS)["runs"]["steps"]  # type: ignore[index]
+    assert [s["name"] for s in steps[-2:]] == [
+        "Run ./.github/actions/a",
+        "Run ./.github/actions/b",
+    ]
+    assert "setup-task" in steps[-3]["uses"]
+
+
+@pytest.mark.parametrize(
+    ("archetype", "extra"),
+    [
+        ("python-app", ""),
+        ("python-tool", ""),
+        ("python-lib", ""),
+        ("python-web-api", ""),
+        ("python-web-app", 'frontend = "angular"'),
+    ],
+)
+def test_s9_1_1_2_other_archetypes_render_no_node_lib_action(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    rendered = _rendered(_cell_root(tmp_path, archetype, extra))
+    assert "start-ci-run" not in rendered[SETUP_ACTION]
+    assert "registry-url" not in rendered[SETUP_ACTION]
+    assert "npm" not in rendered[".github/dependabot.yml"]
+
+
+def test_s9_1_1_3_node_lib_dependabot_adds_npm_beside_uv(
+    tmp_path: Path,
+) -> None:
+    updates = YamlUtils.load(
+        _rendered(_root(tmp_path, "node-lib"))[".github/dependabot.yml"]
+    )["updates"]
+    by_ecosystem = {u["package-ecosystem"]: u for u in updates}
+    assert set(by_ecosystem) == {"uv", "npm"}
+    npm = by_ecosystem["npm"]
+    assert npm["directory"] == "/"
+    assert npm["schedule"] == {"interval": "weekly"}
+    assert list(npm["groups"]) == ["npm"]
