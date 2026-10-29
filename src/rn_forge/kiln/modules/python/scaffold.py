@@ -111,19 +111,21 @@ def scaffold(root: Path, config: KilnConfig) -> None:
 def scaffold_backend(raw: Path, config: KilnConfig) -> None:
     """Run `uv init` into *raw*: the raw output, before any reconcile.
 
-    For `python-lib` and the web archetypes, also runs `uv init` for each
-    workspace member in `config.packages` and wires the workspace table at the
-    root. `uv init` itself refuses a directory that already holds a
-    `pyproject.toml`, so *raw* must be empty. Writes uv's own ignore body to
-    `raw/.gitignore`, once, from `uv_gitignore`, and `SAMPLE_TEST` into each
-    package `uv init` creates.
+    `node-lib` gets the bare root alone. For `python-lib` and the web
+    archetypes, also runs `uv init` for each workspace member in
+    `config.packages` and wires the workspace table at the root. `uv init`
+    itself refuses a directory that already holds a `pyproject.toml`, so *raw*
+    must be empty. Writes uv's own ignore body to `raw/.gitignore`, once, from
+    `uv_gitignore`, and `SAMPLE_TEST` into each package `uv init` creates.
 
     Raises:
         AppException: `uv` is not on `PATH`, or exits non-zero.
     """
     workspace = config.archetype == "python-lib"
     web = config.archetype in {"python-web-api", "python-web-app"}
-    if workspace or web:
+    if config.archetype == "node-lib":
+        _uv_init(raw, name=config.name, bare=True)
+    elif workspace or web:
         _uv_init(raw, name=config.name, bare=True)
         for package in config.packages:
             member = raw / package
@@ -379,7 +381,7 @@ def _reconcile_pyproject(root: Path, config: KilnConfig, relative: Path) -> None
     path = root / relative
     is_root = path.parent == root
     is_member = not is_root
-    is_workspace_root = (workspace or web) and is_root
+    is_workspace_root = (workspace or web or config.archetype == "node-lib") and is_root
     name = _member_name(config, path, root, web=web, is_member=is_member)
     if workspace and is_member:
         module = config.module_for(path.parent.relative_to(root).as_posix())

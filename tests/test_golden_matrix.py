@@ -27,6 +27,7 @@ NAMES = [
     "python-lib",
     "python-web-api-backend=fastapi",
     "python-web-app-backend=fastapi-frontend=angular",
+    "node-lib",
 ]
 
 

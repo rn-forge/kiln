@@ -174,7 +174,7 @@ select independent capabilities or implementations within that shape.
 | `python-lib` | uv workspace of independently published packages | `<package>-v<version>` |
 | `python-web-api` | API service without a separate frontend; optional embedded admin UI | `v<version>` |
 | `python-web-app` | API service and pnpm/Nx frontend workspace | `v<version>` |
-| `node-lib` | pnpm/Nx workspace of published libraries, one release group (release-1, not yet built; [ADR-0015](../adr/ADR-0015.md)) | `v<version>` |
+| `node-lib` | pnpm/Nx workspace of published libraries, one release group (shipped by `kiln new`, CI to follow in F9.1; [ADR-0015](../adr/ADR-0015.md)) | `v<version>` |
 | `node-web-app` | pnpm/Nx frontend consuming remote APIs; deferred | `v<version>` |
 
 `lifecycle` is available to any Python archetype; it adds tooling's lifecycle
@@ -210,7 +210,7 @@ An archetype carries the libraries a repo of that shape is built on
 | `python-lib` | `rn-forge-commons` in each distributable | — (the `docs` group adds `mkdocs-monorepo-plugin`) |
 | `python-web-api` · `python-web-app`, `backend = "django"` | + `rn-forge-cli`, `rn-forge-web`, `rn-forge-django` | + `rn-forge-django[codegen]` |
 | `python-web-api` · `python-web-app`, `backend = "fastapi"` | + `rn-forge-cli`, `rn-forge-web`, `rn-forge-fastapi`, when that package exists | + `rn-forge-fastapi[codegen]` |
-| `node-lib` | — | kiln, MkDocs and mdformat, through a root `pyproject.toml` with no package (release-1, not yet built) |
+| `node-lib` | — | kiln, MkDocs and mdformat, through a root `pyproject.toml` with no package |
 | `node-web-app` | — (deferred) | — |
 
 The library roles below describe pykit, not architectural decisions owned by

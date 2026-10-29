@@ -62,6 +62,8 @@ def render(config: KilnConfig) -> list[Artifact]:
     workspace = config.archetype == "python-lib"
     web = config.archetype in {"python-web-api", "python-web-app"}
     web_app = config.archetype == "python-web-app"
+    node_lib = config.archetype == "node-lib"
+    node = web_app or node_lib
     packages = [Path(package).name for package in config.packages]
     api_package = f"{config.name}-api" if web else None
     web_dir = config.web_dir
@@ -74,7 +76,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         *_PYTHON_TASKS,
         *_CI_TASKS,
         *(_DOCS_TASKS if docs else ()),
-        *(_NODE_TASKS if web_app else ()),
+        *(_NODE_TASKS if node else ()),
     }
     for key in tasks_config.command_overrides:
         if key not in known:
@@ -113,6 +115,8 @@ def render(config: KilnConfig) -> list[Artifact]:
         "audit_excluded": sorted(RN_FORGE_TAGS),
         "web": web,
         "web_app": web_app,
+        "node": node,
+        "node_lib": node_lib,
         "backend": config.backend,
         "api_dir": config.api_dir,
         "api_package": api_package,
@@ -137,7 +141,7 @@ def render(config: KilnConfig) -> list[Artifact]:
             TemplateArtifact("tasks/docs.yml", enabled=docs),
             TemplateArtifact("tasks/api.yml", enabled=web),
             TemplateArtifact("tasks/web.yml", enabled=web_app),
-            TemplateArtifact("tasks/node.yml", enabled=web_app),
+            TemplateArtifact("tasks/node.yml", enabled=node),
             TemplateArtifact("tasks/ci.yml"),
             *(
                 TemplateArtifact(

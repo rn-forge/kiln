@@ -42,7 +42,7 @@ def _web_root(
 
 
 def test_s4_2_1_every_python_archetype_is_shipped() -> None:
-    assert list(archetypes.shipped()) == PYTHON_ARCHETYPES
+    assert [n for n in archetypes.shipped() if n != "node-lib"] == PYTHON_ARCHETYPES
 
 
 @pytest.mark.parametrize("name", PYTHON_ARCHETYPES)

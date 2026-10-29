@@ -46,6 +46,7 @@ CELLS: tuple[Cell, ...] = (
     _cell("python-lib"),
     _cell("python-web-api", ("backend", "fastapi")),
     _cell("python-web-app", ("backend", "fastapi"), ("frontend", "angular")),
+    _cell("node-lib"),
 )
 
 

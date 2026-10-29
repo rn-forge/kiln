@@ -25,7 +25,9 @@ _FORBIDDEN_FRAMEWORKS = ("typer", "jinja2", "click", "django", "fastapi")
 
 
 def render(config: KilnConfig) -> list[Artifact]:
-    """Render `.importlinter` for *config*."""
+    """Render `.importlinter` for *config*; nothing for `node-lib`."""
+    if config.archetype == "node-lib":
+        return []
     engine = TemplateEngine.cached(package="rn_forge.kiln.modules.python")
     workspace = config.archetype == "python-lib"
     web = config.archetype in {"python-web-api", "python-web-app"}

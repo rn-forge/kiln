@@ -18,15 +18,16 @@ from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.runtime.subprocess import Process
 
+from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
-from rn_forge.kiln.modules.node.angular import scaffold_angular
+from rn_forge.kiln.modules.node.angular import NX_VERSION, scaffold_angular
 from rn_forge.kiln.modules.registry import builtin
 from rn_forge.kiln.modules.python.artifacts import render
 from rn_forge.kiln.modules.node.scaffold import (
     reconcile_node,
     scaffold_node,
 )
-from rn_forge.kiln.modules.python.scaffold import scaffold
+from rn_forge.kiln.modules.python.scaffold import add_task_tools, scaffold
 
 FIXTURE = Path(__file__).parents[2] / "fixtures" / "scaffold" / "nx-angular"
 UV_FIXTURE = Path(__file__).parents[2] / "fixtures" / "scaffold" / "uv" / ".gitignore"
@@ -211,3 +212,115 @@ def test_s4_5_9_reconcile_node_leaves_the_raw_tree_untouched(
     after = {p: p.read_bytes() for p in sorted(workspace.rglob("*")) if p.is_file()}
     assert before == after
     assert (root / "apps" / "frontend" / "project.json").is_file()
+
+
+LIB_CONFIG = """
+schema_version = 1
+
+[repository]
+name = "demo"
+archetype = "node-lib"
+
+[docs]
+profile = "mkdocs"
+"""
+
+
+def _lib_root(tmp_path: Path) -> Path:
+    """A root with the `python`/uv side of a `node-lib` scaffold done."""
+    root = tmp_path / "root"
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(LIB_CONFIG, encoding="utf-8")
+    scaffold(root, KilnConfig.load(root))
+    return root
+
+
+def test_s9_1_8_1_node_lib_is_shipped_and_loads() -> None:
+    assert "node-lib" in archetypes.shipped()
+    manifest = archetypes.load("node-lib")
+    assert manifest.name == "node-lib"
+    assert manifest.dependencies.required == []
+    assert manifest.dependencies.allowed == []
+    assert manifest.modules == [
+        "core",
+        "python",
+        "node",
+        "docs",
+        "tasks",
+        "cicd",
+        "instructions",
+    ]
+
+
+def test_s9_1_8_2_scaffold_node_runs_a_bare_nx_workspace(tmp_path: Path) -> None:
+    root = _lib_root(tmp_path)
+    raw = tmp_path / "frontend"
+    raw.mkdir()
+
+    with mock.patch("rn_forge.kiln.modules.node.angular.Process.execute") as run:
+        workspace = scaffold_node(raw, KilnConfig.load(root))
+
+    assert workspace == raw / "workspace"
+    assert [(c.args[0], c.args[1:]) for c in run.call_args_list] == [
+        ("nx-git-boundary", ("git", "init", "-q")),
+        (
+            "nx-workspace",
+            (
+                "pnpm",
+                "dlx",
+                f"create-nx-workspace@{NX_VERSION}",
+                "workspace",
+                "--preset=apps",
+                "--packageManager=pnpm",
+                "--nxCloud=skip",
+                "--ci=skip",
+                "--interactive=false",
+                "--skipGit",
+            ),
+        ),
+    ]
+
+
+def test_s9_1_8_3_reconcile_node_folds_the_workspace_and_writes_nvmrc(
+    tmp_path: Path,
+) -> None:
+    root = _lib_root(tmp_path)
+    workspace = _workspace(tmp_path)
+    shutil.rmtree(workspace / "apps")
+    config = KilnConfig.load(root)
+
+    reconcile_node(root, workspace, config)
+
+    assert (root / "nx.json").is_file()
+    assert not (root / "workspace").exists()
+    assert not (root / "apps").exists()
+    assert (root / ".nvmrc").read_text(encoding="utf-8") == "24\n"
+    assert not any(a.key.endswith(".nvmrc") for a in render(config))
+
+
+def test_s9_1_8_3_reconcile_node_writes_no_angular_starter(tmp_path: Path) -> None:
+    root = _lib_root(tmp_path)
+    workspace = _workspace(tmp_path)
+    config = KilnConfig.load(root)
+    project = workspace / "apps" / "web" / "project.json"
+    before = project.read_bytes()
+
+    reconcile_node(root, workspace, config)
+
+    assert not (root / "apps" / "web" / "proxy.conf.json").exists()
+    assert (root / "apps" / "web" / "project.json").read_bytes() == before
+
+
+def test_s9_1_8_4_root_pyproject_is_bare_with_docs_tooling(tmp_path: Path) -> None:
+    root = _lib_root(tmp_path)
+    config = KilnConfig.load(root)
+
+    document = DocumentUtils.read(root / "pyproject.toml")
+    assert "build-system" not in document
+    assert not (root / "src").exists()
+    assert not (root / "tests").exists()
+    assert not (root / ".importlinter").exists()
+    assert "mkdocs-material>=9.6" in document["dependency-groups"]["docs"]
+    assert add_task_tools(root, config) == []
+    assert "mdformat" in " ".join(document["dependency-groups"]["docs"])

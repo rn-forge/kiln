@@ -26,13 +26,21 @@ from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import gitignore
 from rn_forge.kiln.modules.node import starter
-from rn_forge.kiln.modules.node.angular import SCAFFOLD_APP_DIR, scaffold_angular
+from rn_forge.kiln.modules.node.angular import (
+    SCAFFOLD_APP_DIR,
+    scaffold_angular,
+    scaffold_nx_workspace,
+)
 
 __all__ = ["reconcile_node", "scaffold_node"]
 
 _SCAFFOLDERS: dict[str, Callable[[Path], Path]] = {"angular": scaffold_angular}
 """Each implemented frontend: it scaffolds into a raw directory and returns
 the finished workspace."""
+
+NODE_MAJOR = 24
+"""The Node major `.nvmrc` pins in a `node-lib` repository."""
+_NVMRC = ".nvmrc"
 
 _EXCLUDED_TOP_LEVEL = {".git", "node_modules", ".nx"}
 
@@ -49,13 +57,16 @@ still count as conflicts when root already holds them."""
 def scaffold_node(raw: Path, config: KilnConfig) -> Path | None:
     """Run the selected frontend's generator into *raw*; return its workspace.
 
-    Returns `None` unless `config.archetype == "python-web-app"`. The output is
-    raw: `reconcile_node` folds it into the repo, leaving it untouched.
+    Returns `None` unless the archetype is `python-web-app` or `node-lib`; a
+    `node-lib` gets the bare Nx workspace, with no app. The output is raw:
+    `reconcile_node` folds it into the repo, leaving it untouched.
 
     Raises:
         AppException: the frontend has no scaffolder, a scaffold command is
             not on `PATH`, or `pnpm install` fails after builds are approved.
     """
+    if config.archetype == "node-lib":
+        return scaffold_nx_workspace(raw)
     if config.archetype != "python-web-app":
         return None
 
@@ -85,6 +96,9 @@ def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
     `app.html` and `app.spec.ts`; `serve.options.proxyConfig` in `project.json`
     is set to `<web_dir>/proxy.conf.json` and Nx's `nx-welcome.ts` is deleted.
 
+    For a `node-lib` there is no app: the fold stops after the copy, and
+    `.nvmrc` is written once instead.
+
     A shared top-level directory (`apps/`, holding the API member too) merges
     rather than conflicts: only an actual file colliding with an existing file
     at the same path is a conflict.
@@ -94,6 +108,7 @@ def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
             same path under *root*, naming it.
     """
     web_dir = config.web_dir or SCAFFOLD_APP_DIR
+    lib = config.archetype == "node-lib"
 
     entries = [p for p in workspace.iterdir() if p.name not in _EXCLUDED_TOP_LEVEL]
     conflicts = [
@@ -115,6 +130,10 @@ def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
             gitignore.append(root, entry.read_text(encoding="utf-8"), "nx")
             continue
         _copy_or_merge(entry, root / entry.name)
+
+    if lib:
+        (root / _NVMRC).write_text(f"{NODE_MAJOR}\n", encoding="utf-8")
+        return
 
     if web_dir != SCAFFOLD_APP_DIR:
         shutil.move(str(root / SCAFFOLD_APP_DIR), str(root / web_dir))

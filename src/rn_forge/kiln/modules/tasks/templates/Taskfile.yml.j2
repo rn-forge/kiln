@@ -27,7 +27,7 @@ includes:
   ci: tasks/ci.yml
 {% if web %}  api: tasks/api.yml
 {% endif %}{% if web_app %}  web: tasks/web.yml
-  node: tasks/node.yml
+{% endif %}{% if node %}  node: tasks/node.yml
 {% endif %}{% for include in includes %}  [[ include.namespace ]]: [[ include.taskfile ]]
 {% endfor %}
 tasks:
@@ -35,30 +35,30 @@ tasks:
     desc: Install the project and its dev + docs dependency groups.
     cmds:
       - task: python:install
-{% if web_app %}      - task: node:install
+{% if node %}      - task: node:install
 {% endif %}{% for ref in extra_refs.get("setup", []) %}      - task: [[ ref ]]
 {% endfor %}
   validate:
     desc: The aggregate gate — lint, typecheck, test, docs build. Any failure fails.
     cmds:
       - task: lint
-      - task: typecheck
-      - task: test
+{% if not node_lib %}      - task: typecheck
+{% endif %}      - task: test
 {% if docs %}      - task: docs:build
 {% endif %}{% for ref in extra_refs.get("validate", []) %}      - task: [[ ref ]]
 {% endfor %}
   lint:
     desc: Every lint — Python, imports, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs), workflow security, dependency vulnerabilities.
     cmds:
-      - task: python:lint
+{% if not node_lib %}      - task: python:lint
       - task: python:lint:imports
-{% if web_app %}      - task: node:lint
+{% endif %}{% if node %}      - task: node:lint
 {% endif %}      - task: quality:lint:markdown
       - task: quality:lint:toml
       - task: kiln:doctor
       - task: ci:lint:workflows
-      - task: python:lint:audit
-{% for ref in extra_refs.get("lint", []) %}      - task: [[ ref ]]
+{% if not node_lib %}      - task: python:lint:audit
+{% endif %}{% for ref in extra_refs.get("lint", []) %}      - task: [[ ref ]]
 {% endfor %}
   format:
     desc: Format Python code, TOML and Markdown prose in place.
@@ -77,8 +77,8 @@ tasks:
   test:
     desc: Run the pytest suite.
     cmds:
-      - task: python:test
-{% if web_app %}      - task: node:test
+{% if not node_lib %}      - task: python:test
+{% endif %}{% if node %}      - task: node:test
 {% endif %}{% for ref in extra_refs.get("test", []) %}      - task: [[ ref ]]
 {% endfor %}
   test:coverage:
@@ -91,8 +91,8 @@ tasks:
 {% if workspace %}    desc: Build one package's wheel and sdist into dist/ (pass -- <package>), or every package's.
 {% else %}    desc: Build the wheel and sdist into dist/.
 {% endif %}    cmds:
-      - task: python:build
-{% if web_app %}      - task: node:build
+{% if not node_lib %}      - task: python:build
+{% endif %}{% if node %}      - task: node:build
 {% endif %}{% for ref in extra_refs.get("build", []) %}      - task: [[ ref ]]
 {% endfor %}
   version:

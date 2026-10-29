@@ -12,7 +12,13 @@ from pathlib import Path
 from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.runtime.subprocess import Process
 
-__all__ = ["NGKIT_URL", "NX_VERSION", "SCAFFOLD_APP_DIR", "scaffold_angular"]
+__all__ = [
+    "NGKIT_URL",
+    "NX_VERSION",
+    "SCAFFOLD_APP_DIR",
+    "scaffold_angular",
+    "scaffold_nx_workspace",
+]
 
 NX_VERSION = "23.2.1"
 """`create-nx-workspace`/`@nx/angular`'s pinned release (recorded 2026-09-17,
@@ -37,9 +43,9 @@ _AGENT_ENV_VARS = ("CLAUDECODE", "OPENCODE", "CLAUDE_CODE_ENTRYPOINT")
 its AI-agent template flow, which ignores `--appName` (COMMAND.md)."""
 
 
-def scaffold_angular(raw: Path) -> Path:
-    """Run the Nx/Angular scaffold inside *raw*; return the workspace it made."""
-    env = {k: v for k, v in os.environ.items() if k not in _AGENT_ENV_VARS}
+def scaffold_nx_workspace(raw: Path) -> Path:
+    """Run `create-nx-workspace` with the `apps` preset inside *raw*; return the workspace."""
+    env = _scaffold_env()
     # Keep Nx's native scanner from inheriting staging and checkout ignore rules.
     Process.execute("nx-git-boundary", "git", "init", "-q", cwd=str(raw), env=env)
     Process.execute(
@@ -57,7 +63,17 @@ def scaffold_angular(raw: Path) -> Path:
         cwd=str(raw),
         env=env,
     )
-    workspace = raw / "workspace"
+    return raw / "workspace"
+
+
+def _scaffold_env() -> dict[str, str]:
+    return {k: v for k, v in os.environ.items() if k not in _AGENT_ENV_VARS}
+
+
+def scaffold_angular(raw: Path) -> Path:
+    """Run the Nx/Angular scaffold inside *raw*; return the workspace it made."""
+    env = _scaffold_env()
+    workspace = scaffold_nx_workspace(raw)
     Process.execute(
         "nx-angular-plugin",
         "pnpm",

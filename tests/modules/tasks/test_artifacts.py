@@ -1164,7 +1164,7 @@ def test_s4_11_5_6_command_override_is_accepted(tmp_path: Path) -> None:
     assert "--ignore-vuln" not in YamlUtils.serialize(python["lint:audit"])
 
 
-@pytest.mark.parametrize("name", archetypes.shipped())
+@pytest.mark.parametrize("name", [n for n in archetypes.shipped() if n != "node-lib"])
 def test_s4_11_5_7_required_validate_gains_it(name: str) -> None:
     required = archetypes.load(name).required_validate
     assert "python:lint:audit" in required
@@ -1773,7 +1773,7 @@ def test_s4_12_4_7_old_keys_are_refused(tmp_path: Path, old: str) -> None:
         TASKS.artifacts(KilnConfig.load(root), root)
 
 
-@pytest.mark.parametrize("name", archetypes.shipped())
+@pytest.mark.parametrize("name", [n for n in archetypes.shipped() if n != "node-lib"])
 def test_s4_12_4_8_required_validate_names_the_python_tasks(name: str) -> None:
     required = archetypes.load(name).required_validate
     for task in ("lint", "lint:imports", "lint:audit", "typecheck", "test"):
@@ -1984,7 +1984,7 @@ def test_s4_12_6_9_task_layout_accepts_the_rendered_files(
     assert _codes(root) == []
 
 
-@pytest.mark.parametrize("name", archetypes.shipped())
+@pytest.mark.parametrize("name", [n for n in archetypes.shipped() if n != "node-lib"])
 def test_s4_12_6_10_required_validate_names_kiln_doctor(name: str) -> None:
     required = archetypes.load(name).required_validate
     assert required[required.index("python:lint") + 1] == "kiln:doctor"
