@@ -130,7 +130,7 @@ The assignment is normative:
 | `packages/<pkg>/mkdocs.yml` | `python-lib` only; repo, seeded once by `kiln generate package`; no managed block ([ADR-0008](../adr/ADR-0008.md)) | **seeded** |
 | `packages/<pkg>/docs/**` | `python-lib` only; repo, seeded once by `kiln generate package` | **seeded** |
 | `packages/<pkg>/CHANGELOG.md`, `packages/<pkg>/README.md` | `python-lib` only; repo, seeded once by `kiln generate package` | **seeded** |
-| `.github/workflows/ci.yml`, `docs.yml`; `.github/dependabot.yml`; `.github/actions/setup`; `sonar-project.properties`; `tools/ci/*.mjs` for `node-lib` (release-1, not yet built) | kiln (`cicd`) | managed |
+| `.github/workflows/ci.yml`, `docs.yml`; `.github/dependabot.yml`; `.github/actions/setup`; `sonar-project.properties`; `tools/ci/*.mjs` for `node-lib` | kiln (`cicd`) | managed |
 | `CLAUDE.md`, `AGENTS.md` | bodies written once by `kiln new`, then repo; the `<!-- BEGIN rn-forge kiln -->` block in `CLAUDE.md` → kiln | block (`CLAUDE.md` only; `AGENTS.md` points at it) |
 | `.claude/**`, `.codex/**`, installed skills | not kiln's | — |
 | Repo-specific lints (`check_brand.py`, `check_gate_tags.py`, …) | repo, wired via `[tasks.extra_refs]` | repo |

@@ -1,4 +1,4 @@
-"""The artifacts `cicd` renders: the workflows, the setup action, and Sonar's properties."""
+"""The artifacts `cicd` renders: the workflows, the setup action, Sonar's properties and `node-lib`'s `tools/ci/` helpers."""
 
 from __future__ import annotations
 
@@ -22,6 +22,13 @@ SONAR_ORGANIZATION = "rn-forge"
 """The SonarCloud organization every rendered repo reports to."""
 
 _PACKAGE = "rn_forge.kiln.modules.cicd"
+
+_NODE_HELPERS = (
+    "resolve-dist-workspace-deps",
+    "verify-dist-manifest",
+    "assemble-site",
+    "release-notes",
+)
 
 _PLAN_KEYS = (
     "release-order",
@@ -53,7 +60,7 @@ def _ci_config(config: KilnConfig) -> CiConfig:
 
 
 def render(config: KilnConfig) -> list[Artifact]:
-    """Render the setup action, `ci.yml`, `dependabot.yml`, `docs.yml` and `sonar-project.properties`.
+    """Render the setup action, `ci.yml`, `dependabot.yml`, `docs.yml`, `sonar-project.properties` and, for `node-lib`, `tools/ci/*.mjs`.
 
     A `python-lib` renders no `docs.yml`: its `ci.yml` has the one Pages deploy.
 
@@ -107,6 +114,10 @@ def render(config: KilnConfig) -> list[Artifact]:
         (".github/dependabot.yml", "dependabot.yml.j2", True),
         (".github/workflows/docs.yml", "docs.yml.j2", docs and not workspace),
         ("sonar-project.properties", "sonar-project.properties.j2", ci.sonar),
+        *(
+            (f"tools/ci/{name}.mjs", f"tools/ci/{name}.mjs.j2", node_lib)
+            for name in _NODE_HELPERS
+        ),
     ]
     return render_artifacts(
         engine,
