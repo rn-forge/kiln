@@ -156,7 +156,7 @@ def context(config: KilnConfig) -> dict[str, object]:
         "docs": config.docs_profile == "mkdocs",
         "external_url": docs.external_url if isinstance(docs, DocsConfig) else "",
         "sonar": ci.sonar,
-        "release": ci.release,
+        "release": config.release,
         "web": web,
         "web_app": web_app,
         "backend": config.backend,

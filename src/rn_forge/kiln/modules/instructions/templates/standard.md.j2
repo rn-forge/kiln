@@ -27,7 +27,7 @@ is a kiln ADR; this file states the rule.
   and no local state: that is `python-tool`.
 {% endif %}{% if docs %}- **Docs profile:** `mkdocs` — the full area model, a derived nav, and a
   strict site build inside `task validate`.
-{% endif %}- **CI:** GitHub Actions, Sonar {% if sonar %}on{% else %}off{% endif %}{% if release == "pypi" %}, release to PyPI by trusted publishing, per package{% elif release == "tag-exists" %}, release by tag-exists check{% if workspace %}, per package{% endif %}{% endif %}.
+{% endif %}- **CI:** GitHub Actions, Sonar {% if sonar %}on{% else %}off{% endif %}{% if release == "pypi" %}, release to PyPI by trusted publishing, per package{% elif release == "nx-dispatch" %}, release by dispatch, tagged `v<version>`{% elif release == "tag-exists" %}, release by tag-exists check{% if workspace %}, per package{% endif %}{% endif %}.
 
 ## 1. One entrypoint
 

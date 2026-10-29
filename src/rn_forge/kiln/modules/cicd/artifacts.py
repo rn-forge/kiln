@@ -62,13 +62,13 @@ def _ci_config(config: KilnConfig) -> CiConfig:
 
 
 def render(config: KilnConfig) -> list[Artifact]:
-    """Render the setup action, `ci.yml`, `dependabot.yml`, `docs.yml`, `sonar-project.properties` and, for `node-lib`, `.nx/workflows/agents.yaml` and `tools/ci/*.mjs`.
+    """Render the setup action, `ci.yml`, `dependabot.yml`, `docs.yml`, `sonar-project.properties` and, for `node-lib`, `.nx/workflows/agents.yaml`, `tools/ci/*.mjs` and, when `ci.release` is `nx-dispatch`, `release.yml`.
 
     A `python-lib` and a `node-lib` render no `docs.yml`: their `ci.yml` has the one Pages deploy.
 
     Raises:
         AppException: `ci.provider` is `ado`, which is reserved, or `ci.hooks.docs` is set without a docs site.
-        ValueError: `ci.release` is `pypi` outside a library workspace.
+        ValueError: `ci.release` does not fit the archetype.
     """
     ci = _ci_config(config)
     if ci.provider == "ado":
@@ -76,8 +76,7 @@ def render(config: KilnConfig) -> list[Artifact]:
             "cicd.render: ci.provider = 'ado' is reserved for E8 and renders nothing yet"
         )
     docs = config.docs_profile == "mkdocs"
-    if ci.release == "pypi" and config.archetype != "python-lib":
-        raise ValueError("ci.release = 'pypi' needs a library workspace")
+    release = config.release
     if ci.hooks.docs and not docs:
         raise AppException(
             "cicd.render: ci.hooks.docs is set but nothing deploys Pages (docs profile is not mkdocs)"
@@ -93,7 +92,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "packages": [Path(package).name for package in config.packages],
         "docs": docs,
         "sonar": ci.sonar,
-        "release": ci.release,
+        "release": release,
         "doctor_full": ci.doctor_full,
         "plan_keys": _PLAN_KEYS,
         "pins": load_pins(),
@@ -120,6 +119,7 @@ def render(config: KilnConfig) -> list[Artifact]:
             "docs.yml.j2",
             docs and not workspace and not node_lib,
         ),
+        (".github/workflows/release.yml", "release.yml.j2", release == "nx-dispatch"),
         (".nx/workflows/agents.yaml", "agents.yaml.j2", node_lib),
         ("sonar-project.properties", "sonar-project.properties.j2", ci.sonar),
         *(

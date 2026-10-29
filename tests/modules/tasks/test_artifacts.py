@@ -2458,3 +2458,328 @@ def test_s9_1_11_3_docs_affected_writes_build(
         },
     )
     assert output.read_text().strip() == expected
+
+
+# S9.1.5 — dispatch release.
+
+RELEASE_TASKS = (
+    "release:gate",
+    "release:state",
+    "release:author",
+    "release:version",
+    "release:tag",
+    "release:verify",
+    "release:push",
+    "release:github",
+    "release:publish",
+    "release:latest",
+    "published-install",
+)
+
+
+def _release_run(
+    tmp_path: Path,
+    task: str,
+    env: dict[str, str] | None = None,
+    stubs: dict[str, str] | None = None,
+    tag: str | None = None,
+) -> subprocess.CompletedProcess[str]:
+    """Run `ci:<task>` in a git repository with `stubs` (name -> sh body) first on PATH."""
+    root = _node_lib_root(tmp_path / "cell")
+    cycle.apply(root, home=tmp_path / "home")
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    for name, body in (stubs or {}).items():
+        stub = bin_dir / name
+        stub.write_text(f"#!/bin/sh\n{body}\n")
+        stub.chmod(0o755)
+    repo = tmp_path / "work"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    _commit(repo, "a.txt")
+    if tag:
+        _commit(repo, "b.txt")
+        _git(repo, "tag", tag)
+    output = tmp_path / "output"
+    return subprocess.run(
+        ["task", "-t", str(root / "Taskfile.yml"), "--dir", str(repo), f"ci:{task}"],
+        capture_output=True,
+        text=True,
+        env={
+            **os.environ,
+            "PATH": f"{bin_dir}:{os.environ['PATH']}",
+            "GITHUB_OUTPUT": str(output),
+            "RUNNER_TEMP": str(tmp_path),
+            **(env or {}),
+        },
+    )
+
+
+def _needs_task() -> None:
+    if shutil.which("task") is None:
+        pytest.skip("task is not on PATH")
+
+
+def test_s9_1_5_4_release_tasks_are_described_and_public(tmp_path: Path) -> None:
+    tasks = _ci_tasks(_node_lib_root(tmp_path))["tasks"]
+    for name in RELEASE_TASKS:
+        assert tasks[name]["desc"].startswith("CI only"), name  # type: ignore[index]
+        assert "internal" not in tasks[name], name  # type: ignore[operator]
+        assert "pipefail" not in "\n".join(tasks[name]["cmds"]), name  # type: ignore[index]
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s9_1_5_4_other_archetypes_render_no_release_tasks(
+    tmp_path: Path, archetype: str
+) -> None:
+    tasks = _ci_tasks(_root(tmp_path, archetype))["tasks"]
+    assert not {"release:gate", "published-install"} & set(tasks)  # type: ignore[arg-type]
+
+
+GH_RUNS = 'case "$1" in run) echo {count} ;; esac'
+
+
+@pytest.mark.parametrize(
+    ("ref", "dry", "count", "ok", "message"),
+    [
+        ("feature", "false", "1", False, "Release runs from main, not feature"),
+        ("feature", "true", "0", True, "No successful ci.yml run"),
+        ("main", "false", "1", True, "Found a successful ci.yml run"),
+        ("main", "false", "0", False, "::error::No successful ci.yml run"),
+        ("main", "true", "0", True, "::warning::No successful ci.yml run"),
+    ],
+)
+def test_s9_1_5_4_gate_needs_main_and_a_green_run(
+    tmp_path: Path, ref: str, dry: str, count: str, ok: bool, message: str
+) -> None:
+    _needs_task()
+    done = _release_run(
+        tmp_path,
+        "release:gate",
+        {"GITHUB_REF_NAME": ref, "DRY_RUN": dry},
+        {"gh": GH_RUNS.format(count=count)},
+    )
+    assert (done.returncode == 0) is ok, done.stdout + done.stderr
+    assert message in done.stdout + done.stderr
+
+
+def test_s9_1_5_4_gate_checks_the_parent_of_a_tagged_head(tmp_path: Path) -> None:
+    _needs_task()
+    done = _release_run(
+        tmp_path,
+        "release:gate",
+        {"GITHUB_REF_NAME": "main", "DRY_RUN": "false"},
+        {"gh": GH_RUNS.format(count=1)},
+        tag="v1.0.0",
+    )
+    assert done.returncode == 0, done.stderr
+    assert "Found a successful ci.yml run for" in done.stdout
+
+
+@pytest.mark.parametrize(
+    ("tag", "draft", "mode"),
+    [(None, "", "new"), ("v1.0.0", "false", "released"), ("v1.0.0", "true", "resume")],
+)
+def test_s9_1_5_4_state_writes_the_mode(
+    tmp_path: Path, tag: str | None, draft: str, mode: str
+) -> None:
+    _needs_task()
+    done = _release_run(
+        tmp_path, "release:state", stubs={"gh": f"echo {draft}"}, tag=tag
+    )
+    assert done.returncode == 0, done.stderr
+    assert (tmp_path / "output").read_text() == f"mode={mode}\n"
+
+
+def test_s9_1_5_4_state_refuses_two_tags(tmp_path: Path) -> None:
+    _needs_task()
+    two = tmp_path / "two"
+    two.mkdir()
+    # A second tag on the same commit.
+    root = _node_lib_root(two / "cell")
+    cycle.apply(root, home=two / "home")
+    repo = two / "work"
+    repo.mkdir()
+    _git(repo, "init", "-q")
+    _commit(repo, "a.txt")
+    _git(repo, "tag", "v1.0.0")
+    _git(repo, "tag", "v1.0.1")
+    done = subprocess.run(
+        [
+            "task",
+            "-t",
+            str(root / "Taskfile.yml"),
+            "--dir",
+            str(repo),
+            "ci:release:state",
+        ],
+        capture_output=True,
+        text=True,
+        env={**os.environ, "GITHUB_OUTPUT": str(two / "out")},
+    )
+    assert done.returncode != 0
+    assert "More than one v* tag at HEAD" in done.stdout + done.stderr
+
+
+def test_s9_1_5_4_tag_writes_the_one_tag_and_fails_without(tmp_path: Path) -> None:
+    _needs_task()
+    done = _release_run(tmp_path / "a", "release:tag", tag="v2.0.0")
+    assert done.returncode == 0, done.stderr
+    assert (tmp_path / "a" / "output").read_text() == "name=v2.0.0\n"
+    none = _release_run(tmp_path / "b", "release:tag")
+    assert none.returncode != 0
+    assert (
+        "Expected exactly one v* tag at HEAD, found: none" in none.stdout + none.stderr
+    )
+
+
+PNPM_ECHO = 'for a in "$@"; do printf "<%s>" "$a"; done; echo'
+
+
+@pytest.mark.parametrize(
+    ("dry", "first", "expected"),
+    [
+        ("false", "false", "<exec><nx><release><1.2.3><--skip-publish>"),
+        (
+            "false",
+            "true",
+            "<exec><nx><release><1.2.3><--skip-publish><--first-release>",
+        ),
+        (
+            "true",
+            "false",
+            "<exec><nx><release><version><1.2.3><--git-commit=false><--git-tag=false><--stage-changes=false>",
+        ),
+        (
+            "true",
+            "true",
+            "<exec><nx><release><version><1.2.3><--git-commit=false><--git-tag=false><--stage-changes=false><--first-release>",
+        ),
+    ],
+)
+def test_s9_1_5_4_version_branches_on_dry_run(
+    tmp_path: Path, dry: str, first: str, expected: str
+) -> None:
+    _needs_task()
+    done = _release_run(
+        tmp_path,
+        "release:version",
+        {"VERSION_SPEC": "1.2.3", "FIRST_RELEASE": first, "DRY_RUN": dry},
+        {"pnpm": PNPM_ECHO},
+    )
+    assert done.returncode == 0, done.stderr
+    assert done.stdout.strip() == expected
+
+
+def test_s9_1_5_4_verify_packs_then_verifies_unless_resuming(tmp_path: Path) -> None:
+    _needs_task()
+    plain = _release_run(tmp_path / "a", "release:verify", stubs={"pnpm": PNPM_ECHO})
+    assert plain.stdout.splitlines() == [
+        f"<exec><nx><run-many><-t><{t}><-p><tag:publishable><--excludeTaskDependencies>"
+        for t in ("pack", "verify-dist", "verify-consumer")
+    ]
+    resume = _release_run(
+        tmp_path / "b",
+        "release:verify",
+        {"MODE": "resume"},
+        {"pnpm": PNPM_ECHO},
+    )
+    assert resume.stdout.splitlines() == [
+        "<exec><nx><run-many><-t><pack><verify-dist><verify-consumer><-p><tag:publishable>"
+    ]
+
+
+@pytest.mark.parametrize(
+    ("dry", "first", "tail"),
+    [
+        ("", "", ""),
+        ("--dry-run", "", "<--dry-run>"),
+        ("", "--first-release", "<--first-release>"),
+    ],
+)
+def test_s9_1_5_4_publish_takes_its_flags_from_the_environment(
+    tmp_path: Path, dry: str, first: str, tail: str
+) -> None:
+    _needs_task()
+    done = _release_run(
+        tmp_path,
+        "release:publish",
+        {"DIST_TAG": "next", "DRY_RUN_FLAG": dry, "FIRST_RELEASE_FLAG": first},
+        {"pnpm": PNPM_ECHO},
+    )
+    assert done.returncode == 0, done.stderr
+    assert (
+        done.stdout.strip()
+        == f"<exec><nx><release><publish><--tag=next><--excludeTaskDependencies>{tail}"
+    )
+
+
+@pytest.mark.parametrize("local", [True, False])
+def test_s9_1_5_4_latest_downloads_tarballs_only_when_none_are_local(
+    tmp_path: Path, local: bool
+) -> None:
+    _needs_task()
+    log = tmp_path / "calls"
+    stubs = {
+        "gh": f'echo "gh $*" >> {log}\ncase "$*" in *"view latest"*) echo old ;; *"view v1"*) echo new ;; esac',
+        "git": f'echo "git $*" >> {log}\ncase "$1" in rev-parse) echo abc ;; esac',
+    }
+    root = _node_lib_root(tmp_path / "cell")
+    cycle.apply(root, home=tmp_path / "home")
+    repo = tmp_path / "work"
+    (repo / "dist" / "tarballs").mkdir(parents=True)
+    if local:
+        (repo / "dist" / "tarballs" / "a.tgz").write_text("")
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    for name, body in stubs.items():
+        (bin_dir / name).write_text(f"#!/bin/sh\n{body}\n")
+        (bin_dir / name).chmod(0o755)
+    done = subprocess.run(
+        [
+            "task",
+            "-t",
+            str(root / "Taskfile.yml"),
+            "--dir",
+            str(repo),
+            "ci:release:latest",
+        ],
+        capture_output=True,
+        text=True,
+        env={**os.environ, "PATH": f"{bin_dir}:{os.environ['PATH']}", "TAG": "v1"},
+    )
+    assert done.returncode == 0, done.stderr
+    calls = log.read_text()
+    assert ("release download v1" in calls) is (not local)
+    assert "gh release create latest dist/tarballs/" in calls
+    assert "git push origin latest --force" in calls
+
+
+NGKIT = Path(__file__).resolve().parents[4] / "ngkit"
+NGKIT_REF = "0c2cd2a"
+VERBATIM = {
+    "Detect release state": "release:state",
+    "Configure git author": "release:author",
+    "Resolve release tag": "release:tag",
+    "Push release commit and tag": "release:push",
+    "Create GitHub Release": "release:github",
+    "Verify the released tarballs": "published-install",
+}
+
+
+def test_s9_1_5_4_verbatim_bodies_are_ngkits(tmp_path: Path) -> None:
+    if not (NGKIT / ".git").exists():
+        pytest.skip("no ngkit checkout beside this repository")
+    golden = subprocess.run(
+        ["git", "-C", str(NGKIT), "show", f"{NGKIT_REF}:.github/workflows/release.yml"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    jobs = YamlUtils.load(golden)["jobs"]
+    steps = [s for job in jobs.values() for s in job["steps"]]
+    tasks = _ci_tasks(_node_lib_root(tmp_path))["tasks"]
+    for step in steps:
+        task = VERBATIM.get(step.get("name", ""))
+        if task:
+            assert "\n".join(tasks[task]["cmds"]).strip() == step["run"].strip(), task  # type: ignore[index]

@@ -109,7 +109,147 @@ tasks:
     desc: "CI only: pack the publishable projects and verify their tarballs"
     cmds:
       - pnpm exec nx run-many -t pack verify-dist verify-consumer
-{% if docs %}
+{% if release == "nx-dispatch" %}
+  release:gate:
+    desc: "CI only: fail unless a CI run for the release commit succeeded, and the release runs from main (a dry run only warns)"
+    cmds:
+      - |
+        if [ "$GITHUB_REF_NAME" != main ] && [ "$DRY_RUN" != "true" ]; then
+          echo "::error::Release runs from main, not $GITHUB_REF_NAME"
+          exit 1
+        fi
+        if [ -n "$(git tag --points-at HEAD --list 'v*')" ]; then
+          sha=$(git rev-parse HEAD^)
+        else
+          sha=$(git rev-parse HEAD)
+        fi
+        count=$(gh run list --workflow ci.yml --commit "$sha" --status success --json databaseId --jq length)
+        if [ "$count" -ge 1 ]; then
+          echo "Found a successful ci.yml run for $sha"
+          exit 0
+        fi
+        msg="No successful ci.yml run for $sha"
+        if [ "$DRY_RUN" = "true" ]; then
+          echo "::warning::$msg"
+        else
+          echo "::error::$msg"
+          exit 1
+        fi
+
+  release:state:
+    desc: "CI only: write mode=new|resume|released for the tag at HEAD to $GITHUB_OUTPUT"
+    cmds:
+      - |
+        tag=$(git tag --points-at HEAD --list 'v*')
+        if [ -z "$tag" ]; then
+          mode=new
+        elif [ "$(wc -l <<<"$tag")" -ne 1 ]; then
+          echo "::error::More than one v* tag at HEAD: $tag"
+          exit 1
+        elif [ "$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null)" = false ]; then
+          mode=released
+        else
+          mode=resume
+        fi
+        echo "::notice::Release mode: $mode${tag:+ ($tag)}"
+        echo "mode=$mode" >> "$GITHUB_OUTPUT"
+
+  release:author:
+    desc: "CI only: set the git author to the github-actions bot"
+    cmds:
+      - |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+  release:version:
+    desc: "CI only: version the libraries (VERSION_SPEC, FIRST_RELEASE); DRY_RUN=true writes files only, else commits and tags locally"
+    cmds:
+      - |
+        if [ "$DRY_RUN" = "true" ]; then
+          args=(release version "$VERSION_SPEC" --git-commit=false --git-tag=false --stage-changes=false)
+        else
+          args=(release "$VERSION_SPEC" --skip-publish)
+        fi
+        if [ "$FIRST_RELEASE" = "true" ]; then args+=(--first-release); fi
+        pnpm exec nx "${args[@]}"
+
+  release:tag:
+    desc: "CI only: write name=<the one v* tag at HEAD> to $GITHUB_OUTPUT"
+    cmds:
+      - |
+        tags=$(git tag --points-at HEAD --list 'v*')
+        if [ -z "$tags" ] || [ "$(wc -l <<<"$tags")" -ne 1 ]; then
+          echo "::error::Expected exactly one v* tag at HEAD, found: ${tags:-none}"
+          exit 1
+        fi
+        echo "name=$tags" >> "$GITHUB_OUTPUT"
+
+  release:verify:
+    desc: "CI only: pack and verify the publishable projects; MODE=resume rebuilds dist/ from the tagged source first"
+    cmds:
+      - |
+        if [ "${MODE:-}" = resume ]; then
+          pnpm exec nx run-many -t pack verify-dist verify-consumer -p tag:publishable
+        else
+          pnpm exec nx run-many -t pack -p tag:publishable --excludeTaskDependencies
+          pnpm exec nx run-many -t verify-dist -p tag:publishable --excludeTaskDependencies
+          pnpm exec nx run-many -t verify-consumer -p tag:publishable --excludeTaskDependencies
+        fi
+
+  release:push:
+    desc: "CI only: push the release commit and TAG atomically to the current branch"
+    cmds:
+      - git push --atomic origin "HEAD:refs/heads/$GITHUB_REF_NAME" "refs/tags/$TAG"
+
+  release:github:
+    desc: "CI only: create the GitHub Release for TAG from the tarballs and release-notes.mjs"
+    cmds:
+      - |
+        tag="$TAG"
+        # Only a draft can reach this step (published means released mode); keeps the tag.
+        if gh release view "$tag" --json isDraft --jq .isDraft >/dev/null 2>&1; then
+          gh release delete "$tag" --yes
+        fi
+        node tools/ci/release-notes.mjs "${tag#v}" > "$RUNNER_TEMP/notes.md"
+        gh release create "$tag" dist/tarballs/*.tgz --verify-tag --title "$tag" --notes-file "$RUNNER_TEMP/notes.md"
+
+  release:publish:
+    desc: "CI only: publish to npm under DIST_TAG; DRY_RUN_FLAG and FIRST_RELEASE_FLAG hold the flags, or nothing"
+    cmds:
+      - pnpm exec nx release publish --tag="$DIST_TAG" --excludeTaskDependencies $DRY_RUN_FLAG $FIRST_RELEASE_FLAG
+
+  release:latest:
+    desc: "CI only: move the rolling latest release to TAG"
+    cmds:
+      - |
+        # Skip when the remote "latest" tag already sits on this tag's commit and
+        # the release carries the same assets. (targetCommitish is a branch name,
+        # so the tag's ref is what records the commit.)
+        list='[.assets[].name] | sort | join(",")'
+        want=$(git rev-parse "$TAG^{commit}")
+        refs=$(git ls-remote origin refs/tags/latest 'refs/tags/latest^{}')
+        have=$(echo "$refs" | awk '/\^\{\}$/ {p=$1} {l=$1} END {print p ? p : l}')
+        if [ "$have" = "$want" ] &&
+          [ "$(gh release view latest --json assets --jq "$list")" = "$(gh release view "$TAG" --json assets --jq "$list")" ]; then
+          echo "::notice::latest already points at $TAG"
+          exit 0
+        fi
+        # Released mode has no local tarballs; fetch them from the published release.
+        if ! ls dist/tarballs/*.tgz >/dev/null 2>&1; then
+          gh release download "$TAG" --dir dist/tarballs --pattern '*.tgz'
+        fi
+        gh release delete latest --yes --cleanup-tag || true
+        git tag -f latest
+        git push origin latest --force
+        gh release create latest dist/tarballs/*.tgz --title "Latest" --notes "Rolling pointer to $TAG"
+
+  published-install:
+    desc: "CI only: install what consumers download, the tarballs of the release TAG"
+    cmds:
+      - |
+        gh release download "$TAG" --dir dist/tarballs --pattern '*.tgz'
+        pnpm exec nx run-many -t verify-consumer --excludeTaskDependencies
+{% endif %}{% if docs %}
   docs:affected:
     desc: "CI only: write build=true to $GITHUB_OUTPUT when a doc project is affected, or on dispatch"
     cmds:

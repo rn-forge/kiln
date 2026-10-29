@@ -8,7 +8,7 @@ from typing import Literal
 from pydantic import Field, ValidationInfo, field_validator
 from rn_forge.commons.lang.models import StrictModel
 
-__all__ = ["GENERATED_JOBS", "CiConfig", "CiHooks", "CiJob"]
+__all__ = ["GENERATED_JOBS", "CiConfig", "CiHooks", "CiJob", "resolve_release"]
 
 GENERATED_JOBS = frozenset(
     {
@@ -100,7 +100,8 @@ class CiConfig(StrictModel):
     provider: Literal["github", "ado"] = "github"
     """`ado` is reserved."""
     sonar: bool = True
-    release: Literal["tag-exists", "pypi", "none"] = "tag-exists"
+    release: Literal["tag-exists", "pypi", "nx-dispatch", "none"] | None = None
+    """`None` is the archetype's default: `nx-dispatch` for `node-lib`, `tag-exists` otherwise."""
     doctor_full: Literal["default-branch", "every-run"] = "default-branch"
     """When CI runs `kiln doctor --full`: pushes to the default branch and
     dispatch, or every run."""
@@ -115,3 +116,21 @@ class CiConfig(StrictModel):
         if len(set(names)) != len(names):
             raise ValueError("ci.jobs names must be unique")
         return value
+
+
+def resolve_release(ci: CiConfig, archetype: str) -> str:
+    """The release mode *archetype* runs: `ci.release`, or the archetype's default when unset.
+
+    Raises:
+        ValueError: the mode does not fit the archetype. `pypi` needs `python-lib`;
+            `nx-dispatch` needs `node-lib`, which takes neither `tag-exists` nor `pypi`.
+    """
+    node_lib = archetype == "node-lib"
+    release = ci.release or ("nx-dispatch" if node_lib else "tag-exists")
+    if release == "pypi" and archetype != "python-lib":
+        raise ValueError("ci.release = 'pypi' needs a library workspace")
+    if release == "nx-dispatch" and not node_lib:
+        raise ValueError("ci.release = 'nx-dispatch' needs the node-lib archetype")
+    if release == "tag-exists" and node_lib:
+        raise ValueError("ci.release = 'tag-exists' is not available for node-lib")
+    return release

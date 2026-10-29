@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from rn_forge.kiln.modules.cicd.config import CiConfig
+from rn_forge.kiln.modules.cicd.config import CiConfig, resolve_release
 from rn_forge.kiln.modules.core.config.schema import RootConfig
 from rn_forge.kiln.modules.docs.config import DocsConfig
 from rn_forge.kiln.modules.python.config import ArchetypeConfig, WebAppConfig
@@ -67,6 +67,18 @@ class KilnConfig:
         """`github`; `ado` is reserved."""
         ci = getattr(self.document, "ci", None)
         return ci.provider if isinstance(ci, CiConfig) else "github"
+
+    @property
+    def release(self) -> str:
+        """The release mode: `[ci] release`, or the archetype's default.
+
+        Raises:
+            ValueError: the mode does not fit the archetype.
+        """
+        ci = getattr(self.document, "ci", None)
+        return resolve_release(
+            ci if isinstance(ci, CiConfig) else CiConfig(), self.archetype
+        )
 
     @property
     def packages(self) -> tuple[str, ...]:

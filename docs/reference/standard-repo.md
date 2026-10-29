@@ -130,7 +130,7 @@ The assignment is normative:
 | `packages/<pkg>/mkdocs.yml` | `python-lib` only; repo, seeded once by `kiln generate package`; no managed block ([ADR-0008](../adr/ADR-0008.md)) | **seeded** |
 | `packages/<pkg>/docs/**` | `python-lib` only; repo, seeded once by `kiln generate package` | **seeded** |
 | `packages/<pkg>/CHANGELOG.md`, `packages/<pkg>/README.md` | `python-lib` only; repo, seeded once by `kiln generate package` | **seeded** |
-| `.github/workflows/ci.yml`, `docs.yml`; `.github/dependabot.yml`; `.github/actions/setup`; `sonar-project.properties`; `tools/ci/*.mjs` for `node-lib` | kiln (`cicd`) | managed |
+| `.github/workflows/ci.yml`, `docs.yml`, `release.yml` (`node-lib`); `.github/dependabot.yml`; `.github/actions/setup`; `sonar-project.properties`; `tools/ci/*.mjs` for `node-lib` | kiln (`cicd`) | managed |
 | `CLAUDE.md`, `AGENTS.md` | bodies written once by `kiln new`, then repo; the `<!-- BEGIN rn-forge kiln -->` block in `CLAUDE.md` → kiln | block (`CLAUDE.md` only; `AGENTS.md` points at it) |
 | `.claude/**`, `.codex/**`, installed skills | not kiln's | — |
 | Repo-specific lints (`check_brand.py`, `check_gate_tags.py`, …) | repo, wired via `[tasks.extra_refs]` | repo |
@@ -424,10 +424,12 @@ planned by `kiln-devops` ([ADR-0017](../adr/ADR-0017.md)) through the public
 [How a `python-lib` CI run flows](../architecture/python-lib-ci.md) walks
 through each event.
 
-Planned for release-1, not yet built: a `node-lib` repository releases by
-`workflow_dispatch` (`[ci] release = "nx-dispatch"`), gated on a green CI run,
-and may call `nx start-ci-run` and `nx fix-ci` directly, the only
-`ci-entrypoint` exemption ([ADR-0015](../adr/ADR-0015.md)).
+A `node-lib` repository releases by `workflow_dispatch`
+(`[ci] release = "nx-dispatch"`, its default), from
+`.github/workflows/release.yml`: gated on a green `ci.yml` run for the commit,
+from `main` unless it is a dry run, tagged `v<version>`, with the release commit
+pushed by a GitHub App token. It may call `nx start-ci-run` and `nx fix-ci`
+directly, the only `ci-entrypoint` exemption ([ADR-0015](../adr/ADR-0015.md)).
 
 The rules:
 
@@ -519,9 +521,11 @@ external_url = ""          # external only; surfaced in the instructions block
 [ci]
 provider = "github"        # github only in v1; "ado" reserved
 sonar = true
-release = "tag-exists"     # tag-exists | pypi | none
+release = "tag-exists"     # tag-exists | pypi | nx-dispatch | none
                            # pypi: python-lib only; tag-exists plus a PyPI upload (section 8)
-                           # nx-dispatch: node-lib default (release-1, not yet built)
+                           # nx-dispatch: node-lib only, and its default; tag-exists and pypi
+                           # are refused there. Unset, the archetype's default applies.
+                           # none: no release (node-lib renders no release.yml)
 [ci.hooks]
 setup = ["./.github/actions/setup-node"]
                            # optional: local composite actions the setup action runs as its

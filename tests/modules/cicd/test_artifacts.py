@@ -28,6 +28,7 @@ from rn_forge.kiln.modules.cicd import CICD
 from rn_forge.kiln.modules.cicd.artifacts import load_pins
 from rn_forge.kiln.modules.cicd.config import GENERATED_JOBS
 from rn_forge.kiln.modules.core import cycle
+from rn_forge.kiln.modules.tasks import TASKS
 
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
 
@@ -75,7 +76,7 @@ def _root(
     archetype: str = "python-tool",
     profile: str = "mkdocs",
     sonar: bool = True,
-    release: str = "tag-exists",
+    release: str | None = None,
     provider: str = "github",
 ) -> Path:
     config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
@@ -84,7 +85,7 @@ def _root(
         archetype=archetype,
         profile=profile,
         sonar=str(sonar).lower(),
-        release=release,
+        release=release or ("nx-dispatch" if archetype == "node-lib" else "tag-exists"),
         provider=provider,
     )
     if archetype == "python-lib":
@@ -2774,3 +2775,286 @@ def test_s9_1_11_6_the_idea_row_is_gone() -> None:
         encoding="utf-8"
     )
     assert "node-docs-site-assembly" not in ideas
+
+
+# S9.1.5 — dispatch release.
+
+RELEASE_YML = ".github/workflows/release.yml"
+
+
+def _node_lib_release(tmp_path: Path) -> dict[str, object]:
+    return YamlUtils.load(_rendered(_root(tmp_path, "node-lib"))[RELEASE_YML])
+
+
+def test_s9_1_5_1_nx_dispatch_is_node_libs_default(tmp_path: Path) -> None:
+    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(
+        'schema_version = 1\n\n[repository]\nname = "demo"\narchetype = "node-lib"\n',
+        encoding="utf-8",
+    )
+    rendered = _rendered(tmp_path)
+    assert RELEASE_YML in rendered
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s9_1_5_1_nx_dispatch_is_refused_elsewhere(
+    tmp_path: Path, archetype: str
+) -> None:
+    root = _root(tmp_path, archetype, release="nx-dispatch")
+    with pytest.raises(ValueError, match=r"ci\.release"):
+        _rendered(root)
+
+
+@pytest.mark.parametrize("release", ["tag-exists", "pypi"])
+def test_s9_1_5_1_node_lib_refuses_the_other_modes(
+    tmp_path: Path, release: str
+) -> None:
+    root = _root(tmp_path, "node-lib", release=release)
+    with pytest.raises(ValueError, match=r"ci\.release"):
+        _rendered(root)
+
+
+def test_s9_1_5_2_release_yml_renders_for_nx_dispatch_only(tmp_path: Path) -> None:
+    assert RELEASE_YML in _rendered(_root(tmp_path / "node", "node-lib"))
+    for archetype in ARCHETYPES:
+        assert RELEASE_YML not in _rendered(_root(tmp_path / archetype, archetype))
+
+
+def test_s9_1_5_2_release_none_renders_no_release_yml_and_no_release_tasks(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path, "node-lib", release="none")
+    rendered = _rendered(root)
+    assert RELEASE_YML not in rendered
+    jobs = YamlUtils.load(rendered[CI_YML])["jobs"]
+    assert "release" not in jobs
+    assert "release" not in jobs["ci-ok"]["needs"]
+    config = KilnConfig.load(root)
+    tasks = {a.path: a.content for a in TASKS.artifacts(config, root)}["tasks/ci.yml"]
+    assert "release:" not in tasks
+    assert "published-install" not in tasks
+
+
+def test_s9_1_5_2_ci_yml_has_no_release_job(tmp_path: Path) -> None:
+    jobs = _node_lib_ci(tmp_path)["jobs"]
+    assert "release" not in jobs  # type: ignore[operator]
+    assert "release" not in jobs["ci-ok"]["needs"]  # type: ignore[index]
+
+
+def test_s9_1_5_3_trigger_permissions_and_concurrency_are_ngkits(
+    tmp_path: Path,
+) -> None:
+    workflow = _node_lib_release(tmp_path)
+    assert workflow["on"] == {  # type: ignore[comparison-overlap]
+        "workflow_dispatch": {
+            "inputs": {
+                "specifier": {
+                    "description": "Version bump",
+                    "required": True,
+                    "type": "choice",
+                    "options": ["patch", "minor", "major"],
+                    "default": "patch",
+                },
+                "exact-version": {
+                    "description": "Exact version (overrides bump; leave empty normally)",
+                    "required": False,
+                    "type": "string",
+                },
+                "dist-tag": {
+                    "description": "npm dist-tag (latest for current releases; v<major>-lts for hotfixes to older majors)",
+                    "required": True,
+                    "type": "string",
+                    "default": "latest",
+                },
+                "dry-run": {
+                    "description": "Dry run (no commit/tag/publish)",
+                    "required": True,
+                    "type": "boolean",
+                    "default": True,
+                },
+                "first-release": {
+                    "description": "First release ever (no existing git tags)",
+                    "required": False,
+                    "type": "boolean",
+                    "default": False,
+                },
+            }
+        }
+    }
+    assert workflow["concurrency"] == {"group": "release", "cancel-in-progress": False}
+    job = workflow["jobs"]["release"]  # type: ignore[index]
+    assert job["permissions"] == {
+        "contents": "write",
+        "id-token": "write",
+        "actions": "read",
+    }
+    assert job["timeout-minutes"] == 30
+    assert job["outputs"] == {"tag": "${{ steps.tag.outputs.name }}"}
+    assert list(workflow["jobs"]) == ["release", "published-install"]  # type: ignore[arg-type]
+
+
+def test_s9_1_5_3_app_token_checkout_and_setup_are_ngkits(tmp_path: Path) -> None:
+    pins = load_pins()
+    app, checkout, setup = _node_lib_release(tmp_path)["jobs"]["release"]["steps"][:3]  # type: ignore[index]
+    token = pins["create-github-app-token"]
+    assert app["uses"] == f"{token['uses']}@{token['sha']}"
+    assert app["id"] == "app-token"
+    assert app["with"] == {
+        "client-id": "${{ vars.RELEASE_APP_CLIENT_ID }}",
+        "private-key": "${{ secrets.RELEASE_APP_PRIVATE_KEY }}",
+        "permission-contents": "write",
+    }
+    assert checkout["uses"].startswith(pins["checkout"]["uses"])
+    assert checkout["with"] == {
+        "token": "${{ steps.app-token.outputs.token }}",
+        "fetch-depth": 0,
+        "filter": "tree:0",
+        "persist-credentials": True,
+    }
+    assert setup["uses"].startswith("./.github/actions/setup")
+    assert setup["with"] == {
+        "github-token": "${{ secrets.GITHUB_TOKEN }}",
+        "registry-url": "https://registry.npmjs.org",
+    }
+
+
+VERSION_SPEC = (
+    "${{ inputs.exact-version != '' && inputs.exact-version || inputs.specifier }}"
+)
+RELEASE_STEPS = {
+    "Gate on a green CI run": (
+        None,
+        "task ci:release:gate",
+        {"GH_TOKEN": "${{ github.token }}", "DRY_RUN": "${{ inputs.dry-run }}"},
+    ),
+    "Detect release state": (
+        None,
+        "task ci:release:state",
+        {"GH_TOKEN": "${{ github.token }}"},
+    ),
+    "Configure git author": (None, "task ci:release:author", None),
+    "Version locally": (
+        "${{ !inputs.dry-run && steps.state.outputs.mode == 'new' }}",
+        "task ci:release:version",
+        {
+            "VERSION_SPEC": VERSION_SPEC,
+            "FIRST_RELEASE": "${{ inputs.first-release }}",
+            "DRY_RUN": "${{ inputs.dry-run }}",
+        },
+    ),
+    "Resolve release tag": ("${{ !inputs.dry-run }}", "task ci:release:tag", None),
+    "Version (dry-run simulation)": (
+        "${{ inputs.dry-run }}",
+        "task ci:release:version",
+        {
+            "VERSION_SPEC": VERSION_SPEC,
+            "FIRST_RELEASE": "${{ inputs.first-release }}",
+            "DRY_RUN": "${{ inputs.dry-run }}",
+        },
+    ),
+    "Verify": (
+        "${{ inputs.dry-run || steps.state.outputs.mode == 'new' }}",
+        "task ci:release:verify",
+        None,
+    ),
+    "Rebuild and verify (resume)": (
+        "${{ !inputs.dry-run && steps.state.outputs.mode == 'resume' }}",
+        "task ci:release:verify",
+        {"MODE": "resume"},
+    ),
+    "Push release commit and tag": (
+        "${{ !inputs.dry-run && steps.state.outputs.mode == 'new' }}",
+        "task ci:release:push",
+        {"TAG": "${{ steps.tag.outputs.name }}"},
+    ),
+    "Create GitHub Release": (
+        "${{ !inputs.dry-run && steps.state.outputs.mode != 'released' }}",
+        "task ci:release:github",
+        {"TAG": "${{ steps.tag.outputs.name }}", "GH_TOKEN": "${{ github.token }}"},
+    ),
+    "Publish": (
+        "${{ inputs.dry-run || steps.state.outputs.mode != 'released' }}",
+        "task ci:release:publish",
+        {
+            "DIST_TAG": "${{ inputs.dist-tag }}",
+            "DRY_RUN_FLAG": "${{ inputs.dry-run && '--dry-run' || '' }}",
+            "FIRST_RELEASE_FLAG": "${{ inputs.first-release && '--first-release' || '' }}",
+        },
+    ),
+    'Update rolling "latest" release': (
+        "${{ !inputs.dry-run && github.ref_name == 'main' }}",
+        "task ci:release:latest",
+        {"GH_TOKEN": "${{ github.token }}", "TAG": "${{ steps.tag.outputs.name }}"},
+    ),
+    "Already released": (
+        "${{ !inputs.dry-run && steps.state.outputs.mode == 'released' }}",
+        'echo "::notice::$TAG is already released"',
+        {"TAG": "${{ steps.tag.outputs.name }}"},
+    ),
+}
+
+
+def test_s9_1_5_3_run_steps_are_the_tasks_with_ngkits_if_and_env(
+    tmp_path: Path,
+) -> None:
+    steps = _node_lib_release(tmp_path)["jobs"]["release"]["steps"][3:]  # type: ignore[index]
+    assert [s["name"] for s in steps] == list(RELEASE_STEPS)
+    for step in steps:
+        condition, run, env = RELEASE_STEPS[step["name"]]
+        assert step.get("if") == condition, step["name"]
+        assert step["run"] == run, step["name"]
+        assert step.get("env") == env, step["name"]
+    by_name = {s["name"]: s for s in steps}
+    assert by_name["Detect release state"]["id"] == "state"
+    assert by_name["Resolve release tag"]["id"] == "tag"
+
+
+def test_s9_1_5_3_the_rendered_run_lines_name_no_forbidden_tool(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path, "node-lib")
+    cycle.apply(root, home=tmp_path / "home")
+    codes = [f.code for f in checks.run(root)]
+    assert not [c for c in codes if c.startswith("ci.entrypoint")], codes
+
+
+def test_s9_1_5_5_published_install_is_ngkits(tmp_path: Path) -> None:
+    job = _node_lib_release(tmp_path)["jobs"]["published-install"]  # type: ignore[index]
+    assert job["needs"] == "release"
+    assert job["if"] == "${{ !inputs.dry-run }}"
+    assert job["timeout-minutes"] == 15
+    assert job["permissions"] == {"contents": "read"}
+    checkout, setup, install = job["steps"]
+    assert checkout["with"] == {
+        "ref": "${{ needs.release.outputs.tag }}",
+        "persist-credentials": False,
+    }
+    assert setup["uses"].startswith("./.github/actions/setup")
+    assert install["name"] == "Verify the released tarballs"
+    assert install["run"] == "task ci:published-install"
+    assert install["env"] == {
+        "TAG": "${{ needs.release.outputs.tag }}",
+        "GH_TOKEN": "${{ github.token }}",
+    }
+
+
+def test_s9_1_5_6_nothing_in_release_yml_forces_a_publish_flag(tmp_path: Path) -> None:
+    text = _rendered(_root(tmp_path, "node-lib"))[RELEASE_YML]
+    assert "--provenance" not in text
+    assert "nx release publish" not in text
+
+
+def test_s9_1_5_3_release_yml_passes_actionlint(tmp_path: Path) -> None:
+    if shutil.which("actionlint") is None:
+        pytest.skip("actionlint is not on PATH")
+    root = _root(tmp_path, "node-lib")
+    cycle.apply(root, home=tmp_path / "home")
+    result = subprocess.run(
+        ["actionlint", RELEASE_YML],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

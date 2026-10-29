@@ -48,11 +48,6 @@ def _tasks_config(config: KilnConfig) -> TasksConfig:
     return section if isinstance(section, TasksConfig) else TasksConfig()
 
 
-def _release(config: KilnConfig) -> str:
-    ci = getattr(config.document, "ci", None)
-    return getattr(ci, "release", "tag-exists")
-
-
 def _site_dir(config: KilnConfig) -> str:
     docs = getattr(config.document, "docs", None)
     return docs.site_dir if isinstance(docs, DocsConfig) else ".docs-site"
@@ -108,7 +103,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "packages": packages,
         "package_dirs": list(config.packages),
         "docs": docs,
-        "release": _release(config),
+        "release": config.release,
         "site_dir": _site_dir(config),
         "includes": tasks_config.includes,
         "extra_refs": tasks_config.extra_refs,
