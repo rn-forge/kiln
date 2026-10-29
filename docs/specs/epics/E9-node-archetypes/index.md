@@ -2,13 +2,14 @@
 
 |  |  |
 | -- | -- |
-| **State** | New |
+| **State** | Active |
+| **Start Date** | 2026-10-29 |
 
 <!-- BEGIN derived features -->
 
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
-| [F9.1 — `node-lib` renders ngkit's CI](F9.1-node-lib-hosts-ngkit-ci.md) | New | release-1 | — |
+| [F9.1 — `node-lib` renders ngkit's CI](F9.1-node-lib-hosts-ngkit-ci.md) | Active | release-1 | 12 New · 1 Closed |
 
 <!-- END derived features -->
 
@@ -51,4 +52,4 @@ repository in scope uses it. The decisions are
 1. **`node-lib` meets [ADR-0016](../../../adr/ADR-0016.md)'s CI contract.** It
    may keep its Nx-native affected CI ([ADR-0015](../../../adr/ADR-0015.md))
    only while it does. Where ngkit's CI diverges is listed on
-   [F9.1](F9.1-node-lib-hosts-ngkit-ci.md#divergences-from-the-ci-contract).
+   [F9.1](F9.1-node-lib-hosts-ngkit-ci.md#audit-against-the-ci-contract).
