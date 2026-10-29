@@ -20,3 +20,10 @@ tasks:
       - uv run python scripts/golden_matrix.py render {{.BASE}}
       - uv run python scripts/golden_matrix.py render {{.REF}}
       - uv run python scripts/golden_matrix.py compare {{.BASE}} {{.REF}}
+
+  golden:ngkit:
+    desc: Render the node-lib cell and diff its files against ngkit's at the pinned commit, into .goldens/ngkit.diff (NGKIT=<path to an ngkit checkout>).
+    requires:
+      vars: [NGKIT]
+    cmds:
+      - uv run python scripts/golden_matrix.py ngkit {{.NGKIT}}

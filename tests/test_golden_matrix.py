@@ -342,3 +342,46 @@ def test_s4_4_9_1_compare_pairs_every_cell_of_two_refs(
 
 def test_s4_4_9_2_main_requires_a_base(matrix: ModuleType) -> None:
     assert matrix.main(["compare"]) == 2
+
+
+def _git(cwd: Path, *args: str) -> None:
+    subprocess.run(
+        ["git", "-c", "user.name=t", "-c", "user.email=t@t", *args],
+        cwd=cwd,
+        check=True,
+        capture_output=True,
+    )
+
+
+def test_s9_1_12_1_ngkit_files_skip_check_template(matrix: ModuleType) -> None:
+    assert len(matrix.NGKIT_FILES) == 10
+    assert not any("check-template" in name for name in matrix.NGKIT_FILES)
+    assert matrix.NGKIT_REF == "0c2cd2a"
+
+
+def test_s9_1_12_2_ngkit_diff_compares_the_ref_with_the_cell(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    checkout, cell = tmp_path / "ngkit", tmp_path / "cell"
+    files = {name: f"{name}\n" for name in matrix.NGKIT_FILES}
+    _write(checkout, files)
+    _git(checkout, "init", "-q")
+    _git(checkout, "add", ".")
+    _git(checkout, "commit", "-qm", "x")
+    _write(cell, {**files, "sonar-project.properties": "changed\n"})
+    lines = matrix.ngkit_diff(checkout, cell, "HEAD")
+    assert [line for line in lines if line.startswith("@@")] == ["@@ -1 +1 @@"]
+    assert "+changed" in lines
+    with pytest.raises(RuntimeError):
+        matrix.ngkit_diff(checkout, cell, "no-such-ref")
+
+
+def test_s9_1_12_3_main_requires_a_checkout(matrix: ModuleType) -> None:
+    assert matrix.main(["ngkit"]) == 2
+
+
+def test_s9_1_12_4_task_requires_ngkit() -> None:
+    tasks = YamlUtils.load((ROOT / "tasks" / "self.yml").read_text(encoding="utf-8"))
+    task = tasks["tasks"]["golden:ngkit"]
+    assert str(task["desc"]).strip()
+    assert task["requires"]["vars"] == ["NGKIT"]

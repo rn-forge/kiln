@@ -2,9 +2,11 @@
 
 Usage: golden_matrix.py {render,validate} [REF]
        golden_matrix.py compare BASE [REF]
+       golden_matrix.py ngkit CHECKOUT
 
 Cells land in `.goldens/<ref_dir>/<cell name>/`, beneath the repository root.
 `compare` diffs the kiln-owned files of every cell between two rendered refs.
+`ngkit` diffs the rendered `node-lib` cell against ngkit's files at `NGKIT_REF`.
 """
 
 from __future__ import annotations
@@ -24,6 +26,19 @@ ROOT = Path(__file__).resolve().parent.parent
 GOLDENS = ROOT / ".goldens"
 LIB_ORIGIN = "https://github.com/rn-forge/golden-lib"
 LIB_PACKAGES = ("golden-alpha", "golden-beta")
+NGKIT_REF = "0c2cd2a"
+NGKIT_FILES = (
+    ".github/actions/setup/action.yml",
+    ".github/workflows/ci.yml",
+    ".github/workflows/release.yml",
+    ".github/dependabot.yml",
+    ".nx/workflows/agents.yaml",
+    "tools/ci/resolve-dist-workspace-deps.mjs",
+    "tools/ci/verify-dist-manifest.mjs",
+    "tools/ci/assemble-site.mjs",
+    "tools/ci/release-notes.mjs",
+    "sonar-project.properties",
+)
 
 
 @dataclass(frozen=True)
@@ -267,12 +282,68 @@ def compare(base: str, ref: str, out_root: Path) -> int:
     return 1 if failed else 0
 
 
+def ngkit_diff(checkout: Path, cell_dir: Path, ref: str = NGKIT_REF) -> list[str]:
+    """Unified diffs of ngkit's files at *ref* against the same paths in *cell_dir*.
+
+    Raises:
+        RuntimeError: A file is missing at *ref* in *checkout*.
+    """
+    lines: list[str] = []
+    for relative in NGKIT_FILES:
+        shown = subprocess.run(
+            ["git", "-C", str(checkout), "show", f"{ref}:{relative}"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if shown.returncode != 0:
+            raise RuntimeError(f"{relative} is not at {ref} in {checkout}")
+        file = cell_dir / relative
+        rendered = file.read_text(encoding="utf-8") if file.is_file() else ""
+        lines += difflib.unified_diff(
+            shown.stdout.splitlines(),
+            rendered.splitlines(),
+            fromfile=f"ngkit/{relative}",
+            tofile=f"kiln/{relative}",
+            lineterm="",
+        )
+    return lines
+
+
+def ngkit(checkout: Path, out_root: Path) -> int:
+    """Render the `node-lib` cell and write its diff against *checkout* to `ngkit.diff`.
+
+    Returns 1 when a step failed.
+    """
+    cell = next(c for c in CELLS if c.archetype == "node-lib")
+    dest = out_root / ref_dir("") / cell.name
+    try:
+        render_cell(cell, dest, ["uv", "run", "--project", str(ROOT), "kiln"])
+        lines = ngkit_diff(checkout, dest)
+    except RuntimeError as error:
+        print(error, file=sys.stderr)
+        return 1
+    out_root.mkdir(parents=True, exist_ok=True)
+    (out_root / "ngkit.diff").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(f"{sum(line.startswith('@@') for line in lines)} hunks in ngkit.diff")
+    return 0
+
+
 def main(argv: list[str]) -> int:
-    """Run `render`, `validate` or `compare` with the refs it takes."""
-    usage = "usage: golden_matrix.py {render,validate} [REF] | compare BASE [REF]"
-    if not argv or argv[0] not in ("render", "validate", "compare") or len(argv) > 3:
+    """Run `render`, `validate`, `compare` or `ngkit` with the refs it takes."""
+    usage = (
+        "usage: golden_matrix.py {render,validate} [REF] | compare BASE [REF]"
+        " | ngkit CHECKOUT"
+    )
+    commands = ("render", "validate", "compare", "ngkit")
+    if not argv or argv[0] not in commands or len(argv) > 3:
         print(usage, file=sys.stderr)
         return 2
+    if argv[0] == "ngkit":
+        if len(argv) != 2 or not argv[1]:
+            print(usage, file=sys.stderr)
+            return 2
+        return ngkit(Path(argv[1]).resolve(), GOLDENS)
     if argv[0] == "compare":
         if len(argv) < 2 or not argv[1] or len(argv) > 3:
             print(usage, file=sys.stderr)
