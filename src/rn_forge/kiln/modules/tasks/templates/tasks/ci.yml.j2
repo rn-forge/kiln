@@ -109,7 +109,29 @@ tasks:
     desc: "CI only: pack the publishable projects and verify their tarballs"
     cmds:
       - pnpm exec nx run-many -t pack verify-dist verify-consumer
-{% endif %}{% if workspace %}
+{% if docs %}
+  docs:affected:
+    desc: "CI only: write build=true to $GITHUB_OUTPUT when a doc project is affected, or on dispatch"
+    cmds:
+      - |
+        if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] \
+          || [ "$(pnpm exec nx show projects --affected --with-target compodoc --json | jq 'length > 0')" = true ] \
+          || [ "$(pnpm exec nx show projects --affected --with-target build-storybook --json | jq 'length > 0')" = true ]; then
+          echo "build=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "::notice::No affected project has a doc target; skipping the docs build"
+          echo "build=false" >> "$GITHUB_OUTPUT"
+        fi
+
+  docs:site:
+    desc: "CI only: with BUILD=true, build Compodoc and Storybook and assemble them under the MkDocs site in .docs-site"
+    cmds:
+      - |
+        if [ "${BUILD:-}" = true ]; then
+          pnpm exec nx run-many -t compodoc build-storybook
+          node tools/ci/assemble-site.mjs .docs-site
+        fi
+{% endif %}{% endif %}{% if workspace %}
   plan:
     desc: "CI only: print the plan's outputs for $GITHUB_OUTPUT"
     silent: true

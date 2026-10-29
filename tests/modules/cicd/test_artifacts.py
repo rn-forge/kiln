@@ -6,6 +6,7 @@ Also proves the five properties every F4.3 story owes its module
 
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
@@ -2265,6 +2266,45 @@ def test_s9_1_10_1_other_archetypes_render_none(
     assert not any(p.startswith("tools/") for p in rendered)
 
 
+def _without_t7(body: str) -> str:
+    """Undo S9.1.11's two `assemble-site.mjs` changes, so the rest can be compared with ngkit's."""
+    for new, old in T7_HUNKS:
+        assert new in body, new
+        body = body.replace(new, old)
+    return body
+
+
+T7_HUNKS = (
+    (
+        " * Assembles the docs site into `dist/site/` (or the directory given as the first argument) from every project that declares\n",
+        " * Assembles the docs site into `dist/site/` from every project that declares\n",
+    ),
+    (
+        " * plus a generated `index.html` (unless the site already has one) and `.nojekyll`.\n"
+        " * Existing content of the site directory is kept.\n",
+        " * plus a generated `index.html` and `.nojekyll`.\n",
+    ),
+    (
+        " * Usage: node assemble-site.mjs [site-dir]   (run from the workspace root)",
+        " * Usage: node assemble-site.mjs   (run from the workspace root)",
+    ),
+    ("  readFileSync,\n", "  readFileSync,\n  rmSync,\n"),
+    (
+        "import { basename, join, resolve } from 'node:path';",
+        "import { basename, join } from 'node:path';",
+    ),
+    (
+        "const site = process.argv[2]\n  ? resolve(root, process.argv[2])\n  : join(root, 'dist', 'site');",
+        "const site = join(root, 'dist', 'site');",
+    ),
+    (
+        "mkdirSync(site, { recursive: true });",
+        "rmSync(site, { recursive: true, force: true });\nmkdirSync(site, { recursive: true });",
+    ),
+    ("if (!existsSync(join(site, 'index.html')))\n", ""),
+)
+
+
 @pytest.mark.parametrize("path", NODE_HELPERS)
 def test_s9_1_10_2_body_is_ngkits_under_t1(tmp_path: Path, path: str) -> None:
     lines = _rendered(_root(tmp_path, "node-lib"))[path].splitlines()
@@ -2281,7 +2321,10 @@ def test_s9_1_10_2_body_is_ngkits_under_t1(tmp_path: Path, path: str) -> None:
     ).stdout.splitlines()
     assert golden[0] == lines[0]
     assert golden[1].startswith("// ci-template:")
-    assert golden[2:] == lines[2:]
+    body = "\n".join(lines[2:])
+    if path.endswith("assemble-site.mjs"):
+        body = _without_t7(body)
+    assert golden[2:] == body.splitlines()
 
 
 def test_s9_1_10_3_a_hand_edit_is_drift(tmp_path: Path) -> None:
@@ -2312,6 +2355,7 @@ def test_s9_1_2_1_node_lib_jobs_are_the_affected_set(tmp_path: Path) -> None:
         "ci-local",
         "sonar",
         "package",
+        "docs",
         "ci-ok",
     ]
     assert jobs["ci-cloud"]["needs"] == "validate"  # type: ignore[index]
@@ -2418,6 +2462,7 @@ def test_s9_1_2_6_ci_ok_needs_every_job_and_checks_both_paths(tmp_path: Path) ->
         "ci-local",
         "sonar",
         "package",
+        "docs",
     ]
     assert ok["if"] == "${{ always() }}"
     assert ok["permissions"] == {}
@@ -2578,7 +2623,154 @@ def test_s9_1_4_1_package_job_matches_ngkit(tmp_path: Path) -> None:
 
 def test_s9_1_4_3_ci_ok_needs_package_even_without_sonar(tmp_path: Path) -> None:
     on = _ci_jobs(_root(tmp_path / "on", "node-lib"))
-    assert on["ci-ok"]["needs"][-2:] == ["sonar", "package"]  # type: ignore[index]
+    assert on["ci-ok"]["needs"][-3:] == ["sonar", "package", "docs"]  # type: ignore[index]
     off = _ci_jobs(_root(tmp_path / "off", "node-lib", sonar=False))
-    assert off["ci-ok"]["needs"][-1] == "package"  # type: ignore[index]
+    assert off["ci-ok"]["needs"][-2:] == ["package", "docs"]  # type: ignore[index]
     assert "package" in off
+
+
+# S9.1.11 — one Pages site.
+
+SITE_ROOT = Path(__file__).resolve().parents[3]
+
+
+def _docs_job(tmp_path: Path) -> dict[str, object]:
+    return _node_lib_ci(tmp_path)["jobs"]["docs"]  # type: ignore[index,return-value]
+
+
+def test_s9_1_11_1_node_lib_renders_no_docs_yml_and_one_docs_job(
+    tmp_path: Path,
+) -> None:
+    rendered = _rendered(_root(tmp_path / "files", "node-lib"))
+    assert ".github/workflows/docs.yml" not in rendered
+    job = _docs_job(tmp_path / "jobs")
+    assert job["needs"] == ["validate", "ci-cloud", "ci-local"]
+    assert job["if"] == (
+        "${{ always() && (needs.ci-cloud.result == 'success' "
+        "|| needs.ci-local.result == 'success') "
+        "&& github.ref == 'refs/heads/main' "
+        "&& (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}"
+    )
+    assert job["timeout-minutes"] == 30
+    assert job["permissions"] == {
+        "actions": "read",
+        "contents": "read",
+        "pages": "write",
+        "id-token": "write",
+    }
+    assert job["environment"] == {
+        "name": "github-pages",
+        "url": "${{ steps.deployment.outputs.page_url }}",
+    }
+    assert job["concurrency"] == {"group": "pages", "cancel-in-progress": False}
+
+
+def test_s9_1_11_1_node_lib_without_mkdocs_has_no_docs_job(tmp_path: Path) -> None:
+    jobs = _ci_jobs(_root(tmp_path, "node-lib", profile="none"))
+    assert "docs" not in jobs
+    assert "docs" not in jobs["ci-ok"]["needs"]  # type: ignore[index,operator]
+
+
+def test_s9_1_11_2_steps(tmp_path: Path) -> None:
+    pins = load_pins()
+    steps = _docs_job(tmp_path)["steps"]
+    checkout, setup, shas, affected, mkdocs, site, pages, upload, deploy = steps  # type: ignore[misc]
+    assert checkout["with"] == {
+        "filter": "tree:0",
+        "fetch-depth": 0,
+        "persist-credentials": False,
+    }
+    assert setup["uses"].startswith("./.github/actions/setup")
+    assert shas["uses"].startswith("nrwl/nx-set-shas@")
+    assert affected["id"] == "affected"
+    assert affected["run"] == "task ci:docs:affected"
+    assert "if" not in mkdocs
+    assert mkdocs["run"] == "task docs:build"
+    assert site["env"] == {"BUILD": "${{ steps.affected.outputs.build }}"}
+    assert site["run"] == "task ci:docs:site"
+    for step, name in ((pages, "configure-pages"), (upload, "upload-pages-artifact")):
+        assert step["uses"] == f"{pins[name]['uses']}@{pins[name]['sha']}"
+    assert upload["with"] == {"path": ".docs-site", "include-hidden-files": True}
+    assert deploy["id"] == "deployment"
+    assert (
+        deploy["uses"]
+        == f"{pins['deploy-pages']['uses']}@{pins['deploy-pages']['sha']}"
+    )
+
+
+def test_s9_1_11_2_docs_hooks_run_on_the_assembled_site(tmp_path: Path) -> None:
+    root = _with_ci(_root(tmp_path, "node-lib"), DOCS_HOOKS)
+    steps = _job_steps(root, ".github/workflows/ci.yml", "docs")
+    site = next(i for i, s in enumerate(steps) if s.get("run") == "task ci:docs:site")
+    assert steps[site + 1 : site + 3] == [
+        {
+            "name": f"Run ./.github/actions/{n}",
+            "uses": f"./.github/actions/{n}",
+            "env": {"SITE_DIR": ".docs-site"},
+        }
+        for n in ("a", "b")
+    ]
+
+
+def test_s9_1_11_2_actionlint_passes(tmp_path: Path) -> None:
+    if shutil.which("actionlint") is None:
+        pytest.skip("actionlint is not on PATH")
+    root = _root(tmp_path, "node-lib")
+    cycle.apply(root, home=tmp_path / "home")
+    result = subprocess.run(
+        ["actionlint", ".github/workflows/ci.yml"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def _assemble(tmp_path: Path, *args: str, existing: bool) -> Path:
+    if shutil.which("node") is None:
+        pytest.skip("node is not on PATH")
+    root = _root(tmp_path / "cell", "node-lib")
+    cycle.apply(root, home=tmp_path / "home")
+    stub = tmp_path / "bin"
+    stub.mkdir()
+    pnpm = stub / "pnpm"
+    pnpm.write_text("#!/bin/sh\necho '[]'\n")
+    pnpm.chmod(0o755)
+    if existing:
+        (root / ".docs-site").mkdir()
+        (root / ".docs-site" / "index.html").write_text("mkdocs")
+        (root / ".docs-site" / "guide.html").write_text("guide")
+    subprocess.run(
+        ["node", "tools/ci/assemble-site.mjs", *args],
+        cwd=root,
+        check=True,
+        env={**os.environ, "PATH": f"{stub}:{os.environ['PATH']}"},
+    )
+    return root
+
+
+def test_s9_1_11_4_site_dir_is_the_first_argument(tmp_path: Path) -> None:
+    root = _assemble(tmp_path, ".docs-site", existing=False)
+    assert (root / ".docs-site" / "index.html").is_file()
+    assert not (root / "dist" / "site").exists()
+
+
+def test_s9_1_11_4_the_default_site_dir_is_dist_site(tmp_path: Path) -> None:
+    root = _assemble(tmp_path, existing=False)
+    assert (root / "dist" / "site" / "index.html").is_file()
+
+
+def test_s9_1_11_4_existing_content_and_index_are_kept(tmp_path: Path) -> None:
+    root = _assemble(tmp_path, ".docs-site", existing=True)
+    site = root / ".docs-site"
+    assert (site / "index.html").read_text() == "mkdocs"
+    assert (site / "guide.html").read_text() == "guide"
+    assert (site / ".nojekyll").is_file()
+
+
+def test_s9_1_11_6_the_idea_row_is_gone() -> None:
+    ideas = (SITE_ROOT / "docs" / "specs" / "ideas" / "index.md").read_text(
+        encoding="utf-8"
+    )
+    assert "node-docs-site-assembly" not in ideas

@@ -10,7 +10,6 @@ epic or feature and deletes both; a dropped idea's row and page are deleted too.
 
 | Idea | Summary | Source |
 | -- | -- | -- |
-| node-docs-site-assembly | The Node archetypes build their MkDocs site and assemble Compodoc and Storybook under it, as E13's design describes | ADR-0012, 2026-10-01 |
 | java-archetype | A Java archetype on the same docs model, with Javadoc assembled under `api/` | ADR-0012, 2026-10-01 |
 | local-sonar-scan | A task verb that runs the workspace coverage tests and scans the checked-out branch with the gate awaited, as pykit's `sonar_local.py` does | F6.3, 2026-10-13 |
 | kiln-devops-non-python | kiln-devops plans non-Python workspaces (Nx, Maven) | [ADR-0016](../../adr/ADR-0016.md), 2026-10-18 |

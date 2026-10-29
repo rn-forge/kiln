@@ -14,7 +14,7 @@ name: CI
 #           each on its own `<package>-v<version>` tag.
 # external-install: installs each new tag from git, outside the workspace.
 {% if docs %}# docs:     deploys each released package's versioned site and the root site to Pages.
-{% endif %}{% elif node_lib %}# validate → ci-cloud or ci-local → sonar, package → ci-ok.
+{% endif %}{% elif node_lib %}# validate → ci-cloud or ci-local → sonar, package, docs → ci-ok.
 #
 # ci-cloud:  `nx affected` distributed over Nx Cloud agents (.nx/workflows/agents.yaml).
 # ci-local:  the same on the runner, when `USE_NX_CLOUD` is `false` or dispatch unchecks it.
@@ -257,7 +257,68 @@ jobs:
           name: package-tarballs
           path: dist/tarballs/*.tgz
           retention-days: 14
-{% else %}{% if workspace %}
+{% if docs %}
+  # Publishes the one Pages site from main after the checks pass: MkDocs, with
+  # Compodoc and Storybook assembled under it. The Compodoc and Storybook builds
+  # run only when a project with a doc target is affected, or on a manual run.
+  # Job-level permissions replace the workflow-level ones, so actions: read stays
+  # for nx-set-shas (it queries workflow runs).
+  docs:
+    needs: [validate, ci-cloud, ci-local]
+    if: ${{ always() && (needs.ci-cloud.result == 'success' || needs.ci-local.result == 'success') && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
+        with:
+          filter: tree:0
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: [[ pins["nx-set-shas"].uses ]]@[[ pins["nx-set-shas"].sha ]] # [[ pins["nx-set-shas"].version ]]
+
+      - name: Detect affected doc projects
+        id: affected
+        run: task ci:docs:affected
+
+      - name: Build the MkDocs site
+        run: task docs:build
+
+      - name: Build Compodoc and Storybook and assemble the site
+        env:
+          BUILD: ${{ steps.affected.outputs.build }}
+        run: task ci:docs:site
+
+{% for hook in hooks.docs %}      - name: Run [[ hook ]]
+        uses: [[ hook ]] # zizmor: ignore[self-repository] actionlint rejects the $/ form
+        env:
+          SITE_DIR: .docs-site
+
+{% endfor %}      - uses: [[ pins["configure-pages"].uses ]]@[[ pins["configure-pages"].sha ]] # [[ pins["configure-pages"].version ]]
+
+      - uses: [[ pins["upload-pages-artifact"].uses ]]@[[ pins["upload-pages-artifact"].sha ]] # [[ pins["upload-pages-artifact"].version ]]
+        with:
+          path: .docs-site
+          include-hidden-files: true
+
+      - id: deployment
+        uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]
+{% endif %}{% else %}{% if workspace %}
   plan:
     needs: validate
     runs-on: ubuntu-latest
@@ -733,7 +794,7 @@ jobs:
   # the repo grows; this one does not. A skipped job (the fork-guarded scan, a
   # release on a pull request) is not a failure.
   ci-ok:
-    needs: [validate, dependency-review{% if node_lib %}, ci-cloud, ci-local{% endif %}{% if sonar and node_lib %}, sonar{% endif %}{% if node_lib %}, package{% endif %}{% if workspace %}, plan, verify, postgres, smoke, suites{% endif %}{% if sonar and not node_lib %}, sonar{% endif %}{% if release != "none" and not node_lib %}, release{% if workspace %}, external-install{% endif %}{% endif %}{% if workspace and docs %}, docs{% endif %}{% for job in jobs %}, [[ job.name ]]{% endfor %}]
+    needs: [validate, dependency-review{% if node_lib %}, ci-cloud, ci-local{% endif %}{% if sonar and node_lib %}, sonar{% endif %}{% if node_lib %}, package{% if docs %}, docs{% endif %}{% endif %}{% if workspace %}, plan, verify, postgres, smoke, suites{% endif %}{% if sonar and not node_lib %}, sonar{% endif %}{% if release != "none" and not node_lib %}, release{% if workspace %}, external-install{% endif %}{% endif %}{% if workspace and docs %}, docs{% endif %}{% for job in jobs %}, [[ job.name ]]{% endfor %}]
     if: {% if node_lib %}${{ always() }}{% else %}always(){% endif %}
     runs-on: ubuntu-latest
     timeout-minutes: 5

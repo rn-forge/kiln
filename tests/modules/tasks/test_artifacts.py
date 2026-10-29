@@ -2361,3 +2361,100 @@ def test_s9_1_4_2_package_packs_and_verifies(tmp_path: Path) -> None:
     assert task["desc"]
     assert "internal" not in task
     assert task["cmds"] == ["pnpm exec nx run-many -t pack verify-dist verify-consumer"]
+
+
+# S9.1.11 — one Pages site.
+
+
+def test_s9_1_11_3_docs_site_builds_and_assembles_only_on_build(
+    tmp_path: Path,
+) -> None:
+    tasks = _ci_tasks(_node_lib_root(tmp_path))["tasks"]
+    for name in ("docs:affected", "docs:site"):
+        assert tasks[name]["desc"], name  # type: ignore[index]
+        assert "internal" not in tasks[name], name  # type: ignore[operator]
+    (cmd,) = tasks["docs:site"]["cmds"]  # type: ignore[index]
+    assert "pnpm exec nx run-many -t compodoc build-storybook" in cmd
+    assert "node tools/ci/assemble-site.mjs .docs-site" in cmd
+    assert "set -o pipefail" not in tasks["docs:affected"]["cmds"][0]  # type: ignore[index]
+
+
+@pytest.mark.parametrize("build", ["true", "false"])
+def test_s9_1_11_3_docs_site_runs_steps_by_build(tmp_path: Path, build: str) -> None:
+    if shutil.which("task") is None:
+        pytest.skip("task is not on PATH")
+    root = _node_lib_root(tmp_path / "cell")
+    cycle.apply(root, home=tmp_path / "home")
+    stub = tmp_path / "bin"
+    stub.mkdir()
+    for tool in ("pnpm", "node"):
+        script = stub / tool
+        script.write_text(f'#!/bin/sh\necho "{tool} $*"\n')
+        script.chmod(0o755)
+    repo = tmp_path / "work"
+    repo.mkdir()
+    done = subprocess.run(
+        ["task", "-t", str(root / "Taskfile.yml"), "--dir", str(repo), "ci:docs:site"],
+        capture_output=True,
+        text=True,
+        check=True,
+        env={**os.environ, "PATH": f"{stub}:{os.environ['PATH']}", "BUILD": build},
+    )
+    if build == "true":
+        assert "pnpm exec nx run-many -t compodoc build-storybook" in done.stdout
+        assert "node tools/ci/assemble-site.mjs .docs-site" in done.stdout
+    else:
+        assert "pnpm" not in done.stdout
+        assert "node tools" not in done.stdout
+
+
+@pytest.mark.parametrize(
+    ("event", "compodoc", "storybook", "expected"),
+    [
+        ("workflow_dispatch", "false", "false", "build=true"),
+        ("push", "true", "false", "build=true"),
+        ("push", "false", "true", "build=true"),
+        ("push", "false", "false", "build=false"),
+    ],
+)
+def test_s9_1_11_3_docs_affected_writes_build(
+    tmp_path: Path, event: str, compodoc: str, storybook: str, expected: str
+) -> None:
+    if shutil.which("task") is None or shutil.which("jq") is None:
+        pytest.skip("task or jq is not on PATH")
+    root = _node_lib_root(tmp_path / "cell")
+    cycle.apply(root, home=tmp_path / "home")
+    stub = tmp_path / "bin"
+    stub.mkdir()
+    pnpm = stub / "pnpm"
+    pnpm.write_text(
+        "#!/bin/sh\n"
+        'case "$*" in\n'
+        f"  *\"--with-target compodoc\"*) echo '{'[1]' if compodoc == 'true' else '[]'}' ;;\n"
+        f"  *\"--with-target build-storybook\"*) echo '{'[1]' if storybook == 'true' else '[]'}' ;;\n"
+        "esac\n"
+    )
+    pnpm.chmod(0o755)
+    repo = tmp_path / "work"
+    repo.mkdir()
+    output = tmp_path / "output"
+    subprocess.run(
+        [
+            "task",
+            "-t",
+            str(root / "Taskfile.yml"),
+            "--dir",
+            str(repo),
+            "ci:docs:affected",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+        env={
+            **os.environ,
+            "PATH": f"{stub}:{os.environ['PATH']}",
+            "GITHUB_EVENT_NAME": event,
+            "GITHUB_OUTPUT": str(output),
+        },
+    )
+    assert output.read_text().strip() == expected
