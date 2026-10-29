@@ -2311,6 +2311,7 @@ def test_s9_1_2_1_node_lib_jobs_are_the_affected_set(tmp_path: Path) -> None:
         "ci-cloud",
         "ci-local",
         "sonar",
+        "package",
         "ci-ok",
     ]
     assert jobs["ci-cloud"]["needs"] == "validate"  # type: ignore[index]
@@ -2416,6 +2417,7 @@ def test_s9_1_2_6_ci_ok_needs_every_job_and_checks_both_paths(tmp_path: Path) ->
         "ci-cloud",
         "ci-local",
         "sonar",
+        "package",
     ]
     assert ok["if"] == "${{ always() }}"
     assert ok["permissions"] == {}
@@ -2542,3 +2544,41 @@ def test_s9_1_3_4_ci_ok_needs_sonar_only_when_sonar_is_on(tmp_path: Path) -> Non
     off = _ci_jobs(_root(tmp_path / "off", "node-lib", sonar=False))
     assert "sonar" not in off
     assert "sonar" not in off["ci-ok"]["needs"]  # type: ignore[index]
+
+
+# S9.1.4 — package.
+
+
+def test_s9_1_4_1_package_job_matches_ngkit(tmp_path: Path) -> None:
+    job = _node_lib_ci(tmp_path)["jobs"]["package"]  # type: ignore[index]
+    pins = load_pins()
+    assert job["needs"] == ["validate", "ci-cloud", "ci-local"]
+    assert job["if"] == (
+        "${{ always() && (needs.ci-cloud.result == 'success' "
+        "|| needs.ci-local.result == 'success') }}"
+    )
+    assert job["timeout-minutes"] == 15
+    assert job["permissions"] == {"contents": "read"}
+    checkout, setup, pack, upload = job["steps"]
+    assert checkout["with"] == {
+        "filter": "tree:0",
+        "fetch-depth": 0,
+        "persist-credentials": False,
+    }
+    assert setup["uses"].startswith("./.github/actions/setup")
+    assert pack["run"] == "task ci:package"
+    upload_pin = pins["upload-artifact"]
+    assert upload["uses"] == f"{upload_pin['uses']}@{upload_pin['sha']}"
+    assert upload["with"] == {
+        "name": "package-tarballs",
+        "path": "dist/tarballs/*.tgz",
+        "retention-days": 14,
+    }
+
+
+def test_s9_1_4_3_ci_ok_needs_package_even_without_sonar(tmp_path: Path) -> None:
+    on = _ci_jobs(_root(tmp_path / "on", "node-lib"))
+    assert on["ci-ok"]["needs"][-2:] == ["sonar", "package"]  # type: ignore[index]
+    off = _ci_jobs(_root(tmp_path / "off", "node-lib", sonar=False))
+    assert off["ci-ok"]["needs"][-1] == "package"  # type: ignore[index]
+    assert "package" in off

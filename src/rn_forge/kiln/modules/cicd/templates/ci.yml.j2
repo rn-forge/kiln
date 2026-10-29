@@ -14,7 +14,7 @@ name: CI
 #           each on its own `<package>-v<version>` tag.
 # external-install: installs each new tag from git, outside the workspace.
 {% if docs %}# docs:     deploys each released package's versioned site and the root site to Pages.
-{% endif %}{% elif node_lib %}# validate → ci-cloud or ci-local → sonar → ci-ok.
+{% endif %}{% elif node_lib %}# validate → ci-cloud or ci-local → sonar, package → ci-ok.
 #
 # ci-cloud:  `nx affected` distributed over Nx Cloud agents (.nx/workflows/agents.yaml).
 # ci-local:  the same on the runner, when `USE_NX_CLOUD` is `false` or dispatch unchecks it.
@@ -225,7 +225,39 @@ jobs:
             -Dsonar.qualitygate.wait=true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-{% endif %}{% else %}{% if workspace %}
+{% endif %}
+  # Runs regardless of which path above executed - packaging isn't a
+  # validation step, it just needs one of them to have succeeded first.
+  package:
+    needs: [validate, ci-cloud, ci-local]
+    if: ${{ always() && (needs.ci-cloud.result == 'success' || needs.ci-local.result == 'success') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
+        with:
+          filter: tree:0
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Plain `nx pack` (unlike the release path) never stamps workspace:*
+      # peers to exact pins, so verify-dist checks the CI tarballs' manifests.
+      - name: Pack and verify publishable tarballs
+        run: task ci:package
+
+      - name: Upload package tarballs
+        uses: [[ pins["upload-artifact"].uses ]]@[[ pins["upload-artifact"].sha ]] # [[ pins["upload-artifact"].version ]]
+        with:
+          name: package-tarballs
+          path: dist/tarballs/*.tgz
+          retention-days: 14
+{% else %}{% if workspace %}
   plan:
     needs: validate
     runs-on: ubuntu-latest
@@ -701,7 +733,7 @@ jobs:
   # the repo grows; this one does not. A skipped job (the fork-guarded scan, a
   # release on a pull request) is not a failure.
   ci-ok:
-    needs: [validate, dependency-review{% if node_lib %}, ci-cloud, ci-local{% endif %}{% if sonar and node_lib %}, sonar{% endif %}{% if workspace %}, plan, verify, postgres, smoke, suites{% endif %}{% if sonar and not node_lib %}, sonar{% endif %}{% if release != "none" and not node_lib %}, release{% if workspace %}, external-install{% endif %}{% endif %}{% if workspace and docs %}, docs{% endif %}{% for job in jobs %}, [[ job.name ]]{% endfor %}]
+    needs: [validate, dependency-review{% if node_lib %}, ci-cloud, ci-local{% endif %}{% if sonar and node_lib %}, sonar{% endif %}{% if node_lib %}, package{% endif %}{% if workspace %}, plan, verify, postgres, smoke, suites{% endif %}{% if sonar and not node_lib %}, sonar{% endif %}{% if release != "none" and not node_lib %}, release{% if workspace %}, external-install{% endif %}{% endif %}{% if workspace and docs %}, docs{% endif %}{% for job in jobs %}, [[ job.name ]]{% endfor %}]
     if: {% if node_lib %}${{ always() }}{% else %}always(){% endif %}
     runs-on: ubuntu-latest
     timeout-minutes: 5

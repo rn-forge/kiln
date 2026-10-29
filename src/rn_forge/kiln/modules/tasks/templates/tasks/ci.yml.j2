@@ -104,6 +104,11 @@ tasks:
           exit 1
         fi
         echo "reports=$reports"
+
+  package:
+    desc: "CI only: pack the publishable projects and verify their tarballs"
+    cmds:
+      - pnpm exec nx run-many -t pack verify-dist verify-consumer
 {% endif %}{% if workspace %}
   plan:
     desc: "CI only: print the plan's outputs for $GITHUB_OUTPUT"

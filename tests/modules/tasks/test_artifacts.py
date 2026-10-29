@@ -2354,3 +2354,10 @@ def test_s9_1_3_2_coverage_is_described_and_public(tmp_path: Path) -> None:
     task = _ci_tasks(_node_lib_root(tmp_path))["tasks"]["coverage"]  # type: ignore[index]
     assert task["desc"]
     assert "internal" not in task
+
+
+def test_s9_1_4_2_package_packs_and_verifies(tmp_path: Path) -> None:
+    task = _ci_tasks(_node_lib_root(tmp_path))["tasks"]["package"]  # type: ignore[index]
+    assert task["desc"]
+    assert "internal" not in task
+    assert task["cmds"] == ["pnpm exec nx run-many -t pack verify-dist verify-consumer"]
