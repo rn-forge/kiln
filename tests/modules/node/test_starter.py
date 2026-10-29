@@ -1,4 +1,4 @@
-"""S4.9.3 — the `frontend` module's seeded Angular starter."""
+"""S4.9.3 — the `node` module's seeded Angular starter."""
 
 from __future__ import annotations
 
@@ -12,9 +12,9 @@ import pytest
 from rn_forge.commons.generation import ArtifactKind
 
 from rn_forge.kiln.config import KilnConfig
-from rn_forge.kiln.modules.frontend import FRONTEND
-from rn_forge.kiln.modules.frontend.angular import NGKIT_URL, scaffold_angular
-from rn_forge.kiln.modules.frontend.scaffold import reconcile_frontend
+from rn_forge.kiln.modules.node import NODE
+from rn_forge.kiln.modules.node.angular import NGKIT_URL, scaffold_angular
+from rn_forge.kiln.modules.node.scaffold import reconcile_node
 from rn_forge.kiln.modules.python.scaffold import scaffold
 
 FIXTURE = Path(__file__).parents[2] / "fixtures" / "scaffold" / "nx-angular"
@@ -65,7 +65,7 @@ def _paths(web_dir: str) -> set[str]:
 def test_s4_9_3_1_angular_starter_artifacts(tmp_path: Path) -> None:
     config = _config(tmp_path, extra='frontend = "angular"')
     _stock(tmp_path, "apps/web")
-    artifacts = FRONTEND.artifacts(config, tmp_path)
+    artifacts = NODE.artifacts(config, tmp_path)
     assert {a.path for a in artifacts} == _paths("apps/web")
     assert all(a.kind is ArtifactKind.SEEDED for a in artifacts)
     assert all("{{ name }}" not in a.content for a in artifacts)
@@ -77,7 +77,7 @@ def test_s4_9_3_1_angular_starter_artifacts(tmp_path: Path) -> None:
 def test_s4_9_4_1_starter_paths(tmp_path: Path) -> None:
     config = _config(tmp_path, extra='frontend = "angular"')
     _stock(tmp_path, "apps/web")
-    artifacts = FRONTEND.artifacts(config, tmp_path)
+    artifacts = NODE.artifacts(config, tmp_path)
     assert {a.path for a in artifacts} == _paths("apps/web")
     assert all(a.kind is ArtifactKind.SEEDED for a in artifacts)
     assert all("{{ name }}" not in a.content for a in artifacts)
@@ -94,33 +94,31 @@ def test_s4_9_4_1_starter_paths(tmp_path: Path) -> None:
 def test_s4_9_3_1_web_dir_moves_the_paths(tmp_path: Path) -> None:
     config = _config(tmp_path, extra='frontend = "angular"\nweb_dir = "services/web"')
     _stock(tmp_path, "services/web")
-    assert {a.path for a in FRONTEND.artifacts(config, tmp_path)} == _paths(
-        "services/web"
-    )
+    assert {a.path for a in NODE.artifacts(config, tmp_path)} == _paths("services/web")
 
 
 def test_s4_9_3_1_no_stock_config_gives_nothing(tmp_path: Path) -> None:
     config = _config(tmp_path, extra='frontend = "angular"')
-    assert FRONTEND.artifacts(config, tmp_path) == ()
+    assert NODE.artifacts(config, tmp_path) == ()
 
 
 def test_s4_9_3_1_no_ngkit_dependency_gives_nothing(tmp_path: Path) -> None:
     config = _config(tmp_path, extra='frontend = "angular"')
     _stock(tmp_path, "apps/web", ngkit=False)
-    assert FRONTEND.artifacts(config, tmp_path) == ()
+    assert NODE.artifacts(config, tmp_path) == ()
     (tmp_path / "package.json").unlink()
-    assert FRONTEND.artifacts(config, tmp_path) == ()
+    assert NODE.artifacts(config, tmp_path) == ()
     (tmp_path / "package.json").write_text("{not json", encoding="utf-8")
-    assert FRONTEND.artifacts(config, tmp_path) == ()
+    assert NODE.artifacts(config, tmp_path) == ()
 
 
 def test_s4_9_3_1_other_archetype_or_frontend_gives_nothing(tmp_path: Path) -> None:
     api = _config(tmp_path / "api", archetype="python-web-api", extra="")
     _stock(tmp_path / "api", "apps/web")
-    assert FRONTEND.artifacts(api, tmp_path / "api") == ()
+    assert NODE.artifacts(api, tmp_path / "api") == ()
     react = _config(tmp_path / "react", extra='frontend = "react"')
     _stock(tmp_path / "react", "apps/web")
-    assert FRONTEND.artifacts(react, tmp_path / "react") == ()
+    assert NODE.artifacts(react, tmp_path / "react") == ()
 
 
 @pytest.mark.parametrize("web_dir", ["apps/web", "services/web"])
@@ -141,7 +139,7 @@ def test_s4_9_3_2_reconcile_replaces_the_stock_config(
     package["dependencies"]["@rn-forge/ng"] = NGKIT_URL
     manifest.write_text(json.dumps(package), encoding="utf-8")
 
-    reconcile_frontend(root, workspace, config)
+    reconcile_node(root, workspace, config)
 
     app = root / web_dir / "src" / "app"
     assert "provideRnForgeCoreConfig" in (app / "app.config.ts").read_text(
@@ -161,7 +159,7 @@ def _reconciled(tmp_path: Path, web_dir: str, *, ngkit: bool) -> Path:
         package = json.loads(manifest.read_text(encoding="utf-8"))
         package["dependencies"]["@rn-forge/ng"] = NGKIT_URL
         manifest.write_text(json.dumps(package), encoding="utf-8")
-    reconcile_frontend(root, workspace, config)
+    reconcile_node(root, workspace, config)
     return root
 
 
@@ -197,7 +195,7 @@ def test_s4_9_3_3_scaffold_adds_the_ngkit_dependency(tmp_path: Path) -> None:
         calls.append((name, args, kwargs.get("cwd")))
 
     with mock.patch(
-        "rn_forge.kiln.modules.frontend.angular.Process.execute", side_effect=run
+        "rn_forge.kiln.modules.node.angular.Process.execute", side_effect=run
     ):
         workspace = scaffold_angular(tmp_path)
 

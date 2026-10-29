@@ -1,9 +1,9 @@
 """S5.2.1 — the frontend scaffolder, and reconciling its output into the repo.
 
-`scaffold_frontend` is the one part of kiln that runs someone else's
+`scaffold_node` is the one part of kiln that runs someone else's
 generator: it dispatches on `config.frontend` to that frontend's scaffolder
 (`angular.py`), which builds a workspace in a scratch directory, and
-`reconcile_frontend` folds every top-level entry it
+`reconcile_node` folds every top-level entry it
 wrote into the repo at `config.web_dir`. Every file the frontend scaffolder
 writes is repo-owned; the only files kiln adds under `web_dir` are the seeded
 Angular starter's, written once here, along with the `serve` proxy wiring in
@@ -25,10 +25,10 @@ from rn_forge.commons.fs.documents import DocumentUtils
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import gitignore
-from rn_forge.kiln.modules.frontend import starter
-from rn_forge.kiln.modules.frontend.angular import SCAFFOLD_APP_DIR, scaffold_angular
+from rn_forge.kiln.modules.node import starter
+from rn_forge.kiln.modules.node.angular import SCAFFOLD_APP_DIR, scaffold_angular
 
-__all__ = ["reconcile_frontend", "scaffold_frontend"]
+__all__ = ["reconcile_node", "scaffold_node"]
 
 _SCAFFOLDERS: dict[str, Callable[[Path], Path]] = {"angular": scaffold_angular}
 """Each implemented frontend: it scaffolds into a raw directory and returns
@@ -46,11 +46,11 @@ stock README, not mdformat-clean) would otherwise replace kiln's body. Both
 still count as conflicts when root already holds them."""
 
 
-def scaffold_frontend(raw: Path, config: KilnConfig) -> Path | None:
+def scaffold_node(raw: Path, config: KilnConfig) -> Path | None:
     """Run the selected frontend's generator into *raw*; return its workspace.
 
     Returns `None` unless `config.archetype == "python-web-app"`. The output is
-    raw: `reconcile_frontend` folds it into the repo, leaving it untouched.
+    raw: `reconcile_node` folds it into the repo, leaving it untouched.
 
     Raises:
         AppException: the frontend has no scaffolder, a scaffold command is
@@ -69,7 +69,7 @@ def scaffold_frontend(raw: Path, config: KilnConfig) -> Path | None:
     return scaffolder(raw)
 
 
-def reconcile_frontend(root: Path, workspace: Path, config: KilnConfig) -> None:
+def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
     """Fold *workspace* (a finished frontend scaffold) into *root*.
 
     Every top-level entry of *workspace* is copied into *root*, except `.git`,

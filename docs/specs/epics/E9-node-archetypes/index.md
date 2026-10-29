@@ -9,7 +9,7 @@
 
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
-| [F9.1 — `node-lib` renders ngkit's CI](F9.1-node-lib-hosts-ngkit-ci.md) | Active | release-1 | 12 New · 1 Closed |
+| [F9.1 — `node-lib` renders ngkit's CI](F9.1-node-lib-hosts-ngkit-ci.md) | Active | release-1 | 11 New · 2 Closed |
 
 <!-- END derived features -->
 

@@ -1,4 +1,4 @@
-"""The `frontend` module: scaffolding for the pnpm/Nx frontend workspace."""
+"""The `node` module: scaffolding for the pnpm/Nx workspace."""
 
 from __future__ import annotations
 
@@ -15,11 +15,11 @@ if TYPE_CHECKING:
 
     from rn_forge.kiln.config import KilnConfig
 
-__all__ = ["FRONTEND", "FrontendModule"]
+__all__ = ["NODE", "NodeModule"]
 
 
-class FrontendModule:
-    """The `frontend` module.
+class NodeModule:
+    """The `node` module.
 
     Owns no config section: the archetype owns the validated `frontend` and
     `web_dir` values, and every file the frontend scaffold writes is
@@ -28,7 +28,7 @@ class FrontendModule:
     config and the dev proxy), which is seeded once at `kiln new`.
     """
 
-    name = "frontend"
+    name = "node"
     section: str | None = None
     config_model: type[StrictModel] | None = None
 
@@ -54,7 +54,7 @@ class FrontendModule:
             once the stock `app.config.ts` exists and the root `package.json` depends
             on `@rn-forge/ng`; otherwise nothing.
         """
-        from rn_forge.kiln.modules.frontend import starter
+        from rn_forge.kiln.modules.node import starter
 
         return tuple(starter.render(config, root))
 
@@ -64,4 +64,4 @@ class FrontendModule:
         return ()
 
 
-FRONTEND = FrontendModule()
+NODE = NodeModule()

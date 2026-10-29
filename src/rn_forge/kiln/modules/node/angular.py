@@ -1,7 +1,7 @@
 """The Angular frontend: a pinned `create-nx-workspace` + `@nx/angular` run.
 
 Runs the pinned Nx sequence into a scratch directory and hands back the
-finished workspace for `scaffold.reconcile_frontend` to fold into the repo.
+finished workspace for `scaffold.reconcile_node` to fold into the repo.
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ NGKIT_URL = (
 
 SCAFFOLD_APP_DIR = "apps/web"
 """Where the pinned command always creates the app; renamed to `web_dir` by
-`reconcile_frontend` when a repo's `web_dir` differs."""
+`reconcile_node` when a repo's `web_dir` differs."""
 
 _ALLOW_BUILDS = ("@parcel/watcher", "esbuild", "lmdb", "msgpackr-extract")
 """Native build scripts pnpm 12 blocks by default (`ERR_PNPM_IGNORED_BUILDS`);

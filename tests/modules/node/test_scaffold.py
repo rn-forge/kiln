@@ -19,12 +19,12 @@ from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.runtime.subprocess import Process
 
 from rn_forge.kiln.config import KilnConfig
-from rn_forge.kiln.modules.frontend.angular import scaffold_angular
+from rn_forge.kiln.modules.node.angular import scaffold_angular
 from rn_forge.kiln.modules.registry import builtin
 from rn_forge.kiln.modules.python.artifacts import render
-from rn_forge.kiln.modules.frontend.scaffold import (
-    reconcile_frontend,
-    scaffold_frontend,
+from rn_forge.kiln.modules.node.scaffold import (
+    reconcile_node,
+    scaffold_node,
 )
 from rn_forge.kiln.modules.python.scaffold import scaffold
 
@@ -77,7 +77,7 @@ def test_angular_scaffold_has_its_own_git_boundary(tmp_path: Path) -> None:
             shutil.copytree(FIXTURE, raw / "workspace")
 
     with mock.patch(
-        "rn_forge.kiln.modules.frontend.angular.Process.execute", side_effect=run
+        "rn_forge.kiln.modules.node.angular.Process.execute", side_effect=run
     ):
         workspace = scaffold_angular(raw)
 
@@ -94,7 +94,7 @@ def test_s5_2_1_reconcile_moves_fixture_into_root(tmp_path: Path) -> None:
     workspace = _workspace(tmp_path)
     config = KilnConfig.load(root)
 
-    reconcile_frontend(root, workspace, config)
+    reconcile_node(root, workspace, config)
 
     assert (root / "nx.json").is_file()
     assert (root / "package.json").is_file()
@@ -107,7 +107,7 @@ def test_s4_4_1_reconcile_drops_scaffolder_readme(tmp_path: Path) -> None:
     workspace = _workspace(tmp_path)
     assert (workspace / "README.md").is_file()
 
-    reconcile_frontend(root, workspace, KilnConfig.load(root))
+    reconcile_node(root, workspace, KilnConfig.load(root))
 
     assert not (root / "README.md").exists()
 
@@ -118,7 +118,7 @@ def test_s5_2_1_reconcile_appends_scaffolder_gitignore(tmp_path: Path) -> None:
     fixture_gitignore = (workspace / ".gitignore").read_text(encoding="utf-8")
     config = KilnConfig.load(root)
 
-    reconcile_frontend(root, workspace, config)
+    reconcile_node(root, workspace, config)
 
     body = (root / ".gitignore").read_text(encoding="utf-8")
     for line in fixture_gitignore.splitlines():
@@ -132,7 +132,7 @@ def test_s5_3_6_1_reconcile_composes_uv_then_nx_once(tmp_path: Path) -> None:
     workspace = _workspace(tmp_path)
     nx_body = (workspace / ".gitignore").read_text(encoding="utf-8")
 
-    reconcile_frontend(root, workspace, KilnConfig.load(root))
+    reconcile_node(root, workspace, KilnConfig.load(root))
 
     assert uv_body == "## uv ##\n" + UV_FIXTURE.read_text(encoding="utf-8")
     assert (root / ".gitignore").read_text(encoding="utf-8") == (
@@ -147,7 +147,7 @@ def test_s5_2_1_reconcile_renames_web_dir_and_rewrites_project_json(
     workspace = _workspace(tmp_path)
     config = KilnConfig.load(root)
 
-    reconcile_frontend(root, workspace, config)
+    reconcile_node(root, workspace, config)
 
     assert not (root / "apps" / "web").exists()
     project = DocumentUtils.read(root / "apps" / "frontend" / "project.json")
@@ -164,7 +164,7 @@ def test_s5_2_1_reconcile_refuses_a_root_that_already_holds_readme(
     config = KilnConfig.load(root)
 
     with pytest.raises(AppException, match="README.md"):
-        reconcile_frontend(root, workspace, config)
+        reconcile_node(root, workspace, config)
 
 
 def test_s5_2_1_no_kiln_artifact_lies_under_web_dir(tmp_path: Path) -> None:
@@ -183,7 +183,7 @@ def test_s5_2_4_dispatch_rejects_a_frontend_with_no_scaffolder(
 
     with mock.patch("rn_forge.commons.runtime.subprocess.Process.execute") as run:
         with pytest.raises(AppException, match="react"):
-            scaffold_frontend(root, config)
+            scaffold_node(root, config)
 
     run.assert_not_called()
 
@@ -195,10 +195,10 @@ def test_s5_2_4_frontend_module_owns_the_frontend_option() -> None:
         for m in registry.modules
         if any(o.flag == "frontend" for o in m.options())
     ]
-    assert owners == ["frontend"]
+    assert owners == ["node"]
 
 
-def test_s4_5_9_reconcile_frontend_leaves_the_raw_tree_untouched(
+def test_s4_5_9_reconcile_node_leaves_the_raw_tree_untouched(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path, extra='web_dir = "apps/frontend"')
@@ -206,7 +206,7 @@ def test_s4_5_9_reconcile_frontend_leaves_the_raw_tree_untouched(
     before = {p: p.read_bytes() for p in sorted(workspace.rglob("*")) if p.is_file()}
     config = KilnConfig.load(root)
 
-    reconcile_frontend(root, workspace, config)
+    reconcile_node(root, workspace, config)
 
     after = {p: p.read_bytes() for p in sorted(workspace.rglob("*")) if p.is_file()}
     assert before == after

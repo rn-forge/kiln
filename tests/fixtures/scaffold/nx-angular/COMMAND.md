@@ -1,7 +1,7 @@
 # How this fixture was captured
 
 **Date:** 2026-09-17 · **`create-nx-workspace` version:** 23.2.1
-(`NX_VERSION` in `modules/frontend/angular.py`)
+(`NX_VERSION` in `modules/node/angular.py`)
 
 The story's planned one-liner —
 
@@ -22,7 +22,7 @@ does not reproduce on this release. Two upstream changes broke it:
    `.cursor/`, `.codex/` etc. agent-config directories. Unsetting
    `CLAUDECODE`/`OPENCODE`/`CLAUDE_CODE_ENTRYPOINT` for the capture restores
    the classic preset flow. This is an environment hazard specific to running
-   the capture from an agent shell, not a kiln behaviour — `scaffold_frontend`
+   the capture from an agent shell, not a kiln behaviour — `scaffold_node`
    itself must run with those variables unset (or absent) too, or a live
    `kiln new --frontend angular` run from inside an agent session would hit
    the same rerouting.
@@ -57,7 +57,7 @@ in the freshly-created `apps`-preset workspace.
 allow-list (`ERR_PNPM_IGNORED_BUILDS`) unless approved. Both `pnpm install`
 steps above fail on the first pass and leave `pnpm-workspace.yaml` stamped
 with an `allowBuilds` stub naming exactly the blocked packages; setting each
-to `true` and re-running `pnpm install` completes it. `scaffold_frontend`
+to `true` and re-running `pnpm install` completes it. `scaffold_node`
 must do the same before treating a non-zero exit as failure, or must let the
 scaffolder command itself set `allowBuilds` (e.g. by pre-seeding the
 temporary workspace's `pnpm-workspace.yaml`) so the recorded command succeeds
@@ -74,6 +74,6 @@ were left as `create-nx-workspace --preset=apps` wrote them; they are cosmetic
 now that `apps/web` itself has concrete targets.
 
 **What was stripped before committing:** `node_modules/`, `.nx/`, `dist/`,
-`.angular/`, `coverage/` — everything `reconcile_frontend`'s exclusion list
+`.angular/`, `coverage/` — everything `reconcile_node`'s exclusion list
 and a normal `.gitignore` already exclude from a real `kiln new` run.
 `pnpm-lock.yaml` is kept, as the story requires.

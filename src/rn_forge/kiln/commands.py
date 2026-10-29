@@ -42,12 +42,12 @@ from rn_forge.kiln.modules.docs import generate
 from rn_forge.kiln.modules.docs.nav import NAV_BLOCK, mark_nav
 from rn_forge.kiln.modules.docs.scaffold import add_package as docs_add_package
 from rn_forge.kiln.modules.docs.scaffold import scaffold as docs_scaffold
-from rn_forge.kiln.modules.frontend.scaffold import (
-    reconcile_frontend,
-    scaffold_frontend,
-)
 from rn_forge.kiln.modules.instructions.scaffold import (
     scaffold as instructions_scaffold,
+)
+from rn_forge.kiln.modules.node.scaffold import (
+    reconcile_node,
+    scaffold_node,
 )
 from rn_forge.kiln.modules.python.artifacts import root_package
 from rn_forge.kiln.modules.python.config import MODULE_PATTERN
@@ -281,10 +281,10 @@ def new(
     raw_backend = workspace.parent / "backend"
     raw_frontend = workspace.parent / "frontend"
     scaffold_backend(raw_backend, resolved)
-    frontend_workspace = scaffold_frontend(raw_frontend, resolved)
+    frontend_workspace = scaffold_node(raw_frontend, resolved)
     reconcile_backend(raw_backend, workspace, resolved)
     if frontend_workspace is not None:
-        reconcile_frontend(workspace, frontend_workspace, resolved)
+        reconcile_node(workspace, frontend_workspace, resolved)
     docs_scaffold(workspace, resolved)
     instructions_scaffold(workspace, resolved)
 

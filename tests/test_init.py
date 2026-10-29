@@ -52,9 +52,9 @@ _IGNORE = shutil.ignore_patterns(
 )
 _SCAFFOLDS = (
     "scaffold_backend",
-    "scaffold_frontend",
+    "scaffold_node",
     "reconcile_backend",
-    "reconcile_frontend",
+    "reconcile_node",
     "docs_scaffold",
     "instructions_scaffold",
     "python_add_package",

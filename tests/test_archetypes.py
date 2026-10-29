@@ -51,7 +51,7 @@ def test_s4_2_1_every_python_archetype_manifest_loads(name: str) -> None:
     assert archetype.name == name
     expected = ["core", "python"]
     if name == "python-web-app":
-        expected.append("frontend")
+        expected.append("node")
     assert archetype.modules == [*expected, "docs", "tasks", "cicd", "instructions"]
     assert "rn-forge-commons" in archetype.dependencies.required
     assert set(archetype.dependencies.required) <= set(archetype.dependencies.allowed)

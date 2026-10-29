@@ -4,7 +4,7 @@ name = "python-web-app"
 modules = [
     "core",
     "python",
-    "frontend",
+    "node",
     "docs",
     "tasks",
     "cicd",

@@ -1,4 +1,4 @@
-"""The seeded starter source `frontend` writes once, at `kiln new`."""
+"""The seeded starter source `node` writes once, at `kiln new`."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from rn_forge.commons.generation.templated import TemplateArtifact, render_artif
 from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln.config import KilnConfig
-from rn_forge.kiln.modules.frontend.angular import SCAFFOLD_APP_DIR
+from rn_forge.kiln.modules.node.angular import SCAFFOLD_APP_DIR
 
 __all__ = ["render"]
 
@@ -50,7 +50,7 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
         return []
     if not _has_ngkit(root):
         return []
-    engine = TemplateEngine.cached(package="rn_forge.kiln.modules.frontend")
+    engine = TemplateEngine.cached(package="rn_forge.kiln.modules.node")
     return render_artifacts(
         engine,
         {"name": config.name},

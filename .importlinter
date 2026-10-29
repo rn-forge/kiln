@@ -82,7 +82,7 @@ modules =
     rn_forge.kiln.modules.tasks
     rn_forge.kiln.modules.cicd
     rn_forge.kiln.modules.instructions
-    rn_forge.kiln.modules.frontend
+    rn_forge.kiln.modules.node
 ignore_imports =
     rn_forge.kiln.config -> rn_forge.kiln.modules.**
     rn_forge.kiln.modules.registry -> rn_forge.kiln.modules.**
