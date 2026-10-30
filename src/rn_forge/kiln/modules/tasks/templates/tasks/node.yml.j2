@@ -32,13 +32,13 @@ tasks:
     cmds:
 {% if overrides.get("node:build") %}      - [[ overrides["node:build"] ]]
 {% else %}      - pnpm nx run-many -t build
-{% endif %}{% if node_lib %}
+{% endif %}
   typecheck:
-    desc: Type-check the workspace with Nx.
+    desc: Type-check every project through its Angular build.
     internal: true
     cmds:
 {% if overrides.get("node:typecheck") %}      - [[ overrides["node:typecheck"] ]]
-{% else %}      - pnpm nx run-many -t typecheck
+{% else %}      - pnpm nx run-many -t build
 {% endif %}
   e2e:
     desc: Run the workspace's end-to-end tests with Nx.
@@ -46,4 +46,4 @@ tasks:
     cmds:
 {% if overrides.get("node:e2e") %}      - [[ overrides["node:e2e"] ]]
 {% else %}      - pnpm nx run-many -t e2e
-{% endif %}{% endif -%}
+{% endif -%}

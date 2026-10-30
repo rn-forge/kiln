@@ -38,8 +38,14 @@ _PYTHON_TASKS = (
     "python:version",
 )
 _CI_TASKS = ("ci:lint:workflows",)
-_NODE_TASKS = ("node:install", "node:lint", "node:test", "node:build")
-_NODE_LIB_TASKS = ("node:typecheck", "node:e2e")
+_NODE_TASKS = (
+    "node:install",
+    "node:lint",
+    "node:test",
+    "node:build",
+    "node:typecheck",
+    "node:e2e",
+)
 _DOCS_TASKS = ("docs:build", "docs:serve", "docs:generate")
 
 
@@ -73,7 +79,6 @@ def render(config: KilnConfig) -> list[Artifact]:
         *_CI_TASKS,
         *(_DOCS_TASKS if docs else ()),
         *(_NODE_TASKS if node else ()),
-        *(_NODE_LIB_TASKS if node_lib else ()),
     }
     for key in tasks_config.command_overrides:
         if key not in known:

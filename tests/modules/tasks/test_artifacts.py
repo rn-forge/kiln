@@ -1527,6 +1527,8 @@ NODE_CHECKS = {
     "lint": ["pnpm nx run-many -t lint"],
     "test": ["pnpm nx run-many -t test"],
     "build": ["pnpm nx run-many -t build"],
+    "typecheck": ["pnpm nx run-many -t build"],
+    "e2e": ["pnpm nx run-many -t e2e"],
 }
 NODE_CELL = ("python-web-app", 'frontend = "angular"')
 
@@ -1631,13 +1633,6 @@ def test_s4_12_3_7_node_tasks_must_be_internal(tmp_path: Path) -> None:
     assert "taskgraph.not-internal" in _codes(root)
 
 
-NODE_LIB_CHECKS = {
-    **NODE_CHECKS,
-    "typecheck": ["pnpm nx run-many -t typecheck"],
-    "e2e": ["pnpm nx run-many -t e2e"],
-}
-
-
 def _node_lib_root(tmp_path: Path) -> Path:
     return _root(tmp_path, "node-lib")
 
@@ -1648,18 +1643,12 @@ def test_s9_1_9_1_node_yml_adds_typecheck_and_e2e_for_node_lib(
     root = _node_lib_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "tasks/node.yml")["tasks"]
-    assert set(tasks) == set(NODE_LIB_CHECKS)
-    for name, cmds in NODE_LIB_CHECKS.items():
+    assert set(tasks) == set(NODE_CHECKS)
+    for name, cmds in NODE_CHECKS.items():
         assert tasks[name]["internal"] is True
         assert tasks[name]["desc"].strip()
         assert tasks[name]["cmds"] == cmds
     assert _load(root, "Taskfile.yml")["includes"]["node"] == "tasks/node.yml"
-
-
-def test_s9_1_9_1_python_web_app_keeps_four_node_tasks(tmp_path: Path) -> None:
-    root = _node_root(tmp_path)
-    cycle.apply(root, home=tmp_path / "home")
-    assert set(_load(root, "tasks/node.yml")["tasks"]) == set(NODE_CHECKS)
 
 
 @pytest.mark.parametrize("name", ["typecheck", "e2e"])
@@ -1699,13 +1688,10 @@ def test_s9_1_9_2_node_lib_calls_no_python_task_that_needs_a_package(
     assert {"task": "python:format"} not in tasks["format"]["cmds"]
 
 
-def test_s9_1_9_2_python_web_app_typecheck_and_coverage_stay_python(
-    tmp_path: Path,
-) -> None:
+def test_s9_1_9_2_python_web_app_coverage_stays_python(tmp_path: Path) -> None:
     root = _node_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "Taskfile.yml")["tasks"]
-    assert tasks["typecheck"]["cmds"] == [{"task": "python:typecheck"}]
     assert tasks["test:coverage"]["cmds"] == [{"task": "python:test:coverage"}]
 
 
@@ -1717,6 +1703,83 @@ def test_s9_1_9_3_node_lib_taskfile_includes_no_python_or_api(
     includes = _load(root, "Taskfile.yml")["includes"]
     assert "api" not in includes
     assert "node" in includes
+
+
+# S9.2.5 — one task surface for both node archetypes.
+
+
+def test_s9_2_5_1_node_yml_is_byte_identical_in_both_cells(tmp_path: Path) -> None:
+    lib = _node_lib_root(tmp_path / "lib")
+    app = _node_root(tmp_path / "app")
+    cycle.apply(lib, home=tmp_path / "home")
+    cycle.apply(app, home=tmp_path / "home")
+    text = (lib / "tasks/node.yml").read_text(encoding="utf-8")
+    assert text == (app / "tasks/node.yml").read_text(encoding="utf-8")
+    assert set(YamlUtils.load(text)["tasks"]) == set(NODE_CHECKS)
+
+
+@pytest.mark.parametrize("cell", ["lib", "app"])
+def test_s9_2_5_2_typecheck_is_the_angular_build(tmp_path: Path, cell: str) -> None:
+    root = (_node_lib_root if cell == "lib" else _node_root)(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    task = _load(root, "tasks/node.yml")["tasks"]["typecheck"]
+    assert task["cmds"] == ["pnpm nx run-many -t build"]
+    assert task["desc"] == "Type-check every project through its Angular build."
+
+
+def test_s9_2_5_3_root_typecheck_per_archetype(tmp_path: Path) -> None:
+    lib = _node_lib_root(tmp_path / "lib")
+    app = _node_root(tmp_path / "app")
+    cycle.apply(lib, home=tmp_path / "home")
+    cycle.apply(app, home=tmp_path / "home")
+    assert _load(lib, "Taskfile.yml")["tasks"]["typecheck"]["cmds"] == [
+        {"task": "node:typecheck"}
+    ]
+    assert _load(app, "Taskfile.yml")["tasks"]["typecheck"]["cmds"] == [
+        {"task": "python:typecheck"},
+        {"task": "node:typecheck"},
+    ]
+
+
+def test_s9_2_5_3_python_archetypes_typecheck_calls_no_node(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    assert _load(root, "Taskfile.yml")["tasks"]["typecheck"]["cmds"] == [
+        {"task": "python:typecheck"}
+    ]
+
+
+def test_s9_2_5_4_clean_removes_the_nx_cache_and_the_web_dist(tmp_path: Path) -> None:
+    lib = _node_lib_root(tmp_path / "lib")
+    app = _node_root(tmp_path / "app")
+    cycle.apply(lib, home=tmp_path / "home")
+    cycle.apply(app, home=tmp_path / "home")
+    lib_cmds = _load(lib, "tasks/workspace.yml")["tasks"]["clean"]["cmds"]
+    app_cmds = _load(app, "tasks/workspace.yml")["tasks"]["clean"]["cmds"]
+    assert "rm -rf .nx" in lib_cmds
+    assert "rm -rf .nx apps/web/dist" in app_cmds
+    assert not any("dist" in c and ".nx" in c for c in lib_cmds)
+
+
+@pytest.mark.parametrize("name", ["typecheck", "e2e"])
+def test_s9_2_5_6_python_web_app_overrides_take_the_merged_keys(
+    tmp_path: Path, name: str
+) -> None:
+    root = _node_root(
+        tmp_path,
+        extra=f'\n[tasks]\n[tasks.command_overrides]\n"node:{name}" = "echo hi"\n',
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    assert _load(root, "tasks/node.yml")["tasks"][name]["cmds"] == ["echo hi"]
+
+
+def test_s9_2_5_6_a_python_tool_still_refuses_the_node_keys(tmp_path: Path) -> None:
+    root = _root(
+        tmp_path,
+        extra='\n[tasks]\n[tasks.command_overrides]\n"node:typecheck" = "echo hi"\n',
+    )
+    with pytest.raises(AppException, match="node:typecheck"):
+        TASKS.artifacts(KilnConfig.load(root), root)
 
 
 PYTHON_TASKS = (

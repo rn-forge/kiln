@@ -71,8 +71,8 @@ tasks:
   typecheck:
     desc: Static type-check the package in pyright strict mode.
     cmds:
-{% if node_lib %}      - task: node:typecheck
-{% else %}      - task: python:typecheck
+{% if not node_lib %}      - task: python:typecheck
+{% endif %}{% if node %}      - task: node:typecheck
 {% endif %}{% for ref in extra_refs.get("typecheck", []) %}      - task: [[ ref ]]
 {% endfor %}
   test:

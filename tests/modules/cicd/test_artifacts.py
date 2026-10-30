@@ -1610,7 +1610,8 @@ def test_s4_11_4_2_no_hooks_renders_only_uv(
     parsed = _dependabot(root)
     assert parsed["version"] == 2
     updates = parsed["updates"]
-    assert len(updates) == 1  # type: ignore[arg-type]
+    npm = 1 if archetype == "python-web-app" else 0
+    assert [u["package-ecosystem"] for u in updates] == ["uv"] + ["npm"] * npm  # type: ignore[index]
     assert updates[0]["package-ecosystem"] == "uv"  # type: ignore[index]
     assert updates[0]["directory"] == "/"  # type: ignore[index]
     assert updates[0]["schedule"]["interval"] == "weekly"  # type: ignore[index]
@@ -2212,7 +2213,8 @@ def test_s9_1_1_2_other_archetypes_render_no_node_lib_action(
     rendered = _rendered(_cell_root(tmp_path, archetype, extra))
     assert "start-ci-run" not in rendered[SETUP_ACTION]
     assert "registry-url" not in rendered[SETUP_ACTION]
-    assert "npm" not in rendered[".github/dependabot.yml"]
+    if archetype != "python-web-app":
+        assert "npm" not in rendered[".github/dependabot.yml"]
 
 
 def test_s9_1_1_3_node_lib_dependabot_adds_npm_beside_uv(
@@ -3171,3 +3173,23 @@ def test_s9_2_4_5_each_step_is_written_once() -> None:
     text = template.read_text(encoding="utf-8")
     assert text.count('pins["pnpm-setup"].uses') == 1
     assert text.count('pins["setup-node"].uses') == 1
+
+
+def test_s9_2_5_5_both_node_cells_carry_the_same_npm_block(tmp_path: Path) -> None:
+    def updates(root: Path) -> dict[str, object]:
+        parsed = YamlUtils.load(_rendered(root)[".github/dependabot.yml"])
+        return {u["package-ecosystem"]: u for u in parsed["updates"]}
+
+    lib = updates(_root(tmp_path / "lib", "node-lib"))
+    app = updates(
+        _web_root(tmp_path / "app", "python-web-app", extra='frontend = "angular"')
+    )
+    assert "npm" in lib
+    assert app["npm"] == lib["npm"]
+
+
+@pytest.mark.parametrize("archetype", ["python-app", "python-tool", "python-lib"])
+def test_s9_2_5_5_python_cells_have_no_npm_block(
+    tmp_path: Path, archetype: str
+) -> None:
+    assert "npm" not in _rendered(_root(tmp_path, archetype))[".github/dependabot.yml"]

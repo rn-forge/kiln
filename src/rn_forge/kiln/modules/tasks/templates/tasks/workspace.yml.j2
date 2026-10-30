@@ -12,5 +12,5 @@ tasks:
 {% if overrides.get("workspace:clean") %}      - [[ overrides["workspace:clean"] ]]
 {% else %}      - rm -rf dist build [[ site_dir ]] .pytest_cache .ruff_cache .uv-cache .import_linter_cache coverage.xml
       - find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +
-{% if web_app %}      - rm -rf .nx [[ web_dir ]]/dist
+{% if node %}      - rm -rf .nx{% if web_dir %} [[ web_dir ]]/dist{% endif %}
 {% endif %}{% endif -%}
