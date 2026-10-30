@@ -46,6 +46,8 @@ NODE_MAJOR = 24
 PNPM_VERSION = "12.15.0"
 """The pnpm version `packageManager` pins; `pnpm/action-setup` fails without it."""
 _NVMRC = ".nvmrc"
+_UNIT_TEST_EXECUTORS = ("@angular/build:unit-test", "@nx/angular:unit-test")
+_COVERAGE_OPTIONS = {"coverage": True, "coverageReporters": ["text-summary", "lcov"]}
 
 _EXCLUDED_TOP_LEVEL = {".git", "node_modules", ".nx"}
 
@@ -110,8 +112,9 @@ def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
     `app.html` and `app.spec.ts`; `serve.options.proxyConfig` in `project.json`
     is set to `<web_dir>/proxy.conf.json` and Nx's `nx-welcome.ts` is deleted.
 
-    Every node repository gets `.nvmrc` and root `package.json`'s
-    `packageManager`, set after the copy. For a `node-lib` the workspace has no
+    Every node repository gets `.nvmrc`, root `package.json`'s
+    `packageManager`, and coverage switched on for both unit-test executors in
+    `nx.json`, set after the copy. For a `node-lib` the workspace has no
     app: the fold stops there.
 
     A shared top-level directory (`apps/`, holding the API member too) merges
@@ -148,6 +151,7 @@ def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
 
     (root / _NVMRC).write_text(f"{NODE_MAJOR}\n", encoding="utf-8")
     _pin_package_manager(root / "package.json")
+    _enable_coverage(root)
     if lib:
         return
 
@@ -166,6 +170,20 @@ def _pin_package_manager(package_path: Path) -> None:
     package = DocumentUtils.read(package_path)
     package["packageManager"] = f"pnpm@{PNPM_VERSION}"
     DocumentUtils.write(package_path, package)
+
+
+def _enable_coverage(root: Path) -> None:
+    path = root / "nx.json"
+    nx = DocumentUtils.read(path)
+    defaults = nx.setdefault("targetDefaults", {})
+    for executor in _UNIT_TEST_EXECUTORS:
+        options = defaults.setdefault(executor, {}).setdefault("options", {})
+        options.update(_COVERAGE_OPTIONS)
+    # Only the library executor lacks Nx's own cache and inputs defaults.
+    unit_test = defaults["@nx/angular:unit-test"]
+    unit_test["cache"] = True
+    unit_test["inputs"] = ["default", "^production"]
+    DocumentUtils.write(path, nx)
 
 
 def _wire_starter(root: Path, web_dir: str) -> None:

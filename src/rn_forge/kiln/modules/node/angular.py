@@ -18,6 +18,7 @@ __all__ = [
     "NGKIT_URL",
     "NX_VERSION",
     "SCAFFOLD_APP_DIR",
+    "VITEST_COVERAGE",
     "add_ngkit",
     "remove_scaffold_app",
     "scaffold_angular",
@@ -35,6 +36,9 @@ NGKIT_URL = (
 SCAFFOLD_APP_DIR = "apps/web"
 """Where the pinned command always creates the app; renamed to `web_dir` by
 `reconcile_node` when a repo's `web_dir` differs."""
+
+VITEST_COVERAGE = "@vitest/coverage-v8@^4.0.8"
+"""The coverage provider the scaffold adds; its major matches `vitest`'s."""
 
 _ALLOW_BUILDS = ("@parcel/watcher", "esbuild", "lmdb", "msgpackr-extract")
 """Native build scripts pnpm 12 blocks by default (`ERR_PNPM_IGNORED_BUILDS`);
@@ -116,6 +120,15 @@ def scaffold_angular(raw: Path) -> Path:
         fail_on_error=False,
     )
     _approve_pnpm_builds(workspace / "pnpm-workspace.yaml")
+    Process.execute(
+        "coverage-v8",
+        "pnpm",
+        "add",
+        "-D",
+        VITEST_COVERAGE,
+        cwd=str(workspace),
+        env=env,
+    )
     Process.execute("nx-install", "pnpm", "install", cwd=str(workspace), env=env)
     return workspace
 

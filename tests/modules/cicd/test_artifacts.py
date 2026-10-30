@@ -3193,3 +3193,36 @@ def test_s9_2_5_5_python_cells_have_no_npm_block(
     tmp_path: Path, archetype: str
 ) -> None:
     assert "npm" not in _rendered(_root(tmp_path, archetype))[".github/dependabot.yml"]
+
+
+def test_s9_2_6_4_web_app_sonar_reads_the_web_lcov_report(tmp_path: Path) -> None:
+    properties = _rendered(
+        _web_root(tmp_path, "python-web-app", extra='frontend = "angular"')
+    )["sonar-project.properties"].splitlines()
+    assert "sonar.javascript.lcov.reportPaths=coverage/web/lcov.info" in properties
+    assert "sonar.exclusions=**/node_modules/**,**/dist/**,**/*.spec.ts" in properties
+
+
+def test_s9_2_6_4_sonar_report_path_keeps_the_project_name(tmp_path: Path) -> None:
+    properties = _rendered(
+        _web_root(
+            tmp_path,
+            "python-web-app",
+            extra='frontend = "angular"\nweb_dir = "apps/frontend"',
+        )
+    )["sonar-project.properties"]
+    assert "sonar.javascript.lcov.reportPaths=coverage/web/lcov.info" in properties
+
+
+@pytest.mark.parametrize("archetype", ["python-web-api", "python-tool", "node-lib"])
+def test_s9_2_6_4_other_archetypes_name_no_web_report(
+    tmp_path: Path, archetype: str
+) -> None:
+    root = (
+        _web_root(tmp_path, archetype)
+        if archetype == "python-web-api"
+        else _root(tmp_path, archetype)
+    )
+    properties = _rendered(root)["sonar-project.properties"]
+    assert "sonar.javascript.lcov.reportPaths" not in properties
+    assert "**/dist/**,**/*.spec.ts" not in properties

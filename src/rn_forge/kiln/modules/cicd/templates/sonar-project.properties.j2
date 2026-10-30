@@ -8,7 +8,9 @@ sonar.tests=libs,apps
 sonar.test.inclusions=**/*.spec.ts
 sonar.exclusions=**/node_modules/**,**/dist/**,**/*.stories.ts,**/.storybook/**,**/.venv/**{% elif web %}sonar.sources=[[ api_dir ]]/src{% if web_app %},[[ web_dir ]]/src{% endif %}
 sonar.tests=[[ api_dir ]]/tests
-{% elif workspace %}sonar.sources={% for package in packages %}packages/[[ package ]]/src{% if not loop.last %},{% endif %}{% endfor %}
+{% if web_app %}sonar.javascript.lcov.reportPaths=coverage/[[ web_project ]]/lcov.info
+sonar.exclusions=**/node_modules/**,**/dist/**,**/*.spec.ts
+{% endif %}{% elif workspace %}sonar.sources={% for package in packages %}packages/[[ package ]]/src{% if not loop.last %},{% endif %}{% endfor %}
 sonar.tests={% for package in packages %}packages/[[ package ]]/tests{% if not loop.last %},{% endif %}{% endfor %}
 {% else %}sonar.sources=src
 sonar.tests=tests

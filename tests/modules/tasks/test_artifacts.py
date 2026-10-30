@@ -1688,8 +1688,25 @@ def test_s9_1_9_2_node_lib_calls_no_python_task_that_needs_a_package(
     assert {"task": "python:format"} not in tasks["format"]["cmds"]
 
 
-def test_s9_1_9_2_python_web_app_coverage_stays_python(tmp_path: Path) -> None:
+def test_s9_2_6_3_web_app_coverage_runs_python_then_node(tmp_path: Path) -> None:
     root = _node_root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    tasks = _load(root, "Taskfile.yml")["tasks"]
+    assert tasks["test:coverage"]["cmds"] == [
+        {"task": "python:test:coverage"},
+        {"task": "node:test"},
+    ]
+
+
+def test_s9_2_6_3_node_lib_coverage_stays_node_only(tmp_path: Path) -> None:
+    root = _node_lib_root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    tasks = _load(root, "Taskfile.yml")["tasks"]
+    assert tasks["test:coverage"]["cmds"] == [{"task": "node:test"}]
+
+
+def test_s9_2_6_3_python_web_api_coverage_calls_no_node(tmp_path: Path) -> None:
+    root = _root(tmp_path, "python-web-api")
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "Taskfile.yml")["tasks"]
     assert tasks["test:coverage"]["cmds"] == [{"task": "python:test:coverage"}]

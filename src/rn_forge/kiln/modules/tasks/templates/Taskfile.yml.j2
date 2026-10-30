@@ -85,8 +85,8 @@ tasks:
   test:coverage:
     desc: Run the pytest suite with an XML coverage report (used by CI/Sonar).
     cmds:
-{% if node_lib %}      - task: node:test
-{% else %}      - task: python:test:coverage
+{% if not node_lib %}      - task: python:test:coverage
+{% endif %}{% if node %}      - task: node:test
 {% endif %}{% for ref in extra_refs.get("test:coverage", []) %}      - task: [[ ref ]]
 {% endfor %}
   build:

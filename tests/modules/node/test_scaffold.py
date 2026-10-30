@@ -20,7 +20,11 @@ from rn_forge.commons.runtime.subprocess import Process
 
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
-from rn_forge.kiln.modules.node.angular import NX_VERSION, scaffold_angular
+from rn_forge.kiln.modules.node.angular import (
+    NX_VERSION,
+    VITEST_COVERAGE,
+    scaffold_angular,
+)
 from rn_forge.kiln.modules.registry import builtin
 from rn_forge.kiln.modules.python.artifacts import render
 from rn_forge.kiln.modules.node.scaffold import (
@@ -266,6 +270,7 @@ _SHARED_STEPS = [
     "nx-workspace",
     "nx-angular-plugin",
     "nx-angular-app",
+    "coverage-v8",
     "nx-install",
 ]
 
@@ -437,3 +442,79 @@ def test_s9_1_8_4_root_pyproject_is_bare_with_docs_tooling(tmp_path: Path) -> No
     assert "mkdocs-material>=9.6" in document["dependency-groups"]["docs"]
     assert add_task_tools(root, config) == []
     assert "mdformat" in " ".join(document["dependency-groups"]["docs"])
+
+
+def test_s9_2_6_1_coverage_v8_installs_after_the_app_and_before_the_install(
+    tmp_path: Path,
+) -> None:
+    raw = tmp_path / "raw"
+    raw.mkdir()
+    with mock.patch("rn_forge.kiln.modules.node.angular.Process.execute") as run:
+        scaffold_angular(raw)
+
+    names = [c.args[0] for c in run.call_args_list]
+    assert names.index("nx-angular-app") < names.index("coverage-v8")
+    assert names.index("coverage-v8") < names.index("nx-install")
+    call = run.call_args_list[names.index("coverage-v8")]
+    assert call.args == (
+        "coverage-v8",
+        "pnpm",
+        "add",
+        "-D",
+        "@vitest/coverage-v8@^4.0.8",
+    )
+    assert call.kwargs["cwd"] == str(raw / "workspace")
+
+
+def test_s9_2_6_1_vitest_coverage_names_the_pinned_package() -> None:
+    assert VITEST_COVERAGE == "@vitest/coverage-v8@^4.0.8"
+
+
+_COVERAGE_OPTIONS = {"coverage": True, "coverageReporters": ["text-summary", "lcov"]}
+
+
+@pytest.mark.parametrize("lib", [True, False])
+def test_s9_2_6_2_reconcile_node_turns_coverage_on_in_nx_json(
+    tmp_path: Path, lib: bool
+) -> None:
+    root, _ = _reconciled(tmp_path, lib=lib)
+
+    defaults = DocumentUtils.read(root / "nx.json")["targetDefaults"]
+    for executor in ("@angular/build:unit-test", "@nx/angular:unit-test"):
+        assert defaults[executor]["options"] == _COVERAGE_OPTIONS
+    assert defaults["@nx/angular:unit-test"]["cache"] is True
+    assert defaults["@nx/angular:unit-test"]["inputs"] == ["default", "^production"]
+
+
+@pytest.mark.parametrize("lib", [True, False])
+def test_s9_2_6_2_reconcile_node_keeps_what_nx_json_already_holds(
+    tmp_path: Path, lib: bool
+) -> None:
+    root = _lib_root(tmp_path) if lib else _root(tmp_path)
+    workspace = _workspace(tmp_path)
+    if lib:
+        shutil.rmtree(workspace / "apps")
+    nx = DocumentUtils.read(workspace / "nx.json")
+    nx["targetDefaults"]["@angular/build:unit-test"]["options"] = {
+        "watch": False,
+        "coverage": False,
+    }
+    DocumentUtils.write(workspace / "nx.json", nx)
+
+    reconcile_node(root, workspace, KilnConfig.load(root))
+
+    defaults = DocumentUtils.read(root / "nx.json")["targetDefaults"]
+    assert defaults["@angular/build:unit-test"]["options"] == {
+        "watch": False,
+        **_COVERAGE_OPTIONS,
+    }
+    assert defaults["@angular/build:unit-test"]["cache"] is True
+    assert "@nx/eslint:lint" in defaults
+    assert DocumentUtils.read(root / "nx.json")["analytics"] is False
+
+
+def test_s9_2_6_2_nx_json_is_identical_in_both_cells(tmp_path: Path) -> None:
+    lib, _ = _reconciled(tmp_path / "lib", lib=True)
+    app, _ = _reconciled(tmp_path / "app", lib=False)
+
+    assert (lib / "nx.json").read_bytes() == (app / "nx.json").read_bytes()

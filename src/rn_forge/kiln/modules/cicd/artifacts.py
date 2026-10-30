@@ -25,6 +25,10 @@ _PACKAGE = "rn_forge.kiln.modules.cicd"
 
 _NX_CLOUD_IMAGE = "ubuntu22.04-node24.14-v1"
 
+# The scaffold's `--name`. Angular writes coverage under it, and moving the app
+# to another `web_dir` does not rename the project.
+_WEB_PROJECT = "web"
+
 _NODE_HELPERS = (
     "resolve-dist-workspace-deps",
     "verify-dist-manifest",
@@ -106,6 +110,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "jobs": ci.jobs,
         "api_dir": config.api_dir,
         "web_dir": config.web_dir,
+        "web_project": _WEB_PROJECT,
     }
     # GitHub's own `${{ }}` expressions fill these templates, so Jinja's variables use `[[ ]]`.
     engine = TemplateEngine.cached(
