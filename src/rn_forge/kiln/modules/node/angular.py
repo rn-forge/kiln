@@ -25,7 +25,7 @@ NX_VERSION = "23.2.1"
 `tests/fixtures/scaffold/nx-angular/COMMAND.md`)."""
 
 NGKIT_URL = (
-    "https://github.com/rn-forge/ngkit/releases/download/v0.1.2/rn-forge-ng-0.1.2.tgz"
+    "https://github.com/rn-forge/ngkit/releases/download/v0.3.0/rn-forge-ng-0.3.0.tgz"
 )
 """`@rn-forge/ng`'s release tarball (npm publishing is disabled)."""
 
