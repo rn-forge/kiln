@@ -385,3 +385,279 @@ def test_s9_1_12_4_task_requires_ngkit() -> None:
     task = tasks["tasks"]["golden:ngkit"]
     assert str(task["desc"]).strip()
     assert task["requires"]["vars"] == ["NGKIT"]
+
+
+PARITY = (
+    "nx.json",
+    "package.json",
+    "pnpm-workspace.yaml",
+    "eslint.config.mjs",
+    "tsconfig.base.json",
+    ".nvmrc",
+    ".gitignore",
+    ".vscode/extensions.json",
+    "tasks/node.yml",
+)
+
+
+def _parity_files(**changes: str | None) -> dict[str, str]:
+    """Nine parity files with nested JSON and YAML; *changes* replaces or (None) drops by name."""
+    files = {
+        "nx.json": json.dumps({"a": {"b": [1, {"c": 2}]}}),
+        "package.json": json.dumps(
+            {"dependencies": {"rxjs": "1"}, "devDependencies": {"nx": "1"}}
+        ),
+        "pnpm-workspace.yaml": "packages:\n  - libs/*\nsettings:\n  deep:\n    key: 1\n",
+        "eslint.config.mjs": "export default [];\n",
+        "tsconfig.base.json": json.dumps({"compilerOptions": {"paths": {"x": ["y"]}}}),
+        ".nvmrc": "24\n",
+        ".gitignore": ".nx\n",
+        ".vscode/extensions.json": json.dumps({"recommendations": ["a"]}),
+        "tasks/node.yml": "version: '3'\ntasks:\n  a:\n    cmds: [b]\n",
+    }
+    files.update({k: v for k, v in changes.items() if v is not None})
+    return {k: v for k, v in files.items() if changes.get(k, "") is not None}
+
+
+def _package(deps: dict[str, str], dev: dict[str, str] | None = None) -> str:
+    return json.dumps(
+        {"dependencies": deps, "devDependencies": dev or {"nx": "1"}}, indent=4
+    )
+
+
+def _cells(
+    tmp_path: Path, lib: dict[str, str], web: dict[str, str]
+) -> tuple[Path, Path]:
+    _write(tmp_path / "lib", lib)
+    _write(tmp_path / "web", web)
+    return tmp_path / "lib", tmp_path / "web"
+
+
+def test_s9_2_10_1_parity_files_are_the_nine(matrix: ModuleType) -> None:
+    assert matrix.PARITY_FILES == PARITY
+
+
+def test_s9_2_10_1_identical_cells_report_nothing(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    lib, web = _cells(tmp_path, _parity_files(), _parity_files())
+    assert matrix.parity_cells(lib, web) == []
+
+
+def test_s9_2_10_1_json_and_yaml_may_differ_in_layout_only(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    web_files = _parity_files(
+        **{
+            "nx.json": json.dumps({"a": {"b": [1, {"c": 2}]}}, indent=8),
+            "pnpm-workspace.yaml": (
+                "settings: {deep: {key: 1}}\npackages: ['libs/*']\n"
+            ),
+            "tsconfig.base.json": json.dumps(
+                {"compilerOptions": {"paths": {"x": ["y"]}}}, indent=1
+            ),
+        }
+    )
+    lib, web = _cells(tmp_path, _parity_files(), web_files)
+    assert matrix.parity_cells(lib, web) == []
+
+
+@pytest.mark.parametrize("name", ["eslint.config.mjs", ".nvmrc", ".gitignore"])
+def test_s9_2_10_1_other_files_compare_as_bytes(
+    matrix: ModuleType, tmp_path: Path, name: str
+) -> None:
+    lib, web = _cells(tmp_path, _parity_files(), _parity_files(**{name: "x\n"}))
+    assert [line for line in matrix.parity_cells(lib, web) if name in line]
+
+
+def test_s9_2_10_1_tasks_node_yml_compares_as_bytes(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    # `.yml` is not `.yaml`: same parsed value, different layout, is a difference.
+    layout = "version: '3'\ntasks:\n  a:\n    cmds:\n      - b\n"
+    lib, web = _cells(
+        tmp_path, _parity_files(), _parity_files(**{"tasks/node.yml": layout})
+    )
+    lines = matrix.parity_cells(lib, web)
+    assert len(lines) == 1 and "tasks/node.yml" in lines[0]
+
+
+@pytest.mark.parametrize(
+    ("name", "changed"),
+    [
+        ("nx.json", json.dumps({"a": {"b": [1, {"c": 3}]}})),
+        (
+            "tsconfig.base.json",
+            json.dumps({"compilerOptions": {"paths": {"x": ["z"]}}}),
+        ),
+        (".vscode/extensions.json", json.dumps({"recommendations": ["b"]})),
+        (
+            "pnpm-workspace.yaml",
+            "packages:\n  - libs/*\nsettings:\n  deep:\n    key: 2\n",
+        ),
+        (".nvmrc", "22\n"),
+        (".gitignore", ".nx\n.venv\n"),
+    ],
+)
+def test_s9_2_10_2_a_value_difference_names_the_path(
+    matrix: ModuleType, tmp_path: Path, name: str, changed: str
+) -> None:
+    lib, web = _cells(tmp_path, _parity_files(), _parity_files(**{name: changed}))
+    lines = matrix.parity_cells(lib, web)
+    assert len(lines) == 1 and name in lines[0]
+
+
+@pytest.mark.parametrize("name", PARITY)
+def test_s9_2_10_2_a_file_missing_from_the_web_side_is_reported(
+    matrix: ModuleType, tmp_path: Path, name: str
+) -> None:
+    lib, web = _cells(tmp_path, _parity_files(), _parity_files(**{name: None}))
+    lines = matrix.parity_cells(lib, web)
+    assert len(lines) == 1 and name in lines[0] and "web" in lines[0]
+
+
+@pytest.mark.parametrize("name", PARITY)
+def test_s9_2_10_2_a_file_missing_from_the_lib_side_is_reported(
+    matrix: ModuleType, tmp_path: Path, name: str
+) -> None:
+    lib, web = _cells(tmp_path, _parity_files(**{name: None}), _parity_files())
+    lines = matrix.parity_cells(lib, web)
+    assert len(lines) == 1 and name in lines[0] and "lib" in lines[0]
+
+
+def test_s9_2_10_2_a_file_missing_from_both_sides_is_reported(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    lib, web = _cells(
+        tmp_path, _parity_files(**{".nvmrc": None}), _parity_files(**{".nvmrc": None})
+    )
+    assert [line for line in matrix.parity_cells(lib, web) if ".nvmrc" in line]
+
+
+def test_s9_2_10_3_the_web_side_may_add_rn_forge_ng_to_dependencies(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    lib = _parity_files(**{"package.json": _package({"rxjs": "1"})})
+    web = _parity_files(
+        **{"package.json": _package({"rxjs": "1", "@rn-forge/ng": "file:x.tgz"})}
+    )
+    lib_dir, web_dir = _cells(tmp_path, lib, web)
+    assert matrix.parity_cells(lib_dir, web_dir) == []
+
+
+@pytest.mark.parametrize("section", ["dependencies", "devDependencies"])
+def test_s9_2_10_3_any_other_web_dependency_is_a_difference(
+    matrix: ModuleType, tmp_path: Path, section: str
+) -> None:
+    deps, dev = {"rxjs": "1", "@rn-forge/ng": "x"}, {"nx": "1"}
+    (deps if section == "dependencies" else dev)["left-pad"] = "1"
+    lib = _parity_files(**{"package.json": _package({"rxjs": "1"})})
+    web = _parity_files(**{"package.json": _package(deps, dev)})
+    lib_dir, web_dir = _cells(tmp_path, lib, web)
+    lines = matrix.parity_cells(lib_dir, web_dir)
+    assert len(lines) == 1 and "package.json" in lines[0]
+
+
+def test_s9_2_10_3_rn_forge_ng_in_web_dev_dependencies_is_a_difference(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    lib = _parity_files(**{"package.json": _package({"rxjs": "1"})})
+    web = _parity_files(
+        **{"package.json": _package({"rxjs": "1"}, {"nx": "1", "@rn-forge/ng": "x"})}
+    )
+    lib_dir, web_dir = _cells(tmp_path, lib, web)
+    assert matrix.parity_cells(lib_dir, web_dir) != []
+
+
+def test_s9_2_10_3_rn_forge_ng_on_the_lib_side_is_a_difference(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    ng = _package({"rxjs": "1", "@rn-forge/ng": "x"})
+    lib_dir, web_dir = _cells(
+        tmp_path,
+        _parity_files(**{"package.json": ng}),
+        _parity_files(**{"package.json": ng}),
+    )
+    assert matrix.parity_cells(lib_dir, web_dir) != []
+    # Lib-only, with the web side lacking it too, differs as well.
+    lib_only = _parity_files(**{"package.json": ng})
+    web_none = _parity_files(**{"package.json": _package({"rxjs": "1"})})
+    lib_dir, web_dir = _cells(tmp_path / "b", lib_only, web_none)
+    assert matrix.parity_cells(lib_dir, web_dir) != []
+
+
+def test_s9_2_10_3_other_package_json_keys_still_compare(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    lib = _parity_files(**{"package.json": _package({"rxjs": "1"})})
+    web = json.loads(_package({"rxjs": "1", "@rn-forge/ng": "x"}))
+    web["packageManager"] = "pnpm@1"
+    lib_dir, web_dir = _cells(
+        tmp_path, lib, _parity_files(**{"package.json": json.dumps(web)})
+    )
+    assert len(matrix.parity_cells(lib_dir, web_dir)) == 1
+
+
+def _matrix_goldens(matrix: ModuleType, root: Path, web_files: dict[str, str]) -> None:
+    lib_name = next(c.name for c in matrix.CELLS if c.archetype == "node-lib")
+    web_name = next(c.name for c in matrix.CELLS if c.archetype == "python-web-app")
+    _write(root / "working" / lib_name, _parity_files())
+    _write(root / "working" / web_name, web_files)
+
+
+def test_s9_2_10_4_main_parity_passes_when_the_cells_match(
+    matrix: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _matrix_goldens(matrix, tmp_path, _parity_files())
+    monkeypatch.setattr(matrix, "GOLDENS", tmp_path)
+    assert matrix.main(["parity"]) == 0
+    assert capsys.readouterr().err == ""
+
+
+def test_s9_2_10_4_main_parity_prints_each_line_and_exits_1(
+    matrix: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _matrix_goldens(matrix, tmp_path, _parity_files(**{".nvmrc": "22\n"}))
+    monkeypatch.setattr(matrix, "GOLDENS", tmp_path)
+    assert matrix.main(["parity"]) == 1
+    assert ".nvmrc" in capsys.readouterr().out
+
+
+def test_s9_2_10_4_main_parity_errors_when_a_cell_is_not_rendered(
+    matrix: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(matrix, "GOLDENS", tmp_path)
+    assert matrix.main(["parity"]) == 1
+    assert "golden:render" in capsys.readouterr().err
+    # One cell present, the other absent: still an error, never success.
+    lib_name = next(c.name for c in matrix.CELLS if c.archetype == "node-lib")
+    _write(tmp_path / "working" / lib_name, _parity_files())
+    assert matrix.main(["parity"]) == 1
+
+
+def test_s9_2_10_4_main_parity_takes_no_argument(matrix: ModuleType) -> None:
+    assert matrix.main(["parity", "extra"]) == 2
+
+
+def test_s9_2_10_5_task_golden_parity_calls_the_command() -> None:
+    tasks = YamlUtils.load((ROOT / "tasks" / "self.yml").read_text(encoding="utf-8"))
+    task = tasks["tasks"]["golden:parity"]
+    assert str(task["desc"]).strip()
+    assert task["cmds"] == ["uv run python scripts/golden_matrix.py parity"]
+
+
+def test_s9_2_10_6_the_policy_names_the_parity_check() -> None:
+    page = (ROOT / "docs/specs/epics/E4-generator/F4.4-render-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    policy = page.split("## Template review policy")[1].split("\n## ")[0]
+    assert "self:golden:parity" in policy

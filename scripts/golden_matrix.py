@@ -3,10 +3,12 @@
 Usage: golden_matrix.py {render,validate} [REF]
        golden_matrix.py compare BASE [REF]
        golden_matrix.py ngkit CHECKOUT
+       golden_matrix.py parity
 
 Cells land in `.goldens/<ref_dir>/<cell name>/`, beneath the repository root.
 `compare` diffs the kiln-owned files of every cell between two rendered refs.
 `ngkit` diffs the rendered `node-lib` cell against ngkit's files at `NGKIT_REF`.
+`parity` compares the working `node-lib` and web-app cells' shared files.
 """
 
 from __future__ import annotations
@@ -21,6 +23,8 @@ import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
+
+from rn_forge.commons.fs.documents import YamlUtils
 
 ROOT = Path(__file__).resolve().parent.parent
 GOLDENS = ROOT / ".goldens"
@@ -39,6 +43,18 @@ NGKIT_FILES = (
     "tools/ci/release-notes.mjs",
     "sonar-project.properties",
 )
+PARITY_FILES = (
+    "nx.json",
+    "package.json",
+    "pnpm-workspace.yaml",
+    "eslint.config.mjs",
+    "tsconfig.base.json",
+    ".nvmrc",
+    ".gitignore",
+    ".vscode/extensions.json",
+    "tasks/node.yml",
+)
+WEB_ONLY_DEPENDENCY = "@rn-forge/ng"
 
 
 @dataclass(frozen=True)
@@ -329,16 +345,73 @@ def ngkit(checkout: Path, out_root: Path) -> int:
     return 0
 
 
+def _parity_value(path: Path, relative: str, web: bool) -> object:
+    """The comparable form of one parity file: parsed for `.json` and `.yaml`, else its bytes."""
+    data = path.read_bytes()
+    try:
+        if relative.endswith(".json"):
+            value = json.loads(data)
+            if web and relative == "package.json":
+                # The one allowance: the web side's dependencies entry, nothing else.
+                value["dependencies"].pop(WEB_ONLY_DEPENDENCY, None)
+            return value
+        if relative.endswith(".yaml"):
+            return YamlUtils.load(data.decode("utf-8"))
+    except (ValueError, KeyError, TypeError, AttributeError):
+        pass
+    return data
+
+
+def parity_cells(lib_dir: Path, web_dir: Path) -> list[str]:
+    """Differences between the `PARITY_FILES` of two cells, one line each, in file order.
+
+    `.json` and `.yaml` files compare parsed, the rest as bytes. The web side's
+    `package.json` may carry `@rn-forge/ng` under `dependencies`.
+    """
+    lines: list[str] = []
+    for relative in PARITY_FILES:
+        lib, web = lib_dir / relative, web_dir / relative
+        if not lib.is_file():
+            lines.append(f"missing in lib: {relative}")
+        if not web.is_file():
+            lines.append(f"missing in web: {relative}")
+        if lib.is_file() and web.is_file():
+            if _parity_value(lib, relative, False) != _parity_value(web, relative, True):
+                lines.append(f"differs: {relative}")
+    return lines
+
+
+def parity(out_root: Path) -> int:
+    """Print the differences between the working `node-lib` and web-app cells; 1 on any."""
+    cells = [
+        next(c for c in CELLS if c.archetype == archetype).name
+        for archetype in ("node-lib", "python-web-app")
+    ]
+    lib_dir, web_dir = (out_root / ref_dir("") / name for name in cells)
+    for cell_dir in (lib_dir, web_dir):
+        if not cell_dir.is_dir():
+            print(f"missing cell: {cell_dir} (run task self:golden:render)", file=sys.stderr)
+            return 1
+    lines = parity_cells(lib_dir, web_dir)
+    print("\n".join(lines))
+    return 1 if lines else 0
+
+
 def main(argv: list[str]) -> int:
-    """Run `render`, `validate`, `compare` or `ngkit` with the refs it takes."""
+    """Run `render`, `validate`, `compare`, `ngkit` or `parity` with the refs it takes."""
     usage = (
         "usage: golden_matrix.py {render,validate} [REF] | compare BASE [REF]"
-        " | ngkit CHECKOUT"
+        " | ngkit CHECKOUT | parity"
     )
-    commands = ("render", "validate", "compare", "ngkit")
+    commands = ("render", "validate", "compare", "ngkit", "parity")
     if not argv or argv[0] not in commands or len(argv) > 3:
         print(usage, file=sys.stderr)
         return 2
+    if argv[0] == "parity":
+        if len(argv) != 1:
+            print(usage, file=sys.stderr)
+            return 2
+        return parity(GOLDENS)
     if argv[0] == "ngkit":
         if len(argv) != 2 or not argv[1]:
             print(usage, file=sys.stderr)

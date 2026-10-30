@@ -27,3 +27,8 @@ tasks:
       vars: [NGKIT]
     cmds:
       - uv run python scripts/golden_matrix.py ngkit {{.NGKIT}}
+
+  golden:parity:
+    desc: Fail when the node-lib and python-web-app cells differ in the files they share, apart from @rn-forge/ng; run golden:render first.
+    cmds:
+      - uv run python scripts/golden_matrix.py parity
