@@ -17,6 +17,9 @@ is a kiln ADR; this file states the rule.
 {% elif web %}- **Archetype:** `python-web-api` — a uv workspace with one API member at
   `{{ api_dir }}` (backend `{{ backend }}`), `src/` layout, pytest, ruff and
   pyright, GitHub Actions.
+{% elif node_lib %}- **Archetype:** `node-lib` — a pnpm-managed Nx workspace of Angular libraries,
+  one release group, with no projects until the repository adds them; docs
+  tooling through uv, GitHub Actions.
 {% elif lifecycle %}- **Archetype:** `python-tool` — `python-app` with `lifecycle = true`: one uv
   package, `src/` layout, pytest, ruff and pyright at the root, GitHub Actions,
   a command line declared in `.rn-forge/kiln/config.toml` rather than assembled
@@ -31,8 +34,9 @@ is a kiln ADR; this file states the rule.
 
 ## 1. One entrypoint
 
-`task` is the only entrypoint. Nobody — human, agent, or CI — invokes `uv`,
-`pytest`, `ruff`, `pyright`, `mkdocs` or `kiln` directly.
+`task` is the only entrypoint. Nobody — human, agent, or CI — invokes {% if node_lib %}`uv`,
+`mkdocs`, `pnpm`, `npx`, `nx`, `ng` or `kiln`{% else %}`uv`,
+`pytest`, `ruff`, `pyright`, `mkdocs` or `kiln`{% endif %} directly.
 
 The public surface for this repo is exactly:
 
@@ -57,11 +61,15 @@ The public surface for this repo is exactly:
 | `task validate`     | lint → typecheck → test{% if docs %} → docs build{% else %}             {% endif %}                |
 | `task lint`         | every lint                                          |
 | `task format`       | format in place                                     |
-| `task typecheck`    | pyright, strict                                     |
+{% if node_lib %}| `task typecheck`    | Type-check every project through its Angular build. |
+| `task test`         | Run every project's tests with Nx.                  |
+| `task test:coverage`| Run every project's tests, writing lcov reports to coverage/. |
+| `task build`        | Build every project with Nx.                        |
+{% else %}| `task typecheck`    | pyright, strict                                     |
 | `task test`         | pytest                                              |
 | `task test:coverage`| pytest with an XML coverage report                  |
 | `task build`        | wheel and sdist into `dist/`                        |
-| `task clean`        | remove build outputs and caches                     |
+{% endif %}| `task clean`        | remove build outputs and caches                     |
 | `task version`      | print the version from `pyproject.toml`             |
 {% if docs %}| `task docs:build`   | strict MkDocs build into `.docs-site/`              |
 {% endif %}{% if docs %}| `task docs:serve`   | live-reload docs on `127.0.0.1:8080`                |
@@ -107,7 +115,7 @@ Every path kiln writes or reads has exactly one of these kinds:
   an apply artifact, so a later `kiln apply` recreates it if it is absent and
   never touches it if present. A scaffolded file (`pyproject.toml`,
   `README.md`, the bodies of `CLAUDE.md`, `AGENTS.md` and `mkdocs.yml`, the
-  first `src/` and `tests/`) is written by `kiln new` before its first apply,
+  first {% if node_lib %}`libs/` and `apps/`{% else %}`src/` and `tests/`{% endif %}) is written by `kiln new` before its first apply,
   and never again.
 - Paths kiln neither writes nor reads (`.claude/**`, `.codex/**`, installed
   skills) are not kiln's and have no kind.
@@ -118,8 +126,8 @@ and {% else %}and
 {% endif %}this file. `.rn-forge/kiln/state.json` is generated and committed, and
 never hashes itself.
 
-Blocks here: the `# BEGIN rn-forge kiln` region in `.gitignore` and
-`.importlinter`, and the `<!-- BEGIN rn-forge kiln -->` region in `CLAUDE.md` and
+Blocks here: the `# BEGIN rn-forge kiln` region in `.gitignore`{% if not node_lib %} and
+`.importlinter`{% endif %}, and the `<!-- BEGIN rn-forge kiln -->` region in `CLAUDE.md` and
 `AGENTS.md`.
 {% if docs %}
 Derived regions here: the `# BEGIN derived nav` region in `mkdocs.yml`, the
@@ -129,7 +137,7 @@ Derived regions here: the `# BEGIN derived nav` region in `mkdocs.yml`, the
 Seeded here: `README.md`{% if docs %}, `docs/_areas.yml`, `docs/_structure.md`, each area's
 `_structure.md` and `index.md`, and `docs/index.md`{% endif %}.
 
-Repo-owned: `pyproject.toml`, `src/`, `tests/` and `scripts/**`. After
+Repo-owned: `pyproject.toml`, {% if node_lib %}`package.json`, `libs/`, `apps/`{% else %}`src/`, `tests/`{% endif %} and `scripts/**`. After
 scaffolding, doctor ignores their content and the content and presence of seeded
 files. Repository validation tasks may check these independently. Only managed
 files and fenced blocks remain kiln's responsibility.
@@ -145,7 +153,10 @@ before the change is done.
 
 ## 3. The dependency set
 
-{% if workspace %}The archetype specification supplies its component-library set.
+{% if node_lib %}A `node-lib` repository declares no rn-forge library: its root `pyproject.toml`
+carries only kiln's tooling and the docs group, and its code dependencies are
+pnpm's.
+{% else %}{% if workspace %}The archetype specification supplies its component-library set.
 Every rn-forge distributable depends on `rn-forge-commons`, and each workspace
 package declares the full URL itself. The root declares no rn-forge source at
 all: a member is published on its own, so its dependency has to be resolvable
@@ -209,7 +220,7 @@ tags sit on different commits, and pykit's own workspace sources would
 otherwise make uv resolve a shared dependency once per tag. A repository
 scaffolded before kiln did this adds the line by hand.
 
-{% endif %}
+{% endif %}{% endif %}
 kiln is not a dependency. `[kiln] ref` in `config.toml` pins it, and `task` runs
 it with `uvx` in its own environment (kiln ADR-0006). A
 repository's lock holds none of kiln's dependencies, and kiln's pykit pins never
@@ -217,7 +228,11 @@ constrain the repository's.
 
 ## 4. The import boundary
 
-The rn-forge peer rule is enforced at the dependency declaration, above:
+{% if node_lib %}A `node-lib` repository has no `.importlinter`. The boundaries between its
+projects are the repository's own, in the `@nx/enforce-module-boundaries` rule
+of `eslint.config.mjs`, and `task lint` runs them.
+
+{% else %}The rn-forge peer rule is enforced at the dependency declaration, above:
 import-linter rejects subpackages of external packages, so it cannot express
 "commons but not kiln". What `.importlinter` enforces here is the complement —
 product code imports no framework or CLI toolkit directly (`typer`, `jinja2`,
@@ -238,7 +253,7 @@ included — is a subprocess or nothing.
 repo may import. Every other rn-forge component — `rn-forge-tooling` and kiln
 included — is a subprocess or nothing.
 
-{% endif %}## 5. What CI checks, and what it does not
+{% endif %}{% endif %}## 5. What CI checks, and what it does not
 
 CI runs the pinned kiln read-only: it never runs `kiln apply`
 and never writes a generated file. `task validate` runs `kiln doctor` on every
@@ -255,19 +270,19 @@ the owner creates the GitHub environments `pypi` (deployment branch `main`) and
 `testpypi`, and adds a trusted publisher per package on pypi.org and on
 test.pypi.org, naming workflow `ci.yml` and the environment.
 
-{% endif %}{% if docs %}`task validate` proves: ruff is clean and formatted{% if workspace %} in every package{% endif %}; the archetype's
-dependency set is present, allowed and pinned; the import contracts hold; the
+{% endif %}{% if docs %}`task validate` proves: {% if not node_lib %}ruff is clean and formatted{% if workspace %} in every package{% endif %}; {% endif %}the archetype's
+dependency set is present, allowed and pinned; {% if not node_lib %}the import contracts hold; {% endif %}the
 task layout and validate gate are intact; no workflow step invokes a wrapped
 tool; the docs tree matches `docs/_areas.yml`; the derived nav is current; no link
 or anchor is broken; **every managed file and block still hashes to the value
-committed in `.rn-forge/kiln/state.json`**; pyright is clean; the tests pass;
+committed in `.rn-forge/kiln/state.json`**; {% if not node_lib %}pyright is clean; {% endif %}the tests pass;
 and the docs site builds `--strict`.
 
-{% else %}`task validate` proves: ruff is clean and formatted{% if workspace %} in every package{% endif %}; the archetype's
-dependency set is present, allowed and pinned; the import contracts hold; the
+{% else %}`task validate` proves: {% if not node_lib %}ruff is clean and formatted{% if workspace %} in every package{% endif %}; {% endif %}the archetype's
+dependency set is present, allowed and pinned; {% if not node_lib %}the import contracts hold; {% endif %}the
 task layout and validate gate are intact; no workflow step invokes a wrapped
 tool; **every managed file and block still hashes to the value committed in
-`.rn-forge/kiln/state.json`**; pyright is clean; and the tests pass.
+`.rn-forge/kiln/state.json`**; {% if not node_lib %}pyright is clean; {% endif %}and the tests pass.
 
 {% endif %}## 6. What `kiln doctor --full` adds
 

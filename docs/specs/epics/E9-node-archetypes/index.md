@@ -10,7 +10,7 @@
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
 | [F9.1 — `node-lib` renders ngkit's CI](F9.1-node-lib-hosts-ngkit-ci.md) | Active | release-1 | 2 New · 11 Closed |
-| [F9.2 — One node scaffold](F9.2-one-node-scaffold.md) | Active | release-1 | 2 New · 8 Closed |
+| [F9.2 — One node scaffold](F9.2-one-node-scaffold.md) | Active | release-1 | 1 New · 9 Closed |
 
 <!-- END derived features -->
 
@@ -31,9 +31,10 @@ selector, validated against each archetype; the archetype selects the toolchain
 and component topology ([ADR-0005](../../../adr/ADR-0005.md)).
 
 Markdown in a node archetype is formatted by mdformat under the seeded
-`.mdformat.toml`, as in every other archetype, never by prettier: the seeded
-`.prettierignore` excludes `*.md`, so the docs tree is byte-identical across
-archetypes. ngkit's configuration is the prior art.
+`.mdformat.toml`, as in every other archetype, never by prettier: kiln seeds no
+Prettier configuration; a repository that adds Prettier lists `*.md` in
+`.prettierignore`, so the docs tree stays byte-identical across archetypes.
+ngkit's configuration is the prior art.
 
 ## Decisions
 

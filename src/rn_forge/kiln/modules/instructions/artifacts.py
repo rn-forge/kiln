@@ -81,6 +81,7 @@ def context(config: KilnConfig) -> dict[str, object]:
     lifecycle = config.lifecycle
     web = config.archetype in {"python-web-api", "python-web-app"}
     web_app = config.archetype == "python-web-app"
+    node_lib = config.archetype == "node-lib"
     web_dir = config.web_dir
     sonar = "on" if ci.sonar else "off"
     display = (
@@ -111,6 +112,11 @@ def context(config: KilnConfig) -> dict[str, object]:
         tools += ", `mkdocs`"
     if web_app:
         tools += ", `pnpm`, `npx`, `nx`, `ng`"
+    if node_lib:
+        # node-lib's `forbidden_tools` less `kiln`, which the bullet adds itself.
+        # `mkdocs` stays whatever the docs profile, as the ci-entrypoint check
+        # reads the same list.
+        tools = "`uv`, `mkdocs`, `pnpm`, `npx`, `nx`, `ng`"
     verbs = ""
     if config.docs_profile == "mkdocs":
         verbs = f", plus {_DOCS_VERBS}"
@@ -159,6 +165,7 @@ def context(config: KilnConfig) -> dict[str, object]:
         "release": config.release,
         "web": web,
         "web_app": web_app,
+        "node_lib": node_lib,
         "backend": config.backend,
         "frontend": config.frontend,
         "api_dir": config.api_dir,

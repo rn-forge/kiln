@@ -21,7 +21,7 @@ name: CI
 {% else %}# validate → sonar → release.
 {% endif %}#
 # Every step goes through `task`; `kiln doctor`'s ci-entrypoint rule fails the
-# build if a step invokes uv/pytest/ruff/pyright/mkdocs/kiln directly. kiln runs
+# build if a step invokes {% if node_lib %}uv/mkdocs/pnpm/npx/nx/ng/kiln{% else %}uv/pytest/ruff/pyright/mkdocs/kiln{% endif %} directly. kiln runs
 # here only as the version `[kiln] ref` pins, read-only, through
 # `task validate`: it checks the tree against the committed
 # .rn-forge/kiln/state.json and never runs `kiln apply`.

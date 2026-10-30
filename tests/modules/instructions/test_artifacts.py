@@ -413,3 +413,189 @@ def test_s4_12_6_12_the_instructions_name_three_docs_verbs(tmp_path: Path) -> No
             assert verb in text
         assert "docs:lint" not in text
         assert "docs:structure" not in text
+
+
+# S9.2.9 — node-lib's documents describe a Node repository.
+
+NODE_LIB_BULLET = (
+    "- **Archetype:** `node-lib` — a pnpm-managed Nx workspace of Angular "
+    "libraries, one release group, with no projects until the repository adds "
+    "them; docs tooling through uv, GitHub Actions."
+)
+NODE_LIB_CONVENTION = (
+    "- Node 24, pnpm and Nx, with Angular, ESLint and Vitest; docs tooling through uv."
+)
+PYTHON_TOKENS = ("python-app", "pytest", "pyright")
+
+
+def _squash(text: str) -> str:
+    return " ".join(text.split())
+
+
+def _opening(standard: str) -> str:
+    """The standard's text above its first numbered section."""
+    return standard.split("\n## 1. ", 1)[0]
+
+
+def _section(standard: str, number: int) -> str:
+    start = standard.index(f"\n## {number}. ")
+    end = standard.find(f"\n## {number + 1}. ", start + 1)
+    return standard[start:] if end == -1 else standard[start:end]
+
+
+def _task_table(standard: str) -> str:
+    return "\n".join(
+        line for line in _section(standard, 1).splitlines() if line.startswith("|")
+    )
+
+
+def _node_lib(tmp_path: Path, profile: str = "mkdocs") -> Path:
+    return _new(tmp_path, "node-lib", profile=profile)
+
+
+def test_s9_2_9_1_node_lib_standard_opens_with_the_node_archetype_bullet(
+    tmp_path: Path,
+) -> None:
+    standard = _rendered(_node_lib(tmp_path))[STANDARD]
+    opening = _opening(standard)
+    assert NODE_LIB_BULLET in _squash(opening)
+    assert "**Archetype:** `python-" not in opening
+
+
+def test_s9_2_9_1_node_lib_opening_and_task_table_name_no_python_tool(
+    tmp_path: Path,
+) -> None:
+    node_lib = _rendered(_node_lib(tmp_path / "lib"))[STANDARD]
+    python_app = _rendered(_new(tmp_path / "app", "python-app"))[STANDARD]
+    for token in PYTHON_TOKENS:
+        # The slices are the real ones: a python-app's carry every token.
+        assert token in _opening(python_app) + _task_table(python_app)
+        assert token not in _opening(node_lib)
+        assert token not in _task_table(node_lib)
+    assert _task_table(node_lib).count("| `task ") >= 10
+
+
+def test_s9_2_9_1_node_lib_task_table_uses_the_node_wording(tmp_path: Path) -> None:
+    table = _task_table(_rendered(_node_lib(tmp_path))[STANDARD])
+    rows = {
+        cells[0].strip(" `"): cells[1].strip()
+        for cells in (line.strip("|").split("|") for line in table.splitlines())
+        if cells[0].strip().startswith("`task ")
+    }
+    assert (
+        rows["task typecheck"] == "Type-check every project through its Angular build."
+    )
+    assert rows["task test"] == "Run every project's tests with Nx."
+    assert rows["task test:coverage"] == (
+        "Run every project's tests, writing lcov reports to coverage/."
+    )
+    assert rows["task build"] == "Build every project with Nx."
+
+
+def test_s9_2_9_1_node_lib_standard_names_the_node_entrypoint(tmp_path: Path) -> None:
+    standard = _rendered(_node_lib(tmp_path))[STANDARD]
+    sentence = _squash(_section(standard, 1)).split(" The public surface", 1)[0]
+    for tool in ("uv", "mkdocs", "pnpm", "npx", "nx", "ng", "kiln"):
+        assert f"`{tool}`" in sentence
+    for tool in ("pytest", "ruff", "pyright"):
+        assert tool not in sentence
+
+
+def test_s9_2_9_1_node_lib_validate_paragraph_drops_ruff_and_pyright(
+    tmp_path: Path,
+) -> None:
+    for profile in ("mkdocs", "none"):
+        root = _node_lib(tmp_path / profile, profile=profile)
+        proves = _section(_rendered(root)[STANDARD], 5)
+        assert "`task validate` proves:" in proves
+        assert "ruff" not in proves
+        assert "pyright" not in proves
+    python_app = _section(_rendered(_new(tmp_path / "py", "python-app"))[STANDARD], 5)
+    assert "ruff" in python_app
+    assert "pyright" in python_app
+
+
+def test_s9_2_9_1_node_lib_standard_has_no_uv_sources_or_component_library_text(
+    tmp_path: Path,
+) -> None:
+    standard = _rendered(_node_lib(tmp_path / "lib"))[STANDARD]
+    python_app = _rendered(_new(tmp_path / "app", "python-app"))[STANDARD]
+    for text in ("[tool.uv.sources]", "component-library", "[[tool.uv.index]]"):
+        assert text in python_app
+        assert text not in standard
+
+
+def test_s9_2_9_1_node_lib_standard_claims_no_python_import_contracts(
+    tmp_path: Path,
+) -> None:
+    standard = _rendered(_node_lib(tmp_path / "lib"))[STANDARD]
+    python_app = _rendered(_new(tmp_path / "app", "python-app"))[STANDARD]
+    for text in ("import contracts", "import-linter", "rn-forge-commons", "`src/`"):
+        assert text in python_app
+        assert text not in standard
+    boundary = _squash(_section(standard, 4))
+    assert "has no `.importlinter`" in boundary
+    assert "`@nx/enforce-module-boundaries`" in boundary
+    assert _squash(_section(standard, 2)).count(".importlinter") == 0
+
+
+def test_s9_2_9_2_node_lib_claude_block_names_the_node_tools(tmp_path: Path) -> None:
+    from rn_forge.kiln import archetypes
+
+    for profile in ("mkdocs", "none"):
+        root = _node_lib(tmp_path / profile, profile=profile)
+        bullet = _squash(_rendered(root)[BLOCK_KEY])
+        start = bullet.index("**Entrypoint:**")
+        entry = bullet[start : bullet.index("the ten root", start)]
+        for tool in ("uv", "mkdocs", "pnpm", "npx", "nx", "ng", "kiln"):
+            assert f"`{tool}`" in entry
+        for tool in ("pytest", "ruff", "pyright"):
+            assert tool not in entry
+        named = set(re.findall(r"`([a-z-]+)`", entry)) - {"task"}
+        forbidden = set(archetypes.for_config(KilnConfig.load(root)).forbidden_tools)
+        assert named == forbidden
+
+
+def test_s9_2_9_2_python_web_app_tools_are_unchanged(tmp_path: Path) -> None:
+    root = _root(tmp_path, "python-web-app")
+    (root / ".rn-forge/kiln/config.toml").write_text(
+        (root / ".rn-forge/kiln/config.toml").read_text(encoding="utf-8")
+        + '\n[archetype."python-web-app"]\nfrontend = "angular"\n',
+        encoding="utf-8",
+    )
+    bullet = _squash(_rendered(root)[BLOCK_KEY])
+    assert (
+        "Never invoke `uv`, `pytest`, `ruff`, `pyright`, `mkdocs`, `pnpm`, `npx`, "
+        "`nx`, `ng` or `kiln` directly"
+    ) in bullet
+
+
+def test_s9_2_9_3_node_lib_readme_has_the_node_convention(tmp_path: Path) -> None:
+    readme = (_node_lib(tmp_path / "lib") / "README.md").read_text(encoding="utf-8")
+    assert NODE_LIB_CONVENTION in _squash(readme)
+    assert "Python 3.14" not in readme
+    assert "pyright" not in readme
+    python = (_new(tmp_path / "py", "python-app") / "README.md").read_text(
+        encoding="utf-8"
+    )
+    assert (
+        "- Python 3.14, `src/` layout, pyright strict, ruff for lint and format."
+        in python
+    )
+    assert NODE_LIB_CONVENTION not in python
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s9_2_9_5_python_cells_carry_no_node_lib_text(
+    tmp_path: Path, archetype: str
+) -> None:
+    root = _new(tmp_path, archetype)
+    standard = _rendered(root)[STANDARD]
+    assert "node-lib" not in standard
+    assert "**Archetype:** `python-" in _opening(standard)
+    assert "`pytest`, `ruff`, `pyright`" in _section(standard, 1)
+    assert "[tool.uv.sources]" in standard
+    assert "ruff" in _section(standard, 5)
+    assert "`pytest`, `ruff`, `pyright`" in _rendered(root)[BLOCK_KEY].replace(
+        "\n  ", " "
+    )

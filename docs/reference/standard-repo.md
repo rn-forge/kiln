@@ -174,7 +174,7 @@ select independent capabilities or implementations within that shape.
 | `python-lib` | uv workspace of independently published packages | `<package>-v<version>` |
 | `python-web-api` | API service without a separate frontend; optional embedded admin UI | `v<version>` |
 | `python-web-app` | API service and pnpm/Nx frontend workspace | `v<version>` |
-| `node-lib` | pnpm/Nx workspace of published libraries, one release group (shipped by `kiln new`, CI to follow in F9.1; [ADR-0015](../adr/ADR-0015.md)) | `v<version>` |
+| `node-lib` | pnpm/Nx workspace of published libraries, one release group (shipped by `kiln new`; [ADR-0015](../adr/ADR-0015.md)) | `v<version>` |
 | `node-web-app` | pnpm/Nx frontend consuming remote APIs; deferred | `v<version>` |
 
 `lifecycle` is available to any Python archetype; it adds tooling's lifecycle
@@ -509,7 +509,7 @@ commit = "…"                     # the resolved commit
 name = "my-tool"
 archetype = "python-tool"  # python-app | python-tool | python-lib
                            # python-web-api | python-web-app
-                           # node-lib (release-1, not yet built)
+                           # node-lib
                            # node-web-app   (deferred)
 lifecycle = false          # any python archetype; python-tool is the alias
                            # for python-app + lifecycle = true (ADR-0005)

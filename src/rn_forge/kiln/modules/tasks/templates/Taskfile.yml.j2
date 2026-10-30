@@ -32,7 +32,7 @@ includes:
 {% endfor %}
 tasks:
   setup:
-    desc: Install the project and its dev + docs dependency groups.
+    desc: {% if node_lib %}Install the pnpm workspace and the docs tooling.{% else %}Install the project and its dev + docs dependency groups.{% endif %}
     cmds:
       - task: python:install
 {% if node %}      - task: node:install
@@ -48,7 +48,7 @@ tasks:
 {% endif %}{% for ref in extra_refs.get("validate", []) %}      - task: [[ ref ]]
 {% endfor %}
   lint:
-    desc: Every lint — Python, imports, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs), workflow security, dependency vulnerabilities.
+    desc: {% if node_lib %}Every lint — Nx projects, Markdown and TOML formatting, kiln's checks, workflow security.{% else %}Every lint — Python, imports, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs), workflow security, dependency vulnerabilities.{% endif %}
     cmds:
 {% if not node_lib %}      - task: python:lint
       - task: python:lint:imports
@@ -61,7 +61,7 @@ tasks:
 {% endif %}{% for ref in extra_refs.get("lint", []) %}      - task: [[ ref ]]
 {% endfor %}
   format:
-    desc: Format Python code, TOML and Markdown prose in place.
+    desc: {% if node_lib %}Format TOML and Markdown prose in place.{% else %}Format Python code, TOML and Markdown prose in place.{% endif %}
     cmds:
 {% if not node_lib %}      - task: python:format
 {% endif %}      - task: quality:format:markdown
@@ -69,21 +69,21 @@ tasks:
 {% for ref in extra_refs.get("format", []) %}      - task: [[ ref ]]
 {% endfor %}
   typecheck:
-    desc: Static type-check the package in pyright strict mode.
+    desc: {% if node_lib %}Type-check every project through its Angular build.{% elif web_app %}Type-check the API in pyright strict mode and the frontend through its Angular build.{% else %}Static type-check the package in pyright strict mode.{% endif %}
     cmds:
 {% if not node_lib %}      - task: python:typecheck
 {% endif %}{% if node %}      - task: node:typecheck
 {% endif %}{% for ref in extra_refs.get("typecheck", []) %}      - task: [[ ref ]]
 {% endfor %}
   test:
-    desc: Run the pytest suite.
+    desc: {% if node_lib %}Run every project's tests with Nx.{% elif web_app %}Run the API's pytest suite and the frontend's tests.{% else %}Run the pytest suite.{% endif %}
     cmds:
 {% if not node_lib %}      - task: python:test
 {% endif %}{% if node %}      - task: node:test
 {% endif %}{% for ref in extra_refs.get("test", []) %}      - task: [[ ref ]]
 {% endfor %}
   test:coverage:
-    desc: Run the pytest suite with an XML coverage report (used by CI/Sonar).
+    desc: {% if node_lib %}Run every project's tests, writing lcov reports to coverage/.{% elif web_app %}Run both test suites with coverage reports (used by CI/Sonar).{% else %}Run the pytest suite with an XML coverage report (used by CI/Sonar).{% endif %}
     cmds:
 {% if not node_lib %}      - task: python:test:coverage
 {% endif %}{% if node %}      - task: node:test
@@ -91,6 +91,8 @@ tasks:
 {% endfor %}
   build:
 {% if workspace %}    desc: Build one package's wheel and sdist into dist/ (pass -- <package>), or every package's.
+{% elif node_lib %}    desc: Build every project with Nx.
+{% elif web_app %}    desc: Build the API's wheel and sdist, and the frontend.
 {% else %}    desc: Build the wheel and sdist into dist/.
 {% endif %}    cmds:
 {% if not node_lib %}      - task: python:build
@@ -99,6 +101,7 @@ tasks:
 {% endfor %}
   version:
 {% if workspace %}    desc: Print one package's version (pass -- <package>), or every package's.
+{% elif node_lib %}    desc: Print the root pyproject.toml's version.
 {% else %}    desc: Print the package version from pyproject.toml.
 {% endif %}    cmds:
       - task: python:version

@@ -22,4 +22,7 @@ app = FastApiApp(AppConfig())
 {% endif %}
 ## Conventions
 
-- Python 3.14, `src/` layout, pyright strict, ruff for lint and format.
+{% if node_lib %}- Node 24, pnpm and Nx, with Angular, ESLint and Vitest; docs tooling through
+  uv.
+{% else %}- Python 3.14, `src/` layout, pyright strict, ruff for lint and format.
+{% endif %}
