@@ -1,13 +1,15 @@
 """S5.2.1 — the frontend scaffolder, and reconciling its output into the repo.
 
 `scaffold_node` is the one part of kiln that runs someone else's
-generator: it dispatches on `config.frontend` to that frontend's scaffolder
-(`angular.py`), which builds a workspace in a scratch directory, and
+generator: it dispatches on `config.frontend` (Angular for `node-lib`, which
+has none) to that frontend's scaffolder (`angular.py`), which builds a
+workspace in a scratch directory, and
 `reconcile_node` folds every top-level entry it
 wrote into the repo at `config.web_dir`. Every file the frontend scaffolder
 writes is repo-owned; the only files kiln adds under `web_dir` are the seeded
 Angular starter's, written once here, along with the `serve` proxy wiring in
-`project.json` and the deletion of Nx's `nx-welcome.ts`.
+`project.json` and the deletion of Nx's `nx-welcome.ts`. A `node-lib` gets the
+same workspace root as a `python-web-app`, with no application.
 
 `--frontend` values other than `angular` normally never reach here: `kiln new`
 refuses them as untested before scaffolding starts. One that does is rejected
@@ -28,8 +30,9 @@ from rn_forge.kiln.modules.core import gitignore
 from rn_forge.kiln.modules.node import starter
 from rn_forge.kiln.modules.node.angular import (
     SCAFFOLD_APP_DIR,
+    add_ngkit,
+    remove_scaffold_app,
     scaffold_angular,
-    scaffold_nx_workspace,
 )
 
 __all__ = ["reconcile_node", "scaffold_node"]
@@ -57,27 +60,33 @@ still count as conflicts when root already holds them."""
 def scaffold_node(raw: Path, config: KilnConfig) -> Path | None:
     """Run the selected frontend's generator into *raw*; return its workspace.
 
-    Returns `None` unless the archetype is `python-web-app` or `node-lib`; a
-    `node-lib` gets the bare Nx workspace, with no app. The output is raw:
+    Returns `None` unless the archetype is `python-web-app` or `node-lib`. Both
+    get the Angular workspace with its application; a `node-lib` then has the
+    application removed, and a `python-web-app` has `@rn-forge/ng` added. A
+    `node-lib` has no `frontend` and always uses Angular. The output is raw:
     `reconcile_node` folds it into the repo, leaving it untouched.
 
     Raises:
         AppException: the frontend has no scaffolder, a scaffold command is
             not on `PATH`, or `pnpm install` fails after builds are approved.
     """
-    if config.archetype == "node-lib":
-        return scaffold_nx_workspace(raw)
-    if config.archetype != "python-web-app":
+    if config.archetype not in ("node-lib", "python-web-app"):
         return None
 
-    scaffolder = _SCAFFOLDERS.get(config.frontend or "")
+    lib = config.archetype == "node-lib"
+    scaffolder = _SCAFFOLDERS.get(config.frontend or "angular")
     if scaffolder is None:
         raise AppException(
             "no scaffolder for frontend {!r}; kiln implements {}",
             config.frontend,
             ", ".join(sorted(_SCAFFOLDERS)),
         )
-    return scaffolder(raw)
+    workspace = scaffolder(raw)
+    if lib:
+        remove_scaffold_app(workspace)
+    else:
+        add_ngkit(workspace)
+    return workspace
 
 
 def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
@@ -96,8 +105,8 @@ def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
     `app.html` and `app.spec.ts`; `serve.options.proxyConfig` in `project.json`
     is set to `<web_dir>/proxy.conf.json` and Nx's `nx-welcome.ts` is deleted.
 
-    For a `node-lib` there is no app: the fold stops after the copy, and
-    `.nvmrc` is written once instead.
+    For a `node-lib` the workspace has no app: the fold stops after the copy,
+    and `.nvmrc` is written once instead.
 
     A shared top-level directory (`apps/`, holding the API member too) merges
     rather than conflicts: only an actual file colliding with an existing file

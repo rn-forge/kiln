@@ -253,33 +253,82 @@ def test_s9_1_8_1_node_lib_is_shipped_and_loads() -> None:
     ]
 
 
-def test_s9_1_8_2_scaffold_node_runs_a_bare_nx_workspace(tmp_path: Path) -> None:
+def _scaffold_calls(root: Path, raw: Path) -> tuple[Path | None, list[mock.call]]:
+    with mock.patch("rn_forge.kiln.modules.node.angular.Process.execute") as run:
+        workspace = scaffold_node(raw, KilnConfig.load(root))
+    return workspace, run.call_args_list
+
+
+_SHARED_STEPS = [
+    "nx-git-boundary",
+    "nx-workspace",
+    "nx-angular-plugin",
+    "nx-angular-app",
+    "nx-install",
+]
+
+
+def test_s9_2_2_1_node_lib_scaffolds_the_app_then_removes_it(tmp_path: Path) -> None:
     root = _lib_root(tmp_path)
     raw = tmp_path / "frontend"
     raw.mkdir()
 
-    with mock.patch("rn_forge.kiln.modules.node.angular.Process.execute") as run:
-        workspace = scaffold_node(raw, KilnConfig.load(root))
+    workspace, calls = _scaffold_calls(root, raw)
 
     assert workspace == raw / "workspace"
-    assert [(c.args[0], c.args[1:]) for c in run.call_args_list] == [
-        ("nx-git-boundary", ("git", "init", "-q")),
-        (
-            "nx-workspace",
-            (
-                "pnpm",
-                "dlx",
-                f"create-nx-workspace@{NX_VERSION}",
-                "workspace",
-                "--preset=apps",
-                "--packageManager=pnpm",
-                "--nxCloud=skip",
-                "--ci=skip",
-                "--interactive=false",
-                "--skipGit",
-            ),
-        ),
-    ]
+    assert [c.args[0] for c in calls] == [*_SHARED_STEPS, "nx-remove-app"]
+
+
+def test_s9_2_2_2_web_app_adds_ngkit_after_install_and_keeps_the_app(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path)
+    raw = tmp_path / "frontend"
+    raw.mkdir()
+
+    _, calls = _scaffold_calls(root, raw)
+
+    assert [c.args[0] for c in calls] == [*_SHARED_STEPS, "ngkit-core"]
+
+
+def test_s9_2_2_3_nx_remove_app_removes_web_in_the_workspace(tmp_path: Path) -> None:
+    root = _lib_root(tmp_path)
+    raw = tmp_path / "frontend"
+    raw.mkdir()
+
+    workspace, calls = _scaffold_calls(root, raw)
+
+    remove = calls[-1]
+    assert remove.args == (
+        "nx-remove-app",
+        "pnpm",
+        "nx",
+        "g",
+        "@nx/workspace:remove",
+        "web",
+        "--forceRemove",
+        "--interactive=false",
+    )
+    assert remove.kwargs["cwd"] == str(workspace)
+
+
+def test_s9_2_2_4_python_web_api_has_no_node_scaffold(tmp_path: Path) -> None:
+    root = tmp_path / "root"
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(
+        'schema_version = 1\n\n[repository]\nname = "demo"\n'
+        'archetype = "python-web-api"\n\n[archetype."python-web-api"]\n'
+        'backend = "fastapi"\n',
+        encoding="utf-8",
+    )
+    raw = tmp_path / "frontend"
+    raw.mkdir()
+
+    workspace, calls = _scaffold_calls(root, raw)
+
+    assert workspace is None
+    assert calls == []
 
 
 def test_s9_1_8_3_reconcile_node_folds_the_workspace_and_writes_nvmrc(

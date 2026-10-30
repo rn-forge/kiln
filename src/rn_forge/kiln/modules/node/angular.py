@@ -1,7 +1,9 @@
-"""The Angular frontend: a pinned `create-nx-workspace` + `@nx/angular` run.
+"""The Angular workspace: a pinned `create-nx-workspace` + `@nx/angular` run.
 
 Runs the pinned Nx sequence into a scratch directory and hands back the
-finished workspace for `scaffold.reconcile_node` to fold into the repo.
+finished workspace, application included, for `scaffold.reconcile_node` to
+fold into the repo. `add_ngkit` and `remove_scaffold_app` adjust that
+workspace afterwards.
 """
 
 from __future__ import annotations
@@ -16,8 +18,9 @@ __all__ = [
     "NGKIT_URL",
     "NX_VERSION",
     "SCAFFOLD_APP_DIR",
+    "add_ngkit",
+    "remove_scaffold_app",
     "scaffold_angular",
-    "scaffold_nx_workspace",
 ]
 
 NX_VERSION = "23.2.1"
@@ -71,7 +74,11 @@ def _scaffold_env() -> dict[str, str]:
 
 
 def scaffold_angular(raw: Path) -> Path:
-    """Run the Nx/Angular scaffold inside *raw*; return the workspace it made."""
+    """Run the Nx/Angular scaffold inside *raw*; return the workspace it made.
+
+    The workspace holds the application at `SCAFFOLD_APP_DIR`, and has been
+    installed.
+    """
     env = _scaffold_env()
     workspace = scaffold_nx_workspace(raw)
     Process.execute(
@@ -109,9 +116,36 @@ def scaffold_angular(raw: Path) -> Path:
         fail_on_error=False,
     )
     _approve_pnpm_builds(workspace / "pnpm-workspace.yaml")
-    Process.execute("ngkit-core", "pnpm", "add", NGKIT_URL, cwd=str(workspace), env=env)
     Process.execute("nx-install", "pnpm", "install", cwd=str(workspace), env=env)
     return workspace
+
+
+def add_ngkit(workspace: Path) -> None:
+    """Add the `@rn-forge/ng` package to *workspace*'s root `package.json`."""
+    Process.execute(
+        "ngkit-core",
+        "pnpm",
+        "add",
+        NGKIT_URL,
+        cwd=str(workspace),
+        env=_scaffold_env(),
+    )
+
+
+def remove_scaffold_app(workspace: Path) -> None:
+    """Remove the scaffolded application from *workspace*, keeping its root files."""
+    Process.execute(
+        "nx-remove-app",
+        "pnpm",
+        "nx",
+        "g",
+        "@nx/workspace:remove",
+        "web",
+        "--forceRemove",
+        "--interactive=false",
+        cwd=str(workspace),
+        env=_scaffold_env(),
+    )
 
 
 def _approve_pnpm_builds(path: Path) -> None:

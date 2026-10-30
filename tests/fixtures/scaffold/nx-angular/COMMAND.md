@@ -52,6 +52,14 @@ The application generator brought in `@nx/eslint` and wrote
 `eslint.config.mjs` (root and `apps/web`) itself, since no linter existed yet
 in the freshly-created `apps`-preset workspace.
 
+**`node-lib`.** A `node-lib` runs the same commands, then removes the
+application, because only the application generator writes the root files
+(`eslint.config.mjs`, `tsconfig.base.json`):
+
+```bash
+pnpm nx g @nx/workspace:remove web --forceRemove --interactive=false
+```
+
 **pnpm's build-script gate.** pnpm 12 blocks native build scripts
 (`@parcel/watcher`, `esbuild`, `lmdb`, `msgpackr-extract`) behind an
 allow-list (`ERR_PNPM_IGNORED_BUILDS`) unless approved. Both `pnpm install`

@@ -13,7 +13,7 @@ from rn_forge.commons.generation import ArtifactKind
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.node import NODE
-from rn_forge.kiln.modules.node.angular import NGKIT_URL, scaffold_angular
+from rn_forge.kiln.modules.node.angular import NGKIT_URL, add_ngkit
 from rn_forge.kiln.modules.node.scaffold import reconcile_node
 from rn_forge.kiln.modules.python.scaffold import scaffold
 
@@ -133,7 +133,7 @@ def test_s4_9_3_2_reconcile_replaces_the_stock_config(
     scaffold(root, config)
     workspace = tmp_path / "workspace"
     shutil.copytree(FIXTURE, workspace)
-    # The captured Nx workspace predates `pnpm add`, which scaffold_angular runs.
+    # The captured Nx workspace predates `pnpm add`, which the scaffold runs.
     manifest = workspace / "package.json"
     package = json.loads(manifest.read_text(encoding="utf-8"))
     package["dependencies"]["@rn-forge/ng"] = NGKIT_URL
@@ -188,7 +188,7 @@ def test_s4_9_4_3_no_starter_no_proxy(tmp_path: Path) -> None:
     assert not (root / "apps/web" / "proxy.conf.json").exists()
 
 
-def test_s4_9_3_3_scaffold_adds_the_ngkit_dependency(tmp_path: Path) -> None:
+def test_s4_9_3_3_add_ngkit_adds_the_ngkit_dependency(tmp_path: Path) -> None:
     calls: list[tuple[str, tuple[str, ...], object]] = []
 
     def run(name: str, *args: str, **kwargs: object) -> None:
@@ -197,15 +197,9 @@ def test_s4_9_3_3_scaffold_adds_the_ngkit_dependency(tmp_path: Path) -> None:
     with mock.patch(
         "rn_forge.kiln.modules.node.angular.Process.execute", side_effect=run
     ):
-        workspace = scaffold_angular(tmp_path)
+        add_ngkit(tmp_path)
 
-    names = [name for name, _, _ in calls]
-    assert names.count("ngkit-core") == 1
-    assert names.index("nx-angular-app") < names.index("ngkit-core")
-    assert names.index("ngkit-core") < names.index("nx-install")
-    _, args, cwd = calls[names.index("ngkit-core")]
-    assert args == ("pnpm", "add", NGKIT_URL)
-    assert cwd == str(workspace)
+    assert calls == [("ngkit-core", ("pnpm", "add", NGKIT_URL), str(tmp_path))]
 
 
 @pytest.mark.skipif(
