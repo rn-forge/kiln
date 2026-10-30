@@ -1253,7 +1253,7 @@ def test_s4_11_1_1_hooks_follow_the_node_steps(tmp_path: Path) -> None:
     plain = _hook_steps(_action(root))
     steps = _hook_steps(_action(_with_ci(root, HOOKS)))
     assert steps[: len(plain)] == plain
-    assert steps[len(plain) - 1]["name"] == "Install Node"
+    assert "actions/setup-node" in steps[len(plain) - 1]["uses"]
     assert [s["name"] for s in steps[len(plain) :]] == [
         "Run ./.github/actions/a",
         "Run ./.github/actions/b",
@@ -3058,3 +3058,116 @@ def test_s9_1_5_3_release_yml_passes_actionlint(tmp_path: Path) -> None:
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+# S9.2.4 — one pnpm and Node block in the setup action.
+
+# node-lib's action.yml before S9.2.4, minus the header line, with each pin
+# replaced by PIN.
+NODE_LIB_ACTION_BEFORE = """name: Setup
+description: Install pnpm and Node, uv when the repository commits a uv.lock, optionally start an Nx Cloud CI run, and install dependencies. Run after actions/checkout.
+
+inputs:
+  start-ci-run:
+    description: Arguments for `nx start-ci-run`; when empty, no Nx Cloud CI run is started
+    required: false
+    default: ''
+  registry-url:
+    description: npm registry URL passed to actions/setup-node (needed for npm OIDC publishing)
+    required: false
+    default: ''
+  github-token:
+    description: Token for setup-task's release lookup, to avoid rate limits.
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@PIN
+      with:
+        run_install: false
+
+    - if: ${{ inputs.start-ci-run != '' }}
+      env:
+        START_CI_RUN: ${{ inputs.start-ci-run }}
+      # Unquoted on purpose: the input holds several arguments.
+      run: pnpm dlx nx start-ci-run $START_CI_RUN
+      shell: bash
+
+    - uses: actions/setup-node@PIN
+      with:
+        node-version-file: .nvmrc
+        cache: pnpm
+        registry-url: ${{ inputs.registry-url }}
+
+    - run: pnpm install --frozen-lockfile
+      shell: bash
+
+    - if: ${{ hashFiles('**/uv.lock', '!**/node_modules/**') != '' }}
+      uses: astral-sh/setup-uv@PIN
+      with:
+        version: 0.13.1
+        enable-cache: true
+        cache-dependency-glob: '**/uv.lock'
+
+    - uses: arduino/setup-task@PIN
+      with:
+        version: 3.x
+        repo-token: ${{ inputs.github-token }}
+"""
+
+
+def _web_app_action(tmp_path: Path) -> dict[str, object]:
+    root = _web_root(tmp_path, "python-web-app", extra='frontend = "angular"')
+    return YamlUtils.load(_rendered(root)[SETUP_ACTION])
+
+
+def _step(action: dict[str, object], needle: str) -> dict[str, object]:
+    steps = action["runs"]["steps"]  # type: ignore[index]
+    return next(s for s in steps if needle in s.get("uses", ""))
+
+
+def test_s9_2_4_1_pnpm_setup_does_not_install(tmp_path: Path) -> None:
+    for action in (
+        _node_lib_action(tmp_path / "lib"),
+        _web_app_action(tmp_path / "app"),
+    ):
+        assert _step(action, "pnpm/action-setup")["with"] == {"run_install": False}
+
+
+def test_s9_2_4_2_setup_node_reads_nvmrc_and_caches_pnpm(tmp_path: Path) -> None:
+    lib = _step(_node_lib_action(tmp_path / "lib"), "actions/setup-node")["with"]
+    app = _step(_web_app_action(tmp_path / "app"), "actions/setup-node")["with"]
+    assert lib == {
+        "node-version-file": ".nvmrc",
+        "cache": "pnpm",
+        "registry-url": "${{ inputs.registry-url }}",
+    }
+    assert app == {"node-version-file": ".nvmrc", "cache": "pnpm"}
+
+
+@pytest.mark.parametrize(
+    "archetype", ["python-app", "python-tool", "python-lib", "python-web-api"]
+)
+def test_s9_2_4_3_other_python_archetypes_render_no_pnpm_step(
+    tmp_path: Path, archetype: str
+) -> None:
+    action = _rendered(_cell_root(tmp_path, archetype, ""))[SETUP_ACTION]
+    assert "pnpm" not in action
+    assert "setup-node" not in action
+
+
+def test_s9_2_4_4_node_lib_action_is_byte_identical_to_before(tmp_path: Path) -> None:
+    text = _rendered(_root(tmp_path, "node-lib"))[SETUP_ACTION].split("\n", 1)[1]
+    pinned = re.sub(r"(uses: [\w./-]+)@[0-9a-f]{40} # \S+", r"\1@PIN", text)
+    assert pinned == NODE_LIB_ACTION_BEFORE
+
+
+def test_s9_2_4_5_each_step_is_written_once() -> None:
+    template = (
+        Path(__file__).resolve().parents[3]
+        / "src/rn_forge/kiln/modules/cicd/templates/action.yml.j2"
+    )
+    text = template.read_text(encoding="utf-8")
+    assert text.count('pins["pnpm-setup"].uses') == 1
+    assert text.count('pins["setup-node"].uses') == 1
