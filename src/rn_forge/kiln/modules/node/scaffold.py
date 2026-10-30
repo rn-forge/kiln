@@ -115,7 +115,8 @@ def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
     Every node repository gets `.nvmrc`, root `package.json`'s
     `packageManager`, and coverage switched on for both unit-test executors in
     `nx.json`, set after the copy. For a `node-lib` the workspace has no
-    app: the fold stops there.
+    app: the fold stops there, after writing empty `libs/.gitkeep` and
+    `apps/.gitkeep`.
 
     A shared top-level directory (`apps/`, holding the API member too) merges
     rather than conflicts: only an actual file colliding with an existing file
@@ -153,6 +154,10 @@ def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
     _pin_package_manager(root / "package.json")
     _enable_coverage(root)
     if lib:
+        # sonar-scanner fails on a sonar.sources folder that does not exist.
+        for directory in ("libs", "apps"):
+            (root / directory).mkdir(exist_ok=True)
+            (root / directory / ".gitkeep").write_text("", encoding="utf-8")
         return
 
     if web_dir != SCAFFOLD_APP_DIR:

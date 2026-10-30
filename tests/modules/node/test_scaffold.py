@@ -400,6 +400,19 @@ def test_s9_2_3_4_scaffold_node_pins_pnpm_before_the_last_lockfile_write(
     assert seen["package"] == {"packageManager": "pnpm@12.15.0"}
 
 
+@pytest.mark.parametrize("lib", [True, False])
+def test_s9_2_7_1_reconcile_node_keeps_empty_libs_and_apps_for_node_lib_only(
+    tmp_path: Path, lib: bool
+) -> None:
+    root, _ = _reconciled(tmp_path, lib=lib)
+
+    for directory in ("libs", "apps"):
+        keep = root / directory / ".gitkeep"
+        assert keep.is_file() == lib, directory
+        if lib:
+            assert keep.read_text(encoding="utf-8") == ""
+
+
 def test_s9_1_8_3_reconcile_node_folds_the_workspace_and_writes_nvmrc(
     tmp_path: Path,
 ) -> None:
@@ -412,7 +425,7 @@ def test_s9_1_8_3_reconcile_node_folds_the_workspace_and_writes_nvmrc(
 
     assert (root / "nx.json").is_file()
     assert not (root / "workspace").exists()
-    assert not (root / "apps").exists()
+    assert not (root / "apps" / "web").exists()
     assert (root / ".nvmrc").read_text(encoding="utf-8") == "24\n"
     assert not any(a.key.endswith(".nvmrc") for a in render(config))
 

@@ -98,8 +98,8 @@ tasks:
       - |
         set -eu
         pnpm exec nx run-many -t test >&2
-        reports=$(find coverage -name lcov.info | sort | paste -sd, -)
-        if [ -z "$reports" ]; then
+        reports=$(find coverage -name lcov.info 2>/dev/null | sort | paste -sd, -)
+        if [ -z "$reports" ] && [ "$(pnpm exec nx show projects --json)" != "[]" ]; then
           echo "::error::No lcov.info found under coverage/"
           exit 1
         fi

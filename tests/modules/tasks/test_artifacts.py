@@ -2430,6 +2430,60 @@ def test_s9_1_3_2_coverage_fails_without_an_lcov_report(tmp_path: Path) -> None:
     assert "::error::No lcov.info found under coverage/" in done.stdout + done.stderr
 
 
+def _coverage_run_with_projects(
+    tmp_path: Path, projects: str, lcov: tuple[str, ...]
+) -> subprocess.CompletedProcess[str]:
+    root = _node_lib_root(tmp_path / "cell")
+    cycle.apply(root, home=tmp_path / "home")
+    stub = tmp_path / "bin"
+    stub.mkdir()
+    pnpm = stub / "pnpm"
+    pnpm.write_text(
+        '#!/bin/sh\ncase "$*" in\n  *"show projects"*) echo \'' + projects + "'"
+        ' ;;\n  *) echo "pnpm $*" ;;\nesac\n'
+    )
+    pnpm.chmod(0o755)
+    repo = tmp_path / "work"
+    repo.mkdir()
+    for name in lcov:
+        (repo / name).parent.mkdir(parents=True, exist_ok=True)
+        (repo / name).write_text("")
+    return subprocess.run(
+        ["task", "-t", str(root / "Taskfile.yml"), "--dir", str(repo), "ci:coverage"],
+        capture_output=True,
+        text=True,
+        env={**os.environ, "PATH": f"{stub}:{os.environ['PATH']}"},
+    )
+
+
+def test_s9_2_7_2_coverage_passes_a_workspace_with_no_projects(
+    tmp_path: Path,
+) -> None:
+    if shutil.which("task") is None:
+        pytest.skip("task is not on PATH")
+    done = _coverage_run_with_projects(tmp_path, "[]", ())
+    assert done.returncode == 0, done.stderr
+    assert done.stdout == "reports=\n"
+
+
+def test_s9_2_7_3_coverage_fails_a_project_with_no_report(tmp_path: Path) -> None:
+    if shutil.which("task") is None:
+        pytest.skip("task is not on PATH")
+    done = _coverage_run_with_projects(tmp_path, '["foo"]', ())
+    # task reports a failed command as 201 and names the command's own status.
+    assert done.returncode != 0
+    assert "exit status 1" in done.stderr
+    assert "::error::No lcov.info found under coverage/" in done.stdout + done.stderr
+
+
+def test_s9_2_7_4_coverage_prints_the_report_path(tmp_path: Path) -> None:
+    if shutil.which("task") is None:
+        pytest.skip("task is not on PATH")
+    done = _coverage_run_with_projects(tmp_path, '["foo"]', ("coverage/foo/lcov.info",))
+    assert done.returncode == 0, done.stderr
+    assert done.stdout == "reports=coverage/foo/lcov.info\n"
+
+
 def test_s9_1_3_2_coverage_is_described_and_public(tmp_path: Path) -> None:
     task = _ci_tasks(_node_lib_root(tmp_path))["tasks"]["coverage"]  # type: ignore[index]
     assert task["desc"]
