@@ -76,7 +76,6 @@ class WebAppConfig(StrictModel):
     frontend: Literal["angular", "react", "svelte"] = "angular"
     api_dir: str = "apps/api"
     web_dir: str = "apps/web"
-    nx_cloud: bool = False
 
 
 class ArchetypeConfig(StrictModel):

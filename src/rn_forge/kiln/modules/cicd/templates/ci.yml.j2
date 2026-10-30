@@ -17,7 +17,7 @@ name: CI
 {% endif %}{% elif node_lib %}# validate → ci-cloud or ci-local → sonar, package, docs → ci-ok.
 #
 # ci-cloud:  `nx affected` distributed over Nx Cloud agents (.nx/workflows/agents.yaml).
-# ci-local:  the same on the runner, when `USE_NX_CLOUD` is `false` or dispatch unchecks it.
+# ci-local:  the same on the runner, unless `USE_NX_CLOUD` is `true` or dispatch checks it.
 {% else %}# validate → sonar → release.
 {% endif %}#
 # Every step goes through `task`; `kiln doctor`'s ci-entrypoint rule fails the
@@ -41,10 +41,10 @@ on:
 {% if node_lib %}  workflow_dispatch:
     inputs:
       use-nx-cloud:
-        description: 'Use Nx Cloud distributed CI (uncheck to validate locally, e.g. if Nx Cloud is having issues)'
+        description: 'Use Nx Cloud distributed CI (leave unchecked to validate on a GitHub runner)'
         required: false
         type: boolean
-        default: true
+        default: false
 {% elif release == "pypi" %}  workflow_dispatch:
     inputs:
       testpypi:
@@ -114,11 +114,11 @@ jobs:
       - name: Review dependency changes
         uses: [[ pins["dependency-review"].uses ]]@[[ pins["dependency-review"].sha ]] # [[ pins["dependency-review"].version ]]
 {% if node_lib %}
-  # Default path: distributes lint/test/build/e2e across Nx Cloud agents (.nx/workflows/agents.yaml)
+  # Distributes lint/test/build/e2e across Nx Cloud agents (.nx/workflows/agents.yaml) when USE_NX_CLOUD=true.
   # This job excludes playwright as they are managed by Nx Cloud agents
   ci-cloud:
     needs: validate
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.use-nx-cloud) || (github.event_name != 'workflow_dispatch' && vars.USE_NX_CLOUD != 'false') }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.use-nx-cloud) || (github.event_name != 'workflow_dispatch' && vars.USE_NX_CLOUD == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -147,11 +147,10 @@ jobs:
       - run: pnpm exec nx fix-ci
         if: always()
 
-  # Fallback path to run the pipeline on github runner when Nx Cloud is not available
-  # Enable by setting repo variable USE_NX_CLOUD=false, or with "use-nx-cloud" unchecked when runnning manually
+  # The default path: the pipeline on a GitHub runner, for a repository not on Nx Cloud.
   ci-local:
     needs: validate
-    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.use-nx-cloud == false) || (github.event_name != 'workflow_dispatch' && vars.USE_NX_CLOUD == 'false') }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.use-nx-cloud == false) || (github.event_name != 'workflow_dispatch' && vars.USE_NX_CLOUD != 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

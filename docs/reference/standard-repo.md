@@ -424,6 +424,10 @@ planned by `kiln-devops` ([ADR-0017](../adr/ADR-0017.md)) through the public
 [How a `python-lib` CI run flows](../architecture/python-lib-ci.md) walks
 through each event.
 
+A `node-lib` repository's `ci.yml` runs `ci-local` on a GitHub runner unless the
+repository variable `USE_NX_CLOUD` is `true` (or a dispatch checks
+`use-nx-cloud`), which selects `ci-cloud` on Nx Cloud agents instead.
+
 A `node-lib` repository releases by `workflow_dispatch`
 (`[ci] release = "nx-dispatch"`, its default), from
 `.github/workflows/release.yml`: gated on a green `ci.yml` run for the commit,
@@ -577,7 +581,6 @@ backend = "fastapi"            # fastapi (shipped) | django (untested)
 frontend = "angular"             # angular (shipped) | react | svelte (untested)
 api_dir = "apps/api"
 web_dir = "apps/web"
-nx_cloud = false                 # an account decision, not a repo shape
 
 [cli]                            # shared CLI design; read by rn-forge-cli, not by kiln
 name = "my-tool"

@@ -6,6 +6,7 @@ Also proves the five properties every F4.3 story owes its module
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -18,9 +19,10 @@ from pathlib import Path
 import pytest
 from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.commons.exceptions import AppException
+from rn_forge.commons.lang.models import ModelValidationError
 from rn_forge.commons.generation import Action, ArtifactKind
 
-from rn_forge.kiln import checks
+from rn_forge.kiln import archetypes, checks, commands
 from rn_forge.kiln.modules.cicd.checks import hooks as hooks_check
 from rn_forge.kiln.modules.cicd.checks import pins as pins_check
 from rn_forge.kiln.config import KilnConfig
@@ -2376,10 +2378,10 @@ def test_s9_1_2_2_triggers_and_concurrency(tmp_path: Path) -> None:
     assert triggers["workflow_dispatch"] == {  # type: ignore[index]
         "inputs": {
             "use-nx-cloud": {
-                "description": "Use Nx Cloud distributed CI (uncheck to validate locally, e.g. if Nx Cloud is having issues)",
+                "description": "Use Nx Cloud distributed CI (leave unchecked to validate on a GitHub runner)",
                 "required": False,
                 "type": "boolean",
-                "default": True,
+                "default": False,
             }
         }
     }
@@ -2400,7 +2402,7 @@ def test_s9_1_2_3_ci_cloud_matches_ngkit(tmp_path: Path) -> None:
     pins = load_pins()
     assert job["if"] == (
         "${{ (github.event_name == 'workflow_dispatch' && inputs.use-nx-cloud) "
-        "|| (github.event_name != 'workflow_dispatch' && vars.USE_NX_CLOUD != 'false') }}"
+        "|| (github.event_name != 'workflow_dispatch' && vars.USE_NX_CLOUD == 'true') }}"
     )
     assert job["env"] == {
         "NX_CLOUD_ACCESS_TOKEN": "${{ secrets.NX_CLOUD_ACCESS_TOKEN }}"
@@ -2427,7 +2429,7 @@ def test_s9_1_2_4_ci_local_matches_ngkit(tmp_path: Path) -> None:
     pins = load_pins()
     assert job["if"] == (
         "${{ (github.event_name == 'workflow_dispatch' && inputs.use-nx-cloud == false) "
-        "|| (github.event_name != 'workflow_dispatch' && vars.USE_NX_CLOUD == 'false') }}"
+        "|| (github.event_name != 'workflow_dispatch' && vars.USE_NX_CLOUD != 'true') }}"
     )
     assert "env" not in job
     checkout, setup, e2e, cache, install, deps, shas, affected = job["steps"]
@@ -2517,6 +2519,124 @@ def test_s9_1_2_other_archetypes_render_no_node_lib_ci(
     assert AGENTS not in rendered
     assert "use-nx-cloud" not in rendered[CI_YML]
     assert "nx-set-shas" not in rendered[CI_YML]
+
+
+# S9.2.8 — Nx Cloud is opt-in.
+
+CLOUD_IF = (
+    "${{ (github.event_name == 'workflow_dispatch' && inputs.use-nx-cloud) "
+    "|| (github.event_name != 'workflow_dispatch' && vars.USE_NX_CLOUD == 'true') }}"
+)
+LOCAL_IF = (
+    "${{ (github.event_name == 'workflow_dispatch' && inputs.use-nx-cloud == false) "
+    "|| (github.event_name != 'workflow_dispatch' && vars.USE_NX_CLOUD != 'true') }}"
+)
+
+
+def test_s9_2_8_1_ci_cloud_runs_only_when_asked(tmp_path: Path) -> None:
+    assert _node_lib_ci(tmp_path)["jobs"]["ci-cloud"]["if"] == CLOUD_IF  # type: ignore[index]
+
+
+def test_s9_2_8_2_ci_local_is_the_default_path(tmp_path: Path) -> None:
+    assert _node_lib_ci(tmp_path)["jobs"]["ci-local"]["if"] == LOCAL_IF  # type: ignore[index]
+
+
+def test_s9_2_8_3_dispatch_input_defaults_to_false(tmp_path: Path) -> None:
+    ci = _node_lib_ci(tmp_path)
+    triggers = ci[True] if True in ci else ci["on"]  # type: ignore[index]
+    inputs = triggers["workflow_dispatch"]["inputs"]  # type: ignore[index]
+    assert inputs["use-nx-cloud"]["default"] is False
+
+
+def _evaluate(expression: str, event: str, use_nx_cloud: bool | None, var: str) -> bool:
+    """Evaluate one of the two `if` expressions for an event, the dispatch input
+    and the repository variable ('' is unset)."""
+    python = (
+        expression.removeprefix("${{")
+        .removesuffix("}}")
+        .replace("&&", " and ")
+        .replace("||", " or ")
+        .replace("github.event_name", "event")
+        .replace("inputs.use-nx-cloud", "use_nx_cloud")
+        .replace("vars.USE_NX_CLOUD", "var")
+        .replace("false", "False")
+    )
+    return bool(
+        eval(python, {}, {"event": event, "use_nx_cloud": use_nx_cloud, "var": var})
+    )  # noqa: S307
+
+
+@pytest.mark.parametrize(
+    ("event", "use_nx_cloud", "var", "cloud"),
+    [
+        ("push", None, "", False),
+        ("push", None, "true", True),
+        ("push", None, "false", False),
+        ("pull_request", None, "", False),
+        ("pull_request", None, "true", True),
+        ("pull_request", None, "false", False),
+        ("workflow_dispatch", True, "", True),
+        ("workflow_dispatch", False, "", False),
+        ("workflow_dispatch", True, "false", True),
+        ("workflow_dispatch", False, "true", False),
+    ],
+)
+def test_s9_2_8_5_exactly_one_of_ci_cloud_and_ci_local_runs(
+    tmp_path: Path, event: str, use_nx_cloud: bool | None, var: str, cloud: bool
+) -> None:
+    jobs = _node_lib_ci(tmp_path)["jobs"]
+    ran_cloud = _evaluate(jobs["ci-cloud"]["if"], event, use_nx_cloud, var)  # type: ignore[index]
+    ran_local = _evaluate(jobs["ci-local"]["if"], event, use_nx_cloud, var)  # type: ignore[index]
+    assert (ran_cloud, ran_local) == (cloud, not cloud)
+
+
+@pytest.mark.parametrize(
+    ("cloud", "local", "passes"),
+    [
+        ("success", "skipped", True),
+        ("skipped", "success", True),
+        ("skipped", "skipped", False),
+        ("failure", "skipped", False),
+        ("skipped", "cancelled", False),
+    ],
+)
+def test_s9_2_8_6_ci_ok_accepts_one_skipped_path(
+    tmp_path: Path, cloud: str, local: str, passes: bool
+) -> None:
+    steps = _node_lib_ci(tmp_path)["jobs"]["ci-ok"]["steps"]  # type: ignore[index]
+    script = steps[0]["run"]
+    needs = {
+        "validate": {"result": "success"},
+        "ci-cloud": {"result": cloud},
+        "ci-local": {"result": local},
+        "sonar": {"result": "skipped"},
+    }
+    run = subprocess.run(
+        ["bash", "-c", script],
+        env={**os.environ, "NEEDS": json.dumps(needs)},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert (run.returncode == 0) == passes, run.stdout + run.stderr
+
+
+def test_s9_2_8_4_web_app_config_has_no_nx_cloud(tmp_path: Path) -> None:
+    root = _web_root(tmp_path, "python-web-app", extra="nx_cloud = false")
+    with pytest.raises(ModelValidationError) as caught:
+        KilnConfig.load(root)
+    kinds = {error.path: error.kind for error in caught.value.errors}
+    assert kinds["archetype.python-web-app.nx_cloud"] == "extra_forbidden"
+
+    flags = commands._flag_layer(
+        archetype="python-web-app",
+        docs="none",
+        manifest=archetypes.load("python-web-app"),
+        allow_untested=False,
+    )
+    flags["repository"]["name"] = "demo"
+    document = commands.ConfigManager().resolve(flags=flags).config.to_document()
+    assert "nx_cloud" not in document["archetype"]["python-web-app"]
 
 
 # S9.1.3 — node Sonar.
