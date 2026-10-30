@@ -42,7 +42,9 @@ _SCAFFOLDERS: dict[str, Callable[[Path], Path]] = {"angular": scaffold_angular}
 the finished workspace."""
 
 NODE_MAJOR = 24
-"""The Node major `.nvmrc` pins in a `node-lib` repository."""
+"""The Node major `.nvmrc` pins in every node repository."""
+PNPM_VERSION = "12.15.0"
+"""The pnpm version `packageManager` pins; `pnpm/action-setup` fails without it."""
 _NVMRC = ".nvmrc"
 
 _EXCLUDED_TOP_LEVEL = {".git", "node_modules", ".nx"}
@@ -82,6 +84,9 @@ def scaffold_node(raw: Path, config: KilnConfig) -> Path | None:
             ", ".join(sorted(_SCAFFOLDERS)),
         )
     workspace = scaffolder(raw)
+    # pnpm records `packageManagerDependencies` only if this is set when it next
+    # writes the lockfile; without that entry `--frozen-lockfile` fails.
+    _pin_package_manager(workspace / "package.json")
     if lib:
         remove_scaffold_app(workspace)
     else:
@@ -105,8 +110,9 @@ def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
     `app.html` and `app.spec.ts`; `serve.options.proxyConfig` in `project.json`
     is set to `<web_dir>/proxy.conf.json` and Nx's `nx-welcome.ts` is deleted.
 
-    For a `node-lib` the workspace has no app: the fold stops after the copy,
-    and `.nvmrc` is written once instead.
+    Every node repository gets `.nvmrc` and root `package.json`'s
+    `packageManager`, set after the copy. For a `node-lib` the workspace has no
+    app: the fold stops there.
 
     A shared top-level directory (`apps/`, holding the API member too) merges
     rather than conflicts: only an actual file colliding with an existing file
@@ -140,8 +146,9 @@ def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
             continue
         _copy_or_merge(entry, root / entry.name)
 
+    (root / _NVMRC).write_text(f"{NODE_MAJOR}\n", encoding="utf-8")
+    _pin_package_manager(root / "package.json")
     if lib:
-        (root / _NVMRC).write_text(f"{NODE_MAJOR}\n", encoding="utf-8")
         return
 
     if web_dir != SCAFFOLD_APP_DIR:
@@ -153,6 +160,12 @@ def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
         (root / artifact.path).write_text(artifact.content, encoding="utf-8")
     if artifacts:
         _wire_starter(root, web_dir)
+
+
+def _pin_package_manager(package_path: Path) -> None:
+    package = DocumentUtils.read(package_path)
+    package["packageManager"] = f"pnpm@{PNPM_VERSION}"
+    DocumentUtils.write(package_path, package)
 
 
 def _wire_starter(root: Path, web_dir: str) -> None:

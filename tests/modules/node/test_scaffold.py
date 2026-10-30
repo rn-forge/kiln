@@ -254,6 +254,8 @@ def test_s9_1_8_1_node_lib_is_shipped_and_loads() -> None:
 
 
 def _scaffold_calls(root: Path, raw: Path) -> tuple[Path | None, list[mock.call]]:
+    (raw / "workspace").mkdir()
+    (raw / "workspace" / "package.json").write_text("{}\n", encoding="utf-8")
     with mock.patch("rn_forge.kiln.modules.node.angular.Process.execute") as run:
         workspace = scaffold_node(raw, KilnConfig.load(root))
     return workspace, run.call_args_list
@@ -329,6 +331,68 @@ def test_s9_2_2_4_python_web_api_has_no_node_scaffold(tmp_path: Path) -> None:
 
     assert workspace is None
     assert calls == []
+
+
+def _reconciled(tmp_path: Path, *, lib: bool) -> tuple[Path, KilnConfig]:
+    root = _lib_root(tmp_path) if lib else _root(tmp_path)
+    workspace = _workspace(tmp_path)
+    if lib:
+        shutil.rmtree(workspace / "apps")
+    config = KilnConfig.load(root)
+    reconcile_node(root, workspace, config)
+    return root, config
+
+
+@pytest.mark.parametrize("lib", [True, False])
+def test_s9_2_3_1_reconcile_node_writes_nvmrc_for_both(
+    tmp_path: Path, lib: bool
+) -> None:
+    root, _ = _reconciled(tmp_path, lib=lib)
+
+    assert (root / ".nvmrc").read_text(encoding="utf-8") == "24\n"
+
+
+@pytest.mark.parametrize("lib", [True, False])
+def test_s9_2_3_2_reconcile_node_pins_pnpm_in_package_json(
+    tmp_path: Path, lib: bool
+) -> None:
+    root, _ = _reconciled(tmp_path, lib=lib)
+
+    package = DocumentUtils.read(root / "package.json")
+    assert package["packageManager"] == "pnpm@12.15.0"
+    assert package["name"] == "@workspace/source"
+
+
+@pytest.mark.parametrize("lib", [True, False])
+def test_s9_2_3_3_neither_pin_is_a_managed_artifact(tmp_path: Path, lib: bool) -> None:
+    _, config = _reconciled(tmp_path, lib=lib)
+
+    keys = [a.key for a in render(config)]
+    assert not any(k.endswith((".nvmrc", "package.json")) for k in keys)
+
+
+@pytest.mark.parametrize("lib", [True, False])
+def test_s9_2_3_4_scaffold_node_pins_pnpm_before_the_last_lockfile_write(
+    tmp_path: Path, lib: bool
+) -> None:
+    root = _lib_root(tmp_path) if lib else _root(tmp_path)
+    raw = tmp_path / "frontend"
+    raw.mkdir()
+    workspace = raw / "workspace"
+    seen: dict[str, object] = {}
+
+    def run(name: str, *args: str, **kwargs: object) -> None:
+        if name in ("nx-remove-app", "ngkit-core"):
+            seen["package"] = DocumentUtils.read(workspace / "package.json")
+
+    workspace.mkdir()
+    (workspace / "package.json").write_text("{}\n", encoding="utf-8")
+    with mock.patch(
+        "rn_forge.kiln.modules.node.angular.Process.execute", side_effect=run
+    ):
+        scaffold_node(raw, KilnConfig.load(root))
+
+    assert seen["package"] == {"packageManager": "pnpm@12.15.0"}
 
 
 def test_s9_1_8_3_reconcile_node_folds_the_workspace_and_writes_nvmrc(
