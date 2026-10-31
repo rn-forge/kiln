@@ -23,7 +23,6 @@ from rn_forge.commons.runtime.subprocess import Process
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.node.angular import (
-    NX_VERSION,
     VITEST_COVERAGE,
     scaffold_angular,
 )

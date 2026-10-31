@@ -585,7 +585,7 @@ def test_s6_3_6_release_uploads_distributions_and_sbom_only(tmp_path: Path) -> N
 
 
 UPSTREAM_PINS = {
-    "setup-uv": ("c18668ad3cf93ea998bef934396af7bb5c839dc7", "v10.2.0"),
+    "setup-uv": ("1c37ad07a6a961277cf70c0d37d6f313000f5884", "v10.3.0"),
     "sonarqube-scan": ("d209202bc7d53ff1cc128f7f907dac145c9d6ae9", "v8.3.0"),
     "deploy-pages": ("368f82528645a54fb793d4d04e342629a3f51346", "v5.0.1"),
     "upload-artifact": ("cf430e030ddbb5b0abf93d22962f4752f3646cd9", "v7.0.2"),
@@ -3042,7 +3042,7 @@ def test_s9_1_5_3_trigger_permissions_and_concurrency_are_ngkits(
                     "type": "string",
                 },
                 "dist-tag": {
-                    "description": "npm dist-tag (latest for current releases; v<major>-lts for hotfixes to older majors)",
+                    "description": "npm dist-tag (latest for current releases)",
                     "required": True,
                     "type": "string",
                     "default": "latest",
@@ -3613,3 +3613,44 @@ def test_s9_3_4_3_validate_step_runs_ci_validate_for_node_lib_only(
         assert job["timeout-minutes"] == 20, archetype
         comment = "# The Nx projects are checked by ci-cloud or ci-local; this job runs the rest."
         assert (comment in workflow) == (archetype == "node-lib"), archetype
+
+
+# S9.3.7 — small corrections to the node files.
+
+
+def test_s9_3_7_1_release_dist_tag_description(tmp_path: Path) -> None:
+    release = _node_lib_release(tmp_path)
+    inputs = release["on"]["workflow_dispatch"]["inputs"]  # type: ignore[index]
+    assert (
+        inputs["dist-tag"]["description"]
+        == "npm dist-tag (latest for current releases)"
+    )
+
+
+def test_s9_3_7_2_ci_ok_comment_names_the_deploy_for_node_lib_only(
+    tmp_path: Path,
+) -> None:
+    for archetype in ("node-lib", "python-app", "python-lib"):
+        ci = _rendered(_root(tmp_path / archetype, archetype))[
+            ".github/workflows/ci.yml"
+        ]
+        is_node = archetype == "node-lib"
+        assert ("release on a pull request" in ci) is not is_node, archetype
+        assert ("docs deploy on a pull request" in ci) is is_node, archetype
+
+
+def test_s9_3_7_3_setup_uv_pin_is_v10_3_0(tmp_path: Path) -> None:
+    sha = "1c37ad07a6a961277cf70c0d37d6f313000f5884"
+    assert UPSTREAM_PINS["setup-uv"] == (sha, "v10.3.0")
+    uses = f"astral-sh/setup-uv@{sha} # v10.3.0"
+    cases = [(a, _root(tmp_path / a, a)) for a in (*ARCHETYPES, "node-lib")]
+    cases += [
+        ("python-web-api", _web_root(tmp_path / "api", "python-web-api")),
+        (
+            "python-web-app",
+            _web_root(tmp_path / "app", "python-web-app", extra='frontend = "angular"'),
+        ),
+    ]
+    for archetype, root in cases:
+        action = _rendered(root)[".github/actions/setup/action.yml"]
+        assert uses in action, archetype

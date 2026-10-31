@@ -7,8 +7,8 @@ version = "v7.0.1"
 
 [setup-uv]
 uses = "astral-sh/setup-uv"
-sha = "c18668ad3cf93ea998bef934396af7bb5c839dc7"
-version = "v10.2.0"
+sha = "1c37ad07a6a961277cf70c0d37d6f313000f5884"
+version = "v10.3.0"
 
 [setup-task]
 uses = "arduino/setup-task"

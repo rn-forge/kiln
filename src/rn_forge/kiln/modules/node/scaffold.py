@@ -1,13 +1,12 @@
 """S5.2.1 — the frontend scaffolder, and reconciling its output into the repo.
 
-`scaffold_node` is the one part of kiln that runs someone else's
-generator: it dispatches on `config.frontend` (Angular for `node-lib`, which
-has none) to that frontend's scaffolder (`angular.py`), which builds a
-workspace in a scratch directory, and
-`reconcile_node` folds every top-level entry it
-wrote into the repo at `config.web_dir`. Every file the frontend scaffolder
-writes is repo-owned; the only files kiln adds under `web_dir` are the seeded
-Angular starter's, written once here, along with the `serve` proxy wiring in
+`scaffold_node` is the one part of kiln that runs someone else's generator: it
+dispatches on `config.frontend` (Angular for `node-lib`, which has none) to that
+frontend's scaffolder (`angular.py`), which builds a workspace in a scratch
+directory, and `reconcile_node` folds every top-level entry it wrote into the
+repo at `config.web_dir`. Every file the frontend scaffolder writes is
+repo-owned; the only files kiln adds under `web_dir` are the seeded Angular
+starter's, written once here, along with the `serve` proxy wiring in
 `project.json` and the deletion of Nx's `nx-welcome.ts`. A `node-lib` gets the
 same workspace root as a `python-web-app`, with no application.
 
