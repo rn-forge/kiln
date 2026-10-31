@@ -1,0 +1,81 @@
+# The pinned action set every rendered workflow uses (kiln ADR-0006).
+
+[checkout]
+uses = "actions/checkout"
+sha = "3d3c42e5aac5ba805825da76410c181273ba90b1"
+version = "v7.0.1"
+
+[setup-uv]
+uses = "astral-sh/setup-uv"
+sha = "c18668ad3cf93ea998bef934396af7bb5c839dc7"
+version = "v10.2.0"
+
+[setup-task]
+uses = "arduino/setup-task"
+sha = "bfe25a35f5c1f609e1d6153197b3b42a04ae054c"
+version = "v3.0.0"
+
+[sonarqube-scan]
+uses = "SonarSource/sonarqube-scan-action"
+sha = "d209202bc7d53ff1cc128f7f907dac145c9d6ae9"
+version = "v8.3.0"
+
+[upload-artifact]
+uses = "actions/upload-artifact"
+sha = "cf430e030ddbb5b0abf93d22962f4752f3646cd9"
+version = "v7.0.2"
+
+[download-artifact]
+uses = "actions/download-artifact"
+sha = "9000827ccba6bdab643e8b6fd33ac0654aef8333"
+version = "v8.0.2"
+
+[upload-pages-artifact]
+uses = "actions/upload-pages-artifact"
+sha = "fc324d3547104276b827a68afc52ff2a11cc49c9"
+version = "v5.0.0"
+
+[deploy-pages]
+uses = "actions/deploy-pages"
+sha = "368f82528645a54fb793d4d04e342629a3f51346"
+version = "v5.0.1"
+
+[pnpm-setup]
+uses = "pnpm/action-setup"
+sha = "0ebf47130e4866e96fce0953f49152a61190b271"
+version = "v6.0.9"
+
+[setup-node]
+uses = "actions/setup-node"
+sha = "820762786026740c76f36085b0efc47a31fe5020"
+version = "v7.0.0"
+
+[dependency-review]
+uses = "actions/dependency-review-action"
+sha = "a1d282b36b6f3519aa1f3fc636f609c47dddb294"
+version = "v5.0.0"
+
+[attest]
+uses = "actions/attest"
+sha = "1e69f48acb82d1966a394da916b4c1698aa569d6"
+version = "v4.2.2"
+
+[nx-set-shas]
+uses = "nrwl/nx-set-shas"
+sha = "afb73a62d26e41464e9254689e1fd6122ee683c1"
+version = "v5.0.1"
+
+[cache]
+uses = "actions/cache"
+sha = "55cc8345863c7cc4c66a329aec7e433d2d1c52a9"
+version = "v6.1.0"
+
+[configure-pages]
+uses = "actions/configure-pages"
+sha = "45bfe0192ca1faeb007ade9deae92b16b8254a0d"
+version = "v6.0.0"
+
+[create-github-app-token]
+uses = "actions/create-github-app-token"
+sha = "bcd2ba49218906704ab6c1aa796996da409d3eb1"
+version = "v3.2.0"

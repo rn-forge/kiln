@@ -1,0 +1,287 @@
+# E4 design — the generator
+
+Design shared across [E4](index.md)'s features. The config schema itself is
+normative and lives in
+[the reference, §9](../../../reference/standard-repo.md#9-configuration); the
+decisions are in [the decision log](../../../adr/index.md).
+
+## Scope and ownership
+
+kiln generates and verifies the selected repository standard. It does not infer
+an archetype, migrate application source, or reconcile an arbitrary repository
+into that standard. `new` creates a repository; the narrow
+[`init` contract](F4.5-cli.md#s458-kiln-init-bring-an-existing-standard-repository-under-kiln)
+requires an explicit configuration and a fixed topology preflight, skips
+scaffolding, and refuses collisions unless `--force` archives the affected
+files. It uses the same artifact engine as `new` and `apply`.
+
+Standing repository instructions belong in its `_structure.md` pages. One-time
+judgement belongs in
+[versioned prompts](F4.5-cli.md#s456-kiln-prompt-shipped-one-time-procedures)
+shipped with kiln: they print guidance and install nothing. kiln ships no skills
+and does not seed migration procedures into every generated repository. The
+fleet rebuild and its history policy belong to
+[E6](../E6-rebuild-the-repos/index.md), not the generator contract.
+
+## Package layout
+
+```
+rn-forge/kiln/
+  docs/                    # the canon: adr/, reference/standard-repo.md, architecture/, runbooks/, specs/
+  src/rn_forge/kiln/       # the one distribution, rn-forge-kiln (ADR-0001)
+    main.py cli.toml       # build_tool_app over the packaged declaration (ADR-0002); never a hand-built app
+    commands.py            # one function per command; F4.5 adds them
+    config.py              # KilnConfig: the validated config, typed reads
+    checks.py              # the render-free check registry `kiln doctor` runs
+    archetypes/            # one archetype.toml per archetype: modules, dependency set, forbidden tools, gate, untested values
+      python_app/  python_tool/  python_lib/  python_web_api/  python_web_app/
+    modules/               # each a KilnModule — config model, options, artifacts, checks/ (render-free), templates/, scaffold
+      base.py registry.py  # KilnModule protocol + registry
+      core/                # umbrella, config manager, state, cycle adapter, .gitignore block, .editorconfig
+      python/              # uv init + reconcile, the frontend scaffold, .importlinter, seeded dependency set
+      docs/                # docs tree, _areas.yml, _structure.md, mkdocs.yml body (scaffold) + nav block
+      tasks/               # Taskfile.yml + tasks/*.yml
+      cicd/                # workflows, .github/actions/setup, sonar-project.properties, pins.toml
+      instructions/        # README/CLAUDE/AGENTS bodies (scaffold), the kiln block in CLAUDE.md, standard.md
+    doctor/                # F4.6: the report across modules, taskgraph.py (ported from taskkit), --all
+  tests/
+    fixtures/golden/       # hand-authored bootstrap references; deleted by F4.4
+      python-app/  python-tool/  python-lib/
+    fixtures/scaffold/     # captured scaffolder output, the reconcile's test input (S5.2.2)
+```
+
+Modules supply artifacts and checks through a shared contract, alongside their
+configuration models and CLI options. The registry composes these contributions
+without adding concern-specific branches to the command layer.
+
+## The module contract
+
+```python
+class KilnModule(Protocol):
+    name: str                                         # "docs", as archetype.toml lists it
+    section: str | None                               # the config table it owns: [docs]; cicd owns [ci]
+    config_model: type[StrictModel] | None            # commons[pydantic], strict; defaults are kiln's layer
+    def options(self) -> Sequence[Option]: ...        # the `kiln new` flags this module adds
+    def artifacts(self, config: KilnConfig, root: Path) -> Sequence[Artifact]: ...
+    def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]: ...
+```
+
+kiln owns only the composition: the root schema is `schema_version` + `[source]`
+\+ `[repository]` + rn-forge-cli's `[cli]`, carried as written, + one section per
+enabled module; the `kiln new` command line is the union of every enabled
+module's options, with a collision a startup error; `apply` and `doctor` iterate
+modules in `archetype.toml` order. `archetype.toml` gains
+`modules = ["core", "python", "docs", "tasks", "cicd", "instructions"]`
+alongside its dependency set, and a disabled module's section is rejected rather
+than ignored. This is the `Generator` protocol with the config and options
+halves added — still `artifacts()` + `checks()` at its core
+([ADR-0001](../../../adr/ADR-0001.md)).
+
+## Commands
+
+| Command | Behaviour |
+| -- | -- |
+| `kiln new <dir> --archetype A [--docs P] [--backend F] [--frontend W] [--config <path\|git-url[@ref]>] [--dry-run] [--yes] [--json]` | collect config in memory for a new repo; preview and write nothing unless `--yes`, which writes `config.toml` and runs scaffold + apply. Refuses a non-empty `<dir>`. |
+| `kiln init --archetype A [--docs P] [--backend F] [--frontend W] [--config <path\|git-url[@ref]>] [--force] [--dry-run] [--yes] [--json]` | initialize an existing, preflighted standard Git worktree from its root; same config and artifact flow as `new`, but never scaffolds. Refuses conflicts and a prior state unless `--force`, which archives overwritten targets. |
+| `kiln apply [--dry-run] [--json] [--force <artifact>]…` | the full sequence (below); idempotent and non-interactive; re-run after editing `config.toml` or upgrading kiln; each forced path must name a reported conflict, drift, or missing managed artifact |
+| `kiln doctor [PATH] [--full] [--json] [--all <path>…]` | by default, the render-free checks over committed files — what `task validate` runs in CI; `--full` opts in to every check below, including a fresh render and diff; exit 1 on any error-severity finding |
+| `kiln docs-nav [PATH]` | regenerate `mkdocs.yml`'s nav block; `kiln doctor`'s `docs-nav` check covers it |
+| `kiln diff [<artifact>]` | unified diff of on-disk vs fresh render |
+| `kiln config update` / `kiln config upgrade` | see the config lifecycle |
+| `kiln version`, and the lifecycle verbs under `kiln self`, via `[lifecycle]` | — |
+| `kiln prompt [<name>]` | print a one-time procedure shipped with kiln, or list them; reads and writes nothing ([scope and ownership](#scope-and-ownership)) |
+
+There is no general `adopt` ([scope and ownership](#scope-and-ownership)).
+`kiln init` is the narrow exception: a preflighted standard repository receives
+a supplied configuration; kiln does not inspect its source to infer or transform
+it. **Flag parity is non-negotiable** (D8, D14). `config.toml` is the
+interactive flow's only durable hand-authored input; preview writes nothing,
+`--yes` executes the plan, `apply` is non-interactive and idempotent, and every
+prompt has a flag; `--yes` accepts defaults. Agents are the main callers. CI
+reaches this CLI only through committed `task` entrypoints — `kiln doctor`
+always, `kiln doctor --full` where the workflow sets `KILN_DOCTOR_FULL` — and
+never runs `apply` ([ADR-0006](../../../adr/ADR-0006.md)).
+
+## The config lifecycle
+
+([ADR-0004](../../../adr/ADR-0004.md))
+
+| Command | Reads | Writes | Then |
+| -- | -- | -- | -- |
+| `kiln new <dir> --config <path\|git-url[@ref]> …` | kiln defaults → each source layer → flags | merged `.rn-forge/kiln/config.toml`, with a `[source]` table (location, ref, resolved commit) | scaffold + apply, as today |
+| `kiln init --config <path\|git-url[@ref]> …` | kiln defaults → each source layer → flags, plus the existing standard topology | merged `.rn-forge/kiln/config.toml` and initial state | apply without scaffolding; conflicts refuse unless `--force` archives and approves them |
+| `kiln apply`, `kiln doctor`, `kiln diff` | **only** the committed `config.toml` | — | — |
+| `kiln config update [--dry-run] [--apply]` | the recorded source, with the **current** kiln's defaults | re-merged `config.toml` | prints the artifacts that would change; `--apply` runs `kiln apply` |
+| `kiln upgrade` | — | in a repo, the `rn-forge-kiln` pin and `uv.lock`, then `uv sync`; outside one, the installed tool (the lifecycle verb) | the **new** kiln loads the committed config against its schema: **warns** when it loads but a newer schema exists, **errors** when it no longer validates, and names `kiln config upgrade` either way |
+| `kiln config upgrade [--dry-run] [--apply]` | the recorded source, with the **new** kiln's defaults and schema | migrated and re-merged `config.toml` | as `update` |
+
+Three rules make that table safe:
+
+1. **The config manager validates against the running kiln's schema on every
+   load**, not only on `upgrade`. A config written by a newer kiln is refused
+   with the version it needs.
+1. **Local edits survive re-resolution.** `state.json` records per-key
+   provenance. A key whose committed value differs from what its layer last
+   supplied is a repo override; `update` and `upgrade` keep it and list it,
+   rather than silently overwriting it.
+1. **Lists replace.** A layer that sets a list owns the whole list.
+
+## Artifact kinds and the cycle
+
+`rn_forge.tooling.generation` owns the runtime-neutral artifact kinds, action
+classification and transactional execution. It exposes a Python-callable
+generator contract with no Typer types. kiln's `cycle.py` supplies kiln config,
+render functions, state metadata and explicitly approved force paths, then
+invokes that engine. The engine renders and classifies every artifact before any
+write:
+
+```
+render(config) → new_hash
+disk_hash      = ContentHash.of_file(path) or None
+entry          = state.entries.get(key)
+last_hash      = entry.content_hash if entry else None
+
+kind=managed:
+  absent, no entry                         → CREATE
+  absent, entry                            → MISSING
+  present, no entry                        → CONFLICT   (a hand-made file at a managed path)
+  entry, disk==last==new                   → UNCHANGED
+  entry, disk==last, last!=new             → UPDATE
+  entry, disk!=last                        → DRIFT
+kind=seeded:
+  absent                                   → CREATE
+  present                                  → SKIP (record presence; never hash content)
+kind=block:
+  no block, no entry                       → INSERT (file body untouched)
+  block, no entry                          → CONFLICT
+  entry, body==last==new                   → UNCHANGED
+  entry, body==last, last!=new             → UPDATE (file body untouched)
+  entry, block missing or body!=last       → DRIFT
+
+state entry no longer rendered:
+  managed absent / block missing           → FORGET
+  managed, disk==last                      → DELETE (backup first)
+  block, body==last                        → REMOVE block (file body untouched)
+  seeded                                   → FORGET (never delete repo content)
+  managed/block changed since last apply   → DRIFT
+```
+
+An unforced `CONFLICT`, `DRIFT` or `MISSING` aborts the entire preflight before
+state or artifacts are written. `--force <artifact>` approves only that reported
+path; forcing `MISSING` recreates it. `--yes` never implies force. `kiln new`
+into an empty directory only ever sees `CREATE`, `INSERT` and `SKIP` (after the
+scaffold step has run `uv init` and the like).
+
+Approved writes are staged under `.rn-forge/kiln/rendered/`, the state write
+holds `.rn-forge/kiln/state.lock`, backups go to
+`.rn-forge/kiln/backups/<UTC timestamp>/<repo-relative path>`, and atomic
+replacements begin only after every render and check succeeds. On a write or
+post-apply check failure, kiln restores backups and removes newly created
+artifacts. The committed `state.json` is excluded from artifact enumeration and
+written last; a failed transaction restores its previous bytes. State uses
+tooling `StateStore` with commons-owned JSON value types and hashing; metadata
+is `kiln_version: str`, `config_hash: str` and `config_provenance` — per-key
+provenance, each dotted path's layer and the value it supplied. Managed entries
+store `path`, `kind`, and `content_hash`; block entries also store their exact
+begin and end markers; seeded entries store presence but no content hash.
+
+## Apply sequence
+
+```
+1. core         .rn-forge/kiln/, gitignore block, .editorconfig
+2. python       (new only) uv init / pnpm create / nx g, then reconcile to archetype; .importlinter
+3. docs         (new only) the mkdocs.yml body; tree, _areas.yml, _structure.md, mkdocs.yml block
+4. tasks        Taskfile.yml, tasks/*.yml
+5. cicd         workflows, sonar-project.properties
+6. instructions (new only) README.md / CLAUDE.md / AGENTS.md bodies; the kiln block in
+                CLAUDE.md, .rn-forge/kiln/standard.md
+7. doctor       run every check; apply exits non-zero if any error remains
+```
+
+No apply step shells out ([ADR-0003](../../../adr/ADR-0003.md)). `scripts/**` is
+gone from steps 3 and 4 under ADR-0006: the checks ship in kiln, a pinned dev
+dependency, not in generated files. **Scaffolding shells out.** `kiln new` runs
+`uv init` and `create-nx-workspace`, then reconciles the result (move files, fix
+pyproject sections); each module's `scaffold(root, config)` runs once, before
+the first apply, in module order. It never templates another tool's scaffold
+output (D16), and a body a scaffold writes (`mkdocs.yml`, `CLAUDE.md`) is never
+also an artifact: the engine refuses a whole-file write and a block write to one
+path.
+
+## Doctor checks
+
+The reference's §6 is the normative list; this numbering preserves the feature's
+original check identifiers. All checks respect
+[ADR-0003](../../../adr/ADR-0003.md): doctor checks managed files and fenced
+blocks, reads declared inputs, and ignores seeded or unowned content and its
+continued presence.
+
+| # | Code prefix | Check |
+| -- | -- | -- |
+| 1 | `config.*` | `config.toml` parses and validates |
+| 2 | `artifact.missing` / `.drift` / `.stale` | every managed artifact present; disk hash == committed last-applied; last-applied == fresh render |
+| 3 | retired | seeded presence is not enforced after scaffolding |
+| 4 | `block.missing` / `.stale` | every fenced block present and current |
+| 5 | `taskgraph.*` | managed task files expose the configured public surface and obey wrapper, description, reference, cycle and namespace rules; declared extension inputs may be read without imposing layout rules on their files |
+| 6 | `taskgraph.unresolved-ref` | task references within managed workflows and instruction blocks resolve; repository-owned prose is ignored |
+| 7 | `ci.entrypoint` | no forbidden tool, including `kiln`, invoked directly in a managed workflow (list from `archetype.toml`) |
+| 8 | `gate.shrunk` | the set of tasks reachable from `validate` ⊇ the archetype's `required_validate` list; `kiln doctor` enforces the same list in CI, reading it from `config.toml` |
+| 8a | retired | repository-owned `pyproject.toml` settings and dependency declarations are not enforced |
+| 8b | `kiln.pin` | compare the running kiln with an explicitly declared version input; do not impose a dev-group layout on repository-owned metadata |
+| 9 | `ci.unpinned` / `ci.permissions` | managed workflows have SHA-pinned actions and per-job permissions |
+| 10 | `docs.nav` | managed nav block matches its declared inputs; docs structure, links and page content are repository quality checks |
+| 11 | retired | arbitrary repository-owned root files are not kiln's concern |
+| 12 | `legacy.kiln-state` (error) | repository-local `.rn-forge/kiln/` state has a supported `schema_version`; sibling namespaces are ignored |
+
+`kiln doctor --all <paths>` runs the same checks over many repos and prints one
+table (F11). Docs link and structure validation belongs to explicit repository
+quality tasks, not implicit doctor ownership enforcement. Source and test
+layouts likewise remain repository-owned after scaffolding.
+
+## Template inventory
+
+✔ = generated for that archetype; d = only when `docs.profile = mkdocs`; s =
+only when `ci.sonar`.
+
+| Artifact | app | tool | lib | web |
+| -- | -- | -- | -- | -- |
+| `.editorconfig`, `.gitignore` block, instructions block, `.rn-forge/kiln/standard.md` | ✔ | ✔ | ✔ | ✔ |
+| `Taskfile.yml` (10 root wrappers: `setup validate lint format typecheck test test:coverage build clean version`; public `docs:build docs:serve docs:generate` only for `mkdocs`) | ✔ | ✔ | ✔ | ✔ |
+| `tasks/workspace.yml` (internal `clean`) | ✔ | ✔ | ✔ | ✔ |
+| `tasks/quality.yml` (internal `lint:markdown lint:toml format:markdown format:toml`) | ✔ | ✔ | ✔ | ✔ |
+| `tasks/python.yml` (internal `install lint lint:imports lint:audit format typecheck test test:coverage build version`) | ✔ | ✔ | ✔ (per-package `uv run --package`) | ✔ (api side) |
+| `tasks/kiln.yml` (internal `doctor`: kiln's checks, run once by `lint`) | ✔ | ✔ | ✔ | ✔ |
+| `tasks/ci.yml` (internal `lint:workflows`; `python-lib` also the public CI-only pipeline tasks) | ✔ | ✔ | ✔ | ✔ |
+| `tasks/api.yml` (public `api:dev`; `api:migrate` for django) |  |  |  | ✔ |
+| `tasks/web.yml` (public `web:dev`) |  |  |  | ✔ (`-app` only) |
+| `tasks/node.yml` (internal `install lint test build` via `pnpm nx …`) |  |  |  | ✔ (`-app` only) |
+| `tasks/docs.yml` (`build serve generate`) | d | d | d | d |
+| `.importlinter` contracts | ✔ | ✔ | ✔ | ✔ |
+| `README.md`, `CLAUDE.md`, `AGENTS.md` bodies (written once by `kiln new`); the kiln block in `CLAUDE.md` | ✔ | ✔ | ✔ | ✔ |
+| `docs/_areas.yml`, `docs/_structure.md`, `docs/adr/_structure.md`, seeded index pages, `mkdocs.yml` nav block | d | d | d | d |
+| `.github/workflows/ci.yml` (validate → sonar → check-version → build → publish) | ✔ | ✔ | ✔ (matrix over `packages`) | ✔ (+ pnpm/node setup) |
+| `.github/workflows/docs.yml` (Pages deploy on main) | d | d | d | d |
+| `sonar-project.properties` | s | s | s | s |
+
+**`scripts/**` is not in that table ([ADR-0006](../../../adr/ADR-0006.md)).**
+Ownership checks ship in kiln as `kiln doctor`, a pinned dev dependency, and
+`tasks/quality.yml` calls them rather than `python scripts/...`. Repository
+quality tasks separately validate docs and application code. `pyproject.toml` is
+seeded and then repository-owned; doctor imposes no conformance checks on it. A
+repository may add its own lint scripts.
+
+CI templates bake in the F5 fixes: SHA-pinned actions with version comments,
+least-privilege `permissions:` per job, `concurrency:` per ref, tag-exists
+release check (D22). The pin set lives in `modules/cicd/pins.toml`; Dependabot
+watches kiln, not the generated workflows (D21). Superseded in part by S4.11.4
+(2026-10-20): Dependabot now covers only repository-owned actions and `uv`;
+generated files still do not use it.
+
+## Steady state after release-1
+
+CI runs `task validate`, which runs the pinned kiln's `kiln doctor`; pushes to
+the default branch also run `kiln doctor --full`. Developers run
+`kiln doctor --full`; `kiln doctor --all` is the cross-repo signal. A kiln
+upgrade is `kiln upgrade` (the pin and the lock), `uv sync`, then
+`kiln config upgrade --dry-run`, review, `--apply` — in a pull request whose CI
+runs the new kiln.

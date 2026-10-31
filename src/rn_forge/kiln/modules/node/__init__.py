@@ -1,0 +1,67 @@
+"""The `node` module: scaffolding for the pnpm/Nx workspace."""
+
+from __future__ import annotations
+
+from collections.abc import Sequence
+from pathlib import Path
+from typing import TYPE_CHECKING
+
+from rn_forge.kiln.modules.base import Option
+
+if TYPE_CHECKING:
+    from rn_forge.commons.findings import Finding
+    from rn_forge.commons.generation import Artifact
+    from rn_forge.commons.lang.models import StrictModel
+
+    from rn_forge.kiln.config import KilnConfig
+
+__all__ = ["NODE", "NodeModule"]
+
+
+class NodeModule:
+    """The `node` module.
+
+    Owns no config section: the archetype owns the validated `frontend` and
+    `web_dir` values, and every file the frontend scaffold writes is
+    repo-owned. It owns the `--frontend` selector, the scaffold that runs it,
+    and the Angular starter (a page that calls the API, its specs, the app
+    config and the dev proxy), which is seeded once at `kiln new`.
+    """
+
+    name = "node"
+    section: str | None = None
+    config_model: type[StrictModel] | None = None
+
+    def options(self) -> Sequence[Option]:
+        """The `kiln new` flags this module adds."""
+        return (
+            Option(
+                "frontend",
+                "archetype.<archetype>.frontend",
+                "The frontend: angular, react or svelte (python-web-app only).",
+            ),
+        )
+
+    def artifacts(self, config: KilnConfig, root: Path) -> Sequence[Artifact]:
+        """The seeded Angular starter; nothing else under `web_dir`.
+
+        Args:
+            config: The loaded config.
+            root: The repository root.
+
+        Returns:
+            `SEEDED` artifacts for `python-web-app` with `frontend = "angular"`
+            once the stock `app.config.ts` exists and the root `package.json` depends
+            on `@rn-forge/ng`; otherwise nothing.
+        """
+        from rn_forge.kiln.modules.node import starter
+
+        return tuple(starter.render(config, root))
+
+    def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:
+        """Nothing yet: this module has no render-free checks."""
+        del config, root
+        return ()
+
+
+NODE = NodeModule()

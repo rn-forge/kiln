@@ -1,0 +1,631 @@
+# The standard repository
+
+The normative statement of what an rn-forge repository is. The reasoning behind
+each rule is in [the decision log](../adr/index.md); this page states the rules
+and carries the specifications those decisions produced — the verb list, the
+ownership table, the dependency sets, the config schema. It changes whenever an
+archetype or an artifact does, which is exactly why it is not an ADR.
+
+kiln renders this page, with the repo's archetype, docs profile and task surface
+filled in, into every repo it generates as `.rn-forge/kiln/standard.md`. A repo
+therefore always carries the standard it is held to, and an agent working in it
+never has to find kiln to read the rules.
+
+## 1. One entrypoint
+
+`task` is the only entrypoint. Nobody — human, agent, or CI — invokes `uv`,
+`pytest`, `ruff`, `pyright`, `mkdocs`, `pnpm`, `nx` or `kiln` directly.
+`kiln doctor`'s `ci-entrypoint` check enforces that for every workflow file; the
+forbidden list is the archetype's, read from `.rn-forge/kiln/config.toml`.
+
+The public surface is ten root verbs:
+
+```text
+setup  validate  lint  format  typecheck  test  test:coverage  build  clean  version
+```
+
+plus, under `docs.profile = mkdocs`, three public docs verbs:
+
+```text
+docs:build  docs:serve  docs:generate
+```
+
+`validate` calls `lint`, `typecheck`, `test`, and — for `mkdocs` — `docs:build`.
+Web modules additionally expose `api:dev` (and `api:migrate` for Django) and,
+for `python-web-app`, `web:dev`. Every task outside the declared public surface
+is `internal: true`. The root `Taskfile.yml` holds wrappers only: each of its
+`cmds:` entries is a `task:` call into a `tasks/*.yml` namespace. Every task
+carries a non-empty `desc:`. ([ADR-0007](../adr/ADR-0007.md))
+
+In a workspace archetype, `build` and `version` take a package name after `--`
+(`task version -- rn-forge-commons`); given none, they act on every member.
+
+**`required_validate`**, per archetype — the tasks that must stay reachable from
+`validate`, enforced by `kiln doctor`'s `task-layout` check and by
+`kiln doctor`'s `gate.shrunk`:
+
+```text
+python:lint            kiln:doctor
+python:lint:imports    ci:lint:workflows
+python:lint:audit      quality:lint:markdown
+quality:lint:toml      python:typecheck
+python:test
+```
+
+plus, under `docs.profile = mkdocs`, `docs:build`.
+
+An archetype adds to this list; it never removes from it.
+
+Repo-specific work attaches through `.rn-forge/kiln/config.toml`, never by
+editing a managed file:
+
+| Key | Effect |
+| -- | -- |
+| `[tasks] includes` | wire a repository-owned namespace file into the root Taskfile |
+| `[tasks.extra_refs]` | append a call to a managed wrapper verb |
+| `[tasks.command_overrides]` | replace one primitive's shell line |
+
+## 2. One owner per file, or per block
+
+Every path kiln writes or reads has exactly one of these kinds:
+
+| Kind | Owner | Written by | Recorded in `state.json` | Checked by |
+| -- | -- | -- | -- | -- |
+| **managed** | kiln | `kiln apply` | the file's SHA-256 | `generated`: drift if the file differs |
+| **block** | kiln (the fence); repo (the rest of the file) | `kiln apply` | the body's SHA-256 and the markers | `generated`: drift if the body differs |
+| **derived region** | kiln (the fence); repo (the rest of the file) | `kiln docs-generate`, and `kiln new` | nothing | `docs-generate`: stale if regenerating it from the repo's inputs differs |
+| **seeded** | repo, after the first write | `kiln apply`, once, when absent | creation only | nothing, including presence (see below) |
+| **scaffolded** | repo | `kiln new`'s scaffold step, once | nothing | nothing |
+| **repo** | repo | never kiln | nothing | the repo's own tasks |
+| **input** | repo | the owner, or `kiln config-update` | its hash, as `config_hash` | nothing compares it; `kiln apply` re-renders from it |
+| **baseline** | kiln | `kiln apply` | — (it is the record; it never hashes itself) | `generated` reads it |
+| **derived data** | kiln | kiln, at run time | nothing | nothing; gitignored |
+
+- A file has one kind, except that a file holding a **block** or **derived
+  region** is otherwise scaffolded or repo-owned: `.gitignore`, `CLAUDE.md`
+  and `mkdocs.yml`.
+- **Seeded** and **scaffolded** differ only in who writes them. A seeded file is
+  an apply artifact, so a later `kiln apply` recreates it if it is absent and
+  never touches it if present. A scaffolded file (`pyproject.toml`,
+  `README.md`, the bodies of `CLAUDE.md`, `AGENTS.md` and `mkdocs.yml`, the
+  first `src/` and `tests/`) is written by `kiln new` before its first apply,
+  and never again.
+- "Nothing, including presence" for **seeded** is the target set by
+  [ADR-0003](../adr/ADR-0003.md). The `generated` check skips a seeded state
+  entry.
+- Paths kiln neither writes nor reads (`.claude/**`, `.codex/**`, installed
+  skills) are not kiln's and have no kind.
+
+Two owners never write the same bytes. After scaffolding, doctor checks
+kiln-owned files and blocks for artifact conformance, and the three rules over
+repository-owned content that §6 names. It does not require seeded files to
+remain present or compare repository-owned content with scaffold defaults.
+Explicit project validation tasks still run their configured checks.
+
+The assignment is normative:
+
+| File / tree | Owner | Artifact kind |
+| -- | -- | -- |
+| `.rn-forge/kiln/config.toml` | repo (merged, committed input) | input |
+| `.rn-forge/kiln/state.json` | kiln | baseline — the committed CI baseline; never hashes itself |
+| `.rn-forge/kiln/standard.md` | kiln | managed — the rendered canon |
+| `.rn-forge/kiln/backups/`, `rendered/`, `state.lock` | kiln | derived data — gitignored |
+| `.gitignore` | repo body, seeded once by `kiln new` from uv's and (for a frontend) Nx's own ignore bodies, in that order; `# BEGIN rn-forge kiln` block → kiln | block |
+| `<repo-name>.code-workspace` | repo after scaffolding — one relative folder, `{ "path": "." }` | **seeded** |
+| `pyproject.toml` | **repo** — scaffolded once; tool settings are not kiln-owned | scaffolded |
+| `.editorconfig` | kiln | managed |
+| `.importlinter` | kiln | managed import-boundary contracts |
+| `Taskfile.yml`, `tasks/workspace.yml`, `tasks/quality.yml`, `tasks/python.yml`, `tasks/kiln.yml`, `tasks/docs.yml`, `tasks/ci.yml`, archetype namespace files (`tasks/api.yml`; `tasks/web.yml` and `tasks/node.yml` for `python-web-app`) | kiln | managed |
+| `tasks/self.yml` and any include declared `ownership = "repository"` | repo | seeded once, never rewritten |
+| `scripts/**` | **repo only** — a repo's own lints, wired via `[tasks.extra_refs]`. kiln and `cicd` generate nothing here ([ADR-0006](../adr/ADR-0006.md)) | repo |
+| `src/**`, `tests/**` | **repo** — scaffolded once; no doctor structure policing | scaffolded |
+| `README.md` | written once by `kiln new`, then repo | scaffolded — the single prose home; never rewritten |
+| `docs/_structure.md`, `docs/<area>/_structure.md` for each area kiln seeds | kiln | managed — one rule set in every repo; an area a repo adds keeps its rules in its own, repo-owned `_structure.md` |
+| `docs/_areas.yml` | repo after scaffolding | **seeded** — repos may extend areas |
+| `docs/index.md`, `docs/<area>/index.md` | repo after scaffolding | **seeded** — written once |
+| `docs/specs/ideas/index.md`, `docs/reference/index.md` | repo after scaffolding | **seeded** — written once |
+| `docs/releases/index.md`, `docs/specs/index.md`, `docs/specs/epics/index.md` | repo after scaffolding | **seeded** — written once |
+| The spec board's Releases and Backlog, each release's Scope table, the epic list, and the summary table atop each epic and feature page | kiln, rewritten by `task docs:generate` ([ADR-0011](../adr/ADR-0011.md), [ADR-0013](../adr/ADR-0013.md)) | **derived region** |
+| `mkdocs.yml` | repo body, scaffolded by `kiln new`; the `# BEGIN derived nav` region → kiln, rewritten by `task docs:generate`. For `python-lib` the body carries the `monorepo` plugin | **derived region** |
+| `packages/<pkg>/mkdocs.yml` | `python-lib` only; repo, seeded once by `kiln generate package`; no managed block ([ADR-0008](../adr/ADR-0008.md)) | **seeded** |
+| `packages/<pkg>/docs/**` | `python-lib` only; repo, seeded once by `kiln generate package` | **seeded** |
+| `packages/<pkg>/CHANGELOG.md`, `packages/<pkg>/README.md` | `python-lib` only; repo, seeded once by `kiln generate package` | **seeded** |
+| `.github/workflows/ci.yml`, `docs.yml`, `release.yml` (`node-lib`); `.github/dependabot.yml`; `.github/actions/setup`; `sonar-project.properties`; `tools/ci/*.mjs` for `node-lib` | kiln (`cicd`) | managed |
+| `CLAUDE.md`, `AGENTS.md` | bodies written once by `kiln new`, then repo; the `<!-- BEGIN rn-forge kiln -->` block in `CLAUDE.md` → kiln | block (`CLAUDE.md` only; `AGENTS.md` points at it) |
+| `.claude/**`, `.codex/**`, installed skills | not kiln's | — |
+| Repo-specific lints (`check_brand.py`, `check_gate_tags.py`, …) | repo, wired via `[tasks.extra_refs]` | repo |
+
+`docs/_areas.yml` is **seeded, not managed**, so a repo can add an area kiln has
+never heard of — intellibuild needs a `context` area, and kiln's own tree has a
+`plans` area. The `_structure.md` files of the areas kiln seeds are managed and
+carry kiln's provenance header as an HTML comment, which renders nowhere; an
+area a repo adds keeps its rules in its own `_structure.md`, which kiln neither
+writes nor reads. Repository-configured docs validation uses the repo's
+`_areas.yml`.
+
+To change a managed file: change `.rn-forge/kiln/config.toml`, run `kiln apply`.
+
+### The render matrix
+
+To change what kiln renders: change its Jinja templates, which are the authored
+source
+([template review policy](../specs/epics/E4-generator/F4.4-render-matrix.md#template-review-policy)).
+A rendered repo is reviewed whole but never committed:
+
+1. `task self:golden:render` renders every shipped archetype × flag cell into
+   gitignored `.goldens/<ref>/`; `task self:golden:validate` runs each cell's
+   gate (`uv sync && task validate`, `actionlint`, `mkdocs build --strict`).
+1. The owner reviews and approves the rendered output before a template change
+   is done. kiln's CI renders every cell on every pull request.
+1. The hand-authored goldens under `tests/fixtures/golden/` are the bootstrap
+   reference for the first templates. Until the rendered cells reproduce them
+   they are the only runnable standard, and a standard change starts there;
+   then they leave git.
+
+### Archetype catalogue
+
+The archetype determines components, toolchain, and release topology. Flags
+select independent capabilities or implementations within that shape.
+
+| Archetype | Shape | Release tag |
+| -- | -- | -- |
+| `python-app` | one uv package; optional internal workspace packages | `v<version>` |
+| `python-tool` | alias for `python-app` with `lifecycle = true` | `v<version>` |
+| `python-lib` | uv workspace of independently published packages | `<package>-v<version>` |
+| `python-web-api` | API service without a separate frontend; optional embedded admin UI | `v<version>` |
+| `python-web-app` | API service and pnpm/Nx frontend workspace | `v<version>` |
+| `node-lib` | pnpm/Nx workspace of published libraries, one release group (shipped by `kiln new`; [ADR-0015](../adr/ADR-0015.md)) | `v<version>` |
+| `node-web-app` | pnpm/Nx frontend consuming remote APIs; deferred | `v<version>` |
+
+`lifecycle` is available to any Python archetype; it adds tooling's lifecycle
+surface. Docs profiles are independent: `mkdocs` seeds a docs site, `external`
+records its URL, and `none` generates no docs site. The shipped web combinations
+and promotion criteria live in
+[F5.3](../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md).
+
+**Docs layout per archetype** ([ADR-0008](../adr/ADR-0008.md)). Only a published
+package gets its own docs site. In `python-lib`, every package carries
+`packages/<pkg>/docs/` and `packages/<pkg>/mkdocs.yml`, built standalone with
+`--strict` and included into the root site by `mkdocs-monorepo-plugin`. The root
+`docs/_areas.yml` declares them as an area of kind `include`, which has no
+directory under `docs/` and whose nav is one `!include` entry per package. Each
+area is a top tab with its own sidebar ([ADR-0013](../adr/ADR-0013.md)); an
+area's `nav` is `children`, `index-only`, `include` or `work`, and `work` lists
+the epic list and the epics in ranges of ten. The root `docs/` holds only
+cross-package material. Every other Python archetype has one root site: its
+internal workspace packages have no docs of their own, and their reference
+renders in the root site. A `python-lib` repository starts with no packages;
+`kiln generate package` adds them one at a time.
+
+## 3. The dependency set
+
+An archetype carries the libraries a repo of that shape is built on
+([ADR-0005](../adr/ADR-0005.md)):
+
+| Archetype | Runtime | Dev |
+| -- | -- | -- |
+| every python repo | `rn-forge-commons` | — |
+| `python-app` | + `rn-forge-cli` | — |
+| `python-tool` | + `rn-forge-cli`, `rn-forge-tooling` | — |
+| `python-lib` | `rn-forge-commons` in each distributable | — (the `docs` group adds `mkdocs-monorepo-plugin`) |
+| `python-web-api` · `python-web-app`, `backend = "django"` | + `rn-forge-cli`, `rn-forge-web`, `rn-forge-django` | + `rn-forge-django[codegen]` |
+| `python-web-api` · `python-web-app`, `backend = "fastapi"` | + `rn-forge-cli`, `rn-forge-web`, `rn-forge-fastapi`, when that package exists | + `rn-forge-fastapi[codegen]` |
+| `node-lib` | — | kiln, MkDocs and mdformat, through a root `pyproject.toml` with no package |
+| `node-web-app` | — (deferred) | — |
+
+The library roles below describe pykit, not architectural decisions owned by
+kiln (see [workspace architecture](../architecture/workspace.md)):
+`rn-forge-commons` holds runtime-neutral mechanisms, `rn-forge-cli` holds the
+process and command-line shape, `rn-forge-tooling` holds the machinery for a
+program that installs itself, owns files in someone else's repo, or renders
+templates. `rn-forge-web` holds framework-free inbound HTTP wire semantics on
+commons alone, and sits beneath `rn-forge-django` and `rn-forge-fastapi`. A repo
+takes the highest layer it actually needs; the configured dependency check
+enforces its required list.
+
+Every rn-forge requirement is a **version range** on pykit's package index
+([ADR-0018](../adr/ADR-0018.md)), and the root declares the index once:
+
+```toml
+[project]
+dependencies = ["rn-forge-commons>=0.7.0,<0.8"]
+
+[[tool.uv.index]]
+name = "rn-forge"
+url = "https://rn-forge.github.io/pykit/simple/"
+```
+
+The floor is the version in kiln's pin table, and the ceiling is the next
+breaking release: the next minor before 1.0, the next major from 1.0. uv's
+default `first-index` strategy means an `rn-forge-*` name never resolves from
+PyPI. A pinned git direct URL is still accepted. A bare name, or a range with no
+ceiling, is not.
+
+Never `[tool.uv.sources]` — that is a *local* override which does not survive
+into a built wheel. An `[tool.uv.sources]` entry for an rn-forge package is
+rejected outright.
+
+The repository's own workspace members are the exception
+([ADR-0014](../adr/ADR-0014.md)). A member's dependency on a sibling is a range
+or a pinned direct URL in `dependencies`, may add a `{ workspace = true }`
+source for local development, needs no index entry, and is outside the allowed
+set. A dependency group may name a sibling bare.
+
+A breaking pykit release moves kiln's pin table; `kiln config upgrade --apply`
+takes it into a repository. An additive release needs only `uv lock --upgrade`.
+
+Every root outside `python-lib` sets `[tool.uv] no-sources = true`. pykit's tags
+sit on different commits, and pykit's own workspace sources would otherwise make
+uv resolve a shared dependency once per tag. A repository scaffolded before kiln
+did this adds the line by hand.
+
+`kiln doctor`'s `rn-forge-deps` check enforces three rules — **required**,
+**allowed**, **pinned-or-ranged**. Its required and allowed lists are config, so
+pykit — which *contains* commons and cannot depend on it — renders an empty
+required list rather than needing an exemption.
+
+kiln is not a dependency. `[kiln] ref` in `config.toml` pins it, and `task` runs
+it with `uvx` in its own environment ([ADR-0006](../adr/ADR-0006.md)). A
+repository's lock holds none of kiln's dependencies, and kiln's pykit pins never
+constrain the repository's.
+
+## 4. The import boundary
+
+`rn-forge-commons`, `rn-forge-cli` and `rn-forge-tooling` are the only rn-forge
+packages a repo may import (plus its own framework runtime package). Every other
+rn-forge component — kiln included — is a subprocess or nothing. That rule is
+enforced at the dependency declaration, in §3: import-linter rejects subpackages
+of external packages, so it cannot express it.
+
+What `.importlinter` enforces is the complement — product code imports no
+framework or CLI toolkit *directly* (`typer`, `jinja2`, `click`, `django`,
+`fastapi`); those arrive through the rn-forge library that owns them — plus each
+archetype's internal boundaries, such as a workspace's packages being
+independent of each other, and — inside pykit — the library layering itself:
+`rn_forge.commons` may not import `rn_forge.cli` or `rn_forge.tooling`, and
+`rn_forge.cli` may not import `rn_forge.tooling`. `python:lint:imports` runs it;
+`task validate` reaches it. ([ADR-0002](../adr/ADR-0002.md))
+
+A `python-lib` repository may set `import_contracts = "own"`; kiln then renders
+only the root packages, and the repository's own contracts are its boundary.
+
+## 5. What `task validate` proves
+
+CI runs the pinned kiln read-only ([ADR-0006](../adr/ADR-0006.md)): it never
+runs `kiln apply` and never writes a generated file. `task validate` runs every
+render-free `kiln doctor` check: the six ownership checks — `generated`,
+`task-layout`, `ci-entrypoint`, `ci-pins`, `ci-hooks` and `docs-generate` — and
+the three that read repository-owned content, `rn-forge-deps`, `docs-structure`
+and `docs-site` ([ADR-0003](../adr/ADR-0003.md)). The root `lint` runs them
+once, through the internal task `kiln:doctor`. It also runs the workflow linters
+`zizmor` and `actionlint` (`lint:workflows`) and the dependency audit
+(`lint:audit`, which runs `pip-audit` against the lock and needs the network).
+`kiln doctor --full`, which adds a full render and diff, runs where the workflow
+asks for it: `kiln:doctor` runs it when the `KILN_DOCTOR_FULL` task variable is
+set, by default on pushes to the default branch and on manual dispatch.
+`[ci] doctor_full` chooses where: pushes to the default branch and dispatch by
+default, or every run.
+
+A cold clone with go-task and the pinned language toolchain — `uv sync`, but no
+installed kiln, no `$RNF_HOME`, no bootstrap script — proves all of this:
+
+- ruff is clean and everything is ruff-formatted — `python:lint` asserts both,
+  and `python:format` applies them in the order that makes them agree
+  (`check --fix`, then `format`);
+- the archetype's dependency set is present, allowed, and pinned as a direct
+  URL;
+- the import contracts hold;
+- the task layout is intact and no gate has been removed from `validate`;
+- no workflow step invokes a wrapped tool;
+- every TOML file outside `.taplo.toml`'s `exclude` is taplo-formatted;
+- the docs tree matches the repo's `docs/_areas.yml`, the derived nav is
+  current, every tracked Markdown file is mdformat-clean, and no link or
+  anchor is broken (`mkdocs` profile). mdformat formats every Markdown file; a
+  repository that uses Prettier lists `*.md` in `.prettierignore`
+  ([ADR-0012](../adr/ADR-0012.md));
+- **every managed file and every managed block still hashes to the value
+  committed in `.rn-forge/kiln/state.json`**;
+- pyright is clean in strict mode ([ADR-0002](../adr/ADR-0002.md));
+- the tests pass;
+- the docs site builds `--strict` (`mkdocs` profile). `docs:build` builds the
+  root site and then, for `python-lib`, every package's own site `--strict`,
+  standalone, from the repository root.
+
+## 6. What `kiln doctor --full` adds
+
+Exactly one question `kiln doctor` cannot ask without `--full`: whether a newer
+kiln, or an edited config, would now render something different from what is
+committed. Everything else `--full` reports, `kiln doctor` reports too. `--json`
+prints the same findings as one JSON object.
+
+kiln is modules under one contract ([ADR-0001](../adr/ADR-0001.md)): `core`,
+`python`, `docs`, `tasks`, `cicd` and `instructions`, each owning its config
+section, its `kiln new` options, its `artifacts()` and its `checks()`.
+`kiln doctor` collects every module's `Finding` rows into one report; a module's
+render-free checks are the ones `kiln doctor` runs by default. Six of the nine
+are **ownership** checks: they read only kiln-owned files and blocks, and
+`kiln new`, `kiln init`, `kiln apply` and `kiln config` fail on them alone.
+Three read repository-owned content against a rule this standard defines and
+kiln supplies the means to meet: `rn-forge-deps` (the dependency set, §3;
+`kiln config upgrade` and the scaffold), and `docs-structure` and `docs-site`
+(the area model and the links; `task docs:generate`). `kiln doctor` runs all
+nine, so a broken link or a dependency edit fails `task validate` and never a
+regeneration.
+
+| Code prefix | Check |
+| -- | -- |
+| `config.*` | `config.toml` parses and validates |
+| `artifact.missing` / `.drift` / `.stale` | present; disk == committed; committed == fresh render |
+| `block.missing` / `.stale` | every fenced block present and current |
+| `taskgraph.*` | exact public surface; wrappers only at the root; inner tasks internal except `docs:*`; every task has `desc`; every include exists; every `task:` ref resolves; no cycles; no reserved-namespace collision |
+| `taskgraph.unresolved-ref` | task references in managed workflows and managed instruction blocks resolve |
+| `ci.entrypoint` | no forbidden tool, `kiln` included, invoked directly in a workflow |
+| `gate.shrunk` | tasks reachable from `validate` ⊇ the archetype's `required_validate` |
+| `kiln.pin-missing` / `kiln.pin-mismatch` | `[kiln] ref` is set, and a tag ref names the running kiln's version |
+| `deps.no-ceiling` | an rn-forge version range has a ceiling (`<…` or `==…`) |
+| `deps.no-index` | a range on a package outside the workspace has pykit's `[[tool.uv.index]]` declared at the root |
+| `ci.unpinned` / `ci.permissions` | every `uses:` SHA-pinned with a version comment; every job has `permissions:` |
+| `ci.hook-missing` / `ci.hook-not-callable` | every `[ci.hooks]` action and declared job's workflow exists; a declared job's workflow has `workflow_call` in its `on:` |
+| `docs.nav-stale` | the derived nav (`docs-generate`) differs from what regenerating it from the docs tree would write |
+| `docs.board-*` / `docs.epics-*` / `docs.scope-*` | the derived board, epic list and release Scope regions are present (`-markers`) and current (`-stale`) |
+| `docs.state-contradicts-work` | a work item's state agrees with its children and Iteration ([ADR-0011](../adr/ADR-0011.md)) |
+| `legacy.kiln-state` (error) | a pre-kiln `.rn-forge/kiln/` or `$RNF_HOME/kiln/` tree |
+
+`kiln doctor --all <paths>` runs the same checks across many repos and prints
+one table.
+
+## 7. The state baseline
+
+`.rn-forge/kiln/state.json` is generated and committed:
+
+```json
+{
+  "schema_version": "1",
+  "metadata": { "kiln_version": "…", "config_hash": "…" },
+  "entries": {
+    "Taskfile.yml":      { "path": "Taskfile.yml", "kind": "managed", "content_hash": "…" },
+    ".gitignore#rn-forge kiln": { "path": ".gitignore", "kind": "block",
+                           "begin_marker": "# BEGIN rn-forge kiln",
+                           "end_marker": "# END rn-forge kiln",
+                           "content_hash": "…" },
+    "docs/index.md":     { "path": "docs/index.md", "kind": "seeded" }
+  }
+}
+```
+
+It is written by tooling's generation engine, in that engine's format: a
+`content_hash` is the SHA-256 hex digest of the file — of a block's body, as
+read between its markers — and a block's key is its path and block name. It
+never contains an entry for itself. `kiln doctor`'s `generated` check reads it
+without rendering anything ([ADR-0006](../adr/ADR-0006.md)).
+
+## 8. CI shape
+
+Every archetype's CI follows one contract: the same triggers, gating, change
+plan, Sonar gate, default-branch-only release and `ci-ok`, whatever the stack,
+planned by `kiln-devops` ([ADR-0016](../adr/ADR-0016.md),
+[ADR-0017](../adr/ADR-0017.md)). Only what runs under each `task` differs.
+
+`validate → sonar → release`, with the release job a matrix over the workspace
+members for `python-lib`.
+
+A `python-lib` workspace gets change-scoped verify and an ordered release,
+planned by `kiln-devops` ([ADR-0017](../adr/ADR-0017.md)) through the public
+`ci:*` task namespace, outside the root vocabulary
+([ADR-0014](../adr/ADR-0014.md)):
+
+- `ci` namespace: `ci:plan`, `ci:adapters`, `ci:verify -- <package>`,
+  `ci:postgres`, `ci:smoke`, `ci:suite`, `ci:release-build`,
+  `ci:release-publish` and `ci:external-install`.
+- `python-lib` jobs, in order: `validate`, `dependency-review`, `plan`,
+  `verify`, `postgres`, `smoke`, `suites`, `sonar`, `release`,
+  `external-install`, `ci-ok`.
+
+[How a `python-lib` CI run flows](../architecture/python-lib-ci.md) walks
+through each event.
+
+A `node-lib` repository's `ci.yml` runs `ci-local` on a GitHub runner unless the
+repository variable `USE_NX_CLOUD` is `true` (or a dispatch checks
+`use-nx-cloud`), which selects `ci-cloud` on Nx Cloud agents instead.
+
+A `node-lib` repository releases by `workflow_dispatch`
+(`[ci] release = "nx-dispatch"`, its default), from
+`.github/workflows/release.yml`: gated on a green `ci.yml` run for the commit,
+from `main` unless it is a dry run, tagged `v<version>`, with the release commit
+pushed by a GitHub App token. It may call `nx start-ci-run` and `nx fix-ci`
+directly, the only `ci-entrypoint` exemption ([ADR-0015](../adr/ADR-0015.md)).
+
+The rules:
+
+- Repeated setup lives in the committed composite action
+  `.github/actions/setup`, not in a copy per job.
+- Every `uses:` is SHA-pinned with the version in a trailing comment; every job
+  declares least-privilege `permissions:`; the workflow declares
+  `concurrency:` per ref. Dependabot watches only the repository's own hook
+  actions and its `uv` dependencies; generated files are pinned by kiln.
+- Action SHAs in generated files are kiln's. They move when `cicd/pins.toml`
+  changes and a repository moves `[kiln] ref` and runs `kiln apply`; an edit
+  in place is drift, so `kiln doctor` fails, `kiln apply` refuses and
+  `kiln apply --force <path>` restores kiln's SHA, keeping a backup under
+  `.rn-forge/kiln/backups`. Dependabot's `uv` and `npm` pull requests edit
+  `pyproject.toml`, `package.json` and `pnpm-lock.yaml`, which are not
+  managed, so they are not drift.
+- Every `actions/checkout` sets `persist-credentials: false`, except a job that
+  pushes with the checkout token (`python-lib`'s `docs`, which runs
+  `mike deploy --push`). The workflows pass `zizmor --offline` and
+  `actionlint` in `task lint`.
+- Every archetype's CI has a `dependency-review` job after `validate`: it runs
+  on pull requests only, with `contents: read`, and `ci-ok` needs it, so a
+  skipped run on a push is a pass. `task lint` also audits the locked
+  dependencies with `pip-audit` (`lint:audit`); a vulnerability that cannot be
+  fixed is accepted in `[[tasks.audit.ignore]]` with a reason.
+- The `release` job attests what it ships before it publishes: build provenance
+  (`actions/attest`) over each distribution and its CycloneDX SBOM, which
+  `task build` writes beside them as `*.cdx.json` and lists runtime
+  dependencies only. `id-token: write` and `attestations: write` are on that
+  job alone (and `python-lib` splits `ci:release` into `ci:release-build` and
+  `ci:release-publish` with the attestation between them). The release carries
+  the wheels, the sdists and the `*.cdx.json`, and nothing else.
+- `UV_LOCKED: "1"` at workflow level: CI resolves the committed lockfile and
+  never rewrites it.
+- The Sonar job is skipped for fork pull requests, whose workflows cannot see
+  `SONAR_TOKEN`. Validation stays required.
+- `sonar.qualitygate.wait=true`, and `release` depends on `sonar`. Submitting an
+  analysis is not passing a gate.
+- Release runs only on the default branch, never on a pull request, and only for
+  units whose every check passed. A dispatched release on the default branch,
+  gated on a green CI run ([ADR-0015](../adr/ADR-0015.md)), satisfies this.
+  (`python-lib`'s generated `release` does not yet wait on `sonar` or skip
+  pull requests:
+  [S6.4.7](../specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md#s647-release-publishes-from-the-default-branch-after-the-quality-gate).)
+- `[ci] release = "pypi"` (`python-lib` only) does everything `tag-exists` does
+  and uploads each package to pypi.org by trusted publishing
+  (`uv publish --trusted-publishing always`) first, unless pypi.org already
+  has the version, so a published GitHub release implies the version is on
+  PyPI. The package's `CHANGELOG.md` section is the release notes, and a
+  per-package release is never "Latest". A `workflow_dispatch` with `testpypi`
+  set runs the release job in the `testpypi` environment instead: it uploads
+  every package to test.pypi.org unless that has the version, and creates no
+  tags and no GitHub releases. `external-install` then installs
+  `name==version` from PyPI, retrying up to ten times. Once per repository,
+  the owner creates the GitHub environments `pypi` (deployment branch `main`)
+  and `testpypi`, and adds a trusted publisher per package on pypi.org and
+  test.pypi.org, naming workflow `ci.yml` and the environment; kiln does not
+  automate either.
+- Release is idempotent: the **release**, not the tag, is the record of what
+  shipped, and the tag is created by the publish step itself. A failed publish
+  is therefore resumable; a tag-first design made it permanent.
+
+## 9. Configuration
+
+`.rn-forge/kiln/config.toml` is the one committed input
+([ADR-0004](../adr/ADR-0004.md)). It is a pydantic strict model; every failure
+is reported with its dotted path, never just the first. kiln owns its namespace
+under `.rn-forge/kiln/`; sibling directories under `.rn-forge/` belong to other
+tools and are ignored by kiln.
+
+```toml
+schema_version = 1
+
+[source]                         # written by kiln new; absent without --config
+location = "git+https://github.com/my-org/kiln-profile"  # or a local path
+ref = "main"                     # a branch is allowed
+commit = "…"                     # the resolved commit
+
+[repository]
+name = "my-tool"
+archetype = "python-tool"  # python-app | python-tool | python-lib
+                           # python-web-api | python-web-app
+                           # node-lib
+                           # node-web-app   (deferred)
+lifecycle = false          # any python archetype; python-tool is the alias
+                           # for python-app + lifecycle = true (ADR-0005)
+
+[kiln]
+ref = "v0.1.0"             # the kiln release tag this repository runs
+
+[docs]
+profile = "mkdocs"         # mkdocs | external | none
+site_dir = ".docs-site"    # mkdocs only
+external_url = ""          # external only; surfaced in the instructions block
+
+[ci]
+provider = "github"        # github only in v1; "ado" reserved
+sonar = true
+release = "tag-exists"     # tag-exists | pypi | nx-dispatch | none
+                           # pypi: python-lib only; tag-exists plus a PyPI upload (section 8)
+                           # nx-dispatch: node-lib only, and its default; tag-exists and pypi
+                           # are refused there. Unset, the archetype's default applies.
+                           # none: no release (node-lib renders no release.yml)
+[ci.hooks]
+setup = ["./.github/actions/setup-node"]
+                           # optional: local composite actions the setup action runs as its
+                           # last steps; ./.github/actions/<name>, not setup, no repeats
+docs = ["./.github/actions/publish-index"]
+                           # optional: same rules; every job that uploads the Pages artifact runs
+                           # them after the site is built and before the upload, with SITE_DIR set
+                           # to the site directory; needs a docs site
+
+[[ci.jobs]]
+name = "golden-render"
+uses = "./.github/workflows/golden-render.yml"
+events = ["pull_request"]
+contents = "read"          # read | write; the job's contents permission, read by default
+                           # optional: a reusable-workflow call after validate; uses is
+                           # ./.github/workflows/<file>.yml, not ci.yml; name is kebab-case
+                           # and not a generated job's; events defaults to all three;
+                           # contents = "write" for a job that creates releases
+
+[tasks]
+includes = [{ namespace = "self", taskfile = "tasks/self.yml" }]
+
+[tasks.extra_refs]
+lint = ["self:check:dist"]
+
+[tasks.command_overrides]
+"python:test" = "uv run pytest -q -p no:randomly"
+
+# [[tasks.audit.ignore]]   # optional: a vulnerability the audit accepts; id and
+# id = "PYSEC-0000-0000"   # reason are both required, ids are unique
+# reason = "not reachable: we never parse untrusted input with it"
+
+[archetype.python-lib]
+packages = ["packages/rn-forge-commons", "packages/rn-forge-django"]
+import_contracts = "own"         # optional: "kiln" (default) renders the contracts; "own" leaves them to the repo
+modules = { "packages/rn-forge-commons" = "rn_forge.commons" }  # optional: dotted import module; default is the path name with `-` as `_`
+
+[archetype.python-app]           # or [archetype.python-tool]
+packages = []                    # internal-only; never published
+module = "rn_forge.agentkit"  # optional: dotted import module; default is the repository name with '-' as '_'
+
+[archetype.python-web-api]
+backend = "fastapi"            # fastapi (shipped) | django (untested)
+api_dir = "apps/api"
+admin_ui = false                 # a thin self-contained management surface
+
+[archetype.python-web-app]
+backend = "fastapi"            # fastapi (shipped) | django (untested)
+frontend = "angular"             # angular (shipped) | react | svelte (untested)
+api_dir = "apps/api"
+web_dir = "apps/web"
+
+[cli]                            # shared CLI design; read by rn-forge-cli, not by kiln
+name = "my-tool"
+options = ["json", "dry-run", "yes", "log-level"]
+```
+
+`--backend` and `--frontend` map to the matching keys under
+`[archetype.<name>]`. They select an implementation library, never a topology
+([ADR-0005](../adr/ADR-0005.md)): a pnpm-managed Nx workspace — Nx's own
+documented shape — is what the `-app` archetypes mean, and the presence of a
+separate frontend package is what separates `python-web-app` from
+`python-web-api`. A flag value without a golden repo is `untested` and
+`kiln new` refuses it.
+
+The archetype selects the toolchain and which components exist. Reject a backend
+or frontend selector when that archetype has no corresponding component, and
+reject implementations outside its supported values. `frontend = "none"` cannot
+turn a web app into an API-only repo. There is no `framework` alias,
+`web_runner`, `stack`, or separate `runtime` selector. Additional ecosystems
+such as Java require new archetypes; they are outside E5's scope.
+
+### Layered configuration
+
+Configuration is resolved once and committed.
+`kiln new --config <path|git-url[@ref]>` deep-merges kiln defaults → each source
+layer → flags, and writes the merged result with a `[source]` table recording
+the location, the ref and the resolved commit. **Lists replace**: a layer that
+sets a list owns the whole list, so removing an inherited entry needs no second
+syntax.
+
+| Command | Reads | Writes |
+| -- | -- | -- |
+| `kiln apply`, `kiln doctor`, `kiln diff` | only the committed `config.toml`; never the source | — |
+| `kiln config update [--dry-run] [--apply]` | the recorded source, with the running kiln's defaults | re-merged `config.toml`; prints the artifacts that would change, and `--apply` runs `kiln apply` |
+| `kiln config upgrade [--dry-run] [--apply]` | the recorded source, with a newer kiln's defaults and schema | migrated and re-merged `config.toml`; as `update` |
+
+Every load validates against the running kiln's schema; a config written by a
+newer kiln is refused with the version it needs. Local edits survive
+re-resolution: `state.json` records per-key provenance, and a key whose
+committed value differs from what its layer last supplied is a repo override
+that `update` and `upgrade` keep and list.

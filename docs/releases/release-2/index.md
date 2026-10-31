@@ -1,0 +1,64 @@
+# Release 2 — the architecture baseline and taskkit retired
+
+|  |  |
+| -- | -- |
+| **Status** | planned |
+
+kiln adds the architecture baseline records for Python and web (E12), and
+taskkit is retired (F6.2). Package-site deploys (F11.5) moved to
+[release-1](../release-1/index.md) on 2026-10-18.
+
+## Entry criteria
+
+- [Release 1](../release-1/index.md) ships before this one does.
+
+## Scope
+
+<!-- BEGIN derived scope -->
+
+| Feature | Epic | State |
+| -- | -- | -- |
+| [F6.2 — Retire taskkit](../../specs/epics/E6-rebuild-the-repos/F6.2-retire-taskkit.md) | E6 | New |
+| [F7.5 — kiln takes pykit from PyPI](../../specs/epics/E7-pykit-release-pin-flip/F7.5-pykit-from-pypi.md) | E7 | New |
+| [F12.1 — The baseline module, and the Python records](../../specs/epics/E12-architecture-baseline/F12.1-python-baseline.md) | E12 | New |
+| [F12.2 — The web records](../../specs/epics/E12-architecture-baseline/F12.2-web-baseline.md) | E12 | New |
+
+<!-- END derived scope -->
+
+## Decisions
+
+- [ADR-0010](../../adr/ADR-0010.md) — proposed 2026-09-28: the canon carries an
+  architecture baseline, as managed records (E12).
+
+## Progress
+
+Nothing started. F12.1's S12.1.1 is an owner decision and comes first in E12.
+
+## Commits
+
+Commits whose subject names a scope ID, newest first:
+
+```bash
+git log --format='%h %ad %s' --date=short -E --grep='[FS](6\.2|12\.[1-2])'
+```
+
+- `a31d739` 2026-09-27 S5.3.6 complete the repository setup experience
+- `863963f` 2026-09-27 S5.3.5
+- `376b1ff` 2026-09-26 S5.2.4 frontend scaffolding has its own module
+- `e143f37` 2026-09-17 F5.3 Story Split + S5.3.1 Implemented
+- `e605ed4` 2026-09-17 F5.2
+- `6d13d06` 2026-09-17 F5.1
+
+## Exit criteria
+
+- E5's acceptance block passes.
+- F12.2's acceptance holds.
+- taskkit is archived.
+
+intellibuild is not in this release; it is built on its own schedule from the
+[intellibuild plan](../../plans/intellibuild.md) once this release has shipped.
+
+## Shipped
+
+Filled at the cut: the kiln commit each exit criterion was proved at, and the
+kiln and Nx refs S5.3.2–S5.3.3 record.

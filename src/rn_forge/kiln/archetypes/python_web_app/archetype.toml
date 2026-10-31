@@ -1,0 +1,47 @@
+# The python-web-app archetype (kiln ADR-0005): a uv workspace API plus a
+# pnpm-managed Nx frontend workspace.
+name = "python-web-app"
+modules = [
+    "core",
+    "python",
+    "node",
+    "docs",
+    "tasks",
+    "cicd",
+    "instructions",
+]
+# kiln itself is on the list: CI reaches it only through a committed `task` entrypoint.
+forbidden_tools = [
+    "uv",
+    "pytest",
+    "ruff",
+    "pyright",
+    "mkdocs",
+    "lint-imports",
+    "kiln",
+    "pnpm",
+    "npx",
+    "nx",
+    "ng",
+]
+required_validate = [
+    "python:lint",
+    "kiln:doctor",
+    "python:lint:imports",
+    "ci:lint:workflows",
+    "python:lint:audit",
+    "quality:lint:markdown",
+    "quality:lint:toml",
+    "python:typecheck",
+    "python:test",
+    "node:lint",
+    "node:test",
+]
+
+[dependencies]
+required = ["rn-forge-commons", "rn-forge-cli", "rn-forge-web"]
+allowed = ["rn-forge-commons", "rn-forge-cli", "rn-forge-web"]
+
+[untested]
+backend = ["django"]
+frontend = ["react", "svelte"]

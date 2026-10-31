@@ -1,0 +1,18 @@
+# The node-lib archetype (kiln ADR-0015): a pnpm-managed Nx workspace of
+# published libraries; the root pyproject.toml carries only kiln's tooling.
+name = "node-lib"
+modules = ["core", "python", "node", "docs", "tasks", "cicd", "instructions"]
+forbidden_tools = ["uv", "mkdocs", "kiln", "pnpm", "npx", "nx", "ng"]
+entrypoint_exempt = ["pnpm exec nx fix-ci"]
+required_validate = [
+    "kiln:doctor",
+    "ci:lint:workflows",
+    "quality:lint:markdown",
+    "quality:lint:toml",
+    "node:lint",
+    "node:test",
+]
+
+[dependencies]
+required = []
+allowed = []

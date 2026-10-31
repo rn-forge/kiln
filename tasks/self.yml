@@ -1,0 +1,34 @@
+# Seeded by kiln — this file is yours.
+version: "3"
+
+tasks:
+  golden:render:
+    desc: Render every archetype x flag cell into .goldens/<ref>/ (REF=<git-ref>; default the working tree).
+    cmds:
+      - uv run python scripts/golden_matrix.py render {{.REF}}
+
+  golden:validate:
+    desc: Run uv sync, task validate, actionlint and the strict docs build in every rendered cell (REF=<git-ref>).
+    cmds:
+      - uv run python scripts/golden_matrix.py validate {{.REF}}
+
+  golden:compare:
+    desc: Render BASE and REF (default the working tree), then diff every cell's kiln-owned (managed and block) files between them, ignoring the provenance-version line (BASE=<git-ref> [REF=<git-ref>]).
+    requires:
+      vars: [BASE]
+    cmds:
+      - uv run python scripts/golden_matrix.py render {{.BASE}}
+      - uv run python scripts/golden_matrix.py render {{.REF}}
+      - uv run python scripts/golden_matrix.py compare {{.BASE}} {{.REF}}
+
+  golden:ngkit:
+    desc: Render the node-lib cell and diff its files against ngkit's at the pinned commit, into .goldens/ngkit.diff (NGKIT=<path to an ngkit checkout>).
+    requires:
+      vars: [NGKIT]
+    cmds:
+      - uv run python scripts/golden_matrix.py ngkit {{.NGKIT}}
+
+  golden:parity:
+    desc: Fail when the node-lib and python-web-app cells differ in the files they share, apart from @rn-forge/ng; run golden:render first.
+    cmds:
+      - uv run python scripts/golden_matrix.py parity

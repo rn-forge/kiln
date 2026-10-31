@@ -1,0 +1,28 @@
+name: Golden render
+
+on: workflow_call
+
+jobs:
+  golden-render:
+    # Every shipped archetype x flag cell must still render (S4.4.2). Validating
+    # the cells stays local: `task self:golden:validate`.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install dependencies
+        run: task setup
+
+      - name: Render every golden cell
+        run: task self:golden:render

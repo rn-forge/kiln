@@ -1,0 +1,12 @@
+"""Defaults and per-call overrides, merged with rn-forge-commons."""
+
+from __future__ import annotations
+
+from rn_forge.commons import DictUtils
+
+DEFAULTS: dict[str, str] = {"greeting": "Hello", "punctuation": "!"}
+
+
+def merge_settings(**overrides: str) -> dict[str, str]:
+    """Return ``DEFAULTS`` with *overrides* merged over them."""
+    return DictUtils.merge(dict(DEFAULTS), overrides)

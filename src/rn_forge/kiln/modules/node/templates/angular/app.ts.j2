@@ -1,0 +1,40 @@
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { RouterModule } from '@angular/router';
+
+/** The page the starter API returns from `GET /v1/items`. */
+export interface ItemsPage {
+  readonly pageSize: number;
+  readonly items: readonly unknown[];
+}
+
+/** The RFC 9457 problem body the API returns on failure. */
+export interface Problem {
+  readonly type: string;
+  readonly title: string;
+  readonly status: number;
+  readonly detail?: string;
+}
+
+@Component({
+  imports: [RouterModule],
+  selector: 'app-root',
+  templateUrl: './app.html',
+  styleUrl: './app.scss',
+})
+export class App implements OnInit {
+  protected readonly title = '{{ name }}';
+  protected readonly page = signal<ItemsPage | null>(null);
+  protected readonly error = signal<string | null>(null);
+  private readonly http = inject(HttpClient);
+
+  ngOnInit(): void {
+    this.http.get<ItemsPage>('/v1/items').subscribe({
+      next: (page) => this.page.set(page),
+      error: (response: HttpErrorResponse) => {
+        const problem = response.error as Partial<Problem> | null;
+        this.error.set(problem?.detail ?? problem?.title ?? response.message);
+      },
+    });
+  }
+}

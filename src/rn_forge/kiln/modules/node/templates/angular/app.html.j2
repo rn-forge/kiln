@@ -1,0 +1,16 @@
+{% raw %}<main>
+  <h1>{{ title }}</h1>
+  @if (page(); as page) {
+    <p data-testid="items">
+      API connected: {{ page.items.length }} items (page size
+      {{ page.pageSize }}).
+    </p>
+  }
+  @if (error(); as message) {
+    <p data-testid="error">API error: {{ message }}</p>
+  }
+  @if (!page() && !error()) {
+    <p>Calling the API…</p>
+  }
+</main>
+<router-outlet></router-outlet>{% endraw %}

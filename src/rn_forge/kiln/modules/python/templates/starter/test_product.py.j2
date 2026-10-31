@@ -1,0 +1,20 @@
+from rn_forge.commons.findings import Severity
+from rn_forge.tooling.install import Link, ToolHome
+
+from {{ package }}.product import PRODUCT
+
+
+def test_the_one_artifact_is_the_command_on_path():
+    assert PRODUCT.artifacts() == (
+        Link(
+            "bin/{{ name }}",
+            "bin/{{ name }}",
+        ),
+    )
+
+
+def test_the_one_check_reports_the_home(tmp_path):
+    (check,) = PRODUCT.checks()
+    (finding,) = check(ToolHome("{{ name }}", tmp_path))
+    assert finding.code == "{{ name }}.home"
+    assert finding.severity is Severity.INFO
