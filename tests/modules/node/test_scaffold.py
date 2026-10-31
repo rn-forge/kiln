@@ -8,7 +8,9 @@ already holds a `python-web-app` scaffold.
 
 from __future__ import annotations
 
+import json
 import shutil
+import subprocess
 from unittest import mock
 from pathlib import Path
 
@@ -524,6 +526,94 @@ def test_s9_2_6_2_reconcile_node_keeps_what_nx_json_already_holds(
     assert defaults["@angular/build:unit-test"]["cache"] is True
     assert "@nx/eslint:lint" in defaults
     assert DocumentUtils.read(root / "nx.json")["analytics"] is False
+
+
+RELEASE = {
+    "projects": ["tag:publishable"],
+    "version": {
+        "preVersionCommand": "pnpm exec nx run-many -t build patch-package-exports -p tag:publishable",
+        "adjustSemverBumpsForZeroMajorVersion": False,
+    },
+    "changelog": {"workspaceChangelog": {"createRelease": False}},
+}
+PACK_DEFAULTS = {
+    "pack": {
+        "executor": "nx:run-commands",
+        "dependsOn": ["build"],
+        "options": {
+            "cwd": "{workspaceRoot}",
+            "command": "node tools/ci/resolve-dist-workspace-deps.mjs dist/{projectRoot}/package.json && mkdir -p dist/tarballs && npm pack ./dist/{projectRoot} --pack-destination dist/tarballs",
+        },
+    },
+    "verify-dist": {
+        "executor": "nx:run-commands",
+        "dependsOn": ["pack"],
+        "cache": False,
+        "options": {
+            "cwd": "{workspaceRoot}",
+            "command": "node tools/ci/verify-dist-manifest.mjs dist/{projectRoot}",
+        },
+    },
+}
+
+
+@pytest.mark.parametrize("lib", [True, False])
+def test_s9_3_5_1_reconcile_node_declares_the_release_block(
+    tmp_path: Path, lib: bool
+) -> None:
+    root, _ = _reconciled(tmp_path, lib=lib)
+
+    assert DocumentUtils.read(root / "nx.json")["release"] == RELEASE
+
+
+@pytest.mark.parametrize("lib", [True, False])
+def test_s9_3_5_2_reconcile_node_declares_pack_and_verify_dist(
+    tmp_path: Path, lib: bool
+) -> None:
+    root, _ = _reconciled(tmp_path, lib=lib)
+
+    defaults = DocumentUtils.read(root / "nx.json")["targetDefaults"]
+    assert defaults["pack"] == PACK_DEFAULTS["pack"]
+    assert defaults["verify-dist"] == PACK_DEFAULTS["verify-dist"]
+
+
+@pytest.mark.parametrize("lib", [True, False])
+def test_s9_3_5_3_reconcile_node_keeps_a_release_nx_json_already_holds(
+    tmp_path: Path, lib: bool
+) -> None:
+    root = _lib_root(tmp_path) if lib else _root(tmp_path)
+    workspace = _workspace(tmp_path)
+    if lib:
+        shutil.rmtree(workspace / "apps")
+    mine = {"projects": ["tag:mine"]}
+    nx = DocumentUtils.read(workspace / "nx.json")
+    nx["release"] = mine
+    nx["targetDefaults"]["pack"] = {"cache": False}
+    nx["targetDefaults"]["verify-dist"] = {"cache": True}
+    DocumentUtils.write(workspace / "nx.json", nx)
+
+    reconcile_node(root, workspace, KilnConfig.load(root))
+
+    written = DocumentUtils.read(root / "nx.json")
+    assert written["release"] == mine
+    assert written["targetDefaults"]["pack"] == {"cache": False}
+    assert written["targetDefaults"]["verify-dist"] == {"cache": True}
+
+
+def test_s9_3_5_4_release_values_are_ngkits() -> None:
+    ngkit = Path(__file__).resolve().parents[3].parent / "ngkit"
+    if not (ngkit / ".git").exists():
+        pytest.skip("no ngkit checkout beside this repository")
+    shown = subprocess.run(
+        ["git", "-C", str(ngkit), "show", "0c2cd2a:nx.json"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    theirs = json.loads(shown)
+    assert RELEASE == theirs["release"]
+    assert PACK_DEFAULTS["pack"] == theirs["targetDefaults"]["pack"]
+    assert PACK_DEFAULTS["verify-dist"] == theirs["targetDefaults"]["verify-dist"]
 
 
 def test_s9_2_6_2_nx_json_is_identical_in_both_cells(tmp_path: Path) -> None:

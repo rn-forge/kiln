@@ -18,6 +18,7 @@ before any subprocess runs.
 
 from __future__ import annotations
 
+import copy
 import shutil
 from collections.abc import Callable
 from pathlib import Path
@@ -48,6 +49,35 @@ PNPM_VERSION = "12.15.0"
 _NVMRC = ".nvmrc"
 _UNIT_TEST_EXECUTORS = ("@angular/build:unit-test", "@nx/angular:unit-test")
 _COVERAGE_OPTIONS = {"coverage": True, "coverageReporters": ["text-summary", "lcov"]}
+_RELEASE = {
+    "projects": ["tag:publishable"],
+    "version": {
+        "preVersionCommand": "pnpm exec nx run-many -t build patch-package-exports -p tag:publishable",
+        "adjustSemverBumpsForZeroMajorVersion": False,
+    },
+    "changelog": {"workspaceChangelog": {"createRelease": False}},
+}
+"""`nx.json`'s `release` block: the projects tagged `publishable` release."""
+_RELEASE_TARGET_DEFAULTS = {
+    "pack": {
+        "executor": "nx:run-commands",
+        "dependsOn": ["build"],
+        "options": {
+            "cwd": "{workspaceRoot}",
+            "command": "node tools/ci/resolve-dist-workspace-deps.mjs dist/{projectRoot}/package.json && mkdir -p dist/tarballs && npm pack ./dist/{projectRoot} --pack-destination dist/tarballs",
+        },
+    },
+    "verify-dist": {
+        "executor": "nx:run-commands",
+        "dependsOn": ["pack"],
+        "cache": False,
+        "options": {
+            "cwd": "{workspaceRoot}",
+            "command": "node tools/ci/verify-dist-manifest.mjs dist/{projectRoot}",
+        },
+    },
+}
+"""`nx.json` `targetDefaults` for the `pack` and `verify-dist` targets."""
 
 _EXCLUDED_TOP_LEVEL = {".git", "node_modules", ".nx"}
 
@@ -114,9 +144,10 @@ def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
 
     Every node repository gets `.nvmrc`, root `package.json`'s
     `packageManager`, and coverage switched on for both unit-test executors in
-    `nx.json`, set after the copy. For a `node-lib` the workspace has no
-    app: the fold stops there, after writing empty `libs/.gitkeep` and
-    `apps/.gitkeep`.
+    `nx.json`, set after the copy, and its `release` block with the `pack` and
+    `verify-dist` target defaults, each kept if `nx.json` already holds one.
+    For a `node-lib` the workspace has no app: the fold stops there, after
+    writing empty `libs/.gitkeep` and `apps/.gitkeep`.
 
     A shared top-level directory (`apps/`, holding the API member too) merges
     rather than conflicts: only an actual file colliding with an existing file
@@ -153,6 +184,7 @@ def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
     (root / _NVMRC).write_text(f"{NODE_MAJOR}\n", encoding="utf-8")
     _pin_package_manager(root / "package.json")
     _enable_coverage(root)
+    _declare_release(root)
     if lib:
         # sonar-scanner fails on a sonar.sources folder that does not exist.
         for directory in ("libs", "apps"):
@@ -188,6 +220,16 @@ def _enable_coverage(root: Path) -> None:
     unit_test = defaults["@nx/angular:unit-test"]
     unit_test["cache"] = True
     unit_test["inputs"] = ["default", "^production"]
+    DocumentUtils.write(path, nx)
+
+
+def _declare_release(root: Path) -> None:
+    path = root / "nx.json"
+    nx = DocumentUtils.read(path)
+    nx.setdefault("release", copy.deepcopy(_RELEASE))
+    defaults = nx.setdefault("targetDefaults", {})
+    for target, value in _RELEASE_TARGET_DEFAULTS.items():
+        defaults.setdefault(target, copy.deepcopy(value))
     DocumentUtils.write(path, nx)
 
 

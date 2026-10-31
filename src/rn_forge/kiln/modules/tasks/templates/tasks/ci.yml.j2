@@ -196,7 +196,7 @@ tasks:
         echo "name=$tags" >> "$GITHUB_OUTPUT"
 
   release:verify:
-    desc: "CI only: pack and verify the publishable projects; MODE=resume rebuilds dist/ from the tagged source first"
+    desc: "CI only: pack and verify the publishable projects; MODE=resume rebuilds dist/ from the tagged source first; fails when no tarball was written"
     cmds:
       - |
         if [ "${MODE:-}" = resume ]; then
@@ -205,6 +205,10 @@ tasks:
           pnpm exec nx run-many -t pack -p tag:publishable --excludeTaskDependencies
           pnpm exec nx run-many -t verify-dist -p tag:publishable --excludeTaskDependencies
           pnpm exec nx run-many -t verify-consumer -p tag:publishable --excludeTaskDependencies
+        fi
+        if ! ls dist/tarballs/*.tgz >/dev/null 2>&1; then
+          echo "::error::No tarball in dist/tarballs: give each publishable project the pack and verify-dist targets"
+          exit 1
         fi
 
   release:push:

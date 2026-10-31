@@ -2717,6 +2717,7 @@ def test_s9_1_5_4_tag_writes_the_one_tag_and_fails_without(tmp_path: Path) -> No
 
 
 PNPM_ECHO = 'for a in "$@"; do printf "<%s>" "$a"; done; echo'
+PNPM_ECHO_TARBALL = PNPM_ECHO + "; mkdir -p dist/tarballs; : > dist/tarballs/x.tgz"
 
 
 @pytest.mark.parametrize(
@@ -2756,7 +2757,9 @@ def test_s9_1_5_4_version_branches_on_dry_run(
 
 def test_s9_1_5_4_verify_packs_then_verifies_unless_resuming(tmp_path: Path) -> None:
     _needs_task()
-    plain = _release_run(tmp_path / "a", "release:verify", stubs={"pnpm": PNPM_ECHO})
+    plain = _release_run(
+        tmp_path / "a", "release:verify", stubs={"pnpm": PNPM_ECHO_TARBALL}
+    )
     assert plain.stdout.splitlines() == [
         f"<exec><nx><run-many><-t><{t}><-p><tag:publishable><--excludeTaskDependencies>"
         for t in ("pack", "verify-dist", "verify-consumer")
@@ -2765,11 +2768,48 @@ def test_s9_1_5_4_verify_packs_then_verifies_unless_resuming(tmp_path: Path) -> 
         tmp_path / "b",
         "release:verify",
         {"MODE": "resume"},
-        {"pnpm": PNPM_ECHO},
+        {"pnpm": PNPM_ECHO_TARBALL},
     )
     assert resume.stdout.splitlines() == [
         "<exec><nx><run-many><-t><pack><verify-dist><verify-consumer><-p><tag:publishable>"
     ]
+
+
+@pytest.mark.parametrize("env", [{}, {"MODE": "resume"}])
+def test_s9_3_5_5_verify_fails_when_no_tarball_was_written(
+    tmp_path: Path, env: dict[str, str]
+) -> None:
+    _needs_task()
+    done = _release_run(tmp_path, "release:verify", env, {"pnpm": "exit 0"})
+
+    assert done.returncode != 0
+    output = done.stdout + done.stderr
+    assert "exit status 1" in output
+    assert "::error::No tarball in dist/tarballs" in output
+
+
+@pytest.mark.parametrize("env", [{}, {"MODE": "resume"}])
+def test_s9_3_5_6_verify_passes_when_a_tarball_was_written(
+    tmp_path: Path, env: dict[str, str]
+) -> None:
+    _needs_task()
+    stub = "mkdir -p dist/tarballs; : > dist/tarballs/x.tgz"
+    done = _release_run(tmp_path, "release:verify", env, {"pnpm": stub})
+
+    assert done.returncode == 0, done.stderr
+
+
+def test_s9_3_5_7_package_is_unguarded(tmp_path: Path) -> None:
+    _needs_task()
+    tasks = _ci_tasks(_node_lib_root(tmp_path))["tasks"]
+    assert tasks["package"]["cmds"] == [  # type: ignore[index]
+        "pnpm exec nx run-many -t pack verify-dist verify-consumer"
+    ]
+    done = _release_run(
+        tmp_path / "run", "package", stubs={"pnpm": "echo No tasks were run"}
+    )
+    assert done.returncode == 0, done.stderr
+    assert "No tasks were run" in done.stdout
 
 
 @pytest.mark.parametrize(
