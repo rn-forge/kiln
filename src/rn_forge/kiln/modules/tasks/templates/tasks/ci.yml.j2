@@ -41,6 +41,17 @@ tasks:
     cmds:
       - '{{.DEVOPS}} release-publish "$TAG" --title "$TAG" --target "$SOURCE_SHA" dist/*.whl dist/*.tar.gz dist/*.cdx.json'
 {% endif %}{% if node_lib %}
+  validate:
+    desc: "CI only: the checks that do not run Nx — Markdown and TOML formatting, kiln's checks, workflow security{% if docs %}, the docs build{% endif %}; ci-cloud or ci-local run the Nx projects"
+    cmds:
+      - task: :quality:lint:markdown
+      - task: :quality:lint:toml
+      - task: :kiln:doctor
+      - task: lint:workflows
+{% for verb in ["lint", "typecheck", "test"] %}{% for ref in extra_refs.get(verb, []) %}      - task: :[[ ref ]]
+{% endfor %}{% endfor %}{% if docs %}      - task: :docs:build
+{% endif %}{% for ref in extra_refs.get("validate", []) %}      - task: :[[ ref ]]
+{% endfor %}
   affected:
     desc: "CI only: run Nx targets (-- <targets>) on the affected projects, or on all of them for a dispatch or a change outside every project"
     cmds:

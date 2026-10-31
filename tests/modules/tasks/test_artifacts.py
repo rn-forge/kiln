@@ -2953,3 +2953,98 @@ def test_s9_2_9_5_python_lib_keeps_its_descs(tmp_path: Path) -> None:
         "version": "Print one package's version (pass -- <package>), or every package's.",
     }
     assert _descs(root) == expected
+
+
+# S9.3.4 — validate runs only the checks that do not run Nx.
+
+CI_VALIDATE_HEAD = [
+    {"task": ":quality:lint:markdown"},
+    {"task": ":quality:lint:toml"},
+    {"task": ":kiln:doctor"},
+    {"task": "lint:workflows"},
+]
+
+
+def test_s9_3_4_1_node_lib_ci_validate_is_public_and_ordered(tmp_path: Path) -> None:
+    task = _ci_tasks(_node_lib_root(tmp_path / "docs"))["tasks"]["validate"]  # type: ignore[index]
+    assert task["desc"].startswith("CI only")
+    assert "internal" not in task
+    assert task["cmds"] == [*CI_VALIDATE_HEAD, {"task": ":docs:build"}]
+    bare = _root(tmp_path / "none", "node-lib", profile="none")
+    task = _ci_tasks(bare)["tasks"]["validate"]  # type: ignore[index]
+    assert task["cmds"] == CI_VALIDATE_HEAD
+
+
+def test_s9_3_4_2_no_other_archetype_has_a_ci_validate_task(tmp_path: Path) -> None:
+    for archetype in (*ARCHETYPES,):
+        tasks = _ci_tasks(_root(tmp_path / archetype, archetype))["tasks"]
+        assert "validate" not in tasks, archetype  # type: ignore[operator]
+
+
+def test_s9_3_4_4_dry_run_prints_doctor_with_full_only_when_asked(
+    tmp_path: Path,
+) -> None:
+    if shutil.which("task") is None:
+        pytest.skip("task is not on PATH")
+    root = _node_lib_root(tmp_path / "cell")
+    cycle.apply(root, home=tmp_path / "home")
+    env = {k: v for k, v in os.environ.items() if k != "KILN_DOCTOR_FULL"}
+
+    def dry(extra: dict[str, str]) -> str:
+        done = subprocess.run(
+            ["task", "-t", str(root / "Taskfile.yml"), "--dry", "ci:validate"],
+            capture_output=True,
+            text=True,
+            check=True,
+            cwd=root,
+            env={**env, **extra},
+        )
+        return done.stdout + done.stderr
+
+    plain = [line for line in dry({}).splitlines() if " doctor " in line]
+    full = [
+        line
+        for line in dry({"KILN_DOCTOR_FULL": "1"}).splitlines()
+        if " doctor " in line
+    ]
+    assert plain
+    assert all("--full" not in line for line in plain)
+    assert full
+    assert all("--full" in line for line in full)
+
+
+def test_s9_3_4_5_root_validate_still_runs_the_nx_verbs(tmp_path: Path) -> None:
+    root = _node_lib_root(tmp_path)
+    cmds = _load_from_render(root)["tasks"]["validate"]["cmds"]
+    assert cmds == [
+        {"task": "lint"},
+        {"task": "typecheck"},
+        {"task": "test"},
+        {"task": "docs:build"},
+    ]
+
+
+def test_s9_3_4_6_extra_refs_run_in_root_validate_order(tmp_path: Path) -> None:
+    extra = (
+        "\n[tasks]\n[tasks.extra_refs]\n"
+        'lint = ["workspace:clean"]\n'
+        'typecheck = ["python:version"]\n'
+        'test = ["python:install"]\n'
+        'validate = ["kiln:doctor"]\n'
+        'format = ["workspace:clean"]\n'
+    )
+    root = _root(tmp_path, "node-lib", extra=extra)
+    cmds = _ci_tasks(root)["tasks"]["validate"]["cmds"]  # type: ignore[index]
+    assert cmds == [
+        *CI_VALIDATE_HEAD,
+        {"task": ":workspace:clean"},
+        {"task": ":python:version"},
+        {"task": ":python:install"},
+        {"task": ":docs:build"},
+        {"task": ":kiln:doctor"},
+    ]
+
+
+def _load_from_render(root: Path) -> dict[str, object]:
+    rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
+    return YamlUtils.load(rendered["Taskfile.yml"])

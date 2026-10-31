@@ -2373,7 +2373,15 @@ def test_s9_1_2_1_node_lib_jobs_are_the_affected_set(tmp_path: Path) -> None:
     assert jobs["ci-cloud"]["needs"] == "validate"  # type: ignore[index]
     assert jobs["ci-local"]["needs"] == "validate"  # type: ignore[index]
     python = _ci_jobs(_root(tmp_path / "py", "python-tool"))
-    assert jobs["validate"] == python["validate"]  # type: ignore[index]
+    node_validate = jobs["validate"]  # type: ignore[index]
+    node_steps = node_validate.pop("steps")
+    python_validate = python["validate"]  # type: ignore[index]
+    python_steps = python_validate.pop("steps")
+    assert node_validate == python_validate
+    assert [s.get("name") for s in node_steps] == [s.get("name") for s in python_steps]
+    assert [s for s in node_steps if s.get("name") != "Validate"] == [
+        s for s in python_steps if s.get("name") != "Validate"
+    ]
     assert jobs["dependency-review"] == python["dependency-review"]  # type: ignore[index]
 
 
@@ -3581,3 +3589,27 @@ def test_s9_3_2_7_standard_names_both_keys_in_its_ci_example() -> None:
     example = standard[standard.index('provider = "github"') :]
     assert "sonar_exclusions = []" in example
     assert "sonar_coverage_exclusions = []" in example
+
+
+# S9.3.4 — validate runs only the checks that do not run Nx.
+
+
+def test_s9_3_4_3_validate_step_runs_ci_validate_for_node_lib_only(
+    tmp_path: Path,
+) -> None:
+    expected = {
+        "python-app": "task validate",
+        "python-tool": "task validate",
+        "python-lib": "task lint",
+        "node-lib": "task ci:validate",
+    }
+    for archetype, run in expected.items():
+        root = _root(tmp_path / archetype, archetype)
+        workflow = _rendered(root)[".github/workflows/ci.yml"]
+        job = YamlUtils.load(workflow)["jobs"]["validate"]
+        step = next(s for s in job["steps"] if s["name"] == "Validate")
+        assert step["run"] == run, archetype
+        assert step["env"]["KILN_DOCTOR_FULL"] == KILN_DOCTOR_FULL_EXPRESSION, archetype
+        assert job["timeout-minutes"] == 20, archetype
+        comment = "# The Nx projects are checked by ci-cloud or ci-local; this job runs the rest."
+        assert (comment in workflow) == (archetype == "node-lib"), archetype

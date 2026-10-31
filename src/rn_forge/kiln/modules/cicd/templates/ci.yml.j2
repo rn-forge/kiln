@@ -85,8 +85,9 @@ jobs:
       - name: Install dependencies
         run: task setup
 
-      - name: Validate
-        run: {% if workspace %}task lint{% else %}task validate{% endif %}
+{% if node_lib %}      # The Nx projects are checked by ci-cloud or ci-local; this job runs the rest.
+{% endif %}      - name: Validate
+        run: {% if workspace %}task lint{% elif node_lib %}task ci:validate{% else %}task validate{% endif %}
         env:
           KILN_DOCTOR_FULL: {% if doctor_full == "every-run" %}"1"{% else %}${{ ((github.event_name == 'push' && github.ref_name == github.event.repository.default_branch) || github.event_name == 'workflow_dispatch') && '1' || '' }}{% endif %}
 {% if workspace %}

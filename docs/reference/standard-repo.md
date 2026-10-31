@@ -428,6 +428,11 @@ A `node-lib` repository's `ci.yml` runs `ci-local` on a GitHub runner unless the
 repository variable `USE_NX_CLOUD` is `true` (or a dispatch checks
 `use-nx-cloud`), which selects `ci-cloud` on Nx Cloud agents instead.
 
+A `node-lib` repository's `validate` job runs `task ci:validate`, the checks
+that do not run Nx and the repository's own `[tasks.extra_refs]`, because
+`ci-cloud` or `ci-local` runs lint, test and build on the affected projects.
+`task validate` is unchanged locally.
+
 A `node-lib` repository releases by `workflow_dispatch`
 (`[ci] release = "nx-dispatch"`, its default), from
 `.github/workflows/release.yml`: gated on a green `ci.yml` run for the commit,
