@@ -599,3 +599,111 @@ def test_s9_2_9_5_python_cells_carry_no_node_lib_text(
     assert "`pytest`, `ruff`, `pyright`" in _rendered(root)[BLOCK_KEY].replace(
         "\n  ", " "
     )
+
+
+S9_3_6_HEADING = "## 9. What a node-lib repository declares"
+S9_3_6_NAMES = (
+    "nx.json",
+    "release",
+    "targetDefaults",
+    "pack",
+    "verify-dist",
+    "publishable",
+    "verify-consumer",
+    "compodoc",
+    "build-storybook",
+    "USE_NX_CLOUD",
+    "NX_CLOUD_AGENTS",
+    "NX_CLOUD_ACCESS_TOKEN",
+    "SONAR_TOKEN",
+    "RELEASE_APP_CLIENT_ID",
+    "RELEASE_APP_PRIVATE_KEY",
+    "GitHub Pages",
+    "bypass",
+)
+
+
+def _declares(root: Path) -> str:
+    return _section(_rendered(root)[STANDARD], 9)
+
+
+def test_s9_3_6_1_node_lib_standard_says_what_a_repository_declares(
+    tmp_path: Path,
+) -> None:
+    standard = _rendered(_node_lib(tmp_path))[STANDARD]
+    assert f"\n{S9_3_6_HEADING}\n" in standard
+    section = _section(standard, 9)
+    for name in S9_3_6_NAMES:
+        assert name in section, name
+
+
+def test_s9_3_6_2_the_section_states_the_pin_rule(tmp_path: Path) -> None:
+    section = _squash(_declares(_node_lib(tmp_path)))
+    for phrase in (
+        "pins.toml",
+        "[kiln] ref",
+        "kiln apply --force",
+        "drift",
+        "not drift",
+    ):
+        assert phrase in section, phrase
+
+
+def test_s9_3_6_3_node_lib_instructions_never_name_ngkit(tmp_path: Path) -> None:
+    rendered = _rendered(_node_lib(tmp_path))
+    assert STANDARD in rendered and BLOCK_KEY in rendered
+    for key in (STANDARD, BLOCK_KEY):
+        assert "ngkit" not in rendered[key].lower(), key
+
+
+def test_s9_3_6_4_docs_none_drops_the_pages_line(tmp_path: Path) -> None:
+    with_docs = _declares(_node_lib(tmp_path / "docs"))
+    without = _declares(_node_lib(tmp_path / "none", profile="none"))
+    assert "GitHub Pages" in with_docs
+    assert "GitHub Pages" not in without
+    assert "ci-ok" in without
+
+
+def test_s9_3_6_4_sonar_false_drops_the_sonar_token_row(tmp_path: Path) -> None:
+    on = _declares(_node_lib(tmp_path / "on"))
+    off = _declares(_new(tmp_path / "off", "node-lib", sonar=False))
+    assert "| `SONAR_TOKEN` |" in on
+    assert "SONAR_TOKEN" not in off
+    assert "USE_NX_CLOUD" in off
+
+
+def test_s9_3_6_4_release_none_drops_the_release_app_rows(tmp_path: Path) -> None:
+    on = _declares(_node_lib(tmp_path / "on"))
+    root = _root(tmp_path / "off", "node-lib")
+    config = root / ".rn-forge/kiln/config.toml"
+    config.write_text(
+        config.read_text(encoding="utf-8") + 'release = "none"\n', encoding="utf-8"
+    )
+    off = _section(_rendered(root)[STANDARD], 9)
+    assert "| `RELEASE_APP_CLIENT_ID` |" in on
+    assert "| `RELEASE_APP_PRIVATE_KEY` |" in on
+    assert "RELEASE_APP" not in off
+    assert "SONAR_TOKEN" in off
+
+
+@pytest.mark.parametrize(
+    "archetype",
+    ("python-app", "python-tool", "python-lib", "python-web-api", "python-web-app"),
+)
+def test_s9_3_6_5_other_archetypes_render_no_section_nine(
+    tmp_path: Path, archetype: str
+) -> None:
+    root = _root(tmp_path, archetype)
+    if archetype.startswith("python-web"):
+        key = "backend" if archetype == "python-web-api" else "frontend"
+        value = "fastapi" if archetype == "python-web-api" else "angular"
+        config = root / ".rn-forge/kiln/config.toml"
+        config.write_text(
+            config.read_text(encoding="utf-8")
+            + f'\n[archetype."{archetype}"]\n{key} = "{value}"\n',
+            encoding="utf-8",
+        )
+    standard = _rendered(root)[STANDARD]
+    assert "\n## 9." not in standard
+    for token in ("publishable", "RELEASE_APP", "verify-dist"):
+        assert token not in standard, token

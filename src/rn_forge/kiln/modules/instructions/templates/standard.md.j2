@@ -321,3 +321,69 @@ without `--apply`, and keeps a key edited here as a repo override.{% if lifecycl
 root, or under `namespace` when one is set; the product supplies
 `artifacts()`, `checks()` and `migrate()` through `rn-forge-tooling`'s
 `ToolProduct` adapter.{% endif %}
+{% if node_lib %}
+## 9. What a node-lib repository declares
+
+kiln renders the CI; the repository declares what that CI runs. None of this is
+generated after `kiln new`, and `kiln doctor` reads none of it.
+
+**In `nx.json`.** `kiln new` writes these once; keep them.
+
+- `release`: `projects` holds `tag:publishable`, `version.preVersionCommand`
+  builds those projects (and runs `patch-package-exports` for any that declare
+  it), and `changelog.workspaceChangelog.createRelease` is `false`.
+- `targetDefaults.pack` depends on `build` and packs `dist/<project>` into
+  `dist/tarballs/`. `targetDefaults.verify-dist` depends on `pack`, is not
+  cached, and checks the packed manifest.
+
+Add `nxCloudId` when the repository moves to Nx Cloud.
+
+**In each publishable project's `project.json`.** The tag `publishable`, and the
+targets `"pack": {}` and `"verify-dist": {}`, which take their commands from
+`targetDefaults`. The project generator also adds the project's name to
+`release.projects`, and it can stay there. Without the tag, a release fails at
+its version step, before anything is pushed, because `preVersionCommand` builds
+only tagged projects. With the tag but without `pack`, a release fails in its
+verify step, before anything is pushed, with `No tarball in dist/tarballs`. Until npm publishing is set up, add
+`"dryRun": true` to the `nx-release-publish` options: the project generator does
+not write it, and without it the release's Publish step publishes to npm.
+
+**Targets CI runs.** `lint`, `test` (writing lcov under `coverage/`), `build`
+and `e2e` (`e2e-ci` on Nx Cloud), on the affected projects. Optional,
+declared per project: `verify-consumer` (a check that runs against the packed
+tarballs; `package`, the release and `published-install` run it wherever it is
+declared), `patch-package-exports`, and, for the Pages site, `compodoc` (output
+`dist/compodoc/<project>`) and `build-storybook` (output
+`dist/storybook/<project>`), published under `api/` and `storybook/`.
+
+**Variables and secrets.**
+
+| Name | Kind | Used by | Meaning |
+| -- | -- | -- | -- |
+| `USE_NX_CLOUD` | variable | `ci.yml` | `true` runs `ci-cloud` on Nx Cloud agents; anything else runs `ci-local`. A dispatch's `use-nx-cloud` input decides instead |
+| `NX_CLOUD_AGENTS` | variable | `ci-cloud` | agent count; optional, default 3 |
+| `NX_CLOUD_ACCESS_TOKEN` | secret | `ci-cloud` | the Nx Cloud access token |
+{% if sonar %}| `SONAR_TOKEN` | secret | `sonar` | the SonarCloud token |
+{% endif %}{% if release == "nx-dispatch" %}| `RELEASE_APP_CLIENT_ID` | variable | `release.yml` | the release GitHub App's client ID |
+| `RELEASE_APP_PRIVATE_KEY` | secret | `release.yml` | the release GitHub App's private key |
+{% endif %}
+**Once per repository.**
+
+{% if docs %}- GitHub Pages: Settings, Pages, Source: GitHub Actions. The `docs` job
+  deploys from `main`.
+{% endif %}- Branch protection or a ruleset on `main` requires the `ci-ok` check and
+  nothing else.
+{% if release == "nx-dispatch" %}- The release pushes its commit and tag as a GitHub App with Contents read and
+  write. Install it on the repository and make it an `Always` bypass actor on
+  any ruleset that blocks direct pushes. Use no deploy key or personal access
+  token.
+{% endif %}
+**Action pins.** The `uses:` SHAs in generated files are kiln's. They move when
+kiln's `cicd/pins.toml` changes and the repository moves `[kiln] ref` and runs
+`kiln apply`. Editing one is drift: `kiln doctor` fails, `kiln apply` refuses,
+and `kiln apply --force <path>` restores kiln's SHA, keeping a backup under
+`.rn-forge/kiln/backups`. Dependabot's `npm` and `uv` pull requests edit
+`package.json`, `pnpm-lock.yaml` and `pyproject.toml`, which kiln does not
+manage, so they are not drift. The generated `dependabot.yml` has no
+`github-actions` block for generated workflows, for the same reason.
+{% endif %}
