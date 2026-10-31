@@ -532,6 +532,9 @@ external_url = ""          # external only; surfaced in the instructions block
 [ci]
 provider = "github"        # github only in v1; "ado" reserved
 sonar = true
+sonar_exclusions = []      # paths added to the archetype's own sonar.exclusions
+sonar_coverage_exclusions = []
+                           # paths Sonar counts but does not expect to have coverage
 release = "tag-exists"     # tag-exists | pypi | nx-dispatch | none
                            # pypi: python-lib only; tag-exists plus a PyPI upload (section 8)
                            # nx-dispatch: node-lib only, and its default; tag-exists and pypi

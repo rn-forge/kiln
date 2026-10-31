@@ -105,9 +105,24 @@ class CiConfig(StrictModel):
     doctor_full: Literal["default-branch", "every-run"] = "default-branch"
     """When CI runs `kiln doctor --full`: pushes to the default branch and
     dispatch, or every run."""
+    sonar_exclusions: list[str] = Field(default_factory=list[str])
+    """Paths Sonar skips, added to the archetype's own."""
+    sonar_coverage_exclusions: list[str] = Field(default_factory=list[str])
+    """Paths Sonar counts but does not expect to have coverage."""
     hooks: CiHooks = Field(default_factory=CiHooks)
     jobs: list[CiJob] = Field(default_factory=list[CiJob])
     """Extra jobs, each calling one reusable workflow after `validate`."""
+
+    @field_validator("sonar_exclusions", "sonar_coverage_exclusions")
+    @classmethod
+    def _exclusions_are_valid(cls, value: list[str], info: ValidationInfo) -> list[str]:
+        field = f"ci.{info.field_name}"
+        for entry in value:
+            if not entry or "," in entry or "\n" in entry:
+                raise ValueError(
+                    f"{field} entry {entry!r} must be non-empty, with no comma or newline"
+                )
+        return value
 
     @field_validator("jobs")
     @classmethod

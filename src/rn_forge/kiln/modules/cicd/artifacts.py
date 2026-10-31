@@ -36,6 +36,15 @@ _NODE_HELPERS = (
     "release-notes",
 )
 
+_NODE_LIB_EXCLUSIONS = (
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/*.stories.ts",
+    "**/.storybook/**",
+    "**/.venv/**",
+)
+_WEB_APP_EXCLUSIONS = ("**/node_modules/**", "**/dist/**", "**/*.spec.ts")
+
 _PLAN_KEYS = (
     "release-order",
     "packages",
@@ -96,6 +105,12 @@ def render(config: KilnConfig) -> list[Artifact]:
         "packages": [Path(package).name for package in config.packages],
         "docs": docs,
         "sonar": ci.sonar,
+        "sonar_exclusions": [
+            *(_NODE_LIB_EXCLUSIONS if node_lib else ()),
+            *(_WEB_APP_EXCLUSIONS if web_app else ()),
+            *ci.sonar_exclusions,
+        ],
+        "sonar_coverage_exclusions": list(ci.sonar_coverage_exclusions),
         "release": release,
         "doctor_full": ci.doctor_full,
         "plan_keys": _PLAN_KEYS,
