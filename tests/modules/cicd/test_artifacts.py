@@ -2281,11 +2281,13 @@ def _without_t7(body: str) -> str:
 
 T7_HUNKS = (
     (
-        " * Assembles the docs site into `dist/site/` (or the directory given as the first argument) from every project that declares\n",
+        " * Assembles the docs site into `dist/site/` (or the directory given as the\n"
+        " * first argument) from every project that declares\n",
         " * Assembles the docs site into `dist/site/` from every project that declares\n",
     ),
     (
-        " * plus a generated `index.html` (unless the site already has one) and `.nojekyll`.\n"
+        " * plus a generated `index.html` (unless the site already has one) and\n"
+        " * `.nojekyll`.\n"
         " * Existing content of the site directory is kept.\n",
         " * plus a generated `index.html` and `.nojekyll`.\n",
     ),
@@ -2306,7 +2308,12 @@ T7_HUNKS = (
         "mkdirSync(site, { recursive: true });",
         "rmSync(site, { recursive: true, force: true });\nmkdirSync(site, { recursive: true });",
     ),
-    ("if (!existsSync(join(site, 'index.html')))\n", ""),
+    (
+        "if (!existsSync(join(site, 'index.html'))) {\n"
+        "  writeFileSync(\n    join(site, 'index.html'),\n    `<!doctype html>",
+        "writeFileSync(\n  join(site, 'index.html'),\n  `<!doctype html>",
+    ),
+    ("</html>\n`,\n  );\n}\n", "</html>\n`,\n);\n"),
 )
 
 
@@ -2776,7 +2783,6 @@ def test_s9_1_11_1_node_lib_renders_no_docs_yml_and_one_docs_job(
     )
     assert job["timeout-minutes"] == 30
     assert job["permissions"] == {
-        "actions": "read",
         "contents": "read",
         "pages": "write",
         "id-token": "write",
@@ -2797,19 +2803,15 @@ def test_s9_1_11_1_node_lib_without_mkdocs_has_no_docs_job(tmp_path: Path) -> No
 def test_s9_1_11_2_steps(tmp_path: Path) -> None:
     pins = load_pins()
     steps = _docs_job(tmp_path)["steps"]
-    checkout, setup, shas, affected, mkdocs, site, pages, upload, deploy = steps  # type: ignore[misc]
+    checkout, setup, mkdocs, site, pages, upload, deploy = steps  # type: ignore[misc]
     assert checkout["with"] == {
         "filter": "tree:0",
         "fetch-depth": 0,
         "persist-credentials": False,
     }
     assert setup["uses"].startswith("./.github/actions/setup")
-    assert shas["uses"].startswith("nrwl/nx-set-shas@")
-    assert affected["id"] == "affected"
-    assert affected["run"] == "task ci:docs:affected"
     assert "if" not in mkdocs
     assert mkdocs["run"] == "task docs:build"
-    assert site["env"] == {"BUILD": "${{ steps.affected.outputs.build }}"}
     assert site["run"] == "task ci:docs:site"
     for step, name in ((pages, "configure-pages"), (upload, "upload-pages-artifact")):
         assert step["uses"] == f"{pins[name]['uses']}@{pins[name]['sha']}"
@@ -2819,6 +2821,31 @@ def test_s9_1_11_2_steps(tmp_path: Path) -> None:
         deploy["uses"]
         == f"{pins['deploy-pages']['uses']}@{pins['deploy-pages']['sha']}"
     )
+
+
+def test_s9_3_1_3_docs_job_steps_have_no_id_env_or_if(tmp_path: Path) -> None:
+    job = _docs_job(tmp_path)
+    steps = job["steps"]
+    assert [s.get("uses", s.get("run")) for s in steps][2:4] == [  # type: ignore[attr-defined,union-attr]
+        "task docs:build",
+        "task ci:docs:site",
+    ]
+    for step in steps:  # type: ignore[attr-defined]
+        assert "env" not in step
+        assert "if" not in step
+        assert step.get("id") in (None, "deployment")
+    assert job["permissions"] == {
+        "contents": "read",
+        "pages": "write",
+        "id-token": "write",
+    }
+
+
+def test_s9_3_1_3_nx_set_shas_is_used_twice(tmp_path: Path) -> None:
+    text = _root(tmp_path, "node-lib") / CI_YML
+    cycle.apply(_root(tmp_path / "r", "node-lib"), home=tmp_path / "home")
+    text = (tmp_path / "r" / CI_YML).read_text(encoding="utf-8")
+    assert text.count("nrwl/nx-set-shas") == 2
 
 
 def test_s9_1_11_2_docs_hooks_run_on_the_assembled_site(tmp_path: Path) -> None:
@@ -2890,6 +2917,29 @@ def test_s9_1_11_4_existing_content_and_index_are_kept(tmp_path: Path) -> None:
     assert (site / "index.html").read_text() == "mkdocs"
     assert (site / "guide.html").read_text() == "guide"
     assert (site / ".nojekyll").is_file()
+
+
+def test_s9_3_1_4_no_doc_target_keeps_index_and_makes_no_subsites(
+    tmp_path: Path,
+) -> None:
+    root = _assemble(tmp_path, ".docs-site", existing=True)
+    site = root / ".docs-site"
+    assert (site / "index.html").read_text() == "mkdocs"
+    assert (site / ".nojekyll").is_file()
+    assert not (site / "api").exists()
+    assert not (site / "storybook").exists()
+
+
+def test_s9_3_1_5_assemble_site_is_braced_and_its_comment_is_short(
+    tmp_path: Path,
+) -> None:
+    text = _rendered(_root(tmp_path, "node-lib"))["tools/ci/assemble-site.mjs"]
+    lines = text.splitlines()
+    guard = [ln for ln in lines if ln.startswith("if (!existsSync(")]
+    assert guard == ["if (!existsSync(join(site, 'index.html'))) {"]
+    start = next(i for i, ln in enumerate(lines) if ln == "/**")
+    end = next(i for i, ln in enumerate(lines) if ln == " */")
+    assert all(len(ln) <= 80 for ln in lines[start : end + 1])
 
 
 def test_s9_1_11_6_the_idea_row_is_gone() -> None:

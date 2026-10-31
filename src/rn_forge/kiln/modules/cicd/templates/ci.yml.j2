@@ -258,17 +258,14 @@ jobs:
           retention-days: 14
 {% if docs %}
   # Publishes the one Pages site from main after the checks pass: MkDocs, with
-  # Compodoc and Storybook assembled under it. The Compodoc and Storybook builds
-  # run only when a project with a doc target is affected, or on a manual run.
-  # Job-level permissions replace the workflow-level ones, so actions: read stays
-  # for nx-set-shas (it queries workflow runs).
+  # Compodoc and Storybook assembled under it. deploy-pages replaces the whole
+  # site, so every deploy builds all three.
   docs:
     needs: [validate, ci-cloud, ci-local]
     if: ${{ always() && (needs.ci-cloud.result == 'success' || needs.ci-local.result == 'success') && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      actions: read
       contents: read
       pages: write
       id-token: write
@@ -289,18 +286,10 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: [[ pins["nx-set-shas"].uses ]]@[[ pins["nx-set-shas"].sha ]] # [[ pins["nx-set-shas"].version ]]
-
-      - name: Detect affected doc projects
-        id: affected
-        run: task ci:docs:affected
-
       - name: Build the MkDocs site
         run: task docs:build
 
       - name: Build Compodoc and Storybook and assemble the site
-        env:
-          BUILD: ${{ steps.affected.outputs.build }}
         run: task ci:docs:site
 
 {% for hook in hooks.docs %}      - name: Run [[ hook ]]
