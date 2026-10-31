@@ -443,6 +443,13 @@ The rules:
   declares least-privilege `permissions:`; the workflow declares
   `concurrency:` per ref. Dependabot watches only the repository's own hook
   actions and its `uv` dependencies; generated files are pinned by kiln.
+- Action SHAs in generated files are kiln's. They move when `cicd/pins.toml`
+  changes and a repository moves `[kiln] ref` and runs `kiln apply`; an edit
+  in place is drift, so `kiln doctor` fails, `kiln apply` refuses and
+  `kiln apply --force <path>` restores kiln's SHA, keeping a backup under
+  `.rn-forge/kiln/backups`. Dependabot's `uv` and `npm` pull requests edit
+  `pyproject.toml`, `package.json` and `pnpm-lock.yaml`, which are not
+  managed, so they are not drift.
 - Every `actions/checkout` sets `persist-credentials: false`, except a job that
   pushes with the checkout token (`python-lib`'s `docs`, which runs
   `mike deploy --push`). The workflows pass `zizmor --offline` and

@@ -11,6 +11,7 @@
 | -- | -- | -- | -- |
 | [F9.1 — `node-lib` renders ngkit's CI](F9.1-node-lib-hosts-ngkit-ci.md) | Active | release-1 | 2 New · 11 Closed |
 | [F9.2 — One node scaffold](F9.2-one-node-scaffold.md) | Active | release-1 | 10 Closed |
+| [F9.3 — Node CI holds for ngkit and for every `node-lib`](F9.3-node-ci-holds-for-every-node-lib.md) | New | release-1 | 8 New |
 
 <!-- END derived features -->
 
