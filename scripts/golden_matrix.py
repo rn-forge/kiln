@@ -7,7 +7,8 @@ Usage: golden_matrix.py {render,validate} [REF]
 
 Cells land in `.goldens/<ref_dir>/<cell name>/`, beneath the repository root.
 `compare` diffs the kiln-owned files of every cell between two rendered refs.
-`ngkit` diffs the rendered `node-lib` cell against ngkit's files at `NGKIT_REF`.
+`ngkit` diffs the rendered `node-lib` cell against ngkit's files at `NGKIT_REF`,
+and leaves `before-ngkit/` and `after-kiln/` under `scratch/ngkit-review/` to read.
 `parity` compares the working `node-lib` and web-app cells' shared files.
 """
 
@@ -298,6 +299,23 @@ def compare(base: str, ref: str, out_root: Path) -> int:
     return 1 if failed else 0
 
 
+def _ngkit_text(checkout: Path, relative: str, ref: str) -> str:
+    """The content of *relative* at *ref* in *checkout*.
+
+    Raises:
+        RuntimeError: The file is missing at *ref*.
+    """
+    shown = subprocess.run(
+        ["git", "-C", str(checkout), "show", f"{ref}:{relative}"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if shown.returncode != 0:
+        raise RuntimeError(f"{relative} is not at {ref} in {checkout}")
+    return shown.stdout
+
+
 def ngkit_diff(checkout: Path, cell_dir: Path, ref: str = NGKIT_REF) -> list[str]:
     """Unified diffs of ngkit's files at *ref* against the same paths in *cell_dir*.
 
@@ -306,24 +324,41 @@ def ngkit_diff(checkout: Path, cell_dir: Path, ref: str = NGKIT_REF) -> list[str
     """
     lines: list[str] = []
     for relative in NGKIT_FILES:
-        shown = subprocess.run(
-            ["git", "-C", str(checkout), "show", f"{ref}:{relative}"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        if shown.returncode != 0:
-            raise RuntimeError(f"{relative} is not at {ref} in {checkout}")
         file = cell_dir / relative
         rendered = file.read_text(encoding="utf-8") if file.is_file() else ""
         lines += difflib.unified_diff(
-            shown.stdout.splitlines(),
+            _ngkit_text(checkout, relative, ref).splitlines(),
             rendered.splitlines(),
             fromfile=f"ngkit/{relative}",
             tofile=f"kiln/{relative}",
             lineterm="",
         )
     return lines
+
+
+def ngkit_review(
+    checkout: Path, cell_dir: Path, review_dir: Path, ref: str = NGKIT_REF
+) -> None:
+    """Write each ngkit file at *ref* and the cell's copy to `before-ngkit/` and `after-kiln/`.
+
+    Replaces *review_dir*. A file the cell lacks is written empty.
+
+    Raises:
+        RuntimeError: A file is missing at *ref* in *checkout*.
+    """
+    if review_dir.exists():
+        _remove(review_dir)
+    for relative in NGKIT_FILES:
+        before = review_dir / "before-ngkit" / relative
+        after = review_dir / "after-kiln" / relative
+        before.parent.mkdir(parents=True, exist_ok=True)
+        after.parent.mkdir(parents=True, exist_ok=True)
+        before.write_text(_ngkit_text(checkout, relative, ref), encoding="utf-8")
+        file = cell_dir / relative
+        after.write_text(
+            file.read_text(encoding="utf-8") if file.is_file() else "",
+            encoding="utf-8",
+        )
 
 
 def ngkit(checkout: Path, out_root: Path) -> int:
@@ -336,12 +371,15 @@ def ngkit(checkout: Path, out_root: Path) -> int:
     try:
         render_cell(cell, dest, ["uv", "run", "--project", str(ROOT), "kiln"])
         lines = ngkit_diff(checkout, dest)
+        review = out_root / "scratch" / "ngkit-review"
+        ngkit_review(checkout, dest, review)
     except RuntimeError as error:
         print(error, file=sys.stderr)
         return 1
     out_root.mkdir(parents=True, exist_ok=True)
     (out_root / "ngkit.diff").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"{sum(line.startswith('@@') for line in lines)} hunks in ngkit.diff")
+    print(f"before-ngkit/ and after-kiln/ in {review}")
     return 0
 
 

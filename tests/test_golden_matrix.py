@@ -6,6 +6,7 @@ nearest `done` stories' tests do, and carries no marker of its own.
 
 from __future__ import annotations
 
+import difflib
 import importlib.util
 import json
 import subprocess
@@ -374,6 +375,83 @@ def test_s9_1_12_2_ngkit_diff_compares_the_ref_with_the_cell(
     assert "+changed" in lines
     with pytest.raises(RuntimeError):
         matrix.ngkit_diff(checkout, cell, "no-such-ref")
+
+
+def _ngkit_repo(matrix: ModuleType, tmp_path: Path) -> tuple[Path, Path]:
+    checkout, cell = tmp_path / "ngkit", tmp_path / "cell"
+    files = {name: f"{name}\nsame\n" for name in matrix.NGKIT_FILES}
+    _write(checkout, files)
+    _git(checkout, "init", "-q")
+    _git(checkout, "add", ".")
+    _git(checkout, "commit", "-qm", "x")
+    _write(cell, {**files, "sonar-project.properties": "changed\n"})
+    (cell / matrix.NGKIT_FILES[0]).unlink()
+    return checkout, cell
+
+
+def test_s9_3_8_1_review_writes_both_folders(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    checkout, cell = _ngkit_repo(matrix, tmp_path)
+    review = tmp_path / "review"
+    matrix.ngkit_review(checkout, cell, review, "HEAD")
+    for name in matrix.NGKIT_FILES:
+        assert (review / "before-ngkit" / name).read_text() == f"{name}\nsame\n"
+    assert (review / "after-kiln" / "sonar-project.properties").read_text() == (
+        "changed\n"
+    )
+    assert (review / "after-kiln" / matrix.NGKIT_FILES[0]).read_text() == ""
+
+
+def test_s9_3_8_2_review_folders_rebuild_the_diff(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    checkout, cell = _ngkit_repo(matrix, tmp_path)
+    review = tmp_path / "review"
+    matrix.ngkit_review(checkout, cell, review, "HEAD")
+    rebuilt: list[str] = []
+    for name in matrix.NGKIT_FILES:
+        before = (review / "before-ngkit" / name).read_text().splitlines()
+        after = (review / "after-kiln" / name).read_text().splitlines()
+        rebuilt += difflib.unified_diff(
+            before, after, fromfile=f"ngkit/{name}", tofile=f"kiln/{name}", lineterm=""
+        )
+    assert rebuilt
+    assert rebuilt == matrix.ngkit_diff(checkout, cell, "HEAD")
+
+
+def test_s9_3_8_3_review_replaces_the_folder(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    checkout, cell = _ngkit_repo(matrix, tmp_path)
+    review = tmp_path / "review"
+    matrix.ngkit_review(checkout, cell, review, "HEAD")
+    stale = review / "before-ngkit" / "stale.txt"
+    stale.write_text("x", encoding="utf-8")
+    matrix.ngkit_review(checkout, cell, review, "HEAD")
+    assert not stale.exists()
+    assert (review / "before-ngkit" / matrix.NGKIT_FILES[1]).is_file()
+
+
+def test_s9_3_8_4_ngkit_leaves_the_review_folders(
+    matrix: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    checkout, cell = _ngkit_repo(matrix, tmp_path)
+    _git(checkout, "tag", matrix.NGKIT_REF)
+
+    def render(_cell: object, dest: Path, _cmd: list[str]) -> None:
+        _write(dest, {p.name: p.read_text() for p in cell.iterdir() if p.is_file()})
+        for name in matrix.NGKIT_FILES:
+            if (cell / name).is_file():
+                _write(dest, {name: (cell / name).read_text()})
+
+    monkeypatch.setattr(matrix, "render_cell", render)
+    out_root = tmp_path / "out"
+    assert matrix.ngkit(checkout, out_root) == 0
+    review = out_root / "scratch" / "ngkit-review"
+    assert (review / "before-ngkit").is_dir()
+    assert (review / "after-kiln").is_dir()
+    assert (out_root / "ngkit.diff").is_file()
 
 
 def test_s9_1_12_3_main_requires_a_checkout(matrix: ModuleType) -> None:
