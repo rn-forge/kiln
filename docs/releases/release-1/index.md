@@ -60,10 +60,12 @@ are [release-2](../release-2/index.md).
 | [F6.4 — `python-lib` renders pykit's discovered workspace pipeline](../../specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md) | E6 | Active |
 | [F6.6 — `kiln init` leaves the gate runnable](../../specs/epics/E6-rebuild-the-repos/F6.6-init-leaves-gate-runnable.md) | E6 | Closed |
 | [F6.7 — kiln ships the CI planner as `kiln-devops`](../../specs/epics/E6-rebuild-the-repos/F6.7-kiln-devops.md) | E6 | Active |
+| [F6.8 — The generated CI takes pykit's Release 7](../../specs/epics/E6-rebuild-the-repos/F6.8-pykit-release-7-ci.md) | E6 | New |
 | [F7.1 — kiln renders and takes pykit by release tag](../../specs/epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md) | E7 | Closed |
 | [F7.2 — A tagged kiln release, taken by each repository](../../specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md) | E7 | New |
 | [F7.3 — kiln takes pykit's document, template and Markdown helpers](../../specs/epics/E7-pykit-release-pin-flip/F7.3-adopt-pykit-extraction.md) | E7 | Closed |
 | [F7.4 — kiln runs beside a repository, not inside its lock](../../specs/epics/E7-pykit-release-pin-flip/F7.4-kiln-runs-beside-the-repository.md) | E7 | Closed |
+| [F7.5 — kiln takes pykit from PyPI](../../specs/epics/E7-pykit-release-pin-flip/F7.5-pykit-from-pypi.md) | E7 | Active |
 | [F7.6 — The `python-lib` release job publishes to PyPI](../../specs/epics/E7-pykit-release-pin-flip/F7.6-release-to-pypi.md) | E7 | Active |
 | [F9.1 — `node-lib` renders ngkit's CI](../../specs/epics/E9-node-archetypes/F9.1-node-lib-hosts-ngkit-ci.md) | E9 | Active |
 | [F9.2 — One node scaffold](../../specs/epics/E9-node-archetypes/F9.2-one-node-scaffold.md) | E9 | Active |
@@ -111,8 +113,12 @@ are [release-2](../release-2/index.md).
 - [ADR-0017](../../adr/ADR-0017.md) — added 2026-10-22, revised 2026-10-26: the
   CI planner ships inside kiln as `kiln-devops`, reached through the
   `[kiln] ref` pin and not the repository's lock (F6.7, F7.4).
-- [ADR-0018](../../adr/ADR-0018.md) — accepted 2026-10-25: rn-forge dependencies
-  are version ranges from pykit's package index (F7.3).
+- [ADR-0018](../../adr/ADR-0018.md) — accepted 2026-10-25, revised 2026-10-31:
+  rn-forge dependencies are version ranges from PyPI (F7.3, F7.5).
+- Owner decisions, 2026-10-31, after pykit's Release 7: F7.5 moves here from
+  release 2, and F6.8 is added; pykit keeps its security jobs as `[[ci.jobs]]`
+  entries; the web archetypes allow `rn-forge-auth`; F7.6's two run checks
+  follow the cut; the tag is `v0.1.0`, distributed by git.
 
 ## Progress
 
@@ -182,6 +188,8 @@ Earlier release-1 work also landed in commits whose subjects name no ID:
   before release-1 ships.
 - E9's `node-lib` features pass their acceptance blocks: an ngkit-shaped
   repository passes its own gate and renders ngkit's CI. Added 2026-10-14.
+- F6.7, F6.8, F7.5 and F7.6's acceptance blocks pass, F7.6's two run checks
+  excepted: they need pykit's cutover and follow the cut. Added 2026-10-31.
 - Every open question on an in-scope feature is answered, as an ADR or as a
   rejected option recorded on the feature.
 

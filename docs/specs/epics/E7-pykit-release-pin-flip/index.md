@@ -10,10 +10,10 @@
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
 | [F7.1 — kiln renders and takes pykit by release tag](F7.1-tag-pins.md) | Closed | release-1 | 2 Closed |
-| [F7.2 — A tagged kiln release, taken by each repository](F7.2-kiln-release-and-config-upgrade.md) | New | release-1 | — |
+| [F7.2 — A tagged kiln release, taken by each repository](F7.2-kiln-release-and-config-upgrade.md) | New | release-1 | 3 New |
 | [F7.3 — kiln takes pykit's document, template and Markdown helpers](F7.3-adopt-pykit-extraction.md) | Closed | release-1 | 7 Closed |
 | [F7.4 — kiln runs beside a repository, not inside its lock](F7.4-kiln-runs-beside-the-repository.md) | Closed | release-1 | 4 Closed |
-| [F7.5 — kiln takes pykit from PyPI](F7.5-pykit-from-pypi.md) | New | release-2 | 5 New |
+| [F7.5 — kiln takes pykit from PyPI](F7.5-pykit-from-pypi.md) | Active | release-1 | 5 New · 1 Closed |
 | [F7.6 — The `python-lib` release job publishes to PyPI](F7.6-release-to-pypi.md) | Active | release-1 | 7 Closed |
 
 <!-- END derived features -->

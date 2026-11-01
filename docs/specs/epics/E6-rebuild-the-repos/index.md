@@ -16,6 +16,7 @@
 | [F6.5 — Rebuild an existing repository on kiln, and port it](F6.5-rebuild-and-port.md) | New | — | 3 New |
 | [F6.6 — `kiln init` leaves the gate runnable](F6.6-init-leaves-gate-runnable.md) | Closed | release-1 | 3 Closed |
 | [F6.7 — kiln ships the CI planner as `kiln-devops`](F6.7-kiln-devops.md) | Active | release-1 | 6 Closed |
+| [F6.8 — The generated CI takes pykit's Release 7](F6.8-pykit-release-7-ci.md) | New | release-1 | 3 New |
 
 <!-- END derived features -->
 
@@ -28,9 +29,10 @@ inside kiln, that an archetype can host the repository: for pykit, a
 pykit-shaped `python-lib` repository built in a scratch directory
 ([F6.1](F6.1-pykit-skeleton.md)), whose CI carries what pykit's and ngkit's own
 CI already does ([F6.3](F6.3-hardened-ci.md),
-[F6.4](F6.4-workspace-pipeline.md)), so adopting kiln takes nothing out of their
-pipelines. Retiring taskkit ([F6.2](F6.2-retire-taskkit.md)) is kiln's because
-taskkit's job moves into kiln.
+[F6.4](F6.4-workspace-pipeline.md), [F6.8](F6.8-pykit-release-7-ci.md)), so
+adopting kiln takes nothing out of their pipelines. Retiring taskkit
+([F6.2](F6.2-retire-taskkit.md)) is kiln's because taskkit's job moves into
+kiln.
 
 ## Features
 
