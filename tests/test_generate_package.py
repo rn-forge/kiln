@@ -153,7 +153,7 @@ def test_s11_3_1_1_member_pyproject_where_the_command_writes_is_pinned(
     }
     assert ours["project"]["name"] == package
     assert ours["project"]["requires-python"] == ">=3.14"
-    assert ours["project"]["dependencies"] == ["rn-forge-commons>=0.7.0,<0.8"]
+    assert ours["project"]["dependencies"] == ["rn-forge-commons>=0.8.1,<0.9"]
     assert ours["build-system"]["build-backend"] == "uv_build"
     assert ours["tool"]["uv"] == {
         "build-backend": {

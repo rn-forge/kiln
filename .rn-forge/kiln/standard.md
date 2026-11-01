@@ -121,9 +121,9 @@ release, and the root declares the index once:
 
 ```toml
 dependencies = [
-  "rn-forge-commons>=0.7.0,<0.8",
-  "rn-forge-cli>=0.1.1,<0.2",
-  "rn-forge-tooling>=0.3.0,<0.4",
+  "rn-forge-commons>=0.8.1,<0.9",
+  "rn-forge-cli>=0.1.2,<0.2",
+  "rn-forge-tooling>=0.3.1,<0.4",
 ]
 
 [[tool.uv.index]]

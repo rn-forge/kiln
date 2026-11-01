@@ -192,6 +192,17 @@ def test_s5_1_1_2_a_compliant_web_member_passes(tmp_path: Path) -> None:
     assert run(_web_root(tmp_path, WEB_COMPLIANT)) == []
 
 
+def test_s7_5_6_3_a_web_root_may_declare_auth(tmp_path: Path) -> None:
+    pyproject = WEB_COMPLIANT.rstrip("\n")[:-1] + ', "rn-forge-auth>=0.1.0,<0.2"]\n'
+    codes = [
+        f.code
+        for f in rn_forge_deps.check(
+            KilnConfig.load(_web_root(tmp_path, pyproject)), tmp_path
+        )
+    ]
+    assert f"{rn_forge_deps.CODE}.not-allowed" not in codes
+
+
 def test_s5_1_1_2_a_member_lacking_rn_forge_web_is_refused(tmp_path: Path) -> None:
     reported = run(_web_root(tmp_path, WEB_MISSING_WEB))
     assert any("rn-forge-web" in line for line in reported)

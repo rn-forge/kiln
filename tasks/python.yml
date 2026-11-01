@@ -35,6 +35,7 @@ tasks:
       - >-
         set -o pipefail;
         uv export --frozen --all-packages --all-groups --no-emit-workspace --no-header
+        --no-emit-package rn-forge-auth
         --no-emit-package rn-forge-cli
         --no-emit-package rn-forge-commons
         --no-emit-package rn-forge-django

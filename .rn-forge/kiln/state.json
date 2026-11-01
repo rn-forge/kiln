@@ -58,7 +58,7 @@
     },
     ".rn-forge/kiln/standard.md": {
       "begin_marker": null,
-      "content_hash": "15ecc52ee656d244f2a1de8a4d60ad981a50dcea33a9cc8471cfeab0459fdafc",
+      "content_hash": "1b1156ff70bc9efcdbcce5a7b00c66356dd5fc1049669b891269dfdd79de5bb5",
       "end_marker": null,
       "kind": "managed",
       "path": ".rn-forge/kiln/standard.md"
@@ -275,7 +275,7 @@
     },
     "tasks/python.yml": {
       "begin_marker": null,
-      "content_hash": "50ecc19f966379a4991c97b793e0daa711dc98a213380724280730dfc4120b6b",
+      "content_hash": "c09c6530856b5bcc0ad1b428c555fc09bfdcd2967160439d5789c255c14c99bd",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/python.yml"

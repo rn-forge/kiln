@@ -40,7 +40,7 @@ required_validate = [
 
 [dependencies]
 required = ["rn-forge-commons", "rn-forge-cli", "rn-forge-web"]
-allowed = ["rn-forge-commons", "rn-forge-cli", "rn-forge-web"]
+allowed = ["rn-forge-commons", "rn-forge-cli", "rn-forge-web", "rn-forge-auth"]
 
 [untested]
 backend = ["django"]
