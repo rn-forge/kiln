@@ -414,11 +414,11 @@ def test_s6_1_2_5_an_extra_on_a_member_in_a_group_may_be_bare(tmp_path: Path) ->
 INDEX_TABLE = f"""
 [[tool.uv.index]]
 name = "rn-forge"
-url = "{archetypes.PYKIT_INDEX}"
+url = "https://rn-forge.github.io/pykit/simple/"
 """
 
 
-def _ranged(commons: str = "rn-forge-commons>=0.7.0,<0.8", index: bool = True) -> str:
+def _ranged(commons: str = "rn-forge-commons>=0.7.0,<0.8", index: bool = False) -> str:
     deps = [commons, "rn-forge-cli>=0.1.1,<0.2", "rn-forge-tooling>=0.3.0,<0.4"]
     block = ", ".join(f'"{d}"' for d in deps)
     text = f'[project]\nname = "example"\nversion = "0.1.0"\ndependencies = [{block}]\n'
@@ -462,15 +462,20 @@ def test_s7_3_7_4_a_bare_name_is_still_refused(repo) -> None:
     assert [code for code, _, _ in _findings(root)] == ["deps.not-direct"]
 
 
-def test_s7_3_7_5_a_range_needs_the_index(repo) -> None:
-    root = repo(lifecycle=True, **{"pyproject.toml": _ranged(index=False)})
-    found = _findings(root)
-    assert [(code, path) for code, _, path in found] == [
-        ("deps.no-index", "pyproject.toml")
+def test_s7_5_3_1_a_range_with_no_index_passes(repo) -> None:
+    root = repo(lifecycle=True, **{"pyproject.toml": _ranged()})
+    assert _findings(root) == []
+
+
+def test_s7_5_3_2_the_pykit_index_is_refused(repo) -> None:
+    root = repo(lifecycle=True, **{"pyproject.toml": _ranged(index=True)})
+    found = rn_forge_deps.check(KilnConfig.load(root), root)
+    assert [(f.code, f.severity, f.path) for f in found] == [
+        ("deps.pykit-index", Severity.ERROR, "pyproject.toml")
     ]
-    assert archetypes.PYKIT_INDEX in found[0][1]
 
 
-def test_s7_3_7_6_a_member_range_needs_no_index(tmp_path: Path) -> None:
-    root = _workspace_root(tmp_path, tooling_cli="rn-forge-cli>=0.1.0,<0.2")
-    assert run(root) == []
+def test_s7_5_3_3_another_index_is_not_refused(repo) -> None:
+    other = '\n[[tool.uv.index]]\nname = "other"\nurl = "https://example.org/simple/"\n'
+    root = repo(lifecycle=True, **{"pyproject.toml": _ranged() + other})
+    assert _findings(root) == []

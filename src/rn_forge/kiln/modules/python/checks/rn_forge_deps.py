@@ -1,6 +1,6 @@
 """`rn-forge-deps` — the archetype's rn-forge dependency contract.
 
-Three rules, all read from `pyproject.toml`:
+Four rules, all read from `pyproject.toml`:
 
 1. **Required.** Every distribution in the archetype's required set is a
    runtime dependency of at least one distributable in this repo.
@@ -10,14 +10,14 @@ Three rules, all read from `pyproject.toml`:
    an external kit.
 3. **Pinned or ranged, and in the published metadata.** Every rn-forge
    requirement is a PEP 508 direct URL naming a tag or a rev, or a version range
-   with a ceiling resolved from pykit's index, which the root then declares. It
+   with a ceiling resolved from PyPI. It
    is never a `[tool.uv.sources]` entry (a local override that does not survive
    into a built wheel). A workspace member may carry a `{ workspace = true }`
    source and may be named bare in a dependency group, which never reaches a
-   wheel; in `dependencies` it still needs the URL or a range, and a range on a
-   member needs no index.
+   wheel; in `dependencies` it still needs the URL or a range.
+4. **No pykit index.** No root declares pykit's Pages index.
 
-A fourth rule keeps kiln out of the lock: `rn-forge-kiln` in any dependency,
+A fifth rule keeps kiln out of the lock: `rn-forge-kiln` in any dependency,
 optional dependency or dependency group is an error, because kiln runs from
 `[kiln] ref` in its own environment (F7.4). The root project's own
 `[project] name` is not a dependency, so kiln's own repository passes.
@@ -54,6 +54,9 @@ CODEGEN_EXTRA = re.compile(r"^\s*[A-Za-z0-9][A-Za-z0-9._-]*\[[^\]]*\bcodegen\b[^
 # The version specifier after a requirement's name and extras, up to a marker.
 # `rn-forge-web[auth]>=0.2.1,<0.3; python_version>"3"` → `>=0.2.1,<0.3`.
 SPECIFIER = re.compile(r"^\s*[A-Za-z0-9][A-Za-z0-9._-]*(?:\[[^\]]*\])?\s*([^;@]*)")
+
+_PYKIT_INDEX = "https://rn-forge.github.io/pykit/simple/"
+"""pykit's retired Pages index (ADR-0018 as revised)."""
 
 KILN = "rn-forge-kiln"
 """The generator itself: never a dependency of the repo it runs beside."""
@@ -181,14 +184,9 @@ def _check_allowed(
 
 def _check_source(
     label: str, document: dict[str, object], members: frozenset[str]
-) -> tuple[list[Finding], bool]:
-    """Every rn-forge requirement carries a pinned source or a bounded range.
-
-    Returns the findings, and whether an accepted range named a distribution
-    outside *members*, which is the case that needs the index.
-    """
+) -> list[Finding]:
+    """Every rn-forge requirement carries a pinned source or a bounded range."""
     findings: list[Finding] = []
-    needs_index = False
     published = published_dependencies(document)
     grouped = [
         r for r in group_dependencies(document) if distribution(r) not in members
@@ -212,8 +210,8 @@ def _check_source(
             continue
         spec = _specifier(requirement)
         if spec and _has_ceiling(spec):
-            needs_index = needs_index or name not in members
-        elif spec:
+            continue
+        if spec:
             findings.append(
                 Finding(
                     f"{CODE}.no-ceiling",
@@ -235,7 +233,7 @@ def _check_source(
                     path=label,
                 )
             )
-    return findings, needs_index
+    return findings
 
 
 def _check_no_codegen_in_runtime(
@@ -289,7 +287,7 @@ def _check_no_shadowing_source(
 def _declares_index(document: dict[str, object]) -> bool:
     """Whether `[[tool.uv.index]]` lists pykit's index."""
     return any(
-        DictUtils.as_mapping(entry).get("url") == archetypes.PYKIT_INDEX
+        DictUtils.as_mapping(entry).get("url") == _PYKIT_INDEX
         for entry in DictUtils.get_list(document, "tool.uv.index")
     )
 
@@ -301,7 +299,6 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
     findings: list[Finding] = []
     declared: set[str] = set()
     members = workspace_members(config, root)
-    needs_index = False
     root_document: dict[str, object] = {}
 
     for relative in archetypes.pyproject_paths(config):
@@ -324,23 +321,21 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
             )
         )
         findings.extend(_check_kiln_not_in_lock(label, document))
-        source_findings, ranged = _check_source(label, document, members)
-        findings.extend(source_findings)
-        needs_index = needs_index or ranged
+        findings.extend(_check_source(label, document, members))
         if relative == Path("pyproject.toml"):
             root_document = document
         findings.extend(_check_no_shadowing_source(label, document, members))
         findings.extend(_check_no_codegen_in_runtime(label, document))
         declared.update(distribution(r) for r in runtime_dependencies(document))
 
-    if needs_index and not _declares_index(root_document):
+    if _declares_index(root_document):
         findings.append(
             Finding(
-                f"{CODE}.no-index",
+                f"{CODE}.pykit-index",
                 Severity.ERROR,
-                f"an rn-forge requirement is a version range, and no "
-                f"[[tool.uv.index]] names {archetypes.PYKIT_INDEX} — add it as "
-                f'name = "rn-forge" (kiln ADR-0018)',
+                f"pyproject.toml declares pykit's retired index ({_PYKIT_INDEX}); "
+                f"delete the [[tool.uv.index]] table, and the next `task setup` "
+                f"re-locks from PyPI",
                 path="pyproject.toml",
             )
         )

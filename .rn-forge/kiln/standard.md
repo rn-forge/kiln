@@ -113,11 +113,11 @@ that a rule rather than a preference.
 The web archetypes add `rn-forge-web` — framework-free inbound HTTP, on commons
 alone — beneath `rn-forge-django` or `rn-forge-fastapi`.
 
-rn-forge requirements are version ranges on pykit's package index — pykit
-publishes GitHub Releases, not to PyPI — declared in `dependencies`, never as
+rn-forge packages resolve from PyPI; a root declares no index for them. Their
+requirements are version ranges declared in `dependencies`, never as
 `[tool.uv.sources]` overrides, which do not survive into a built wheel. The
 floor is kiln's pin for the package and the ceiling is the next breaking
-release, and the root declares the index once:
+release:
 
 ```toml
 dependencies = [
@@ -125,10 +125,6 @@ dependencies = [
   "rn-forge-cli>=0.1.2,<0.2",
   "rn-forge-tooling>=0.3.1,<0.4",
 ]
-
-[[tool.uv.index]]
-name = "rn-forge"
-url = "https://rn-forge.github.io/pykit/simple/"
 ```
 
 The dependency source is config: `git` + ref, which is CI-capable, or a local

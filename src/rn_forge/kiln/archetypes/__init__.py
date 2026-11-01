@@ -23,7 +23,6 @@ __all__ = [
     "KILN_GIT",
     "KILN_REF",
     "PYKIT_GIT",
-    "PYKIT_INDEX",
     "RN_FORGE_PREFIX",
     "RN_FORGE_TAGS",
     "Archetype",
@@ -41,8 +40,6 @@ RN_FORGE_PREFIX = "rn-forge-"
 
 PYKIT_GIT = "git+https://github.com/rn-forge/pykit"
 """pykit's git source, without a ref."""
-PYKIT_INDEX = "https://rn-forge.github.io/pykit/simple/"
-"""pykit's PEP 503 index of its GitHub Release files (kiln ADR-0018)."""
 RN_FORGE_TAGS = {
     "rn-forge-commons": "rn-forge-commons-v0.8.1",
     "rn-forge-cli": "rn-forge-cli-v0.1.2",
@@ -164,7 +161,7 @@ def ceiling(version: str) -> str:
 
 
 def requirement(distribution: str) -> str:
-    """The version range pykit's *distribution* resolves to from `PYKIT_INDEX`.
+    """The version range pykit's *distribution* resolves to from PyPI.
 
     Raises:
         KeyError: *distribution* has no release tag in `RN_FORGE_TAGS`.

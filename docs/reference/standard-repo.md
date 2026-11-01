@@ -223,23 +223,18 @@ commons alone, and sits beneath `rn-forge-django` and `rn-forge-fastapi`. A repo
 takes the highest layer it actually needs; the configured dependency check
 enforces its required list.
 
-Every rn-forge requirement is a **version range** on pykit's package index
-([ADR-0018](../adr/ADR-0018.md)), and the root declares the index once:
+Every rn-forge requirement is a **version range** resolved from PyPI
+([ADR-0018](../adr/ADR-0018.md)); a root declares no index for them:
 
 ```toml
 [project]
 dependencies = ["rn-forge-commons>=0.7.0,<0.8"]
-
-[[tool.uv.index]]
-name = "rn-forge"
-url = "https://rn-forge.github.io/pykit/simple/"
 ```
 
 The floor is the version in kiln's pin table, and the ceiling is the next
 breaking release: the next minor before 1.0, the next major from 1.0. uv's
-default `first-index` strategy means an `rn-forge-*` name never resolves from
-PyPI. A pinned git direct URL is still accepted. A bare name, or a range with no
-ceiling, is not.
+default index serves them. A pinned git direct URL is still accepted. A bare
+name, or a range with no ceiling, is not.
 
 Never `[tool.uv.sources]` — that is a *local* override which does not survive
 into a built wheel. An `[tool.uv.sources]` entry for an rn-forge package is

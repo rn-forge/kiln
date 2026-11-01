@@ -520,7 +520,7 @@ def test_s9_2_9_1_node_lib_standard_has_no_uv_sources_or_component_library_text(
 ) -> None:
     standard = _rendered(_node_lib(tmp_path / "lib"))[STANDARD]
     python_app = _rendered(_new(tmp_path / "app", "python-app"))[STANDARD]
-    for text in ("[tool.uv.sources]", "component-library", "[[tool.uv.index]]"):
+    for text in ("[tool.uv.sources]", "component-library"):
         assert text in python_app
         assert text not in standard
 
