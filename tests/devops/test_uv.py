@@ -28,7 +28,32 @@ def _workspace(root: Path) -> None:
     _write(
         root / "pkgs/app/pyproject.toml",
         '[project]\nname = "App_X"\nversion = "1"\ndependencies = ["base>=1"]\n\n'
-        '[tool.workspace-ci.postgres]\nenv = "DSN"\n',
+        '[tool.workspace-ci.postgres]\nenv = "DSN"\n\n'
+        '[tool.workspace-ci.redis]\nenv = "URL"\n',
+    )
+
+
+def test_s6_8_1_8_redis_table_sets_redis_env(tmp_path: Path) -> None:
+    _workspace(tmp_path)
+    packages = uv.load_workspace(tmp_path).packages
+    assert packages["app-x"].redis_env == "URL"
+    assert packages["base"].redis_env is None
+    assert packages["app-x"].release_requires == {"base"}
+
+
+def test_s6_8_1_9_load_workspace_keeps_dependency_groups_out_of_release_requires(
+    tmp_path: Path,
+) -> None:
+    _workspace(tmp_path)
+    _write(
+        tmp_path / "pkgs/base/pyproject.toml",
+        '[project]\nname = "base"\nversion = "1"\n\n'
+        '[dependency-groups]\ndev = ["App_X>=1"]\n',
+    )
+    packages = uv.load_workspace(tmp_path).packages
+    assert (packages["base"].requires, packages["base"].release_requires) == (
+        {"app-x"},
+        set(),
     )
 
 

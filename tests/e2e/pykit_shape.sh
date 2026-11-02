@@ -2,7 +2,8 @@
 # Build a pykit-shaped python-lib repository from a fresh `kiln new` (kiln S6.1.1).
 # The skeleton is kiln's; each member's pyproject.toml, src/ and tests/ are pykit's,
 # because kiln imports commons, cli and tooling and the overrides below make it take
-# the workspace copies. kiln is this checkout, installed editable.
+# the workspace copies. `kiln new` and `kiln generate` are this checkout; the rendered
+# tasks run the pushed `[kiln] ref` (F7.4).
 # Usage: tests/e2e/pykit_shape.sh <scratch dir> <kiln checkout> [pykit ref, default main]
 # PYKIT_REPO overrides the clone source, e.g. a local checkout to test unpushed work.
 set -euo pipefail
@@ -53,7 +54,7 @@ for p in "${packages[@]}"; do
   # docs/ and its mkdocs.yml (seeded, so repo-owned) too: the guides carry
   # examples the tests execute, and the nav lists every page.
   rm -rf "$dir/packages/$p/src" "$dir/packages/$p/tests" "$dir/packages/$p/docs"
-  for f in pyproject.toml README.md CHANGELOG.md mkdocs.yml src tests docs; do
+  for f in pyproject.toml README.md LICENSE CHANGELOG.md mkdocs.yml src tests docs; do
     cp -R "$pykit/packages/$p/$f" "$dir/packages/$p/$f"
   done
 done
@@ -109,9 +110,6 @@ while read -r group req; do
 done <"$dir/.pykit-groups"
 rm "$dir/.pykit-groups"
 
-# This checkout's kiln, not the pushed branch the template pins.
-(cd "$dir" && uv add --quiet --no-sync --dev --editable "$kiln_root")
-
 {
   printf '# Packages\n\nEach package has its own site.\n\n'
   for p in "${packages[@]}"; do
@@ -119,4 +117,4 @@ rm "$dir/.pykit-groups"
   done
 } >"$dir/docs/guides/packages.md"
 
-(cd "$dir" && uv sync --quiet && task docs:generate)
+(cd "$dir" && uv sync --quiet && task docs:generate && task format)

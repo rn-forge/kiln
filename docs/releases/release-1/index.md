@@ -60,7 +60,7 @@ are [release-2](../release-2/index.md).
 | [F6.4 — `python-lib` renders pykit's discovered workspace pipeline](../../specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md) | E6 | Active |
 | [F6.6 — `kiln init` leaves the gate runnable](../../specs/epics/E6-rebuild-the-repos/F6.6-init-leaves-gate-runnable.md) | E6 | Closed |
 | [F6.7 — kiln ships the CI planner as `kiln-devops`](../../specs/epics/E6-rebuild-the-repos/F6.7-kiln-devops.md) | E6 | Active |
-| [F6.8 — The generated CI takes pykit's Release 7](../../specs/epics/E6-rebuild-the-repos/F6.8-pykit-release-7-ci.md) | E6 | New |
+| [F6.8 — The generated CI takes pykit's Release 7](../../specs/epics/E6-rebuild-the-repos/F6.8-pykit-release-7-ci.md) | E6 | Active |
 | [F7.1 — kiln renders and takes pykit by release tag](../../specs/epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md) | E7 | Closed |
 | [F7.2 — A tagged kiln release, taken by each repository](../../specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md) | E7 | New |
 | [F7.3 — kiln takes pykit's document, template and Markdown helpers](../../specs/epics/E7-pykit-release-pin-flip/F7.3-adopt-pykit-extraction.md) | E7 | Closed |

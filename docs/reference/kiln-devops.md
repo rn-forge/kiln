@@ -69,7 +69,9 @@ release state is read and no `gh` command runs.
 - **Packages:** the members of the root `[tool.uv.workspace]`, including
   `exclude`. No name prefix is assumed.
 - **Internal requirements:** workspace members named in a package's
-  dependencies, optional dependencies and dependency groups.
+  dependencies, optional dependencies and dependency groups. Release order and
+  `releasable` leave dependency groups out; a cycle among the rest is an
+  error.
 - **Import name:** `[tool.uv.build-backend].module-name`, used for `--cov`, the
   external-install import and the smoke imports.
 - **Optional jobs:** `sonar` runs only if `sonar-project.properties` exists;
@@ -86,6 +88,7 @@ package.
 | `[tool.workspace-ci]` | root | `pytest-args` for package test runs. |
 | `[tool.workspace-ci.suites]` | root | A named workspace-wide pytest run per key, each its own job. |
 | `[tool.workspace-ci.postgres]` | package | `env`: the variable that receives a PostgreSQL DSN; the package's tests run again against a service container. |
+| `[tool.workspace-ci.redis]` | package | `env`: the variable that receives a Redis URL; the package's tests run again against a service container. |
 | `[tool.workspace-ci.smoke]` | package | Optional: a package without it is still smoke-tested with no extra, importing its own module. `modules` imported for every smoke run, an optional `setup` script run first, and `extras`: one smoke job per extra with its own modules. |
 | `[tool.workspace-ci]` | package | `adapters`: the names of the package's adapter modules. Each must be a module or subpackage of the package and have an extra of the same name; `adapters` checks it. |
 
@@ -107,6 +110,7 @@ every workspace member, whatever the change.
 | `release-order` | List of package names. | Selected |
 | `packages` | List of rows `{name, dir}`. | Selected |
 | `postgres` | List of rows `{name, dir, env}`, one per package that declares a PostgreSQL run. `env` is the variable that receives the DSN. | Selected |
+| `redis` | List of rows `{name, dir, env}`, one per package that declares a Redis run. `env` is the variable that receives the URL. | Selected |
 | `smoke` | List of rows `{name, extra, marker}`, one per smoke check. `extra` is empty for the run with no extra. `marker` is the file name a passing check leaves for `releasable`. | Selected |
 | `suites` | List of rows `{name, args}`, one per `[tool.workspace-ci.suites]` key. `args` is a shell-quoted string. | Every suite |
 | `pytest-args` | Shell-quoted string of the root `pytest-args`; empty if none. | Workspace |

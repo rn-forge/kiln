@@ -16,7 +16,7 @@
 | [F6.5 — Rebuild an existing repository on kiln, and port it](F6.5-rebuild-and-port.md) | New | — | 3 New |
 | [F6.6 — `kiln init` leaves the gate runnable](F6.6-init-leaves-gate-runnable.md) | Closed | release-1 | 3 Closed |
 | [F6.7 — kiln ships the CI planner as `kiln-devops`](F6.7-kiln-devops.md) | Active | release-1 | 6 Closed |
-| [F6.8 — The generated CI takes pykit's Release 7](F6.8-pykit-release-7-ci.md) | New | release-1 | 3 New |
+| [F6.8 — The generated CI takes pykit's Release 7](F6.8-pykit-release-7-ci.md) | Active | release-1 | 2 New · 1 Closed |
 
 <!-- END derived features -->
 
