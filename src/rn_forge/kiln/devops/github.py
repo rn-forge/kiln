@@ -163,7 +163,7 @@ def upload_commands(
 ) -> list[list[str]]:
     """Return the `uv publish` command that uploads `files` to `index`, or `[]` when it already has the version.
 
-    Only wheels and sdists are uploaded; any other file is ignored.
+    Only wheels, sdists and their `.publish.attestation` files are uploaded; any other file is ignored.
 
     Args:
         index: The index to upload to.
@@ -177,7 +177,10 @@ def upload_commands(
     command = ["uv", "publish", "--trusted-publishing", "always"]
     if index == "testpypi":
         command += ["--publish-url", "https://test.pypi.org/legacy/"]
-    return [command + [f for f in files if f.endswith((".whl", ".tar.gz"))]]
+    return [
+        command
+        + [f for f in files if f.endswith((".whl", ".tar.gz", ".publish.attestation"))]
+    ]
 
 
 def on_index(host: str, name: str, version: str) -> bool:

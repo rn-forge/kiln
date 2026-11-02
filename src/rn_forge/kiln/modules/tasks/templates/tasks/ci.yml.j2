@@ -361,7 +361,26 @@ tasks:
         done
         printf 'built=%s\n' "$built" >> "$GITHUB_OUTPUT"
 
-  release-publish:
+{% if release == "pypi" %}  release-sign:
+    desc: "CI only: sign each built wheel and sdist, writing a PEP 740 *.publish.attestation beside it"
+    cmds:
+      - |
+        set -euo pipefail
+        for file in dist/*/*.whl dist/*/*.tar.gz; do
+          [ -e "$file" ] || continue
+          for attempt in $(seq 1 5); do
+            if uvx pypi-attestations==0.0.30 sign "$file"; then
+              break
+            fi
+            echo "::warning::Signing $file failed on attempt $attempt."
+            if [ "$attempt" -eq 5 ]; then
+              exit 1
+            fi
+            sleep 20
+          done
+        done
+
+{% endif %}  release-publish:
     desc: "CI only: publish a GitHub release for each package release-build built, prerequisites first"
     cmds:
       - |

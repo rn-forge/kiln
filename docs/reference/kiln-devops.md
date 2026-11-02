@@ -51,12 +51,12 @@ exits 0. A draft is deleted first (`gh release delete TAG --yes`). Then it runs
 the tag exists, and
 `gh release create TAG FILE... --target SHA --title TITLE --generate-notes`
 otherwise. With `--notes-file FILE`, `--generate-notes` becomes
-`--notes-file FILE --latest=false`. It prints nothing. The release, not the tag,
-is the record of what shipped, and `gh release create` makes the tag at
-`--target`.
+`--notes-file FILE --latest=false`. The release leaves out the FILEs ending in
+`.publish.attestation`. It prints nothing. The release, not the tag, is the
+record of what shipped, and `gh release create` makes the tag at `--target`.
 
 With `--upload pypi`, a release that is not yet published first uploads the
-`*.whl` and `*.tar.gz` among the FILEs with
+`*.whl`, `*.tar.gz` and `*.publish.attestation` among the FILEs with
 `uv publish --trusted-publishing always`, unless
 `https://pypi.org/pypi/<name>/<version>/json` answers 200; `<name>` and
 `<version>` come from `TAG` (`<name>-v<version>`). A failed upload ends the

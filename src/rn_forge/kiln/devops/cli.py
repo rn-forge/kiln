@@ -89,8 +89,9 @@ def _release(args: argparse.Namespace) -> int:
         if draft == "false":
             github.already_published(tag)
         return 0
+    assets = [f for f in args.files if not f.endswith(".publish.attestation")]
     commands = github.publish_commands(
-        tag, args.title, args.target, args.files, draft, tagged, args.notes_file
+        tag, args.title, args.target, assets, draft, tagged, args.notes_file
     )
     if not commands:
         github.already_published(tag)

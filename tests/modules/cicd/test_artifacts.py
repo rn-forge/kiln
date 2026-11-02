@@ -868,6 +868,18 @@ def test_s6_8_2_4_redis_is_generated(tmp_path: Path) -> None:
         KilnConfig.load(root)
 
 
+def test_s6_8_3_1_attest_step(tmp_path: Path) -> None:
+    steps = _release_steps(_pypi_root(tmp_path / "pypi"))
+    names = [step.get("name") for step in steps]
+    index = names.index("Attest PyPI publish")
+    assert names[index - 1] == "Generate provenance"
+    assert names[index + 1] == "Publish releases"
+    assert steps[index]["if"] == "steps.build.outputs.built != '0'"
+    assert steps[index]["run"] == "task ci:release-sign"
+    plain = _release_steps(_lib_root(tmp_path / "plain"))
+    assert "Attest PyPI publish" not in [step.get("name") for step in plain]
+
+
 def test_s6_4_3_4_smoke_job_does_not_sync(tmp_path: Path) -> None:
     steps = _lib_jobs(tmp_path)["smoke"]["steps"]  # type: ignore[assignment]
     runs = [s.get("run") for s in steps]  # type: ignore[attr-defined]

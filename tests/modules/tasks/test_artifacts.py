@@ -789,6 +789,23 @@ def test_s6_8_2_5_redis_task(tmp_path: Path) -> None:
     assert tasks["postgres"]["cmds"][0].splitlines()[1] == lines[1]  # type: ignore[index]
 
 
+def test_s6_8_3_2_release_sign_task(tmp_path: Path) -> None:
+    pypi = _root(tmp_path / "pypi", "python-lib", extra='\n[ci]\nrelease = "pypi"\n')
+    task = _ci_tasks(pypi)["tasks"]["release-sign"]  # type: ignore[index]
+    script = "\n".join(task["cmds"])
+    assert task["desc"]
+    assert 'uvx pypi-attestations==0.0.30 sign "$file"' in script
+    assert "dist/*/*.whl" in script
+    assert "dist/*/*.tar.gz" in script
+    assert "seq 1 5" in script
+    assert "sleep 20" in script
+    assert "-eq 5" in script
+    assert "exit 1" in script
+    assert "::warning::Signing $file failed on attempt $attempt." in script
+    plain = _ci_tasks(_root(tmp_path / "plain", "python-lib"))["tasks"]
+    assert "release-sign" not in plain  # type: ignore[operator]
+
+
 def _libs_root(tmp_path: Path) -> Path:
     root = _root(tmp_path, "python-lib")
     config = root / ".rn-forge" / "kiln" / "config.toml"

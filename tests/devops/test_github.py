@@ -132,6 +132,19 @@ def test_s7_6_4_10_only_wheels_and_sdists_are_uploaded() -> None:
     assert not any(part.endswith((".cdx.json", ".md")) for part in command)
 
 
+def test_s6_8_3_3_upload_includes_attestations() -> None:
+    files = [
+        "x.cdx.json", "x.whl", "x.whl.publish.attestation",
+        "x.tar.gz", "x.tar.gz.publish.attestation",
+    ]  # fmt: skip
+    (command,) = github.upload_commands("pypi", "a", "1.0", files, False)
+    assert command[4:] == [
+        "x.whl", "x.whl.publish.attestation",
+        "x.tar.gz", "x.tar.gz.publish.attestation",
+    ]  # fmt: skip
+    assert "x.cdx.json" not in command
+
+
 class _Response:
     status = 200
 

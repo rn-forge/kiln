@@ -272,6 +272,19 @@ def test_s7_6_4_13_upload_pypi_runs_before_gh_release_create(
     assert len(commands) == 2
 
 
+def test_s6_8_3_4_release_assets_leave_out_attestations(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls = _upload_stubs(monkeypatch, None, False, False)
+    files = ["a.whl", "a.whl.publish.attestation", "a.cdx.json"]
+    assert cli.main([*PUBLISH, "--upload", "pypi", *files]) == 0
+    commands = [c for c in calls if c[0] in ("uv", "gh")]
+    assert commands[0][4:] == ["a.whl", "a.whl.publish.attestation"]
+    assert commands[1][3:5] == ["pkg-a-v1.2.0", "a.whl"]
+    assert "a.whl.publish.attestation" not in commands[1]
+    assert "a.cdx.json" in commands[1]
+
+
 def test_s7_6_4_14_upload_pypi_skips_a_version_already_on_the_index(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

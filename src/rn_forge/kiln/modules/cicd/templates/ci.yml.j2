@@ -684,7 +684,12 @@ jobs:
             dist/*/*.tar.gz
             dist/*/*.cdx.json
 
-      - name: Publish releases
+{% if release == "pypi" %}      # uv publish uploads the *.publish.attestation files it is given. One file at a time, because a Rekor write can stall into a 502 and signing never retries.
+      - name: Attest PyPI publish
+        if: steps.build.outputs.built != '0'
+        run: task ci:release-sign
+
+{% endif %}      - name: Publish releases
         env:
           GH_TOKEN: ${{ github.token }}
 {% if release == "pypi" %}          TESTPYPI: ${{ github.event_name == 'workflow_dispatch' && inputs.testpypi }}
