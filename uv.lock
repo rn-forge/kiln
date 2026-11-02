@@ -1095,24 +1095,32 @@ wheels = [
 
 [[package]]
 name = "rn-forge-cli"
-version = "0.1.1"
-source = { git = "https://github.com/rn-forge/pykit?subdirectory=packages%2Frn-forge-cli&rev=rn-forge-tooling-v0.3.0#95576686b893ee90dfa9015b7f980cd51cb92bae" }
+version = "0.1.2"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "rich" },
     { name = "rn-forge-commons" },
     { name = "typer" },
 ]
+sdist = { url = "https://files.pythonhosted.org/packages/1b/a6/9639cee80cde930b26ffe4bcb8c9f4bade77ef625caa376ada59b135419e/rn_forge_cli-0.1.2.tar.gz", hash = "sha256:36e857f45bdeac19307aefb096809ed2df60bfda983fd14973d6464825f4e830", size = 10029, upload-time = "2026-10-31T00:49:18.697Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2f/d4/aa8aac4f4c69e41fd4c99257beb196566208ca23428c508097e3966a6b9b/rn_forge_cli-0.1.2-py3-none-any.whl", hash = "sha256:138c7d8edc99b98e1f36a67825cbd52fa417ef3582d8d10371136ad8aa91fc86", size = 11747, upload-time = "2026-10-31T00:49:17.515Z" },
+]
 
 [[package]]
 name = "rn-forge-commons"
-version = "0.7.0"
-source = { git = "https://github.com/rn-forge/pykit?subdirectory=packages%2Frn-forge-commons&rev=rn-forge-tooling-v0.3.0#95576686b893ee90dfa9015b7f980cd51cb92bae" }
+version = "0.8.1"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "dacite" },
     { name = "rich" },
     { name = "ruamel-yaml", extra = ["oldlibyaml"] },
     { name = "tomlkit" },
     { name = "verboselogs" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ba/3c/88b634fc98ce8097d64d61d1369cfd9a6a13221c1457ccc2523cab5a6e75/rn_forge_commons-0.8.1.tar.gz", hash = "sha256:8d3cedd792fde60d6ceabe4e20f0461aa3ab8ca1d77c67fdcaf00358b2b867ed", size = 92039, upload-time = "2026-10-31T00:49:06.013Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/7e/65/eff10ad06f968e58d00829f663a2ec37c537a1a7ca197ec74af47462fd51/rn_forge_commons-0.8.1-py3-none-any.whl", hash = "sha256:94aa8e69b338b7f7e1142913f8deed36039b9237f625834eac3e531621a27cb1", size = 110337, upload-time = "2026-10-31T00:49:04.501Z" },
 ]
 
 [package.optional-dependencies]
@@ -1164,9 +1172,9 @@ docs = [
 requires-dist = [
     { name = "packaging", specifier = ">=24" },
     { name = "pathspec", specifier = ">=1.1" },
-    { name = "rn-forge-cli", git = "https://github.com/rn-forge/pykit?subdirectory=packages%2Frn-forge-cli&rev=rn-forge-cli-v0.1.1" },
-    { name = "rn-forge-commons", extras = ["pydantic", "markdown", "templates"], git = "https://github.com/rn-forge/pykit?subdirectory=packages%2Frn-forge-commons&rev=rn-forge-commons-v0.7.0" },
-    { name = "rn-forge-tooling", git = "https://github.com/rn-forge/pykit?subdirectory=packages%2Frn-forge-tooling&rev=rn-forge-tooling-v0.3.0" },
+    { name = "rn-forge-cli", specifier = ">=0.1.2,<0.2" },
+    { name = "rn-forge-commons", extras = ["pydantic", "markdown", "templates"], specifier = ">=0.8.1,<0.9" },
+    { name = "rn-forge-tooling", specifier = ">=0.3.1,<0.4" },
 ]
 
 [package.metadata.requires-dev]
@@ -1192,11 +1200,15 @@ docs = [
 
 [[package]]
 name = "rn-forge-tooling"
-version = "0.3.0"
-source = { git = "https://github.com/rn-forge/pykit?subdirectory=packages%2Frn-forge-tooling&rev=rn-forge-tooling-v0.3.0#95576686b893ee90dfa9015b7f980cd51cb92bae" }
+version = "0.3.1"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "rn-forge-cli" },
     { name = "rn-forge-commons" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8d/f8/983e772e6cfec4c85572bd774e0c1424ec953de6f38c7a30af6e000278a6/rn_forge_tooling-0.3.1.tar.gz", hash = "sha256:b51a2315adfe5d630628df430172f9322b69fc06cb3e1bf48b97b8a3db0db02b", size = 16324, upload-time = "2026-10-31T00:49:51.204Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/66/45/8d35278c2767e9e8a3ecbff07b68367121def2acec34963d4f6172791441/rn_forge_tooling-0.3.1-py3-none-any.whl", hash = "sha256:1a9f3ca94a77b139a2902821839b7219ff63a2c5d2e45871bd09615af18f0925", size = 20084, upload-time = "2026-10-31T00:49:49.946Z" },
 ]
 
 [[package]]

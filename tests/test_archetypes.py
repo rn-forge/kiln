@@ -238,21 +238,22 @@ def test_s7_1_1_1_an_unpinned_distribution_is_refused() -> None:
         archetypes.requirement("rn-forge-nope")
 
 
-def test_s7_1_1_2_kiln_takes_pykit_by_tag() -> None:
-    """Kiln's own pins and the rendered ones are independent since F7.4."""
+def test_s7_5_4_1_kiln_takes_pykit_by_range() -> None:
     import re
     import tomllib
     from pathlib import Path
 
     text = (Path(__file__).parent.parent / "pyproject.toml").read_text("utf-8")
-    assert "pykit@main" not in text
     dependencies = tomllib.loads(text)["project"]["dependencies"]
     ours = [d for d in dependencies if d.startswith("rn-forge-")]
     assert len(ours) == 3
     for requirement in ours:
+        assert "@" not in requirement, requirement
         name = re.match(r"rn-forge-[a-z]+", requirement)
         assert name
-        assert re.search(rf"@{name.group(0)}-v\d+\.\d+\.\d+#", requirement), requirement
+        assert re.sub(r"\[[^\]]*\]", "", requirement) == archetypes.requirement(
+            name.group(0)
+        )
 
 
 def test_s6_7_3_2_devops_is_not_pinned() -> None:
