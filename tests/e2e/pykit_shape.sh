@@ -117,4 +117,6 @@ rm "$dir/.pykit-groups"
   done
 } >"$dir/docs/guides/packages.md"
 
+# A cutover keeps pykit's lock, so its versions stay what pykit's own checks pass on.
+cp "$pykit/uv.lock" "$dir/uv.lock"
 (cd "$dir" && uv sync --quiet && task docs:generate && task format)
