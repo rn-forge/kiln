@@ -13,7 +13,7 @@ Backlog sections below are derived from the epic, feature and release pages by
 | Release | Status | Features |
 | -- | -- | -- |
 | [Release 2 — the architecture baseline and taskkit retired](../releases/release-2/index.md) | planned | 3 New |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 8 Active · 1 New · 36 Closed |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 8 Active · 2 New · 36 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -75,6 +75,7 @@ now:   ADRs accepted ─→ S13.1.1 derived nav ─→ F13.2 board/scope ─→ 
        F9.1 node-lib CI ─→ F9.2 one node scaffold ─→ F9.3 node CI holds ─→ S9.1.12 re-label and approval ─→ S9.1.6
        F6.3 CI hardening (after F4.4) ─→ F6.4 workspace pipeline (after F6.1; planner pin met) ─→ S6.4.6 · S6.4.7 · F11.5 package-site deploy
        F7.5 pykit from PyPI ─→ S6.4.5 and F6.7 reruns ─→ F6.8 pykit Release 7 CI ─→ F7.2 the cut
+       F6.9 adopted repositories left alone (pykit's 2026-11-01 trial) ─→ F7.2 the cut
 triggered: E7 pykit tags · E8 ADO · backlog: E10 generators
 ```
 

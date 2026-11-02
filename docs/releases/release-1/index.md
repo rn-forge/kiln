@@ -61,6 +61,7 @@ are [release-2](../release-2/index.md).
 | [F6.6 — `kiln init` leaves the gate runnable](../../specs/epics/E6-rebuild-the-repos/F6.6-init-leaves-gate-runnable.md) | E6 | Closed |
 | [F6.7 — kiln ships the CI planner as `kiln-devops`](../../specs/epics/E6-rebuild-the-repos/F6.7-kiln-devops.md) | E6 | Active |
 | [F6.8 — The generated CI takes pykit's Release 7](../../specs/epics/E6-rebuild-the-repos/F6.8-pykit-release-7-ci.md) | E6 | Active |
+| [F6.9 — `init` and `config-update` leave an adopted repository alone](../../specs/epics/E6-rebuild-the-repos/F6.9-init-leaves-adopted-repo-alone.md) | E6 | New |
 | [F7.1 — kiln renders and takes pykit by release tag](../../specs/epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md) | E7 | Closed |
 | [F7.2 — A tagged kiln release, taken by each repository](../../specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md) | E7 | New |
 | [F7.3 — kiln takes pykit's document, template and Markdown helpers](../../specs/epics/E7-pykit-release-pin-flip/F7.3-adopt-pykit-extraction.md) | E7 | Closed |
@@ -190,6 +191,9 @@ Earlier release-1 work also landed in commits whose subjects name no ID:
   repository passes its own gate and renders ngkit's CI. Added 2026-10-14.
 - F6.7, F6.8, F7.5 and F7.6's acceptance blocks pass, F7.6's two run checks
   excepted: they need pykit's cutover and follow the cut. Added 2026-10-31.
+- F6.9's acceptance block passes: `init` and `apply` write no starter source
+  into a repository kiln adopts, which pykit's cutover requires of the tag.
+  Added 2026-11-01.
 - Every open question on an in-scope feature is answered, as an ADR or as a
   rejected option recorded on the feature.
 
