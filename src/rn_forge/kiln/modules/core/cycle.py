@@ -27,7 +27,7 @@ from rn_forge.tooling.install.home import rnf_home
 
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
-from rn_forge.kiln.modules.base import ModuleRegistry
+from rn_forge.kiln.modules.base import ModuleRegistry, StarterModule
 from rn_forge.kiln.modules.core import umbrella
 from rn_forge.kiln.modules.core.config.manager import PROVENANCE_KEY, ConfigManager
 
@@ -111,6 +111,7 @@ def apply(
     verify: Callable[[], None] | None = None,
     provenance: Mapping[str, JsonValue] | None = None,
     adopt: bool = False,
+    starters: str | None = None,
 ) -> ApplyResult:
     """Plan, then apply transactionally; see :func:`plan` for the arguments.
 
@@ -118,6 +119,8 @@ def apply(
         dry_run: Classify and report, write nothing.
         verify: Called after every write and before `state.json` is written;
             raising from it rolls the whole apply back.
+        starters: The path prefix under which an absent starter file may be
+            created: `""` for the whole repository, `None` for nowhere.
 
     Raises:
         CycleRefused: A legacy kiln tree is present.
@@ -125,7 +128,7 @@ def apply(
             conflict, drift or missing artifact, or a write failed (after the
             tree and `state.json` were restored).
     """
-    store, planned = _prepare(root, force, registry, home, provenance, adopt)
+    store, planned = _prepare(root, force, registry, home, provenance, adopt, starters)
     return generation.apply(
         root,
         planned,
@@ -144,6 +147,7 @@ def _prepare(
     home: Path | None,
     provenance: Mapping[str, JsonValue] | None = None,
     adopt: bool = False,
+    starters: str | None = None,
 ) -> tuple[StateStore[StateEntry], Plan]:
     refused = umbrella.legacy(root / umbrella.UMBRELLA, (home or rnf_home()) / "kiln")
     if refused:
@@ -151,7 +155,7 @@ def _prepare(
 
     manager = ConfigManager(registry)
     config = manager.load(root)
-    artifacts = _artifacts(manager, config, root)
+    artifacts = _artifacts(manager, config, root, starters=starters)
     unfenced = _unfenced(root, artifacts)
     if unfenced:
         raise CycleRefused(unfenced)
@@ -183,13 +187,25 @@ def _prepare(
 
 
 def _artifacts(
-    manager: ConfigManager, config: KilnConfig, root: Path
+    manager: ConfigManager,
+    config: KilnConfig,
+    root: Path,
+    *,
+    starters: str | None = None,
 ) -> list[generation.Artifact]:
-    return [
-        artifact
-        for module in manager.modules_for(config)
-        for artifact in module.artifacts(config, root)
-    ]
+    kept: list[generation.Artifact] = []
+    for module in manager.modules_for(config):
+        held: set[str] = set()
+        if isinstance(module, StarterModule):
+            held.update(module.starters(config, root))
+        kept += [
+            artifact
+            for artifact in module.artifacts(config, root)
+            if artifact.path not in held
+            or (root / artifact.path).exists()
+            or (starters is not None and artifact.path.startswith(starters))
+        ]
+    return kept
 
 
 def _unfenced(root: Path, artifacts: Sequence[generation.Artifact]) -> list[Finding]:

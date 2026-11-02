@@ -288,7 +288,9 @@ def new(
     docs_scaffold(workspace, resolved)
     instructions_scaffold(workspace, resolved)
 
-    result = cycle.apply(workspace, provenance=resolution.provenance_metadata())
+    result = cycle.apply(
+        workspace, provenance=resolution.provenance_metadata(), starters=""
+    )
     if resolved.docs_profile == "mkdocs":
         packages = resolved.packages if resolved.archetype == "python-lib" else ()
         generate.generate(workspace, packages)
@@ -770,7 +772,7 @@ def generate_package(
     config = ConfigManager().load(root)
     python_add_package(root, config, name, remote)
     docs_add_package(root, config, name)
-    result = cycle.apply(root)
+    result = cycle.apply(root, starters=f"{relative}/")
     generate.generate(root, config.packages)
 
     written = sorted(

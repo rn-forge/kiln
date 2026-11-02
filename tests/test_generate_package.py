@@ -386,3 +386,18 @@ def test_s6_1_3_3_an_invalid_module_is_refused(tmp_path: Path) -> None:
     with pytest.raises(AppException):
         commands.generate_package("alpha", path=root, module="Rn-Forge")
     assert _tree(root) == tree
+
+
+def test_s6_9_1_3_generate_package_seeds_only_the_new_package(
+    generated: Path, tmp_path: Path
+) -> None:
+    root = tmp_path / "golden-lib"
+    shutil.copytree(generated, root)
+    alpha = root / "packages/golden-alpha/src/golden_alpha/settings.py"
+    alpha.unlink()
+
+    _generate(root, "golden-gamma")
+
+    assert (root / "packages/golden-gamma/src/golden_gamma/settings.py").is_file()
+    assert (root / "packages/golden-gamma/tests/test_settings.py").is_file()
+    assert not alpha.exists()

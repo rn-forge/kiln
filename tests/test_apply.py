@@ -155,3 +155,29 @@ def _snapshot(repo: Path) -> dict[str, str]:
         except UnicodeDecodeError:
             result[relative] = "<binary>"
     return result
+
+
+def test_s6_9_1_2_apply_does_not_recreate_a_deleted_starter(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    commands.new(Path("tool"), archetype="python-tool", docs="mkdocs", yes=True)
+    root = tmp_path / "tool"
+    monkeypatch.chdir(root)
+    product = next(root.glob("src/*/product.py"))
+    relative = product.relative_to(root).as_posix()
+    product.unlink()
+    capsys.readouterr()
+
+    commands.apply(dry_run=True, json=True)
+    rows = _last_json(capsys)["artifacts"]
+    assert {row["action"] for row in rows if row["path"] == relative} == {"forget"}
+    assert all(row["action"] != "create" for row in rows)
+
+    commands.apply()
+    assert not product.exists()
+    capsys.readouterr()
+    commands.apply(dry_run=True, json=True)
+    assert all(row["path"] != relative for row in _last_json(capsys)["artifacts"])

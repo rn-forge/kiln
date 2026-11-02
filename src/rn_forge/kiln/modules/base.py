@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from rn_forge.kiln.archetypes import Archetype
     from rn_forge.kiln.config import KilnConfig
 
-__all__ = ["KilnModule", "ModuleRegistry", "Option"]
+__all__ = ["KilnModule", "ModuleRegistry", "Option", "StarterModule"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,6 +69,15 @@ class KilnModule(Protocol):
 
     def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:
         """Check what this module owns in the repo at *root*."""
+        ...
+
+
+@runtime_checkable
+class StarterModule(Protocol):
+    """A module whose artifacts include starter source."""
+
+    def starters(self, config: KilnConfig, root: Path) -> Sequence[str]:
+        """The paths in :meth:`KilnModule.artifacts` that are starter source."""
         ...
 
 

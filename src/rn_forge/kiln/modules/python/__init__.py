@@ -42,6 +42,12 @@ class PythonModule:
 
         return [*artifacts.render(config), *starter.render(config, root)]
 
+    def starters(self, config: KilnConfig, root: Path) -> Sequence[str]:
+        """The paths in :meth:`artifacts` that are starter source."""
+        from rn_forge.kiln.modules.python import starter
+
+        return [a.path for a in starter.render(config, root)]
+
     def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:
         """This module's render-free checks."""
         # Imported here so importing a module object never loads its checks.

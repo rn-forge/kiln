@@ -13,7 +13,8 @@ from rn_forge.commons.generation import Artifact, ArtifactKind
 
 from rn_forge.kiln import commands
 from rn_forge.kiln.config import KilnConfig
-from rn_forge.kiln.modules.python import starter
+from rn_forge.kiln.modules.base import StarterModule
+from rn_forge.kiln.modules.python import PYTHON, starter
 from rn_forge.kiln.modules.python.artifacts import root_package
 
 CONFIG = """
@@ -296,3 +297,15 @@ def test_s4_9_5_2_web_api_starter_is_formatter_stable(
     artifacts = starter.render(config, tmp_path)
     assert artifacts
     _assert_formatter_stable(tmp_path, artifacts)
+
+
+def test_s6_9_1_4_python_starters_are_its_starter_paths(tmp_path: Path) -> None:
+    assert isinstance(PYTHON, StarterModule)
+    config = _tool(tmp_path)
+    _fresh(tmp_path, "python_tool")
+    expected = {a.path for a in starter.render(config, tmp_path)}
+    assert expected
+    assert set(PYTHON.starters(config, tmp_path)) == expected
+
+    (tmp_path / "src" / "python_tool" / "service.py").write_text("", encoding="utf-8")
+    assert not PYTHON.starters(config, tmp_path)

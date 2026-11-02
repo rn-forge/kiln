@@ -12,6 +12,7 @@ import pytest
 from rn_forge.commons.generation import ArtifactKind
 
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.base import StarterModule
 from rn_forge.kiln.modules.node import NODE
 from rn_forge.kiln.modules.node.angular import NGKIT_URL, add_ngkit
 from rn_forge.kiln.modules.node.scaffold import reconcile_node
@@ -89,6 +90,15 @@ def test_s4_9_4_1_starter_paths(tmp_path: Path) -> None:
     assert "'/v1/items'" in app_ts
     proxy = json.loads(by_path["apps/web/proxy.conf.json"])
     assert proxy["/v1"]["target"] == "http://localhost:8000"
+
+
+def test_s6_9_1_5_node_starters_include_the_proxy_config(tmp_path: Path) -> None:
+    assert isinstance(NODE, StarterModule)
+    config = _config(tmp_path, extra='frontend = "angular"')
+    _stock(tmp_path, "apps/web")
+    paths = NODE.starters(config, tmp_path)
+    assert "apps/web/proxy.conf.json" in paths
+    assert set(paths) == _paths("apps/web")
 
 
 def test_s4_9_3_1_web_dir_moves_the_paths(tmp_path: Path) -> None:

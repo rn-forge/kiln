@@ -444,6 +444,34 @@ def test_s6_1_5_1_init_adopts_a_library_workspace_with_its_packages(
     assert _entries(lib_repo) == _entries(lib_fresh)
 
 
+def test_s6_9_1_1_init_writes_no_starter_into_a_package_with_subpackages(
+    lib_repo: Path, tmp_path: Path
+) -> None:
+    packages = ["packages/lib-alpha", "packages/lib-beta"]
+    alpha = lib_repo / packages[0]
+    beta_starters = [
+        lib_repo / packages[1] / "src" / "lib_beta" / "settings.py",
+        lib_repo / packages[1] / "tests" / "test_settings.py",
+    ]
+    assert all(file.is_file() for file in beta_starters)
+    before = [file.read_bytes() for file in beta_starters]
+    (alpha / "src" / "lib_alpha" / "settings.py").unlink()
+    (alpha / "tests" / "test_settings.py").unlink()
+    (alpha / "src" / "lib_alpha" / "sub").mkdir()
+    (alpha / "src" / "lib_alpha" / "sub" / "__init__.py").write_text(
+        "", encoding="utf-8"
+    )
+    _commit(lib_repo)
+
+    commands.init(
+        archetype="python-lib", config=_packages_config(tmp_path, *packages), yes=True
+    )
+
+    assert not (alpha / "src" / "lib_alpha" / "settings.py").exists()
+    assert not (alpha / "tests" / "test_settings.py").exists()
+    assert [file.read_bytes() for file in beta_starters] == before
+
+
 def test_s6_6_1_1_written_config_is_taplo_clean(
     lib_fresh: Path, tmp_path: Path
 ) -> None:
