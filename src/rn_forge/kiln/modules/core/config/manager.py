@@ -238,7 +238,8 @@ class ConfigManager:
         Values given as flags when the config was created are kept. A key whose
         committed value differs from what its layer last supplied — or that no
         layer supplied — is a repo override: its committed value wins, and it
-        is listed in :attr:`Resolution.overrides`.
+        is listed in :attr:`Resolution.overrides`. Deleting `[source]` keeps
+        its values as repository overrides.
 
         Args:
             allow_schema_upgrade: `kiln config-upgrade` passes this to re-merge
@@ -277,9 +278,15 @@ class ConfigManager:
         body = {k: v for k, v in committed.items() if k not in _UNLAYERED}
         overrides: dict[str, Any] = {}
         names: list[str] = []
+        orphaned = "source" not in committed
         for path, value in DictUtils.flatten(body).items():
             was = recorded.get(path)
-            if was is None or was.layer == REPO_LAYER or was.value != value:
+            if (
+                was is None
+                or was.layer == REPO_LAYER
+                or was.value != value
+                or (orphaned and was.layer == SOURCE_LAYER)
+            ):
                 DictUtils.set(overrides, path, value)
                 names.append(path)
         layers.append((REPO_LAYER, overrides))

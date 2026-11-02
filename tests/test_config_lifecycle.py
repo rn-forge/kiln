@@ -201,6 +201,50 @@ def test_s4_5_4_apply_writes_the_remerged_config_then_apply_dry_run_is_clean(
     assert all(row["action"] in ("unchanged", "skip") for row in payload["artifacts"])
 
 
+def _delete_source(root: Path) -> None:
+    document = tomllib.loads((root / CONFIG_PATH).read_text(encoding="utf-8"))
+    del document["source"]
+    (root / CONFIG_PATH).write_text(
+        DocumentUtils.dumps(document, ConfigFormat.TOML), encoding="utf-8"
+    )
+
+
+def test_s6_9_2_1_deleting_source_keeps_its_values(
+    resolved_repo: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _delete_source(resolved_repo)
+
+    commands.config_update(apply=True, json=True)
+
+    kept = tomllib.loads((resolved_repo / CONFIG_PATH).read_text(encoding="utf-8"))
+    assert kept["docs"]["profile"] == "none"
+    assert kept["ci"]["sonar"] is False
+
+    commands.config_update(dry_run=True, json=True)
+    assert _last_json(capsys)["artifacts"] == []
+
+
+def test_s6_9_2_2_deleted_source_values_become_overrides(
+    resolved_repo: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _delete_source(resolved_repo)
+
+    commands.config_update(dry_run=True, json=True)
+
+    overrides = _last_json(capsys)["overrides"]
+    assert "docs.profile" in overrides
+    assert "ci.sonar" in overrides
+
+
+def test_s6_9_2_3_a_missing_source_file_still_refuses(
+    resolved_repo: Path, layer: Path
+) -> None:
+    layer.unlink()
+
+    with pytest.raises(AppException):
+        commands.config_update(dry_run=True)
+
+
 def test_s4_5_4_update_refuses_a_stale_schema_naming_config_upgrade(
     resolved_repo: Path,
 ) -> None:

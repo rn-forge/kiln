@@ -17,7 +17,7 @@
 | [F6.6 — `kiln init` leaves the gate runnable](F6.6-init-leaves-gate-runnable.md) | Closed | release-1 | 3 Closed |
 | [F6.7 — kiln ships the CI planner as `kiln-devops`](F6.7-kiln-devops.md) | Active | release-1 | 6 Closed |
 | [F6.8 — The generated CI takes pykit's Release 7](F6.8-pykit-release-7-ci.md) | Active | release-1 | 3 Closed |
-| [F6.9 — `init` and `config-update` leave an adopted repository alone](F6.9-init-leaves-adopted-repo-alone.md) | Active | release-1 | 1 New · 1 Closed |
+| [F6.9 — `init` and `config-update` leave an adopted repository alone](F6.9-init-leaves-adopted-repo-alone.md) | Active | release-1 | 2 Closed |
 
 <!-- END derived features -->
 
