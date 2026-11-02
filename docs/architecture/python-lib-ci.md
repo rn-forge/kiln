@@ -51,6 +51,7 @@ A newer push to the same pull request cancels the run in progress. Pushes to
 | `plan` | the selection above | runs | runs | runs, every package |
 | `verify`, one per selected package | ruff, pyright and pytest for that member | selected | selected | every package |
 | `postgres`, one per selected package that declares `[tool.workspace-ci.postgres]` | that member's tests against a PostgreSQL 17 service | selected | selected | every declaring package |
+| `redis`, one per selected package that declares `[tool.workspace-ci.redis]` | that member's tests against a Redis 7 service | selected | selected | every declaring package |
 | `smoke`, one per selected package with no extra, plus one per declared extra | the built wheel, with no extra or with that one extra, installs into a clean venv and imports | selected | selected | every package and declared extra |
 | `suites` | the root `[tool.workspace-ci.suites]` pytest runs | always, all suites | always | always |
 | `sonar` | whole-workspace coverage, then the scan, waiting on the quality gate | runs; skipped for a fork's pull request | runs, on branch `main` | runs, on the dispatched branch |
@@ -63,16 +64,17 @@ A newer push to the same pull request cancels the run in progress. Pushes to
 
 ```text
 validate ─► plan ─┬─► verify ───┐
-                  ├─► postgres ─┼─► sonar ─► release ─► external-install
+                  ├─► postgres ─┤
+                  ├─► redis ────┼─► sonar ─► release ─► external-install
                   ├─► smoke ────┘                 └───► docs
                   └─► suites
 all of them ─► ci-ok
 ```
 
 - Nothing runs unless `validate` passes.
-- `sonar` waits for `verify`, `postgres` and `smoke`, and runs only if none
-  failed.
-- `release` waits for the same three and for `sonar`. It runs only on a push to
+- `sonar` waits for `verify`, `postgres`, `redis` and `smoke`, and runs only if
+  none failed.
+- `release` waits for the same four and for `sonar`. It runs only on a push to
   `main`, when the selection is not empty and `sonar` succeeded (where
   `[ci] sonar` is off, `sonar` is not rendered and the condition is absent).
   Within a run it decides per package.
@@ -81,13 +83,13 @@ all of them ─► ci-ok
 
 ## How a release is decided
 
-- Each passing `verify`, `postgres` and `smoke` leg uploads an `ok-<marker>`
-  artifact. `release` publishes a package only when every one of its markers
-  exists and every selected package it requires is releasable too. Because
-  `release` waits for `sonar`, and `sonar` runs only if no check failed, any
-  failed leg holds back the whole run's releases; the run is red through
-  `ci-ok`. The markers still guard a leg that was skipped for a package that
-  was not selected.
+- Each passing `verify`, `postgres`, `redis` and `smoke` leg uploads an
+  `ok-<marker>` artifact. `release` publishes a package only when every one of
+  its markers exists and every selected package it requires is releasable too.
+  Because `release` waits for `sonar`, and `sonar` runs only if no check
+  failed, any failed leg holds back the whole run's releases; the run is red
+  through `ci-ok`. The markers still guard a leg that was skipped for a
+  package that was not selected.
 - Releases follow version bumps. A tag that is already published is skipped; a
   draft is rebuilt from its tag and replaced. A merge that changes a package
   without bumping its version re-verifies it and publishes nothing.
@@ -103,6 +105,6 @@ all of them ─► ci-ok
 
 ## Worked example: a docs-only pull request
 
-The selection is empty, so `verify`, `postgres`, `smoke` and `release` are
-skipped. `validate`, which builds the docs strictly, `suites` and `sonar` still
-run, and `ci-ok` passes.
+The selection is empty, so `verify`, `postgres`, `redis`, `smoke` and `release`
+are skipped. `validate`, which builds the docs strictly, `suites` and `sonar`
+still run, and `ci-ok` passes.

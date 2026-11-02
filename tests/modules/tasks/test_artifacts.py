@@ -778,6 +778,17 @@ def test_s6_4_3_2_commands_follow_the_story(tmp_path: Path) -> None:
     assert tasks["suite"]["cmds"] == ["uv run pytest $SUITE_ARGS"]  # type: ignore[index]
 
 
+def test_s6_8_2_5_redis_task(tmp_path: Path) -> None:
+    tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
+    assert tasks["redis"]["desc"]  # type: ignore[index]
+    assert "internal" not in tasks["redis"]  # type: ignore[operator]
+    cmds = tasks["redis"]["cmds"]  # type: ignore[index]
+    assert len(cmds) == 1
+    lines = cmds[0].splitlines()
+    assert lines[0] == 'export "$URL_VAR=redis://localhost:6379/0"'
+    assert tasks["postgres"]["cmds"][0].splitlines()[1] == lines[1]  # type: ignore[index]
+
+
 def _libs_root(tmp_path: Path) -> Path:
     root = _root(tmp_path, "python-lib")
     config = root / ".rn-forge" / "kiln" / "config.toml"
@@ -794,7 +805,7 @@ def test_s6_4_6_2_ci_tasks_take_the_directory_from_package_dir(
     tmp_path: Path,
 ) -> None:
     tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
-    for name in ("verify", "postgres"):
+    for name in ("verify", "postgres", "redis"):
         text = "\n".join(tasks[name]["cmds"])  # type: ignore[index]
         assert "packages/{{.CLI_ARGS}}" not in text, name
         assert '--directory "$PACKAGE_DIR"' in text, name
@@ -1386,6 +1397,7 @@ CI_PIPELINE_TASKS = {
     "adapters",
     "verify",
     "postgres",
+    "redis",
     "smoke",
     "suite",
     "release-build",

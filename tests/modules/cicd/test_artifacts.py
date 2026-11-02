@@ -660,6 +660,7 @@ PLAN_KEYS = (
     "release-order",
     "packages",
     "postgres",
+    "redis",
     "smoke",
     "suites",
     "pytest-args",
@@ -680,6 +681,7 @@ def test_s6_4_2_4_python_lib_jobs_and_validate_steps(tmp_path: Path) -> None:
         "plan",
         "verify",
         "postgres",
+        "redis",
         "smoke",
         "suites",
         "sonar",
@@ -746,7 +748,7 @@ def test_s6_4_2_6_verify_job(tmp_path: Path) -> None:
 
 def test_s6_4_2_6_sonar_waits_for_verify(tmp_path: Path) -> None:
     sonar = _lib_jobs(tmp_path)["sonar"]
-    assert sonar["needs"] == ["validate", "verify", "postgres", "smoke"]
+    assert sonar["needs"] == ["validate", "verify", "postgres", "redis", "smoke"]
     assert str(sonar["if"]).startswith(
         "${{ !cancelled() && !contains(needs.*.result, 'failure') && ("
     )
@@ -768,13 +770,15 @@ def test_s6_4_2_8_other_archetypes_keep_the_plain_pipeline(tmp_path: Path) -> No
 def test_s6_4_3_2_declared_jobs_follow_verify(tmp_path: Path) -> None:
     jobs = _lib_jobs(tmp_path)
     names = list(jobs)
-    assert names[names.index("verify") + 1 : names.index("verify") + 4] == [
+    assert names[names.index("verify") + 1 : names.index("verify") + 5] == [
         "postgres",
+        "redis",
         "smoke",
         "suites",
     ]
     for name, key in (
         ("postgres", "postgres"),
+        ("redis", "redis"),
         ("smoke", "smoke"),
         ("suites", "suites"),
     ):
@@ -820,6 +824,50 @@ def test_s6_4_3_3_postgres_job(tmp_path: Path) -> None:
     }
 
 
+def test_s6_8_2_1_redis_job(tmp_path: Path) -> None:
+    job = _lib_jobs(tmp_path)["redis"]
+    assert job["services"] == {
+        "redis": {
+            "image": "redis:7",
+            "ports": ["6379:6379"],
+            "options": (
+                '--health-cmd "redis-cli ping" --health-interval 5s '
+                "--health-timeout 5s --health-retries 10"
+            ),
+        }
+    }
+    steps = job["steps"]  # type: ignore[assignment]
+    runs = [s.get("run") for s in steps]  # type: ignore[attr-defined]
+    command = "task ci:redis -- ${{ matrix.name }}"
+    assert runs.index("task setup") < runs.index(command)
+    assert steps[runs.index(command)]["env"] == {  # type: ignore[index]
+        "PACKAGE_DIR": "${{ matrix.dir }}",
+        "URL_VAR": "${{ matrix.env }}",
+        "PYTEST_ARGS": "${{ needs.plan.outputs.pytest-args }}",
+    }
+
+
+def test_s6_8_2_2_redis_uploads_its_marker(tmp_path: Path) -> None:
+    touch, upload = _marker_steps(_lib_jobs(tmp_path)["redis"])
+    assert touch["run"] == 'mkdir ok && touch "ok/${{ matrix.name }}.redis"'
+    assert upload["with"]["name"] == "ok-${{ matrix.name }}.redis"  # type: ignore[index]
+
+
+def test_s6_8_2_3_redis_gates_what_postgres_gates(tmp_path: Path) -> None:
+    jobs = _lib_jobs(tmp_path)
+    for name in ("sonar", "release", "ci-ok"):
+        needs = list(jobs[name]["needs"])  # type: ignore[call-overload]
+        assert needs.index("redis") == needs.index("postgres") + 1, name
+
+
+def test_s6_8_2_4_redis_is_generated(tmp_path: Path) -> None:
+    assert "redis" in GENERATED_JOBS
+    extra = f'\n[[ci.jobs]]\nname = "redis"\nuses = "{CALL}"\n'
+    root = _with_ci(_root(tmp_path, "python-lib"), extra)
+    with pytest.raises(AppException):
+        KilnConfig.load(root)
+
+
 def test_s6_4_3_4_smoke_job_does_not_sync(tmp_path: Path) -> None:
     steps = _lib_jobs(tmp_path)["smoke"]["steps"]  # type: ignore[assignment]
     runs = [s.get("run") for s in steps]  # type: ignore[attr-defined]
@@ -841,9 +889,15 @@ def test_s6_4_3_5_suites_job(tmp_path: Path) -> None:
 
 def test_s6_4_3_6_ci_ok_and_sonar_need_the_declared_jobs(tmp_path: Path) -> None:
     jobs = _lib_jobs(tmp_path)
-    assert jobs["sonar"]["needs"] == ["validate", "verify", "postgres", "smoke"]
+    assert jobs["sonar"]["needs"] == [
+        "validate",
+        "verify",
+        "postgres",
+        "redis",
+        "smoke",
+    ]
     assert set(jobs["ci-ok"]["needs"]) == set(jobs) - {"ci-ok"}  # type: ignore[arg-type]
-    assert {"postgres", "smoke", "suites"} <= set(jobs["ci-ok"]["needs"])  # type: ignore[arg-type]
+    assert {"postgres", "redis", "smoke", "suites"} <= set(jobs["ci-ok"]["needs"])  # type: ignore[arg-type]
 
 
 def _marker_steps(job: dict[str, object]) -> list[dict[str, object]]:
@@ -855,6 +909,7 @@ def test_s6_4_4_1_check_jobs_end_with_marker_steps(tmp_path: Path) -> None:
     markers = {
         "verify": "${{ matrix.name }}.verify",
         "postgres": "${{ matrix.name }}.postgres",
+        "redis": "${{ matrix.name }}.redis",
         "smoke": "${{ matrix.marker }}",
     }
     for name, marker in markers.items():
@@ -976,7 +1031,11 @@ def test_s6_4_6_1_verify_and_postgres_pass_the_matrix_dir_through_env(
     tmp_path: Path,
 ) -> None:
     jobs = _lib_jobs(tmp_path)
-    for name, task in (("verify", "ci:verify"), ("postgres", "ci:postgres")):
+    for name, task in (
+        ("verify", "ci:verify"),
+        ("postgres", "ci:postgres"),
+        ("redis", "ci:redis"),
+    ):
         assert jobs[name]["name"] == f"{name} (${{{{ matrix.name }}}})"
         step = next(
             s
@@ -1098,6 +1157,7 @@ def test_s6_4_7_1_release_needs_every_check_and_sonar(tmp_path: Path) -> None:
         "plan",
         "verify",
         "postgres",
+        "redis",
         "smoke",
         "sonar",
     ]
@@ -1114,7 +1174,14 @@ def test_s6_4_7_3_release_waits_on_sonar_only_where_sonar_renders(
     tmp_path: Path,
 ) -> None:
     release = _lib_jobs(tmp_path, sonar=False)["release"]
-    assert release["needs"] == ["validate", "plan", "verify", "postgres", "smoke"]
+    assert release["needs"] == [
+        "validate",
+        "plan",
+        "verify",
+        "postgres",
+        "redis",
+        "smoke",
+    ]
     assert release["if"] == RELEASE_IF % ""
     assert "sonar" not in str(release)
 

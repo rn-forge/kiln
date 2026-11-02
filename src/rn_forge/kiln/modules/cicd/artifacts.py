@@ -49,6 +49,7 @@ _PLAN_KEYS = (
     "release-order",
     "packages",
     "postgres",
+    "redis",
     "smoke",
     "suites",
     "pytest-args",

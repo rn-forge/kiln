@@ -303,6 +303,13 @@ tasks:
         export "$DSN_VAR=postgresql://ci:ci@localhost:5432/ci"
         uv run --directory "$PACKAGE_DIR" --package {{.CLI_ARGS}} pytest -q $PYTEST_ARGS
 
+  redis:
+    desc: "CI only: a member's tests again against Redis (-- <package>, with PACKAGE_DIR)"
+    cmds:
+      - |
+        export "$URL_VAR=redis://localhost:6379/0"
+        uv run --directory "$PACKAGE_DIR" --package {{.CLI_ARGS}} pytest -q $PYTEST_ARGS
+
   smoke:
     desc: "CI only: install one extra from the built wheel and import it (-- <package> [extra])"
     silent: true

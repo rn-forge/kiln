@@ -410,10 +410,10 @@ planned by `kiln-devops` ([ADR-0017](../adr/ADR-0017.md)) through the public
 ([ADR-0014](../adr/ADR-0014.md)):
 
 - `ci` namespace: `ci:plan`, `ci:adapters`, `ci:verify -- <package>`,
-  `ci:postgres`, `ci:smoke`, `ci:suite`, `ci:release-build`,
+  `ci:postgres`, `ci:redis`, `ci:smoke`, `ci:suite`, `ci:release-build`,
   `ci:release-publish` and `ci:external-install`.
 - `python-lib` jobs, in order: `validate`, `dependency-review`, `plan`,
-  `verify`, `postgres`, `smoke`, `suites`, `sonar`, `release`,
+  `verify`, `postgres`, `redis`, `smoke`, `suites`, `sonar`, `release`,
   `external-install`, `ci-ok`.
 
 [How a `python-lib` CI run flows](../architecture/python-lib-ci.md) walks

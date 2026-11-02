@@ -17,6 +17,7 @@ GENERATED_JOBS = frozenset(
         "plan",
         "verify",
         "postgres",
+        "redis",
         "smoke",
         "suites",
         "sonar",
