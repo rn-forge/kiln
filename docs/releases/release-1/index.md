@@ -44,7 +44,7 @@ are [release-2](../release-2/index.md).
 | [F4.2 — The `core` module, the config manager and the module contract](../../specs/epics/E4-generator/F4.2-core-module.md) | E4 | Closed |
 | [F4.3 — The concern modules, with templates](../../specs/epics/E4-generator/F4.3-concern-modules.md) | E4 | Closed |
 | [F4.4 — The render matrix, and the goldens leave git](../../specs/epics/E4-generator/F4.4-render-matrix.md) | E4 | Closed |
-| [F4.5 — CLI](../../specs/epics/E4-generator/F4.5-cli.md) | E4 | Active |
+| [F4.5 — CLI](../../specs/epics/E4-generator/F4.5-cli.md) | E4 | Closed |
 | [F4.6 — doctor](../../specs/epics/E4-generator/F4.6-doctor.md) | E4 | Closed |
 | [F4.7 — Import contracts](../../specs/epics/E4-generator/F4.7-import-contracts.md) | E4 | Closed |
 | [F4.8 — Self-hosting](../../specs/epics/E4-generator/F4.8-self-hosting.md) | E4 | Closed |
@@ -59,18 +59,18 @@ are [release-2](../release-2/index.md).
 | [F6.3 — The generated CI matches the hardened upstream CI](../../specs/epics/E6-rebuild-the-repos/F6.3-hardened-ci.md) | E6 | Closed |
 | [F6.4 — `python-lib` renders pykit's discovered workspace pipeline](../../specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md) | E6 | Closed |
 | [F6.6 — `kiln init` leaves the gate runnable](../../specs/epics/E6-rebuild-the-repos/F6.6-init-leaves-gate-runnable.md) | E6 | Closed |
-| [F6.7 — kiln ships the CI planner as `kiln-devops`](../../specs/epics/E6-rebuild-the-repos/F6.7-kiln-devops.md) | E6 | Active |
+| [F6.7 — kiln ships the CI planner as `kiln-devops`](../../specs/epics/E6-rebuild-the-repos/F6.7-kiln-devops.md) | E6 | Closed |
 | [F6.8 — The generated CI takes pykit's Release 7](../../specs/epics/E6-rebuild-the-repos/F6.8-pykit-release-7-ci.md) | E6 | Closed |
 | [F6.9 — `init` and `config-update` leave an adopted repository alone](../../specs/epics/E6-rebuild-the-repos/F6.9-init-leaves-adopted-repo-alone.md) | E6 | Closed |
 | [F7.1 — kiln renders and takes pykit by release tag](../../specs/epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md) | E7 | Closed |
-| [F7.2 — A tagged kiln release, taken by each repository](../../specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md) | E7 | New |
+| [F7.2 — A tagged kiln release, taken by each repository](../../specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md) | E7 | Active |
 | [F7.3 — kiln takes pykit's document, template and Markdown helpers](../../specs/epics/E7-pykit-release-pin-flip/F7.3-adopt-pykit-extraction.md) | E7 | Closed |
 | [F7.4 — kiln runs beside a repository, not inside its lock](../../specs/epics/E7-pykit-release-pin-flip/F7.4-kiln-runs-beside-the-repository.md) | E7 | Closed |
-| [F7.5 — kiln takes pykit from PyPI](../../specs/epics/E7-pykit-release-pin-flip/F7.5-pykit-from-pypi.md) | E7 | Active |
-| [F7.6 — The `python-lib` release job publishes to PyPI](../../specs/epics/E7-pykit-release-pin-flip/F7.6-release-to-pypi.md) | E7 | Active |
+| [F7.5 — kiln takes pykit from PyPI](../../specs/epics/E7-pykit-release-pin-flip/F7.5-pykit-from-pypi.md) | E7 | Closed |
+| [F7.6 — The `python-lib` release job publishes to PyPI](../../specs/epics/E7-pykit-release-pin-flip/F7.6-release-to-pypi.md) | E7 | Closed |
 | [F9.1 — `node-lib` renders ngkit's CI](../../specs/epics/E9-node-archetypes/F9.1-node-lib-hosts-ngkit-ci.md) | E9 | Closed |
-| [F9.2 — One node scaffold](../../specs/epics/E9-node-archetypes/F9.2-one-node-scaffold.md) | E9 | Active |
-| [F9.3 — Node CI holds for ngkit and for every `node-lib`](../../specs/epics/E9-node-archetypes/F9.3-node-ci-holds-for-every-node-lib.md) | E9 | Active |
+| [F9.2 — One node scaffold](../../specs/epics/E9-node-archetypes/F9.2-one-node-scaffold.md) | E9 | Closed |
+| [F9.3 — Node CI holds for ngkit and for every `node-lib`](../../specs/epics/E9-node-archetypes/F9.3-node-ci-holds-for-every-node-lib.md) | E9 | Closed |
 | [F11.1 — The docs checks learn package sites](../../specs/epics/E11-package-docs/F11.1-checks-learn-package-sites.md) | E11 | Closed |
 | [F11.2 — `python-lib` repositories carry package docs sites](../../specs/epics/E11-package-docs/F11.2-python-lib-package-sites.md) | E11 | Closed |
 | [F11.3 — `kiln generate package`](../../specs/epics/E11-package-docs/F11.3-generate-package.md) | E11 | Closed |
@@ -122,6 +122,11 @@ are [release-2](../release-2/index.md).
   follow the cut; the tag is `v0.1.0`, distributed by git.
 
 ## Progress
+
+As of 2026-11-03, every in-scope feature is closed except F7.2: S7.2.1 is done
+([Shipped](#shipped)), and S7.2.4's cutover rehearsals hold the tag (S7.2.2).
+E4, E9 and E11 closed the same day. The rest of this section is the record as of
+2026-10-16.
 
 As of 2026-10-16. E3 shipped 2026-09-15; F4.1–F4.7, F5.1, F5.2, F6.3, F7.1,
 F11.1–F11.4, F13.1–F13.3 and F14.1–F14.2 are closed, the last eight on
@@ -196,8 +201,59 @@ Earlier release-1 work also landed in commits whose subjects name no ID:
   Added 2026-11-01.
 - Every open question on an in-scope feature is answered, as an ADR or as a
   rejected option recorded on the feature.
+- [S7.2.4](../../specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md#s724-in-place-cutovers-of-pykit-and-ngkit-find-nothing-kiln-lacks):
+  in-place cutover rehearsals of pykit and ngkit find nothing kiln lacks, or
+  every gap is closed. The owner holds the tag until then. Added 2026-11-02.
 
 ## Shipped
 
-Filled at the cut: the kiln commit each exit criterion was proved at, and the
-run of each acceptance block.
+Proved 2026-11-03 at `be9429e` on `feature/v1`
+([S7.2.1](../../specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md#s721-the-release-1-exit-criteria-hold)).
+kiln's CI at that commit:
+[run 41590472355](https://github.com/rn-forge/kiln/actions/runs/41590472355),
+green with Sonar's quality gate. The tag is held for S7.2.4.
+
+Each block ran locally in a clean worktree after `task setup`. F6.1 and F6.7 ran
+with pykit's `feature/release-8`, which carries the rn-forge-devops guides page.
+Exit `0` for every block:
+
+| Exit criterion | Blocks |
+| -- | -- |
+| E3, E4, E5 | E3, E4, E5 |
+| E4's features | F4.2–F4.9, F4.11, F4.12 |
+| E5's features | F5.1–F5.3 |
+| F6.1, F6.3, F6.4, F6.6–F6.9 | F6.1, F6.3, F6.4, F6.6, F6.7, F6.8, F6.9 |
+| F7.1, F7.4–F7.6 | F7.1, F7.4, F7.5, F7.6 |
+| E9's `node-lib` features | F9.1, F9.2, F9.3 |
+| F11.1–F11.5, and E11 | F11.1–F11.5, E11 |
+| F13.1–F13.3 | F13.1, F13.2, F13.3 |
+| F14.1–F14.2 | F14.1, F14.2 |
+
+These blocks first failed on a line that later work had made stale: E3, E4,
+F4.3, F4.5, F5.2, F6.1, and earlier in the run F4.4, F4.7, F4.12, F5.1, F6.3,
+F11.1, F11.4, F13.1–F13.3, F14.1, F14.2. Each line was corrected with an
+*Updated (S7.2.1)* note on its page, and the block re-run to exit `0`. The real
+defects the runs found became stories and closed before the final run:
+[S4.5.11](../../specs/epics/E4-generator/F4.5-cli.md) (`kiln new` runs
+`git init`), [S4.5.12](../../specs/epics/E4-generator/F4.5-cli.md) (no `main()`
+stub in app packages) and
+[S6.7.7](../../specs/epics/E6-rebuild-the-repos/F6.7-kiln-devops.md)
+(`kiln-devops` checks its arguments, which cleared Sonar's security gate).
+
+**Not re-run, superseded:** F3.1–F3.4 by E3's block; F4.1 by E4's block; F7.3 by
+F7.5's. F4.10, F7.2 and F13.4 have no block.
+
+**GitHub runs the shaped repositories ask for:**
+
+- S6.4.5, pykit-shape:
+  [run 41549190853](https://github.com/rn-forge/pykit-shape/actions/runs/41549190853).
+- S9.1.6, ngkit-shape:
+  [run 41564051289](https://github.com/rn-forge/ngkit-shape/actions/runs/41564051289),
+  attempt 2.
+
+**Checked after the cut:**
+
+- F6.7, S6.7.5: on kiln's first default-branch push after the merge, the
+  `release` job's `release-state` step reports the version's state.
+- F7.6: pykit's cutover dispatches a `testpypi` run, and its next push to `main`
+  uploads to pypi.org (owner decision, 2026-10-31).

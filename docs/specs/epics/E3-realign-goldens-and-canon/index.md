@@ -95,10 +95,14 @@ absent 'rn-forge-commons-v0\.2\.2' "$G"                                         
 task self:golden:validate                                                             # every cell
 (cd "$G/python-tool" && uv run python-tool doctor)                                    # F3.3
 (cd "$G/python-tool" && uv run python-tool --json status) | jq -e '.version'          # F3.3
-absent 'RNF_HOME|lifecycle' "$G/python-app"                                           # F3.3
+absent 'RNF_HOME|lifecycle' "$G/python-app" --glob '!.rn-forge'                                          # F3.3
 rg -q 'rn-forge-web' docs/reference/standard-repo.md                                  # F3.4
 task lint                                                                             # F3.4
 ```
+
+*Updated 2026-11-03 (S7.2.1):* `lifecycle` is now a key in kiln's own
+`.rn-forge/kiln/config.toml` (`lifecycle = false`), so the check skips
+`.rn-forge`. The app code is what F3.3 meant.
 
 *Updated 2026-11-03 (S7.2.1):* the hand-authored goldens under
 `tests/fixtures/golden` left git in

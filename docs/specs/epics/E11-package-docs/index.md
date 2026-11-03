@@ -2,8 +2,9 @@
 
 |  |  |
 | -- | -- |
-| **State** | Active |
+| **State** | Closed |
 | **Start Date** | 2026-09-26 |
+| **Closed Date** | 2026-11-03 |
 
 <!-- BEGIN derived features -->
 
@@ -156,3 +157,5 @@ Run 2026-10-01 against this checkout, because a fresh repository pins kiln at
 `feature/v1` on GitHub, which did not yet carry the E11 commits: the gate ran as
 `task setup && uv pip install -e "$kiln_dir" && UV_NO_SYNC=1 task validate`.
 Every line passed. Re-run the block as written after the push, then close.
+
+Run again as written 2026-11-03 at `be9429e` for S7.2.1: exit `0`. E11 closes.
