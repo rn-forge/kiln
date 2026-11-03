@@ -132,3 +132,58 @@ def test_s6_6_3_2_adopt_says_where_quality_findings_appear() -> None:
         "ownership checks; `task lint` also runs `rn-forge-deps`, "
         "`docs-structure` and `docs-site`, so read its findings too."
     ) in sections["9"]
+
+
+def test_s9_1_14_1_adopt_section_1_names_a_node_lib() -> None:
+    section = _adopt_sections()["1"]
+    assert "node-lib" in section
+    assert "nx.json" in section
+
+
+def test_s9_1_14_2_adopt_does_not_hard_code_the_archetype() -> None:
+    sections = _adopt_sections()
+    for number in ("3", "4"):
+        assert "--archetype python-lib" not in sections[number]
+        assert "--archetype <archetype>" in sections[number]
+        assert "`python-lib` or `node-lib`" in sections[number]
+
+
+def test_s9_1_14_3_adopt_section_2_has_a_node_lib_config_example() -> None:
+    section = _adopt_sections()["2"]
+    assert "sonar_exclusions" in section
+    assert "sonar_coverage_exclusions" in section
+    assert "extra_refs" in section
+    assert "nx-dispatch" in section
+
+
+def test_s9_1_14_4_adopt_section_5_rewrites_node_verbs() -> None:
+    section = _adopt_sections()["5"]
+    for name in ("pnpm exec nx", "pnpm dlx", "npx", "nx run-many -t lint"):
+        assert name in section
+    for rewrite in ("`task lint`", "`task test`", "`task build`", "`task setup`"):
+        assert rewrite in section
+    assert "`pnpm add`" in section
+
+
+def test_s9_1_14_5_adopt_section_6_names_prettierignore() -> None:
+    section = _adopt_sections()["6"]
+    assert ".prettierignore" in section
+    assert "*.md" in section
+
+
+def test_s9_1_14_6_adopt_section_7_names_the_ngkit_docs_rules() -> None:
+    section = _adopt_sections()["7"]
+    assert "#s821-accept" in section
+    assert "#s821--accept" in section
+    assert "index-only" in section
+    assert "docs/specs/epics/index.md" in section
+    assert "docs/specs/ideas/index.md" in section
+
+
+def test_s9_1_14_7_adopt_opening_cites_run_4() -> None:
+    text = (ROOT / "src/rn_forge/kiln/prompts/adopt.md").read_text(encoding="utf-8")
+    opening = " ".join(text.split("## 1. ")[0].split())
+    assert "run 4" in opening
+    assert "ngkit" in opening
+    assert "node-lib" in opening
+    assert "run 1" in opening

@@ -9,14 +9,17 @@ answer: a missing file is created, a duplicate `.gitignore` line is dropped, an
 unfenced `.importlinter` is fenced, the derived-nav markers are placed, the task
 tools the repository lacks are added to its dependency groups. It reports what
 it cannot settle. This prompt is the rest, the judgement. It prints guidance and
-installs nothing, and it is written from the first in-place adoption (run 1:
-pykit, a `python-lib` workspace). Facts from that run are examples, not rules.
+installs nothing, and it is written from in-place adoptions (run 1: pykit, a
+`python-lib` workspace; run 4: ngkit, a `node-lib` workspace). Facts from those
+runs are examples, not rules.
 
 ## 1. Choose the route
 
 - **In place** (`kiln init`, this prompt) when the repository already has the
-  archetype's shape: `src/` layout or a `packages/` workspace, a
-  `pyproject.toml`, tests, and a docs tree that is close to kiln's areas.
+  archetype's shape: for a `python-lib`, a `src/` layout or a `packages/`
+  workspace, a `pyproject.toml`, tests, and a docs tree that is close to
+  kiln's areas; for a `node-lib`, a pnpm workspace with `nx.json`, projects
+  under `libs/` or `apps/`, and a docs tree that is close to kiln's areas.
 - **Rebuild and port** (`kiln new`, then carry the specs and decisions over with
   `kiln prompt --name port-docs`) when it does not: a different layout, a
   different toolchain, or docs that share nothing with the standard. The
@@ -56,12 +59,28 @@ rebuild.
     delete the `[source]` table from `.rn-forge/kiln/config.toml` after `init`
     (run 3: pykit's `dist/pykit-kiln.toml`, which `task clean` also deletes).
 
+    A `node-lib` has no `[archetype.node-lib]` table; its file carries the
+    repository's own CI and task declarations (run 4: ngkit):
+
+    ```toml
+    [ci]
+    sonar_exclusions = ["apps/demo/**"]         # paths the repository's own Sonar file excluded
+    sonar_coverage_exclusions = ["libs/*/src/testing/**"]  # counted, but not expected to have coverage
+
+    [tasks.extra_refs]
+    lint = ["self:check:tokens"]                # repository-owned checks a root verb also runs
+    ```
+
+    The archetype's release default is `nx-dispatch`, so `[ci] release` is left
+    unset.
+
 ## 3. Preview and sort the plan
 
-Run the preview, which writes nothing:
+Run the preview, which writes nothing. `<archetype>` is `python-lib` or
+`node-lib`:
 
 ```bash
-uv run --project <kiln> kiln init --archetype python-lib --docs mkdocs --config <file> --dry-run
+uv run --project <kiln> kiln init --archetype <archetype> --docs mkdocs --config <file> --dry-run
 ```
 
 The plan lists creates, conflicts and block inserts. Sort each conflict by how
@@ -81,11 +100,12 @@ made now is the one you will check against at review.
 ## 4. Apply
 
 ```bash
-uv run --project <kiln> kiln init --archetype python-lib --docs mkdocs --config <file> --yes --force
+uv run --project <kiln> kiln init --archetype <archetype> --docs mkdocs --config <file> --yes --force
 ```
 
-`--force` approves every conflict. Before it overwrites, kiln copies each
-conflicting file, and every file it restructures, to
+The archetype is the one section 3 used, `python-lib` or `node-lib`. `--force`
+approves every conflict. Before it overwrites, kiln copies each conflicting
+file, and every file it restructures, to
 `.rn-forge/kiln/backups/<UTC timestamp>/` (gitignored). It also restructures
 three things for you:
 
@@ -124,12 +144,16 @@ Read kiln's block and the repository's text together:
 - A document contradicts kiln's block when it tells a developer to run, in this
   repository, a tool that a root `task` verb wraps (`uv run pytest` is
   `task test`, `uv run ruff check` is `task lint`, `uv sync` is `task setup`,
-  `mkdocs build` is `task docs:build`). Rewrite those to the verb. Leave
-  commands with no verb (`uv add`, `uv lock`, `uv build`), and commands for a
-  consumer outside the repository (a README's `uvx …` install line). No check
-  finds these: grep the docs, `README.md` and `CLAUDE.md` for `uv run`,
-  `pytest`, `ruff`, `pyright`, `mkdocs` (run 2: pykit's `development.md`,
-  `README.md`, `releasing-packages.md`).
+  `mkdocs build` is `task docs:build`). In a `node-lib`, `pnpm exec nx lint`
+  or `nx run-many -t lint` is `task lint`, `nx test` is `task test`,
+  `nx build` is `task build`, and `pnpm install` is `task setup`. Rewrite
+  those to the verb. Leave commands with no verb (`uv add`, `uv lock`,
+  `uv build`, `pnpm add`), and commands for a consumer outside the repository
+  (a README's `uvx …` install line). No check finds these: grep the docs,
+  `README.md` and `CLAUDE.md` for `uv run`, `pytest`, `ruff`, `pyright`,
+  `mkdocs` (run 2: pykit's `development.md`, `README.md`,
+  `releasing-packages.md`) and, in a `node-lib`, `pnpm exec`, `pnpm dlx`,
+  `npx` and a bare `nx` command.
 
 ## 6. Seeded files that kiln's checks need in a given shape
 
@@ -146,6 +170,8 @@ fails or, worse, stays silent.
   `.rn-forge/kiln/config.toml`; reorder that list, not the nav.
 - Page titles in the nav come from each page's H1. If a title reads wrong, fix
   the H1.
+- A repository with Prettier lists `*.md` in `.prettierignore`, because mdformat
+  formats Markdown in every archetype (run 4: ngkit).
 
 ## 7. Convert the specs to kiln's work model
 
@@ -164,6 +190,12 @@ verbatim, nothing is dropped silently), and in particular:
 - The `specs` area becomes `nav: work` in `docs/_areas.yml`, and
   `docs/specs/epics/index.md` is seeded.
 - The repository's own board script retires, with whatever calls it.
+- Heading anchors are MkDocs' slugs, not GitHub's: `## S8.2.1 — Accept` is
+  `#s821-accept`, not `#s821--accept`. Rewrite every such link, and let
+  `task lint`'s `broken anchor` findings list them (run 4: ngkit).
+- When an area is `index-only`, its `index.md` links the pages kiln seeds in it
+  (`docs/specs/epics/index.md`, `docs/specs/ideas/index.md`), or they are
+  unreachable from the nav.
 
 Then run `task docs:generate`, and fix every `docs.state-contradicts-work`
 finding on the page (an epic or feature state that its features or stories
