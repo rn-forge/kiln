@@ -13,7 +13,7 @@
 | [F4.2 — The `core` module, the config manager and the module contract](F4.2-core-module.md) | Closed | release-1 | 3 Closed |
 | [F4.3 — The concern modules, with templates](F4.3-concern-modules.md) | Closed | release-1 | 7 Closed |
 | [F4.4 — The render matrix, and the goldens leave git](F4.4-render-matrix.md) | Closed | release-1 | 9 Closed |
-| [F4.5 — CLI](F4.5-cli.md) | Closed | release-1 | 10 Closed |
+| [F4.5 — CLI](F4.5-cli.md) | Active | release-1 | 12 Closed |
 | [F4.6 — doctor](F4.6-doctor.md) | Closed | release-1 | 5 Closed |
 | [F4.7 — Import contracts](F4.7-import-contracts.md) | Closed | release-1 | 3 Closed |
 | [F4.8 — Self-hosting](F4.8-self-hosting.md) | Closed | release-1 | 3 Closed |

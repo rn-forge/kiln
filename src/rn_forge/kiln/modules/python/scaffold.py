@@ -460,6 +460,10 @@ def _uv_init(
         if package_dir != derived:
             package_dir.parent.mkdir(parents=True, exist_ok=True)
             shutil.move(derived, package_dir)
+        if not lib:
+            # `uv init --package` writes a `main()` stub the starter's
+            # `main:app` console script never uses.
+            (package_dir / "__init__.py").write_text("", encoding="utf-8")
         typed = package_dir / "py.typed"
         if not typed.exists():
             typed.touch()

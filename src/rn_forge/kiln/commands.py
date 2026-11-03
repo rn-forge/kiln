@@ -31,6 +31,7 @@ from rn_forge.commons.fs.state import StateStore
 from rn_forge.commons.generation import StateEntry
 from rn_forge.commons.lang.collections import DictUtils
 from rn_forge.commons.runtime.console import OutputMode, console
+from rn_forge.commons.runtime.subprocess import Process
 
 from rn_forge.kiln import archetypes, checks
 from rn_forge.kiln import doctor as doctor_module
@@ -301,6 +302,8 @@ def new(
 
     directory.mkdir(parents=True, exist_ok=True)
     shutil.copytree(workspace, directory, symlinks=True, dirs_exist_ok=True)
+    # Last, so a failed run leaves no repository; the file linters need a root.
+    Process.execute("git-init", "git", "init", "-q", cwd=str(directory))
     rows = _change_rows(result.changes)
     _report(directory, resolved, rows)
 

@@ -87,19 +87,25 @@ the epic as a whole afterwards.
 set -euo pipefail
 absent() { local rc=0; rg -q --hidden --glob '!.git' "$@" || rc=$?; [ "$rc" -eq 1 ]; }
 cd rn-forge/kiln
-G=tests/fixtures/golden
+task self:golden:render
+G=.goldens/working
 absent 'rn_forge\.cli\.declare|build_app|from rn_forge\.cli import console' "$G"      # F3.1
-absent 'def main' "$G/python-app/src" "$G/python-tool/src"                            # F3.1
+absent 'def main' "$G/python-app/src" "$G/python-tool/src"                            # F3.1, S4.5.12
 absent 'rn-forge-commons-v0\.2\.2' "$G"                                               # F3.2
-for g in "$G/python-app" "$G/python-tool" "$G/python-lib"; do
-  (cd "$g" && uv sync && task validate) || { echo "FAIL $g" >&2; exit 1; }
-done
-(cd "$G/python-tool" && uv run golden-tool doctor)                                    # F3.3
-(cd "$G/python-tool" && uv run golden-tool --json status) | jq -e '.version'          # F3.3
+task self:golden:validate                                                             # every cell
+(cd "$G/python-tool" && uv run python-tool doctor)                                    # F3.3
+(cd "$G/python-tool" && uv run python-tool --json status) | jq -e '.version'          # F3.3
 absent 'RNF_HOME|lifecycle' "$G/python-app"                                           # F3.3
 rg -q 'rn-forge-web' docs/reference/standard-repo.md                                  # F3.4
 task lint                                                                             # F3.4
 ```
+
+*Updated 2026-11-03 (S7.2.1):* the hand-authored goldens under
+`tests/fixtures/golden` left git in
+[S4.4.9](../E4-generator/F4.4-render-matrix.md#s449-the-goldens-leave-the-repository),
+so the block re-proves E3 on the rendered cells under `.goldens/working`, whose
+tool script is `python-tool`. The features' own blocks (F3.1–F3.4) name the
+retired fixtures and are kept as the record of their close.
 
 Run on 2026-09-15 against `feature/v1`: every feature block passes (F3.1, F3.2,
 F3.3, F3.4) and this block passes after them. Two things it caught and that were

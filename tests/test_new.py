@@ -399,7 +399,7 @@ def _hashes(root: Path) -> dict[str, bytes]:
     return {
         str(p.relative_to(root)): p.read_bytes()
         for p in sorted(root.rglob("*"))
-        if p.is_file()
+        if p.is_file() and ".git" not in p.relative_to(root).parts
     }
 
 
@@ -472,6 +472,73 @@ def test_s4_5_9_5_existing_staging_is_refused_untouched(tmp_path: Path) -> None:
     assert not (tmp_path / "demo").exists()
 
 
+def test_s4_5_11_1_success_leaves_a_git_repository_without_commits(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "demo"
+    commands.new(target, archetype="python-tool", docs="none", yes=True)
+
+    top = subprocess.run(
+        ["git", "-C", str(target), "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    assert Path(top).resolve() == target.resolve()
+    head = subprocess.run(
+        ["git", "-C", str(target), "rev-parse", "--verify", "HEAD"],
+        capture_output=True,
+        check=False,
+    )
+    assert head.returncode != 0
+    remotes = subprocess.run(
+        ["git", "-C", str(target), "remote"], capture_output=True, text=True
+    )
+    assert remotes.stdout == ""
+
+
+def test_s4_5_11_2_dry_run_writes_no_git(tmp_path: Path) -> None:
+    target = tmp_path / "preview"
+    commands.new(target, archetype="python-tool", docs="none", yes=True, dry_run=True)
+    assert not target.exists()
+
+
+def test_s4_5_11_3_failure_or_refusal_creates_no_git(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    full = tmp_path / "full"
+    full.mkdir()
+    (full / "x").write_text("x", encoding="utf-8")
+    with pytest.raises(AppException):
+        commands.new(full, archetype="python-tool", docs="none", yes=True)
+    assert not (full / ".git").exists()
+
+    def boom(*_args: object) -> None:
+        raise AppException("boom")
+
+    monkeypatch.setattr(commands, "instructions_scaffold", boom)
+    failed = tmp_path / "failed"
+    with pytest.raises(AppException, match="boom"):
+        commands.new(failed, archetype="python-tool", docs="none", yes=True)
+    assert not (failed / ".git").exists()
+
+
+def test_s4_5_11_4_json_plan_does_not_list_git(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    commands.new(
+        tmp_path / "demo", archetype="python-tool", docs="none", yes=True, json=True
+    )
+    payload = _last_json(capsys)
+    assert not any(".git" in str(row).split("/") for row in payload["artifacts"])
+
+
+@pytest.mark.parametrize("archetype", ["python-lib", "python-app"])
+def test_s4_5_11_5_other_archetypes_get_git(tmp_path: Path, archetype: str) -> None:
+    commands.new(tmp_path / "demo", archetype=archetype, docs="none", yes=True)
+    assert (tmp_path / "demo" / ".git").is_dir()
+
+
 def test_s4_5_9_6_no_retention_or_cleanup_flag_and_no_rnf_home() -> None:
     assert set(inspect.signature(commands.new).parameters) == {
         "directory",
@@ -504,7 +571,7 @@ def test_s5_3_6_1_fresh_scaffolds_have_identical_composed_gitignores(
         monkeypatch.chdir(cwd)
         target = cwd / "demo"
         commands.new(target, archetype="python-web-api", docs="none", yes=True)
-        assert not (target / ".git").exists()
+        assert (target / ".git").is_dir()
         texts.append((target / ".gitignore").read_bytes())
 
     assert texts[0] == texts[1]

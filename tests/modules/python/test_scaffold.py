@@ -568,6 +568,30 @@ def test_s4_4_8_7_lib_members_are_libraries(tmp_path: Path) -> None:
         assert "def main" not in init
 
 
+@pytest.mark.parametrize("archetype", ["python-app", "python-tool", "python-web-api"])
+def test_s4_5_12_1_app_package_keeps_no_uv_init_stub(
+    tmp_path: Path, archetype: str
+) -> None:
+    root, _ = _scaffolded(tmp_path, archetype)
+
+    inits = [
+        p
+        for p in root.glob("**/src/*/__init__.py")
+        if ".venv" not in p.parts and ".staging" not in p.parts
+    ]
+    assert inits
+    for init in inits:
+        text = init.read_text(encoding="utf-8")
+        assert "def main" not in text
+        assert "print(" not in text
+
+
+def test_s4_5_12_2_console_script_still_points_at_main_app(tmp_path: Path) -> None:
+    app, _ = _scaffolded(tmp_path, "python-app")
+    scripts = _toml(app / "pyproject.toml")["project"]["scripts"]
+    assert list(scripts.values()) == ["demo_tool.main:app"]
+
+
 def test_s4_4_8_8_python_version_sits_at_the_workspace_root(tmp_path: Path) -> None:
     app, _ = _scaffolded(tmp_path / "app", "python-app")
     lib, lib_config = _scaffolded(tmp_path / "lib", "python-lib")

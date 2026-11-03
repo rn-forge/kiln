@@ -44,7 +44,7 @@ are [release-2](../release-2/index.md).
 | [F4.2 — The `core` module, the config manager and the module contract](../../specs/epics/E4-generator/F4.2-core-module.md) | E4 | Closed |
 | [F4.3 — The concern modules, with templates](../../specs/epics/E4-generator/F4.3-concern-modules.md) | E4 | Closed |
 | [F4.4 — The render matrix, and the goldens leave git](../../specs/epics/E4-generator/F4.4-render-matrix.md) | E4 | Closed |
-| [F4.5 — CLI](../../specs/epics/E4-generator/F4.5-cli.md) | E4 | Closed |
+| [F4.5 — CLI](../../specs/epics/E4-generator/F4.5-cli.md) | E4 | Active |
 | [F4.6 — doctor](../../specs/epics/E4-generator/F4.6-doctor.md) | E4 | Closed |
 | [F4.7 — Import contracts](../../specs/epics/E4-generator/F4.7-import-contracts.md) | E4 | Closed |
 | [F4.8 — Self-hosting](../../specs/epics/E4-generator/F4.8-self-hosting.md) | E4 | Closed |
