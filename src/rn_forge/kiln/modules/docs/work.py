@@ -275,7 +275,7 @@ def read_stories(text: str) -> tuple[Story, ...]:
     """The stories of a feature page: each `## S<n>.<m>.<k> — <title>` heading.
 
     A heading inside fenced code is ignored. A story's state and dependencies
-    come from the first `**State:**` line before the next `## ` heading.
+    come from the first `**State:**` paragraph before the next `## ` heading.
     """
     lines = MarkdownUtils.strip_fenced_code(text).splitlines()
     stories: list[Story] = []
@@ -284,12 +284,18 @@ def read_stories(text: str) -> tuple[Story, ...]:
         if heading is None:
             continue
         state = depends = ""
-        for following in lines[i + 1 :]:
+        for j, following in enumerate(lines[i + 1 :], i + 1):
             if following.startswith("## "):
                 break
             if following.startswith("**State:**"):
-                state = following.removeprefix("**State:**").split("·")[0].strip()
-                found = _DEPENDS_RE.search(following)
+                paragraph = [following]
+                for rest in lines[j + 1 :]:
+                    if not rest.strip() or rest.startswith("## "):
+                        break
+                    paragraph.append(rest)
+                joined = " ".join(paragraph)
+                state = joined.removeprefix("**State:**").split("·")[0].strip()
+                found = _DEPENDS_RE.search(joined)
                 depends = found.group(1).strip() if found else ""
                 break
         stories.append(Story(heading.group(1), heading.group(2), state, depends))

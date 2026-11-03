@@ -448,6 +448,33 @@ def test_s14_2_1_1_read_stories_ignores_fenced_code_and_stops_state_at_a_dot() -
     )
 
 
+def test_s14_2_4_1_read_stories_joins_a_wrapped_state_paragraph() -> None:
+    text = (
+        "## S1.1.5 \u2014 a\n\n"
+        "**State:** New \u00b7 **Depends on:** S1.1.1, S1.1.2,\n"
+        "S1.1.3, S1.1.4\n\n"
+    )
+    assert read_stories(text) == (
+        Story("S1.1.5", "a", "New", "S1.1.1, S1.1.2, S1.1.3, S1.1.4"),
+    )
+
+
+def test_s14_2_4_2_the_paragraph_ends_at_a_blank_line() -> None:
+    text = (
+        "## S1.1.5 \u2014 a\n\n"
+        "**State:** New \u00b7 **Depends on:** S1.1.1,\n"
+        "S1.1.2\n\n**Build:** S9.9.9\n"
+    )
+    assert read_stories(text) == (Story("S1.1.5", "a", "New", "S1.1.1, S1.1.2"),)
+
+
+def test_s14_2_4_3_a_label_split_across_lines_is_read() -> None:
+    text = (
+        "## S1.1.5 \u2014 a\n\n**State:** New \u00b7 **Depends\non:** S1.1.1, S1.1.2\n"
+    )
+    assert read_stories(text) == (Story("S1.1.5", "a", "New", "S1.1.1, S1.1.2"),)
+
+
 def _feature_with(tmp_path: Path, body: str):
     work = _tree(tmp_path, {**VALID, "specs/epics/E1-x/F1.1-a.md": ACTIVE + body})
     return next(f for f in work.features if f.id == "F1.1")
