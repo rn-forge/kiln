@@ -26,11 +26,11 @@ from rn_forge.kiln.modules.core import gitignore
 from rn_forge.kiln.modules.python.checks.rn_forge_deps import distribution
 
 __all__ = [
-    "DOCS_TASK_TOOLS",
     "SAMPLE_TEST",
     "TASK_TOOLS",
     "add_package",
     "add_task_tools",
+    "docs_group",
     "github_remote",
     "missing_task_tools",
     "reconcile_backend",
@@ -90,9 +90,18 @@ TASK_TOOLS = (
 
 kiln is not listed: `{{.KILN}}` runs the pinned release with `uvx`, outside the
 repository's lock."""
-DOCS_TASK_TOOLS = ("mdformat",)
-"""The `docs` group tool `quality:lint:markdown` runs; it counts unless `docs.profile`
-is `none`."""
+
+
+def docs_group(config: KilnConfig) -> list[str]:
+    """The `docs` dependency group `kiln new` writes for *config*, entry by entry."""
+    return _docs_group(
+        mkdocs=config.docs_profile == "mkdocs", lib=config.archetype == "python-lib"
+    )
+
+
+def _docs_group(*, mkdocs: bool, lib: bool) -> list[str]:
+    mkdocs_group = _DOCS_GROUP_MKDOCS_LIB if lib else _DOCS_GROUP_MKDOCS
+    return [*_DOCS_GROUP, *(mkdocs_group if mkdocs else [])]
 
 
 def scaffold(root: Path, config: KilnConfig) -> None:
@@ -258,8 +267,8 @@ def _join_workspace(pyproject: Path, relative: str, name: str) -> None:
 def missing_task_tools(root: Path, config: KilnConfig) -> list[str]:
     """The task tools no dependency group of *root*'s `pyproject.toml` names.
 
-    In `TASK_TOOLS` order, then `DOCS_TASK_TOOLS` when the docs profile is not
-    `none`. A missing `[dependency-groups]` table means every tool is missing.
+    In `TASK_TOOLS` order, then each `docs_group` entry's distribution name when
+    the docs profile is not `none`. A missing `[dependency-groups]` table means every tool is missing.
     """
     document = DocumentUtils.read_document(root / "pyproject.toml")
     groups = DictUtils.as_mapping(document.get("dependency-groups"))
@@ -269,15 +278,16 @@ def missing_task_tools(root: Path, config: KilnConfig) -> list[str]:
         for entry in cast("list[object]", group)
         if isinstance(entry, str)
     }
-    wanted = [*TASK_TOOLS, *(DOCS_TASK_TOOLS if config.docs_profile != "none" else ())]
+    docs = [distribution(entry) for entry in docs_group(config)]
+    wanted = [*TASK_TOOLS, *(docs if config.docs_profile != "none" else ())]
     return [tool for tool in wanted if tool not in present]
 
 
 def add_task_tools(root: Path, config: KilnConfig) -> list[str]:
     """Append each task tool *root* lacks to its dependency groups; return the names.
 
-    A name is added bare, as `_DEV_GROUP` writes it: to `docs` for a
-    `DOCS_TASK_TOOLS` tool, to `dev` for the rest. A missing group is created.
+    A `dev` tool is added bare, as `_DEV_GROUP` writes it; a `docs` tool is added
+    as `docs_group` writes it, with its version floor. A missing group is created.
     Comments survive, and nothing is written when no tool is missing.
     """
     added = missing_task_tools(root, config)
@@ -288,11 +298,12 @@ def add_task_tools(root: Path, config: KilnConfig) -> list[str]:
     if "dependency-groups" not in document:
         document["dependency-groups"] = {}
     groups = document["dependency-groups"]
+    docs = {distribution(entry): entry for entry in docs_group(config)}
     for tool in added:
-        name = "docs" if tool in DOCS_TASK_TOOLS else "dev"
+        name, entry = ("docs", docs[tool]) if tool in docs else ("dev", tool)
         if name not in groups:
             groups[name] = []
-        groups[name].append(tool)
+        groups[name].append(entry)
     DocumentUtils.write_document(path, document)
     _multiline_lists(path)
     return added
@@ -502,8 +513,7 @@ def _reconcile(
     if is_root:
         coverage = ["coverage[toml]>=7.6"] if lib else []
         dev = [*_DEV_GROUP, *coverage]
-        mkdocs_group = _DOCS_GROUP_MKDOCS_LIB if lib else _DOCS_GROUP_MKDOCS
-        docs = [*_DOCS_GROUP, *(mkdocs_group if mkdocs else [])]
+        docs = _docs_group(mkdocs=mkdocs, lib=lib)
         updates["dependency-groups"] = {
             "dev": [*_existing_list(path, "dependency-groups", "dev"), *dev],
             "docs": [*_existing_list(path, "dependency-groups", "docs"), *docs],

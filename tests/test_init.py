@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -787,3 +788,176 @@ def test_s6_1_9_3_force_adds_a_nav_when_there_is_none(repo: Path, fresh: Path) -
 
     assert nav(repo) is not None
     assert nav(repo) == nav(fresh)
+
+
+# S9.1.15 — `kiln init` gives an existing `node-lib` what `kiln new` does.
+
+NODE_SELECTORS: dict[str, Any] = {"archetype": "node-lib", "docs": "mkdocs"}
+_DOCS_GROUP_SIZE = 6  # node-lib under mkdocs: four mdformat entries + two mkdocs
+
+
+@pytest.fixture
+def node_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """A node repository named like the `new` one: `.git`, `package.json`, `nx.json`, no Python files."""
+    root = tmp_path / "node-lib"
+    root.mkdir()
+    (root / "package.json").write_text('{"name": "node-lib"}\n', encoding="utf-8")
+    (root / "nx.json").write_text("{}\n", encoding="utf-8")
+    _git(root, "init", "-q")
+    _commit(root)
+    monkeypatch.chdir(root)
+    return root
+
+
+def _plan(capsys: pytest.CaptureFixture[str]) -> dict[str, dict[str, str]]:
+    payload = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    return {row["path"]: row for row in payload["artifacts"]}
+
+
+def test_s9_1_15_1_a_node_lib_gets_the_pyproject_new_writes(
+    node_repo: Path, rendered: Callable[[str], Path]
+) -> None:
+    commands.init(**NODE_SELECTORS, yes=True)
+
+    written = tomllib.loads((node_repo / "pyproject.toml").read_text(encoding="utf-8"))
+    assert written["project"]["name"] == "node-lib"
+    assert "build-system" not in written
+    assert set(written["dependency-groups"]) == {"dev", "docs"}
+    fresh = rendered("node-lib") / "pyproject.toml"
+    assert (node_repo / "pyproject.toml").read_bytes() == fresh.read_bytes()
+
+
+def test_s9_1_15_1_the_dry_run_lists_the_pyproject_as_a_seeded_create(
+    node_repo: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    before = _snapshot(node_repo)
+
+    commands.init(**NODE_SELECTORS, dry_run=True, json=True)
+
+    row = _plan(capsys)["pyproject.toml"]
+    assert (row["kind"], row["action"]) == ("seeded", "create")
+    assert _snapshot(node_repo) == before
+
+
+@pytest.mark.parametrize("archetype", ["python-app", "python-lib", "python-tool"])
+def test_s9_1_15_1_other_archetypes_still_refuse_a_missing_pyproject(
+    node_repo: Path, archetype: str
+) -> None:
+    before = _snapshot(node_repo)
+
+    with pytest.raises(AppException) as error:
+        commands.init(archetype=archetype, docs="mkdocs", yes=True)
+
+    assert f"kiln init cannot run in {node_repo}: missing pyproject.toml" in str(
+        error.value
+    )
+    assert _snapshot(node_repo) == before
+
+
+def test_s9_1_15_2_docs_mkdocs_creates_the_missing_mkdocs_yml(
+    node_repo: Path, rendered: Callable[[str], Path]
+) -> None:
+    commands.init(**NODE_SELECTORS, yes=True)
+
+    text = (node_repo / "mkdocs.yml").read_text(encoding="utf-8")
+    assert NAV_BLOCK.extract(text) is not None
+    fresh = rendered("node-lib") / "mkdocs.yml"
+    assert (node_repo / "mkdocs.yml").read_bytes() == fresh.read_bytes()
+
+
+def test_s9_1_15_2_the_dry_run_lists_mkdocs_yml_as_a_seeded_create(
+    node_repo: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    commands.init(**NODE_SELECTORS, dry_run=True, json=True)
+
+    row = _plan(capsys)["mkdocs.yml"]
+    assert (row["kind"], row["action"]) == ("seeded", "create")
+
+
+def test_s9_1_15_2_docs_none_writes_no_mkdocs_yml(node_repo: Path) -> None:
+    commands.init(archetype="node-lib", docs="none", yes=True)
+
+    assert not (node_repo / "mkdocs.yml").exists()
+
+
+def test_s9_1_15_2_an_existing_mkdocs_yml_is_kept(node_repo: Path) -> None:
+    own = "site_name: mine\n# BEGIN derived nav\nnav: []\n# END derived nav\n"
+    (node_repo / "mkdocs.yml").write_text(own, encoding="utf-8")
+    _commit(node_repo)
+
+    commands.init(**NODE_SELECTORS, yes=True)
+
+    assert "site_name: mine" in (node_repo / "mkdocs.yml").read_text(encoding="utf-8")
+
+
+def test_s9_1_15_2_a_python_archetype_also_gets_a_missing_mkdocs_yml(
+    repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (repo / "mkdocs.yml").unlink()
+    _commit(repo)
+    monkeypatch.undo()
+    monkeypatch.chdir(repo)
+
+    commands.init(**SELECTORS, force=True, yes=True)
+
+    text = (repo / "mkdocs.yml").read_text(encoding="utf-8")
+    assert NAV_BLOCK.extract(text) is not None
+
+
+def test_s9_1_15_3_the_docs_group_init_completes_is_news_whole_group(
+    node_repo: Path,
+) -> None:
+    (node_repo / "pyproject.toml").write_text(
+        '[project]\nname = "node-lib"\nversion = "0"\n'
+        'requires-python = ">=3.12"\n\n[dependency-groups]\n'
+        'dev = ["ruff"]\ndocs = ["mdformat"]\n',
+        encoding="utf-8",
+    )
+    _commit(node_repo)
+
+    commands.init(**NODE_SELECTORS, yes=True)
+
+    groups = tomllib.loads((node_repo / "pyproject.toml").read_text(encoding="utf-8"))[
+        "dependency-groups"
+    ]
+    assert len(groups["docs"]) == _DOCS_GROUP_SIZE
+    assert groups["docs"][0] == "mdformat"  # pinned already, at no version: kept
+    names = {re.split(r"[\[<>=]", entry)[0] for entry in groups["docs"]}
+    assert names == {
+        "mdformat",
+        "mdformat-gfm",
+        "mdformat-front-matters",
+        "mdformat-mkdocs",
+        "mkdocs-material",
+        "mkdocstrings",
+    }
+
+
+def test_s9_1_15_3_an_entry_pinned_at_any_version_is_kept(node_repo: Path) -> None:
+    pinned = ["mdformat-gfm==0.3.5", "mkdocs-material>=9.0,<10"]
+    body = "".join(f'    "{entry}",\n' for entry in pinned)
+    (node_repo / "pyproject.toml").write_text(
+        '[project]\nname = "node-lib"\nversion = "0"\n'
+        'requires-python = ">=3.12"\n\n[dependency-groups]\n'
+        f"docs = [\n{body}]\n",
+        encoding="utf-8",
+    )
+    _commit(node_repo)
+
+    commands.init(**NODE_SELECTORS, yes=True)
+
+    docs = tomllib.loads((node_repo / "pyproject.toml").read_text(encoding="utf-8"))[
+        "dependency-groups"
+    ]["docs"]
+    assert docs[:2] == pinned
+    assert len(docs) == _DOCS_GROUP_SIZE
+    assert not [
+        e for e in docs if e.startswith(("mdformat-gfm>", "mkdocs-material>=9.6"))
+    ]
+
+
+def test_s9_1_15_4_the_adopt_prompt_does_not_ask_for_these_files_by_hand() -> None:
+    text = (ROOT / "src/rn_forge/kiln/prompts/adopt.md").read_text(encoding="utf-8")
+    section = text.split("## 2. Prepare", 1)[1].split("## 3.", 1)[0]
+    assert "mkdocs.yml" not in section
+    assert "pyproject.toml" not in section.split("node-lib", 1)[-1].split("```", 1)[0]

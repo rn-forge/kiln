@@ -15,6 +15,7 @@ from __future__ import annotations
 import re
 import shutil
 import subprocess
+import tempfile
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from importlib import metadata
@@ -60,6 +61,7 @@ from rn_forge.kiln.modules.python.scaffold import (
     reconcile_backend,
     scaffold_backend,
 )
+from rn_forge.kiln.modules.python.scaffold import scaffold as python_scaffold
 from rn_forge.kiln.modules.registry import builtin
 
 __all__ = [
@@ -85,6 +87,7 @@ _CONFIG_HEADER = (
 )
 
 _INIT_FILES = ("pyproject.toml",)
+"""What `init` needs already there; a `node-lib` creates its `pyproject.toml`."""
 
 _PACKAGE_NAME = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
 
@@ -322,8 +325,9 @@ def init(
     `new`'s configuration and first-apply flow, run in place and never
     scaffolding. `--module` sets the dotted import module of a `python-app` or
     `python-tool` repository in place of the one derived from the name.
-    Requires a `.git` entry and a `pyproject.toml`; kiln renders every managed
-    path that is missing. Without `--yes` (or with `--dry-run`)
+    Requires a `.git` entry and a `pyproject.toml`, which a `node-lib` is
+    given; kiln renders every managed path that is missing, and writes a
+    missing `mkdocs.yml` under `--docs mkdocs` as `new` does. Without `--yes` (or with `--dry-run`)
     prints the resolved config and the artifact plan, and writes nothing. With
     `--yes`, the Git
     working tree must be clean (`init.dirty-tree`); it then writes
@@ -358,7 +362,7 @@ def init(
     if not archetype:
         raise AppException("--archetype is required")
     root = Path.cwd()
-    _init_preflight(root)
+    _init_preflight(root, archetype)
     if yes and not dry_run:
         _require_clean(root)
 
@@ -393,9 +397,10 @@ def init(
     if yes and not dry_run and resolved.docs_profile == "mkdocs":
         _settle_nav(root, force)
     planned = cycle.adoption_plan(root, resolved)
+    seeds = _missing_seeds(root, resolved)
 
     if not yes or dry_run:
-        _report(root, resolved, _change_rows(planned.changes))
+        _report(root, resolved, [*_seed_rows(seeds), *_change_rows(planned.changes)])
         return
 
     config_path = root / CONFIG_PATH
@@ -420,6 +425,7 @@ def init(
         _archive(root, sorted(conflicting))
 
     _write_config(root, resolved)
+    _seed(root, resolved, seeds)
     result = cycle.apply(
         root,
         force=[change.key for change in conflicts],
@@ -442,6 +448,32 @@ def init(
             )
     _fail_on_errors(root)
     _report(root, resolved, _change_rows(result.changes))
+
+
+def _missing_seeds(root: Path, config: KilnConfig) -> list[str]:
+    """The files `init` creates once, as `new` does: a `node-lib`'s `pyproject.toml`, an `mkdocs` repo's `mkdocs.yml`."""
+    wanted = [
+        ("pyproject.toml", config.archetype == "node-lib"),
+        ("mkdocs.yml", config.docs_profile == "mkdocs"),
+    ]
+    return [name for name, applies in wanted if applies and not (root / name).exists()]
+
+
+def _seed_rows(seeds: Sequence[str]) -> list[dict[str, str]]:
+    return [
+        {"key": name, "path": name, "kind": "seeded", "action": "create"}
+        for name in seeds
+    ]
+
+
+def _seed(root: Path, config: KilnConfig, seeds: Sequence[str]) -> None:
+    """Write each of *seeds* by `new`'s own scaffold; a file `init` found is never in them."""
+    if "pyproject.toml" in seeds:
+        with tempfile.TemporaryDirectory() as scratch:
+            python_scaffold(Path(scratch), config)
+            shutil.copy2(Path(scratch) / "pyproject.toml", root / "pyproject.toml")
+    if "mkdocs.yml" in seeds:
+        docs_scaffold(root, config)
 
 
 def _settle_nav(root: Path, force: bool) -> None:
@@ -565,8 +597,10 @@ def _require_clean(root: Path) -> None:
         )
 
 
-def _init_preflight(root: Path) -> None:
+def _init_preflight(root: Path, archetype: str) -> None:
     """Refuse *root* unless it is a standard repository's Git worktree root.
+
+    A `node-lib` need not have a `pyproject.toml`: `init` creates it.
 
     Raises:
         AppException: Naming every failed condition at once.
@@ -576,9 +610,8 @@ def _init_preflight(root: Path) -> None:
         failed.append("not a Git worktree root (no .git entry here)")
     if _project_name(root / "pyproject.toml") == _canonical(_own_name()):
         failed.append("kiln's own source checkout")
-    failed.extend(
-        f"missing {name}" for name in _INIT_FILES if not (root / name).is_file()
-    )
+    required = () if archetype == "node-lib" else _INIT_FILES
+    failed.extend(f"missing {name}" for name in required if not (root / name).is_file())
     if failed:
         raise AppException("kiln init cannot run in {}: {}", root, "; ".join(failed))
 

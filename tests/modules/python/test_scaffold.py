@@ -27,11 +27,11 @@ from rn_forge.kiln.modules.core import CORE, cycle
 from rn_forge.kiln.modules.python import scaffold as python_scaffold
 from rn_forge.kiln.modules.python.checks import rn_forge_deps
 from rn_forge.kiln.modules.python.scaffold import (
-    DOCS_TASK_TOOLS,
     SAMPLE_TEST,
     TASK_TOOLS,
     add_package,
     add_task_tools,
+    docs_group,
     missing_task_tools,
     reconcile_backend,
     sample_test,
@@ -702,7 +702,7 @@ def test_s6_6_2_2_add_task_tools_appends_bare_names(
     text = path.read_text(encoding="utf-8")
     groups = tomllib.loads(text)["dependency-groups"]
     assert groups["dev"] == [*before["dev"], "taplo"]
-    assert groups["docs"] == [*before["docs"], "mdformat"]
+    assert groups["docs"] == [*before["docs"], "mdformat>=1.0.0"]
     assert "kept: a repo comment" in text
     (taplo,) = (a for a in CORE.artifacts(config, root) if a.path == ".taplo.toml")
     (root / ".taplo.toml").write_text(taplo.content, encoding="utf-8")
@@ -731,7 +731,7 @@ def test_s6_6_2_3_add_task_tools_creates_a_missing_group(
     add_task_tools(root, config)
 
     groups = tomllib.loads(path.read_text(encoding="utf-8"))["dependency-groups"]
-    assert groups == {"dev": list(TASK_TOOLS), "docs": list(DOCS_TASK_TOOLS)}
+    assert groups == {"dev": list(TASK_TOOLS), "docs": docs_group(config)}
 
 
 @pytest.mark.parametrize(("archetype", "relative"), _TAPLO_CELLS)
