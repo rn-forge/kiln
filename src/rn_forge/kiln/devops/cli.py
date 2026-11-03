@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import os
+import re
 import sys
+import tempfile
 from pathlib import Path
 
 from rn_forge.kiln.devops import ci, github, notes, uv
@@ -60,6 +63,44 @@ def _parser() -> argparse.ArgumentParser:
     changelog.add_argument("changelog", metavar="CHANGELOG")
     changelog.add_argument("version", metavar="VERSION")
     return parser
+
+
+def _checked(pattern: str, kind: str, value: str) -> str:
+    if re.fullmatch(pattern, value) is None:
+        raise ValueError(f"invalid {kind} '{value}'")
+    return value
+
+
+def _inside(value: str, *roots: str) -> str:
+    """Return the resolved `value` when it is at or below one of `roots`."""
+    resolved = os.path.realpath(value)
+    for root in map(os.path.realpath, roots):
+        if resolved == root or resolved.startswith(root + os.sep):
+            return resolved
+    raise ValueError(f"'{value}' is outside the working directory")
+
+
+def _validate(args: argparse.Namespace) -> None:
+    """Replace each argument that reaches a command or a file with its checked value.
+
+    Raises:
+        ValueError: With the message to print when an argument is not allowed.
+    """
+    cwd = os.getcwd()
+    if hasattr(args, "tag"):
+        args.tag = _checked(r"[A-Za-z0-9][A-Za-z0-9._+-]*", "tag", args.tag)
+    if hasattr(args, "target"):
+        args.target = _checked(r"[0-9a-f]{7,40}", "target", args.target)
+    if hasattr(args, "title"):
+        args.title = _checked(
+            r"[^\x00-\x1f\x7f-][^\x00-\x1f\x7f]*", "title", args.title
+        )
+    if hasattr(args, "files"):
+        args.files = [_inside(f, cwd) for f in args.files]
+    if getattr(args, "notes_file", None):
+        args.notes_file = _inside(args.notes_file, cwd, tempfile.gettempdir())
+    if hasattr(args, "changelog"):
+        args.changelog = _inside(args.changelog, cwd)
 
 
 def _upload(args: argparse.Namespace) -> None:
@@ -154,6 +195,11 @@ def main(argv: list[str] | None = None) -> int:
         argv: The arguments after the program name; `sys.argv[1:]` when omitted.
     """
     args = _parser().parse_args(argv)
+    try:
+        _validate(args)
+    except ValueError as error:
+        print(f"kiln-devops: {error}", file=sys.stderr)
+        return 2
     if args.command == "sonar-target":
         try:
             print(github.sonar_target())
