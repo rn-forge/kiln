@@ -68,7 +68,7 @@ are [release-2](../release-2/index.md).
 | [F7.4 — kiln runs beside a repository, not inside its lock](../../specs/epics/E7-pykit-release-pin-flip/F7.4-kiln-runs-beside-the-repository.md) | E7 | Closed |
 | [F7.5 — kiln takes pykit from PyPI](../../specs/epics/E7-pykit-release-pin-flip/F7.5-pykit-from-pypi.md) | E7 | Active |
 | [F7.6 — The `python-lib` release job publishes to PyPI](../../specs/epics/E7-pykit-release-pin-flip/F7.6-release-to-pypi.md) | E7 | Active |
-| [F9.1 — `node-lib` renders ngkit's CI](../../specs/epics/E9-node-archetypes/F9.1-node-lib-hosts-ngkit-ci.md) | E9 | Active |
+| [F9.1 — `node-lib` renders ngkit's CI](../../specs/epics/E9-node-archetypes/F9.1-node-lib-hosts-ngkit-ci.md) | E9 | Closed |
 | [F9.2 — One node scaffold](../../specs/epics/E9-node-archetypes/F9.2-one-node-scaffold.md) | E9 | Active |
 | [F9.3 — Node CI holds for ngkit and for every `node-lib`](../../specs/epics/E9-node-archetypes/F9.3-node-ci-holds-for-every-node-lib.md) | E9 | Active |
 | [F11.1 — The docs checks learn package sites](../../specs/epics/E11-package-docs/F11.1-checks-learn-package-sites.md) | E11 | Closed |
