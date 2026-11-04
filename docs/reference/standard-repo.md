@@ -417,8 +417,7 @@ planned by `kiln-devops` ([ADR-0017](../adr/ADR-0017.md)) through the public
   `verify`, `postgres`, `redis`, `smoke`, `suites`, `sonar`, `release`,
   `external-install`, `ci-ok`.
 
-[How a `python-lib` CI run flows](../architecture/python-lib-ci.md) walks
-through each event.
+[CI](../architecture/ci.md#python-lib-event-by-event) walks through each event.
 
 A `node-lib` repository's `ci.yml` runs `ci-local` on a GitHub runner unless the
 repository variable `USE_NX_CLOUD` is `true` (or a dispatch checks

@@ -13,7 +13,7 @@ Backlog sections below are derived from the epic, feature and release pages by
 | Release | Status | Features |
 | -- | -- | -- |
 | [Release 2 — the architecture baseline and taskkit retired](../releases/release-2/index.md) | planned | 3 New |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 1 Active · 45 Closed |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 1 Active · 12 New · 45 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -24,7 +24,7 @@ Features with no Iteration, by State and epic.
 
 | Epic | Features |
 | -- | -- |
-| [E6 — Rebuild the repos, retire the old](epics/E6-rebuild-the-repos/index.md) | [F6.5](epics/E6-rebuild-the-repos/F6.5-rebuild-and-port.md) |
+| [E16 — `init` adopts by overwrite](epics/E16-init-adopts-by-overwrite/index.md) | [F16.5](epics/E16-init-adopts-by-overwrite/F16.5-rebuild-and-port.md) |
 
 ### Deferred
 
@@ -61,7 +61,7 @@ theirs.
 ```text
 done:  E1 ─→ E2 ─→ E3 ─→ F4.1 ─→ F4.2 ─→ S4.3.1–S4.3.5 ─→ S4.5.1–S4.5.6
 done:  F5.1 ─→ F5.2 fastapi ─→ S5.2.4 frontend module ─→ S4.5.9 staged `new` ─→ S5.3.1 fresh-repo gate fixes ─→ S5.3.5 quality commands ─→ S5.3.6 setup experience
-done:  S4.4.1 matrix ─→ S5.3.7 README ─→ S5.3.2 ─→ S5.3.3 ─→ F5.3 shipped cells (S5.3.4 moved to S6.5.3)
+done:  S4.4.1 matrix ─→ S5.3.7 README ─→ S5.3.2 ─→ S5.3.3 ─→ F5.3 shipped cells (S5.3.4 moved to S16.5.3)
        (Django deferred: F5.4)
 now:   ADRs accepted ─→ S13.1.1 derived nav ─→ F13.2 board/scope ─→ F13.3 adopt the model
        F11.1 checks ─→ F11.2 python-lib package sites ─→ F11.3 generate package   (S11.4.2 after S13.3.1)
@@ -76,6 +76,8 @@ now:   ADRs accepted ─→ S13.1.1 derived nav ─→ F13.2 board/scope ─→ 
        F6.3 CI hardening (after F4.4) ─→ F6.4 workspace pipeline (after F6.1; planner pin met) ─→ S6.4.6 · S6.4.7 · F11.5 package-site deploy
        F7.5 pykit from PyPI ─→ S6.4.5 and F6.7 reruns ─→ F6.8 pykit Release 7 CI ─→ F7.2 the cut
        F6.9 adopted repositories left alone (pykit's 2026-11-01 trial) ─→ F7.2 the cut
+       E15 CI standard (F15.1 ─→ F15.2–F15.7 · F15.8 owner decision) ─┐
+       E16 init adopts by overwrite (F16.2 · F16.1 ─→ F16.3 · F16.4) ──┴─→ S7.2.4 cutover SOP on pykit, then ngkit ─→ S7.2.2 the tag
 triggered: E7 pykit tags · E8 ADO · backlog: E10 generators
 ```
 

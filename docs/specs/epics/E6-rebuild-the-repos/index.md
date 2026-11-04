@@ -13,7 +13,6 @@
 | [F6.2 — Retire taskkit](F6.2-retire-taskkit.md) | New | release-2 | 1 New |
 | [F6.3 — The generated CI matches the hardened upstream CI](F6.3-hardened-ci.md) | Closed | release-1 | 8 Closed |
 | [F6.4 — `python-lib` renders pykit's discovered workspace pipeline](F6.4-workspace-pipeline.md) | Closed | release-1 | 7 Closed |
-| [F6.5 — Rebuild an existing repository on kiln, and port it](F6.5-rebuild-and-port.md) | New | — | 3 New |
 | [F6.6 — `kiln init` leaves the gate runnable](F6.6-init-leaves-gate-runnable.md) | Closed | release-1 | 3 Closed |
 | [F6.7 — kiln ships the CI planner as `kiln-devops`](F6.7-kiln-devops.md) | Closed | release-1 | 7 Closed |
 | [F6.8 — The generated CI takes pykit's Release 7](F6.8-pykit-release-7-ci.md) | Closed | release-1 | 3 Closed |

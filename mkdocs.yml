@@ -51,7 +51,7 @@ nav:
   - Architecture:
     - architecture/index.md
     - The rn-forge workspace: architecture/workspace.md
-    - How a `python-lib` CI run flows: architecture/python-lib-ci.md
+    - CI: architecture/ci.md
   - Guides:
     - guides/index.md
     - Development: guides/development.md
@@ -107,7 +107,6 @@ nav:
         - F6.2 — Retire taskkit: specs/epics/E6-rebuild-the-repos/F6.2-retire-taskkit.md
         - F6.3 — The generated CI matches the hardened upstream CI: specs/epics/E6-rebuild-the-repos/F6.3-hardened-ci.md
         - F6.4 — `python-lib` renders pykit's discovered workspace pipeline: specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md
-        - F6.5 — Rebuild an existing repository on kiln, and port it: specs/epics/E6-rebuild-the-repos/F6.5-rebuild-and-port.md
         - F6.6 — `kiln init` leaves the gate runnable: specs/epics/E6-rebuild-the-repos/F6.6-init-leaves-gate-runnable.md
         - F6.7 — kiln ships the CI planner as `kiln-devops`: specs/epics/E6-rebuild-the-repos/F6.7-kiln-devops.md
         - F6.8 — The generated CI takes pykit's Release 7: specs/epics/E6-rebuild-the-repos/F6.8-pykit-release-7-ci.md
@@ -153,9 +152,28 @@ nav:
         - specs/epics/E14-site-navigation/index.md
         - F14.1 — Area tabs, the epic ranges and the epic list: specs/epics/E14-site-navigation/F14.1-tabbed-navigation.md
         - F14.2 — Epic and feature summary tables: specs/epics/E14-site-navigation/F14.2-work-summaries.md
+      - E15 — One CI standard for every archetype:
+        - specs/epics/E15-ci-standard/index.md
+        - F15.1 — The check model: specs/epics/E15-ci-standard/F15.1-check-model.md
+        - F15.2 — The licences check: specs/epics/E15-ci-standard/F15.2-licences-check.md
+        - F15.3 — The secret scan: specs/epics/E15-ci-standard/F15.3-secret-scan.md
+        - F15.4 — Internal ranges: specs/epics/E15-ci-standard/F15.4-internal-ranges.md
+        - F15.5 — The umbrella release: specs/epics/E15-ci-standard/F15.5-umbrella-release.md
+        - F15.6 — OpenSSF Scorecard: specs/epics/E15-ci-standard/F15.6-scorecard.md
+        - F15.7 — Repository-owned workflows: specs/epics/E15-ci-standard/F15.7-repo-owned-workflows.md
+        - F15.8 — Every archetype on the one-workflow contract: specs/epics/E15-ci-standard/F15.8-one-workflow-contract.md
+        - 'E15 — Design: the target CI': specs/epics/E15-ci-standard/design.md
+      - E16 — `init` adopts by overwrite:
+        - specs/epics/E16-init-adopts-by-overwrite/index.md
+        - F16.1 — Opinionated `init`: specs/epics/E16-init-adopts-by-overwrite/F16.1-opinionated-init.md
+        - F16.2 — kiln owns `mkdocs.yml`: specs/epics/E16-init-adopts-by-overwrite/F16.2-kiln-owns-mkdocs.md
+        - F16.3 — The cutover SOP: specs/epics/E16-init-adopts-by-overwrite/F16.3-cutover-sop.md
+        - F16.4 — Generated-file hygiene: specs/epics/E16-init-adopts-by-overwrite/F16.4-generated-file-hygiene.md
+        - F16.5 — Rebuild an existing repository on kiln, and port it: specs/epics/E16-init-adopts-by-overwrite/F16.5-rebuild-and-port.md
     - Ideas:
       - specs/ideas/index.md
       - kiln simplification: specs/ideas/kiln-simplification.md
+      - pykit cutover findings: specs/ideas/pykit-cutover-findings.md
   - Decisions: adr/index.md
   - Plans:
     - plans/index.md

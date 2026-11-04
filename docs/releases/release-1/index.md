@@ -82,6 +82,18 @@ are [release-2](../release-2/index.md).
 | [F13.4 — Ideas live in a folder, one page per large idea](../../specs/epics/E13-docs-work-model/F13.4-ideas-folder.md) | E13 | Closed |
 | [F14.1 — Area tabs, the epic ranges and the epic list](../../specs/epics/E14-site-navigation/F14.1-tabbed-navigation.md) | E14 | Closed |
 | [F14.2 — Epic and feature summary tables](../../specs/epics/E14-site-navigation/F14.2-work-summaries.md) | E14 | Closed |
+| [F15.1 — The check model](../../specs/epics/E15-ci-standard/F15.1-check-model.md) | E15 | New |
+| [F15.2 — The licences check](../../specs/epics/E15-ci-standard/F15.2-licences-check.md) | E15 | New |
+| [F15.3 — The secret scan](../../specs/epics/E15-ci-standard/F15.3-secret-scan.md) | E15 | New |
+| [F15.4 — Internal ranges](../../specs/epics/E15-ci-standard/F15.4-internal-ranges.md) | E15 | New |
+| [F15.5 — The umbrella release](../../specs/epics/E15-ci-standard/F15.5-umbrella-release.md) | E15 | New |
+| [F15.6 — OpenSSF Scorecard](../../specs/epics/E15-ci-standard/F15.6-scorecard.md) | E15 | New |
+| [F15.7 — Repository-owned workflows](../../specs/epics/E15-ci-standard/F15.7-repo-owned-workflows.md) | E15 | New |
+| [F15.8 — Every archetype on the one-workflow contract](../../specs/epics/E15-ci-standard/F15.8-one-workflow-contract.md) | E15 | New |
+| [F16.1 — Opinionated `init`](../../specs/epics/E16-init-adopts-by-overwrite/F16.1-opinionated-init.md) | E16 | New |
+| [F16.2 — kiln owns `mkdocs.yml`](../../specs/epics/E16-init-adopts-by-overwrite/F16.2-kiln-owns-mkdocs.md) | E16 | New |
+| [F16.3 — The cutover SOP](../../specs/epics/E16-init-adopts-by-overwrite/F16.3-cutover-sop.md) | E16 | New |
+| [F16.4 — Generated-file hygiene](../../specs/epics/E16-init-adopts-by-overwrite/F16.4-generated-file-hygiene.md) | E16 | New |
 
 <!-- END derived scope -->
 
@@ -116,6 +128,10 @@ are [release-2](../release-2/index.md).
   `[kiln] ref` pin and not the repository's lock (F6.7, F7.4).
 - [ADR-0018](../../adr/ADR-0018.md) — accepted 2026-10-25, revised 2026-10-31:
   rn-forge dependencies are version ranges from PyPI (F7.3, F7.5).
+- [ADR-0016](../../adr/ADR-0016.md) — revised 2026-11-04: one CI standard for
+  every archetype, with a check registry and `[ci.checks]` (E15).
+- Owner decisions, 2026-11-04: E15 and E16 are release-1 scope; the tag stays
+  held until they land and S7.2.4's cutover runs on them.
 - Owner decisions, 2026-10-31, after pykit's Release 7: F7.5 moves here from
   release 2, and F6.8 is added; pykit keeps its security jobs as `[[ci.jobs]]`
   entries; the web archetypes allow `rn-forge-auth`; F7.6's two run checks
@@ -123,7 +139,9 @@ are [release-2](../release-2/index.md).
 
 ## Progress
 
-As of 2026-11-03, every in-scope feature is closed except F7.2: S7.2.1 is done
+As of 2026-11-04, E15 (one CI standard) and E16 (`init` adopts by overwrite)
+joined the scope; the tag waits for both and for S7.2.4 run on them. As of
+2026-11-03, every in-scope feature was closed except F7.2: S7.2.1 is done
 ([Shipped](#shipped)), and S7.2.4's cutover rehearsals hold the tag (S7.2.2).
 E4, E9 and E11 closed the same day. The rest of this section is the record as of
 2026-10-16.
@@ -143,14 +161,14 @@ in-place adoption. S6.1.5 is closed, and run 1 of adopting pykit in place, on an
 unmerged pykit branch, wrote S6.1.6–S6.1.13: `init` fixes, the shipped `adopt`
 prompt proved by a second pykit run, a decision on kiln's area rules, and
 S6.1.14's rules taken from pykit's. Rebuilding a far-off repository and porting
-it is F6.5, not yet scheduled. F6.4's planner pin was met 2026-10-16
+it is F16.5 (was F6.5), not yet scheduled. F6.4's planner pin was met 2026-10-16
 (`rn-forge-devops-v0.1.0`); S6.4.6 and S11.5.1 were added 2026-10-18 to retire
 pykit's `main.yml`. S6.4.7 was added the same day, to bring `python-lib`'s
 release to [ADR-0016](../../adr/ADR-0016.md)'s rule (default branch only, after
 Sonar); it waits on a pykit change to `rn-forge-devops`. F5.3 closed 2026-10-21
 on its two shipped cells, approved at kiln `c62d4e2`; its real-application proof
-moved to F6.5 (S6.5.3, apollo), which is not in this release. F9.1 has no
-stories written ([board](../../specs/index.md#order)).
+moved to F16.5 (was F6.5; S16.5.3, apollo), which is not in this release. F9.1
+has no stories written ([board](../../specs/index.md#order)).
 
 ## Commits
 
@@ -201,9 +219,16 @@ Earlier release-1 work also landed in commits whose subjects name no ID:
   Added 2026-11-01.
 - Every open question on an in-scope feature is answered, as an ADR or as a
   rejected option recorded on the feature.
-- [S7.2.4](../../specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md#s724-in-place-cutovers-of-pykit-and-ngkit-find-nothing-kiln-lacks):
-  in-place cutover rehearsals of pykit and ngkit find nothing kiln lacks, or
-  every gap is closed. The owner holds the tag until then. Added 2026-11-02.
+- [S7.2.4](../../specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md#s724-run-the-cutover-sop-on-pykit-then-ngkit):
+  the cutover SOP, run on pykit and then ngkit, leaves no open absorb row. The
+  owner holds the tag until then. Added 2026-11-02, rewritten 2026-11-04.
+- [E15](../../specs/epics/E15-ci-standard/index.md)'s acceptance blocks pass,
+  F15.8's included: every archetype runs the one stage vocabulary from
+  `ci.yml`. Added 2026-11-04: pykit's cutover declares no `[[ci.jobs]]` for a
+  check E15 covers.
+- [E16](../../specs/epics/E16-init-adopts-by-overwrite/index.md)'s acceptance
+  blocks pass: `init` adopts by overwrite and the cutover SOP exists. Added
+  2026-11-04.
 
 ## Shipped
 
