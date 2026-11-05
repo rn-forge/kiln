@@ -12,7 +12,15 @@ validate, dependency-review
 {%- endmacro %}
 {%- macro postrelease_needs() -%}
 {%- if release != "none" %}, release, verify-release{% endif -%}
-{%- if (workspace or node_lib) and docs %}, docs{% endif -%}
+{%- if docs %}, docs{% endif -%}
+{%- endmacro %}
+{#- `docs` waits for the barrier and for each release stage that is rendered; a skipped
+    release stage (nothing to publish) still lets the site deploy. #}
+{%- macro docs_needs(plan) -%}
+checks-ok{% if plan %}, plan{% endif %}{% if release != "none" %}, release, verify-release{% endif %}
+{%- endmacro %}
+{%- macro docs_if(plan) -%}
+${{ !cancelled() && needs.checks-ok.result == 'success' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') {% if plan %}&& needs.plan.outputs.docs == 'true' {% endif %}&& github.event_name == 'push' && github.ref_name == 'main' }}
 {%- endmacro %}
 {%- macro gate_job(name, needs) %}
   [[ name ]]:
@@ -27,7 +35,7 @@ validate, dependency-review
         run: exit 1
 {%- endmacro %}
 
-{% if not node_lib %}# validate → plan → test, integration, smoke, suites → sonar → release{% if release != "none" %} → verify-release{% endif %}{% if workspace %}{% if release == "none" %} →{% else %},{% endif %} docs{% endif %}.
+{% if not node_lib %}# validate → plan → test, integration, smoke, suites → sonar → release{% if release != "none" %} → verify-release{% endif %}{% if docs %}{% if release == "none" %} →{% else %},{% endif %} docs{% endif %}.
 #
 # validate: the repository-wide checks ({% if workspace %}lint, adapters, docs build{% else %}lint, typecheck{% if docs %}, docs build{% endif %}{% endif %}), once.
 # plan:     reads the uv workspace{% if not workspace %} (here a workspace of one member, the root project){% endif %} and selects the changed packages and their
@@ -39,9 +47,9 @@ validate, dependency-review
 # sonar:    the scan, once test, integration and smoke have passed.
 {% if workspace %}# release:  the selected packages whose checks all passed, in dependency order,
 #           each on its own `<package>-v<version>` tag.
-{% if docs %}# docs:     deploys each released package's versioned site and the root site to Pages.
-{% endif %}{% elif release != "none" %}# release:  publishes the version once everything before it has passed.
+{% elif release != "none" %}# release:  publishes the version once everything before it has passed.
 {% endif %}{% if release != "none" %}# verify-release: installs what was published, from {% if release == "pypi" %}PyPI{% else %}its git tag{% endif %}, outside the repository, and imports it.
+{% endif %}{% if docs %}# docs:     deploys {% if workspace %}each released package's versioned site and the root site{% else %}the site{% endif %} to Pages once the barrier{% if release != "none" %} and the release stages{% endif %} have passed.
 {% endif %}{% else %}# validate → test-cloud or test-local → sonar, smoke, docs → ci-ok.
 #
 # test-cloud:  `nx affected` distributed over Nx Cloud agents (.nx/workflows/agents.yaml).
@@ -445,8 +453,8 @@ jobs:
   # Compodoc and Storybook assembled under it. deploy-pages replaces the whole
   # site, so every deploy builds all three.
   docs:
-    needs: [validate, test-cloud, test-local]
-    if: ${{ always() && (needs.test-cloud.result == 'success' || needs.test-local.result == 'success') && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+    needs: [[ "[" ~ docs_needs(false) ~ "]" ]]
+    if: [[ docs_if(false) ]]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -917,8 +925,8 @@ jobs:
   # job that deploys Pages for a workspace: a root-only deploy landing after it
   # would remove the package sites, so there is no separate docs.yml.
   docs:
-    needs: [validate, plan{% if release != "none" %}, release{% endif %}]
-    if: ${{ !cancelled() && needs.validate.result == 'success' && {% if release != "none" %}needs.release.result != 'failure' && {% endif %}needs.plan.outputs.docs == 'true' && github.event_name == 'push' && github.ref_name == 'main' }}
+    needs: [[ "[" ~ docs_needs(true) ~ "]" ]]
+    if: [[ docs_if(true) ]]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     concurrency:
@@ -950,6 +958,53 @@ jobs:
         env:
           SITE_DIR: ${{ runner.temp }}/site
         run: task ci:docs-publish
+
+{% for hook in hooks.docs %}      - name: Run [[ hook ]]
+        uses: [[ hook ]] # zizmor: ignore[self-repository] actionlint rejects the $/ form
+        env:
+          SITE_DIR: ${{ runner.temp }}/site
+
+{% endfor %}      - name: Upload Pages artifact
+        uses: [[ pins["upload-pages-artifact"].uses ]]@[[ pins["upload-pages-artifact"].sha ]] # [[ pins["upload-pages-artifact"].version ]]
+        with:
+          path: ${{ runner.temp }}/site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]
+{% endif %}{% if not workspace and docs %}
+  # The one Pages deploy, after the barrier and the release stages.
+  docs:
+    needs: [[ "[" ~ docs_needs(false) ~ "]" ]]
+    if: [[ docs_if(false) ]]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
+        with:
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install dependencies
+        run: task setup
+
+      - name: Build docs site
+        run: task docs:build -- "$RUNNER_TEMP/site"
 
 {% for hook in hooks.docs %}      - name: Run [[ hook ]]
         uses: [[ hook ]] # zizmor: ignore[self-repository] actionlint rejects the $/ form

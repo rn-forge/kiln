@@ -224,7 +224,12 @@ def test_s15_8_3_5_needs(tmp_path: Path, archetype: str) -> None:
         "secret-scan",
     ]
     assert jobs["release"]["needs"] == ["plan", "checks-ok"]
-    assert jobs["ci-ok"]["needs"] == ["checks-ok", "release", "verify-release"]
+    assert jobs["ci-ok"]["needs"] == [
+        "checks-ok",
+        "release",
+        "verify-release",
+        "docs",
+    ]
 
 
 @pytest.mark.parametrize("archetype", SINGLE)
@@ -447,3 +452,159 @@ def test_s15_8_5_10_no_dispatch_inputs(tmp_path: Path) -> None:
         } & set(inputs), path
     jobs = workflows.jobs(files)
     assert "github.event_name == 'push'" in jobs["release"]["if"]
+
+
+# S15.8.6 — `docs` is a stage of `ci.yml`.
+
+DOCS_IF = (
+    "${{ !cancelled() && needs.checks-ok.result == 'success' "
+    "&& !contains(needs.*.result, 'failure') "
+    "&& !contains(needs.*.result, 'cancelled') "
+    "&& github.event_name == 'push' && github.ref_name == 'main' }}"
+)
+PLAN_TERM = "&& needs.plan.outputs.docs == 'true' "
+ALL_ARCHETYPES = (*SINGLE, "python-lib", "node-lib")
+
+
+def _docs_render(
+    tmp_path: Path,
+    archetype: str,
+    release: str,
+    *,
+    sonar: bool = True,
+    docs: bool = True,
+    extra: str = "",
+) -> dict[str, str]:
+    root = tmp_path / f"{archetype}-{release}-{sonar}-{docs}"
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True, exist_ok=True)
+    text = CONFIG.format(archetype=archetype, release=release)
+    text = text.replace("sonar = true", f"sonar = {str(sonar).lower()}")
+    if not docs:
+        text = text.replace('[docs]\nprofile = "mkdocs"', '[docs]\nprofile = "none"')
+    if archetype == "python-lib":
+        text += PACKAGES
+    elif archetype in {"python-web-api", "python-web-app"}:
+        text += f'\n[archetype."{archetype}"]\n'
+        if archetype == "python-web-app":
+            text += 'frontend = "angular"\n'
+    config.write_text(text + extra, encoding="utf-8")
+    loaded = KilnConfig.load(root)
+    files = {a.path: a.content for a in CICD.artifacts(loaded, root)}
+    files.update({a.path: a.content for a in TASKS.artifacts(loaded, root)})
+    return files
+
+
+def _release_for(archetype: str, release: str) -> str:
+    if release == "none":
+        return "none"
+    return {"python-lib": "pypi", "node-lib": "nx-dispatch"}.get(archetype, release)
+
+
+@pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
+@pytest.mark.parametrize("release", ["tag-exists", "none"])
+def test_s15_8_6_1_no_docs_yml(tmp_path: Path, archetype: str, release: str) -> None:
+    files = _docs_render(tmp_path, archetype, _release_for(archetype, release))
+    assert ".github/workflows/docs.yml" not in files
+
+
+@pytest.mark.parametrize("archetype", SINGLE)
+def test_s15_8_6_2_job(tmp_path: Path, archetype: str) -> None:
+    job = workflows.jobs(_docs_render(tmp_path, archetype, "tag-exists"))["docs"]
+    assert job["permissions"] == {
+        "contents": "read",
+        "pages": "write",
+        "id-token": "write",
+    }
+    assert job["environment"]["name"] == "github-pages"
+    assert job["concurrency"] == {"group": "pages", "cancel-in-progress": False}
+    steps = job["steps"]
+    uses = [s.get("uses", "") for s in steps]
+    runs = [s.get("run") for s in steps]
+    assert uses[0].startswith("actions/checkout@")
+    assert uses[1] == "./.github/actions/setup"
+    assert runs[2] == "task setup"
+    assert runs[3] == 'task docs:build -- "$RUNNER_TEMP/site"'
+    assert uses[-2].startswith("actions/upload-pages-artifact@")
+    assert uses[-1].startswith("actions/deploy-pages@")
+    assert steps[-1]["id"] == "deployment"
+    assert job["environment"]["url"] == "${{ steps.deployment.outputs.page_url }}"
+
+
+@pytest.mark.parametrize("archetype", SINGLE)
+def test_s15_8_6_2b_hook_steps(tmp_path: Path, archetype: str) -> None:
+    extra = '\n[ci.hooks]\ndocs = ["./.github/actions/a", "./.github/actions/b"]\n'
+    steps = workflows.jobs(
+        _docs_render(tmp_path, archetype, "tag-exists", extra=extra)
+    )["docs"]["steps"]
+    names = [s.get("name") for s in steps]
+    assert names[-2:] == ["Upload Pages artifact", "Deploy to GitHub Pages"]
+    assert [s["uses"] for s in steps if "SITE_DIR" in s.get("env", {})] == [
+        "./.github/actions/a",
+        "./.github/actions/b",
+    ]
+
+
+GATES = [
+    ("tag-exists", True),
+    ("tag-exists", False),
+    ("none", True),
+    ("none", False),
+]
+
+
+@pytest.mark.parametrize(("release", "sonar"), GATES)
+@pytest.mark.parametrize("archetype", ["python-tool", "python-lib", "node-lib"])
+def test_s15_8_6_3_gate(
+    tmp_path: Path, archetype: str, release: str, sonar: bool
+) -> None:
+    release = _release_for(archetype, release)
+    jobs = workflows.jobs(_docs_render(tmp_path, archetype, release, sonar=sonar))
+    rendered = ["release", "verify-release"] if release != "none" else []
+    plan = ["plan"] if archetype == "python-lib" else []
+    assert jobs["docs"]["needs"] == ["checks-ok", *plan, *rendered]
+    assert jobs["docs"]["if"].replace(PLAN_TERM, "") == DOCS_IF
+    assert ("sonar" in jobs) is sonar
+    barrier = set(jobs["checks-ok"]["needs"])
+    if archetype == "node-lib":
+        assert {"test-cloud", "test-local", "smoke"} <= barrier
+    else:
+        assert {"test", "integration", "smoke", "suites"} <= barrier
+
+
+@pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
+def test_s15_8_6_3b_skipped_release_deploys(tmp_path: Path, archetype: str) -> None:
+    release = _release_for(archetype, "tag-exists")
+    cond = workflows.jobs(_docs_render(tmp_path, archetype, release))["docs"]["if"]
+    assert "needs.release.result" not in cond
+    assert "needs.verify-release.result" not in cond
+
+
+@pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
+def test_s15_8_6_4_ci_ok(tmp_path: Path, archetype: str) -> None:
+    release = _release_for(archetype, "tag-exists")
+    jobs = workflows.jobs(_docs_render(tmp_path, archetype, release))
+    assert jobs["ci-ok"]["needs"] == ["checks-ok", "release", "verify-release", "docs"]
+
+
+@pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
+def test_s15_8_6_5_no_profile(tmp_path: Path, archetype: str) -> None:
+    release = _release_for(archetype, "tag-exists")
+    jobs = workflows.jobs(_docs_render(tmp_path, archetype, release, docs=False))
+    assert "docs" not in jobs
+    assert "docs" not in jobs["ci-ok"]["needs"]
+
+
+def test_s15_8_6_6_node_lib_gate(tmp_path: Path) -> None:
+    job = workflows.jobs(_docs_render(tmp_path, "node-lib", "nx-dispatch"))["docs"]
+    assert job["needs"] == ["checks-ok", "release", "verify-release"]
+    assert job["if"] == DOCS_IF
+    assert "test-cloud" not in str(job["needs"]) + job["if"]
+    assert "test-local" not in str(job["needs"]) + job["if"]
+
+
+def test_s15_8_6_7_lib_gate(tmp_path: Path) -> None:
+    job = workflows.jobs(_docs_render(tmp_path, "python-lib", "pypi"))["docs"]
+    assert job["needs"] == ["checks-ok", "plan", "release", "verify-release"]
+    assert PLAN_TERM in job["if"]
+    assert job["if"].replace(PLAN_TERM, "") == DOCS_IF

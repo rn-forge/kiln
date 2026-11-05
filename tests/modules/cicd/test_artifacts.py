@@ -39,17 +39,14 @@ CI_KEYS = (
     ".github/actions/setup/action.yml",
     ".github/workflows/ci.yml",
     ".github/dependabot.yml",
-    ".github/workflows/docs.yml",
     "sonar-project.properties",
 )
-WORKFLOWS = (".github/workflows/ci.yml", ".github/workflows/docs.yml")
+WORKFLOWS = (".github/workflows/ci.yml",)
 
 
 def _keys(archetype: str, keys: tuple[str, ...] = CI_KEYS) -> tuple[str, ...]:
-    """The rows `archetype` renders: a `python-lib` has no `docs.yml` (S11.5.1)."""
-    return tuple(
-        k for k in keys if archetype != "python-lib" or not k.endswith("/docs.yml")
-    )
+    """The rows `archetype` renders: the same for every archetype since S15.8.6."""
+    return keys
 
 
 CONFIG = """
@@ -217,6 +214,7 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
         "suites",
         "release",
         "verify-release",
+        "docs",
         "checks-ok",
         "ci-ok",
     }
@@ -245,6 +243,7 @@ def test_s4_3_4_3_release_none_renders_no_release_job(tmp_path: Path) -> None:
         "smoke",
         "suites",
         "sonar",
+        "docs",
         "checks-ok",
         "ci-ok",
     }
@@ -786,6 +785,7 @@ def test_s6_4_2_8_other_archetypes_keep_the_plain_pipeline(tmp_path: Path) -> No
             "sonar",
             "release",
             "verify-release",
+            "docs",
             "checks-ok",
             "ci-ok",
         ], archetype
@@ -1039,10 +1039,11 @@ def test_s11_5_1_2_python_lib_docs_job(tmp_path: Path) -> None:
         "ci-ok",
     ]
     docs = jobs["docs"]
-    assert docs["needs"] == ["validate", "plan", "release"]
+    assert docs["needs"] == ["checks-ok", "plan", "release", "verify-release"]
     assert docs["if"] == (
-        "${{ !cancelled() && needs.validate.result == 'success' && "
-        "needs.release.result != 'failure' && "
+        "${{ !cancelled() && needs.checks-ok.result == 'success' && "
+        "!contains(needs.*.result, 'failure') && "
+        "!contains(needs.*.result, 'cancelled') && "
         "needs.plan.outputs.docs == 'true' && "
         "github.event_name == 'push' && github.ref_name == 'main' }}"
     )
@@ -1068,8 +1069,8 @@ def test_s11_5_1_2_python_lib_docs_job(tmp_path: Path) -> None:
     assert "docs" in jobs["ci-ok"]["needs"]  # type: ignore[operator]
     assert "docs" not in _lib_jobs(tmp_path / "n", profile="none")
     no_release = _lib_jobs(tmp_path / "r", release="none")
-    assert no_release["docs"]["needs"] == ["validate", "plan"]
-    assert "release" not in str(no_release["docs"]["if"])
+    assert no_release["docs"]["needs"] == ["checks-ok", "plan"]
+    assert "needs.release" not in str(no_release["docs"]["if"])
 
 
 def test_s11_5_1_3_python_lib_renders_no_docs_yml(tmp_path: Path) -> None:
@@ -1078,15 +1079,15 @@ def test_s11_5_1_3_python_lib_renders_no_docs_yml(tmp_path: Path) -> None:
     assert ".github/workflows/ci.yml" in rendered
 
 
-def test_s11_5_1_4_other_archetypes_keep_docs_yml_and_plain_ci(
+def test_s11_5_1_4_other_archetypes_deploy_docs_from_ci(
     tmp_path: Path,
 ) -> None:
     for archetype in ("python-app", "python-tool"):
         rendered = _rendered(_root(tmp_path / archetype, archetype))
-        assert ".github/workflows/docs.yml" in rendered, archetype
-        assert (
-            "docs" not in YamlUtils.load(rendered[".github/workflows/ci.yml"])["jobs"]
-        ), archetype
+        assert ".github/workflows/docs.yml" not in rendered, archetype
+        assert "docs" in YamlUtils.load(rendered[".github/workflows/ci.yml"])["jobs"], (
+            archetype
+        )
 
 
 def test_s11_5_1_2_actionlint_passes_on_the_docs_job(tmp_path: Path) -> None:
@@ -1540,7 +1541,7 @@ def test_s16_4_6_1_docs_job_comment(tmp_path: Path, archetype: str, extra: str) 
                     "persist-credentials: true # mike pushes gh-pages with this token"
                 ), (archetype, path)
     ci = YamlUtils.load(rendered[".github/workflows/ci.yml"])["jobs"]
-    if "docs" in ci:
+    if "docs" in ci and archetype == "python-lib":
         assert (
             "persist-credentials: true # mike pushes gh-pages with this token"
             in (rendered[".github/workflows/ci.yml"])
@@ -1979,9 +1980,11 @@ def test_s4_11_7_1_docs_hooks_render_before_the_upload(tmp_path: Path) -> None:
     assert names[upload - 3] == "Deploy the package sites and build the root site"
 
 
-def test_s4_11_7_1_docs_hooks_render_in_docs_yml(tmp_path: Path) -> None:
+def test_s4_11_7_1_docs_hooks_render_in_the_single_package_docs_job(
+    tmp_path: Path,
+) -> None:
     root = _with_ci(_root(tmp_path, "python-tool"), DOCS_HOOKS)
-    steps = _job_steps(root, ".github/workflows/docs.yml", "build")
+    steps = _job_steps(root, ".github/workflows/ci.yml", "docs")
     names = [s["name"] for s in steps]
     upload = names.index("Upload Pages artifact")
     assert steps[upload - 2 : upload] == _docs_hook_steps("a", "b")
@@ -2830,12 +2833,12 @@ def test_s9_1_11_1_node_lib_renders_no_docs_yml_and_one_docs_job(
     rendered = _rendered(_root(tmp_path / "files", "node-lib"))
     assert ".github/workflows/docs.yml" not in rendered
     job = _docs_job(tmp_path / "jobs")
-    assert job["needs"] == ["validate", "test-cloud", "test-local"]
+    assert job["needs"] == ["checks-ok", "release", "verify-release"]
     assert job["if"] == (
-        "${{ always() && (needs.test-cloud.result == 'success' "
-        "|| needs.test-local.result == 'success') "
-        "&& github.ref == 'refs/heads/main' "
-        "&& (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}"
+        "${{ !cancelled() && needs.checks-ok.result == 'success' && "
+        "!contains(needs.*.result, 'failure') && "
+        "!contains(needs.*.result, 'cancelled') && "
+        "github.event_name == 'push' && github.ref_name == 'main' }}"
     )
     assert job["timeout-minutes"] == 30
     assert job["permissions"] == {

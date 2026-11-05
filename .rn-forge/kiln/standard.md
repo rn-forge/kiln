@@ -232,7 +232,7 @@ model.
 | Sonar | `sonar` job | C: `[ci] sonar`, default `true` |
 | Release | `release` job | C: `[ci] release`, default `tag-exists`; `pypi` for `python-lib`; `nx-dispatch` for `node-lib`; `none` |
 | `verify-release` | `task ci:verify-release` | D: a release mode other than `none` |
-| Docs deploy | `docs` job or `docs.yml` | D: `[docs] profile = "mkdocs"` |
+| Docs deploy | `docs` job | D: `[docs] profile = "mkdocs"` |
 | `ci-ok` | none | S |
 | `licenses` | `task python:lint:licenses` | C: `[ci.checks] licenses`, default `true`; a table sets `deny` and `ignore` |
 | `secret-scan` | `task ci:lint:secrets` | C: `[ci.checks] secret-scan`, default `true` |

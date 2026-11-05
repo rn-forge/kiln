@@ -39,8 +39,8 @@ archetype, is in
 | Archetype | `ci.yml` job order | Other workflows |
 | -- | -- | -- |
 | `python-lib` | `validate` > `dependency-review`, `secret-scan`, `plan` > `test`, `integration`, `smoke`, `suites` > `sonar` > `checks-ok` > `release` > `verify-release`, `docs` > `ci-ok` | none: `docs` is the one Pages deploy |
-| `python-tool`, `python-app`, `python-web-api`, `python-web-app` | `validate` > `dependency-review`, `secret-scan`, `plan` > `test`, `integration`, `smoke`, `suites` > `sonar` > `checks-ok` > `release` > `verify-release` > `ci-ok` | `docs.yml` |
-| `node-lib` | `validate` > `dependency-review`, `secret-scan`, `test-cloud` or `test-local` > `sonar`, `smoke` > `checks-ok` > `release` > `verify-release`; `docs` > `ci-ok` | none |
+| `python-tool`, `python-app`, `python-web-api`, `python-web-app` | `validate` > `dependency-review`, `secret-scan`, `plan` > `test`, `integration`, `smoke`, `suites` > `sonar` > `checks-ok` > `release` > `verify-release` > `docs` > `ci-ok` | none: `docs` is the one Pages deploy |
+| `node-lib` | `validate` > `dependency-review`, `secret-scan`, `test-cloud` or `test-local` > `sonar`, `smoke` > `checks-ok` > `release` > `verify-release` > `docs` > `ci-ok` | none |
 
 | Job | Runs | Task verb |
 | -- | -- | -- |
@@ -59,7 +59,7 @@ archetype, is in
 | `release` | publishes from the default branch only, after `sonar` | `python-lib`: `task ci:release-build`, `task ci:release-publish`; single-package Python: `task ci:release-state`, `task build`, `task ci:release-publish`; `node-lib`: `task ci:release:*` (see below) |
 | `verify-release` | installs what was published, from PyPI (`[ci] release = "pypi"`) or from its git tag, into a clean venv outside the repository and imports it; `python-lib` verifies every new tag, a single-package repository the tag `release` output | `task ci:verify-release` (`kiln-devops verify-release`) |
 | `smoke` (`node-lib`) | packs and verifies publishable tarballs | `task ci:package` |
-| `docs` | deploys Pages once | `python-lib`: `task ci:docs-publish`; `node-lib`: `task docs:build`, `task ci:docs:site` |
+| `docs` | deploys Pages once, on a push to the default branch, after `checks-ok` and each of `release` and `verify-release` that is rendered; a skipped release stage still lets it deploy, a failed or cancelled one does not | `python-lib`: `task ci:docs-publish`; single-package Python: `task docs:build`; `node-lib`: `task docs:build`, `task ci:docs:site` |
 | `checks-ok` | the pre-release barrier: every job that runs before `release` passed or was skipped | none |
 | `ci-ok` | `checks-ok`, and every job after it, passed or was skipped | none |
 
@@ -94,7 +94,7 @@ checks" in `.rn-forge/kiln/standard.md`.
 | Sonar | `sonar` job | yes | yes | yes | yes | yes | yes | C: `[ci] sonar`, default `true` |
 | Release | `release` job | yes | yes | yes | yes | yes | yes | C: `[ci] release`, default `tag-exists`; `pypi` for `python-lib`; `nx-dispatch` for `node-lib`; `none` |
 | `verify-release` | `task ci:verify-release` | yes | yes | yes | yes | yes | yes | D: a release mode other than `none` |
-| Docs deploy | `docs` job or `docs.yml` | `ci.yml` | `docs.yml` | `docs.yml` | `docs.yml` | `docs.yml` | `ci.yml` | D: `[docs] profile = "mkdocs"` |
+| Docs deploy | `docs` job | yes | yes | yes | yes | yes | yes | D: `[docs] profile = "mkdocs"` |
 | Package tarballs | `task ci:package` |  |  |  |  |  | yes | S |
 | `ci-ok` | none | yes | yes | yes | yes | yes | yes | S |
 | `licenses` | `task python:lint:licenses` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] licenses`, default `true`; a table sets `deny` and `ignore` |
@@ -185,18 +185,18 @@ nothing; any other change selects the one member. `release` waits for `plan` and
 version is new. `python-web-api` and `python-web-app` run the same pipeline with
 the API package under `api_dir`; `python-web-app` adds the frontend
 (`task node:*`) to `lint`, `typecheck`, `test` and `build`. They deploy docs
-from `docs.yml` (`task docs:build`, on a push to the default branch), which is
-outside `ci-ok` and not gated on `release`.
+from the `docs` job (`task docs:build`), which waits for `checks-ok`, `release`
+and `verify-release` and is part of `ci-ok`.
 
 ### `node-lib`
 
 `validate` runs `task ci:validate`; `test-cloud` or `test-local` runs
 `task ci:affected` (Nx's lint, typecheck, test and build on the affected
 projects); `sonar` waits for one of them; `smoke` packs and verifies the
-publishable tarballs; `docs` builds the site. `checks-ok` and `ci-ok` share one
-macro (no `jq`): a failed or cancelled need fails them, and the inactive one of
-`test-cloud` and `test-local` is skipped, which passes. Sonar is skipped for
-Dependabot's pull requests.
+publishable tarballs; `docs` builds the site after `checks-ok`, `release` and
+`verify-release`. `checks-ok` and `ci-ok` share one macro (no `jq`): a failed or
+cancelled need fails them, and the inactive one of `test-cloud` and `test-local`
+is skipped, which passes. Sonar is skipped for Dependabot's pull requests.
 
 The `node-lib` `release` runs on a push to the default branch, after `checks-ok`
 only (the inactive one of `test-cloud` and `test-local` is skipped, so the
@@ -280,6 +280,9 @@ validate ─► plan ─┬─► test ────────┐
 - `release` waits for `plan` and `checks-ok`. It runs only on a push to `main`,
   when the selection is not empty and `checks-ok` succeeded, so a failed check
   of any kind blocks every package. Within a run it decides per package.
+- `docs` waits for `checks-ok`, `plan`, `release` and `verify-release`. It runs
+  on a push to `main` when `plan` reports a docs site and none of them failed
+  or was cancelled, so a push that released nothing still deploys.
 - `ci-ok` is the one check branch protection requires, because job names change
   as members come and go.
 

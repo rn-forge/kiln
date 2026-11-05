@@ -176,11 +176,7 @@ def test_s15_8_7_2_barrier_needs(tmp_path: Path, archetype: str) -> None:
 
 
 def _after(archetype: str) -> list[str]:
-    if archetype == "node-lib":
-        return ["release", "verify-release", "docs"]
-    if archetype == "python-lib":
-        return ["release", "verify-release", "docs"]
-    return ["release", "verify-release"]
+    return ["release", "verify-release", "docs"]
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)

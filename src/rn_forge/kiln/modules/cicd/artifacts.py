@@ -89,9 +89,7 @@ def _ci_config(config: KilnConfig) -> CiConfig:
 
 
 def render(config: KilnConfig) -> list[Artifact]:
-    """Render the setup action, `ci.yml`, `dependabot.yml`, `docs.yml`, `scorecard.yml` (when `ci.checks.scorecard` is on), `sonar-project.properties` and, for `node-lib`, `.nx/workflows/agents.yaml`, `tools/ci/*.mjs`.
-
-    A `python-lib` and a `node-lib` render no `docs.yml`: their `ci.yml` has the one Pages deploy.
+    """Render the setup action, `ci.yml`, `dependabot.yml`, `scorecard.yml` (when `ci.checks.scorecard` is on), `sonar-project.properties` and, for `node-lib`, `.nx/workflows/agents.yaml`, `tools/ci/*.mjs`.
 
     Raises:
         AppException: `ci.provider` is `ado`, which is reserved, or `ci.hooks.docs` is set without a docs site.
@@ -171,11 +169,6 @@ def render(config: KilnConfig) -> list[Artifact]:
         (".github/actions/setup/action.yml", "action.yml.j2", True),
         (".github/workflows/ci.yml", "ci.yml.j2", True),
         (".github/dependabot.yml", "dependabot.yml.j2", True),
-        (
-            ".github/workflows/docs.yml",
-            "docs.yml.j2",
-            docs and not workspace and not node_lib,
-        ),
         (
             ".github/workflows/scorecard.yml",
             "scorecard.yml.j2",
