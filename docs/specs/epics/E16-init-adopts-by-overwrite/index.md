@@ -2,14 +2,15 @@
 
 |  |  |
 | -- | -- |
-| **State** | New |
+| **State** | Active |
+| **Start Date** | 2026-11-04 |
 
 <!-- BEGIN derived features -->
 
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
 | [F16.1 — Opinionated `init`](F16.1-opinionated-init.md) | New | release-1 | 4 New |
-| [F16.2 — kiln owns `mkdocs.yml`](F16.2-kiln-owns-mkdocs.md) | New | release-1 | 3 New |
+| [F16.2 — kiln owns `mkdocs.yml`](F16.2-kiln-owns-mkdocs.md) | Active | release-1 | 2 New · 1 Closed |
 | [F16.3 — The cutover SOP](F16.3-cutover-sop.md) | New | release-1 | 2 New |
 | [F16.4 — Generated-file hygiene](F16.4-generated-file-hygiene.md) | New | release-1 | 7 New |
 | [F16.5 — Rebuild an existing repository on kiln, and port it](F16.5-rebuild-and-port.md) | New | — | 3 New |
