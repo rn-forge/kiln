@@ -282,7 +282,7 @@
     },
     "tasks/python.yml": {
       "begin_marker": null,
-      "content_hash": "c09c6530856b5bcc0ad1b428c555fc09bfdcd2967160439d5789c255c14c99bd",
+      "content_hash": "812410fb85437bb28ba8c39783416cda3e675e441ba820d55212beb2647cd9d2",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/python.yml"

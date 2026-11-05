@@ -1061,10 +1061,6 @@ def _audit_cmd(root: Path) -> str:
     return cmd
 
 
-def _excluded(cmd: str) -> list[str]:
-    return re.findall(r"--no-emit-package (\S+)", cmd)
-
-
 @pytest.mark.parametrize(("archetype", "extra"), AUDIT_ALL_CELLS)
 def test_s4_11_5_1_lint_runs_audit_after_workflows(
     tmp_path: Path, archetype: str, extra: str
@@ -1090,23 +1086,14 @@ def test_s4_11_5_1_the_command(tmp_path: Path) -> None:
     assert "\n" not in cmd
     assert "  " not in cmd
     assert "--ignore-vuln" not in cmd
-    names = _excluded(cmd)
-    expected = (
-        f"set -o pipefail; {AUDIT_PREFIX} "
-        + " ".join(f"--no-emit-package {n}" for n in names)
-        + f" {AUDIT_SUFFIX}"
-    )
+    expected = f"set -o pipefail; {AUDIT_PREFIX} {AUDIT_SUFFIX}"
     assert cmd == expected
 
 
-def test_s4_11_5_2_the_excluded_set_is_every_rn_forge_distribution(
-    tmp_path: Path,
-) -> None:
+def test_s16_4_4_1_audit_command_has_no_exclude_flags(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
-    names = _excluded(_audit_cmd(root))
-    assert names == sorted(archetypes.RN_FORGE_TAGS)
-    assert len(set(names)) == len(names)
+    assert "--no-emit-package" not in _audit_cmd(root)
 
 
 def test_s4_11_5_3_web_and_lib_cells_render_the_same_command(tmp_path: Path) -> None:

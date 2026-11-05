@@ -35,14 +35,6 @@ tasks:
       - >-
         set -o pipefail;
         uv export --frozen --all-packages --all-groups --no-emit-workspace --no-header
-        --no-emit-package rn-forge-auth
-        --no-emit-package rn-forge-cli
-        --no-emit-package rn-forge-commons
-        --no-emit-package rn-forge-django
-        --no-emit-package rn-forge-fastapi
-        --no-emit-package rn-forge-sqlalchemy
-        --no-emit-package rn-forge-tooling
-        --no-emit-package rn-forge-web
         | uv run pip-audit --disable-pip --require-hashes --strict -r /dev/stdin
 
   format:

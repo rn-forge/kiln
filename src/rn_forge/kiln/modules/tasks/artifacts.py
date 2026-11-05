@@ -10,7 +10,7 @@ from rn_forge.commons.generation.templated import TemplateArtifact, render_artif
 from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
-from rn_forge.kiln.archetypes import KILN_REF, RN_FORGE_TAGS, kiln_command
+from rn_forge.kiln.archetypes import KILN_REF, kiln_command
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs.config import DocsConfig
 from rn_forge.kiln.modules.python.artifacts import root_package
@@ -114,7 +114,6 @@ def render(config: KilnConfig) -> list[Artifact]:
         "extra_refs": tasks_config.extra_refs,
         "overrides": tasks_config.command_overrides,
         "audit_ignore": [entry.id for entry in tasks_config.audit.ignore],
-        "audit_excluded": sorted(RN_FORGE_TAGS),
         "web": web,
         "web_app": web_app,
         "node": node,
