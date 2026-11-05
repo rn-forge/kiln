@@ -83,7 +83,7 @@ are [release-2](../release-2/index.md).
 | [F14.1 — Area tabs, the epic ranges and the epic list](../../specs/epics/E14-site-navigation/F14.1-tabbed-navigation.md) | E14 | Closed |
 | [F14.2 — Epic and feature summary tables](../../specs/epics/E14-site-navigation/F14.2-work-summaries.md) | E14 | Closed |
 | [F15.1 — The check model](../../specs/epics/E15-ci-standard/F15.1-check-model.md) | E15 | Closed |
-| [F15.2 — The licences check](../../specs/epics/E15-ci-standard/F15.2-licences-check.md) | E15 | New |
+| [F15.2 — The licences check](../../specs/epics/E15-ci-standard/F15.2-licences-check.md) | E15 | Active |
 | [F15.3 — The secret scan](../../specs/epics/E15-ci-standard/F15.3-secret-scan.md) | E15 | New |
 | [F15.4 — Internal ranges](../../specs/epics/E15-ci-standard/F15.4-internal-ranges.md) | E15 | New |
 | [F15.5 — The umbrella release](../../specs/epics/E15-ci-standard/F15.5-umbrella-release.md) | E15 | New |

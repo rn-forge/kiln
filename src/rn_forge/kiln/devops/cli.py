@@ -9,7 +9,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from rn_forge.kiln.devops import ci, github, notes, uv
+from rn_forge.kiln.devops import ci, github, licenses, notes, uv
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -62,6 +62,12 @@ def _parser() -> argparse.ArgumentParser:
     )
     changelog.add_argument("changelog", metavar="CHANGELOG")
     changelog.add_argument("version", metavar="VERSION")
+    policy = commands.add_parser(
+        "licenses", help="fail when a dependency's licence matches the deny list"
+    )
+    policy.add_argument("--format", required=True, choices=["pip-licenses", "pnpm"])
+    policy.add_argument("--deny", action="append", default=None, metavar="PATTERN")
+    policy.add_argument("--ignore", action="append", default=[], metavar="PACKAGE")
     return parser
 
 
@@ -153,6 +159,18 @@ def _notes(args: argparse.Namespace) -> int:
     return 0
 
 
+def _licenses(args: argparse.Namespace) -> int:
+    deny = args.deny if args.deny is not None else licenses.DEFAULT_DENY
+    try:
+        offenders = licenses.run(sys.stdin.read(), args.format, deny, args.ignore)
+    except ValueError as error:
+        print(f"kiln-devops: {error}", file=sys.stderr)
+        return 2
+    for line in offenders:
+        print(line, file=sys.stderr)
+    return 1 if offenders else 0
+
+
 def _releasable(workspace: ci.Workspace, args: argparse.Namespace) -> int:
     ok, blocked = ci.releasable(workspace.packages, Path(args.ok_dir), args.names)
     for name in blocked:
@@ -208,6 +226,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "notes":
         return _notes(args)
+    if args.command == "licenses":
+        return _licenses(args)
     if args.command.startswith("release-"):
         return _release(args)
 
