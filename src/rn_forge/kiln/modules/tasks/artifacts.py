@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.generation import Artifact, ArtifactKind
@@ -13,6 +14,7 @@ from rn_forge.kiln import __version__
 from rn_forge.kiln.archetypes import KILN_REF, kiln_command
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd import registry
+from rn_forge.kiln.modules.cicd.artifacts import load_pins
 from rn_forge.kiln.modules.cicd.config import CiConfig
 from rn_forge.kiln.modules.docs.config import DocsConfig
 from rn_forge.kiln.modules.python.artifacts import root_package
@@ -40,6 +42,10 @@ _PYTHON_TASKS = (
     "python:version",
 )
 _CI_TASKS = ("ci:lint:workflows",)
+_GITLEAKS_PLATFORMS = (
+    ("Linux-x86_64", "linux_x64"),
+    ("Darwin-arm64", "darwin_arm64"),
+)
 # Dual-licensed Artistic or GPL, taken under Artistic; reached through the
 # rendered docs group (mkdocs-monorepo-plugin -> python-slugify).
 _LICENSES_ALWAYS_IGNORED = ("text-unidecode",)
@@ -81,6 +87,9 @@ def render(config: KilnConfig) -> list[Artifact]:
     check = next(c for c in registry.CHECKS if c.name == "licenses")
     licenses_enabled = registry.enabled(check, ci, config.archetype, len(packages))
     policy = ci.licenses_policy()
+    scan = next(c for c in registry.CHECKS if c.name == "secret-scan")
+    secret_scan_enabled = registry.enabled(scan, ci, config.archetype, len(packages))
+    gitleaks = cast("dict[str, Any]", load_pins()["gitleaks"])
 
     known = {
         *_WORKSPACE_TASKS,
@@ -123,6 +132,15 @@ def render(config: KilnConfig) -> list[Artifact]:
         "includes": tasks_config.includes,
         "extra_refs": tasks_config.extra_refs,
         "overrides": tasks_config.command_overrides,
+        "secret_scan_enabled": secret_scan_enabled,
+        "gitleaks": [
+            {
+                "uname": uname,
+                "url": gitleaks[platform]["url"],
+                "sha256": gitleaks[platform]["sha256"],
+            }
+            for uname, platform in _GITLEAKS_PLATFORMS
+        ],
         "licenses_enabled": licenses_enabled,
         "licenses_task": licenses_enabled and not node_lib,
         "licenses_node_task": licenses_enabled and node_lib,

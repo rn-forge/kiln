@@ -21,6 +21,38 @@ tasks:
 {% else %}      - uv run zizmor --offline .github
       - uv run actionlint
 {% endif %}
+{% if secret_scan_enabled %}  lint:secrets:
+    desc: "CI only: scan the git history for secrets with the pinned gitleaks (downloads it on first run, so it is not part of lint)"
+    cmds:
+      - task: secrets:install
+      - .rn-forge/kiln/rendered/bin/gitleaks detect --source . --redact --no-banner --exit-code 1
+
+  secrets:install:
+    desc: Download the pinned gitleaks release, check its sha256, and unpack the binary.
+    internal: true
+    status:
+      - test -x .rn-forge/kiln/rendered/bin/gitleaks
+    cmds:
+      - |
+        set -euo pipefail
+        platform="$(uname -s)-$(uname -m)"
+        case "$platform" in
+{% for item in gitleaks %}          [[ item.uname ]])
+            url='[[ item.url ]]'
+            sha256='[[ item.sha256 ]]'
+            ;;
+{% endfor %}          *)
+            echo "unsupported platform: $platform" >&2
+            exit 1
+            ;;
+        esac
+        tmp="$(mktemp -d)"
+        curl -fsSL "$url" -o "$tmp/gitleaks.tar.gz"
+        echo "$sha256  $tmp/gitleaks.tar.gz" | shasum -a 256 -c -
+        mkdir -p .rn-forge/kiln/rendered/bin
+        tar -xzf "$tmp/gitleaks.tar.gz" -C .rn-forge/kiln/rendered/bin gitleaks
+        rm -rf "$tmp"
+{% endif %}
   sonar-target:
     desc: "CI only: print the Sonar branch argument for this run as a $GITHUB_OUTPUT line"
     cmds:

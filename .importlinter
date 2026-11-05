@@ -88,6 +88,7 @@ ignore_imports =
     rn_forge.kiln.modules.registry -> rn_forge.kiln.modules.**
     rn_forge.kiln.modules.tasks.artifacts -> rn_forge.kiln.modules.docs.config
     rn_forge.kiln.modules.tasks.artifacts -> rn_forge.kiln.modules.python.artifacts
+    rn_forge.kiln.modules.tasks.artifacts -> rn_forge.kiln.modules.cicd.artifacts
     rn_forge.kiln.modules.tasks.artifacts -> rn_forge.kiln.modules.cicd.config
     rn_forge.kiln.modules.tasks.artifacts -> rn_forge.kiln.modules.cicd.registry
     rn_forge.kiln.modules.docs.generate -> rn_forge.kiln.modules.cicd.registry

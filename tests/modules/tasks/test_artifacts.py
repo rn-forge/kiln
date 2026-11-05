@@ -13,6 +13,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import cast
 
 import pytest
 from rn_forge.commons.fs.documents import YamlUtils
@@ -1456,7 +1457,7 @@ def test_s4_12_2_3_only_python_lib_has_the_pipeline_tasks(
         k
         for k in document["tasks"]
         if not k.startswith("lint:")
-        and k != "sonar-target"
+        and k not in {"sonar-target", "secrets:install"}
         and not (archetype != "python-lib" and k in single)
     }
     if archetype == "python-lib":
@@ -3260,3 +3261,78 @@ def test_s15_2_4_2_python_archetypes_have_none(tmp_path: Path) -> None:
             text = path.read_text(encoding="utf-8")
             assert "pnpm audit" not in text, path
             assert "node:lint:audit" not in text, path
+
+
+# S15.3.2 — `task ci:lint:secrets`.
+
+SIX_ARCHETYPES = (*ARCHETYPES, "python-web-api", "python-web-app", "node-lib")
+
+
+def _gitleaks_pin() -> dict[str, dict[str, str]]:
+    from rn_forge.kiln.modules.cicd.artifacts import load_pins
+
+    return cast("dict[str, dict[str, str]]", load_pins()["gitleaks"])
+
+
+def _secrets_root(tmp_path: Path, archetype: str, ci: str = "") -> Path:
+    if archetype.startswith("python-web"):
+        extra = 'frontend = "angular"' if archetype == "python-web-app" else ""
+        root = _web_root(tmp_path, archetype, "fastapi", extra=extra)
+    else:
+        root = _root(tmp_path, archetype)
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(config.read_text(encoding="utf-8") + ci, encoding="utf-8")
+    cycle.apply(root, home=tmp_path / "home")
+    return root
+
+
+@pytest.mark.parametrize("archetype", SIX_ARCHETYPES)
+def test_s15_3_2_1_task_renders_for_every_archetype(
+    tmp_path: Path, archetype: str
+) -> None:
+    tasks = _ci_rendered(_secrets_root(tmp_path, archetype))
+    assert tasks["lint:secrets"]["cmds"] == [
+        {"task": "secrets:install"},
+        ".rn-forge/kiln/rendered/bin/gitleaks detect --source . --redact "
+        "--no-banner --exit-code 1",
+    ]
+    assert "internal" not in tasks["lint:secrets"]
+    assert tasks["secrets:install"]["internal"] is True
+
+
+def test_s15_3_2_2_install_verifies_the_sha(tmp_path: Path) -> None:
+    install = _ci_rendered(_secrets_root(tmp_path, "python-tool"))["secrets:install"]
+    assert install["status"] == ["test -x .rn-forge/kiln/rendered/bin/gitleaks"]
+    (script,) = install["cmds"]
+    pin = _gitleaks_pin()
+    for uname, platform in (
+        ("Linux-x86_64", "linux_x64"),
+        ("Darwin-arm64", "darwin_arm64"),
+    ):
+        assert f"{uname})" in script
+        assert pin[platform]["url"] in script
+        assert pin[platform]["sha256"] in script
+    assert 'platform="$(uname -s)-$(uname -m)"' in script
+    assert 'curl -fsSL "$url"' in script
+    assert "shasum -a 256 -c" in script
+    assert "-C .rn-forge/kiln/rendered/bin gitleaks" in script
+    assert 'echo "unsupported platform: $platform" >&2' in script
+    assert script.index("unsupported platform") < script.index("curl")
+    assert script.index("shasum -a 256 -c") < script.index("tar -xzf")
+
+
+@pytest.mark.parametrize("archetype", SIX_ARCHETYPES)
+def test_s15_3_2_3_off(tmp_path: Path, archetype: str) -> None:
+    on_dir, off_dir = tmp_path / "on", tmp_path / "off"
+    on_dir.mkdir()
+    off_dir.mkdir()
+    on = _secrets_root(on_dir, archetype)
+    off = _secrets_root(off_dir, archetype, "\n[ci.checks]\nsecret-scan = false\n")
+    tasks = _ci_rendered(off)
+    assert "lint:secrets" not in tasks
+    assert "secrets:install" not in tasks
+    assert "gitleaks" not in (off / "tasks/ci.yml").read_text(encoding="utf-8")
+    on_lint = YamlUtils.load((on / "Taskfile.yml").read_text(encoding="utf-8"))
+    off_lint = YamlUtils.load((off / "Taskfile.yml").read_text(encoding="utf-8"))
+    assert on_lint["tasks"]["lint"] == off_lint["tasks"]["lint"]
+    assert "secrets" not in json.dumps(off_lint["tasks"]["lint"])
