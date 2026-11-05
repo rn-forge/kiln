@@ -100,8 +100,11 @@ The release follows a version bump, as for Python
 
 On a push to the default branch, `release` reads the release group's version
 `V`. No `vV` tag means a new release: tag `HEAD`, verify, push the tag only,
-create the GitHub Release, publish, move `latest`. A tag with a draft release
-resumes; a tag with a published release does nothing. CI never commits.
+create the GitHub Release as a draft, publish to npm, publish the draft, move
+`latest`. The GitHub Release is published only after npm publishing succeeds, so
+a published release means a finished one. A tag with a draft (or no) release
+resumes, and the resume republishes; `nx release publish` skips any version npm
+already has. A tag with a published release does nothing. CI never commits.
 
 ## Integration: services as data
 
@@ -164,7 +167,7 @@ them.
 
 ```toml
 [ci.checks]
-licenses = { deny = ["GPL-*", "AGPL-*", "UNKNOWN"], ignore = ["some-package"] }
+licenses = { deny = ["GPL", "GPL-*", "AGPL", "AGPL-*", "UNKNOWN"], ignore = ["some-package"] }
 secret-scan = true
 umbrella-release = false
 scorecard = false
