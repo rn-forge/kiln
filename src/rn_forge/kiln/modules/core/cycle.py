@@ -28,10 +28,18 @@ from rn_forge.tooling.install.home import rnf_home
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
 from rn_forge.kiln.modules.base import ModuleRegistry, StarterModule
-from rn_forge.kiln.modules.core import umbrella
+from rn_forge.kiln.modules.core import settle, umbrella
 from rn_forge.kiln.modules.core.config.manager import PROVENANCE_KEY, ConfigManager
 
-__all__ = ["CycleRefused", "adoption_plan", "apply", "fence", "plan", "unfenced"]
+__all__ = [
+    "CycleRefused",
+    "adoption_plan",
+    "apply",
+    "classify",
+    "fence",
+    "plan",
+    "unfenced",
+]
 
 STATE_SCHEMA_VERSION = "1"
 
@@ -98,7 +106,7 @@ def adoption_plan(
     existing artifact is a `conflict`.
     """
     artifacts = _artifacts(ConfigManager(registry), config, root)
-    return _adopted(root, generation.plan(root, artifacts, {}))
+    return _adopted(root, classify(root, artifacts, {}))
 
 
 def apply(
@@ -182,8 +190,26 @@ def _prepare(
         metadata=metadata,
     )
     entries = {} if adopt else _without_converted(store.load(), artifacts)
-    planned = generation.plan(root, artifacts, entries, force=force)
+    planned = classify(root, artifacts, entries, force=force)
     return store, _adopted(root, planned) if adopt else planned
+
+
+def classify(
+    root: Path,
+    artifacts: Iterable[generation.Artifact],
+    entries: Mapping[str, StateEntry],
+    *,
+    force: Iterable[str] = (),
+) -> Plan:
+    """Classify *artifacts* against *entries* as the engine does, then settle derived files.
+
+    The one place kiln calls the engine's planner. A file with a derived region
+    (see :mod:`~rn_forge.kiln.modules.core.derived`) is compared with that
+    region emptied.
+    """
+    return settle.settle(
+        root, generation.plan(root, artifacts, entries, force=force), entries
+    )
 
 
 def _artifacts(

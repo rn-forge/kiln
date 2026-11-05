@@ -17,6 +17,9 @@ module = "rn_forge.kiln"
 profile = "mkdocs"
 site_dir = ".docs-site"
 
+[docs.mkdocs]
+site_description = "The rn-forge repository standard, its decisions, and the generator that renders it."
+
 [ci]
 provider = "github"
 sonar = true

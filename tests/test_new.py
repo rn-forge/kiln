@@ -624,7 +624,7 @@ def test_s13_1_1_4_new_writes_a_current_derived_nav(tmp_path: Path) -> None:
     assert "# BEGIN derived nav" in nav
     assert "guides/index.md" in nav
     state = (target / ".rn-forge" / "kiln" / "state.json").read_text("utf-8")
-    assert "mkdocs.yml" not in state
+    assert '"mkdocs.yml"' in state
 
 
 def test_s14_1_1_2_new_writes_tabbed_navigation_features(tmp_path: Path) -> None:

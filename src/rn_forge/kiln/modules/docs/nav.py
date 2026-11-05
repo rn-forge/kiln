@@ -13,10 +13,10 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
-from rn_forge.commons.fs.blocks import ManagedBlock
 from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.commons.text.markdown import MarkdownUtils
 
+from rn_forge.kiln.modules.core.derived import NAV_BLOCK
 from rn_forge.kiln.modules.docs.areas import Area, load_areas
 from rn_forge.kiln.modules.docs.work import epic_range, range_label, title_markup
 
@@ -30,9 +30,6 @@ __all__ = [
     "title_from_filename",
     "update_nav",
 ]
-
-NAV_BLOCK = ManagedBlock("derived nav", indent="  ")
-"""The fenced block inside `mkdocs.yml`'s ``nav:`` that this module owns."""
 
 ACRONYMS = {"adr": "ADR", "api": "API", "cli": "CLI", "ci": "CI", "id": "ID"}
 """Filename words that are capitalised rather than title-cased."""

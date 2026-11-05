@@ -30,6 +30,7 @@ from rn_forge.kiln.modules.cicd import CICD
 from rn_forge.kiln.modules.cicd.artifacts import load_pins
 from rn_forge.kiln.modules.cicd.config import GENERATED_JOBS
 from rn_forge.kiln.modules.core import cycle
+from rn_forge.kiln.modules.docs import generate
 from rn_forge.kiln.modules.tasks import TASKS
 
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
@@ -1769,6 +1770,8 @@ def test_s4_11_4_7_the_file_passes_the_checks(
                 "name: x\nruns:\n  using: composite\n  steps: []\n", encoding="utf-8"
             )
     cycle.apply(root, home=tmp_path / "home")
+    config = KilnConfig.load(root)  # fills the nav `mkdocs.yml` is rendered with
+    generate.generate(root, config.packages if archetype == "python-lib" else ())
     assert (root / DEPENDABOT).is_file()
     assert checks.run(root, scope="ownership") == []
     assert _actions(root, tmp_path)[DEPENDABOT] is Action.UNCHANGED

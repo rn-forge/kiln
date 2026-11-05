@@ -245,6 +245,13 @@
       "kind": "seeded",
       "path": "kiln.code-workspace"
     },
+    "mkdocs.yml": {
+      "begin_marker": null,
+      "content_hash": "97735193e653401b157940e0f18edd11d0e9d698a469433ffff2d64937ba1543",
+      "end_marker": null,
+      "kind": "managed",
+      "path": "mkdocs.yml"
+    },
     "sonar-project.properties": {
       "begin_marker": null,
       "content_hash": "078796c3c20fb028d4e86d6f916fb80e054966da88a1e6ea04e340cc1088cfd1",
@@ -261,7 +268,7 @@
     },
     "tasks/docs.yml": {
       "begin_marker": null,
-      "content_hash": "1552ad16c55b90ca8cb2aeb2dc6c40a53fccfc257bb70c46d798c53e04643f79",
+      "content_hash": "8ea840c78a1f27d9d0aa90e1d0a5f1e459095432e5aefadc5ca258382595c82b",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/docs.yml"
@@ -303,7 +310,7 @@
     }
   },
   "metadata": {
-    "config_hash": "90ff3f37aafcc8982adc750f76c02f6d07e9560531a1e5b7317df143e2844a35",
+    "config_hash": "b803bcbdd8aaf0bd27f2d6e8e8a9b77730601ac40cb0d6b8afa4920fc8376961",
     "kiln_version": "0.1.0"
   },
   "schema_version": "1"

@@ -56,7 +56,6 @@ _SCAFFOLDS = (
     "scaffold_node",
     "reconcile_backend",
     "reconcile_node",
-    "docs_scaffold",
     "instructions_scaffold",
     "python_add_package",
     "docs_add_package",
@@ -568,7 +567,15 @@ def test_s6_1_5_3_init_renders_a_missing_taskfile_and_tasks(
 
 
 def test_s6_1_6_1_init_creates_every_missing_path(repo: Path, fresh: Path) -> None:
-    removed = ["README.md", "CLAUDE.md", "AGENTS.md", ".gitignore", "docs", ".github"]
+    removed = [
+        "README.md",
+        "CLAUDE.md",
+        "AGENTS.md",
+        ".gitignore",
+        "docs",
+        ".github",
+        "mkdocs.yml",
+    ]
     for name in removed:
         target = repo / name
         shutil.rmtree(target) if target.is_dir() else target.unlink()
@@ -865,13 +872,13 @@ def test_s9_1_15_2_docs_mkdocs_creates_the_missing_mkdocs_yml(
     assert (node_repo / "mkdocs.yml").read_bytes() == fresh.read_bytes()
 
 
-def test_s9_1_15_2_the_dry_run_lists_mkdocs_yml_as_a_seeded_create(
+def test_s9_1_15_2_the_dry_run_lists_mkdocs_yml_as_a_managed_create(
     node_repo: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     commands.init(**NODE_SELECTORS, dry_run=True, json=True)
 
     row = _plan(capsys)["mkdocs.yml"]
-    assert (row["kind"], row["action"]) == ("seeded", "create")
+    assert (row["kind"], row["action"]) == ("managed", "create")
 
 
 def test_s9_1_15_2_docs_none_writes_no_mkdocs_yml(node_repo: Path) -> None:
@@ -880,14 +887,14 @@ def test_s9_1_15_2_docs_none_writes_no_mkdocs_yml(node_repo: Path) -> None:
     assert not (node_repo / "mkdocs.yml").exists()
 
 
-def test_s9_1_15_2_an_existing_mkdocs_yml_is_kept(node_repo: Path) -> None:
+def test_s9_1_15_2_an_existing_mkdocs_yml_is_a_conflict(node_repo: Path) -> None:
     own = "site_name: mine\n# BEGIN derived nav\nnav: []\n# END derived nav\n"
     (node_repo / "mkdocs.yml").write_text(own, encoding="utf-8")
     _commit(node_repo)
 
-    commands.init(**NODE_SELECTORS, yes=True)
-
-    assert "site_name: mine" in (node_repo / "mkdocs.yml").read_text(encoding="utf-8")
+    with pytest.raises(AppException, match=r"conflict.*mkdocs\.yml"):
+        commands.init(**NODE_SELECTORS, yes=True)
+    assert (node_repo / "mkdocs.yml").read_text(encoding="utf-8") == own
 
 
 def test_s9_1_15_2_a_python_archetype_also_gets_a_missing_mkdocs_yml(

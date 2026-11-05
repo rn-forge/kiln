@@ -6,14 +6,13 @@ version: "3"
 # non-root public tasks the vocabulary allows (see .rn-forge/kiln/standard.md).
 
 vars:
-  MKDOCS_SITE_DIR: .docs-site
   KILN: 'uv run kiln'
 
 tasks:
   build:
     desc: Build the MkDocs site into .docs-site/ (or $1 when given).
     cmds:
-      - uv run --group docs mkdocs build --strict --site-dir "{{.CLI_ARGS | default .MKDOCS_SITE_DIR}}"
+      - uv run --group docs mkdocs build --strict{{if .CLI_ARGS}} --site-dir "{{.CLI_ARGS}}"{{end}}
 
   serve:
     desc: Serve the docs site locally with live reload on http://127.0.0.1:8080.

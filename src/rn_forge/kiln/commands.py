@@ -43,7 +43,6 @@ from rn_forge.kiln.modules.core.config.sources import Source, fetch
 from rn_forge.kiln.modules.docs import generate
 from rn_forge.kiln.modules.docs.nav import NAV_BLOCK, mark_nav
 from rn_forge.kiln.modules.docs.scaffold import add_package as docs_add_package
-from rn_forge.kiln.modules.docs.scaffold import scaffold as docs_scaffold
 from rn_forge.kiln.modules.instructions.scaffold import (
     scaffold as instructions_scaffold,
 )
@@ -289,7 +288,6 @@ def new(
     reconcile_backend(raw_backend, workspace, resolved)
     if frontend_workspace is not None:
         reconcile_node(workspace, frontend_workspace, resolved)
-    docs_scaffold(workspace, resolved)
     instructions_scaffold(workspace, resolved)
 
     result = cycle.apply(
@@ -454,10 +452,9 @@ def init(
 
 
 def _missing_seeds(root: Path, config: KilnConfig) -> list[str]:
-    """The files `init` creates once, as `new` does: a `node-lib`'s `pyproject.toml`, an `mkdocs` repo's `mkdocs.yml`."""
+    """The files `init` creates once, as `new` does: a `node-lib`'s `pyproject.toml`."""
     wanted = [
         ("pyproject.toml", config.archetype == "node-lib"),
-        ("mkdocs.yml", config.docs_profile == "mkdocs"),
     ]
     return [name for name, applies in wanted if applies and not (root / name).exists()]
 
@@ -475,8 +472,6 @@ def _seed(root: Path, config: KilnConfig, seeds: Sequence[str]) -> None:
         with tempfile.TemporaryDirectory() as scratch:
             python_scaffold(Path(scratch), config)
             shutil.copy2(Path(scratch) / "pyproject.toml", root / "pyproject.toml")
-    if "mkdocs.yml" in seeds:
-        docs_scaffold(root, config)
 
 
 def _settle_nav(root: Path, force: bool) -> None:
@@ -1162,7 +1157,7 @@ def _config_change_rows(
         entry_type=StateEntry,
         schema_version=cycle.STATE_SCHEMA_VERSION,
     )
-    planned = generation.plan(root, artifacts, store.load())
+    planned = cycle.classify(root, artifacts, store.load())
     settled = (generation.Action.UNCHANGED, generation.Action.SKIP)
     changed = [c for c in planned.changes if c.action not in settled]
     return _change_rows(changed)

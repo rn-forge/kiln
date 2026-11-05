@@ -6,7 +6,6 @@ version: "3"
 # non-root public tasks the vocabulary allows (see .rn-forge/kiln/standard.md).
 
 vars:
-  MKDOCS_SITE_DIR: [[ site_dir ]]
   KILN: '[[ kiln ]]'
 
 tasks:
@@ -14,7 +13,7 @@ tasks:
     desc: Build the MkDocs site into .docs-site/ (or $1 when given).
     cmds:
 {% if overrides.get("docs:build") %}      - [[ overrides["docs:build"] ]]
-{% else %}      - uv run --group docs mkdocs build --strict --site-dir "{{.CLI_ARGS | default .MKDOCS_SITE_DIR}}"
+{% else %}      - uv run --group docs mkdocs build --strict{{if .CLI_ARGS}} --site-dir "{{.CLI_ARGS}}"{{end}}
 {% if workspace %}{% for dir in package_dirs %}      - |
         site=$(mktemp -d) && uv run --group docs mkdocs build --strict -f [[ dir ]]/mkdocs.yml --site-dir "$site"; rc=$?; rm -rf "$site"; exit $rc
 {% endfor %}{% endif %}{% endif %}

@@ -24,6 +24,7 @@ from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.fs.hashing import ContentHash
 
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.core.derived import managed_digest
 
 __all__ = ["CODE", "NAME", "block_body", "check", "digest"]
 
@@ -77,7 +78,12 @@ def _check_managed(root: Path, key: str, entry: dict[str, object]) -> list[Findi
                 path=relative,
             )
         ]
-    actual = digest(_read(path))
+    try:
+        actual = managed_digest(relative, _read(path))
+    except AppException as malformed:
+        return [
+            _error(f"managed artifact is malformed — {malformed.message}", relative)
+        ]
     if actual != entry["content_hash"]:
         return [
             _error(
