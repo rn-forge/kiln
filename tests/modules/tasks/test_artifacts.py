@@ -1659,7 +1659,7 @@ def test_s9_1_9_1_node_yml_adds_typecheck_and_e2e_for_node_lib(
     root = _node_lib_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "tasks/node.yml")["tasks"]
-    assert set(tasks) == set(NODE_CHECKS)
+    assert set(tasks) == {*NODE_CHECKS, "lint:licenses"}
     for name, cmds in NODE_CHECKS.items():
         assert tasks[name]["internal"] is True
         assert tasks[name]["desc"].strip()
@@ -1746,8 +1746,13 @@ def test_s9_2_5_1_node_yml_is_byte_identical_in_both_cells(tmp_path: Path) -> No
     app = _node_root(tmp_path / "app")
     cycle.apply(lib, home=tmp_path / "home")
     cycle.apply(app, home=tmp_path / "home")
-    text = (lib / "tasks/node.yml").read_text(encoding="utf-8")
-    assert text == (app / "tasks/node.yml").read_text(encoding="utf-8")
+    # S15.2.3: the licences check is `node-lib`'s alone, so the lib file adds
+    # exactly the `DEVOPS` var and the `lint:licenses` task to the shared one.
+    lib_doc = YamlUtils.load((lib / "tasks/node.yml").read_text(encoding="utf-8"))
+    text = (app / "tasks/node.yml").read_text(encoding="utf-8")
+    assert lib_doc.pop("vars").keys() == {"DEVOPS"}
+    del lib_doc["tasks"]["lint:licenses"]
+    assert lib_doc == YamlUtils.load(text)
     assert set(YamlUtils.load(text)["tasks"]) == set(NODE_CHECKS)
 
 
@@ -3190,3 +3195,44 @@ def test_s15_2_2_3_off(tmp_path: Path) -> None:
     root_tasks, python = _rendered_yaml(root)
     assert "lint:licenses" not in python
     assert LICENSES_REF not in root_tasks["lint"]["cmds"]
+
+
+# S15.2.3 — `node-lib` runs the licences check in `lint`.
+
+NODE_LICENSES_REF = {"task": "node:lint:licenses"}
+
+
+def _node_lib_rendered(root: Path) -> tuple[dict[str, dict], dict[str, dict]]:
+    root_tasks = YamlUtils.load((root / "Taskfile.yml").read_text(encoding="utf-8"))
+    node = YamlUtils.load((root / "tasks/node.yml").read_text(encoding="utf-8"))
+    return root_tasks["tasks"], node["tasks"]
+
+
+def test_s15_2_3_1_node_lint_licenses_task(tmp_path: Path) -> None:
+    root = _node_lib_root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    root_tasks, node = _node_lib_rendered(root)
+    assert NODE_LICENSES_REF in root_tasks["lint"]["cmds"]
+    task = node["lint:licenses"]
+    assert task["internal"] is True
+    (cmd,) = task["cmds"]
+    assert cmd.startswith(
+        "set -o pipefail; pnpm licenses list --json --prod "
+        "| {{.DEVOPS}} licenses --format pnpm "
+        f"{LICENSES_DENY}"
+    )
+    assert (
+        "DEVOPS"
+        in YamlUtils.load((root / "tasks/node.yml").read_text(encoding="utf-8"))["vars"]
+    )
+
+
+def test_s15_2_3_2_off(tmp_path: Path) -> None:
+    root = _root(tmp_path, "node-lib", extra="\n[ci.checks]\nlicenses = false\n")
+    cycle.apply(root, home=tmp_path / "home")
+    root_tasks, node = _node_lib_rendered(root)
+    assert "lint:licenses" not in node
+    assert NODE_LICENSES_REF not in root_tasks["lint"]["cmds"]
+    assert "vars" not in YamlUtils.load(
+        (root / "tasks/node.yml").read_text(encoding="utf-8")
+    )

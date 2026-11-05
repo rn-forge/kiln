@@ -125,6 +125,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "overrides": tasks_config.command_overrides,
         "licenses_enabled": licenses_enabled,
         "licenses_task": licenses_enabled and not node_lib,
+        "licenses_node_task": licenses_enabled and node_lib,
         "licenses_deny": policy.deny,
         "licenses_ignore": [
             *policy.ignore,

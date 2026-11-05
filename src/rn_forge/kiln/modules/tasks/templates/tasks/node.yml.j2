@@ -3,7 +3,10 @@ version: "3"
 
 # The pnpm-managed Nx toolchain the frontend scaffold owns. Internal — reached
 # through the root wrappers, as `python`'s is.
-
+{% if licenses_node_task %}
+vars:
+  DEVOPS: '[[ devops ]]'
+{% endif %}
 tasks:
   install:
     desc: Install the frontend workspace's locked dependencies.
@@ -18,7 +21,20 @@ tasks:
     cmds:
 {% if overrides.get("node:lint") %}      - [[ overrides["node:lint"] ]]
 {% else %}      - pnpm nx run-many -t lint
-{% endif %}
+{% endif %}{% if licenses_node_task %}
+  lint:licenses:
+    desc: Fail if a dependency's licence matches the deny list (pnpm licenses).
+    internal: true
+    # `set -o pipefail`, as in python's `lint:licenses`: a failing `pnpm` must
+    # not let the matcher pass on empty input.
+    cmds:
+      - >-
+        set -o pipefail;
+        pnpm licenses list --json --prod
+        | {{.DEVOPS}} licenses --format pnpm
+{% for d in licenses_deny %}        --deny '[[ d ]]'
+{% endfor %}{% for i in licenses_ignore %}        --ignore '[[ i ]]'
+{% endfor %}{% endif %}
   test:
     desc: Test the frontend workspace with Nx.
     internal: true
