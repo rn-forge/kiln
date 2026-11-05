@@ -6,7 +6,8 @@ import re
 from typing import Literal
 
 from pydantic import Field, ValidationInfo, field_validator
-from rn_forge.commons.lang.models import StrictModel
+
+from rn_forge.kiln.modules.core.config.schema import ConfigModel
 
 __all__ = ["GENERATED_JOBS", "CiConfig", "CiHooks", "CiJob", "resolve_release"]
 
@@ -36,14 +37,17 @@ _CALLABLE = re.compile(r"^\./\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml$")
 _GENERATED_WORKFLOW = "./.github/workflows/ci.yml"
 
 
-class CiHooks(StrictModel):
+class CiHooks(ConfigModel):
     """The anchors a repository extends the generated CI at, by reference."""
 
     setup: list[str] = Field(default_factory=list[str])
-    """Local composite actions the generated setup action runs as its last steps."""
+    """Local composite actions the generated setup action runs as its last steps.
+    Changing the list rewrites the setup action on `kiln apply`."""
 
     docs: list[str] = Field(default_factory=list[str])
-    """Local composite actions every Pages-uploading job runs before the upload, with `SITE_DIR` set."""
+    """Local composite actions every Pages-uploading job runs before the upload,
+    with `SITE_DIR` set. Changing the list rewrites the workflows on
+    `kiln apply`."""
 
     @field_validator("setup", "docs")
     @classmethod
@@ -61,19 +65,24 @@ class CiHooks(StrictModel):
         return value
 
 
-class CiJob(StrictModel):
+class CiJob(ConfigModel):
     """A repository-declared job that calls a reusable workflow after `validate`."""
 
     name: str
+    """The job's name in `ci.yml`: kebab-case, and not a job kiln generates.
+    Changing it renames the job on `kiln apply`."""
     uses: str
-    """The called workflow: `./.github/workflows/<file>.yml`, not `ci.yml`."""
+    """The called workflow: `./.github/workflows/<file>.yml`, not `ci.yml`.
+    Changing it rewrites the job in `ci.yml` on `kiln apply`."""
     events: list[Literal["pull_request", "push", "workflow_dispatch"]] = Field(
         default_factory=lambda: ["pull_request", "push", "workflow_dispatch"],
         min_length=1,
     )
-    """The events the job runs on; default all three."""
+    """The events the job runs on. Changing them rewrites the job's condition in
+    `ci.yml` on `kiln apply`."""
     contents: Literal["read", "write"] = "read"
-    """The job's `contents` permission; `write` for a job that creates releases."""
+    """The job's `contents` permission; `write` for a job that creates releases.
+    Changing it rewrites the job's permissions in `ci.yml` on `kiln apply`."""
 
     @field_validator("uses")
     @classmethod
@@ -95,24 +104,35 @@ class CiJob(StrictModel):
         return value
 
 
-class CiConfig(StrictModel):
+class CiConfig(ConfigModel):
     """Which CI provider the workflows target, and what they run."""
 
     provider: Literal["github", "ado"] = "github"
-    """`ado` is reserved."""
+    """The CI provider the workflows target. `ado` is reserved and not yet
+    rendered; changing it re-renders the CI files on `kiln apply`."""
     sonar: bool = True
+    """Whether CI runs a Sonar analysis. Turning it off removes the Sonar job and
+    its properties file on `kiln apply`."""
     release: Literal["tag-exists", "pypi", "nx-dispatch", "none"] | None = None
-    """`None` is the archetype's default: `nx-dispatch` for `node-lib`, `tag-exists` otherwise."""
+    """How a release is published: `tag-exists` tags the default branch, `pypi`
+    publishes a library to PyPI, `nx-dispatch` is the `node-lib` flow, and
+    `none` has no release job. Changing it rewrites the release workflow on
+    `kiln apply`. Default: `tag-exists`; `nx-dispatch` for `node-lib`."""
     doctor_full: Literal["default-branch", "every-run"] = "default-branch"
-    """When CI runs `kiln doctor --full`: pushes to the default branch and
-    dispatch, or every run."""
+    """When CI runs `kiln doctor --full`: on pushes to the default branch and on
+    dispatch, or on every run. Changing it rewrites the validate job in
+    `ci.yml` on `kiln apply`."""
     sonar_exclusions: list[str] = Field(default_factory=list[str])
-    """Paths Sonar skips, added to the archetype's own."""
+    """Paths Sonar skips, added to the archetype's own. Changing the list rewrites
+    the Sonar properties on `kiln apply`."""
     sonar_coverage_exclusions: list[str] = Field(default_factory=list[str])
-    """Paths Sonar counts but does not expect to have coverage."""
+    """Paths Sonar counts but does not expect to have coverage. Changing the list
+    rewrites the Sonar properties on `kiln apply`."""
     hooks: CiHooks = Field(default_factory=CiHooks)
+    """Local actions the generated CI runs at its extension points."""
     jobs: list[CiJob] = Field(default_factory=list[CiJob])
-    """Extra jobs, each calling one reusable workflow after `validate`."""
+    """Extra jobs, each calling one reusable workflow after `validate`. Changing
+    the list rewrites `ci.yml` on `kiln apply`."""
 
     @field_validator("sonar_exclusions", "sonar_coverage_exclusions")
     @classmethod

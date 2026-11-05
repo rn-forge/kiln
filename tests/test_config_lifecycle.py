@@ -266,3 +266,19 @@ def test_s4_5_4_upgrade_migrates_a_config_from_the_previous_schema_version(
     commands.apply(dry_run=True, json=True)
     payload = _last_json(capsys)
     assert all(row["action"] in ("unchanged", "skip") for row in payload["artifacts"])
+
+
+def test_s16_4_7_6_config_update_writes_the_commented_form(repo: Path) -> None:
+    commands.config_update(apply=True, json=True)
+
+    text = (repo / CONFIG_PATH).read_text(encoding="utf-8")
+    assert '# One of: "default-branch", "every-run".' in text
+
+
+def test_s16_4_7_6_config_upgrade_writes_the_commented_form(repo: Path) -> None:
+    _stale_schema(repo)
+
+    commands.config_upgrade(apply=True, json=True)
+
+    text = (repo / CONFIG_PATH).read_text(encoding="utf-8")
+    assert '# One of: "default-branch", "every-run".' in text

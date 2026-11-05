@@ -16,13 +16,14 @@ git diff -- Taskfile.yml
 task kiln:diff -- --artifact Taskfile.yml
 ```
 
-`git diff` shows the edit. `task kiln:diff` shows the edit *against a fresh render*,
-which also tells you whether kiln itself would now produce something different.
+`git diff` shows the edit. `task kiln:diff` shows the edit *against a fresh
+render*, which also tells you whether kiln itself would now produce something
+different.
 
 ## 2. Decide
 
-- **The edit was a mistake, or a local hack.** Revert it: `task kiln:apply` restores
-  the rendered bytes. Done.
+- **The edit was a mistake, or a local hack.** Revert it: `task kiln:apply`
+  restores the rendered bytes. Done.
 - **The edit is right and the standard is wrong.** Then the change belongs in
   kiln, not here: change the template in `rn-forge/kiln`, release kiln, bump
   this repo's `[kiln] ref` in `.rn-forge/kiln/config.toml`, then run

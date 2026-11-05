@@ -5,7 +5,8 @@ from __future__ import annotations
 import re
 
 from pydantic import Field, field_validator
-from rn_forge.commons.lang.models import StrictModel
+
+from rn_forge.kiln.modules.core.config.schema import ConfigModel
 
 __all__ = ["ROOT_VERBS", "AuditConfig", "AuditIgnore", "TaskInclude", "TasksConfig"]
 
@@ -24,23 +25,29 @@ ROOT_VERBS = (
 """The root Taskfile's fixed vocabulary (kiln ADR-0007)."""
 
 
-class TaskInclude(StrictModel):
+class TaskInclude(ConfigModel):
     """A repo-owned taskfile the generated `Taskfile.yml` includes."""
 
     namespace: str
+    """The namespace its tasks are called under (`task <namespace>:<task>`).
+    Changing it rewrites the include in `Taskfile.yml` on `kiln apply`."""
     taskfile: str
+    """The taskfile's path, relative to the repository root. Changing it
+    rewrites the include in `Taskfile.yml` on `kiln apply`."""
 
 
 _VULN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]*$")
 
 
-class AuditIgnore(StrictModel):
+class AuditIgnore(ConfigModel):
     """A vulnerability the dependency audit accepts, and why."""
 
     id: str
-    """The advisory id (`GHSA-…`, `PYSEC-…`, `CVE-…`)."""
+    """The advisory id (`GHSA-…`, `PYSEC-…`, `CVE-…`) the audit accepts.
+    Changing it rewrites the audit command on `kiln apply`."""
     reason: str
-    """Why the vulnerability is accepted; never empty."""
+    """Why the vulnerability is accepted; never empty. It is recorded beside the
+    id, and changing it rewrites the audit task on `kiln apply`."""
 
     @field_validator("id")
     @classmethod
@@ -57,11 +64,12 @@ class AuditIgnore(StrictModel):
         return value.strip()
 
 
-class AuditConfig(StrictModel):
-    """The `[tasks.audit]` section."""
+class AuditConfig(ConfigModel):
+    """The dependency audit (`pip-audit`) settings."""
 
     ignore: list[AuditIgnore] = Field(default_factory=list[AuditIgnore])
-    """Accepted vulnerabilities, passed to `pip-audit --ignore-vuln` in order."""
+    """Accepted vulnerabilities, passed to `pip-audit --ignore-vuln` in order.
+    Changing the list rewrites the audit task on `kiln apply`."""
 
     @field_validator("ignore")
     @classmethod
@@ -72,15 +80,20 @@ class AuditConfig(StrictModel):
         return value
 
 
-class TasksConfig(StrictModel):
+class TasksConfig(ConfigModel):
     """What the repo adds to the generated task surface."""
 
     includes: list[TaskInclude] = Field(default_factory=list[TaskInclude])
+    """Repo-owned taskfiles the generated `Taskfile.yml` includes. Changing
+    the list rewrites `Taskfile.yml` on `kiln apply`."""
     extra_refs: dict[str, list[str]] = Field(default_factory=dict)
-    """Extra tasks a root verb calls, keyed by that verb."""
+    """Extra tasks a root verb calls, keyed by that verb (`validate`, `test`, ...).
+    Changing it rewrites the root verb in `Taskfile.yml` on `kiln apply`."""
     command_overrides: dict[str, str] = Field(default_factory=dict)
-    """A replacement command for an inner task, keyed by the task's name."""
+    """A replacement command for an inner task, keyed by the task's name.
+    Changing it rewrites that task in `tasks/*.yml` on `kiln apply`."""
     audit: AuditConfig = Field(default_factory=AuditConfig)
+    """How the dependency audit runs."""
 
     @field_validator("extra_refs")
     @classmethod

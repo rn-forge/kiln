@@ -1170,3 +1170,10 @@ def test_s16_1_3_4_no_docs_profile_lint_passes(
     )
 
     _lint(repo)
+
+
+def test_s16_4_7_6_init_writes_the_commented_form(repo: Path) -> None:
+    commands.init(**SELECTORS, yes=True)
+
+    text = (repo / CONFIG).read_text(encoding="utf-8")
+    assert '# One of: "default-branch", "every-run".' in text

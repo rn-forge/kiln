@@ -38,6 +38,7 @@ from rn_forge.kiln import doctor as doctor_module
 from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
 from rn_forge.kiln.modules.core import cycle, umbrella
 from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK
+from rn_forge.kiln.modules.core.config import catalog
 from rn_forge.kiln.modules.core.config.manager import ConfigManager, Resolution
 from rn_forge.kiln.modules.core.config.sources import Source, fetch
 from rn_forge.kiln.modules.docs import generate
@@ -1136,13 +1137,7 @@ def _write_config(directory: Path, config: KilnConfig) -> None:
     config_path = directory / CONFIG_PATH
     config_path.parent.mkdir(parents=True, exist_ok=True)
     config_path.write_text(
-        DocumentUtils.dumps(
-            config.to_document(),
-            ConfigFormat.TOML,
-            header=_CONFIG_HEADER,
-            multiline_arrays=True,
-        ),
-        encoding="utf-8",
+        catalog.render(config, header=_CONFIG_HEADER), encoding="utf-8"
     )
 
 

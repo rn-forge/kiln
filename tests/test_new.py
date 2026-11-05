@@ -826,3 +826,12 @@ def test_s4_8_2_3_module_on_another_archetype_is_refused(tmp_path: Path) -> None
         )
     assert not directory.exists()
     assert not (tmp_path / ".staging").exists()
+
+
+def test_s16_4_7_6_new_writes_the_commented_form(tmp_path: Path) -> None:
+    commands.new(tmp_path / "demo", archetype="python-tool", docs="none", yes=True)
+
+    text = (tmp_path / "demo" / ".rn-forge/kiln/config.toml").read_text(
+        encoding="utf-8"
+    )
+    assert '# One of: "default-branch", "every-run".' in text
