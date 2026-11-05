@@ -844,7 +844,7 @@ jobs:
   # the repo grows; this one does not. A skipped job (the fork-guarded scan, {% if node_lib %}the{% else %}a{% endif %}
   # {% if node_lib %}docs deploy{% else %}release{% endif %} on a pull request) is not a failure.
   ci-ok:
-    needs: [validate, dependency-review{% if node_lib %}, ci-cloud, ci-local{% endif %}{% if sonar and node_lib %}, sonar{% endif %}{% if node_lib %}, package{% if docs %}, docs{% endif %}{% endif %}{% if workspace %}, plan, verify, postgres, redis, smoke, suites{% endif %}{% if sonar and not node_lib %}, sonar{% endif %}{% if release != "none" and not node_lib %}, release{% if workspace %}, external-install{% endif %}{% endif %}{% if workspace and docs %}, docs{% endif %}{% for job in jobs %}, [[ job.name ]]{% endfor %}]
+    needs: [validate, dependency-review{% if node_lib %}, ci-cloud, ci-local{% endif %}{% if sonar and node_lib %}, sonar{% endif %}{% if node_lib %}, package{% if docs %}, docs{% endif %}{% endif %}{% if workspace %}, plan, verify, postgres, redis, smoke, suites{% endif %}{% if sonar and not node_lib %}, sonar{% endif %}{% if release != "none" and not node_lib %}, release{% if workspace %}, external-install{% endif %}{% endif %}{% if workspace and docs %}, docs{% endif %}{% for job in check_jobs %}, [[ job ]]{% endfor %}{% for job in required_jobs %}, [[ job ]]{% endfor %}]
     if: {% if node_lib %}${{ always() }}{% else %}always(){% endif %}
     runs-on: ubuntu-latest
     timeout-minutes: 5

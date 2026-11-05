@@ -105,13 +105,14 @@ it owns.
 | Switch a kiln check | `[ci]`: `sonar`, `release`, `doctor_full`, `sonar_exclusions`, `sonar_coverage_exclusions` | Turns a check on or off, or sets its policy |
 | Steps inside kiln's jobs | `[ci.hooks] setup` | Local composite actions (`./.github/actions/<name>`) the generated setup action runs last, so every job using it gets them |
 |  | `[ci.hooks] docs` | Local composite actions every Pages-uploading job runs before the upload, with `SITE_DIR` set |
-| A repository's own job | `[[ci.jobs]]` | Renders a reusable-workflow call that needs `validate` and that `ci-ok` needs |
+| A repository's own job | `[[ci.jobs]]` | Renders a reusable-workflow call that needs `validate` and that `ci-ok` needs unless `required = false` |
 
 A `[[ci.jobs]]` entry has `name` (kebab-case, not a job kiln generates), `uses`
 (`./.github/workflows/<file>.yml`, not `ci.yml`), `events` (default all three of
 `pull_request`, `push`, `workflow_dispatch`) and `contents` (`read`, or `write`
-for a job that creates releases). Every entry gates `ci-ok`. `ci-hooks` checks
-that each hook and job names a file that exists and, for a job, can be called.
+for a job that creates releases). Every entry gates `ci-ok` unless
+`required = false`. `ci-hooks` checks that each hook and job names a file that
+exists and, for a job, can be called.
 
 ## Per-archetype detail
 

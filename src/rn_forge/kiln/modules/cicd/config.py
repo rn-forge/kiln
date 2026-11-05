@@ -101,6 +101,8 @@ class CiJob(ConfigModel):
     contents: Literal["read", "write"] = "read"
     """The job's `contents` permission; `write` for a job that creates releases.
     Changing it rewrites the job's permissions in `ci.yml` on `kiln apply`."""
+    required: bool = True
+    """`False` keeps the job out of `ci-ok`'s `needs`."""
 
     @field_validator("uses")
     @classmethod

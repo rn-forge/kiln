@@ -133,6 +133,14 @@ def render(config: KilnConfig) -> list[Artifact]:
         "nx_cloud_image": _NX_CLOUD_IMAGE,
         "hooks": ci.hooks,
         "jobs": ci.jobs,
+        "required_jobs": [job.name for job in ci.jobs if job.required],
+        "check_jobs": [
+            check.job
+            for check in registry.CHECKS
+            if check.gates
+            and check.job
+            and registry.enabled(check, ci, config.archetype, len(config.packages))
+        ],
         "api_dir": config.api_dir,
         "web_dir": config.web_dir,
         "web_project": _WEB_PROJECT,
