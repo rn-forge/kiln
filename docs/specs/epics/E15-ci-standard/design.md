@@ -26,7 +26,7 @@ archetype maps each stage to a stack-specific `task`, or marks it n/a.
 | `smoke` | the built artifact installs and starts or imports |
 | `suites` | end-to-end or cross-unit tests |
 | `sonar` | coverage and the quality gate |
-| `release` | publish, from the default branch only, after `sonar` |
+| `release` | publish, from the default branch only, after every check (`checks-ok`) |
 | `verify-release` | install the published release from its registry. Replaces `external-install` and `node-lib`'s `published-install` |
 | `docs` | deploy Pages once, after the release stages |
 
@@ -50,12 +50,58 @@ Job names other than `ci-ok` are not required checks, so renaming is safe.
 - `verify-release` installs from the registry the release went to (PyPI with
   `[ci] release = "pypi"`, the git tag with `tag-exists`, the release tarballs
   with `nx-dispatch`). It is not rendered with `[ci] release = "none"`.
-- `docs` runs on a push to the default branch, after the last of `release` and
-  `verify-release` that is rendered has succeeded; `[ci.hooks] docs` actions
-  run before the upload.
-- One `ci-ok` logic and one Sonar guard serve every archetype: `ci-ok` fails
-  when any needed job failed or was cancelled; Sonar is skipped for a fork's
-  pull request and for Dependabot's.
+- One Sonar guard serves every archetype: Sonar is skipped for a fork's pull
+  request and for Dependabot's.
+
+## The pre-release barrier
+
+One job, `checks-ok`, stands between the checks and anything that publishes. It
+has `ci-ok`'s logic (`if: always()`; it fails when any needed job failed or was
+cancelled, and a skipped job passes), and its `needs` are every job that runs
+before `release`: `validate`, `dependency-review`, `secret-scan`, `plan`, the
+test stages (`test`, or `node-lib`'s `test-cloud` and `test-local`),
+`integration`, `smoke`, `suites`, `sonar`, every configured check's job, and
+every `[[ci.jobs]]` with `required = true`, as rendered. The list is written
+once, in a template macro.
+
+| Job | `needs` | Runs when |
+| -- | -- | -- |
+| `release` | `checks-ok` (and `plan`, for its outputs) | `!cancelled() && needs.checks-ok.result == 'success'`, on a push to the default branch |
+| `verify-release` | `release` | `release` succeeded and published something (its `tag` output is not empty) |
+| `docs` | `checks-ok`, and `release` and `verify-release` where rendered (and `plan` for `python-lib`) | `!cancelled() && needs.checks-ok.result == 'success' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')`, on a push to the default branch |
+| `ci-ok` | `checks-ok`, `release`, `verify-release`, `docs`, as rendered | `always()`; fails on a failed or cancelled need |
+
+- No publishing job uses GitHub's default `success()` over a list of jobs, so
+  `node-lib`'s inactive test job (one of `test-cloud` and `test-local` is
+  always skipped) never skips the release: `checks-ok` takes the skip.
+- A failed check of any kind (the secret scan, a required declared job) blocks
+  `release`, not only `ci-ok`.
+- `docs` deploys when `release` or `verify-release` was skipped because there
+  was nothing to publish, and never before the test stages finish, with or
+  without Sonar and a release mode.
+- `python-lib` releases nothing when any check fails, including one package's
+  leg. With Sonar on this was already so (Sonar is skipped on a failure); with
+  Sonar off it no longer releases the passing packages alone.
+- `[ci.hooks] docs` actions run before the upload, against the site built into
+  `$RUNNER_TEMP/site` (`task docs:build -- <dir>` overrides the configured
+  `site_dir`).
+
+## `node-lib` versions in the pull request
+
+The release follows a version bump, as for Python
+([ADR-0016](../../../adr/ADR-0016.md)); nothing is chosen at release time.
+
+| Was a `release.yml` input | Now |
+| -- | -- |
+| `specifier`, `exact-version` | A developer runs `task version -- <patch\|minor\|major\|x.y.z>` in a pull request (`nx release version`, no commit or tag) and commits the bump |
+| `first-release` | Derived: no `v*` tag exists in the repository |
+| `dist-tag` | Derived: `latest` for `x.y.z`; the prerelease identifier for `x.y.z-<id>.<n>` |
+| `dry-run` | Gone: `smoke` packs on every pull request; `release` runs only on the default branch |
+
+On a push to the default branch, `release` reads the release group's version
+`V`. No `vV` tag means a new release: tag `HEAD`, verify, push the tag only,
+create the GitHub Release, publish, move `latest`. A tag with a draft release
+resumes; a tag with a published release does nothing. CI never commits.
 
 ## Integration: services as data
 
@@ -143,8 +189,9 @@ contents = "read"
 required = true
 ```
 
-`required` defaults to `true`: the job is in `ci-ok`'s `needs`. `false` renders
-the job, still after `validate`, but `ci-ok` does not wait for it.
+`required` defaults to `true`: the job is in `checks-ok`'s `needs`, so it gates
+both `release` and `ci-ok`. `false` renders the job, still after `validate`, but
+nothing waits for it.
 
 ## Hook tiers
 
@@ -154,7 +201,7 @@ All declared in `.rn-forge/kiln/config.toml`, naming files the repository owns.
 | -- | -- | -- |
 | 1 | `[ci.checks]` | Switches a configured check or sets its policy |
 | 2 | `[ci.hooks]` `setup`, `docs` | Runs local composite actions inside kiln's jobs at a named anchor |
-| 3 | `[[ci.jobs]]` | A reusable-workflow call after `validate`; `required` says whether `ci-ok` needs it |
+| 3 | `[[ci.jobs]]` | A reusable-workflow call after `validate`; `required` says whether `checks-ok` needs it |
 | 4 | a repository-owned workflow | Non-gating or scheduled runs only; its action pins are kept current by Dependabot, which ignores the actions kiln pins |
 
 ## Reusable workflow layout
@@ -174,8 +221,9 @@ are read-only to the repository.
 | `_verify-release.yml` | `verify-release` | every archetype |
 | `_docs.yml` | `docs` | every archetype; Pages permissions in one place |
 
-`validate`, `plan`, `test`, `suites`, `dependency-review`, `secret-scan` and
-`ci-ok` stay in `ci.yml`: each is short or needs `ci.yml`'s outputs.
+`validate`, `plan`, `test`, `suites`, `dependency-review`, `secret-scan`,
+`checks-ok` and `ci-ok` stay in `ci.yml`: each is short or needs `ci.yml`'s
+outputs.
 
 - The caller job in `ci.yml` grants the permissions; a called workflow can only
   narrow them. Secrets are passed by name, never `secrets: inherit`.
