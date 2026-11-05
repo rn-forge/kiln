@@ -105,6 +105,7 @@ def render(config: KilnConfig) -> list[Artifact]:
             "cicd.render: ci.hooks.docs is set but nothing deploys Pages (docs profile is not mkdocs)"
         )
     workspace = config.archetype == "python-lib"
+    ranges = next(c for c in registry.CHECKS if c.name == "internal-ranges")
     web = config.archetype in {"python-web-api", "python-web-app"}
     web_app = config.archetype == "python-web-app"
     node_lib = config.archetype == "node-lib"
@@ -123,6 +124,9 @@ def render(config: KilnConfig) -> list[Artifact]:
         "sonar_coverage_exclusions": list(ci.sonar_coverage_exclusions),
         "release": release,
         "doctor_full": ci.doctor_full,
+        "internal_ranges_enabled": registry.enabled(
+            ranges, ci, config.archetype, len(config.packages)
+        ),
         "plan_keys": _PLAN_KEYS,
         "pins": load_pins(),
         "organization": SONAR_ORGANIZATION,

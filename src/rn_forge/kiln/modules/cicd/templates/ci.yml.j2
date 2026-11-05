@@ -330,7 +330,10 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Plan
+{% if internal_ranges_enabled %}      - name: Check internal ranges
+        run: task ci:requirements
+
+{% endif %}      - name: Plan
         id: plan
         env:
           GH_TOKEN: ${{ github.token }}

@@ -315,7 +315,13 @@ tasks:
         fi
         {{.DEVOPS}} plan "$base"
 
-  adapters:
+{% if internal_ranges_enabled %}  requirements:
+    desc: "CI only: check that members depend on each other by range, not by exact pin"
+    silent: true
+    cmds:
+      - "{{.DEVOPS}} requirements"
+
+{% endif %}  adapters:
     desc: "CI only: check each package's declared adapters"
     silent: true
     cmds:

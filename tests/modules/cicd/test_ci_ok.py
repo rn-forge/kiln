@@ -100,3 +100,35 @@ def test_s15_1_3_4_default_render_is_unchanged(tmp_path: Path, archetype: str) -
     )
     assert plain == off
     assert "secret-scan" not in plain
+
+
+# S15.4.2 — the `plan` job runs `task ci:requirements`.
+
+
+def _plan_steps(root: Path) -> list[str]:
+    steps = _jobs(root)["plan"]["steps"]
+    return [str(s.get("run", s.get("name"))) for s in steps]  # type: ignore[union-attr]
+
+
+def test_s15_4_2_2_plan_job_step(tmp_path: Path) -> None:
+    two = _plan_steps(_write(tmp_path / "two"))
+    assert "task ci:requirements" in two
+    assert two.index("task ci:requirements") < two.index(
+        'task ci:plan >> "$GITHUB_OUTPUT"'
+    )
+
+    one_root = _write(tmp_path / "one")
+    config = one_root / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(
+        config.read_text(encoding="utf-8").replace(
+            '["packages/alpha", "packages/beta"]', '["packages/alpha"]'
+        ),
+        encoding="utf-8",
+    )
+    assert "task ci:requirements" not in _plan_steps(one_root)
+
+    for archetype in ARCHETYPES:
+        if archetype == "python-lib":
+            continue
+        root = _write(tmp_path / archetype, archetype)
+        assert "task ci:requirements" not in _ci(root)

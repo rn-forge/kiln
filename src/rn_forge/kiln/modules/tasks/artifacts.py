@@ -89,6 +89,8 @@ def render(config: KilnConfig) -> list[Artifact]:
     policy = ci.licenses_policy()
     scan = next(c for c in registry.CHECKS if c.name == "secret-scan")
     secret_scan_enabled = registry.enabled(scan, ci, config.archetype, len(packages))
+    ranges = next(c for c in registry.CHECKS if c.name == "internal-ranges")
+    ranges_enabled = registry.enabled(ranges, ci, config.archetype, len(packages))
     gitleaks = cast("dict[str, Any]", load_pins()["gitleaks"])
 
     known = {
@@ -133,6 +135,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "extra_refs": tasks_config.extra_refs,
         "overrides": tasks_config.command_overrides,
         "secret_scan_enabled": secret_scan_enabled,
+        "internal_ranges_enabled": ranges_enabled,
         "gitleaks": [
             {
                 "uname": uname,

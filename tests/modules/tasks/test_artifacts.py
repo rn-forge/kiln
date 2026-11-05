@@ -1399,6 +1399,7 @@ CI_LINT_CHECKS = {
 }
 CI_PIPELINE_TASKS = {
     "plan",
+    "requirements",
     "adapters",
     "verify",
     "postgres",
@@ -3336,3 +3337,18 @@ def test_s15_3_2_3_off(tmp_path: Path, archetype: str) -> None:
     off_lint = YamlUtils.load((off / "Taskfile.yml").read_text(encoding="utf-8"))
     assert on_lint["tasks"]["lint"] == off_lint["tasks"]["lint"]
     assert "secrets" not in json.dumps(off_lint["tasks"]["lint"])
+
+
+def test_s15_4_2_1_task(tmp_path: Path) -> None:
+    tasks = _ci_rendered(_applied(tmp_path / "lib", "python-lib"))
+    assert tasks["requirements"]["cmds"] == ["{{.DEVOPS}} requirements"]
+    for archetype in ("python-tool", "python-app", "node-lib"):
+        other = _ci_rendered(_applied(tmp_path / archetype, archetype))
+        assert "requirements" not in other
+
+
+def _applied(tmp_path: Path, archetype: str) -> Path:
+    tmp_path.mkdir()
+    root = _root(tmp_path, archetype)
+    cycle.apply(root, home=tmp_path / "home")
+    return root
