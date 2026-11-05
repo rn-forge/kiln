@@ -12,6 +12,8 @@ import os
 import re
 import shutil
 import tempfile
+from collections.abc import Mapping
+from copy import copy
 from functools import cache
 from pathlib import Path
 from typing import Any, cast
@@ -60,8 +62,8 @@ _DEV_GROUP = [
 
 _DOCS_GROUP = [
     "mdformat>=1.0.0",
-    "mdformat-gfm>=0.4",
     "mdformat-front-matters>=2.0.0",
+    "mdformat-gfm>=0.4",
     "mdformat-mkdocs>=5.3.0",
 ]
 """The `docs` dependency group's shared entries, present for every docs profile."""
@@ -304,9 +306,44 @@ def add_task_tools(root: Path, config: KilnConfig) -> list[str]:
         if name not in groups:
             groups[name] = []
         groups[name].append(entry)
+    for group in ("dev", "docs"):
+        if group in groups:
+            _sort_group(groups[group])
     DocumentUtils.write_document(path, document)
     _multiline_lists(path)
     return added
+
+
+def _sort_group(array: Any) -> None:
+    """Sort a round-trip TOML dependency *array* by normalized distribution name.
+
+    Inline tables (`{ include-group = ... }`) follow the strings. A trailing
+    comment stays on its entry, and a comment on lines of its own travels with
+    the entry below it.
+    """
+    groups: list[Any] = array._value  # tomlkit has no public reorder
+    commas = [g.comma for g in groups if g.comma is not None]
+    carried: list[Any] = []
+    strings: list[list[Any]] = []
+    tables: list[list[Any]] = []
+    for group in groups:
+        carried.append(group)
+        if isinstance(group.value, str):
+            strings.append(carried)
+        elif isinstance(group.value, Mapping):
+            tables.append(carried)
+        else:
+            continue
+        carried = []
+    strings.sort(key=lambda chunk: distribution(str(chunk[-1].value)))
+    ordered = [group for chunk in (*strings, *tables, carried) for group in chunk]
+    for group in ordered[:-1]:
+        if group.comma is None and group.value is not None and commas:
+            group.comma = copy(commas[0])
+    groups[:] = ordered
+    entries: list[object] = [chunk[-1].value for chunk in (*strings, *tables)]
+    list[object].__setitem__(array, slice(None), entries)  # not tomlkit's override
+    array._reindex()
 
 
 SAMPLE_TEST = Path("tests") / "test_package.py"
@@ -527,6 +564,11 @@ def _reconcile(
             "dev": [*_existing_list(path, "dependency-groups", "dev"), *extra_dev],
         }
     DocumentUtils.update(path, updates)
+    if "dependency-groups" in updates:
+        document = DocumentUtils.read_document(path)
+        for group in document["dependency-groups"].values():
+            _sort_group(group)
+        DocumentUtils.write_document(path, document)
     _multiline_lists(path)
 
 

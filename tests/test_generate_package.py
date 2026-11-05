@@ -190,8 +190,8 @@ def test_s11_3_1_1_root_pyproject_workspace_sources_and_groups_are_pinned(
     assert groups["workspace"] == packages
     assert groups["docs"] == [
         "mdformat>=1.0.0",
-        "mdformat-gfm>=0.4",
         "mdformat-front-matters>=2.0.0",
+        "mdformat-gfm>=0.4",
         "mdformat-mkdocs>=5.3.0",
         "mkdocs-material>=9.6",
         "mkdocs-monorepo-plugin>=1.1",

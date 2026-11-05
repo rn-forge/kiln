@@ -218,7 +218,7 @@ def test_s4_9_2_3_httpx_is_a_dev_dependency(tmp_path: Path) -> None:
     dev = document["dependency-groups"]["dev"]
     assert "uvicorn>=0.30" in dev
     assert "httpx>=0.28.1" in dev
-    assert dev.index("uvicorn>=0.30") < dev.index("httpx>=0.28.1")
+    assert dev.index("httpx>=0.28.1") < dev.index("uvicorn>=0.30")
 
 
 def test_s4_9_2_4_new_records_seeded(

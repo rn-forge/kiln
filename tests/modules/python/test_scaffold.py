@@ -463,8 +463,8 @@ def test_s11_2_2_2_the_python_lib_docs_group_is_pinned(tmp_path: Path) -> None:
     rendered = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
     assert rendered["dependency-groups"]["docs"] == [
         "mdformat>=1.0.0",
-        "mdformat-gfm>=0.4",
         "mdformat-front-matters>=2.0.0",
+        "mdformat-gfm>=0.4",
         "mdformat-mkdocs>=5.3.0",
         "mkdocs-material>=9.6",
         "mkdocs-monorepo-plugin>=1.1",
@@ -725,8 +725,12 @@ def test_s6_6_2_2_add_task_tools_appends_bare_names(
 
     text = path.read_text(encoding="utf-8")
     groups = tomllib.loads(text)["dependency-groups"]
-    assert groups["dev"] == [*before["dev"], "taplo"]
-    assert groups["docs"] == [*before["docs"], "mdformat>=1.0.0"]
+    assert groups["dev"] == sorted(
+        [*before["dev"], "taplo"], key=rn_forge_deps.distribution
+    )
+    assert groups["docs"] == sorted(
+        [*before["docs"], "mdformat>=1.0.0"], key=rn_forge_deps.distribution
+    )
     assert "kept: a repo comment" in text
     (taplo,) = (a for a in CORE.artifacts(config, root) if a.path == ".taplo.toml")
     (root / ".taplo.toml").write_text(taplo.content, encoding="utf-8")
@@ -771,3 +775,102 @@ def test_s6_6_2_4_add_task_tools_is_idempotent(
 
     assert add_task_tools(root, config) == []
     assert (root / "pyproject.toml").read_bytes() == after
+
+
+_GROUP_HEAD = '[project]\nname = "x"\nversion = "0"\n\n[dependency-groups]\n'
+
+
+def _group_root(tmp_path: Path, dev: str) -> tuple[Path, KilnConfig]:
+    """A root whose `dev` group is *dev* (TOML array text) and names every tool but taplo."""
+    root = _root(tmp_path, "python-tool")
+    config = KilnConfig.load(root)
+    (root / "pyproject.toml").write_text(
+        f"{_GROUP_HEAD}dev = {dev}\ndocs = {docs_group(config)!r}\n".replace("'", '"'),
+        encoding="utf-8",
+    )
+    return root, config
+
+
+def _other_tools(config: KilnConfig, *skip: str) -> str:
+    """Every task tool but taplo and *skip*, as TOML array entries."""
+    return ", ".join(f'"{t}"' for t in TASK_TOOLS if t not in {"taplo", *skip})
+
+
+def test_s16_4_2_1_add_task_tools_sorts_the_group(tmp_path: Path) -> None:
+    root, config = _group_root(tmp_path, '["pytest", "aiosqlite", "zebra"]')
+    (root / "pyproject.toml").write_text(
+        (root / "pyproject.toml")
+        .read_text(encoding="utf-8")
+        .replace('"zebra"]', f'"zebra", {_other_tools(config, "pytest")}]'),
+        encoding="utf-8",
+    )
+
+    assert add_task_tools(root, config) == ["taplo"]
+
+    dev = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))[
+        "dependency-groups"
+    ]["dev"]
+    assert dev == sorted([*TASK_TOOLS, "aiosqlite", "zebra"])
+
+
+def test_s16_4_2_2_normalization(tmp_path: Path) -> None:
+    root, config = _group_root(
+        tmp_path, '["zed>=1", "Foo_Bar<2", "foo-baz", "alpha==1.0"]'
+    )
+
+    add_task_tools(root, config)
+
+    dev = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))[
+        "dependency-groups"
+    ]["dev"]
+    names = [rn_forge_deps.distribution(e) for e in dev]
+    assert names == sorted(names)
+    assert dev.index("alpha==1.0") < dev.index("Foo_Bar<2") < dev.index("foo-baz")
+    assert dev.index("foo-baz") < dev.index("zed>=1")
+
+
+def test_s16_4_2_3_include_group_tables_stay_last(tmp_path: Path) -> None:
+    root, config = _group_root(tmp_path, '[{ include-group = "x" }, "zebra", "aa"]')
+
+    add_task_tools(root, config)
+
+    dev = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))[
+        "dependency-groups"
+    ]["dev"]
+    assert dev[-1] == {"include-group": "x"}
+    strings = dev[:-1]
+    assert all(isinstance(e, str) for e in strings)
+    assert strings == sorted(strings, key=rn_forge_deps.distribution)
+
+
+def test_s16_4_2_4_no_write_when_nothing_changes(tmp_path: Path) -> None:
+    root, config = _group_root(tmp_path, "[]")
+    path = root / "pyproject.toml"
+    path.write_text(
+        path.read_text(encoding="utf-8").replace(
+            "dev = []", f'dev = [{_other_tools(config)}, "taplo"]'
+        ),
+        encoding="utf-8",
+    )
+    before = path.read_bytes()
+
+    assert add_task_tools(root, config) == []
+    assert path.read_bytes() == before
+
+    add_task_tools(root, config)
+    assert path.read_bytes() == before
+
+
+def test_s16_4_2_5_comments_survive(tmp_path: Path) -> None:
+    root, config = _group_root(
+        tmp_path, '[\n    "zebra",  # the last one\n    "aardvark",  # the first\n]'
+    )
+
+    add_task_tools(root, config)
+
+    lines = (root / "pyproject.toml").read_text(encoding="utf-8").splitlines()
+    (zebra,) = (line for line in lines if '"zebra"' in line)
+    (aardvark,) = (line for line in lines if '"aardvark"' in line)
+    assert "# the last one" in zebra
+    assert "# the first" in aardvark
+    assert lines.index(aardvark) < lines.index(zebra)

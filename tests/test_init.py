@@ -859,8 +859,8 @@ def test_s9_1_15_3_the_docs_group_init_completes_is_news_whole_group(
     names = {re.split(r"[\[<>=]", entry)[0] for entry in groups["docs"]}
     assert names == {
         "mdformat",
-        "mdformat-gfm",
         "mdformat-front-matters",
+        "mdformat-gfm",
         "mdformat-mkdocs",
         "mkdocs-material",
         "mkdocstrings",
@@ -883,7 +883,7 @@ def test_s9_1_15_3_an_entry_pinned_at_any_version_is_kept(node_repo: Path) -> No
     docs = tomllib.loads((node_repo / "pyproject.toml").read_text(encoding="utf-8"))[
         "dependency-groups"
     ]["docs"]
-    assert docs[:2] == pinned
+    assert all(entry in docs for entry in pinned)
     assert len(docs) == _DOCS_GROUP_SIZE
     assert not [
         e for e in docs if e.startswith(("mdformat-gfm>", "mkdocs-material>=9.6"))
