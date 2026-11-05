@@ -39,9 +39,9 @@ vocabulary, one for every archetype, is in
 
 | Archetype | `ci.yml` job order | Other workflows |
 | -- | -- | -- |
-| `python-lib` | `validate` > `dependency-review`, `plan` > `test`, `postgres`, `redis`, `smoke`, `suites` > `sonar` > `release` > `external-install`, `docs` > `ci-ok` | none: `docs` is the one Pages deploy |
-| `python-tool`, `python-app`, `python-web-api`, `python-web-app` | `validate` > `dependency-review`, `sonar` > `release` > `ci-ok` | `docs.yml` |
-| `node-lib` | `validate` > `dependency-review`, `test-cloud` or `test-local` > `sonar`, `smoke`, `docs` > `ci-ok` | `release.yml` (dispatch) |
+| `python-lib` | `validate` > `dependency-review`, `plan` > `test`, `postgres`, `redis`, `smoke`, `suites` > `sonar` > `checks-ok` > `release` > `external-install`, `docs` > `ci-ok` | none: `docs` is the one Pages deploy |
+| `python-tool`, `python-app`, `python-web-api`, `python-web-app` | `validate` > `dependency-review`, `sonar` > `checks-ok` > `release` > `ci-ok` | `docs.yml` |
+| `node-lib` | `validate` > `dependency-review`, `test-cloud` or `test-local` > `sonar`, `smoke` > `checks-ok`; `docs` > `ci-ok` | `release.yml` (dispatch) |
 
 | Job | Runs | Task verb |
 | -- | -- | -- |
@@ -60,7 +60,8 @@ vocabulary, one for every archetype, is in
 | `external-install` | installs each new tag from outside the workspace | `task ci:external-install` |
 | `smoke` (`node-lib`) | packs and verifies publishable tarballs | `task ci:package` |
 | `docs` | deploys Pages once | `python-lib`: `task ci:docs-publish`; `node-lib`: `task docs:build`, `task ci:docs:site` |
-| `ci-ok` | no job failed or was cancelled | none |
+| `checks-ok` | the pre-release barrier: every job that runs before `release` passed or was skipped | none |
+| `ci-ok` | `checks-ok`, and every job after it, passed or was skipped | none |
 
 ## Checks by archetype
 
@@ -127,9 +128,9 @@ actions kiln pins.
 A `[[ci.jobs]]` entry has `name` (kebab-case, not a job kiln generates), `uses`
 (`./.github/workflows/<file>.yml`, not `ci.yml`), `events` (default all three of
 `pull_request`, `push`, `workflow_dispatch`) and `contents` (`read`, or `write`
-for a job that creates releases). Every entry gates `ci-ok` unless
-`required = false`. `ci-hooks` checks that each hook and job names a file that
-exists and, for a job, can be called.
+for a job that creates releases). Every entry gates `checks-ok` (hence
+`release`) unless `required = false`. `ci-hooks` checks that each hook and job
+names a file that exists and, for a job, can be called.
 
 ### `[ci.checks]`
 
@@ -164,8 +165,8 @@ contents = "read"
 required = true
 ```
 
-`required` defaults to `true`: the job is in `ci-ok`'s `needs`. `false` renders
-the job, still after `validate`, but nothing waits for it.
+`required` defaults to `true`: the job is in `checks-ok`'s `needs`. `false`
+renders the job, still after `validate`, but nothing waits for it.
 
 ## Per-archetype detail
 
@@ -185,9 +186,10 @@ branch), which is outside `ci-ok` and not gated on `release`.
 `validate` runs `task ci:validate`; `test-cloud` or `test-local` runs
 `task ci:affected` (Nx's lint, typecheck, test and build on the affected
 projects); `sonar` waits for one of them; `smoke` packs and verifies the
-publishable tarballs; `docs` builds the site. `ci-ok` reads its needs with a
-`jq` script that also requires one of `test-cloud` and `test-local` to have
-passed. Sonar is skipped for Dependabot's pull requests.
+publishable tarballs; `docs` builds the site. `checks-ok` and `ci-ok` share one
+macro (no `jq`): a failed or cancelled need fails them, and the inactive one of
+`test-cloud` and `test-local` is skipped, which passes. Sonar is skipped for
+Dependabot's pull requests.
 
 `release.yml` is dispatched (`task ci:release:*`): a gate on a green CI run,
 version, verify, push, publish and a rolling `latest` release, then
@@ -243,7 +245,8 @@ A newer push to the same pull request cancels the run in progress. Pushes to
 | `release` | each selected package whose checks passed is built with its SBOM (`task ci:release-build`), attested, then published (`task ci:release-publish`) as `<package>-v<version>`, after `sonar` passed | skipped | builds and publishes | skipped |
 | `external-install` | each new tag installs from git, outside the workspace, and imports | skipped | runs | skipped |
 | `docs` | each package tagged at this commit deployed with `mike`, then the root site plus `packages/` to Pages; `[ci.hooks] docs` actions run before the upload | skipped | runs | skipped |
-| `ci-ok` | no job failed or was cancelled; a skipped job is not a failure | runs | runs | runs |
+| `checks-ok` | the pre-release barrier: `validate`, `dependency-review`, `plan`, `test`, `postgres`, `redis`, `smoke`, `suites`, `sonar`, and the checks and required jobs, none failed or cancelled | runs | runs | runs |
+| `ci-ok` | `checks-ok`, `release`, `external-install`, `docs`: none failed or cancelled; a skipped job is not a failure | runs | runs | runs |
 
 #### Ordering and gating
 
@@ -253,16 +256,18 @@ validate ─► plan ─┬─► test ─────┐
                   ├─► redis ────┼─► sonar ─► release ─► external-install
                   ├─► smoke ────┘                 └───► docs
                   └─► suites
-all of them ─► ci-ok
+`validate` .. `sonar` ─► checks-ok ─► release
+`checks-ok`, `release`, `external-install`, `docs` ─► ci-ok
 ```
 
 - Nothing runs unless `validate` passes.
 - `sonar` waits for `test`, `postgres`, `redis` and `smoke`, and runs only if
   none failed.
-- `release` waits for the same four and for `sonar`. It runs only on a push to
-  `main`, when the selection is not empty and `sonar` succeeded (where
-  `[ci] sonar` is off, `sonar` is not rendered and the condition is absent).
-  Within a run it decides per package.
+- `checks-ok` waits for every job above it (and the declared checks) and fails
+  when any failed or was cancelled; a skipped job passes.
+- `release` waits for `plan` and `checks-ok`. It runs only on a push to `main`,
+  when the selection is not empty and `checks-ok` succeeded, so a failed check
+  of any kind blocks every package. Within a run it decides per package.
 - `ci-ok` is the one check branch protection requires, because job names change
   as members come and go.
 
@@ -271,10 +276,9 @@ all of them ─► ci-ok
 - Each passing `test`, `postgres`, `redis` and `smoke` leg uploads an
   `ok-<marker>` artifact. `release` publishes a package only when every one of
   its markers exists and every selected package it requires is releasable too.
-  Because `release` waits for `sonar`, and `sonar` runs only if no check
-  failed, any failed leg holds back the whole run's releases; the run is red
-  through `ci-ok`. The markers still guard a leg that was skipped for a
-  package that was not selected.
+  Because `release` waits for `checks-ok`, any failed leg holds back the whole
+  run's releases; the run is red through `ci-ok`. The markers still guard a
+  leg that was skipped for a package that was not selected.
 - Releases follow version bumps. A tag that is already published is skipped; a
   draft is rebuilt from its tag and replaced. A merge that changes a package
   without bumping its version re-verifies it and publishes nothing.

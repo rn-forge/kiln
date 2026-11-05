@@ -135,8 +135,8 @@ jobs:
             ${{ steps.target.outputs.branch-arg }}
 
   release:
-    needs: [validate, sonar]
-    if: github.event_name == 'push' && github.ref_name == 'main'
+    needs: checks-ok
+    if: ${{ !cancelled() && needs.checks-ok.result == 'success' && github.event_name == 'push' && github.ref_name == 'main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -200,11 +200,24 @@ jobs:
       contents: read
     uses: ./.github/workflows/golden-render.yml # zizmor: ignore[self-repository] actionlint rejects the $/ form
 
+  # Everything that runs before a release, as one job: `release` and `docs` wait
+  # for it, not for a list of checks. A skipped job (the fork-guarded scan, a
+  # release or deploy on a pull request) passes; a failed or cancelled one does not.
+  checks-ok:
+    needs: [validate, dependency-review, sonar, golden-render]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Every job passed or was skipped
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
+
   # The only check branch protection requires. Job and matrix names change as
-  # the repo grows; this one does not. A skipped job (the fork-guarded scan, a
-  # release on a pull request) is not a failure.
+  # the repo grows; this one does not. It adds what runs after the barrier.
   ci-ok:
-    needs: [validate, dependency-review, sonar, release, golden-render]
+    needs: [checks-ok, release]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

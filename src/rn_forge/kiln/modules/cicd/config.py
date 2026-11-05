@@ -33,6 +33,7 @@ GENERATED_JOBS = frozenset(
         "external-install",
         "docs",
         "scorecard",
+        "checks-ok",
         "ci-ok",
     }
 )

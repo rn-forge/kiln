@@ -206,8 +206,14 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
     off = _rendered(_root(tmp_path / "off", sonar=False))
     assert "sonar-project.properties" not in off
     jobs = YamlUtils.load(off[".github/workflows/ci.yml"])["jobs"]
-    assert set(jobs) == {"validate", "dependency-review", "release", "ci-ok"}
-    assert jobs["release"]["needs"] == ["validate"]
+    assert set(jobs) == {
+        "validate",
+        "dependency-review",
+        "release",
+        "checks-ok",
+        "ci-ok",
+    }
+    assert jobs["release"]["needs"] == "checks-ok"
     assert (
         "sonar"
         not in off[".github/workflows/ci.yml"]
@@ -217,13 +223,9 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
     # Everything else keeps its bytes.
     on_ci = on[".github/workflows/ci.yml"]
     sonar_job = on_ci[on_ci.index("\n  sonar:") : on_ci.index("\n  release:")]
-    expected = (
-        on_ci.replace(sonar_job, "")
-        .replace("needs: [validate, sonar]", "needs: [validate]")
-        .replace(
-            "needs: [validate, dependency-review, sonar, release]",
-            "needs: [validate, dependency-review, release]",
-        )
+    expected = on_ci.replace(sonar_job, "").replace(
+        "needs: [validate, dependency-review, sonar]",
+        "needs: [validate, dependency-review]",
     )
     assert off[".github/workflows/ci.yml"] == expected
 
@@ -231,7 +233,7 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
 def test_s4_3_4_3_release_none_renders_no_release_job(tmp_path: Path) -> None:
     rendered = _rendered(_root(tmp_path, release="none"))
     jobs = YamlUtils.load(rendered[".github/workflows/ci.yml"])["jobs"]
-    assert set(jobs) == {"validate", "dependency-review", "sonar", "ci-ok"}
+    assert set(jobs) == {"validate", "dependency-review", "sonar", "checks-ok", "ci-ok"}
 
 
 def test_s4_3_4_4_ci_entrypoint_passes_on_the_rendered_workflows(
@@ -427,7 +429,8 @@ def test_s6_3_2_ci_ok_needs_every_other_job(tmp_path: Path) -> None:
     for root in _ci_ok_roots(tmp_path):
         jobs = _ci_jobs(root)
         assert list(jobs)[-1] == "ci-ok", root.name
-        assert set(jobs["ci-ok"]["needs"]) == set(jobs) - {"ci-ok"}, root.name  # type: ignore[arg-type]
+        covered = {*jobs["checks-ok"]["needs"], *jobs["ci-ok"]["needs"]}  # type: ignore[misc]
+        assert covered == set(jobs) - {"ci-ok"}, root.name
         assert jobs["ci-ok"]["if"] == "always()", root.name
 
 
@@ -689,6 +692,7 @@ def test_s6_4_2_4_python_lib_jobs_and_validate_steps(tmp_path: Path) -> None:
         "release",
         "external-install",
         "docs",
+        "checks-ok",
         "ci-ok",
     ]
     runs = [step.get("run") for step in jobs["validate"]["steps"]]  # type: ignore[attr-defined]
@@ -762,6 +766,7 @@ def test_s6_4_2_8_other_archetypes_keep_the_plain_pipeline(tmp_path: Path) -> No
             "dependency-review",
             "sonar",
             "release",
+            "checks-ok",
             "ci-ok",
         ], archetype
 
@@ -854,7 +859,7 @@ def test_s6_8_2_2_redis_uploads_its_marker(tmp_path: Path) -> None:
 
 def test_s6_8_2_3_redis_gates_what_postgres_gates(tmp_path: Path) -> None:
     jobs = _lib_jobs(tmp_path)
-    for name in ("sonar", "release", "ci-ok"):
+    for name in ("sonar", "checks-ok"):
         needs = list(jobs[name]["needs"])  # type: ignore[call-overload]
         assert needs.index("redis") == needs.index("postgres") + 1, name
 
@@ -907,8 +912,7 @@ def test_s6_4_3_6_ci_ok_and_sonar_need_the_declared_jobs(tmp_path: Path) -> None
         "redis",
         "smoke",
     ]
-    assert set(jobs["ci-ok"]["needs"]) == set(jobs) - {"ci-ok"}  # type: ignore[arg-type]
-    assert {"postgres", "redis", "smoke", "suites"} <= set(jobs["ci-ok"]["needs"])  # type: ignore[arg-type]
+    assert {"postgres", "redis", "smoke", "suites"} <= set(jobs["checks-ok"]["needs"])  # type: ignore[arg-type]
 
 
 def _marker_steps(job: dict[str, object]) -> list[dict[str, object]]:
@@ -1086,6 +1090,7 @@ def test_s11_5_1_2_python_lib_docs_job(tmp_path: Path) -> None:
         "release",
         "external-install",
         "docs",
+        "checks-ok",
         "ci-ok",
     ]
     docs = jobs["docs"]
@@ -1155,28 +1160,31 @@ def test_s11_5_1_2_actionlint_passes_on_the_docs_job(tmp_path: Path) -> None:
 
 
 RELEASE_IF = (
-    "${{ !cancelled() && needs.validate.result == 'success' && "
+    "${{ !cancelled() && needs.checks-ok.result == 'success' && "
     "needs.plan.outputs.release-order != '[]' && "
     "github.event_name == 'push' && github.ref == 'refs/heads/main'%s }}"
 )
 
 
 def test_s6_4_7_1_release_needs_every_check_and_sonar(tmp_path: Path) -> None:
-    release = _lib_jobs(tmp_path)["release"]
-    assert release["needs"] == [
+    jobs = _lib_jobs(tmp_path)
+    assert jobs["release"]["needs"] == ["plan", "checks-ok"]
+    assert jobs["checks-ok"]["needs"] == [
         "validate",
+        "dependency-review",
         "plan",
         "test",
         "postgres",
         "redis",
         "smoke",
+        "suites",
         "sonar",
     ]
 
 
 def test_s6_4_7_2_release_runs_on_a_default_branch_push_only(tmp_path: Path) -> None:
     release = _lib_jobs(tmp_path)["release"]
-    assert release["if"] == RELEASE_IF % " && needs.sonar.result == 'success'"
+    assert release["if"] == RELEASE_IF % ""
     assert "pull_request" not in str(release["if"])
     assert "workflow_dispatch" not in str(release["if"])
 
@@ -1184,15 +1192,10 @@ def test_s6_4_7_2_release_runs_on_a_default_branch_push_only(tmp_path: Path) -> 
 def test_s6_4_7_3_release_waits_on_sonar_only_where_sonar_renders(
     tmp_path: Path,
 ) -> None:
-    release = _lib_jobs(tmp_path, sonar=False)["release"]
-    assert release["needs"] == [
-        "validate",
-        "plan",
-        "test",
-        "postgres",
-        "redis",
-        "smoke",
-    ]
+    jobs = _lib_jobs(tmp_path, sonar=False)
+    release = jobs["release"]
+    assert release["needs"] == ["plan", "checks-ok"]
+    assert "sonar" not in jobs["checks-ok"]["needs"]  # type: ignore[operator]
     assert release["if"] == RELEASE_IF % ""
     assert "sonar" not in str(release)
 
@@ -1229,7 +1232,8 @@ def test_s6_4_7_6_ci_ok_needs_every_job_and_tolerates_a_skipped_release(
 ) -> None:
     jobs = _lib_jobs(tmp_path)
     ci_ok = jobs["ci-ok"]
-    assert set(ci_ok["needs"]) == set(jobs) - {"ci-ok"}  # type: ignore[arg-type]
+    covered = {*jobs["checks-ok"]["needs"], *ci_ok["needs"]}  # type: ignore[misc]
+    assert covered == set(jobs) - {"ci-ok"}
     (step,) = ci_ok["steps"]  # type: ignore[misc]
     failed = "contains(needs.*.result, 'failure')"
     cancelled = "contains(needs.*.result, 'cancelled')"
@@ -1399,10 +1403,11 @@ def test_s4_11_1_6_declared_job_renders_as_a_call(tmp_path: Path) -> None:
         "permissions": {"contents": "read"},
         "uses": CALL,
     }
-    assert "golden-render" in jobs["ci-ok"]["needs"]  # type: ignore[operator]
+    assert "golden-render" in jobs["checks-ok"]["needs"]  # type: ignore[operator]
     names = list(jobs)
     assert names[-1] == "ci-ok"
-    assert names[-2] == "golden-render"
+    assert names[-2] == "checks-ok"
+    assert names[-3] == "golden-render"
 
 
 def test_s4_11_1_6_declared_job_defaults_to_every_event(tmp_path: Path) -> None:
@@ -1448,7 +1453,9 @@ def test_s4_11_1_7_task_key_is_refused(tmp_path: Path) -> None:
         KilnConfig.load(root)
 
 
-@pytest.mark.parametrize("name", ["sonar", "validate", "ci-ok", "Golden", "a_b"])
+@pytest.mark.parametrize(
+    "name", ["sonar", "validate", "ci-ok", "checks-ok", "Golden", "a_b"]
+)
 def test_s4_11_1_7_job_name_collision_is_refused(tmp_path: Path, name: str) -> None:
     extra = f'\n[[ci.jobs]]\nname = "{name}"\nuses = "{CALL}"\n'
     root = _with_ci(_root(tmp_path, "python-tool"), extra)
@@ -1876,7 +1883,7 @@ def test_s4_11_5_8_ci_ok_needs_dependency_review(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
     jobs = _review_jobs(_cell_root(tmp_path, archetype, extra))
-    assert "dependency-review" in jobs["ci-ok"]["needs"]  # type: ignore[operator]
+    assert "dependency-review" in jobs["checks-ok"]["needs"]  # type: ignore[operator]
 
 
 def test_s4_11_5_8_declared_jobs_cannot_take_the_name(tmp_path: Path) -> None:
@@ -2492,6 +2499,7 @@ def test_s9_1_2_1_node_lib_jobs_are_the_affected_set(tmp_path: Path) -> None:
         "sonar",
         "smoke",
         "docs",
+        "checks-ok",
         "ci-ok",
     ]
     assert jobs["test-cloud"]["needs"] == "validate"  # type: ignore[index]
@@ -2598,31 +2606,27 @@ def test_s9_1_2_4_ci_local_matches_ngkit(tmp_path: Path) -> None:
 
 
 def test_s9_1_2_6_ci_ok_needs_every_job_and_checks_both_paths(tmp_path: Path) -> None:
-    ok = _node_lib_ci(tmp_path)["jobs"]["ci-ok"]  # type: ignore[index]
-    assert ok["needs"] == [
+    jobs = _node_lib_ci(tmp_path)["jobs"]
+    assert jobs["checks-ok"]["needs"] == [  # type: ignore[index]
         "validate",
         "dependency-review",
         "test-cloud",
         "test-local",
-        "sonar",
         "smoke",
-        "docs",
+        "sonar",
     ]
-    assert ok["if"] == "${{ always() }}"
+    ok = jobs["ci-ok"]  # type: ignore[index]
+    assert ok["needs"] == ["checks-ok", "docs"]
+    assert ok["if"] == "always()"
     assert ok["permissions"] == {}
     (step,) = ok["steps"]
-    assert step["env"] == {"NEEDS": "${{ toJSON(needs) }}"}
-    assert (
-        '[.["test-cloud"].result, .["test-local"].result] | index("success")'
-        in step["run"]
-    )
-    assert "Neither test-cloud nor test-local succeeded" in step["run"]
+    assert "jq" not in step["run"]
 
 
 def test_s9_1_2_6_declared_jobs_join_ci_ok(tmp_path: Path) -> None:
     extra = f'\n[[ci.jobs]]\nname = "extra"\nuses = "{CALL}"\n'
     jobs = _ci_jobs(_with_ci(_root(tmp_path, "node-lib"), extra))
-    assert jobs["ci-ok"]["needs"][-1] == "extra"  # type: ignore[index]
+    assert jobs["checks-ok"]["needs"][-1] == "extra"  # type: ignore[index]
 
 
 def test_s9_1_2_7_agents_yaml_is_ngkits_under_t1(tmp_path: Path) -> None:
@@ -2730,37 +2734,6 @@ def test_s9_2_8_5_exactly_one_of_ci_cloud_and_ci_local_runs(
     assert (ran_cloud, ran_local) == (cloud, not cloud)
 
 
-@pytest.mark.parametrize(
-    ("cloud", "local", "passes"),
-    [
-        ("success", "skipped", True),
-        ("skipped", "success", True),
-        ("skipped", "skipped", False),
-        ("failure", "skipped", False),
-        ("skipped", "cancelled", False),
-    ],
-)
-def test_s9_2_8_6_ci_ok_accepts_one_skipped_path(
-    tmp_path: Path, cloud: str, local: str, passes: bool
-) -> None:
-    steps = _node_lib_ci(tmp_path)["jobs"]["ci-ok"]["steps"]  # type: ignore[index]
-    script = steps[0]["run"]
-    needs = {
-        "validate": {"result": "success"},
-        "test-cloud": {"result": cloud},
-        "test-local": {"result": local},
-        "sonar": {"result": "skipped"},
-    }
-    run = subprocess.run(
-        ["bash", "-c", script],
-        env={**os.environ, "NEEDS": json.dumps(needs)},
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert (run.returncode == 0) == passes, run.stdout + run.stderr
-
-
 def test_s9_2_8_4_web_app_config_has_no_nx_cloud(tmp_path: Path) -> None:
     root = _web_root(tmp_path, "python-web-app", extra="nx_cloud = false")
     with pytest.raises(ModelValidationError) as caught:
@@ -2848,10 +2821,10 @@ def test_s9_1_3_3_properties_are_ngkits_generic_keys(tmp_path: Path) -> None:
 
 def test_s9_1_3_4_ci_ok_needs_sonar_only_when_sonar_is_on(tmp_path: Path) -> None:
     on = _ci_jobs(_root(tmp_path / "on", "node-lib"))
-    assert "sonar" in on["ci-ok"]["needs"]  # type: ignore[index]
+    assert "sonar" in on["checks-ok"]["needs"]  # type: ignore[index]
     off = _ci_jobs(_root(tmp_path / "off", "node-lib", sonar=False))
     assert "sonar" not in off
-    assert "sonar" not in off["ci-ok"]["needs"]  # type: ignore[index]
+    assert "sonar" not in off["checks-ok"]["needs"]  # type: ignore[index]
 
 
 # S9.1.4 — package.
@@ -2886,9 +2859,10 @@ def test_s9_1_4_1_package_job_matches_ngkit(tmp_path: Path) -> None:
 
 def test_s9_1_4_3_ci_ok_needs_smoke_even_without_sonar(tmp_path: Path) -> None:
     on = _ci_jobs(_root(tmp_path / "on", "node-lib"))
-    assert on["ci-ok"]["needs"][-3:] == ["sonar", "smoke", "docs"]  # type: ignore[index]
+    assert on["checks-ok"]["needs"][-2:] == ["smoke", "sonar"]  # type: ignore[index]
     off = _ci_jobs(_root(tmp_path / "off", "node-lib", sonar=False))
-    assert off["ci-ok"]["needs"][-2:] == ["smoke", "docs"]  # type: ignore[index]
+    assert off["checks-ok"]["needs"][-1] == "smoke"  # type: ignore[index]
+    assert off["ci-ok"]["needs"] == ["checks-ok", "docs"]  # type: ignore[index]
     assert "smoke" in off
 
 
@@ -3752,16 +3726,14 @@ def test_s9_3_7_1_release_dist_tag_description(tmp_path: Path) -> None:
     )
 
 
-def test_s9_3_7_2_ci_ok_comment_names_the_deploy_for_node_lib_only(
+def test_s9_3_7_2_gate_comment_is_one_text_for_every_archetype(
     tmp_path: Path,
 ) -> None:
     for archetype in ("node-lib", "python-app", "python-lib"):
         ci = _rendered(_root(tmp_path / archetype, archetype))[
             ".github/workflows/ci.yml"
         ]
-        is_node = archetype == "node-lib"
-        assert ("release on a pull request" in ci) is not is_node, archetype
-        assert ("docs deploy on a pull request" in ci) is is_node, archetype
+        assert "a\n  # release or deploy on a pull request" in ci, archetype
 
 
 def test_s9_3_7_3_setup_uv_pin_is_v10_3_0(tmp_path: Path) -> None:

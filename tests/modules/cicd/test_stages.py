@@ -76,6 +76,7 @@ def test_s15_8_1_1_lib_jobs(tmp_path: Path) -> None:
         "release",
         "external-install",
         "docs",
+        "checks-ok",
         "ci-ok",
     ]
 
@@ -95,7 +96,7 @@ def test_s15_8_1_4_node_jobs(tmp_path: Path) -> None:
     assert not {"ci-cloud", "ci-local", "package"} & set(jobs)
     for name in ("sonar", "smoke"):
         assert jobs[name]["needs"] == ["validate", "test-cloud", "test-local"]
-    assert {"test-cloud", "test-local", "smoke"} <= set(jobs["ci-ok"]["needs"])
+    assert {"test-cloud", "test-local", "smoke"} <= set(jobs["checks-ok"]["needs"])
     files = _render(tmp_path, "node-lib")
     tasks = YamlUtils.load(files["tasks/ci.yml"])["tasks"]
     assert {"affected", "package"} <= set(tasks)

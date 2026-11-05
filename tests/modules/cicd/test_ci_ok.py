@@ -1,4 +1,4 @@
-"""S15.1.3 — `ci-ok`'s `needs` come from the registry and each job's `required`."""
+"""S15.1.3 — `checks-ok`'s `needs` come from the registry and each job's `required`."""
 
 from __future__ import annotations
 
@@ -54,7 +54,7 @@ def _jobs(root: Path) -> dict[str, dict[str, object]]:
 
 
 def _needs(root: Path) -> list[str]:
-    return list(_jobs(root)["ci-ok"]["needs"])  # type: ignore[call-overload]
+    return list(_jobs(root)["checks-ok"]["needs"])  # type: ignore[call-overload]
 
 
 def _job(name: str, required: str = "") -> str:
@@ -69,8 +69,9 @@ def test_s15_1_3_2_required_job_gates(tmp_path: Path) -> None:
     extra = _job("gate", "required = true\n") + _job("advisory", "required = false\n")
     root = _write(tmp_path, extra=extra)
     jobs = _jobs(root)
-    assert "gate" in jobs["ci-ok"]["needs"]  # type: ignore[operator]
-    assert "advisory" not in jobs["ci-ok"]["needs"]  # type: ignore[operator]
+    assert "gate" in jobs["checks-ok"]["needs"]  # type: ignore[operator]
+    assert "advisory" not in jobs["checks-ok"]["needs"]  # type: ignore[operator]
+    assert "gate" not in jobs["ci-ok"]["needs"]  # type: ignore[operator]
     assert jobs["advisory"]["needs"] == "validate"
     assert jobs["gate"]["needs"] == "validate"
 
@@ -79,7 +80,7 @@ def test_s15_1_3_3_registry_jobs_gate(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     # The `secret-scan` half waits for S15.3.3, which gives the row its job; until
-    # then a gating row injected here proves `check_jobs` reaches `ci-ok`.
+    # then a gating row injected here proves `check_jobs` reaches `checks-ok`.
     root = _write(tmp_path, extra="\n[ci.checks]\nscorecard = true\n")
     jobs = _jobs(root)
     assert all("scorecard" not in j.get("needs", []) for j in jobs.values())
@@ -132,3 +133,86 @@ def test_s15_4_2_2_plan_job_step(tmp_path: Path) -> None:
             continue
         root = _write(tmp_path / archetype, archetype)
         assert "task ci:requirements" not in _ci(root)
+
+
+# S15.8.7 — one `ci-ok` logic, and the pre-release barrier.
+
+STEP_IF = "contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')"
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s15_8_7_1_same_steps(tmp_path: Path, archetype: str) -> None:
+    ci = _ci(_write(tmp_path, archetype))
+    assert "jq" not in ci
+    jobs = YamlUtils.load(ci)["jobs"]
+    for name in ("ci-ok", "checks-ok"):
+        job = jobs[name]
+        assert job["if"] == "always()"
+        assert job["permissions"] == {}
+        assert [(s["if"], s["run"]) for s in job["steps"]] == [(STEP_IF, "exit 1")]
+
+
+def _barrier(archetype: str, sonar: bool) -> list[str]:
+    needs = ["validate", "dependency-review"]
+    if archetype == "node-lib":
+        needs += ["test-cloud", "test-local", "smoke"]
+    if archetype == "python-lib":
+        needs += ["plan", "test", "postgres", "redis", "smoke", "suites"]
+    return needs + (["sonar"] if sonar else [])
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s15_8_7_2_barrier_needs(tmp_path: Path, archetype: str) -> None:
+    extra = _job("gate", "required = true\n") + _job("advisory", "required = false\n")
+    root = _write(tmp_path / "on", archetype, extra)
+    assert _needs(root) == [*_barrier(archetype, True), "gate"]
+    off = _write(tmp_path / "off", archetype)
+    config = off / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(
+        config.read_text(encoding="utf-8").replace("sonar = true", "sonar = false"),
+        encoding="utf-8",
+    )
+    assert _needs(off) == _barrier(archetype, False)
+
+
+def _after(archetype: str) -> list[str]:
+    if archetype == "node-lib":
+        return ["docs"]
+    if archetype == "python-lib":
+        return ["release", "external-install", "docs"]
+    return ["release"]
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s15_8_7_3_ci_ok_needs(tmp_path: Path, archetype: str) -> None:
+    extra = _job("gate", "required = true\n")
+    jobs = _jobs(_write(tmp_path, archetype, extra))
+    assert jobs["ci-ok"]["needs"] == ["checks-ok", *_after(archetype)]
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s15_8_7_4_release_waits_on_the_barrier(tmp_path: Path, archetype: str) -> None:
+    jobs = _jobs(_write(tmp_path, archetype))
+    if "release" not in jobs:
+        # node-lib releases from `release.yml` until S15.8.5 moves it here.
+        assert archetype == "node-lib"
+        return
+    release = jobs["release"]
+    plan = ["plan"] if archetype == "python-lib" else []
+    assert release["needs"] == ([*plan, "checks-ok"] if plan else "checks-ok")
+    condition = str(release["if"])
+    assert "needs.checks-ok.result == 'success'" in condition
+    assert "!cancelled()" in condition
+    assert "always()" not in condition
+    assert "needs.sonar" not in condition
+    assert "needs.validate" not in condition
+    if archetype == "python-lib":
+        assert "release-order != '[]'" in condition
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s15_8_7_5_skipped_passes(tmp_path: Path, archetype: str) -> None:
+    jobs = _jobs(_write(tmp_path, archetype))
+    for name in ("ci-ok", "checks-ok"):
+        for step in jobs[name]["steps"]:  # type: ignore[attr-defined]
+            assert "skipped" not in f"{step.get('if', '')}{step.get('run', '')}"
