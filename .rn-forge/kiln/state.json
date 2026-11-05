@@ -16,7 +16,7 @@
     },
     ".github/dependabot.yml": {
       "begin_marker": null,
-      "content_hash": "cd233df1ebf84cddfc9f9ebe4f98670cd057139a58821ddba1b9517be703dae1",
+      "content_hash": "cdc0276ad6d6adf35a41c2f543ed8cdbbd6c693469c34c1831f9436d4a3a99de",
       "end_marker": null,
       "kind": "managed",
       "path": ".github/dependabot.yml"

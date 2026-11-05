@@ -16,6 +16,19 @@ updates:
       github-actions:
         update-types: [minor, patch]
 {%- endif %}
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        update-types: [minor, patch]
+    ignore:
+{%- for name in pinned_actions %}
+      - dependency-name: [[ name ]]
+{%- endfor %}
   - package-ecosystem: uv
     directory: /
     schedule:

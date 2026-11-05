@@ -11,6 +11,34 @@ updates:
     groups:
       github-actions:
         update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: SonarSource/sonarqube-scan-action
+      - dependency-name: actions/attest
+      - dependency-name: actions/cache
+      - dependency-name: actions/checkout
+      - dependency-name: actions/configure-pages
+      - dependency-name: actions/create-github-app-token
+      - dependency-name: actions/dependency-review-action
+      - dependency-name: actions/deploy-pages
+      - dependency-name: actions/download-artifact
+      - dependency-name: actions/setup-node
+      - dependency-name: actions/upload-artifact
+      - dependency-name: actions/upload-pages-artifact
+      - dependency-name: arduino/setup-task
+      - dependency-name: astral-sh/setup-uv
+      - dependency-name: github/codeql-action
+      - dependency-name: nrwl/nx-set-shas
+      - dependency-name: ossf/scorecard-action
+      - dependency-name: pnpm/action-setup
   - package-ecosystem: uv
     directory: /
     schedule:

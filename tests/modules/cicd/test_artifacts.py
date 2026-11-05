@@ -1690,6 +1690,21 @@ def _dependabot(root: Path) -> dict[str, object]:
     return YamlUtils.load(_rendered(root)[DEPENDABOT])
 
 
+def _hook_entry(root: Path) -> dict[str, object]:
+    """The `github-actions` entry for hook directories (no `directory`)."""
+    (entry,) = [
+        u
+        for u in _dependabot(root)["updates"]  # type: ignore[attr-defined]
+        if u["package-ecosystem"] == "github-actions" and "directories" in u
+    ]
+    return entry
+
+
+def _updates_of(content: str) -> list[str]:
+    """The package ecosystems a rendered `dependabot.yml` updates."""
+    return [u["package-ecosystem"] for u in YamlUtils.load(content)["updates"]]
+
+
 def _updates(root: Path) -> dict[str, dict[str, object]]:
     return {u["package-ecosystem"]: u for u in _dependabot(root)["updates"]}  # type: ignore[attr-defined]
 
@@ -1705,7 +1720,7 @@ def test_s4_11_4_1_dependabot_is_a_managed_row(
 
 
 @pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
-def test_s4_11_4_2_no_hooks_renders_only_uv(
+def test_s4_11_4_2_no_hooks_renders_only_the_root_actions_entry_and_uv(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
     root = _cell_root(tmp_path, archetype, extra)
@@ -1713,20 +1728,28 @@ def test_s4_11_4_2_no_hooks_renders_only_uv(
     assert parsed["version"] == 2
     updates = parsed["updates"]
     npm = 1 if archetype == "python-web-app" else 0
-    assert [u["package-ecosystem"] for u in updates] == ["uv"] + ["npm"] * npm  # type: ignore[index]
-    assert updates[0]["package-ecosystem"] == "uv"  # type: ignore[index]
-    assert updates[0]["directory"] == "/"  # type: ignore[index]
-    assert updates[0]["schedule"]["interval"] == "weekly"  # type: ignore[index]
-    assert "github-actions" not in _rendered(root)[DEPENDABOT]
+    assert [u["package-ecosystem"] for u in updates] == [  # type: ignore[index]
+        "github-actions",
+        "uv",
+        *["npm"] * npm,
+    ]
+    assert "directories" not in updates[0]  # type: ignore[index]
+    assert updates[1]["directory"] == "/"  # type: ignore[index]
+    assert updates[1]["schedule"]["interval"] == "weekly"  # type: ignore[index]
 
 
 def test_s4_11_4_3_hooks_render_exactly_their_directories(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "python-tool"), DEPENDABOT_HOOKS)
     updates = _dependabot(root)["updates"]
-    assert [u["package-ecosystem"] for u in updates] == ["github-actions", "uv"]  # type: ignore[index,union-attr]
+    assert [u["package-ecosystem"] for u in updates] == [  # type: ignore[index,union-attr]
+        "github-actions",
+        "github-actions",
+        "uv",
+    ]
     actions = updates[0]  # type: ignore[index]
     assert actions["directories"] == ["/.github/actions/b", "/.github/actions/a"]
     assert "directory" not in actions
+    assert "ignore" not in actions
     assert actions["schedule"]["interval"] == "weekly"
 
 
@@ -1741,7 +1764,7 @@ def test_s4_11_4_3_never_the_root_or_the_setup_action(
     tmp_path: Path, hooks: str
 ) -> None:
     root = _with_ci(_root(tmp_path, "python-tool"), hooks)
-    directories = _updates(root)["github-actions"]["directories"]
+    directories = _hook_entry(root)["directories"]
     assert directories
     for directory in directories:  # type: ignore[attr-defined]
         assert directory not in {"/", "/.github/actions/setup"}
@@ -1751,7 +1774,7 @@ def test_s4_11_4_3_never_the_root_or_the_setup_action(
 def test_s4_11_4_4_one_group_per_ecosystem_for_minor_and_patch(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "python-tool"), DEPENDABOT_HOOKS)
     updates = _dependabot(root)["updates"]
-    assert len(updates) == 2  # type: ignore[arg-type]
+    assert len(updates) == 3  # type: ignore[arg-type]
     for entry in updates:  # type: ignore[attr-defined]
         groups = entry["groups"]
         assert len(groups) == 1
@@ -1961,7 +1984,8 @@ def test_s4_11_6_6_release_none_renders_no_attestation(
     rendered = _rendered(root)
     assert "release" not in _ci_jobs(root)
     for path, content in rendered.items():
-        assert "attest" not in content, path
+        if path != DEPENDABOT:  # its ignore list names every pinned action
+            assert "attest" not in content, path
         if not path.startswith(".github/workflows/"):
             continue
         for name, job in YamlUtils.load(content)["jobs"].items():
@@ -2072,7 +2096,7 @@ def test_s4_11_7_6_dependabot_covers_docs_hooks(tmp_path: Path) -> None:
         'docs = ["./.github/actions/b", "./.github/actions/a"]\n'
     )
     root = _with_ci(_root(tmp_path, "python-tool"), extra)
-    assert _updates(root)["github-actions"]["directories"] == [
+    assert _hook_entry(root)["directories"] == [
         "/.github/actions/a",
         "/.github/actions/b",
     ]
@@ -2318,7 +2342,7 @@ def test_s9_1_1_2_other_archetypes_render_no_node_lib_action(
     assert "start-ci-run" not in rendered[SETUP_ACTION]
     assert "registry-url" not in rendered[SETUP_ACTION]
     if archetype != "python-web-app":
-        assert "npm" not in rendered[".github/dependabot.yml"]
+        assert "npm" not in _updates_of(rendered[".github/dependabot.yml"])
 
 
 def test_s9_1_1_3_node_lib_dependabot_adds_npm_beside_uv(
@@ -2328,7 +2352,7 @@ def test_s9_1_1_3_node_lib_dependabot_adds_npm_beside_uv(
         _rendered(_root(tmp_path, "node-lib"))[".github/dependabot.yml"]
     )["updates"]
     by_ecosystem = {u["package-ecosystem"]: u for u in updates}
-    assert set(by_ecosystem) == {"uv", "npm"}
+    assert set(by_ecosystem) == {"github-actions", "uv", "npm"}
     npm = by_ecosystem["npm"]
     assert npm["directory"] == "/"
     assert npm["schedule"] == {"interval": "weekly"}
@@ -3472,7 +3496,7 @@ def test_s9_2_5_5_both_node_cells_carry_the_same_npm_block(tmp_path: Path) -> No
 def test_s9_2_5_5_python_cells_have_no_npm_block(
     tmp_path: Path, archetype: str
 ) -> None:
-    assert "npm" not in _rendered(_root(tmp_path, archetype))[".github/dependabot.yml"]
+    assert "npm" not in _updates_of(_rendered(_root(tmp_path, archetype))[DEPENDABOT])
 
 
 def test_s9_2_6_4_web_app_sonar_reads_the_web_lcov_report(tmp_path: Path) -> None:
@@ -3851,3 +3875,47 @@ def test_s15_6_1_5_generated_job_name(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "python-lib"), extra)
     with pytest.raises(AppException):
         KilnConfig.load(root)
+
+
+def _actions_entry(root: Path) -> dict[str, object]:
+    return _updates(root)["github-actions"]
+
+
+def _unique_uses(pins: dict[str, dict[str, str]]) -> list[str]:
+    return sorted(
+        {"/".join(t["uses"].split("/")[:2]) for t in pins.values() if "uses" in t}
+    )
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES + ("node-lib",))
+def test_s15_7_1_1_github_actions_entry(tmp_path: Path, archetype: str) -> None:
+    updates = _updates(_root(tmp_path, archetype))
+    entry = updates["github-actions"]
+    assert entry["directory"] == "/"
+    for key in ("schedule", "cooldown"):
+        assert entry[key] == updates["uv"][key]
+    assert next(iter(entry["groups"].values())) == next(  # type: ignore[attr-defined]
+        iter(updates["uv"]["groups"].values())  # type: ignore[attr-defined]
+    )
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES + ("node-lib",))
+def test_s15_7_1_2_ignore_covers_every_pin(tmp_path: Path, archetype: str) -> None:
+    names = [
+        i["dependency-name"]
+        for i in _actions_entry(_root(tmp_path, archetype))["ignore"]
+    ]  # type: ignore[attr-defined,index]
+    assert names == sorted(set(names))
+    assert names == _unique_uses(load_pins())
+    assert "actions/checkout" in names
+    assert "github/codeql-action" in names
+    assert not any(n.count("/") != 1 for n in names)
+
+
+def test_s15_7_1_3_new_pin_is_ignored(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pins = load_pins() | {"extra": {"uses": "x/y", "sha": "0" * 40, "version": "v1"}}
+    monkeypatch.setattr("rn_forge.kiln.modules.cicd.artifacts.load_pins", lambda: pins)
+    names = [i["dependency-name"] for i in _actions_entry(_root(tmp_path))["ignore"]]  # type: ignore[attr-defined,index]
+    assert "x/y" in names

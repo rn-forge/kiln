@@ -71,6 +71,19 @@ def load_pins() -> dict[str, dict[str, str]]:
     )
 
 
+def pinned_actions() -> list[str]:
+    """The `owner/repo` of every pinned action, sorted: Dependabot's
+    `dependency-name` for a sub-path action (`github/codeql-action/upload-sarif`)
+    is its repository."""
+    return sorted(
+        {
+            "/".join(table["uses"].split("/")[:2])
+            for table in load_pins().values()
+            if "uses" in table
+        }
+    )
+
+
 def _ci_config(config: KilnConfig) -> CiConfig:
     section = getattr(config.document, "ci", None)
     return section if isinstance(section, CiConfig) else CiConfig()
@@ -130,6 +143,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         ),
         "plan_keys": _PLAN_KEYS,
         "pins": load_pins(),
+        "pinned_actions": pinned_actions(),
         "organization": SONAR_ORGANIZATION,
         "web": web,
         "web_app": web_app,
