@@ -34,8 +34,8 @@ kiln prompt --name adopt | claude
 1. `init`'s change, on its own: `init` formats and generates last, so there is
    no separate formatting commit.
 1. The reconciliation the prompt walks through. It ends by pointing at
-   `docs/runbooks/cutover.md`, which reviews the diff and records what the
-   repository loses.
+   [the cutover runbook](cutover.md), which reviews the diff and records what
+   the repository loses.
 
 ## 5. Done when
 
