@@ -93,6 +93,19 @@ def _reset_console_mode() -> Any:
     console.set_mode(OutputMode.PLAIN)
 
 
+_REAL_RUN_TASK = commands._run_task
+
+
+@pytest.fixture(autouse=True)
+def task_calls(monkeypatch: pytest.MonkeyPatch) -> list[tuple[Path, str]]:
+    """Replace `commands._run_task` with a recorder, so no test runs `task` unless it restores `_REAL_RUN_TASK`."""
+    calls: list[tuple[Path, str]] = []
+    monkeypatch.setattr(
+        commands, "_run_task", lambda root, name: calls.append((root, name))
+    )
+    return calls
+
+
 @pytest.fixture
 def scaffold_calls(monkeypatch: pytest.MonkeyPatch) -> list[str]:
     """Every scaffold function `commands` holds fails if called, and is recorded."""
@@ -1061,3 +1074,98 @@ def test_s16_1_2_5_no_conflict_stage(
     assert code == 0
     captured = capsys.readouterr()
     assert "nothing written" not in captured.out + captured.err
+
+
+def _local_kiln(root: Path) -> str:
+    """The `KILN` variable that runs this checkout's kiln, not the repository's pinned ref."""
+    return f"KILN=uv run --project {ROOT} kiln"
+
+
+def _real_tasks(monkeypatch: pytest.MonkeyPatch) -> None:
+    if shutil.which("task") is None or shutil.which("uv") is None:
+        pytest.skip("task or uv is not on PATH")
+
+    def run(root: Path, name: str) -> None:
+        subprocess.run(["task", name, _local_kiln(root)], cwd=root, check=True)
+
+    monkeypatch.setattr(commands, "_run_task", run)
+
+
+def _lint(root: Path) -> None:
+    done = subprocess.run(
+        ["task", "lint", _local_kiln(root)],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert done.returncode == 0, done.stdout + done.stderr
+
+
+def test_s16_1_3_1_lint_passes_after_init(
+    lib_repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _real_tasks(monkeypatch)
+
+    _lib_init(lib_repo, tmp_path)
+
+    _lint(lib_repo)
+
+
+def test_s16_1_3_2_order(
+    lib_repo: Path, tmp_path: Path, task_calls: list[tuple[Path, str]]
+) -> None:
+    _lib_init(lib_repo, tmp_path)
+
+    assert task_calls == [
+        (lib_repo, "setup"),
+        (lib_repo, "format"),
+        (lib_repo, "docs:generate"),
+    ]
+
+
+def test_s16_1_3_2_a_failing_step_is_named(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def fail(*_a: object, **_k: object) -> None:
+        raise subprocess.CalledProcessError(1, ["task", "format"])
+
+    monkeypatch.setattr(commands.subprocess, "run", fail)
+    with pytest.raises(AppException, match=r"`task format` failed"):
+        _REAL_RUN_TASK(tmp_path, "format")
+
+
+def test_s16_1_3_3_dry_run_runs_nothing(
+    lib_repo: Path, task_calls: list[tuple[Path, str]]
+) -> None:
+    commands.init(**_LIB, dry_run=True, yes=True)
+    commands.init(**_LIB)
+
+    assert task_calls == []
+
+
+@pytest.mark.parametrize("docs", ["none", "external"])
+def test_s16_1_3_4_no_docs_profile(
+    repo: Path, docs: str, task_calls: list[tuple[Path, str]]
+) -> None:
+    commands.init(archetype="python-app", docs=docs, yes=True)
+
+    assert [name for _, name in task_calls] == ["setup", "format"]
+
+
+@pytest.mark.parametrize("docs", ["none", "external"])
+def test_s16_1_3_4_no_docs_profile_lint_passes(
+    repo: Path, docs: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _real_tasks(monkeypatch)
+    config = tmp_path / "external.toml"
+    config.write_text('[docs]\nexternal_url = "https://docs.example.com"\n')
+
+    commands.init(
+        archetype="python-app",
+        docs=docs,
+        config=str(config) if docs == "external" else None,
+        yes=True,
+    )
+
+    _lint(repo)

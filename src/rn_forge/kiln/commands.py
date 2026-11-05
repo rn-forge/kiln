@@ -332,7 +332,9 @@ def init(
     `--yes`, the Git
     working tree must be clean (`init.dirty-tree`); it then writes
     `config.toml`, then applies, recording byte-identical managed files in the
-    baseline without rewriting them, then runs `kiln doctor`'s ownership checks.
+    baseline without rewriting them, then runs `task setup`, `task format` and
+    (under `--docs mkdocs`) `task docs:generate`, then `kiln doctor`'s
+    ownership checks.
 
     A `python-lib` workspace is adopted with its members: unlike `new`, the
     `--config` layer may list `packages`, each an existing directory with a
@@ -355,7 +357,7 @@ def init(
             preflight (each failed condition is named), a listed package has
             no `pyproject.toml` (`init.package-missing`), `state.json` already
             exists, a conflict exists, the working tree is dirty
-            (`init.dirty-tree`), or the config, apply or check step fails.
+            (`init.dirty-tree`), or the config, apply, task or check step fails.
     """
     if json:
         console.set_mode(OutputMode.JSON)
@@ -445,8 +447,26 @@ def init(
             console.info(
                 "added {} to pyproject.toml's dependency groups", ", ".join(added)
             )
+    for step in _final_steps(resolved):
+        _run_task(root, step)
     _fail_on_errors(root)
     _report(root, resolved, _change_rows(result.changes))
+
+
+def _final_steps(config: KilnConfig) -> list[str]:
+    """The tasks `init` ends with, in order."""
+    steps = ["setup", "format"]
+    if config.docs_profile == "mkdocs":
+        steps.append("docs:generate")
+    return steps
+
+
+def _run_task(root: Path, name: str) -> None:
+    """Run `task <name>` in *root*, raising `AppException` naming the step on failure."""
+    try:
+        subprocess.run(["task", name], cwd=root, check=True)
+    except (subprocess.CalledProcessError, FileNotFoundError) as error:
+        raise AppException("`task {}` failed in {}: {}", name, root, error) from error
 
 
 def _missing_seeds(root: Path, config: KilnConfig) -> list[str]:
