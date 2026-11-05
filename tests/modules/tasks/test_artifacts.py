@@ -1390,10 +1390,18 @@ CI_PIPELINE_TASKS = {
     "suite",
     "release-build",
     "release-publish",
-    "external-install",
+    "verify-release",
     "docs-publish",
 }
-SINGLE_PIPELINE_TASKS = {"validate", "test", "plan", "integration", "smoke", "suite"}
+SINGLE_PIPELINE_TASKS = {
+    "validate",
+    "test",
+    "plan",
+    "integration",
+    "smoke",
+    "suite",
+    "verify-release",
+}
 ALL_CELLS = [(a, "") for a in ARCHETYPES] + list(WEB_CELLS)
 OLD_CI_KEYS = [
     "quality:lint:ci-entrypoint",
@@ -2222,26 +2230,18 @@ def test_s7_6_4_6_release_tasks_upload(tmp_path: Path) -> None:
             assert forbidden not in text, (task, forbidden)
 
 
-def test_s7_6_5_1_external_install_from_pypi(tmp_path: Path) -> None:
+def test_s7_6_5_1_verify_release_from_pypi(tmp_path: Path) -> None:
     pypi = _root(tmp_path / "pypi", "python-lib", extra='\n[ci]\nrelease = "pypi"\n')
-    task = _ci_tasks(pypi)["tasks"]["external-install"]  # type: ignore[index]
-    script = "\n".join(task["cmds"])
+    task = _ci_tasks(pypi)["tasks"]["verify-release"]  # type: ignore[index]
     assert task["desc"] == (
-        "CI only: install each released version from PyPI, outside the workspace"
+        "CI only: install the release from PyPI, outside the repository, and import it"
     )
-    assert (
-        'VIRTUAL_ENV="$tmp/$name" uv pip install -q --refresh --no-config'
-        ' "$name==$version"'
-    ) in script
-    assert "seq 1 10" in script
-    assert "sleep 30" in script
-    assert "-eq 10" in script
-    assert "exit 1" in script
-    assert "git+" not in script
-    assert '"$tmp/$name/bin/python" -c "import $module"' in script
+    assert task["cmds"] == ["{{.DEVOPS}} verify-release --source pypi {{.CLI_ARGS}}"]
     plain = _ci_tasks(_root(tmp_path / "plain", "python-lib"))["tasks"]
-    plain_task = plain["external-install"]  # type: ignore[index]
-    assert "git+" in "\n".join(plain_task["cmds"])
+    plain_task = plain["verify-release"]  # type: ignore[index]
+    assert plain_task["cmds"] == [
+        "{{.DEVOPS}} verify-release --source git {{.CLI_ARGS}}"
+    ]
     assert "PyPI" not in plain_task["desc"]
 
 

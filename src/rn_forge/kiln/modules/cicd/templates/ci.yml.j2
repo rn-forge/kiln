@@ -11,7 +11,7 @@ validate, dependency-review
 {%- for job in required_jobs %}, [[ job ]]{% endfor -%}
 {%- endmacro %}
 {%- macro postrelease_needs() -%}
-{%- if release != "none" and not node_lib %}, release{% if workspace %}, external-install{% endif %}{% endif -%}
+{%- if release != "none" and not node_lib %}, release, verify-release{% endif -%}
 {%- if (workspace or node_lib) and docs %}, docs{% endif -%}
 {%- endmacro %}
 {%- macro gate_job(name, needs) %}
@@ -27,7 +27,7 @@ validate, dependency-review
         run: exit 1
 {%- endmacro %}
 
-{% if not node_lib %}# validate → plan → test, integration, smoke, suites → sonar → release{% if workspace %} → external-install, docs{% endif %}.
+{% if not node_lib %}# validate → plan → test, integration, smoke, suites → sonar → release{% if release != "none" %} → verify-release{% endif %}{% if workspace %}{% if release == "none" %} →{% else %},{% endif %} docs{% endif %}.
 #
 # validate: the repository-wide checks ({% if workspace %}lint, adapters, docs build{% else %}lint, typecheck{% if docs %}, docs build{% endif %}{% endif %}), once.
 # plan:     reads the uv workspace{% if not workspace %} (here a workspace of one member, the root project){% endif %} and selects the changed packages and their
@@ -39,9 +39,9 @@ validate, dependency-review
 # sonar:    the scan, once test, integration and smoke have passed.
 {% if workspace %}# release:  the selected packages whose checks all passed, in dependency order,
 #           each on its own `<package>-v<version>` tag.
-# external-install: installs each new tag from git, outside the workspace.
 {% if docs %}# docs:     deploys each released package's versioned site and the root site to Pages.
 {% endif %}{% elif release != "none" %}# release:  publishes the version once everything before it has passed.
+{% endif %}{% if release != "none" %}# verify-release: installs what was published, from {% if release == "pypi" %}PyPI{% else %}its git tag{% endif %}, outside the repository, and imports it.
 {% endif %}{% else %}# validate → test-cloud or test-local → sonar, smoke, docs → ci-ok.
 #
 # test-cloud:  `nx affected` distributed over Nx Cloud agents (.nx/workflows/agents.yaml).
@@ -670,7 +670,7 @@ jobs:
 
   # Package checks resolve internal dependencies from the workspace, which
   # never proves a tag installs on its own.
-  external-install:
+  verify-release:
     needs: [release]
     if: ${{ !cancelled() && needs.release.result == 'success' && github.event_name == 'push' && github.ref_name == 'main' }}
     runs-on: ubuntu-latest
@@ -692,13 +692,16 @@ jobs:
       - name: Verify remote tags and clean installs
         env:
           REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
-        run: task ci:external-install
+        run: task ci:verify-release
 {% elif release != "none" %}
   release:
     needs: [plan, checks-ok]
     if: ${{ !cancelled() && needs.checks-ok.result == 'success' && github.event_name == 'push' && github.ref_name == 'main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # The tag this run published; empty when the version was already released.
+    outputs:
+      tag: ${{ steps.check.outputs.should-release == 'true' && steps.check.outputs.tag || '' }}
     permissions:
       contents: write
       id-token: write
@@ -752,6 +755,31 @@ jobs:
           TAG: ${{ steps.check.outputs.tag }}
           SOURCE_SHA: ${{ steps.source.outputs.sha }}
         run: task ci:release-publish
+
+  verify-release:
+    needs: [release]
+    if: ${{ !cancelled() && needs.release.result == 'success' && needs.release.outputs.tag != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify the remote tag and a clean install
+        env:
+          REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+          TAG: ${{ needs.release.outputs.tag }}
+        run: task ci:verify-release -- "$TAG"
 {% endif %}{% if workspace and docs %}
   # Runs on a push with no package change too, when `release` is skipped. The one
   # job that deploys Pages for a workspace: a root-only deploy landing after it

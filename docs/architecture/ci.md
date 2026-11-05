@@ -32,15 +32,15 @@ Triggers are the same everywhere: a pull request into the default branch, a push
 to it, and `workflow_dispatch`. A newer push to a pull request cancels its run;
 default-branch runs queue. `validate` gates every other job.
 
-The stages are not named alike yet: `python-lib` calls its post-release install
-`external-install`, and the other archetypes lack some stages. The target
-vocabulary, one for every archetype, is in
+The stages are not named alike yet: `node-lib` releases from `release.yml` and
+has no `verify-release` in `ci.yml`. The target vocabulary, one for every
+archetype, is in
 [the design](../specs/epics/E15-ci-standard/design.md#stage-vocabulary).
 
 | Archetype | `ci.yml` job order | Other workflows |
 | -- | -- | -- |
-| `python-lib` | `validate` > `dependency-review`, `secret-scan`, `plan` > `test`, `integration`, `smoke`, `suites` > `sonar` > `checks-ok` > `release` > `external-install`, `docs` > `ci-ok` | none: `docs` is the one Pages deploy |
-| `python-tool`, `python-app`, `python-web-api`, `python-web-app` | `validate` > `dependency-review`, `secret-scan`, `plan` > `test`, `integration`, `smoke`, `suites` > `sonar` > `checks-ok` > `release` > `ci-ok` | `docs.yml` |
+| `python-lib` | `validate` > `dependency-review`, `secret-scan`, `plan` > `test`, `integration`, `smoke`, `suites` > `sonar` > `checks-ok` > `release` > `verify-release`, `docs` > `ci-ok` | none: `docs` is the one Pages deploy |
+| `python-tool`, `python-app`, `python-web-api`, `python-web-app` | `validate` > `dependency-review`, `secret-scan`, `plan` > `test`, `integration`, `smoke`, `suites` > `sonar` > `checks-ok` > `release` > `verify-release` > `ci-ok` | `docs.yml` |
 | `node-lib` | `validate` > `dependency-review`, `secret-scan`, `test-cloud` or `test-local` > `sonar`, `smoke` > `checks-ok`; `docs` > `ci-ok` | `release.yml` (dispatch) |
 
 | Job | Runs | Task verb |
@@ -58,7 +58,7 @@ vocabulary, one for every archetype, is in
 | `test-cloud`, `test-local` | `nx affected` on Nx Cloud agents, or on the runner; one runs per `USE_NX_CLOUD` | `task ci:affected` |
 | `sonar` | coverage, then the scan, waiting on the quality gate | `task ci:sonar-target`, `task test:coverage` (`python-lib`: after the check legs; `node-lib`: `task ci:coverage`) |
 | `release` | publishes from the default branch only, after `sonar` | `python-lib`: `task ci:release-build`, `task ci:release-publish`; single-package Python: `task ci:release-state`, `task build`, `task ci:release-publish`; `node-lib`: in `release.yml` (see below) |
-| `external-install` | installs each new tag from outside the workspace | `task ci:external-install` |
+| `verify-release` | installs what was published, from PyPI (`[ci] release = "pypi"`) or from its git tag, into a clean venv outside the repository and imports it; `python-lib` verifies every new tag, a single-package repository the tag `release` output | `task ci:verify-release` (`kiln-devops verify-release`) |
 | `smoke` (`node-lib`) | packs and verifies publishable tarballs | `task ci:package` |
 | `docs` | deploys Pages once | `python-lib`: `task ci:docs-publish`; `node-lib`: `task docs:build`, `task ci:docs:site` |
 | `checks-ok` | the pre-release barrier: every job that runs before `release` passed or was skipped | none |
@@ -94,7 +94,7 @@ checks" in `.rn-forge/kiln/standard.md`.
 | `dependency-review` | action | yes | yes | yes | yes | yes | yes | S |
 | Sonar | `sonar` job | yes | yes | yes | yes | yes | yes | C: `[ci] sonar`, default `true` |
 | Release | `release` job | yes | yes | yes | yes | yes | `release.yml` | C: `[ci] release`, default `tag-exists`; `pypi` for `python-lib`; `nx-dispatch` for `node-lib`; `none` |
-| `external-install` | `task ci:external-install` | yes |  |  |  |  |  | D: a release mode other than `none` |
+| `verify-release` | `task ci:verify-release` | yes | yes | yes | yes | yes |  | D: a release mode other than `none` |
 | Docs deploy | `docs` job or `docs.yml` | `ci.yml` | `docs.yml` | `docs.yml` | `docs.yml` | `docs.yml` | `ci.yml` | D: `[docs] profile = "mkdocs"` |
 | Package tarballs | `task ci:package` |  |  |  |  |  | yes | S |
 | `ci-ok` | none | yes | yes | yes | yes | yes | yes | S |
@@ -250,20 +250,20 @@ A newer push to the same pull request cancels the run in progress. Pushes to
 | `suites` | the root `[tool.workspace-ci.suites]` pytest runs | always, all suites | always | always |
 | `sonar` | whole-workspace coverage, then the scan, waiting on the quality gate | runs; skipped for a fork's pull request | runs, on branch `main` | runs, on the dispatched branch |
 | `release` | each selected package whose checks passed is built with its SBOM (`task ci:release-build`), attested, then published (`task ci:release-publish`) as `<package>-v<version>`, after `sonar` passed | skipped | builds and publishes | skipped |
-| `external-install` | each new tag installs from git, outside the workspace, and imports | skipped | runs | skipped |
+| `verify-release` | each new release installs from PyPI or its git tag, outside the repository, and imports; a single-package repository runs it only when `release` published (its `tag` output is not empty) | skipped | runs | skipped |
 | `docs` | each package tagged at this commit deployed with `mike`, then the root site plus `packages/` to Pages; `[ci.hooks] docs` actions run before the upload | skipped | runs | skipped |
 | `checks-ok` | the pre-release barrier: `validate`, `dependency-review`, `plan`, `test`, `integration`, `smoke`, `suites`, `sonar`, `secret-scan`, and the checks and required jobs, none failed or cancelled | runs | runs | runs |
-| `ci-ok` | `checks-ok`, `release`, `external-install`, `docs`: none failed or cancelled; a skipped job is not a failure | runs | runs | runs |
+| `ci-ok` | `checks-ok`, `release`, `verify-release`, `docs`: none failed or cancelled; a skipped job is not a failure | runs | runs | runs |
 
 #### Ordering and gating
 
 ```text
 validate ─► plan ─┬─► test ────────┐
-                  ├─► integration ─┼─► sonar ─► release ─► external-install
+                  ├─► integration ─┼─► sonar ─► release ─► verify-release
                   ├─► smoke ───────┘                 └───► docs
                   └─► suites
 `validate` .. `sonar` ─► checks-ok ─► release
-`checks-ok`, `release`, `external-install`, `docs` ─► ci-ok
+`checks-ok`, `release`, `verify-release`, `docs` ─► ci-ok
 ```
 
 - Nothing runs unless `validate` passes.

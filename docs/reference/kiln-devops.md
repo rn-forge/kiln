@@ -15,9 +15,10 @@ subcommands load no workspace and run in any repository.
 | -- | -- |
 | `plan [BASE]` | Selects the packages a change affects, and writes every job's matrix and package list as `$GITHUB_OUTPUT` lines. |
 | `releasable OK_DIR NAME...` | Prints, in dependency order, the selected packages whose checks all passed and whose selected prerequisites are releasable. |
-| `released` | Prints `name dir module version` for each `<name>-v<version>` tag at `HEAD`, for `external-install` and `docs`. |
+| `released` | Prints `name dir module version` for each `<name>-v<version>` tag at `HEAD`, for `verify-release` and `docs`. |
 | `smoke PACKAGE [EXTRA]` | Builds the package and its internal requirements as wheels, installs one extra into a clean venv from the wheels' metadata, and imports the configured modules, or the package's own module when it has no smoke table. |
 | `integration PACKAGE` | Starts the package's declared service containers with `docker run`, waits until each is healthy, runs the package's pytest with every `expose` variable set, and removes the containers, also when pytest fails. Exits with pytest's status, or 1 when a service never becomes healthy. |
+| `verify-release --source {pypi,git} [TAG]` | Installs a published release into a clean venv and imports its module. `pypi` installs `name==version` with `uv pip install --no-cache`, retrying up to ten times 30 s apart while the index catches up; `git` fetches the tag and installs `name @ git+$REPOSITORY_URL@tag`. Without `TAG` it verifies each `<name>-v<version>` tag at `HEAD`; with `TAG` (a single-package repository's `v<version>`) it verifies the one member. |
 | `adapters` | Checks each package that declares `adapters`: every name has a module or subpackage under the package's source directory and an extra of the same name, and none is repeated. Prints one line per problem to stderr and exits 1 if there are any. |
 | `sonar-target` | Prints the `branch-arg=` line for the Sonar scan, from the `EVENT_NAME`, `REF_TYPE` and `REF_NAME` environment variables. |
 | `release-state TAG` | Prints the release's state for `TAG` as `$GITHUB_OUTPUT` lines. |
@@ -74,7 +75,7 @@ release state is read and no `gh` command runs.
   `releasable` leave dependency groups out; a cycle among the rest is an
   error.
 - **Import name:** `[tool.uv.build-backend].module-name`, used for `--cov`, the
-  external-install import and the smoke imports.
+  verify-release import and the smoke imports.
 - **Optional jobs:** `sonar` runs only if `sonar-project.properties` exists;
   `docs` only if `mkdocs.yml` exists.
 

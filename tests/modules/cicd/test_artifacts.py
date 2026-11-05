@@ -216,6 +216,7 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
         "smoke",
         "suites",
         "release",
+        "verify-release",
         "checks-ok",
         "ci-ok",
     }
@@ -702,7 +703,7 @@ def test_s6_4_2_4_python_lib_jobs_and_validate_steps(tmp_path: Path) -> None:
         "suites",
         "sonar",
         "release",
-        "external-install",
+        "verify-release",
         "docs",
         "checks-ok",
         "ci-ok",
@@ -784,6 +785,7 @@ def test_s6_4_2_8_other_archetypes_keep_the_plain_pipeline(tmp_path: Path) -> No
             "suites",
             "sonar",
             "release",
+            "verify-release",
             "checks-ok",
             "ci-ok",
         ], archetype
@@ -928,9 +930,9 @@ def test_s6_4_4_3_release_task_is_pykit_s_script(tmp_path: Path) -> None:
     assert "uv run rn-forge-devops" not in script
 
 
-def test_s6_4_4_4_external_install(tmp_path: Path) -> None:
+def test_s6_4_4_4_verify_release(tmp_path: Path) -> None:
     jobs = _lib_jobs(tmp_path)
-    job = jobs["external-install"]
+    job = jobs["verify-release"]
     assert job["needs"] == ["release"]
     assert job["if"] == (
         "${{ !cancelled() && needs.release.result == 'success' && "
@@ -942,16 +944,15 @@ def test_s6_4_4_4_external_install(tmp_path: Path) -> None:
         "persist-credentials": False,
     }
     last = steps[-1]  # type: ignore[index]
-    assert last["run"] == "task ci:external-install"
+    assert last["run"] == "task ci:verify-release"
     assert last["env"] == {
         "REPOSITORY_URL": "${{ github.server_url }}/${{ github.repository }}"
     }
-    assert "external-install" in jobs["ci-ok"]["needs"]  # type: ignore[operator]
+    assert "verify-release" in jobs["ci-ok"]["needs"]  # type: ignore[operator]
     script = "\n".join(
-        _ci_tasks_text(tmp_path)["tasks"]["external-install"]["cmds"]  # type: ignore[index]
+        _ci_tasks_text(tmp_path)["tasks"]["verify-release"]["cmds"]  # type: ignore[index]
     )
-    assert "{{.DEVOPS}} released" in script
-    assert "$REPOSITORY_URL" in script
+    assert script == "{{.DEVOPS}} verify-release --source git {{.CLI_ARGS}}"
 
 
 def _ci_tasks_text_of(root: Path) -> dict[str, object]:
@@ -1032,7 +1033,7 @@ def test_s11_5_1_2_python_lib_docs_job(tmp_path: Path) -> None:
     names = list(jobs)
     assert names[names.index("release") :] == [
         "release",
-        "external-install",
+        "verify-release",
         "docs",
         "checks-ok",
         "ci-ok",
@@ -1549,7 +1550,7 @@ def test_s16_4_6_1_docs_job_comment(tmp_path: Path, archetype: str, extra: str) 
 def test_s4_11_3_1_fetch_depth_is_kept(tmp_path: Path) -> None:
     lib = _checkouts(_root(tmp_path, "python-lib"))
     deep = {job for _, job, step in lib if step["with"].get("fetch-depth") == 0}  # type: ignore[union-attr]
-    assert {"plan", "sonar", "external-install"} <= deep
+    assert {"plan", "sonar", "verify-release"} <= deep
 
 
 def test_s4_11_3_2_the_release_version_is_read_through_env(tmp_path: Path) -> None:
@@ -2197,7 +2198,7 @@ def test_s7_6_4_5_pypi_keeps_every_tag_exists_job(tmp_path: Path, sonar: bool) -
     for name in plain:
         assert pypi[name].get("needs") == plain[name].get("needs"), name
     assert "release" in pypi["ci-ok"]["needs"]  # type: ignore[operator]
-    assert "external-install" in pypi["ci-ok"]["needs"]  # type: ignore[operator]
+    assert "verify-release" in pypi["ci-ok"]["needs"]  # type: ignore[operator]
 
 
 def test_s7_6_6_1_declared_job_can_write_contents(tmp_path: Path) -> None:

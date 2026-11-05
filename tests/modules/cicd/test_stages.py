@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 from pathlib import Path
 from typing import Any
 
@@ -73,7 +74,7 @@ def test_s15_8_1_1_lib_jobs(tmp_path: Path) -> None:
         "suites",
         "sonar",
         "release",
-        "external-install",
+        "verify-release",
         "docs",
         "checks-ok",
         "ci-ok",
@@ -119,8 +120,8 @@ def test_s15_8_1_5_no_old_name(tmp_path: Path, archetype: str) -> None:
     text = "\n".join(
         c for p, c in files.items() if p.startswith((".github/", "tasks/"))
     )
-    for old in ("ci:verify", "ci-cloud", "ci-local"):
-        assert old not in text, old
+    for old in (r"ci:verify(?![-\w])", "ci-cloud", "ci-local"):
+        assert not re.search(old, text), old
     jobs = workflows.jobs(files)
     assert "package" not in jobs
     assert "verify" not in jobs
@@ -222,7 +223,7 @@ def test_s15_8_3_5_needs(tmp_path: Path, archetype: str) -> None:
         "secret-scan",
     ]
     assert jobs["release"]["needs"] == ["plan", "checks-ok"]
-    assert jobs["ci-ok"]["needs"] == ["checks-ok", "release"]
+    assert jobs["ci-ok"]["needs"] == ["checks-ok", "release", "verify-release"]
 
 
 @pytest.mark.parametrize("archetype", SINGLE)
@@ -232,3 +233,79 @@ def test_s15_8_3_6_suites_are_declared(tmp_path: Path, archetype: str) -> None:
         "include": "${{ fromJSON(needs.plan.outputs.suites) }}"
     }
     assert "needs.plan.outputs.suites != '[]'" in suites["if"]
+
+
+# S15.8.4 — `verify-release` for every Python archetype.
+
+
+def _lib_files(tmp_path: Path, release: str) -> dict[str, str]:
+    root = tmp_path / f"lib-{release}"
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True, exist_ok=True)
+    config.write_text(
+        CONFIG.format(archetype="python-lib", release=release) + PACKAGES,
+        encoding="utf-8",
+    )
+    loaded = KilnConfig.load(root)
+    files = {a.path: a.content for a in CICD.artifacts(loaded, root)}
+    files.update({a.path: a.content for a in TASKS.artifacts(loaded, root)})
+    return files
+
+
+def test_s15_8_4_3_task(tmp_path: Path) -> None:
+    for release, source in (("tag-exists", "git"), ("pypi", "pypi")):
+        tasks = YamlUtils.load(_lib_files(tmp_path, release)["tasks/ci.yml"])["tasks"]
+        assert tasks["verify-release"]["cmds"] == [
+            f"{{{{.DEVOPS}}}} verify-release --source {source} {{{{.CLI_ARGS}}}}"
+        ]
+        assert "external-install" not in tasks
+    for archetype in SINGLE:
+        tasks = YamlUtils.load(_render_single(tmp_path, archetype)["tasks/ci.yml"])[
+            "tasks"
+        ]
+        assert "verify-release" in tasks
+        assert "external-install" not in tasks
+
+
+def test_s15_8_4_4_lib_job(tmp_path: Path) -> None:
+    jobs = workflows.jobs(_lib_files(tmp_path, "tag-exists"))
+    assert "external-install" not in jobs
+    job = jobs["verify-release"]
+    assert job["needs"] == ["release"]
+    assert job["if"] == (
+        "${{ !cancelled() && needs.release.result == 'success' && "
+        "github.event_name == 'push' && github.ref_name == 'main' }}"
+    )
+    assert job["steps"][-1]["run"] == "task ci:verify-release"
+
+
+@pytest.mark.parametrize("archetype", SINGLE)
+def test_s15_8_4_5_single_package_job(tmp_path: Path, archetype: str) -> None:
+    jobs = workflows.jobs(_render_single(tmp_path, archetype))
+    tag = (
+        "${{ steps.check.outputs.should-release == 'true' "
+        "&& steps.check.outputs.tag || '' }}"
+    )
+    assert jobs["release"]["outputs"] == {"tag": tag}
+    job = jobs["verify-release"]
+    assert job["needs"] == ["release"]
+    assert "needs.release.outputs.tag != ''" in job["if"]
+    assert "!cancelled()" in job["if"]
+    last = job["steps"][-1]
+    assert last["run"] == 'task ci:verify-release -- "$TAG"'
+    assert last["env"]["TAG"] == "${{ needs.release.outputs.tag }}"
+
+
+def test_s15_8_4_6_none(tmp_path: Path) -> None:
+    assert "verify-release" not in workflows.jobs(_lib_files(tmp_path, "none"))
+    root = tmp_path / "single-none"
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(
+        CONFIG.format(archetype="python-tool", release="none"), encoding="utf-8"
+    )
+    loaded = KilnConfig.load(root)
+    files = {a.path: a.content for a in CICD.artifacts(loaded, root)}
+    jobs = workflows.jobs(files)
+    assert "verify-release" not in jobs
+    assert "verify-release" not in jobs["ci-ok"]["needs"]

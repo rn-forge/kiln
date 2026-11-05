@@ -179,8 +179,8 @@ def _after(archetype: str) -> list[str]:
     if archetype == "node-lib":
         return ["docs"]
     if archetype == "python-lib":
-        return ["release", "external-install", "docs"]
-    return ["release"]
+        return ["release", "verify-release", "docs"]
+    return ["release", "verify-release"]
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)

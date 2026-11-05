@@ -413,9 +413,9 @@ planned by `kiln-devops` ([ADR-0017](../adr/ADR-0017.md)) through the public
 
 - `ci` namespace: `ci:plan`, `ci:adapters`, `ci:test -- <package>`,
   `ci:integration`, `ci:smoke`, `ci:suite`, `ci:release-build`,
-  `ci:release-publish` and `ci:external-install`.
+  `ci:release-publish` and `ci:verify-release`.
 - `python-lib` jobs, in order: `validate`, `dependency-review`, `plan`, `test`,
-  `integration`, `smoke`, `suites`, `sonar`, `release`, `external-install`,
+  `integration`, `smoke`, `suites`, `sonar`, `release`, `verify-release`,
   `ci-ok`.
 
 [CI](../architecture/ci.md#python-lib-event-by-event) walks through each event.
@@ -488,7 +488,7 @@ The rules:
   notes, and a per-package release is never "Latest". A `workflow_dispatch`
   with `testpypi` set runs the release job in the `testpypi` environment
   instead: it uploads every package to test.pypi.org unless that has the
-  version, and creates no tags and no GitHub releases. `external-install` then
+  version, and creates no tags and no GitHub releases. `verify-release` then
   installs `name==version` from PyPI, retrying up to ten times. Once per
   repository, the owner creates the GitHub environments `pypi` (deployment
   branch `main`) and `testpypi`, and adds a trusted publisher per package on

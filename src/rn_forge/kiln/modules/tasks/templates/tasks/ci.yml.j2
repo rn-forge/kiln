@@ -370,6 +370,11 @@ tasks:
     desc: "CI only: run one workspace-wide pytest suite"
     cmds:
       - uv run pytest $SUITE_ARGS
+
+  verify-release:
+    desc: "CI only: install the release from {% if release == "pypi" %}PyPI{% else %}its git tag{% endif %}, outside the repository, and import it{% if not workspace %} (-- <tag>){% endif %}"
+    cmds:
+      - '{{.DEVOPS}} verify-release --source [[ "pypi" if release == "pypi" else "git" ]] {{.CLI_ARGS}}'
 {% if workspace %}
   release-build:
     desc: "CI only: build the releasable packages and their SBOMs into dist/<package>/, prerequisites first"
@@ -452,40 +457,7 @@ tasks:
           {{.DEVOPS}} release-publish "$tag" --title "$name v$version" --target "$GITHUB_SHA" --notes-file "$notes" {% if release == "pypi" %}--upload "$upload" {% endif %}dist/"$name"/*
         done
 
-  external-install:
-{% if release == "pypi" %}    desc: "CI only: install each released version from PyPI, outside the workspace"
-    cmds:
-      - |
-        set -euo pipefail
-        tmp=$(mktemp -d)
-        {{.DEVOPS}} released | while read -r name _ module version; do
-          uv venv -q "$tmp/$name"
-          for attempt in $(seq 1 10); do
-            if VIRTUAL_ENV="$tmp/$name" uv pip install -q --refresh --no-config "$name==$version"; then
-              break
-            fi
-            if [ "$attempt" -eq 10 ]; then
-              echo "$name==$version is not installable from PyPI after 10 attempts" >&2
-              exit 1
-            fi
-            sleep 30
-          done
-          "$tmp/$name/bin/python" -c "import $module"
-        done
-{% else %}    desc: "CI only: install each released tag from git, outside the workspace"
-    cmds:
-      - |
-        set -euo pipefail
-        tmp=$(mktemp -d)
-        {{.DEVOPS}} released | while read -r name dir module version; do
-          tag="$name-v$version"
-          git fetch --no-tags origin "refs/tags/$tag"
-          uv venv -q "$tmp/$name"
-          VIRTUAL_ENV="$tmp/$name" uv pip install -q \
-            "$name @ git+$REPOSITORY_URL@$tag#subdirectory=$dir"
-          "$tmp/$name/bin/python" -c "import $module"
-        done
-{% endif %}{% if docs %}
+{% if docs %}
   docs-publish:
     desc: "CI only: deploy each released package's versioned site, then build the root site (SITE_DIR) with packages/ merged in"
     cmds:

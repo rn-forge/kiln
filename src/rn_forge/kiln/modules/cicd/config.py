@@ -30,7 +30,7 @@ GENERATED_JOBS = frozenset(
         "suites",
         "sonar",
         "release",
-        "external-install",
+        "verify-release",
         "docs",
         "scorecard",
         "checks-ok",

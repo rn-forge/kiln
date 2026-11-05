@@ -19,6 +19,7 @@ from rn_forge.kiln.devops import (
     requirements,
     umbrella,
     uv,
+    verify_release,
 )
 
 
@@ -47,6 +48,18 @@ def _parser() -> argparse.ArgumentParser:
         "integration", help="run one package's tests against its service containers"
     )
     services.add_argument("package", metavar="PACKAGE")
+    verify = commands.add_parser(
+        "verify-release",
+        help="install each released version from its registry and import it",
+    )
+    verify.add_argument("--source", required=True, choices=["pypi", "git"])
+    verify.add_argument(
+        "tag",
+        nargs="?",
+        default=None,
+        metavar="TAG",
+        help="the release tag of a single-package repository; omit to read the tags at HEAD",
+    )
     commands.add_parser(
         "adapters", help="check each declared adapter has a module and an extra"
     )
@@ -244,6 +257,33 @@ def _adapters(workspace: ci.Workspace) -> int:
     return 1 if problems else 0
 
 
+def _verify_release(workspace: ci.Workspace, args: argparse.Namespace) -> int:
+    url = os.environ.get("REPOSITORY_URL", "")
+    if args.source == "git" and not url:
+        print("kiln-devops: REPOSITORY_URL is not set", file=sys.stderr)
+        return 2
+    if args.tag:
+        (package,) = workspace.packages.values()
+        found = [
+            (
+                package.name,
+                package.dir,
+                package.module,
+                args.tag.removeprefix("v"),
+                args.tag,
+            )
+        ]
+    else:
+        found = [(n, d, m, v, f"{n}-v{v}") for n, d, m, v in ci.released(workspace)]
+    status = 0
+    for name, directory, module, version, tag in found:
+        spec = verify_release.Spec(
+            name, module, version, tag, args.source, url, directory
+        )
+        status = verify_release.run(spec, integration.subprocess_runner) or status
+    return status
+
+
 def _run(workspace: ci.Workspace, args: argparse.Namespace) -> int:
     command: str = args.command
     if command == "plan":
@@ -256,6 +296,8 @@ def _run(workspace: ci.Workspace, args: argparse.Namespace) -> int:
     elif command == "released":
         for found in ci.released(workspace):
             print(*found)
+    elif command == "verify-release":
+        return _verify_release(workspace, args)
     elif command == "integration":
         package = workspace.packages[ci.normalize(args.package)]
         return integration.run(

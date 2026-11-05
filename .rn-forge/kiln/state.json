@@ -23,7 +23,7 @@
     },
     ".github/workflows/ci.yml": {
       "begin_marker": null,
-      "content_hash": "20a68b0c3c3a5451632ff0a6aa37f7cb861da5de20085fcba4361b22feeef1ad",
+      "content_hash": "14e1cb3ce1a0bfa054b3c569e3c958ee0dfa00c7d47b2c28e1aa93c0d6e44523",
       "end_marker": null,
       "kind": "managed",
       "path": ".github/workflows/ci.yml"
@@ -58,7 +58,7 @@
     },
     ".rn-forge/kiln/standard.md": {
       "begin_marker": null,
-      "content_hash": "c9413d764946aa7891271500576d87cb4d10405f8903ba57f1587a4a4c526b41",
+      "content_hash": "f4b0de643581919b54bd1e440cc0d14664d2b131020e77ab06b8f2d8c40891bb",
       "end_marker": null,
       "kind": "managed",
       "path": ".rn-forge/kiln/standard.md"
@@ -261,7 +261,7 @@
     },
     "tasks/ci.yml": {
       "begin_marker": null,
-      "content_hash": "171ad6419b984100c18beb131f7bb2112bcfe5938c18cc071397a06ed94d9f50",
+      "content_hash": "f5ca51a0ec025ffcdcf60fba9be279c6066c1a0253c9cd049850f3019035393f",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/ci.yml"
