@@ -113,6 +113,158 @@ releases wait on pykit's.
   `config-upgrade` and `prompt` may fold into fewer commands.
 - `commands.py` is a 1.2k-line catch-all.
 
+### 8. The design has no home once an epic closes
+
+Added 2026-11-05, after the archetype catalogue proved hard to find. kiln's
+major designs (archetypes, config and apply, modules, tasks, docs, doctor) have
+no architecture page. [architecture/](../../architecture/index.md) holds two
+pages, and only [ci.md](../../architecture/ci.md) was promoted from an epic's
+design (E15). The rest of the design is scattered:
+
+- [reference/standard-repo.md](../../reference/standard-repo.md), at 636 lines,
+  is meant for exact rules but carries the explanation too: the archetype
+  catalogue, the docs layout and the dependency rationale.
+- Epic `design.md` files hold the real design for
+  [E4](../epics/E4-generator/design.md),
+  [E12](../epics/E12-architecture-baseline/design.md),
+  [E13](../epics/E13-docs-work-model/design.md) and
+  [E15](../epics/E15-ci-standard/design.md). They are frozen at implementation
+  time, and after that the code is the source of truth.
+- ADRs carry explanation in their Consequences and Influences, but nobody looks
+  for a design in the decision log.
+
+The docs rules already ask for this. `docs/_structure.md` sends "behaviour as it
+is now" to `architecture/`, and `architecture/_structure.md` admits "the
+reasoning that survived a decision". The gap is the migration, and the absence
+of a step that makes it happen.
+
+**Possible simplification:** give each kind of document one job.
+
+| Document | Holds |
+| -- | -- |
+| ADR | The decision, its consequences and alternatives, and a link to the architecture page. Short. |
+| `architecture/<subject>.md` | The model, its principles, how the parts fit, and why. The main read. |
+| `reference/standard-repo.md` | Exact rules, tables and checks, linking to architecture for the why. |
+| Epic `design.md` | Working design while the epic is in flight. At close, its durable content moves to architecture, and it is left as history that links there. |
+
+Candidate pages and their sources:
+
+- `archetypes.md`: [ADR-0005](../../adr/ADR-0005.md), the catalogue and
+  dependency-set sections of the standard, and E9's one node scaffold.
+- `config-and-apply.md`: config, render, ownership, drift and backups, from
+  [ADR-0003](../../adr/ADR-0003.md), [ADR-0004](../../adr/ADR-0004.md) and
+  E16.
+- `modules.md`: the generator's composition, from E4's design and
+  [ADR-0001](../../adr/ADR-0001.md).
+- `tasks.md`: the task vocabulary, namespaces and `required_validate`, from
+  [ADR-0007](../../adr/ADR-0007.md).
+- `docs-model.md`: areas, nav and the work model, from
+  [ADR-0012](../../adr/ADR-0012.md), [ADR-0013](../../adr/ADR-0013.md) and
+  E13's design.
+- `doctor.md`: the checks, what each one enforces, and `doctor` versus `--full`.
+
+Cautions:
+
+- The routing rule ("an ADR links to architecture; an epic's design is promoted
+  when the epic closes") belongs to the standard. `docs/_structure.md` and
+  `architecture/_structure.md` are generated, so changing the rule is a kiln
+  template change that every repository picks up. The pages themselves are
+  kiln's own.
+- Keep architecture pages at the level of principles and mechanisms. Leave the
+  lists of flags, task names and check IDs to the reference or to generated
+  output, or each page becomes a second copy of the code, with nothing to
+  catch it going stale.
+- Make the promotion a closing step in an epic's last story, so the gap does not
+  reopen. A doctor check, such as "every accepted ADR links to an architecture
+  page", can wait until the pages exist.
+
+This finding works alongside finding 2. Trimming closed stories and ADRs is safe
+only once their durable content has a home.
+
+### 9. The same rule is implemented more than once, and the copies drift
+
+Added 2026-11-05 from a code review by Codex against `8855021`, which reproduced
+each case below. Five claims were checked again against the code, and all five
+held: the registry gap, the reserved job names, the suites gate, the wildcard
+floor and the dropped conflict. Several of kiln's defects come from one concept
+having two or three implementations:
+
+- **Check registration.** `checks.py` keeps a central registry, and each module
+  also declares `checks()`. Doctor dispatches the registry, which lacks
+  `kiln-pin`, so the pin check never runs. Its tests call it directly, so they
+  pass anyway.
+- **Reserved names.** The cicd schema's `GENERATED_JOBS` omits node-lib's
+  `ci-cloud`, `ci-local` and `package` jobs, so a custom job may take those
+  names and render as a duplicate key. Task includes have no reserved-name
+  check at all, and `task-layout` catches a collision only after rendering.
+- **Docs.** `structure.py` and `site.py` each validate links, and they disagree
+  about gitignored generated pages. `site.py` reads `.gitignore` lines as
+  literal paths, while the code next to it uses `GitIgnoreSpec`.
+- **Distribution names.** The `rn-forge-deps` check, the CI planner and the
+  range checker each normalise names differently. `rn.forge.commons` is
+  governed in one and not in another.
+- **State identity.** The state schema version and path are declared separately
+  by the cycle, the baseline checker and the provenance reader.
+- **Command entry points.** `config` preview selects artifacts without the
+  starter policy that apply uses. Apply skips the docs finalisation that `new`
+  and `init` run, so a switch from `none` to `mkdocs` fails on the first
+  apply. `generate package` writes config, workspace and source before its
+  drift preflight, and leaves a half-added package when that preflight fails.
+
+Semantic validation is spread out in the same way. Archetype defaults differ
+between direct load and layered resolve (the web-app backend and frontend dirs).
+A noncanonical archetype name such as `python_tool` loads the manifest but
+behaves as a different archetype. `ci.release = "pypi"` on `python-app` passes
+validation and then raises a raw `ValueError`. `_areas.yml` and
+`[tool.workspace-ci]` are parsed without a strict model.
+
+**Possible simplification:**
+
+- Declare each concept once and derive the others from it: checks through the
+  module contract alone, reserved names from the job and include definitions,
+  one link resolver, one name canonicaliser (`packaging`), and one state
+  module.
+- Run every cross-section rule at one render-free boundary after the schema is
+  composed, with dotted config paths in the errors.
+- Make `new`, `init`, `apply`, `config` and `generate` phases of one pipeline
+  (plan, preflight, write, finalise), rather than each command composing its
+  own. This would also break up `commands.py` (finding 7).
+- Test through doctor and the commands, not by calling a check directly.
+
+### 10. Module independence is held by a growing allow-list
+
+From the same review. The `.importlinter` comment allows four grandfathered
+sibling imports and says not to add a fifth, but the allow-list now has nine.
+`tasks` reaches into cicd, docs and python, and `instructions` and the docs
+generator reach into siblings too. That weakens the small module contract listed
+under [What to keep](#what-to-keep).
+
+**Possible simplification:** have composition pass the shared resolved values,
+and move render-free helpers to their owner, instead of importing through
+sibling artifact modules. The same review notes that live Nx-generator tests sit
+in the offline module-test tree and pick themselves by whether `pnpm` is
+present. They need an explicit integration marker.
+
+## Defects from the code review
+
+The 2026-11-05 review also found defects that are not about simplification. They
+are listed here so they are not lost, and each is to be triaged into a story. P1
+is release correctness, P2 a functional defect, and P3 a standards gap.
+
+| # | P | Defect | Where |
+| -- | -- | -- | -- |
+| 1 | P1 | Workspace `suites` gate neither `sonar` nor `release`. Only `ci-ok` waits on them, after publishing. | `cicd/templates/ci.yml.j2` |
+| 2 | P2 | Full doctor drops a plan `CONFLICT`, which has no entry in the action-to-finding map. | `doctor.py` |
+| 3 | P2 | `Source.parse` does not split a ref containing `/`, such as `@feature/profile`. | `core/config/sources.py` |
+| 4 | P2 | `==0.3.*` has no recognised floor, contradicting F15.4. Also undecided: must the sibling version satisfy the whole specifier? | `devops/requirements.py` |
+| 5 | P2 | Provenance records raw values and compares normalised ones, so a whitespace-trimmed audit reason later reads as a repository override. | `core/config/manager.py`, `tasks/config.py` |
+| 6 | P2 | Command overrides are interpolated into task YAML unserialised, so `echo "a: b"` parses as a mapping. | `tasks/templates/tasks/*.yml.j2` |
+| 7 | P2 | `PYTEST_ARGS` and `SUITE_ARGS` are built with `shlex.join` and then expanded unquoted, so `-m 'not slow'` splits into three arguments. | `devops/ci.py`, `tasks/templates/tasks/ci.yml.j2` |
+| 8 | P2 | A custom `web_dir` changes the Nx project name the tasks assume, while `project.json` keeps `web`. | `node/scaffold.py`, `tasks/artifacts.py` |
+| 9 | P2 | Fencing an unfenced `.importlinter` leaves its contracts outside the fence, so apply duplicates them. | `core/cycle.py` |
+| 10 | P2 | Publish recovery treats any index hit for a version as complete, so a lost sdist upload is never retried. | `devops/github.py`, `devops/cli.py` |
+| 11 | P3 | `commands.py` docstrings carry ADR references and design rationale, against the README's rule that docstrings hold only the contract. | `commands.py` |
+
 ## What to keep
 
 - **The core model:** each file has exactly one owner, renders read only
@@ -129,13 +281,19 @@ releases wait on pykit's.
 1. Change the work-item model from managed and enforced to seeded and owned by
    each repository (finding 1).
 1. Limit archetypes and flags to what real repositories use today (finding 3).
-1. Archive plans and history, and trim closed stories (finding 2).
+1. Promote each major design into an architecture page (finding 8), then archive
+   plans and history and trim closed stories and ADRs (finding 2).
 
 ## Open questions for refinement
 
+- Does the P1 suites-gate defect go into E15 now, given that it breaks
+  ADR-0016's release-after-checks contract?
+
 - Which findings become epics or features, and which are dropped?
+
 - Does trimming the docs model reopen [ADR-0011](../../adr/ADR-0011.md) and
   [ADR-0013](../../adr/ADR-0013.md), or only the specs that build them?
+
 - Does release-1 wait for any of this, given that other repositories adopt from
   the release-1 tag? A model that is trimmed after adoption has to be migrated
   in every adopter.
