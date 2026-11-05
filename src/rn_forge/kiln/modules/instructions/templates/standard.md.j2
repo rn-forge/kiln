@@ -9,7 +9,7 @@ is a kiln ADR; this file states the rule.
 
 {% if workspace %}- **Archetype:** `python-lib` — a uv workspace of published library packages
   ({% for package in packages %}`packages/{{ package }}`{% if not loop.last %}, {% endif %}{% else %}none yet{% endfor %}), each with its own `src/`
-  layout, per-package verify, and a `<package>-v<version>` release tag.
+  layout, per-package test, and a `<package>-v<version>` release tag.
 {% elif web_app %}- **Archetype:** `python-web-app` — a uv workspace with one API member at
   `{{ api_dir }}` (backend `{{ backend }}`) plus a pnpm-managed Nx frontend
   workspace whose one application is `{{ web_dir }}` (`{{ frontend }}`), `src/`
@@ -368,9 +368,9 @@ declared), `patch-package-exports`, and, for the Pages site, `compodoc` (output
 
 | Name | Kind | Used by | Meaning |
 | -- | -- | -- | -- |
-| `USE_NX_CLOUD` | variable | `ci.yml` | `true` runs `ci-cloud` on Nx Cloud agents; anything else runs `ci-local`. A dispatch's `use-nx-cloud` input decides instead |
-| `NX_CLOUD_AGENTS` | variable | `ci-cloud` | agent count; optional, default 3 |
-| `NX_CLOUD_ACCESS_TOKEN` | secret | `ci-cloud` | the Nx Cloud access token |
+| `USE_NX_CLOUD` | variable | `ci.yml` | `true` runs `test-cloud` on Nx Cloud agents; anything else runs `test-local`. A dispatch's `use-nx-cloud` input decides instead |
+| `NX_CLOUD_AGENTS` | variable | `test-cloud` | agent count; optional, default 3 |
+| `NX_CLOUD_ACCESS_TOKEN` | secret | `test-cloud` | the Nx Cloud access token |
 {% if sonar %}| `SONAR_TOKEN` | secret | `sonar` | the SonarCloud token |
 {% endif %}{% if release == "nx-dispatch" %}| `RELEASE_APP_CLIENT_ID` | variable | `release.yml` | the release GitHub App's client ID |
 | `RELEASE_APP_PRIVATE_KEY` | secret | `release.yml` | the release GitHub App's private key |

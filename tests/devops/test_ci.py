@@ -156,9 +156,22 @@ def test_s6_7_2_missing_smoke_marker_blocks_a_package_without_a_declaration(
     tmp_path: Path,
 ) -> None:
     packages = _packages()
-    (tmp_path / "base.verify").touch()
+    (tmp_path / "base.test").touch()
     assert releasable(packages, tmp_path, ["base"]) == ([], ["base"])
     (tmp_path / "base.smoke").touch()
+    assert releasable(packages, tmp_path, ["base"]) == (["base"], [])
+
+
+def test_s15_8_1_2_marker_kind(tmp_path: Path) -> None:
+    package = Package("base", "packages/base", "base")
+    assert package.checks()[0] == {"kind": "test", "marker": "base.test"}
+    packages = {"base": package}
+    for check in package.checks()[1:]:
+        (tmp_path / check["marker"]).touch()
+    assert releasable(packages, tmp_path, ["base"]) == ([], ["base"])
+    (tmp_path / "base.verify").touch()
+    assert releasable(packages, tmp_path, ["base"]) == ([], ["base"])
+    (tmp_path / "base.test").touch()
     assert releasable(packages, tmp_path, ["base"]) == (["base"], [])
 
 

@@ -680,7 +680,7 @@ def test_s6_4_2_4_python_lib_jobs_and_validate_steps(tmp_path: Path) -> None:
         "validate",
         "dependency-review",
         "plan",
-        "verify",
+        "test",
         "postgres",
         "redis",
         "smoke",
@@ -723,33 +723,31 @@ def test_s6_4_2_5_plan_job(tmp_path: Path) -> None:
     )
 
 
-def test_s6_4_2_6_verify_job(tmp_path: Path) -> None:
-    verify = _lib_jobs(tmp_path)["verify"]
-    assert verify["needs"] == ["validate", "plan"]
-    assert verify["if"] == (
+def test_s6_4_2_6_test_job(tmp_path: Path) -> None:
+    test = _lib_jobs(tmp_path)["test"]
+    assert test["needs"] == ["validate", "plan"]
+    assert test["if"] == (
         "${{ !cancelled() && needs.validate.result == 'success' && "
         "needs.plan.outputs.packages != '[]' }}"
     )
-    assert verify["strategy"] == {
+    assert test["strategy"] == {
         "fail-fast": False,
         "matrix": {"include": "${{ fromJSON(needs.plan.outputs.packages) }}"},
     }
-    assert verify["name"] == "verify (${{ matrix.name }})"
-    runs = [s.get("run") for s in verify["steps"]]  # type: ignore[attr-defined]
+    assert test["name"] == "test (${{ matrix.name }})"
+    runs = [s.get("run") for s in test["steps"]]  # type: ignore[attr-defined]
     assert "task setup" in runs
-    step = next(
-        s for s in verify["steps"] if s.get("run", "").startswith("task ci:verify")
-    )  # type: ignore[attr-defined]
-    assert step["run"] == "task ci:verify -- ${{ matrix.name }}"
+    step = next(s for s in test["steps"] if s.get("run", "").startswith("task ci:test"))  # type: ignore[attr-defined]
+    assert step["run"] == "task ci:test -- ${{ matrix.name }}"
     assert step["env"] == {
         "PACKAGE_DIR": "${{ matrix.dir }}",
         "PYTEST_ARGS": "${{ needs.plan.outputs.pytest-args }}",
     }
 
 
-def test_s6_4_2_6_sonar_waits_for_verify(tmp_path: Path) -> None:
+def test_s6_4_2_6_sonar_waits_for_test(tmp_path: Path) -> None:
     sonar = _lib_jobs(tmp_path)["sonar"]
-    assert sonar["needs"] == ["validate", "verify", "postgres", "redis", "smoke"]
+    assert sonar["needs"] == ["validate", "test", "postgres", "redis", "smoke"]
     assert str(sonar["if"]).startswith(
         "${{ !cancelled() && !contains(needs.*.result, 'failure') && ("
     )
@@ -768,10 +766,10 @@ def test_s6_4_2_8_other_archetypes_keep_the_plain_pipeline(tmp_path: Path) -> No
         ], archetype
 
 
-def test_s6_4_3_2_declared_jobs_follow_verify(tmp_path: Path) -> None:
+def test_s6_4_3_2_declared_jobs_follow_test(tmp_path: Path) -> None:
     jobs = _lib_jobs(tmp_path)
     names = list(jobs)
-    assert names[names.index("verify") + 1 : names.index("verify") + 5] == [
+    assert names[names.index("test") + 1 : names.index("test") + 5] == [
         "postgres",
         "redis",
         "smoke",
@@ -904,7 +902,7 @@ def test_s6_4_3_6_ci_ok_and_sonar_need_the_declared_jobs(tmp_path: Path) -> None
     jobs = _lib_jobs(tmp_path)
     assert jobs["sonar"]["needs"] == [
         "validate",
-        "verify",
+        "test",
         "postgres",
         "redis",
         "smoke",
@@ -920,7 +918,7 @@ def _marker_steps(job: dict[str, object]) -> list[dict[str, object]]:
 def test_s6_4_4_1_check_jobs_end_with_marker_steps(tmp_path: Path) -> None:
     jobs = _lib_jobs(tmp_path)
     markers = {
-        "verify": "${{ matrix.name }}.verify",
+        "test": "${{ matrix.name }}.test",
         "postgres": "${{ matrix.name }}.postgres",
         "redis": "${{ matrix.name }}.redis",
         "smoke": "${{ matrix.marker }}",
@@ -1040,12 +1038,12 @@ def test_s6_4_4_6_other_archetypes_keep_the_per_package_release_steps(
         assert "Publish GitHub Release" in names
 
 
-def test_s6_4_6_1_verify_and_postgres_pass_the_matrix_dir_through_env(
+def test_s6_4_6_1_test_and_postgres_pass_the_matrix_dir_through_env(
     tmp_path: Path,
 ) -> None:
     jobs = _lib_jobs(tmp_path)
     for name, task in (
-        ("verify", "ci:verify"),
+        ("test", "ci:test"),
         ("postgres", "ci:postgres"),
         ("redis", "ci:redis"),
     ):
@@ -1168,7 +1166,7 @@ def test_s6_4_7_1_release_needs_every_check_and_sonar(tmp_path: Path) -> None:
     assert release["needs"] == [
         "validate",
         "plan",
-        "verify",
+        "test",
         "postgres",
         "redis",
         "smoke",
@@ -1190,7 +1188,7 @@ def test_s6_4_7_3_release_waits_on_sonar_only_where_sonar_renders(
     assert release["needs"] == [
         "validate",
         "plan",
-        "verify",
+        "test",
         "postgres",
         "redis",
         "smoke",
@@ -2489,15 +2487,15 @@ def test_s9_1_2_1_node_lib_jobs_are_the_affected_set(tmp_path: Path) -> None:
     assert list(jobs) == [  # type: ignore[arg-type]
         "validate",
         "dependency-review",
-        "ci-cloud",
-        "ci-local",
+        "test-cloud",
+        "test-local",
         "sonar",
-        "package",
+        "smoke",
         "docs",
         "ci-ok",
     ]
-    assert jobs["ci-cloud"]["needs"] == "validate"  # type: ignore[index]
-    assert jobs["ci-local"]["needs"] == "validate"  # type: ignore[index]
+    assert jobs["test-cloud"]["needs"] == "validate"  # type: ignore[index]
+    assert jobs["test-local"]["needs"] == "validate"  # type: ignore[index]
     python = _ci_jobs(_root(tmp_path / "py", "python-tool"))
     node_validate = jobs["validate"]  # type: ignore[index]
     node_steps = node_validate.pop("steps")
@@ -2531,7 +2529,7 @@ def test_s9_1_2_2_triggers_and_concurrency(tmp_path: Path) -> None:
         "cancel-in-progress": "${{ github.event_name == 'pull_request' }}",
     }
     assert ci["permissions"] == {"contents": "read"}
-    for name in ("ci-cloud", "ci-local"):
+    for name in ("test-cloud", "test-local"):
         assert ci["jobs"][name]["permissions"] == {  # type: ignore[index]
             "actions": "read",
             "contents": "read",
@@ -2539,7 +2537,7 @@ def test_s9_1_2_2_triggers_and_concurrency(tmp_path: Path) -> None:
 
 
 def test_s9_1_2_3_ci_cloud_matches_ngkit(tmp_path: Path) -> None:
-    job = _node_lib_ci(tmp_path)["jobs"]["ci-cloud"]  # type: ignore[index]
+    job = _node_lib_ci(tmp_path)["jobs"]["test-cloud"]  # type: ignore[index]
     pins = load_pins()
     assert job["if"] == (
         "${{ (github.event_name == 'workflow_dispatch' && inputs.use-nx-cloud) "
@@ -2566,7 +2564,7 @@ def test_s9_1_2_3_ci_cloud_matches_ngkit(tmp_path: Path) -> None:
 
 
 def test_s9_1_2_4_ci_local_matches_ngkit(tmp_path: Path) -> None:
-    job = _node_lib_ci(tmp_path)["jobs"]["ci-local"]  # type: ignore[index]
+    job = _node_lib_ci(tmp_path)["jobs"]["test-local"]  # type: ignore[index]
     pins = load_pins()
     assert job["if"] == (
         "${{ (github.event_name == 'workflow_dispatch' && inputs.use-nx-cloud == false) "
@@ -2604,10 +2602,10 @@ def test_s9_1_2_6_ci_ok_needs_every_job_and_checks_both_paths(tmp_path: Path) ->
     assert ok["needs"] == [
         "validate",
         "dependency-review",
-        "ci-cloud",
-        "ci-local",
+        "test-cloud",
+        "test-local",
         "sonar",
-        "package",
+        "smoke",
         "docs",
     ]
     assert ok["if"] == "${{ always() }}"
@@ -2615,9 +2613,10 @@ def test_s9_1_2_6_ci_ok_needs_every_job_and_checks_both_paths(tmp_path: Path) ->
     (step,) = ok["steps"]
     assert step["env"] == {"NEEDS": "${{ toJSON(needs) }}"}
     assert (
-        '[.["ci-cloud"].result, .["ci-local"].result] | index("success")' in step["run"]
+        '[.["test-cloud"].result, .["test-local"].result] | index("success")'
+        in step["run"]
     )
-    assert "Neither ci-cloud nor ci-local succeeded" in step["run"]
+    assert "Neither test-cloud nor test-local succeeded" in step["run"]
 
 
 def test_s9_1_2_6_declared_jobs_join_ci_ok(tmp_path: Path) -> None:
@@ -2675,11 +2674,11 @@ LOCAL_IF = (
 
 
 def test_s9_2_8_1_ci_cloud_runs_only_when_asked(tmp_path: Path) -> None:
-    assert _node_lib_ci(tmp_path)["jobs"]["ci-cloud"]["if"] == CLOUD_IF  # type: ignore[index]
+    assert _node_lib_ci(tmp_path)["jobs"]["test-cloud"]["if"] == CLOUD_IF  # type: ignore[index]
 
 
 def test_s9_2_8_2_ci_local_is_the_default_path(tmp_path: Path) -> None:
-    assert _node_lib_ci(tmp_path)["jobs"]["ci-local"]["if"] == LOCAL_IF  # type: ignore[index]
+    assert _node_lib_ci(tmp_path)["jobs"]["test-local"]["if"] == LOCAL_IF  # type: ignore[index]
 
 
 def test_s9_2_8_3_dispatch_input_defaults_to_false(tmp_path: Path) -> None:
@@ -2726,8 +2725,8 @@ def test_s9_2_8_5_exactly_one_of_ci_cloud_and_ci_local_runs(
     tmp_path: Path, event: str, use_nx_cloud: bool | None, var: str, cloud: bool
 ) -> None:
     jobs = _node_lib_ci(tmp_path)["jobs"]
-    ran_cloud = _evaluate(jobs["ci-cloud"]["if"], event, use_nx_cloud, var)  # type: ignore[index]
-    ran_local = _evaluate(jobs["ci-local"]["if"], event, use_nx_cloud, var)  # type: ignore[index]
+    ran_cloud = _evaluate(jobs["test-cloud"]["if"], event, use_nx_cloud, var)  # type: ignore[index]
+    ran_local = _evaluate(jobs["test-local"]["if"], event, use_nx_cloud, var)  # type: ignore[index]
     assert (ran_cloud, ran_local) == (cloud, not cloud)
 
 
@@ -2748,8 +2747,8 @@ def test_s9_2_8_6_ci_ok_accepts_one_skipped_path(
     script = steps[0]["run"]
     needs = {
         "validate": {"result": "success"},
-        "ci-cloud": {"result": cloud},
-        "ci-local": {"result": local},
+        "test-cloud": {"result": cloud},
+        "test-local": {"result": local},
         "sonar": {"result": "skipped"},
     }
     run = subprocess.run(
@@ -2788,10 +2787,10 @@ SONAR_PROPERTIES = "sonar-project.properties"
 def test_s9_1_3_1_sonar_job_matches_ngkit(tmp_path: Path) -> None:
     job = _node_lib_ci(tmp_path)["jobs"]["sonar"]  # type: ignore[index]
     pins = load_pins()
-    assert job["needs"] == ["validate", "ci-cloud", "ci-local"]
+    assert job["needs"] == ["validate", "test-cloud", "test-local"]
     assert job["if"] == (
         "${{ always() && github.actor != 'dependabot[bot]' "
-        "&& (needs.ci-cloud.result == 'success' || needs.ci-local.result == 'success') "
+        "&& (needs.test-cloud.result == 'success' || needs.test-local.result == 'success') "
         "&& (github.event_name != 'pull_request' "
         "|| github.event.pull_request.head.repo.full_name == github.repository) }}"
     )
@@ -2859,12 +2858,12 @@ def test_s9_1_3_4_ci_ok_needs_sonar_only_when_sonar_is_on(tmp_path: Path) -> Non
 
 
 def test_s9_1_4_1_package_job_matches_ngkit(tmp_path: Path) -> None:
-    job = _node_lib_ci(tmp_path)["jobs"]["package"]  # type: ignore[index]
+    job = _node_lib_ci(tmp_path)["jobs"]["smoke"]  # type: ignore[index]
     pins = load_pins()
-    assert job["needs"] == ["validate", "ci-cloud", "ci-local"]
+    assert job["needs"] == ["validate", "test-cloud", "test-local"]
     assert job["if"] == (
-        "${{ always() && (needs.ci-cloud.result == 'success' "
-        "|| needs.ci-local.result == 'success') }}"
+        "${{ always() && (needs.test-cloud.result == 'success' "
+        "|| needs.test-local.result == 'success') }}"
     )
     assert job["timeout-minutes"] == 15
     assert job["permissions"] == {"contents": "read"}
@@ -2885,12 +2884,12 @@ def test_s9_1_4_1_package_job_matches_ngkit(tmp_path: Path) -> None:
     }
 
 
-def test_s9_1_4_3_ci_ok_needs_package_even_without_sonar(tmp_path: Path) -> None:
+def test_s9_1_4_3_ci_ok_needs_smoke_even_without_sonar(tmp_path: Path) -> None:
     on = _ci_jobs(_root(tmp_path / "on", "node-lib"))
-    assert on["ci-ok"]["needs"][-3:] == ["sonar", "package", "docs"]  # type: ignore[index]
+    assert on["ci-ok"]["needs"][-3:] == ["sonar", "smoke", "docs"]  # type: ignore[index]
     off = _ci_jobs(_root(tmp_path / "off", "node-lib", sonar=False))
-    assert off["ci-ok"]["needs"][-2:] == ["package", "docs"]  # type: ignore[index]
-    assert "package" in off
+    assert off["ci-ok"]["needs"][-2:] == ["smoke", "docs"]  # type: ignore[index]
+    assert "smoke" in off
 
 
 # S9.1.11 — one Pages site.
@@ -2908,10 +2907,10 @@ def test_s9_1_11_1_node_lib_renders_no_docs_yml_and_one_docs_job(
     rendered = _rendered(_root(tmp_path / "files", "node-lib"))
     assert ".github/workflows/docs.yml" not in rendered
     job = _docs_job(tmp_path / "jobs")
-    assert job["needs"] == ["validate", "ci-cloud", "ci-local"]
+    assert job["needs"] == ["validate", "test-cloud", "test-local"]
     assert job["if"] == (
-        "${{ always() && (needs.ci-cloud.result == 'success' "
-        "|| needs.ci-local.result == 'success') "
+        "${{ always() && (needs.test-cloud.result == 'success' "
+        "|| needs.test-local.result == 'success') "
         "&& github.ref == 'refs/heads/main' "
         "&& (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}"
     )
@@ -3737,7 +3736,7 @@ def test_s9_3_4_3_validate_step_runs_ci_validate_for_node_lib_only(
         assert step["run"] == run, archetype
         assert step["env"]["KILN_DOCTOR_FULL"] == KILN_DOCTOR_FULL_EXPRESSION, archetype
         assert job["timeout-minutes"] == 20, archetype
-        comment = "# The Nx projects are checked by ci-cloud or ci-local; this job runs the rest."
+        comment = "# The Nx projects are checked by test-cloud or test-local; this job runs the rest."
         assert (comment in workflow) == (archetype == "node-lib"), archetype
 
 

@@ -82,7 +82,7 @@ class Package:
 
         The empty-extra smoke check is listed whether or not `smoke` is set.
         """
-        checks = [{"kind": "verify", "marker": f"{self.name}.verify"}]
+        checks = [{"kind": "test", "marker": f"{self.name}.test"}]
         if self.postgres_env is not None:
             checks.append({"kind": "postgres", "marker": f"{self.name}.postgres"})
         if self.redis_env is not None:

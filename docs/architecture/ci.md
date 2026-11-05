@@ -32,16 +32,16 @@ Triggers are the same everywhere: a pull request into the default branch, a push
 to it, and `workflow_dispatch`. A newer push to a pull request cancels its run;
 default-branch runs queue. `validate` gates every other job.
 
-The stages are not named alike yet: `python-lib` calls its per-package stage
-`verify` and its post-release install `external-install`, and the other
-archetypes lack some stages. The target vocabulary, one for every archetype, is
-in [the design](../specs/epics/E15-ci-standard/design.md#stage-vocabulary).
+The stages are not named alike yet: `python-lib` calls its post-release install
+`external-install`, and the other archetypes lack some stages. The target
+vocabulary, one for every archetype, is in
+[the design](../specs/epics/E15-ci-standard/design.md#stage-vocabulary).
 
 | Archetype | `ci.yml` job order | Other workflows |
 | -- | -- | -- |
-| `python-lib` | `validate` > `dependency-review`, `plan` > `verify`, `postgres`, `redis`, `smoke`, `suites` > `sonar` > `release` > `external-install`, `docs` > `ci-ok` | none: `docs` is the one Pages deploy |
+| `python-lib` | `validate` > `dependency-review`, `plan` > `test`, `postgres`, `redis`, `smoke`, `suites` > `sonar` > `release` > `external-install`, `docs` > `ci-ok` | none: `docs` is the one Pages deploy |
 | `python-tool`, `python-app`, `python-web-api`, `python-web-app` | `validate` > `dependency-review`, `sonar` > `release` > `ci-ok` | `docs.yml` |
-| `node-lib` | `validate` > `dependency-review`, `ci-cloud` or `ci-local` > `sonar`, `package`, `docs` > `ci-ok` | `release.yml` (dispatch) |
+| `node-lib` | `validate` > `dependency-review`, `test-cloud` or `test-local` > `sonar`, `smoke`, `docs` > `ci-ok` | `release.yml` (dispatch) |
 
 | Job | Runs | Task verb |
 | -- | -- | -- |
@@ -50,15 +50,15 @@ in [the design](../specs/epics/E15-ci-standard/design.md#stage-vocabulary).
 | `validate` (`node-lib`) | what Nx does not run | `task ci:validate` |
 | `dependency-review` | pull requests only; fails on a new dependency with a known vulnerability | none: a pinned action |
 | `plan` | selects changed packages and their dependents | `task ci:plan` |
-| `verify` | one leg per selected package | `task ci:verify` |
+| `test` | one leg per selected package | `task ci:test` |
 | `postgres`, `redis` | one leg per selected package declaring the service | `task ci:postgres`, `task ci:redis` |
 | `smoke` | one leg per selected package, plus one per declared extra: the wheel installs and imports | `task ci:smoke` |
 | `suites` | the root workspace-wide pytest suites | `task ci:suite` |
-| `ci-cloud`, `ci-local` | `nx affected` on Nx Cloud agents, or on the runner; one runs per `USE_NX_CLOUD` | `task ci:affected` |
+| `test-cloud`, `test-local` | `nx affected` on Nx Cloud agents, or on the runner; one runs per `USE_NX_CLOUD` | `task ci:affected` |
 | `sonar` | coverage, then the scan, waiting on the quality gate | `task ci:sonar-target`, `task test:coverage` (`python-lib`: after the check legs; `node-lib`: `task ci:coverage`) |
 | `release` | publishes from the default branch only, after `sonar` | `python-lib`: `task ci:release-build`, `task ci:release-publish`; single-package Python: `task ci:release-state`, `task build`, `task ci:release-publish`; `node-lib`: in `release.yml` (see below) |
 | `external-install` | installs each new tag from outside the workspace | `task ci:external-install` |
-| `package` | packs and verifies publishable tarballs | `task ci:package` |
+| `smoke` (`node-lib`) | packs and verifies publishable tarballs | `task ci:package` |
 | `docs` | deploys Pages once | `python-lib`: `task ci:docs-publish`; `node-lib`: `task docs:build`, `task ci:docs:site` |
 | `ci-ok` | no job failed or was cancelled | none |
 
@@ -77,7 +77,7 @@ checks" in `.rn-forge/kiln/standard.md`.
 | Check | Verb | lib | tool | app | web-api | web-app | node-lib | Switch and key |
 | -- | -- | -- | -- | -- | -- | -- | -- | -- |
 | ruff check and format | `task lint` | yes | yes | yes | yes | yes |  | S |
-| pyright strict | `task typecheck` | verify | yes | yes | yes | yes |  | S |
+| pyright strict | `task typecheck` | test | yes | yes | yes | yes |  | S |
 | `lint-imports` | `task lint` | yes | yes | yes | yes | yes |  | S |
 | Markdown and TOML formatting | `task lint` | yes | yes | yes | yes | yes | yes | S |
 | `kiln doctor` | `task lint` | yes | yes | yes | yes | yes | yes | S; `--full` per `[ci] doctor_full`, default `default-branch` |
@@ -85,7 +85,7 @@ checks" in `.rn-forge/kiln/standard.md`.
 | `pip-audit` | `task lint` | yes | yes | yes | yes | yes |  | S; ignore list `[tasks.audit] ignore` |
 | `pnpm-audit` | `task python:lint:audit` |  |  |  |  |  | yes | S |
 | Nx lint, typecheck, test, build | `task node:*`, `task ci:affected` |  |  |  |  | yes | yes | S |
-| pytest | `task test` | verify | yes | yes | yes | yes |  | S |
+| pytest | `task test` | test | yes | yes | yes | yes |  | S |
 | Services, smoke, suites | `task ci:*` | yes |  |  |  |  |  | D: a package declares them |
 | Adapters check | `task ci:adapters` | yes |  |  |  |  |  | S |
 | Docs strict build | `task docs:build` | yes | yes | yes | yes | yes | yes | D: `[docs] profile = "mkdocs"` |
@@ -182,12 +182,12 @@ branch), which is outside `ci-ok` and not gated on `release`.
 
 ### `node-lib`
 
-`validate` runs `task ci:validate`; `ci-cloud` or `ci-local` runs
+`validate` runs `task ci:validate`; `test-cloud` or `test-local` runs
 `task ci:affected` (Nx's lint, typecheck, test and build on the affected
-projects); `sonar` waits for one of them; `package` packs and verifies the
+projects); `sonar` waits for one of them; `smoke` packs and verifies the
 publishable tarballs; `docs` builds the site. `ci-ok` reads its needs with a
-`jq` script that also requires one of `ci-cloud` and `ci-local` to have passed.
-Sonar is skipped for Dependabot's pull requests.
+`jq` script that also requires one of `test-cloud` and `test-local` to have
+passed. Sonar is skipped for Dependabot's pull requests.
 
 `release.yml` is dispatched (`task ci:release:*`): a gate on a green CI run,
 version, verify, push, publish and a rolling `latest` release, then
@@ -234,7 +234,7 @@ A newer push to the same pull request cancels the run in progress. Pushes to
 | -- | -- | -- | -- | -- |
 | `validate` | `task lint` (ruff and format, generated-file drift, rn-forge dependency pins, import contracts, task layout, `ci-entrypoint`, docs links, structure and derived regions, markdown), `task ci:adapters`, and the strict docs build of the root and every package site | runs | runs, with `kiln doctor --full` | runs, with `kiln doctor --full` |
 | `plan` | the selection above | runs | runs | runs, every package |
-| `verify`, one per selected package | ruff, pyright and pytest for that member | selected | selected | every package |
+| `test`, one per selected package | ruff, pyright and pytest for that member | selected | selected | every package |
 | `postgres`, one per selected package that declares `[tool.workspace-ci.postgres]` | that member's tests against a PostgreSQL 17 service | selected | selected | every declaring package |
 | `redis`, one per selected package that declares `[tool.workspace-ci.redis]` | that member's tests against a Redis 7 service | selected | selected | every declaring package |
 | `smoke`, one per selected package with no extra, plus one per declared extra | the built wheel, with no extra or with that one extra, installs into a clean venv and imports | selected | selected | every package and declared extra |
@@ -248,7 +248,7 @@ A newer push to the same pull request cancels the run in progress. Pushes to
 #### Ordering and gating
 
 ```text
-validate ─► plan ─┬─► verify ───┐
+validate ─► plan ─┬─► test ─────┐
                   ├─► postgres ─┤
                   ├─► redis ────┼─► sonar ─► release ─► external-install
                   ├─► smoke ────┘                 └───► docs
@@ -257,7 +257,7 @@ all of them ─► ci-ok
 ```
 
 - Nothing runs unless `validate` passes.
-- `sonar` waits for `verify`, `postgres`, `redis` and `smoke`, and runs only if
+- `sonar` waits for `test`, `postgres`, `redis` and `smoke`, and runs only if
   none failed.
 - `release` waits for the same four and for `sonar`. It runs only on a push to
   `main`, when the selection is not empty and `sonar` succeeded (where
@@ -268,7 +268,7 @@ all of them ─► ci-ok
 
 #### How a release is decided
 
-- Each passing `verify`, `postgres`, `redis` and `smoke` leg uploads an
+- Each passing `test`, `postgres`, `redis` and `smoke` leg uploads an
   `ok-<marker>` artifact. `release` publishes a package only when every one of
   its markers exists and every selected package it requires is releasable too.
   Because `release` waits for `sonar`, and `sonar` runs only if no check
@@ -291,6 +291,6 @@ all of them ─► ci-ok
 
 #### Worked example: a docs-only pull request
 
-The selection is empty, so `verify`, `postgres`, `redis`, `smoke` and `release`
+The selection is empty, so `test`, `postgres`, `redis`, `smoke` and `release`
 are skipped. `validate`, which builds the docs strictly, `suites` and `sonar`
 still run, and `ci-ok` passes.

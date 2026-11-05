@@ -704,7 +704,7 @@ def test_s6_4_2_1_ci_yml_is_rendered_for_every_archetype(tmp_path: Path) -> None
 
 def test_s6_4_2_2_ci_tasks_are_described_and_not_internal(tmp_path: Path) -> None:
     tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
-    for name in ("plan", "adapters", "verify"):
+    for name in ("plan", "adapters", "test"):
         assert tasks[name]["desc"], name  # type: ignore[index]
         assert "internal" not in tasks[name], name  # type: ignore[operator]
 
@@ -755,7 +755,7 @@ def test_s6_4_2_2_ci_tasks_pass_task_layout_and_list(tmp_path: Path) -> None:
     listed = _run_task(root, "--list-all", "--json")
     assert listed.returncode == 0, listed.stderr
     names = {t["name"] for t in json.loads(listed.stdout)["tasks"]}
-    assert {"ci:plan", "ci:adapters", "ci:verify"} <= names
+    assert {"ci:plan", "ci:adapters", "ci:test"} <= names
 
 
 def test_s6_4_3_1_postgres_smoke_and_suite_are_described_and_not_internal(
@@ -823,12 +823,12 @@ def test_s6_4_6_2_ci_tasks_take_the_directory_from_package_dir(
     tmp_path: Path,
 ) -> None:
     tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
-    for name in ("verify", "postgres", "redis"):
+    for name in ("test", "postgres", "redis"):
         text = "\n".join(tasks[name]["cmds"])  # type: ignore[index]
         assert "packages/{{.CLI_ARGS}}" not in text, name
         assert '--directory "$PACKAGE_DIR"' in text, name
         assert "--package {{.CLI_ARGS}}" in text, name
-    assert 'test -d "$PACKAGE_DIR/tests"' in tasks["verify"]["cmds"][0]  # type: ignore[index]
+    assert 'test -d "$PACKAGE_DIR/tests"' in tasks["test"]["cmds"][0]  # type: ignore[index]
 
 
 def test_s6_4_6_3_quality_loops_use_the_configured_paths(tmp_path: Path) -> None:
@@ -1401,7 +1401,7 @@ CI_PIPELINE_TASKS = {
     "plan",
     "requirements",
     "adapters",
-    "verify",
+    "test",
     "postgres",
     "redis",
     "smoke",

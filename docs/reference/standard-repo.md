@@ -406,27 +406,27 @@ planned by `kiln-devops` ([ADR-0016](../adr/ADR-0016.md),
 `validate → sonar → release`, with the release job a matrix over the workspace
 members for `python-lib`.
 
-A `python-lib` workspace gets change-scoped verify and an ordered release,
+A `python-lib` workspace gets change-scoped tests and an ordered release,
 planned by `kiln-devops` ([ADR-0017](../adr/ADR-0017.md)) through the public
 `ci:*` task namespace, outside the root vocabulary
 ([ADR-0014](../adr/ADR-0014.md)):
 
-- `ci` namespace: `ci:plan`, `ci:adapters`, `ci:verify -- <package>`,
+- `ci` namespace: `ci:plan`, `ci:adapters`, `ci:test -- <package>`,
   `ci:postgres`, `ci:redis`, `ci:smoke`, `ci:suite`, `ci:release-build`,
   `ci:release-publish` and `ci:external-install`.
-- `python-lib` jobs, in order: `validate`, `dependency-review`, `plan`,
-  `verify`, `postgres`, `redis`, `smoke`, `suites`, `sonar`, `release`,
+- `python-lib` jobs, in order: `validate`, `dependency-review`, `plan`, `test`,
+  `postgres`, `redis`, `smoke`, `suites`, `sonar`, `release`,
   `external-install`, `ci-ok`.
 
 [CI](../architecture/ci.md#python-lib-event-by-event) walks through each event.
 
-A `node-lib` repository's `ci.yml` runs `ci-local` on a GitHub runner unless the
-repository variable `USE_NX_CLOUD` is `true` (or a dispatch checks
-`use-nx-cloud`), which selects `ci-cloud` on Nx Cloud agents instead.
+A `node-lib` repository's `ci.yml` runs `test-local` on a GitHub runner unless
+the repository variable `USE_NX_CLOUD` is `true` (or a dispatch checks
+`use-nx-cloud`), which selects `test-cloud` on Nx Cloud agents instead.
 
 A `node-lib` repository's `validate` job runs `task ci:validate`, the checks
 that do not run Nx and the repository's own `[tasks.extra_refs]`, because
-`ci-cloud` or `ci-local` runs lint, test and build on the affected projects.
+`test-cloud` or `test-local` runs lint, test and build on the affected projects.
 `task validate` is unchanged locally.
 
 A `node-lib` repository releases by `workflow_dispatch`

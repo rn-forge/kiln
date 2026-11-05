@@ -1,0 +1,126 @@
+"""Stage names of the one-workflow contract (F15.8)."""
+
+from __future__ import annotations
+
+import importlib.util
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+from rn_forge.commons.fs.documents import YamlUtils
+from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.cicd import CICD
+from rn_forge.kiln.modules.tasks import TASKS
+
+_spec = importlib.util.spec_from_file_location(
+    "cicd_workflows", Path(__file__).with_name("workflows.py")
+)
+assert _spec is not None and _spec.loader is not None
+workflows = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(workflows)
+
+CONFIG = """
+schema_version = 1
+
+[repository]
+name = "demo"
+archetype = "{archetype}"
+
+[docs]
+profile = "mkdocs"
+
+[ci]
+provider = "github"
+sonar = true
+release = "{release}"
+"""
+
+PACKAGES = """
+[archetype."python-lib"]
+packages = ["packages/alpha", "packages/beta"]
+"""
+
+
+def _render(tmp_path: Path, archetype: str) -> dict[str, str]:
+    root = tmp_path / archetype
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True, exist_ok=True)
+    release = "nx-dispatch" if archetype == "node-lib" else "tag-exists"
+    text = CONFIG.format(archetype=archetype, release=release)
+    if archetype == "python-lib":
+        text += PACKAGES
+    config.write_text(text, encoding="utf-8")
+    loaded = KilnConfig.load(root)
+    files = {a.path: a.content for a in CICD.artifacts(loaded, root)}
+    files.update({a.path: a.content for a in TASKS.artifacts(loaded, root)})
+    return files
+
+
+def _jobs(tmp_path: Path, archetype: str) -> dict[str, dict[str, Any]]:
+    return workflows.jobs(_render(tmp_path, archetype))
+
+
+def test_s15_8_1_1_lib_jobs(tmp_path: Path) -> None:
+    names = [n for n in _jobs(tmp_path, "python-lib") if n != "secret-scan"]
+    assert names == [
+        "validate",
+        "dependency-review",
+        "plan",
+        "test",
+        "postgres",
+        "redis",
+        "smoke",
+        "suites",
+        "sonar",
+        "release",
+        "external-install",
+        "docs",
+        "ci-ok",
+    ]
+
+
+def test_s15_8_1_3_test_task(tmp_path: Path) -> None:
+    files = _render(tmp_path, "python-lib")
+    tasks = YamlUtils.load(files["tasks/ci.yml"])["tasks"]
+    assert "test" in tasks and "verify" not in tasks
+    assert "pytest" in "\n".join(tasks["test"]["cmds"])
+    steps = _jobs(tmp_path, "python-lib")["test"]["steps"]
+    assert any(s.get("run") == "task ci:test -- ${{ matrix.name }}" for s in steps)
+
+
+def test_s15_8_1_4_node_jobs(tmp_path: Path) -> None:
+    jobs = _jobs(tmp_path, "node-lib")
+    assert {"test-cloud", "test-local", "smoke"} <= set(jobs)
+    assert not {"ci-cloud", "ci-local", "package"} & set(jobs)
+    for name in ("sonar", "smoke"):
+        assert jobs[name]["needs"] == ["validate", "test-cloud", "test-local"]
+    assert {"test-cloud", "test-local", "smoke"} <= set(jobs["ci-ok"]["needs"])
+    files = _render(tmp_path, "node-lib")
+    tasks = YamlUtils.load(files["tasks/ci.yml"])["tasks"]
+    assert {"affected", "package"} <= set(tasks)
+    smoke_runs = [s.get("run") for s in jobs["smoke"]["steps"]]
+    assert "task ci:package" in smoke_runs
+
+
+@pytest.mark.parametrize(
+    "archetype",
+    [
+        "python-lib",
+        "python-tool",
+        "python-app",
+        "python-web-api",
+        "python-web-app",
+        "node-lib",
+    ],
+)
+def test_s15_8_1_5_no_old_name(tmp_path: Path, archetype: str) -> None:
+    files = _render(tmp_path, archetype)
+    text = "\n".join(
+        c for p, c in files.items() if p.startswith((".github/", "tasks/"))
+    )
+    for old in ("ci:verify", "ci-cloud", "ci-local"):
+        assert old not in text, old
+    jobs = workflows.jobs(files)
+    assert "package" not in jobs
+    assert "verify" not in jobs

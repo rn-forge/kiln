@@ -96,7 +96,7 @@ def _std(
 
 CHECKS: tuple[CiCheck, ...] = (
     _std("ruff check and format", "lint", _PY),
-    _std("pyright strict", "typecheck", _PY, lib="verify"),
+    _std("pyright strict", "typecheck", _PY, lib="test"),
     _std("lint-imports", "lint", _PY),
     _std("Markdown and TOML formatting", "lint", _ALL),
     _std(
@@ -113,7 +113,7 @@ CHECKS: tuple[CiCheck, ...] = (
         "`task node:*`, `task ci:affected`",
         frozenset({"python-web-app", "node-lib"}),
     ),
-    _std("pytest", "test", _PY, lib="verify"),
+    _std("pytest", "test", _PY, lib="test"),
     CiCheck(
         "Services, smoke, suites",
         "ci:*",

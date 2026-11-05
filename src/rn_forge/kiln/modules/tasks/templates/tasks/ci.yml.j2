@@ -80,7 +80,7 @@ tasks:
       - "set -o pipefail; pnpm ls -r --depth -1 --json | {{.DEVOPS}} requirements --stack node"
 
   validate:
-    desc: "CI only: the checks that do not run Nx — Markdown and TOML formatting, kiln's checks, workflow security{% if docs %}, the docs build{% endif %}; ci-cloud or ci-local run the Nx projects"
+    desc: "CI only: the checks that do not run Nx — Markdown and TOML formatting, kiln's checks, workflow security{% if docs %}, the docs build{% endif %}; test-cloud or test-local run the Nx projects"
     cmds:
       - task: :quality:lint:markdown
       - task: :quality:lint:toml
@@ -334,7 +334,7 @@ tasks:
     cmds:
       - "{{.DEVOPS}} adapters"
 
-  verify:
+  test:
     desc: "CI only: lint, typecheck and test one member (-- <package>, with PACKAGE_DIR)"
     cmds:
       - uv run --directory "$PACKAGE_DIR" --package {{.CLI_ARGS}} ruff check src $(test -d "$PACKAGE_DIR/tests" && echo tests)
