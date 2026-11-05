@@ -3701,3 +3701,35 @@ def test_s15_5_2_5_ci_ok(tmp_path: Path, archetype: str) -> None:
     assert "umbrella" in on["ci-ok"]["needs"]  # type: ignore[operator]
     off = _ci_jobs(_umbrella_root(tmp_path / "off", archetype, False))
     assert "umbrella" not in off["ci-ok"]["needs"]  # type: ignore[operator]
+
+
+# S15.5.3 — `node-lib`'s `release` stage runs the umbrella release.
+
+
+def test_s15_5_3_1_node_lib_off_by_default(tmp_path: Path) -> None:
+    jobs, tasks = _umbrella_files(_umbrella_root(tmp_path, "node-lib", False))
+    assert "umbrella" not in jobs
+    assert "release:umbrella" not in tasks
+
+
+def test_s15_5_3_2_node_lib_on(tmp_path: Path) -> None:
+    jobs, tasks = _umbrella_files(_umbrella_root(tmp_path, "node-lib", True))
+    job = jobs["umbrella"]
+    assert job["needs"] == ["checks-ok", "release"]
+    assert job["if"] == UMBRELLA_IF
+    assert job["permissions"] == {"contents": "write"}
+    assert job["concurrency"] == {"group": "release", "cancel-in-progress": False}
+    steps = job["steps"]
+    assert steps[2]["run"] == "task ci:release:umbrella"  # type: ignore[index]
+    assert len(steps) == 3  # type: ignore[arg-type]
+    for name, other in jobs.items():
+        if name != "umbrella":
+            assert "umbrella" not in str(other.get("steps", "")), name
+    assert "umbrella" in jobs["ci-ok"]["needs"]  # type: ignore[operator]
+    assert "release:umbrella" in tasks
+    # `released` mode is the docs-only push: `release` still succeeds, its tag
+    # output is empty, and `umbrella` (which needs `release`, not
+    # `verify-release`) runs on `release.result != 'failure'`.
+    release_steps = str(jobs["release"]["steps"])
+    assert "steps.state.outputs.mode == 'released'" in release_steps
+    assert "verify-release" not in job["needs"]  # type: ignore[operator]
