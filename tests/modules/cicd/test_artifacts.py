@@ -1577,6 +1577,26 @@ def test_s4_11_3_1_the_python_lib_docs_job_keeps_credentials(tmp_path: Path) -> 
     assert docs["permissions"]["contents"] == "write"  # type: ignore[index]
 
 
+@pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
+def test_s16_4_6_1_docs_job_comment(tmp_path: Path, archetype: str, extra: str) -> None:
+    """Every persisted checkout in a rendered workflow carries the reason."""
+    rendered = _rendered(_cell_root(tmp_path, archetype, extra))
+    for path, content in rendered.items():
+        if not path.startswith(".github/workflows/"):
+            continue
+        for line in content.splitlines():
+            if "persist-credentials: true" in line:
+                assert line.strip() == (
+                    "persist-credentials: true # mike pushes gh-pages with this token"
+                ), (archetype, path)
+    ci = YamlUtils.load(rendered[".github/workflows/ci.yml"])["jobs"]
+    if "docs" in ci:
+        assert (
+            "persist-credentials: true # mike pushes gh-pages with this token"
+            in (rendered[".github/workflows/ci.yml"])
+        )
+
+
 def test_s4_11_3_1_fetch_depth_is_kept(tmp_path: Path) -> None:
     lib = _checkouts(_root(tmp_path, "python-lib"))
     deep = {job for _, job, step in lib if step["with"].get("fetch-depth") == 0}  # type: ignore[union-attr]
