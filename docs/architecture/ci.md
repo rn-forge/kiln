@@ -67,19 +67,24 @@ in [the design](../specs/epics/E15-ci-standard/design.md#stage-vocabulary).
 Switch is S standard, D derived, C configured. Blank means the archetype does
 not run the check. Defaults are on unless stated.
 
-<!-- Becomes a derived region (BEGIN derived) once E15's check registry lands. -->
+The matrix is generated from kiln's check registry
+(`rn_forge/kiln/modules/cicd/registry.py`): adding a check is one registry row
+plus its task. The same table, cut to the repository's archetype, is under "CI
+checks" in `.rn-forge/kiln/standard.md`.
+
+<!-- BEGIN derived ci-matrix -->
 
 | Check | Verb | lib | tool | app | web-api | web-app | node-lib | Switch and key |
 | -- | -- | -- | -- | -- | -- | -- | -- | -- |
 | ruff check and format | `task lint` | yes | yes | yes | yes | yes |  | S |
-| pyright strict | `task typecheck` | `verify` | yes | yes | yes | yes |  | S |
+| pyright strict | `task typecheck` | verify | yes | yes | yes | yes |  | S |
 | `lint-imports` | `task lint` | yes | yes | yes | yes | yes |  | S |
 | Markdown and TOML formatting | `task lint` | yes | yes | yes | yes | yes | yes | S |
 | `kiln doctor` | `task lint` | yes | yes | yes | yes | yes | yes | S; `--full` per `[ci] doctor_full`, default `default-branch` |
 | zizmor, actionlint | `task lint` | yes | yes | yes | yes | yes | yes | S |
 | `pip-audit` | `task lint` | yes | yes | yes | yes | yes |  | S; ignore list `[tasks.audit] ignore` |
 | Nx lint, typecheck, test, build | `task node:*`, `task ci:affected` |  |  |  |  | yes | yes | S |
-| pytest | `task test` | `verify` | yes | yes | yes | yes |  | S |
+| pytest | `task test` | verify | yes | yes | yes | yes |  | S |
 | Services, smoke, suites | `task ci:*` | yes |  |  |  |  |  | D: a package declares them |
 | Adapters check | `task ci:adapters` | yes |  |  |  |  |  | S |
 | Docs strict build | `task docs:build` | yes | yes | yes | yes | yes | yes | D: `[docs] profile = "mkdocs"` |
@@ -90,6 +95,13 @@ not run the check. Defaults are on unless stated.
 | Docs deploy | `docs` job or `docs.yml` | `ci.yml` | `docs.yml` | `docs.yml` | `docs.yml` | `docs.yml` | `ci.yml` | D: `[docs] profile = "mkdocs"` |
 | Package tarballs | `task ci:package` |  |  |  |  |  | yes | S |
 | `ci-ok` | none | yes | yes | yes | yes | yes | yes | S |
+| `licenses` | `task python:lint:licenses` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] licenses`, default `true`; a table sets `deny` and `ignore` |
+| `secret-scan` | `task ci:lint:secrets` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] secret-scan`, default `true` |
+| `internal-ranges` | `task ci:requirements` | yes |  |  |  |  | yes | D: two or more workspace members |
+| `umbrella-release` | `task ci:release:umbrella` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] umbrella-release`, default `false` |
+| `scorecard` | none | yes | yes | yes | yes | yes | yes | C: `[ci.checks] scorecard`, default `false`; public repositories only |
+
+<!-- END derived ci-matrix -->
 
 `kiln doctor --full` runs on a push to the default branch and on dispatch, or on
 every run with `[ci] doctor_full = "every-run"`. Sonar is skipped for a fork's
@@ -113,6 +125,38 @@ A `[[ci.jobs]]` entry has `name` (kebab-case, not a job kiln generates), `uses`
 for a job that creates releases). Every entry gates `ci-ok` unless
 `required = false`. `ci-hooks` checks that each hook and job names a file that
 exists and, for a job, can be called.
+
+### `[ci.checks]`
+
+```toml
+[ci.checks]
+licenses = { deny = ["GPL", "GPL-*", "AGPL", "AGPL-*", "UNKNOWN"], ignore = ["some-package"] }
+secret-scan = true
+umbrella-release = false
+scorecard = false
+```
+
+- Keys are the registry's configured checks, the same for every archetype. A
+  standard or derived check has no key; naming one is an error.
+- A value is a boolean or, for a check with a policy (`licenses`), a table.
+- A switch outside the table stays where it is: `[ci] sonar`, `release`,
+  `doctor_full`.
+- `umbrella-release = true` with `[ci] release = "none"` is an error: there is
+  no release job to hold the step.
+
+### `[[ci.jobs]]` and `required`
+
+```toml
+[[ci.jobs]]
+name = "broker-profile"
+uses = "./.github/workflows/broker-profile.yml"
+events = ["pull_request", "push", "workflow_dispatch"]
+contents = "read"
+required = true
+```
+
+`required` defaults to `true`: the job is in `ci-ok`'s `needs`. `false` renders
+the job, still after `validate`, but nothing waits for it.
 
 ## Per-archetype detail
 

@@ -9,7 +9,7 @@
 
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
-| [F15.1 — The check model](F15.1-check-model.md) | Active | release-1 | 1 New · 3 Closed |
+| [F15.1 — The check model](F15.1-check-model.md) | Closed | release-1 | 4 Closed |
 | [F15.2 — The licences check](F15.2-licences-check.md) | New | release-1 | 4 New |
 | [F15.3 — The secret scan](F15.3-secret-scan.md) | New | release-1 | 3 New |
 | [F15.4 — Internal ranges](F15.4-internal-ranges.md) | New | release-1 | 3 New |

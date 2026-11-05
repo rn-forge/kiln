@@ -589,7 +589,8 @@ def test_s9_2_9_5_python_cells_carry_no_node_lib_text(
 ) -> None:
     root = _new(tmp_path, archetype)
     standard = _rendered(root)[STANDARD]
-    assert "node-lib" not in standard
+    # The CI checks table is registry data: the Release row's note names node-lib.
+    assert "node-lib" not in standard.partition("## CI checks")[0]
     assert "**Archetype:** `python-" in _opening(standard)
     assert "`pytest`, `ruff`, `pyright`" in _section(standard, 1)
     assert "[tool.uv.sources]" in standard
@@ -721,3 +722,14 @@ def test_s16_4_5_2_block_names_the_task(tmp_path: Path) -> None:
     assert re.search(r"(?<!task )(?<!:)kiln (apply|diff)", drift) is None
     taskfile = (root / "Taskfile.yml").read_text(encoding="utf-8")
     assert "do not edit; run 'kiln apply'" in taskfile
+
+
+def test_s15_1_4_4_standard_lists_this_archetypes_checks(tmp_path: Path) -> None:
+    from rn_forge.kiln.modules.cicd import registry
+
+    node = _rendered(_root(tmp_path / "node", "node-lib"))[STANDARD]
+    assert registry.render_matrix("node-lib") in node
+    assert "## CI checks" in node
+    assert "pip-audit" not in node
+    lib = _rendered(_root(tmp_path / "lib", "python-lib"))[STANDARD]
+    assert "licenses" in lib

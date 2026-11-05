@@ -211,3 +211,29 @@ without `--apply`, and keeps a key edited here as a repo override.
 root, or under `namespace` when one is set; the product supplies
 `artifacts()`, `checks()` and `migrate()` through `rn-forge-tooling`'s
 `ToolProduct` adapter.
+
+## CI checks
+
+Switch a configured check in `[ci.checks]`; see the CI architecture page for the
+model.
+
+| Check | Verb | Switch and key |
+| -- | -- | -- |
+| ruff check and format | `task lint` | S |
+| pyright strict | `task typecheck` | S |
+| `lint-imports` | `task lint` | S |
+| Markdown and TOML formatting | `task lint` | S |
+| `kiln doctor` | `task lint` | S; `--full` per `[ci] doctor_full`, default `default-branch` |
+| zizmor, actionlint | `task lint` | S |
+| `pip-audit` | `task lint` | S; ignore list `[tasks.audit] ignore` |
+| pytest | `task test` | S |
+| Docs strict build | `task docs:build` | D: `[docs] profile = "mkdocs"` |
+| `dependency-review` | action | S |
+| Sonar | `sonar` job | C: `[ci] sonar`, default `true` |
+| Release | `release` job | C: `[ci] release`, default `tag-exists`; `pypi` for `python-lib`; `nx-dispatch` for `node-lib`; `none` |
+| Docs deploy | `docs` job or `docs.yml` | D: `[docs] profile = "mkdocs"` |
+| `ci-ok` | none | S |
+| `licenses` | `task python:lint:licenses` | C: `[ci.checks] licenses`, default `true`; a table sets `deny` and `ignore` |
+| `secret-scan` | `task ci:lint:secrets` | C: `[ci.checks] secret-scan`, default `true` |
+| `umbrella-release` | `task ci:release:umbrella` | C: `[ci.checks] umbrella-release`, default `false` |
+| `scorecard` | none | C: `[ci.checks] scorecard`, default `false`; public repositories only |

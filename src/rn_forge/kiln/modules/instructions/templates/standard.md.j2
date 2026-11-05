@@ -318,6 +318,13 @@ without `--apply`, and keeps a key edited here as a repo override.{% if lifecycl
 root, or under `namespace` when one is set; the product supplies
 `artifacts()`, `checks()` and `migrate()` through `rn-forge-tooling`'s
 `ToolProduct` adapter.{% endif %}
+
+## CI checks
+
+Switch a configured check in `[ci.checks]`; see the CI architecture page for the
+model.
+
+{{ ci_matrix }}
 {% if node_lib %}
 ## 9. What a node-lib repository declares
 

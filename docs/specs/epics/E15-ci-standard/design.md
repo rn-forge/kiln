@@ -163,39 +163,6 @@ them.
 | Scorecard | `scorecard.yml` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] scorecard`, off; public repositories | [F15.6](F15.6-scorecard.md) |
 | `ci-ok` | `ci-ok` | yes | yes | yes | yes | yes | yes | S | built; one logic in [F15.8](F15.8-one-workflow-contract.md) |
 
-## `[ci.checks]`
-
-```toml
-[ci.checks]
-licenses = { deny = ["GPL", "GPL-*", "AGPL", "AGPL-*", "UNKNOWN"], ignore = ["some-package"] }
-secret-scan = true
-umbrella-release = false
-scorecard = false
-```
-
-- Keys are the registry's configured checks, the same for every archetype. A
-  standard or derived check has no key; naming one is an error.
-- A value is a boolean or, for a check with a policy (`licenses`), a table.
-- A switch outside the table stays where it is: `[ci] sonar`, `release`,
-  `doctor_full`.
-- `umbrella-release = true` with `[ci] release = "none"` is an error: there is
-  no release job to hold the step.
-
-## `[[ci.jobs]]`
-
-```toml
-[[ci.jobs]]
-name = "broker-profile"
-uses = "./.github/workflows/broker-profile.yml"
-events = ["pull_request", "push", "workflow_dispatch"]
-contents = "read"
-required = true
-```
-
-`required` defaults to `true`: the job is in `checks-ok`'s `needs`, so it gates
-both `release` and `ci-ok`. `false` renders the job, still after `validate`, but
-nothing waits for it.
-
 ## Hook tiers
 
 All declared in `.rn-forge/kiln/config.toml`, naming files the repository owns.

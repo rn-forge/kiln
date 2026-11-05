@@ -7,8 +7,9 @@ from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding, Severity
-from rn_forge.commons.fs.blocks import ManagedBlock
+from rn_forge.commons.fs.blocks import HTML_COMMENT, ManagedBlock
 
+from rn_forge.kiln.modules.cicd import registry
 from rn_forge.kiln.modules.docs.nav import update_nav
 from rn_forge.kiln.modules.docs.work import (
     BOARD_BLOCK,
@@ -30,6 +31,11 @@ from rn_forge.kiln.modules.docs.work import (
 __all__ = ["generate", "stale"]
 
 _RERUN = "— run `task docs:generate`"
+
+CI_MATRIX_BLOCK = ManagedBlock("derived ci-matrix", comment=HTML_COMMENT)
+"""The checks matrix in `docs/architecture/ci.md`, filled from the check registry."""
+
+_CI_PAGE = Path("docs") / "architecture" / "ci.md"
 
 
 def _error(code: str, message: str, path: str) -> Finding:
@@ -64,6 +70,26 @@ def _with_fence(text: str, block: ManagedBlock) -> str | None:
     if tail and text.endswith("\n"):
         tail += "\n"
     return f"{head}\n\n{block.render('', '')}" + (f"\n{tail}" if tail else "")
+
+
+def _ci_matrix(root: Path) -> tuple[dict[Path, str], list[Finding]]:
+    """The new text of the CI page and its stale finding, when it carries the fence."""
+    path = root / _CI_PAGE
+    if not path.exists():
+        return {}, []
+    on_disk = path.read_text(encoding="utf-8")
+    if not _fenced(CI_MATRIX_BLOCK, on_disk):
+        return {}, []
+    updated = CI_MATRIX_BLOCK.render(on_disk, f"\n{registry.render_matrix(None)}\n\n")
+    if updated == on_disk:
+        return {}, []
+    return {path: updated}, [
+        _error(
+            "docs.ci-matrix-stale",
+            f"the derived ci-matrix is stale {_RERUN}",
+            _CI_PAGE.as_posix(),
+        )
+    ]
 
 
 def _work_regions(
@@ -182,6 +208,10 @@ def generate(
         if changed:
             mkdocs.write_text(updated, encoding="utf-8")
             written.append(mkdocs)
+    matrix, _ = _ci_matrix(root)
+    for path, text in matrix.items():
+        path.write_text(text, encoding="utf-8")
+        written.append(path)
     regions = _work_regions(root)
     if regions is None:
         return written, []
@@ -204,6 +234,7 @@ def stale(root: Path, packages: Sequence[str] = ()) -> list[Finding]:
                 "mkdocs.yml",
             )
         )
+    findings.extend(_ci_matrix(root)[1])
     regions = _work_regions(root)
     if regions is None:
         return findings
