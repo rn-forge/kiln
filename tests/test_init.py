@@ -458,7 +458,8 @@ def test_s6_6_1_2_init_writes_packages_one_per_line(
 def test_s6_6_2_5_init_adds_missing_tools(lib_repo: Path, tmp_path: Path) -> None:
     pyproject = lib_repo / "pyproject.toml"
     document = tomlkit.parse(pyproject.read_text(encoding="utf-8"))
-    document["dependency-groups"]["dev"].remove("taplo")  # type: ignore[index]
+    dev = document["dependency-groups"]["dev"]  # type: ignore[index]
+    dev.remove(next(e for e in dev if str(e).startswith("taplo")))
     pyproject.write_text(tomlkit.dumps(document), encoding="utf-8")
     _commit(lib_repo)
     config = _packages_config(tmp_path, "packages/lib-alpha", "packages/lib-beta")

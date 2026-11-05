@@ -48,15 +48,15 @@ PYRIGHT_EXPECTED = {"typeCheckingMode": "strict", "reportMissingTypeStubs": Fals
 RUFF_TEST_IGNORES = {"S101", "D", "ANN", "PLR2004"}
 
 _DEV_GROUP = [
-    "actionlint-py",
-    "import-linter",
-    "pip-audit",
-    "pyright",
-    "pytest",
-    "pytest-cov",
-    "ruff",
-    "taplo",
-    "zizmor",
+    "actionlint-py>=1.7",
+    "import-linter>=2.15",
+    "pip-audit>=2.10",
+    "pyright>=1.1",
+    "pytest>=9.1",
+    "pytest-cov>=7.1",
+    "ruff>=0.16",
+    "taplo>=0.9",
+    "zizmor>=1.31",
 ]
 """The dev tools every archetype's `pyproject.toml` names."""
 

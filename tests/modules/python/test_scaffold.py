@@ -282,7 +282,7 @@ def test_s4_10_1_4_dev_group_has_taplo(
     groups = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))[
         "dependency-groups"
     ]
-    assert "taplo" in groups["dev"]
+    assert "taplo" in [rn_forge_deps.distribution(e) for e in groups["dev"]]
 
 
 @pytest.mark.parametrize(("archetype", "relative"), _TAPLO_CELLS)
@@ -294,8 +294,8 @@ def test_s4_11_3_9_dev_group_has_zizmor_and_actionlint(
     groups = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))[
         "dependency-groups"
     ]
-    assert "zizmor" in groups["dev"]
-    assert "actionlint-py" in groups["dev"]
+    assert "zizmor" in [rn_forge_deps.distribution(e) for e in groups["dev"]]
+    assert "actionlint-py" in [rn_forge_deps.distribution(e) for e in groups["dev"]]
 
 
 @pytest.mark.parametrize(("archetype", "relative"), _TAPLO_CELLS)
@@ -307,7 +307,7 @@ def test_s4_11_5_10_dev_group_has_pip_audit(
     groups = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))[
         "dependency-groups"
     ]
-    assert "pip-audit" in groups["dev"]
+    assert "pip-audit" in [rn_forge_deps.distribution(e) for e in groups["dev"]]
 
 
 @pytest.mark.parametrize(("archetype", "relative"), _TAPLO_CELLS)
@@ -874,3 +874,36 @@ def test_s16_4_2_5_comments_survive(tmp_path: Path) -> None:
     assert "# the last one" in zebra
     assert "# the first" in aardvark
     assert lines.index(aardvark) < lines.index(zebra)
+
+
+def test_s16_4_3_1_every_dev_entry_has_a_floor() -> None:
+    assert python_scaffold._DEV_GROUP
+    for entry in python_scaffold._DEV_GROUP:
+        assert re.match(r"^[A-Za-z0-9_.-]+>=\d", entry), entry
+
+
+def _version_key(version: str) -> tuple[int, ...]:
+    return tuple(int(part) for part in version.split("."))
+
+
+def test_s16_4_3_2_floors_match_the_lock() -> None:
+    lock = tomllib.loads(
+        (Path(__file__).parents[3] / "uv.lock").read_text(encoding="utf-8")
+    )
+    locked = {package["name"]: package["version"] for package in lock["package"]}
+    for entry in python_scaffold._DEV_GROUP:
+        name, floor = entry.split(">=")
+        assert _version_key(floor) <= _version_key(locked[name]), entry
+
+
+def test_s16_4_3_3_task_tools_stay_bare_in_the_check(tmp_path: Path) -> None:
+    assert all(re.fullmatch(r"[A-Za-z0-9_.-]+", tool) for tool in TASK_TOOLS)
+    root, config = _group_root(tmp_path, "[]")
+    path = root / "pyproject.toml"
+    floored = ", ".join(f'"{entry}"' for entry in python_scaffold._DEV_GROUP)
+    path.write_text(
+        path.read_text(encoding="utf-8").replace("dev = []", f"dev = [{floored}]"),
+        encoding="utf-8",
+    )
+    assert "ruff" not in missing_task_tools(root, config)
+    assert not [t for t in missing_task_tools(root, config) if t in TASK_TOOLS]
