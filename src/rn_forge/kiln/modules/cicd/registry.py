@@ -184,7 +184,7 @@ CHECKS: tuple[CiCheck, ...] = (
         _ALL,
         Switch.CONFIGURED,
         "C: `[ci.checks] secret-scan`, default `true`",
-        job=None,  # S15.3.3 sets "secret-scan" when it renders the job
+        job="secret-scan",
         gates=True,
     ),
     CiCheck(

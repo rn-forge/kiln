@@ -141,7 +141,31 @@ jobs:
 
       - name: Review dependency changes
         uses: [[ pins["dependency-review"].uses ]]@[[ pins["dependency-review"].sha ]] # [[ pins["dependency-review"].version ]]
-{% if node_lib %}
+{% if "secret-scan" in check_jobs %}
+  # Scans the full git history for leaked secrets (gitleaks, `task ci:lint:secrets`). A pull
+  # request from a fork cannot be scanned with this checkout, so it is skipped, which
+  # `checks-ok` treats as a pass.
+  secret-scan:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Scan the history for secrets
+        run: task ci:lint:secrets
+{% endif %}{% if node_lib %}
   # Distributes lint/test/build/e2e across Nx Cloud agents (.nx/workflows/agents.yaml) when USE_NX_CLOUD=true.
   # This job excludes playwright as they are managed by Nx Cloud agents
   test-cloud:

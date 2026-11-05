@@ -145,7 +145,7 @@ them.
 | `pip-audit` | `validate` | yes | yes | yes | yes | yes |  | S; ignore list `[tasks.audit] ignore` | built |
 | `pnpm audit` | `validate` |  |  |  |  |  | yes | S | built |
 | Licences | `validate` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] licenses`, on | built |
-| Secret scan | `secret-scan` job | yes | yes | yes | yes | yes | yes | C: `[ci.checks] secret-scan`, on | [F15.3](F15.3-secret-scan.md) |
+| Secret scan | `secret-scan` job | yes | yes | yes | yes | yes | yes | C: `[ci.checks] secret-scan`, on | built |
 | Internal ranges | `plan` (lib), `validate` (node-lib) | yes |  |  |  |  | yes | D: a workspace with two or more members | built |
 | `dependency-review` | `dependency-review` job | yes | yes | yes | yes | yes | yes | S | built |
 | Nx lint, typecheck, test, build | `test` |  |  |  |  | yes | yes | S | built |

@@ -78,6 +78,30 @@ jobs:
       - name: Review dependency changes
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
 
+  # Scans the full git history for leaked secrets (gitleaks, `task ci:lint:secrets`). A pull
+  # request from a fork cannot be scanned with this checkout, so it is skipped, which
+  # `checks-ok` treats as a pass.
+  secret-scan:
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Scan the history for secrets
+        run: task ci:lint:secrets
+
   sonar:
     needs: validate
     # The scan runs on a same-repository pull request and on main, nowhere else.
@@ -204,7 +228,7 @@ jobs:
   # for it, not for a list of checks. A skipped job (the fork-guarded scan, a
   # release or deploy on a pull request) passes; a failed or cancelled one does not.
   checks-ok:
-    needs: [validate, dependency-review, sonar, golden-render]
+    needs: [validate, dependency-review, sonar, secret-scan, golden-render]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

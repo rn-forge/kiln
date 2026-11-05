@@ -22,6 +22,7 @@ GENERATED_JOBS = frozenset(
     {
         "validate",
         "dependency-review",
+        "secret-scan",
         "plan",
         "test",
         "postgres",

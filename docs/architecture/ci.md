@@ -39,9 +39,9 @@ vocabulary, one for every archetype, is in
 
 | Archetype | `ci.yml` job order | Other workflows |
 | -- | -- | -- |
-| `python-lib` | `validate` > `dependency-review`, `plan` > `test`, `postgres`, `redis`, `smoke`, `suites` > `sonar` > `checks-ok` > `release` > `external-install`, `docs` > `ci-ok` | none: `docs` is the one Pages deploy |
-| `python-tool`, `python-app`, `python-web-api`, `python-web-app` | `validate` > `dependency-review`, `sonar` > `checks-ok` > `release` > `ci-ok` | `docs.yml` |
-| `node-lib` | `validate` > `dependency-review`, `test-cloud` or `test-local` > `sonar`, `smoke` > `checks-ok`; `docs` > `ci-ok` | `release.yml` (dispatch) |
+| `python-lib` | `validate` > `dependency-review`, `secret-scan`, `plan` > `test`, `postgres`, `redis`, `smoke`, `suites` > `sonar` > `checks-ok` > `release` > `external-install`, `docs` > `ci-ok` | none: `docs` is the one Pages deploy |
+| `python-tool`, `python-app`, `python-web-api`, `python-web-app` | `validate` > `dependency-review`, `secret-scan`, `sonar` > `checks-ok` > `release` > `ci-ok` | `docs.yml` |
+| `node-lib` | `validate` > `dependency-review`, `secret-scan`, `test-cloud` or `test-local` > `sonar`, `smoke` > `checks-ok`; `docs` > `ci-ok` | `release.yml` (dispatch) |
 
 | Job | Runs | Task verb |
 | -- | -- | -- |
@@ -49,6 +49,7 @@ vocabulary, one for every archetype, is in
 | `validate` (single-package Python) | the aggregate gate | `task validate` |
 | `validate` (`node-lib`) | what Nx does not run | `task ci:validate` |
 | `dependency-review` | pull requests only; fails on a new dependency with a known vulnerability | none: a pinned action |
+| `secret-scan` | `task ci:lint:secrets`: gitleaks over the full git history; skipped for a fork's pull request | `[ci.checks] secret-scan`, on |
 | `plan` | selects changed packages and their dependents | `task ci:plan` |
 | `test` | one leg per selected package | `task ci:test` |
 | `postgres`, `redis` | one leg per selected package declaring the service | `task ci:postgres`, `task ci:redis` |
@@ -245,7 +246,7 @@ A newer push to the same pull request cancels the run in progress. Pushes to
 | `release` | each selected package whose checks passed is built with its SBOM (`task ci:release-build`), attested, then published (`task ci:release-publish`) as `<package>-v<version>`, after `sonar` passed | skipped | builds and publishes | skipped |
 | `external-install` | each new tag installs from git, outside the workspace, and imports | skipped | runs | skipped |
 | `docs` | each package tagged at this commit deployed with `mike`, then the root site plus `packages/` to Pages; `[ci.hooks] docs` actions run before the upload | skipped | runs | skipped |
-| `checks-ok` | the pre-release barrier: `validate`, `dependency-review`, `plan`, `test`, `postgres`, `redis`, `smoke`, `suites`, `sonar`, and the checks and required jobs, none failed or cancelled | runs | runs | runs |
+| `checks-ok` | the pre-release barrier: `validate`, `dependency-review`, `plan`, `test`, `postgres`, `redis`, `smoke`, `suites`, `sonar`, `secret-scan`, and the checks and required jobs, none failed or cancelled | runs | runs | runs |
 | `ci-ok` | `checks-ok`, `release`, `external-install`, `docs`: none failed or cancelled; a skipped job is not a failure | runs | runs | runs |
 
 #### Ordering and gating

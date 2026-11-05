@@ -79,10 +79,10 @@ def test_s15_1_3_2_required_job_gates(tmp_path: Path) -> None:
 def test_s15_1_3_3_registry_jobs_gate(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # The `secret-scan` half waits for S15.3.3, which gives the row its job; until
-    # then a gating row injected here proves `check_jobs` reaches `checks-ok`.
     root = _write(tmp_path, extra="\n[ci.checks]\nscorecard = true\n")
     jobs = _jobs(root)
+    assert "secret-scan" in jobs["checks-ok"]["needs"]  # type: ignore[operator]
+    assert "secret-scan" not in jobs["ci-ok"]["needs"]  # type: ignore[operator]
     assert all("scorecard" not in j.get("needs", []) for j in jobs.values())
 
     gating = replace(registry.CHECKS[-1], name="injected", job="injected-job")
@@ -99,8 +99,8 @@ def test_s15_1_3_4_default_render_is_unchanged(tmp_path: Path, archetype: str) -
     off = _needs(
         _write(tmp_path / "off", archetype, "\n[ci.checks]\nsecret-scan = false\n")
     )
-    assert plain == off
-    assert "secret-scan" not in plain
+    assert [n for n in plain if n != "secret-scan"] == off
+    assert "secret-scan" not in off
 
 
 # S15.4.2 — the `plan` job runs `task ci:requirements`.
@@ -158,7 +158,7 @@ def _barrier(archetype: str, sonar: bool) -> list[str]:
         needs += ["test-cloud", "test-local", "smoke"]
     if archetype == "python-lib":
         needs += ["plan", "test", "postgres", "redis", "smoke", "suites"]
-    return needs + (["sonar"] if sonar else [])
+    return needs + (["sonar"] if sonar else []) + ["secret-scan"]
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
@@ -216,3 +216,66 @@ def test_s15_8_7_5_skipped_passes(tmp_path: Path, archetype: str) -> None:
     for name in ("ci-ok", "checks-ok"):
         for step in jobs[name]["steps"]:  # type: ignore[attr-defined]
             assert "skipped" not in f"{step.get('if', '')}{step.get('run', '')}"
+
+
+# S15.3.3 — the `secret-scan` job gates `release` and `ci-ok`.
+
+FORK_GUARD = (
+    "${{ github.event_name != 'pull_request' || "
+    "github.event.pull_request.head.repo.full_name == github.repository }}"
+)
+OFF = "\n[ci.checks]\nsecret-scan = false\n"
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s15_3_3_1_job_shape(tmp_path: Path, archetype: str) -> None:
+    job = _jobs(_write(tmp_path, archetype))["secret-scan"]
+    assert job["runs-on"] == "ubuntu-latest"
+    assert job["timeout-minutes"] == 10
+    assert job["permissions"] == {"contents": "read"}
+    steps = job["steps"]  # type: ignore[index]
+    assert steps[0]["with"] == {"fetch-depth": 0, "persist-credentials": False}
+    assert "actions/checkout" in steps[0]["uses"]
+    assert steps[1]["uses"] == "./.github/actions/setup"
+    assert [s.get("run") for s in steps[2:]] == ["task ci:lint:secrets"]
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s15_3_3_2_fork_guard(tmp_path: Path, archetype: str) -> None:
+    assert _jobs(_write(tmp_path, archetype))["secret-scan"]["if"] == FORK_GUARD
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s15_3_3_3_gates(tmp_path: Path, archetype: str) -> None:
+    jobs = _jobs(_write(tmp_path, archetype))
+    assert "secret-scan" in jobs["checks-ok"]["needs"]  # type: ignore[operator]
+    assert "secret-scan" not in jobs["ci-ok"]["needs"]  # type: ignore[operator]
+    steps = jobs["checks-ok"]["steps"]  # type: ignore[index]
+    # A skipped scan passes, as dependency-review's does: no step tests for it.
+    assert all("skipped" not in f"{s.get('if', '')}{s.get('run', '')}" for s in steps)
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s15_3_3_3b_failed_scan_blocks_release(tmp_path: Path, archetype: str) -> None:
+    jobs = _jobs(_write(tmp_path, archetype))
+    if "release" not in jobs:
+        assert archetype == "node-lib"  # releases from `release.yml` until S15.8.5
+        return
+    needs = jobs["release"]["needs"]
+    assert "checks-ok" in (needs if isinstance(needs, list) else [needs])
+    assert "needs.checks-ok.result == 'success'" in str(jobs["release"]["if"])
+    assert "secret-scan" in jobs["checks-ok"]["needs"]  # type: ignore[operator]
+    assert STEP_IF in jobs["checks-ok"]["steps"][0]["if"]  # type: ignore[index]
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s15_3_3_4_off(tmp_path: Path, archetype: str) -> None:
+    root = _write(tmp_path, archetype, OFF)
+    assert "secret-scan" not in _jobs(root)
+    assert "secret-scan" not in _needs(root)
+
+
+def test_s15_3_3_5_declared_name() -> None:
+    from rn_forge.kiln.modules.cicd.config import GENERATED_JOBS
+
+    assert "secret-scan" in GENERATED_JOBS

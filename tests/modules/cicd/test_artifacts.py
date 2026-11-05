@@ -209,6 +209,7 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
     assert set(jobs) == {
         "validate",
         "dependency-review",
+        "secret-scan",
         "release",
         "checks-ok",
         "ci-ok",
@@ -224,8 +225,8 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
     on_ci = on[".github/workflows/ci.yml"]
     sonar_job = on_ci[on_ci.index("\n  sonar:") : on_ci.index("\n  release:")]
     expected = on_ci.replace(sonar_job, "").replace(
-        "needs: [validate, dependency-review, sonar]",
-        "needs: [validate, dependency-review]",
+        "needs: [validate, dependency-review, sonar, secret-scan]",
+        "needs: [validate, dependency-review, secret-scan]",
     )
     assert off[".github/workflows/ci.yml"] == expected
 
@@ -233,7 +234,14 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
 def test_s4_3_4_3_release_none_renders_no_release_job(tmp_path: Path) -> None:
     rendered = _rendered(_root(tmp_path, release="none"))
     jobs = YamlUtils.load(rendered[".github/workflows/ci.yml"])["jobs"]
-    assert set(jobs) == {"validate", "dependency-review", "sonar", "checks-ok", "ci-ok"}
+    assert set(jobs) == {
+        "validate",
+        "dependency-review",
+        "secret-scan",
+        "sonar",
+        "checks-ok",
+        "ci-ok",
+    }
 
 
 def test_s4_3_4_4_ci_entrypoint_passes_on_the_rendered_workflows(
@@ -682,6 +690,7 @@ def test_s6_4_2_4_python_lib_jobs_and_validate_steps(tmp_path: Path) -> None:
     assert list(jobs) == [
         "validate",
         "dependency-review",
+        "secret-scan",
         "plan",
         "test",
         "postgres",
@@ -764,6 +773,7 @@ def test_s6_4_2_8_other_archetypes_keep_the_plain_pipeline(tmp_path: Path) -> No
         assert list(jobs) == [
             "validate",
             "dependency-review",
+            "secret-scan",
             "sonar",
             "release",
             "checks-ok",
@@ -1179,6 +1189,7 @@ def test_s6_4_7_1_release_needs_every_check_and_sonar(tmp_path: Path) -> None:
         "smoke",
         "suites",
         "sonar",
+        "secret-scan",
     ]
 
 
@@ -2494,6 +2505,7 @@ def test_s9_1_2_1_node_lib_jobs_are_the_affected_set(tmp_path: Path) -> None:
     assert list(jobs) == [  # type: ignore[arg-type]
         "validate",
         "dependency-review",
+        "secret-scan",
         "test-cloud",
         "test-local",
         "sonar",
@@ -2614,6 +2626,7 @@ def test_s9_1_2_6_ci_ok_needs_every_job_and_checks_both_paths(tmp_path: Path) ->
         "test-local",
         "smoke",
         "sonar",
+        "secret-scan",
     ]
     ok = jobs["ci-ok"]  # type: ignore[index]
     assert ok["needs"] == ["checks-ok", "docs"]
@@ -2859,9 +2872,9 @@ def test_s9_1_4_1_package_job_matches_ngkit(tmp_path: Path) -> None:
 
 def test_s9_1_4_3_ci_ok_needs_smoke_even_without_sonar(tmp_path: Path) -> None:
     on = _ci_jobs(_root(tmp_path / "on", "node-lib"))
-    assert on["checks-ok"]["needs"][-2:] == ["smoke", "sonar"]  # type: ignore[index]
+    assert on["checks-ok"]["needs"][-2:] == ["sonar", "secret-scan"]  # type: ignore[index]
     off = _ci_jobs(_root(tmp_path / "off", "node-lib", sonar=False))
-    assert off["checks-ok"]["needs"][-1] == "smoke"  # type: ignore[index]
+    assert off["checks-ok"]["needs"][-2:] == ["smoke", "secret-scan"]  # type: ignore[index]
     assert off["ci-ok"]["needs"] == ["checks-ok", "docs"]  # type: ignore[index]
     assert "smoke" in off
 
