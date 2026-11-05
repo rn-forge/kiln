@@ -16,3 +16,11 @@ def test_s15_3_1_1_gitleaks_pin_shape() -> None:
         entry = pin[platform]
         assert entry["url"].endswith(f"gitleaks_{version}_{platform}.tar.gz")
         assert re.fullmatch(r"[0-9a-f]{64}", entry["sha256"])
+
+
+def test_s15_6_1_4_pins() -> None:
+    pins = load_pins()
+    for key in ("scorecard", "upload-sarif"):
+        pin = pins[key]
+        assert re.fullmatch(r"[0-9a-f]{40}", pin["sha"]), key
+        assert pin["uses"] and pin["version"], key

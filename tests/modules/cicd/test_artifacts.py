@@ -3778,3 +3778,76 @@ def test_s15_1_2_7_umbrella_needs_a_release(tmp_path: Path, archetype: str) -> N
         encoding="utf-8",
     )
     assert ".github/workflows/ci.yml" in _rendered(root)
+
+
+# S15.6.1 — kiln renders `scorecard.yml`.
+
+SCORECARD = ".github/workflows/scorecard.yml"
+
+
+def _scorecard_root(tmp_path: Path, archetype: str) -> Path:
+    return _with_ci(_root(tmp_path, archetype), "\n[ci.checks]\nscorecard = true\n")
+
+
+@pytest.mark.parametrize("archetype", [*ARCHETYPES, "node-lib"])
+def test_s15_6_1_1_absent_by_default(tmp_path: Path, archetype: str) -> None:
+    assert SCORECARD not in _rendered(_root(tmp_path, archetype))
+
+
+@pytest.mark.parametrize("archetype", [*ARCHETYPES, "node-lib"])
+def test_s15_6_1_2_on(tmp_path: Path, archetype: str) -> None:
+    workflow = YamlUtils.load(
+        _rendered(_scorecard_root(tmp_path, archetype))[SCORECARD]
+    )
+    assert workflow["on"]["schedule"] == [{"cron": "17 4 * * 1"}]
+    assert "workflow_dispatch" in workflow["on"]
+    assert list(workflow["jobs"]) == ["analysis"]
+    job = workflow["jobs"]["analysis"]
+    assert job["permissions"] == {
+        "contents": "read",
+        "actions": "read",
+        "id-token": "write",
+        "security-events": "write",
+    }
+    pins = load_pins()
+    checkout, scan, upload = job["steps"]
+    assert checkout["uses"] == f"{pins['checkout']['uses']}@{pins['checkout']['sha']}"
+    assert checkout["with"] == {"persist-credentials": False}
+    assert scan["uses"] == f"{pins['scorecard']['uses']}@{pins['scorecard']['sha']}"
+    assert scan["with"] == {
+        "results_file": "results.sarif",
+        "results_format": "sarif",
+        "publish_results": True,
+    }
+    assert (
+        upload["uses"]
+        == f"{pins['upload-sarif']['uses']}@{pins['upload-sarif']['sha']}"
+    )
+    assert upload["uses"].startswith("github/codeql-action/upload-sarif@")
+    assert upload["with"] == {"sarif_file": "results.sarif"}
+
+
+@pytest.mark.parametrize("archetype", [*ARCHETYPES, "node-lib"])
+def test_s15_6_1_3_not_gating(tmp_path: Path, archetype: str) -> None:
+    jobs = _ci_jobs(_scorecard_root(tmp_path, archetype))
+    assert "scorecard" not in jobs
+    assert "scorecard" not in jobs["ci-ok"]["needs"]
+
+
+@pytest.mark.parametrize("archetype", [*ARCHETYPES, "node-lib"])
+def test_s15_6_1_4_pins(tmp_path: Path, archetype: str) -> None:
+    root = _scorecard_root(tmp_path, archetype)
+    assert "ci.unpinned" not in _codes(root)
+    assert "ci.permissions" not in _codes(root)
+    rendered = _rendered(root)[SCORECARD]
+    pins = load_pins()
+    for key in ("scorecard", "upload-sarif"):
+        assert f"@{pins[key]['sha']} # {pins[key]['version']}" in rendered
+
+
+def test_s15_6_1_5_generated_job_name(tmp_path: Path) -> None:
+    assert "scorecard" in GENERATED_JOBS
+    extra = f'\n[[ci.jobs]]\nname = "scorecard"\nuses = "{CALL}"\n'
+    root = _with_ci(_root(tmp_path, "python-lib"), extra)
+    with pytest.raises(AppException):
+        KilnConfig.load(root)

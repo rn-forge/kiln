@@ -160,7 +160,7 @@ them.
 | Umbrella release | `release` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] umbrella-release`, off | [F15.5](F15.5-umbrella-release.md) |
 | `verify-release` | `verify-release` | yes | yes | yes | yes | yes | yes | D: a release mode other than `none` | [F15.8](F15.8-one-workflow-contract.md) (built for `lib` as `external-install`) |
 | Docs deploy | `docs` | yes | yes | yes | yes | yes | yes | D: `[docs] profile = "mkdocs"` | [F15.8](F15.8-one-workflow-contract.md) |
-| Scorecard | `scorecard.yml` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] scorecard`, off; public repositories | [F15.6](F15.6-scorecard.md) |
+| Scorecard | `scorecard.yml` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] scorecard`, off; public repositories | built |
 | `ci-ok` | `ci-ok` | yes | yes | yes | yes | yes | yes | S | built; one logic in [F15.8](F15.8-one-workflow-contract.md) |
 
 ## Hook tiers

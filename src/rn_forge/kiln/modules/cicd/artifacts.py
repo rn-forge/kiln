@@ -77,7 +77,7 @@ def _ci_config(config: KilnConfig) -> CiConfig:
 
 
 def render(config: KilnConfig) -> list[Artifact]:
-    """Render the setup action, `ci.yml`, `dependabot.yml`, `docs.yml`, `sonar-project.properties` and, for `node-lib`, `.nx/workflows/agents.yaml`, `tools/ci/*.mjs` and, when `ci.release` is `nx-dispatch`, `release.yml`.
+    """Render the setup action, `ci.yml`, `dependabot.yml`, `docs.yml`, `scorecard.yml` (when `ci.checks.scorecard` is on), `sonar-project.properties` and, for `node-lib`, `.nx/workflows/agents.yaml`, `tools/ci/*.mjs` and, when `ci.release` is `nx-dispatch`, `release.yml`.
 
     A `python-lib` and a `node-lib` render no `docs.yml`: their `ci.yml` has the one Pages deploy.
 
@@ -106,6 +106,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         )
     workspace = config.archetype == "python-lib"
     ranges = next(c for c in registry.CHECKS if c.name == "internal-ranges")
+    scorecard = next(c for c in registry.CHECKS if c.name == "scorecard")
     web = config.archetype in {"python-web-api", "python-web-app"}
     web_app = config.archetype == "python-web-app"
     node_lib = config.archetype == "node-lib"
@@ -163,6 +164,11 @@ def render(config: KilnConfig) -> list[Artifact]:
             docs and not workspace and not node_lib,
         ),
         (".github/workflows/release.yml", "release.yml.j2", release == "nx-dispatch"),
+        (
+            ".github/workflows/scorecard.yml",
+            "scorecard.yml.j2",
+            registry.enabled(scorecard, ci, config.archetype, len(config.packages)),
+        ),
         (".nx/workflows/agents.yaml", "agents.yaml.j2", node_lib),
         ("sonar-project.properties", "sonar-project.properties.j2", ci.sonar),
         *(

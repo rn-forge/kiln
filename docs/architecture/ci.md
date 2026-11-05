@@ -139,6 +139,10 @@ scorecard = false
 
 - Keys are the registry's configured checks, the same for every archetype. A
   standard or derived check has no key; naming one is an error.
+- `scorecard = true` renders `.github/workflows/scorecard.yml` for a public
+  repository: a weekly and dispatchable OpenSSF Scorecard run that uploads its
+  SARIF to Code scanning. It reports and does not gate, so `ci-ok` never waits
+  for it.
 - A value is a boolean or, for a check with a policy (`licenses`), a table.
 - A switch outside the table stays where it is: `[ci] sonar`, `release`,
   `doctor_full`.
