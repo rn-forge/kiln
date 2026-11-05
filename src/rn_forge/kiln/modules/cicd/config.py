@@ -151,6 +151,36 @@ class CiConfig(ConfigModel):
     jobs: list[CiJob] = Field(default_factory=list[CiJob])
     """Extra jobs, each calling one reusable workflow after `validate`. Changing
     the list rewrites `ci.yml` on `kiln apply`."""
+    checks: dict[str, bool | dict[str, object]] = Field(default_factory=dict)
+    """Switches for the configurable checks: a name from the check registry set to
+    a bool, or for `licenses` a table of its policy. Changing it re-renders
+    `ci.yml` and the check tasks on `kiln apply`."""
+
+    @field_validator("checks")
+    @classmethod
+    def _checks_are_configurable(
+        cls, value: dict[str, bool | dict[str, object]]
+    ) -> dict[str, bool | dict[str, object]]:
+        from rn_forge.kiln.modules.cicd import registry
+
+        rows = {c.name: c for c in registry.CHECKS}
+        for name, entry in value.items():
+            field = f"ci.checks.{name}"
+            row = rows.get(name)
+            if row is None:
+                raise ValueError(f"{field} is not a configurable check")
+            if row.switch is not registry.Switch.CONFIGURED:
+                raise ValueError(f"{field} is {row.switch} and has no switch")
+            if isinstance(entry, dict):
+                if row.policy is None:
+                    raise ValueError(f"{field} takes no policy")
+                row.policy.model_validate(entry)
+        return value
+
+    def licenses_policy(self) -> LicensePolicy:
+        """The `licenses` check's policy: the `[ci.checks]` table, or the default."""
+        entry = self.checks.get("licenses")
+        return LicensePolicy.model_validate(entry if isinstance(entry, dict) else {})
 
     @field_validator("sonar_exclusions", "sonar_coverage_exclusions")
     @classmethod

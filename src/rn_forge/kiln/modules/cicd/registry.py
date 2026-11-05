@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any
 
 from rn_forge.commons.lang.models import StrictModel
 
@@ -230,9 +229,7 @@ def enabled(check: CiCheck, ci: CiConfig, archetype: str, members: int) -> bool:
     if archetype not in check.archetypes:
         return False
     if check.switch is Switch.CONFIGURED:
-        # `ci.checks` is the `[ci.checks]` table (S15.1.2).
-        checks: dict[str, Any] = getattr(ci, "checks", {})
-        value = checks.get(check.name, check.default)
+        value = ci.checks.get(check.name, check.default)
         return True if isinstance(value, dict) else bool(value)
     if check.name == "internal-ranges":
         return archetype == "node-lib" or (archetype == "python-lib" and members >= 2)

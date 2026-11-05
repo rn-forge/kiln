@@ -3756,3 +3756,25 @@ def test_s9_3_7_3_setup_uv_pin_is_v10_3_0(tmp_path: Path) -> None:
     for archetype, root in cases:
         action = _rendered(root)[".github/actions/setup/action.yml"]
         assert uses in action, archetype
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s15_1_2_7_umbrella_needs_a_release(tmp_path: Path, archetype: str) -> None:
+    root = _root(tmp_path, archetype, release="none")
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(
+        config.read_text(encoding="utf-8") + "\n[ci.checks]\numbrella-release = true\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(
+        AppException,
+        match=r"cicd\.render: ci\.checks\.umbrella-release needs \[ci\] release other than none",
+    ):
+        _rendered(root)
+    config.write_text(
+        config.read_text(encoding="utf-8").replace(
+            'release = "none"', 'release = "tag-exists"'
+        ),
+        encoding="utf-8",
+    )
+    assert ".github/workflows/ci.yml" in _rendered(root)

@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from types import SimpleNamespace
-from typing import Any, cast
+from typing import Any
 
 from rn_forge.kiln.modules.cicd import registry
 from rn_forge.kiln.modules.cicd.config import CiConfig
@@ -25,8 +24,7 @@ def _check(name: str) -> registry.CiCheck:
 
 
 def _ci(checks: dict[str, Any]) -> CiConfig:
-    # `[ci.checks]` is validated by S15.1.2; `enabled` only reads it.
-    return cast(CiConfig, SimpleNamespace(checks=checks))
+    return CiConfig(checks=checks)
 
 
 def test_s15_1_1_1_names_are_unique() -> None:

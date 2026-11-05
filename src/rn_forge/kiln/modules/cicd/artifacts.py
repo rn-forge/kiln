@@ -14,6 +14,7 @@ from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.cicd import registry
 from rn_forge.kiln.modules.cicd.config import CiConfig
 
 __all__ = ["SONAR_ORGANIZATION", "load_pins", "render"]
@@ -91,6 +92,14 @@ def render(config: KilnConfig) -> list[Artifact]:
         )
     docs = config.docs_profile == "mkdocs"
     release = config.release
+    umbrella = next(c for c in registry.CHECKS if c.name == "umbrella-release")
+    if (
+        registry.enabled(umbrella, ci, config.archetype, len(config.packages))
+        and ci.release == "none"
+    ):
+        raise AppException(
+            "cicd.render: ci.checks.umbrella-release needs [ci] release other than none"
+        )
     if ci.hooks.docs and not docs:
         raise AppException(
             "cicd.render: ci.hooks.docs is set but nothing deploys Pages (docs profile is not mkdocs)"
