@@ -73,6 +73,12 @@ tasks:
     cmds:
       - '{{.DEVOPS}} release-publish "$TAG" --title "$TAG" --target "$SOURCE_SHA" dist/*.whl dist/*.tar.gz dist/*.cdx.json'
 {% endif %}{% if node_lib %}
+  requirements:
+    desc: "CI only: check that members depend on each other by workspace:^ or workspace:~"
+    silent: true
+    cmds:
+      - "set -o pipefail; pnpm ls -r --depth -1 --json | {{.DEVOPS}} requirements --stack node"
+
   validate:
     desc: "CI only: the checks that do not run Nx — Markdown and TOML formatting, kiln's checks, workflow security{% if docs %}, the docs build{% endif %}; ci-cloud or ci-local run the Nx projects"
     cmds:
@@ -80,6 +86,7 @@ tasks:
       - task: :quality:lint:toml
       - task: :kiln:doctor
       - task: lint:workflows
+      - task: requirements
 {% for verb in ["lint", "typecheck", "test"] %}{% for ref in extra_refs.get(verb, []) %}      - task: :[[ ref ]]
 {% endfor %}{% endfor %}{% if docs %}      - task: :docs:build
 {% endif %}{% for ref in extra_refs.get("validate", []) %}      - task: :[[ ref ]]

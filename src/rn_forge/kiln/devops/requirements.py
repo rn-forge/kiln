@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import tomllib
 from pathlib import Path
 
@@ -62,4 +63,40 @@ def check(root: Path) -> list[str]:
             problem = _problem(requirement, versions[target])
             if problem:
                 problems.append(f"{name} -> {target}: {problem}")
+    return problems
+
+
+_NODE_FIELDS = ("dependencies", "peerDependencies", "optionalDependencies")
+
+
+def _node_problem(spec: str) -> str | None:
+    """Return what is wrong with how `spec` points at a member, if anything."""
+    if spec in ("workspace:^", "workspace:~"):
+        return None
+    if spec == "workspace:*":
+        return "workspace:* publishes as an exact pin"
+    return f"use workspace:^ or workspace:~, found {spec}"
+
+
+def check_node(members: list[dict[str, str]]) -> list[str]:
+    """Return one `a -> b: problem` line per internal dependency not on `workspace:^` or `~`.
+
+    Checks `dependencies`, `peerDependencies` and `optionalDependencies` of each
+    member; `devDependencies` are not published, so they are not checked.
+
+    Args:
+        members: The parsed output of `pnpm ls -r --depth -1 --json`, each entry
+            with a `name` and the `path` of the member's directory.
+    """
+    paths = {m["name"]: Path(m["path"]) for m in members if "name" in m}
+    problems: list[str] = []
+    for name, path in sorted(paths.items()):
+        manifest = json.loads((path / "package.json").read_text(encoding="utf-8"))
+        for field in _NODE_FIELDS:
+            for target, spec in manifest.get(field, {}).items():
+                if target == name or target not in paths:
+                    continue
+                problem = _node_problem(spec)
+                if problem:
+                    problems.append(f"{name} -> {target}: {problem}")
     return problems

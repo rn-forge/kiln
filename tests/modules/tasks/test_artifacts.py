@@ -3033,6 +3033,7 @@ CI_VALIDATE_HEAD = [
     {"task": ":quality:lint:toml"},
     {"task": ":kiln:doctor"},
     {"task": "lint:workflows"},
+    {"task": "requirements"},
 ]
 
 
@@ -3342,9 +3343,21 @@ def test_s15_3_2_3_off(tmp_path: Path, archetype: str) -> None:
 def test_s15_4_2_1_task(tmp_path: Path) -> None:
     tasks = _ci_rendered(_applied(tmp_path / "lib", "python-lib"))
     assert tasks["requirements"]["cmds"] == ["{{.DEVOPS}} requirements"]
-    for archetype in ("python-tool", "python-app", "node-lib"):
+    for archetype in ("python-tool", "python-app"):
         other = _ci_rendered(_applied(tmp_path / archetype, archetype))
         assert "requirements" not in other
+
+
+def test_s15_4_3_8_node_task(tmp_path: Path) -> None:
+    tasks = _ci_rendered(_applied(tmp_path / "lib", "node-lib"))
+    assert tasks["requirements"]["cmds"] == [
+        "set -o pipefail; pnpm ls -r --depth -1 --json"
+        " | {{.DEVOPS}} requirements --stack node"
+    ]
+    assert {"task": "requirements"} in tasks["validate"]["cmds"]
+    for archetype in ("python-lib", "python-tool", "python-app"):
+        other = _ci_rendered(_applied(tmp_path / archetype, archetype))
+        assert {"task": "requirements"} not in other.get("validate", {}).get("cmds", [])
 
 
 def _applied(tmp_path: Path, archetype: str) -> Path:

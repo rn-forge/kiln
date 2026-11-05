@@ -146,7 +146,7 @@ them.
 | `pnpm audit` | `validate` |  |  |  |  |  | yes | S | built |
 | Licences | `validate` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] licenses`, on | built |
 | Secret scan | `secret-scan` job | yes | yes | yes | yes | yes | yes | C: `[ci.checks] secret-scan`, on | [F15.3](F15.3-secret-scan.md) |
-| Internal ranges | `plan` (lib), `validate` (node-lib) | yes |  |  |  |  | yes | D: a workspace with two or more members | [F15.4](F15.4-internal-ranges.md) |
+| Internal ranges | `plan` (lib), `validate` (node-lib) | yes |  |  |  |  | yes | D: a workspace with two or more members | built |
 | `dependency-review` | `dependency-review` job | yes | yes | yes | yes | yes | yes | S | built |
 | Nx lint, typecheck, test, build | `test` |  |  |  |  | yes | yes | S | built |
 | pytest | `test` | yes | yes | yes | yes | yes |  | S | built |

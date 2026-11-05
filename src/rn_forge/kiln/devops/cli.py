@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import re
 import sys
@@ -72,6 +73,12 @@ def _parser() -> argparse.ArgumentParser:
         "requirements", help="fail when members depend on each other by exact pin"
     )
     ranges.add_argument("--root", default=".", metavar="DIR")
+    ranges.add_argument(
+        "--stack",
+        choices=["python", "node"],
+        default="python",
+        help="node reads `pnpm ls -r --depth -1 --json` from stdin",
+    )
     return parser
 
 
@@ -177,8 +184,11 @@ def _licenses(args: argparse.Namespace) -> int:
 
 def _requirements(args: argparse.Namespace) -> int:
     try:
-        problems = requirements.check(Path(args.root))
-    except FileNotFoundError as error:
+        if args.stack == "node":
+            problems = requirements.check_node(json.load(sys.stdin))
+        else:
+            problems = requirements.check(Path(args.root))
+    except (FileNotFoundError, ValueError) as error:
         print(f"kiln-devops: {error}", file=sys.stderr)
         return 2
     for line in problems:
