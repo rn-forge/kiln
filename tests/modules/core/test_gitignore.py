@@ -12,6 +12,7 @@ from pathlib import Path
 
 import pytest
 
+from rn_forge.kiln.commands import _dedupe_gitignore
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle, gitignore
 from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK, render
@@ -20,7 +21,7 @@ SCAFFOLD = Path(__file__).resolve().parents[2] / "fixtures" / "scaffold"
 UV_BODY = (SCAFFOLD / "uv" / ".gitignore").read_text(encoding="utf-8")
 NX_BODY = (SCAFFOLD / "nx-angular" / ".gitignore").read_text(encoding="utf-8")
 
-CONFIG = 'schema_version = 1\n\n[repository]\nname = "demo"\narchetype = "python-app"\n'
+CONFIG = 'schema_version = 1\n\n[repository]\nname = "demo"\narchetype = "python-app"\n\n[docs]\nprofile = "mkdocs"\n'
 
 
 def _kiln_body(root: Path) -> str:
@@ -222,3 +223,85 @@ def test_s4_4_8_4_kiln_block_stays_after_the_tool_sections(root: Path) -> None:
 
     cycle.apply(root, home=home)
     assert path.read_text(encoding="utf-8") == text
+
+
+def _block(root: Path, archetype: str, docs: str) -> str:
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(
+        'schema_version = 1\n\n[repository]\nname = "demo"\n'
+        f'archetype = "{archetype}"\n\n[docs]\nprofile = "{docs}"\n',
+        encoding="utf-8",
+    )
+    return _kiln_body(root)
+
+
+S16_4_1_BLOCK = """\
+# kiln's own state
+.rn-forge/kiln/backups/
+.rn-forge/kiln/rendered/
+.rn-forge/kiln/state.lock
+
+# macOS
+.DS_Store
+
+# Python tool caches
+.pytest_cache/
+.ruff_cache/
+.import_linter_cache/
+.uv-cache/
+
+# Coverage output
+.coverage
+.coverage.*
+coverage.xml
+
+# Docs build output ([docs] site_dir), and mkdocs's default
+.docs-site/
+site/
+"""
+
+
+def test_s16_4_1_1_groups(root: Path) -> None:
+    assert _block(root, "python-lib", "mkdocs") == S16_4_1_BLOCK
+
+
+def test_s16_4_1_1_site_dir_is_the_configured_one(root: Path) -> None:
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(
+        'schema_version = 1\n\n[repository]\nname = "demo"\n'
+        'archetype = "python-lib"\n\n[docs]\nprofile = "mkdocs"\n'
+        'site_dir = "out/site"\n',
+        encoding="utf-8",
+    )
+    assert "\nout/site/\n" in _kiln_body(root)
+
+
+def test_s16_4_1_2_node_lib_has_no_python_groups(root: Path) -> None:
+    body = _block(root, "node-lib", "mkdocs")
+    assert "# Python tool caches" not in body
+    assert "# Coverage output" not in body
+    assert "# kiln's own state" in body
+    assert "# macOS" in body
+    assert "# Docs build output" in body
+
+
+def test_s16_4_1_3_no_docs(root: Path) -> None:
+    body = _block(root, "python-lib", "none")
+    assert "# Docs build output" not in body
+    assert ".docs-site/" not in body
+    assert "# Python tool caches" in body
+
+
+def test_s16_4_1_4_dedupe_ignores_comments(root: Path) -> None:
+    path = root / ".gitignore"
+    path.write_text(
+        GITIGNORE_BLOCK.render("", S16_4_1_BLOCK)
+        + "\n# macOS\n.DS_Store\n\n# mine\nsecrets.env\n",
+        encoding="utf-8",
+    )
+    dropped = _dedupe_gitignore(root)
+    assert dropped == [".DS_Store"]
+    text = path.read_text(encoding="utf-8")
+    assert "secrets.env" in text
+    assert "# mine" in text
+    assert text.count(".DS_Store") == 1

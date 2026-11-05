@@ -13,18 +13,26 @@ wheels/
 .goldens
 
 # BEGIN rn-forge kiln
+# kiln's own state
 .rn-forge/kiln/backups/
 .rn-forge/kiln/rendered/
 .rn-forge/kiln/state.lock
+
+# macOS
 .DS_Store
+
+# Python tool caches
 .pytest_cache/
 .ruff_cache/
 .import_linter_cache/
 .uv-cache/
+
+# Coverage output
 .coverage
 .coverage.*
 coverage.xml
+
+# Docs build output ([docs] site_dir), and mkdocs's default
 .docs-site/
-# mkdocs's own default output dir, for when someone runs it directly by mistake
 site/
 # END rn-forge kiln
