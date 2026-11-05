@@ -23,7 +23,7 @@ from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.tasks import TASKS
-from rn_forge.kiln.modules.tasks.config import TasksConfig
+from rn_forge.kiln.modules.tasks.config import ROOT_VERBS, TasksConfig
 from rn_forge.kiln.modules.tasks.checks import layout
 
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
@@ -207,7 +207,7 @@ def test_s4_3_3_1_task_list_json_lists_exactly_the_ten_root_verbs(
     names = {
         entry["name"]
         for entry in json.loads(result.stdout)["tasks"]
-        if not entry["name"].startswith("ci:")
+        if not entry["name"].startswith(("ci:", "kiln:"))
     }
     assert names == {
         "setup",
@@ -2025,7 +2025,8 @@ def test_s4_12_6_1_kiln_yml_holds_one_internal_doctor_task(
     root = _s4_12_1_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     document = _load(root, "tasks/kiln.yml")
-    assert set(document["tasks"]) == {"doctor"}
+    assert set(document["tasks"]) == {"doctor", "diff", "apply"}
+    assert not [n for n in ("diff", "apply") if "internal" in document["tasks"][n]]
     doctor = document["tasks"]["doctor"]
     assert doctor["internal"] is True
     assert doctor["desc"].strip()
@@ -3104,3 +3105,35 @@ def test_s9_3_4_6_extra_refs_run_in_root_validate_order(tmp_path: Path) -> None:
 def _load_from_render(root: Path) -> dict[str, object]:
     rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
     return YamlUtils.load(rendered["Taskfile.yml"])
+
+
+def test_s16_4_5_1_tasks(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    specs = YamlUtils.load((root / "tasks" / "kiln.yml").read_text(encoding="utf-8"))[
+        "tasks"
+    ]
+    for verb in ("diff", "apply"):
+        assert "internal" not in specs[verb]
+        assert specs[verb]["cmds"] == ["{{.KILN}} " + verb + " {{.CLI_ARGS}}"]
+    includes = YamlUtils.load((root / "Taskfile.yml").read_text(encoding="utf-8"))[
+        "includes"
+    ]
+    assert includes["kiln"] == "tasks/kiln.yml"
+    assert specs["doctor"]["internal"] is True
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s16_4_5_3_ten_root_verbs(tmp_path: Path, archetype: str) -> None:
+    root = _root(tmp_path, archetype, profile="none")
+    cycle.apply(root, home=tmp_path / "home")
+    result = _run_task(root, "--list", "--json")
+    assert result.returncode == 0, result.stderr
+    names = {entry["name"] for entry in json.loads(result.stdout)["tasks"]}
+    assert {n for n in names if n.startswith("kiln:")} == {"kiln:diff", "kiln:apply"}
+    assert {n for n in names if not n.startswith(("ci:", "kiln:"))} == set(ROOT_VERBS)
+    assert not [
+        f
+        for f in TASKS.checks(KilnConfig.load(root), root)
+        if f.code.startswith("taskgraph")
+    ]

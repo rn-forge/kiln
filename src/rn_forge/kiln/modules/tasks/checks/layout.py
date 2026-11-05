@@ -40,6 +40,9 @@ STATE_PATH = Path(".rn-forge/kiln/state.json")
 RESERVED_NAMESPACES = frozenset({"quality", "workspace", "node", "python", "kiln"})
 """Namespaces whose tasks are inner implementation and must be `internal`."""
 
+PUBLIC_KILN_TASKS = frozenset({"diff", "apply"})
+"""The `kiln:` tasks that are public: the rest of the namespace stays internal."""
+
 _TASK_CALL = re.compile(r"(?:^|[;&|(]\s*|\s)task\s+([A-Za-z][\w:-]*)")
 _RUN_LINE = re.compile(r"^(\s*)(?:- )?run:\s*(.*)$")
 _BLOCK_SCALAR = re.compile(r"^[|>][+-]?\d*$")
@@ -453,7 +456,9 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
             continue
         for name, spec in task_specs(_load_yaml(root / path)).items():
             findings.extend(_check_desc(path, name, spec))
-            if namespace in RESERVED_NAMESPACES:
+            if namespace in RESERVED_NAMESPACES and not (
+                namespace == "kiln" and name in PUBLIC_KILN_TASKS
+            ):
                 findings.extend(_check_internal(path, name, spec))
 
     graph, namespaces = load_graph(root)

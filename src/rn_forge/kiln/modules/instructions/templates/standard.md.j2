@@ -87,7 +87,7 @@ frontend scaffold wrote is repo-owned; kiln renders nothing under
 {% endif %}{% if workspace %}`build` and `version` take a package name after `--`
 (`task version -- {{ packages[0] if packages else "<package>" }}`); given none, they act on every member.
 
-{% endif %}Every other task is `internal: true`. The root `Taskfile.yml` holds wrappers
+{% endif %}`kiln:diff` and `kiln:apply` are public too. Every other task is `internal: true`. The root `Taskfile.yml` holds wrappers
 only: each of its commands is a `task:` call into a `tasks/*.yml` namespace.
 `kiln doctor`'s `task-layout` check enforces both halves of that, and fails if
 any gate stops being reachable from `validate`.

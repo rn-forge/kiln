@@ -38,7 +38,7 @@ The public surface for this repo is exactly:
 | `task docs:serve`   | live-reload docs on `127.0.0.1:8080`                |
 | `task docs:generate`| regenerate the docs' derived regions                |
 
-Every other task is `internal: true`. The root `Taskfile.yml` holds wrappers
+`kiln:diff` and `kiln:apply` are public too. Every other task is `internal: true`. The root `Taskfile.yml` holds wrappers
 only: each of its commands is a `task:` call into a `tasks/*.yml` namespace.
 `kiln doctor`'s `task-layout` check enforces both halves of that, and fails if
 any gate stops being reachable from `validate`.

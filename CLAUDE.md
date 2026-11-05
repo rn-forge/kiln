@@ -33,13 +33,13 @@ changing anything structural.
   plus `docs:build docs:serve docs:generate`.
 - **Generated files** carry a provenance header naming kiln. They are owned by
   kiln, not by this repo: edit `.rn-forge/kiln/config.toml` and run
-  `kiln apply`. An edit in place is drift, and `task lint` fails on it.
+  `task kiln:apply`. An edit in place is drift, and `task lint` fails on it.
 - **Docs rules:** [docs/\_structure.md](docs/_structure.md) says what belongs
   where; [docs/index.md](docs/index.md) is the reader's entry point. Run
   `task docs:generate` after adding a page.
 - **kiln is pinned by `[kiln] ref`** in `.rn-forge/kiln/config.toml`, and runs
   in its own environment, outside this repo's lock. CI runs it read-only
   through `task validate` — `kiln doctor` on every run, `kiln doctor --full`
-  where the workflow asks — and never runs `kiln apply`.
+  where the workflow asks — and never runs `task kiln:apply`.
 
 <!-- END rn-forge kiln -->

@@ -705,3 +705,19 @@ def test_s9_3_6_5_other_archetypes_render_no_section_nine(
     assert "\n## 9." not in standard
     for token in ("publishable", "RELEASE_APP", "verify-dist"):
         assert token not in standard, token
+
+
+def test_s16_4_5_2_block_names_the_task(tmp_path: Path) -> None:
+    root = _new(tmp_path)
+    block = KILN_BLOCK.extract((root / "CLAUDE.md").read_text(encoding="utf-8")) or ""
+    assert "`task kiln:apply`" in block
+    body = re.sub(r"<!--.*?-->", "", block)  # the provenance header stays as is
+    assert re.search(r"(?<!task )(?<!:)kiln apply", body) is None
+    drift = {a.key: a for a in DOCS.artifacts(KilnConfig.load(root), root)}[
+        "docs/runbooks/recovering-from-drift.md"
+    ].content
+    assert "task kiln:apply" in drift
+    assert "task kiln:diff" in drift
+    assert re.search(r"(?<!task )(?<!:)kiln (apply|diff)", drift) is None
+    taskfile = (root / "Taskfile.yml").read_text(encoding="utf-8")
+    assert "do not edit; run 'kiln apply'" in taskfile

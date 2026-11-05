@@ -58,7 +58,7 @@
     },
     ".rn-forge/kiln/standard.md": {
       "begin_marker": null,
-      "content_hash": "7982157459e8a996d88bb26cb91bb02ee9c101ca09761e0fba3fa8c5fa2d93cb",
+      "content_hash": "ecef8a173907636f6dd4058c5d4a03e4186cc048884b27335def00e81031375f",
       "end_marker": null,
       "kind": "managed",
       "path": ".rn-forge/kiln/standard.md"
@@ -72,7 +72,7 @@
     },
     "CLAUDE.md#rn-forge kiln": {
       "begin_marker": "<!-- BEGIN rn-forge kiln -->",
-      "content_hash": "a2647c8c24abc7b79518f4a83a67f1af4befbfdd2d9a1e8ed4811f5341c7e4c0",
+      "content_hash": "de55685da2d6e07c244ffbad071e1cf16b14f4b96e0ea5bff8a21a1c3ecfb963",
       "end_marker": "<!-- END rn-forge kiln -->",
       "kind": "block",
       "path": "CLAUDE.md"
@@ -275,7 +275,7 @@
     },
     "tasks/kiln.yml": {
       "begin_marker": null,
-      "content_hash": "8325c197cc4f38258381eaaf3cee7eb89818c3743762f16464b523a18c036608",
+      "content_hash": "ae8fa0dce9e77754c7542695351b62bf79a309047f615c98c23f88910e666e1b",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/kiln.yml"
