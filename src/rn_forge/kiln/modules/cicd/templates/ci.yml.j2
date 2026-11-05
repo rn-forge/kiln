@@ -5,7 +5,7 @@ name: CI
 {%- macro prerelease_needs() -%}
 validate, dependency-review
 {%- if node_lib %}, test-cloud, test-local, smoke{% endif -%}
-{%- if workspace %}, plan, test, integration, smoke, suites{% endif -%}
+{%- if not node_lib %}, plan, test, integration, smoke, suites{% endif -%}
 {%- if sonar %}, sonar{% endif -%}
 {%- for job in check_jobs %}, [[ job ]]{% endfor -%}
 {%- for job in required_jobs %}, [[ job ]]{% endfor -%}
@@ -27,25 +27,25 @@ validate, dependency-review
         run: exit 1
 {%- endmacro %}
 
-{% if workspace %}# validate → plan → test, integration, smoke, suites → sonar → release → external-install, docs.
+{% if not node_lib %}# validate → plan → test, integration, smoke, suites → sonar → release{% if workspace %} → external-install, docs{% endif %}.
 #
-# validate: the repository-wide checks (lint, adapters, docs build), once.
-# plan:     reads the uv workspace and selects the changed packages and their
+# validate: the repository-wide checks ({% if workspace %}lint, adapters, docs build{% else %}lint, typecheck{% if docs %}, docs build{% endif %}{% endif %}), once.
+# plan:     reads the uv workspace{% if not workspace %} (here a workspace of one member, the root project){% endif %} and selects the changed packages and their
 #           dependents, as the outputs every later job reads.
-# test:     one job per selected package — lint, typecheck and test that member.
+# test:     one job per selected package — {% if workspace %}lint, typecheck and test that member{% else %}`task test`{% endif %}.
 # integration, smoke, suites: the jobs a package or the workspace declares —
 #           tests against the service containers a package declares, one extra
 #           installed alone, workspace-wide pytest.
 # sonar:    the scan, once test, integration and smoke have passed.
-# release:  the selected packages whose checks all passed, in dependency order,
+{% if workspace %}# release:  the selected packages whose checks all passed, in dependency order,
 #           each on its own `<package>-v<version>` tag.
 # external-install: installs each new tag from git, outside the workspace.
 {% if docs %}# docs:     deploys each released package's versioned site and the root site to Pages.
-{% endif %}{% elif node_lib %}# validate → test-cloud or test-local → sonar, smoke, docs → ci-ok.
+{% endif %}{% elif release != "none" %}# release:  publishes the version once everything before it has passed.
+{% endif %}{% else %}# validate → test-cloud or test-local → sonar, smoke, docs → ci-ok.
 #
 # test-cloud:  `nx affected` distributed over Nx Cloud agents (.nx/workflows/agents.yaml).
 # test-local:  the same on the runner, unless `USE_NX_CLOUD` is `true` or dispatch checks it.
-{% else %}# validate → sonar → release.
 {% endif %}#
 # Every step goes through `task`; `kiln doctor`'s ci-entrypoint rule fails the
 # build if a step invokes {% if node_lib %}uv/mkdocs/pnpm/npx/nx/ng/kiln{% else %}uv/pytest/ruff/pyright/mkdocs/kiln{% endif %} directly. kiln runs
@@ -114,7 +114,7 @@ jobs:
 
 {% if node_lib %}      # The Nx projects are checked by test-cloud or test-local; this job runs the rest.
 {% endif %}      - name: Validate
-        run: {% if workspace %}task lint{% elif node_lib %}task ci:validate{% else %}task validate{% endif %}
+        run: {% if workspace %}task lint{% else %}task ci:validate{% endif %}
         env:
           KILN_DOCTOR_FULL: {% if doctor_full == "every-run" %}"1"{% else %}${{ ((github.event_name == 'push' && github.ref_name == github.event.repository.default_branch) || github.event_name == 'workflow_dispatch') && '1' || '' }}{% endif %}
 {% if workspace %}
@@ -358,7 +358,7 @@ jobs:
 
       - id: deployment
         uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]
-{% endif %}{% else %}{% if workspace %}
+{% endif %}{% else %}
   plan:
     needs: validate
     runs-on: ubuntu-latest
@@ -548,24 +548,15 @@ jobs:
         env:
           SUITE_ARGS: ${{ matrix.args }}
         run: task ci:suite
-{% endif %}{% if sonar %}
+{% if sonar %}
   sonar:
-{% if workspace %}    needs: [validate, test, integration, smoke]
+    needs: [validate, test, integration, smoke]
     # The scan runs on a same-repository pull request and on main, nowhere else.
     # A fork's pull request cannot see SONAR_TOKEN, and SonarQube Cloud's free
     # plan keeps no readable result for any other branch, so the quality-gate
     # wait fails there. Validation stays required; the scan is skipped.
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name != 'pull_request' && github.ref == 'refs/heads/main')) }}
-{% else %}    needs: validate
-    # The scan runs on a same-repository pull request and on main, nowhere else.
-    # A fork's pull request cannot see SONAR_TOKEN, and SonarQube Cloud's free
-    # plan keeps no readable result for any other branch, so the quality-gate
-    # wait fails there. Validation stays required; the scan is skipped.
-    if: >-
-      (github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name == github.repository) ||
-      (github.event_name != 'pull_request' && github.ref == 'refs/heads/main')
-{% endif %}    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
@@ -704,7 +695,7 @@ jobs:
         run: task ci:external-install
 {% elif release != "none" %}
   release:
-    needs: checks-ok
+    needs: [plan, checks-ok]
     if: ${{ !cancelled() && needs.checks-ok.result == 'success' && github.event_name == 'push' && github.ref_name == 'main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15

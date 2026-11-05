@@ -40,18 +40,18 @@ vocabulary, one for every archetype, is in
 | Archetype | `ci.yml` job order | Other workflows |
 | -- | -- | -- |
 | `python-lib` | `validate` > `dependency-review`, `secret-scan`, `plan` > `test`, `integration`, `smoke`, `suites` > `sonar` > `checks-ok` > `release` > `external-install`, `docs` > `ci-ok` | none: `docs` is the one Pages deploy |
-| `python-tool`, `python-app`, `python-web-api`, `python-web-app` | `validate` > `dependency-review`, `secret-scan`, `sonar` > `checks-ok` > `release` > `ci-ok` | `docs.yml` |
+| `python-tool`, `python-app`, `python-web-api`, `python-web-app` | `validate` > `dependency-review`, `secret-scan`, `plan` > `test`, `integration`, `smoke`, `suites` > `sonar` > `checks-ok` > `release` > `ci-ok` | `docs.yml` |
 | `node-lib` | `validate` > `dependency-review`, `secret-scan`, `test-cloud` or `test-local` > `sonar`, `smoke` > `checks-ok`; `docs` > `ci-ok` | `release.yml` (dispatch) |
 
 | Job | Runs | Task verb |
 | -- | -- | -- |
 | `validate` (`python-lib`) | repository-wide checks, once | `task lint`, `task ci:adapters`, `task docs:build` |
-| `validate` (single-package Python) | the aggregate gate | `task validate` |
+| `validate` (single-package Python) | lint, typecheck and the docs build, once | `task ci:validate` |
 | `validate` (`node-lib`) | what Nx does not run | `task ci:validate` |
 | `dependency-review` | pull requests only; fails on a new dependency with a known vulnerability | none: a pinned action |
 | `secret-scan` | `task ci:lint:secrets`: gitleaks over the full git history; skipped for a fork's pull request | `[ci.checks] secret-scan`, on |
 | `plan` | selects changed packages and their dependents | `task ci:plan` |
-| `test` | one leg per selected package | `task ci:test` |
+| `test` | one leg per selected package; for a single-package Python repository, `task test` | `task ci:test` |
 | `integration` | one leg per selected package declaring a service in `[tool.workspace-ci.integration.<service>]`: the task starts the containers, runs the tests, removes them | `task ci:integration` |
 | `smoke` | one leg per selected package, plus one per declared extra: the wheel installs and imports | `task ci:smoke` |
 | `suites` | the root workspace-wide pytest suites | `task ci:suite` |
@@ -173,14 +173,21 @@ renders the job, still after `validate`, but nothing waits for it.
 
 ### Single-package Python
 
-`python-tool`, `python-app`, `python-web-api` and `python-web-app` run the
-`validate` > `sonar` > `release` flow above. `release` builds with `task build`
-and publishes with `task ci:release-publish`, after `task ci:release-state`
-decides whether the version is new. `python-web-api` and `python-web-app` run
-the same pipeline with the API package under `api_dir`; `python-web-app` adds
-the frontend (`task node:*`) to `lint`, `typecheck`, `test` and `build`. They
-deploy docs from `docs.yml` (`task docs:build`, on a push to the default
-branch), which is outside `ci-ok` and not gated on `release`.
+`python-tool`, `python-app`, `python-web-api` and `python-web-app` are a
+workspace of one member, the root project, so they run the same `plan`, `test`,
+`integration`, `smoke` and `suites` jobs as `python-lib`: `validate` > `plan` >
+`test`, `integration`, `smoke`, `suites` > `sonar` > `checks-ok` > `release`.
+`validate` runs `task ci:validate` (`task lint`, `task typecheck`, and
+`task docs:build` with docs); `test` runs `task test`, which for
+`python-web-app` includes the frontend. A change under `docs/` alone selects
+nothing; any other change selects the one member. `release` waits for `plan` and
+`checks-ok`, builds with `task build` and publishes with
+`task ci:release-publish`, after `task ci:release-state` decides whether the
+version is new. `python-web-api` and `python-web-app` run the same pipeline with
+the API package under `api_dir`; `python-web-app` adds the frontend
+(`task node:*`) to `lint`, `typecheck`, `test` and `build`. They deploy docs
+from `docs.yml` (`task docs:build`, on a push to the default branch), which is
+outside `ci-ok` and not gated on `release`.
 
 ### `node-lib`
 

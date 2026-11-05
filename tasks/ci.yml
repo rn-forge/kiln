@@ -3,6 +3,11 @@ version: "3"
 
 # The CI module's check on the workflows it generates (zizmor and actionlint),
 # internal, run by `lint`.
+#
+# What the CI workflow calls for a single-package Python repo's per-package pipeline. These
+# are public tasks, not `internal`: a workflow step runs them from the command
+# line, which go-task refuses for an internal task. They are CI's, not a
+# developer's; the ten root verbs do not change.
 
 vars:
   DEVOPS: 'uv run kiln-devops'
@@ -70,3 +75,44 @@ tasks:
     desc: "CI only: publish the GitHub release for TAG, from the built distributions, at SOURCE_SHA"
     cmds:
       - '{{.DEVOPS}} release-publish "$TAG" --title "$TAG" --target "$SOURCE_SHA" dist/*.whl dist/*.tar.gz dist/*.cdx.json'
+
+  plan:
+    desc: "CI only: print the plan's outputs for $GITHUB_OUTPUT"
+    silent: true
+    cmds:
+      - |
+        set -euo pipefail
+        base="${BASE:-}"
+        if [ "${EVENT_NAME:-}" = push ]; then
+          base=$(gh run list --workflow ci.yml --branch main --event push --status success --limit 1 --json headSha --jq '.[0].headSha // ""')
+        fi
+        {{.DEVOPS}} plan "$base"
+
+  validate:
+    desc: "CI only: the repository-wide checks — lint, typecheck, docs build; `test` runs the tests"
+    cmds:
+      - task: :lint
+      - task: :typecheck
+      - task: :docs:build
+
+  test:
+    desc: "CI only: run the repository's tests (the plan's one member)"
+    cmds:
+      - task: :test
+
+  integration:
+    desc: "CI only: a member's tests against the service containers it declares (-- <package>)"
+    silent: true
+    cmds:
+      - '{{.DEVOPS}} integration {{.CLI_ARGS}}'
+
+  smoke:
+    desc: "CI only: install one extra from the built wheel and import it (-- <package> [extra])"
+    silent: true
+    cmds:
+      - '{{.DEVOPS}} smoke {{.CLI_ARGS}} "${EXTRA:-}"'
+
+  suite:
+    desc: "CI only: run one workspace-wide pytest suite"
+    cmds:
+      - uv run pytest $SUITE_ARGS

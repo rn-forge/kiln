@@ -491,8 +491,8 @@ def test_s5_1_2_a_workflow_calling_pnpm_directly_fails_ci_entrypoint(
     workflow = root / ".github" / "workflows" / "ci.yml"
     text = workflow.read_text(encoding="utf-8")
     text = text.replace(
-        "      - name: Validate\n        run: task validate\n",
-        "      - name: Validate\n        run: task validate\n"
+        "      - name: Validate\n        run: task ci:validate\n",
+        "      - name: Validate\n        run: task ci:validate\n"
         "      - name: Bad\n        run: pnpm install\n",
     )
     workflow.write_text(text, encoding="utf-8")
@@ -1393,6 +1393,7 @@ CI_PIPELINE_TASKS = {
     "external-install",
     "docs-publish",
 }
+SINGLE_PIPELINE_TASKS = {"validate", "test", "plan", "integration", "smoke", "suite"}
 ALL_CELLS = [(a, "") for a in ARCHETYPES] + list(WEB_CELLS)
 OLD_CI_KEYS = [
     "quality:lint:ci-entrypoint",
@@ -1447,7 +1448,7 @@ def test_s4_12_2_3_only_python_lib_has_the_pipeline_tasks(
         assert others == CI_PIPELINE_TASKS
         assert not any("internal" in document["tasks"][k] for k in others)
     else:
-        assert others == set()
+        assert others == SINGLE_PIPELINE_TASKS
     assert "DEVOPS" in document["vars"]
 
 
@@ -3029,10 +3030,12 @@ def test_s9_3_4_1_node_lib_ci_validate_is_public_and_ordered(tmp_path: Path) -> 
     assert task["cmds"] == CI_VALIDATE_HEAD
 
 
-def test_s9_3_4_2_no_other_archetype_has_a_ci_validate_task(tmp_path: Path) -> None:
+def test_s9_3_4_2_only_node_lib_and_single_packages_have_a_ci_validate_task(
+    tmp_path: Path,
+) -> None:
     for archetype in (*ARCHETYPES,):
         tasks = _ci_tasks(_root(tmp_path / archetype, archetype))["tasks"]
-        assert "validate" not in tasks, archetype  # type: ignore[operator]
+        assert ("validate" in tasks) == (archetype != "python-lib"), archetype  # type: ignore[operator]
 
 
 def test_s9_3_4_4_dry_run_prints_doctor_with_full_only_when_asked(

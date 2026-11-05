@@ -210,23 +210,23 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
         "validate",
         "dependency-review",
         "secret-scan",
+        "plan",
+        "test",
+        "integration",
+        "smoke",
+        "suites",
         "release",
         "checks-ok",
         "ci-ok",
     }
-    assert jobs["release"]["needs"] == "checks-ok"
-    assert (
-        "sonar"
-        not in off[".github/workflows/ci.yml"]
-        .split("jobs:", 1)[1]
-        .split("release:", 1)[0]
-    )
+    assert jobs["release"]["needs"] == ["plan", "checks-ok"]
+    assert "\n  sonar:" not in off[".github/workflows/ci.yml"]
     # Everything else keeps its bytes.
     on_ci = on[".github/workflows/ci.yml"]
     sonar_job = on_ci[on_ci.index("\n  sonar:") : on_ci.index("\n  release:")]
     expected = on_ci.replace(sonar_job, "").replace(
-        "needs: [validate, dependency-review, sonar, secret-scan]",
-        "needs: [validate, dependency-review, secret-scan]",
+        "needs: [validate, dependency-review, plan, test, integration, smoke, suites, sonar, secret-scan]",
+        "needs: [validate, dependency-review, plan, test, integration, smoke, suites, secret-scan]",
     )
     assert off[".github/workflows/ci.yml"] == expected
 
@@ -238,6 +238,11 @@ def test_s4_3_4_3_release_none_renders_no_release_job(tmp_path: Path) -> None:
         "validate",
         "dependency-review",
         "secret-scan",
+        "plan",
+        "test",
+        "integration",
+        "smoke",
+        "suites",
         "sonar",
         "checks-ok",
         "ci-ok",
@@ -652,7 +657,7 @@ def test_s4_6_4_2_ci_sets_the_variable_on_default_branch_pushes(
         jobs = YamlUtils.load(_rendered(root)[".github/workflows/ci.yml"])["jobs"]
         step = next(s for s in jobs["validate"]["steps"] if s["name"] == "Validate")
         assert step["run"] == (
-            "task lint" if archetype == "python-lib" else "task validate"
+            "task lint" if archetype == "python-lib" else "task ci:validate"
         )
         assert step["env"]["KILN_DOCTOR_FULL"] == KILN_DOCTOR_FULL_EXPRESSION, archetype
 
@@ -772,6 +777,11 @@ def test_s6_4_2_8_other_archetypes_keep_the_plain_pipeline(tmp_path: Path) -> No
             "validate",
             "dependency-review",
             "secret-scan",
+            "plan",
+            "test",
+            "integration",
+            "smoke",
+            "suites",
             "sonar",
             "release",
             "checks-ok",
@@ -3629,12 +3639,12 @@ def test_s9_3_2_7_standard_names_both_keys_in_its_ci_example() -> None:
 # S9.3.4 — validate runs only the checks that do not run Nx.
 
 
-def test_s9_3_4_3_validate_step_runs_ci_validate_for_node_lib_only(
+def test_s9_3_4_3_validate_step_runs_ci_validate(
     tmp_path: Path,
 ) -> None:
     expected = {
-        "python-app": "task validate",
-        "python-tool": "task validate",
+        "python-app": "task ci:validate",
+        "python-tool": "task ci:validate",
         "python-lib": "task lint",
         "node-lib": "task ci:validate",
     }

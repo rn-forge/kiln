@@ -156,7 +156,7 @@ def _barrier(archetype: str, sonar: bool) -> list[str]:
     needs = ["validate", "dependency-review"]
     if archetype == "node-lib":
         needs += ["test-cloud", "test-local", "smoke"]
-    if archetype == "python-lib":
+    else:
         needs += ["plan", "test", "integration", "smoke", "suites"]
     return needs + (["sonar"] if sonar else []) + ["secret-scan"]
 
@@ -198,8 +198,7 @@ def test_s15_8_7_4_release_waits_on_the_barrier(tmp_path: Path, archetype: str) 
         assert archetype == "node-lib"
         return
     release = jobs["release"]
-    plan = ["plan"] if archetype == "python-lib" else []
-    assert release["needs"] == ([*plan, "checks-ok"] if plan else "checks-ok")
+    assert release["needs"] == ["plan", "checks-ok"]
     condition = str(release["if"])
     assert "needs.checks-ok.result == 'success'" in condition
     assert "!cancelled()" in condition

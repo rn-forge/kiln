@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from rn_forge.kiln.devops import Package, Service, Smoke, Workspace, uv
+from rn_forge.kiln.devops.ci import plan, select
 
 
 def _write(path: Path, text: str) -> None:
@@ -216,3 +217,67 @@ def test_s6_7_2_smoke_with_a_declaration_imports_its_modules(
     workspace = Workspace(root=tmp_path, packages={"app": package})
     assert uv.smoke(workspace, "app", "") == 0
     assert calls[-1][-1] == "app.core"
+
+
+def _single(root: Path) -> None:
+    _write(
+        root / "pyproject.toml",
+        '[project]\nname = "My_Tool"\nversion = "1"\n\n'
+        '[tool.workspace-ci.integration.redis]\nimage = "redis:7"\n',
+    )
+    _write(root / "src/my_tool/__init__.py", "")
+
+
+def test_s15_8_3_1_root_is_the_member(tmp_path: Path) -> None:
+    _single(tmp_path)
+    assert uv.find_root(tmp_path / "src") == tmp_path
+    packages = uv.load_workspace(tmp_path).packages
+    assert list(packages) == ["my-tool"]
+    assert (packages["my-tool"].dir, packages["my-tool"].module) == (".", "my_tool")
+    assert [s.name for s in packages["my-tool"].services] == ["redis"]
+
+
+def test_s15_8_3_1_declared_module_name_wins(tmp_path: Path) -> None:
+    _write(
+        tmp_path / "pyproject.toml",
+        '[project]\nname = "ns-pkg"\nversion = "1"\n\n'
+        '[tool.uv.build-backend]\nmodule-name = "ns.pkg"\n',
+    )
+    assert uv.load_workspace(tmp_path).packages["ns-pkg"].module == "ns.pkg"
+
+
+def test_s15_8_3_2_plan_of_one(tmp_path: Path) -> None:
+    _single(tmp_path)
+    run = lambda *args: subprocess.run(  # noqa: E731
+        ["git", "-c", "user.name=t", "-c", "user.email=t@t", *args],
+        cwd=tmp_path, check=True, capture_output=True,
+    )  # fmt: skip
+    run("init", "-q", "-b", "main")
+    run("add", ".")
+    run("commit", "-q", "-m", "one")
+    base = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=tmp_path, check=True, capture_output=True, text=True,
+    ).stdout.strip()  # fmt: skip
+    workspace = uv.load_workspace(tmp_path)
+
+    _write(tmp_path / "docs/index.md", "x")
+    run("add", ".")
+    run("commit", "-q", "-m", "docs")
+    assert select(workspace, base) == set()
+
+    _write(tmp_path / "src/my_tool/more.py", "x = 1")
+    run("add", ".")
+    run("commit", "-q", "-m", "src")
+    assert select(workspace, base) == {"my-tool"}
+    assert select(workspace, "") == {"my-tool"}
+    outputs = plan(workspace, base)
+    assert outputs["integration"] == [
+        {
+            "name": "my-tool",
+            "dir": ".",
+            "services": ["redis"],
+            "marker": "my-tool.integration",
+        }
+    ]
+    assert outputs["sonar-sources"] == "src"

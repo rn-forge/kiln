@@ -204,8 +204,16 @@ def select(workspace: Workspace, base: str) -> set[str]:
     selected: set[str] = set()
     for file in changed_files(root, base):
         owner = next(
-            (p.name for p in packages.values() if file.startswith(f"{p.dir}/")), None
+            (
+                p.name
+                for p in packages.values()
+                if p.dir != "." and file.startswith(f"{p.dir}/")
+            ),
+            None,
         )
+        if owner is None and not file.startswith(UNSCOPED):
+            # A single-package repository: the root project owns everything else.
+            owner = next((p.name for p in packages.values() if p.dir == "."), None)
         if owner:
             selected.add(owner)
         elif not file.startswith(UNSCOPED):
@@ -218,6 +226,11 @@ def select(workspace: Workspace, base: str) -> set[str]:
                 selected.add(package.name)
                 grew = True
     return selected
+
+
+def _under(directory: str, child: str) -> str:
+    """Return `child` under `directory`, without a leading `./` for the root."""
+    return child if directory == "." else f"{directory}/{child}"
 
 
 def plan(workspace: Workspace, base: str) -> dict[str, object]:
@@ -257,9 +270,11 @@ def plan(workspace: Workspace, base: str) -> dict[str, object]:
         "pytest-args": shlex.join(workspace.pytest_args),
         "cov-args": shlex.join(f"--cov={p.module}" for p in everything),
         "test-paths": shlex.join(p.dir for p in everything),
-        "sonar-sources": ",".join(f"{p.dir}/src" for p in everything),
+        "sonar-sources": ",".join(_under(p.dir, "src") for p in everything),
         "sonar-tests": ",".join(
-            f"{p.dir}/tests" for p in everything if (root / p.dir / "tests").is_dir()
+            _under(p.dir, "tests")
+            for p in everything
+            if (root / p.dir / "tests").is_dir()
         ),
         "sonar": (root / "sonar-project.properties").is_file(),
         "docs": (root / "mkdocs.yml").is_file(),

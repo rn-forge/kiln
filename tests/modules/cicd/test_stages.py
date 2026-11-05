@@ -150,3 +150,85 @@ def test_s15_8_2_8_task(tmp_path: Path) -> None:
     tasks = YamlUtils.load(_render(tmp_path, "python-lib")["tasks/ci.yml"])["tasks"]
     assert tasks["integration"]["cmds"] == ["{{.DEVOPS}} integration {{.CLI_ARGS}}"]
     assert not {"postgres", "redis"} & set(tasks)
+
+
+# S15.8.3 — single-package Python archetypes get a plan of one.
+
+SINGLE = ("python-tool", "python-app", "python-web-api", "python-web-app")
+STAGES = ("plan", "test", "integration", "smoke", "suites")
+
+
+def _render_single(tmp_path: Path, archetype: str, extra: str = "") -> dict[str, str]:
+    root = tmp_path / archetype
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True, exist_ok=True)
+    text = CONFIG.format(archetype=archetype, release="tag-exists")
+    if archetype in {"python-web-api", "python-web-app"}:
+        text += f'\n[archetype."{archetype}"]\n'
+        if archetype == "python-web-app":
+            text += 'frontend = "angular"\n'
+    config.write_text(text + extra, encoding="utf-8")
+    loaded = KilnConfig.load(root)
+    files = {a.path: a.content for a in CICD.artifacts(loaded, root)}
+    files.update({a.path: a.content for a in TASKS.artifacts(loaded, root)})
+    return files
+
+
+@pytest.mark.parametrize("archetype", SINGLE)
+def test_s15_8_3_3_jobs(tmp_path: Path, archetype: str) -> None:
+    lib = _jobs(tmp_path, "python-lib")
+    jobs = workflows.jobs(_render_single(tmp_path, archetype))
+    # Only a repository with two members checks their internal ranges.
+    lib["plan"]["steps"] = [
+        s for s in lib["plan"]["steps"] if s["name"] != "Check internal ranges"
+    ]
+    for stage in STAGES:
+        assert jobs[stage] == lib[stage], stage
+    validate = [s.get("run") for s in jobs["validate"]["steps"]]
+    assert "task ci:validate" in validate
+    assert "task ci:adapters" not in validate
+
+
+@pytest.mark.parametrize("archetype", SINGLE)
+def test_s15_8_3_4_validate_task(tmp_path: Path, archetype: str) -> None:
+    files = _render_single(tmp_path, archetype)
+    tasks = YamlUtils.load(files["tasks/ci.yml"])["tasks"]
+    assert tasks["validate"]["cmds"] == [
+        {"task": ":lint"},
+        {"task": ":typecheck"},
+        {"task": ":docs:build"},
+    ]
+    assert tasks["test"]["cmds"] == [{"task": ":test"}]
+    assert {"plan", "integration", "smoke", "suite"} <= set(tasks)
+    root = YamlUtils.load(files["Taskfile.yml"])["tasks"]
+    assert {"task": "node:test"} in root["test"]["cmds"] or archetype != (
+        "python-web-app"
+    )
+
+
+@pytest.mark.parametrize("archetype", SINGLE)
+def test_s15_8_3_5_needs(tmp_path: Path, archetype: str) -> None:
+    jobs = workflows.jobs(_render_single(tmp_path, archetype))
+    assert jobs["sonar"]["needs"] == ["validate", "test", "integration", "smoke"]
+    assert jobs["checks-ok"]["needs"] == [
+        "validate",
+        "dependency-review",
+        "plan",
+        "test",
+        "integration",
+        "smoke",
+        "suites",
+        "sonar",
+        "secret-scan",
+    ]
+    assert jobs["release"]["needs"] == ["plan", "checks-ok"]
+    assert jobs["ci-ok"]["needs"] == ["checks-ok", "release"]
+
+
+@pytest.mark.parametrize("archetype", SINGLE)
+def test_s15_8_3_6_suites_are_declared(tmp_path: Path, archetype: str) -> None:
+    suites = workflows.jobs(_render_single(tmp_path, archetype))["suites"]
+    assert suites["strategy"]["matrix"] == {
+        "include": "${{ fromJSON(needs.plan.outputs.suites) }}"
+    }
+    assert "needs.plan.outputs.suites != '[]'" in suites["if"]

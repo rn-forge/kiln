@@ -1,6 +1,7 @@
 """The uv workspace adapter: manifest reading and the `smoke` and `adapters` checks.
 
-Members are those of the root `[tool.uv.workspace]`. A member's internal
+Members are those of the root `[tool.uv.workspace]`; a root `pyproject.toml` without
+one is a workspace of one member, the root project. A member's internal
 requirements are the members named in its dependencies, optional dependencies and
 dependency groups. CI settings live in `[tool.workspace-ci]` tables: the root one
 holds workspace-wide settings, a member's own holds that member's extra checks.
@@ -45,18 +46,38 @@ for name in modules:
 
 def find_root(start: Path) -> Path:
     """Return the nearest directory at or above `start` whose `pyproject.toml`
-    declares `[tool.uv.workspace]`.
+    declares `[tool.uv.workspace]`, else the nearest one with a `pyproject.toml`
+    (a single-package repository).
 
     Raises:
-        FileNotFoundError: When there is none.
+        FileNotFoundError: When there is neither.
     """
-    for directory in (start, *start.parents):
+    directories = (start, *start.parents)
+    for directory in directories:
         manifest = directory / MANIFEST
         if manifest.is_file() and "workspace" in tomllib.loads(
             manifest.read_text()
         ).get("tool", {}).get("uv", {}):
             return directory
-    raise FileNotFoundError(f"no uv workspace at or above {start}")
+    for directory in directories:
+        if (directory / MANIFEST).is_file():
+            return directory
+    raise FileNotFoundError(f"no uv workspace or pyproject.toml at or above {start}")
+
+
+def _module(path: Path, tool: dict[str, Any], name: str) -> str:
+    """Return a project's import name: the declared `module-name`, else the one
+    package under `src/`, else the project name as an identifier."""
+    declared = tool.get("uv", {}).get("build-backend", {}).get("module-name")
+    if declared:
+        return str(declared)
+    source = path / "src"
+    found = (
+        sorted(p.name for p in source.iterdir() if (p / "__init__.py").is_file())
+        if source.is_dir()
+        else []
+    )
+    return found[0] if len(found) == 1 else name.replace("-", "_")
 
 
 def _services(package: str, ci: dict[str, Any]) -> tuple[Service, ...]:
@@ -98,18 +119,24 @@ def load_workspace(root: Path) -> Workspace:
         ValueError: When a member declares a removed or incomplete service table.
     """
     manifest: dict[str, Any] = tomllib.loads((root / MANIFEST).read_text())
-    workspace = manifest["tool"]["uv"]["workspace"]
-    excluded = workspace.get("exclude", [])
-    dirs = sorted(
-        {
-            path.parent
-            for pattern in workspace["members"]
-            for path in root.glob(f"{pattern}/{MANIFEST}")
-            if not any(
-                fnmatch.fnmatch(path.parent.relative_to(root).as_posix(), x)
-                for x in excluded
-            )
-        }
+    workspace: dict[str, Any] | None = (
+        manifest.get("tool", {}).get("uv", {}).get("workspace")
+    )
+    excluded: list[str] = (workspace or {}).get("exclude", [])
+    dirs = (
+        sorted(
+            {
+                path.parent
+                for pattern in workspace["members"]
+                for path in root.glob(f"{pattern}/{MANIFEST}")
+                if not any(
+                    fnmatch.fnmatch(path.parent.relative_to(root).as_posix(), x)
+                    for x in excluded
+                )
+            }
+        )
+        if workspace is not None
+        else [root]
     )
     manifests = {path: tomllib.loads((path / MANIFEST).read_text()) for path in dirs}
     names = {normalize(m["project"]["name"]) for m in manifests.values()}
@@ -129,8 +156,7 @@ def load_workspace(root: Path) -> Workspace:
         packages[name] = Package(
             name=name,
             dir=path.relative_to(root).as_posix(),
-            module=tool.get("uv", {}).get("build-backend", {}).get("module-name")
-            or name.replace("-", "_"),
+            module=_module(path, tool, name),
             requires={r for r in map(requirement_name, requirements) if r in names}
             - {name},
             release_requires={

@@ -112,7 +112,7 @@ def _break_entrypoint(root: Path) -> None:
     _edit(
         root,
         ".github/workflows/ci.yml",
-        lambda text: text.replace("run: task validate", "run: uv sync", 1),
+        lambda text: text.replace("run: task ci:validate", "run: uv sync", 1),
     )
     _reseed(root, ".github/workflows/ci.yml")
 

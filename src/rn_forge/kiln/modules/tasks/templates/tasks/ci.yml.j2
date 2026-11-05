@@ -3,8 +3,8 @@ version: "3"
 
 # The CI module's check on the workflows it generates (zizmor and actionlint),
 # internal, run by `lint`.
-{% if workspace %}#
-# What the CI workflow calls for a python-lib repo's per-package pipeline. These
+{% if not node_lib %}#
+# What the CI workflow calls for a [[ "python-lib" if workspace else "single-package Python" ]] repo's per-package pipeline. These
 # are public tasks, not `internal`: a workflow step runs them from the command
 # line, which go-task refuses for an internal task. They are CI's, not a
 # developer's; the ten root verbs do not change.
@@ -309,7 +309,7 @@ tasks:
     cmds:
       - pnpm exec nx run-many -t compodoc build-storybook
       - node tools/ci/assemble-site.mjs .docs-site
-{% endif %}{% endif %}{% if workspace %}
+{% endif %}{% endif %}{% if not node_lib %}
   plan:
     desc: "CI only: print the plan's outputs for $GITHUB_OUTPUT"
     silent: true
@@ -322,7 +322,20 @@ tasks:
         fi
         {{.DEVOPS}} plan "$base"
 
-{% if internal_ranges_enabled %}  requirements:
+{% if not workspace %}  validate:
+    desc: "CI only: the repository-wide checks — lint, typecheck{% if docs %}, docs build{% endif %}; `test` runs the tests"
+    cmds:
+      - task: :lint
+      - task: :typecheck
+{% if docs %}      - task: :docs:build
+{% endif %}{% for ref in extra_refs.get("validate", []) %}      - task: :[[ ref ]]
+{% endfor %}
+  test:
+    desc: "CI only: run the repository's tests (the plan's one member)"
+    cmds:
+      - task: :test
+
+{% else %}{% if internal_ranges_enabled %}  requirements:
     desc: "CI only: check that members depend on each other by range, not by exact pin"
     silent: true
     cmds:
@@ -341,7 +354,7 @@ tasks:
       - uv run --directory "$PACKAGE_DIR" --package {{.CLI_ARGS}} pyright src
       - uv run --directory "$PACKAGE_DIR" --package {{.CLI_ARGS}} pytest -q $PYTEST_ARGS
 
-  integration:
+{% endif %}  integration:
     desc: "CI only: a member's tests against the service containers it declares (-- <package>)"
     silent: true
     cmds:
@@ -357,7 +370,7 @@ tasks:
     desc: "CI only: run one workspace-wide pytest suite"
     cmds:
       - uv run pytest $SUITE_ARGS
-
+{% if workspace %}
   release-build:
     desc: "CI only: build the releasable packages and their SBOMs into dist/<package>/, prerequisites first"
     cmds:
@@ -496,4 +509,4 @@ tasks:
           git archive FETCH_HEAD packages | tar -x -C "$SITE_DIR"
         fi
 {% endif %}
-{% endif %}
+{% endif %}{% endif %}
