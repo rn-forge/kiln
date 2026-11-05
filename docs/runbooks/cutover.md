@@ -56,3 +56,10 @@ For a repository with no lineage worth keeping, use
    old CI workflow in the same change that adds `ci.yml`: both share the
    concurrency group and a ruleset requires the context `ci-ok`, so a
    follow-up would leave two.
+
+## Examples
+
+- kiln's own table, for its `mkdocs.yml`:
+  [S16.2.1](../specs/epics/E16-init-adopts-by-overwrite/F16.2-kiln-owns-mkdocs.md#s1621-inventory-what-the-three-mkdocsyml-files-carry).
+- pykit's rehearsal, items 1–15:
+  [the cutover findings](../specs/ideas/pykit-cutover-findings.md#items).

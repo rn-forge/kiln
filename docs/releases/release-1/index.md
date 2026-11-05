@@ -92,7 +92,7 @@ are [release-2](../release-2/index.md).
 | [F15.8 — Every archetype on the one-workflow contract](../../specs/epics/E15-ci-standard/F15.8-one-workflow-contract.md) | E15 | New |
 | [F16.1 — Opinionated `init`](../../specs/epics/E16-init-adopts-by-overwrite/F16.1-opinionated-init.md) | E16 | Closed |
 | [F16.2 — kiln owns `mkdocs.yml`](../../specs/epics/E16-init-adopts-by-overwrite/F16.2-kiln-owns-mkdocs.md) | E16 | Closed |
-| [F16.3 — The cutover SOP](../../specs/epics/E16-init-adopts-by-overwrite/F16.3-cutover-sop.md) | E16 | Active |
+| [F16.3 — The cutover SOP](../../specs/epics/E16-init-adopts-by-overwrite/F16.3-cutover-sop.md) | E16 | Closed |
 | [F16.4 — Generated-file hygiene](../../specs/epics/E16-init-adopts-by-overwrite/F16.4-generated-file-hygiene.md) | E16 | New |
 
 <!-- END derived scope -->
