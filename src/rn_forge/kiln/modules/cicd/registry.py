@@ -63,6 +63,7 @@ _CODE_NAMES = frozenset(
         "lint-imports",
         "kiln doctor",
         "pip-audit",
+        "pnpm-audit",
         "dependency-review",
         "external-install",
         "ci-ok",
@@ -106,6 +107,7 @@ CHECKS: tuple[CiCheck, ...] = (
     ),
     _std("zizmor, actionlint", "lint", _ALL),
     _std("pip-audit", "lint", _PY, "S; ignore list `[tasks.audit] ignore`"),
+    _std("pnpm-audit", "{stack}:lint:audit", frozenset({"node-lib"})),
     _std(
         "Nx lint, typecheck, test, build",
         "`task node:*`, `task ci:affected`",

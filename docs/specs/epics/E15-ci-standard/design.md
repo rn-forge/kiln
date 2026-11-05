@@ -143,8 +143,8 @@ them.
 | ruff, pyright, `lint-imports` | `validate`, `test` | yes | yes | yes | yes | yes |  | S | built |
 | Markdown and TOML formatting, `kiln doctor`, zizmor, actionlint | `validate` | yes | yes | yes | yes | yes | yes | S | built |
 | `pip-audit` | `validate` | yes | yes | yes | yes | yes |  | S; ignore list `[tasks.audit] ignore` | built |
-| `pnpm audit` | `validate` |  |  |  |  |  | yes | S | [F15.2](F15.2-licences-check.md) |
-| Licences | `validate` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] licenses`, on | [F15.2](F15.2-licences-check.md) |
+| `pnpm audit` | `validate` |  |  |  |  |  | yes | S | built |
+| Licences | `validate` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] licenses`, on | built |
 | Secret scan | `secret-scan` job | yes | yes | yes | yes | yes | yes | C: `[ci.checks] secret-scan`, on | [F15.3](F15.3-secret-scan.md) |
 | Internal ranges | `plan` (lib), `validate` (node-lib) | yes |  |  |  |  | yes | D: a workspace with two or more members | [F15.4](F15.4-internal-ranges.md) |
 | `dependency-review` | `dependency-review` job | yes | yes | yes | yes | yes | yes | S | built |

@@ -1659,7 +1659,7 @@ def test_s9_1_9_1_node_yml_adds_typecheck_and_e2e_for_node_lib(
     root = _node_lib_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "tasks/node.yml")["tasks"]
-    assert set(tasks) == {*NODE_CHECKS, "lint:licenses"}
+    assert set(tasks) == {*NODE_CHECKS, "lint:audit", "lint:licenses"}
     for name, cmds in NODE_CHECKS.items():
         assert tasks[name]["internal"] is True
         assert tasks[name]["desc"].strip()
@@ -1747,11 +1747,12 @@ def test_s9_2_5_1_node_yml_is_byte_identical_in_both_cells(tmp_path: Path) -> No
     cycle.apply(lib, home=tmp_path / "home")
     cycle.apply(app, home=tmp_path / "home")
     # S15.2.3: the licences check is `node-lib`'s alone, so the lib file adds
-    # exactly the `DEVOPS` var and the `lint:licenses` task to the shared one.
+    # exactly the `DEVOPS` var and the `lint:licenses` task (and, S15.2.4, `lint:audit`)
+    # to the shared one.
     lib_doc = YamlUtils.load((lib / "tasks/node.yml").read_text(encoding="utf-8"))
     text = (app / "tasks/node.yml").read_text(encoding="utf-8")
     assert lib_doc.pop("vars").keys() == {"DEVOPS"}
-    del lib_doc["tasks"]["lint:licenses"]
+    del lib_doc["tasks"]["lint:licenses"], lib_doc["tasks"]["lint:audit"]
     assert lib_doc == YamlUtils.load(text)
     assert set(YamlUtils.load(text)["tasks"]) == set(NODE_CHECKS)
 
@@ -3236,3 +3237,26 @@ def test_s15_2_3_2_off(tmp_path: Path) -> None:
     assert "vars" not in YamlUtils.load(
         (root / "tasks/node.yml").read_text(encoding="utf-8")
     )
+
+
+def test_s15_2_4_1_node_lint_audit_task(tmp_path: Path) -> None:
+    root = _node_lib_root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    root_tasks, node = _node_lib_rendered(root)
+    assert {"task": "node:lint:audit"} in root_tasks["lint"]["cmds"]
+    task = node["lint:audit"]
+    assert task["internal"] is True
+    assert task["cmds"] == ["pnpm audit --prod --audit-level moderate"]
+    assert "network" in task["desc"]
+
+
+def test_s15_2_4_2_python_archetypes_have_none(tmp_path: Path) -> None:
+    for archetype in ("python-tool", "python-web-app"):
+        sub = tmp_path / archetype
+        sub.mkdir()
+        root = _root(sub, archetype)
+        cycle.apply(root, home=sub / "home")
+        for path in (root / "Taskfile.yml", *(root / "tasks").glob("*.yml")):
+            text = path.read_text(encoding="utf-8")
+            assert "pnpm audit" not in text, path
+            assert "node:lint:audit" not in text, path

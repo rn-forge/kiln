@@ -83,6 +83,7 @@ checks" in `.rn-forge/kiln/standard.md`.
 | `kiln doctor` | `task lint` | yes | yes | yes | yes | yes | yes | S; `--full` per `[ci] doctor_full`, default `default-branch` |
 | zizmor, actionlint | `task lint` | yes | yes | yes | yes | yes | yes | S |
 | `pip-audit` | `task lint` | yes | yes | yes | yes | yes |  | S; ignore list `[tasks.audit] ignore` |
+| `pnpm-audit` | `task python:lint:audit` |  |  |  |  |  | yes | S |
 | Nx lint, typecheck, test, build | `task node:*`, `task ci:affected` |  |  |  |  | yes | yes | S |
 | pytest | `task test` | verify | yes | yes | yes | yes |  | S |
 | Services, smoke, suites | `task ci:*` | yes |  |  |  |  |  | D: a package declares them |

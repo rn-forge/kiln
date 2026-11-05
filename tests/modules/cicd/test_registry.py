@@ -109,3 +109,17 @@ def test_s15_1_1_6_matrix_for_one_archetype() -> None:
     assert "lib |" not in lines[0]
     assert registry.for_archetype("node-lib") == expected
     assert all(a in ALL for c in registry.CHECKS for a in c.archetypes)
+
+
+def test_s15_2_4_3_registry_row() -> None:
+    row = _check("pnpm-audit")
+    assert row.switch is Switch.STANDARD
+    assert row.archetypes == frozenset({"node-lib"})
+    assert row.verb == "{stack}:lint:audit"
+    assert "pnpm-audit" not in registry.configured_names()
+    assert registry.configured_names() == {
+        "licenses",
+        "secret-scan",
+        "umbrella-release",
+        "scorecard",
+    }

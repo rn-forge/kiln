@@ -58,6 +58,7 @@ tasks:
       - task: kiln:doctor
       - task: ci:lint:workflows
 {% if not node_lib %}      - task: python:lint:audit
+{% else %}      - task: node:lint:audit
 {% endif %}{% if licenses_enabled and not node_lib %}      - task: python:lint:licenses
 {% endif %}{% if licenses_enabled and node_lib %}      - task: node:lint:licenses
 {% endif %}{% for ref in extra_refs.get("lint", []) %}      - task: [[ ref ]]

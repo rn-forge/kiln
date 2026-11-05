@@ -21,6 +21,12 @@ tasks:
     cmds:
 {% if overrides.get("node:lint") %}      - [[ overrides["node:lint"] ]]
 {% else %}      - pnpm nx run-many -t lint
+{% endif %}{% if node_lib %}
+  lint:audit:
+    desc: Fail if a production dependency has a known vulnerability (pnpm audit; needs the network).
+    internal: true
+    cmds:
+      - pnpm audit --prod --audit-level moderate
 {% endif %}{% if licenses_node_task %}
   lint:licenses:
     desc: Fail if a dependency's licence matches the deny list (pnpm licenses).
