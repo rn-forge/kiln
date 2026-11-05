@@ -9,6 +9,7 @@ function `commands` imports is replaced by one that records and fails.
 
 from __future__ import annotations
 
+import inspect
 import json
 import os
 import re
@@ -29,7 +30,7 @@ from rn_forge.commons.runtime.console import OutputMode, console
 from rn_forge.commons.generation import ArtifactKind, StateEntry
 from rn_forge.commons.generation.artifacts import block_from_entry
 
-from rn_forge.kiln import commands
+from rn_forge.kiln import commands, main
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK
 from rn_forge.kiln.modules.docs.nav import NAV_BLOCK
@@ -183,28 +184,6 @@ def test_s4_5_8_1_equal_files_are_baselined_without_rewriting(
     assert _entries(repo) == _entries(fresh)
 
 
-def test_s4_5_8_1_force_over_differences_reproduces_a_fresh_new(
-    repo: Path, fresh: Path
-) -> None:
-    (repo / "Taskfile.yml").write_text("# hand made\n", encoding="utf-8")
-    _tamper_block(repo, fresh, "CLAUDE.md")
-    _commit(repo)
-
-    commands.init(**SELECTORS, force=True, yes=True)
-
-    assert _entries(repo) == _entries(fresh)
-    for entry in _entries(fresh).values():
-        if entry["kind"] == "managed":
-            assert (repo / entry["path"]).read_bytes() == (
-                fresh / entry["path"]
-            ).read_bytes()
-    claude = (repo / "CLAUDE.md").read_text(encoding="utf-8")
-    assert "tampered" not in claude
-    assert tomllib.loads((repo / CONFIG).read_text(encoding="utf-8")) == tomllib.loads(
-        (fresh / CONFIG).read_text(encoding="utf-8")
-    )
-
-
 def test_s4_5_8_2_outside_a_git_worktree_fails_and_leaves_no_umbrella(
     repo: Path,
 ) -> None:
@@ -256,7 +235,7 @@ def test_s4_5_8_2_archetype_is_required(repo: Path) -> None:
     assert not (repo / ".rn-forge").exists()
 
 
-def test_s4_5_8_3_unforced_conflicts_are_all_named_and_nothing_changes(
+def test_s4_5_8_3_conflicts_are_all_named_and_nothing_changes(
     repo: Path, fresh: Path
 ) -> None:
     (repo / "Taskfile.yml").write_text("# hand made\n", encoding="utf-8")
@@ -269,6 +248,7 @@ def test_s4_5_8_3_unforced_conflicts_are_all_named_and_nothing_changes(
 
     assert "Taskfile.yml" in str(raised.value)
     assert "CLAUDE.md" in str(raised.value)
+    assert "--force" not in str(raised.value)
     assert _snapshot(repo) == before
     assert not (repo / ".rn-forge").exists()
 
@@ -297,71 +277,18 @@ def test_s4_5_8_3_an_existing_config_without_state_is_a_conflict(
     assert not (repo / STATE).exists()
 
 
-def test_s4_5_8_4_force_archives_every_overwritten_target(
-    repo: Path, fresh: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
-    (repo / "Taskfile.yml").write_text("# hand made\n", encoding="utf-8")
-    _tamper_block(repo, fresh, "CLAUDE.md")
-    claude_before = (repo / "CLAUDE.md").read_bytes()
-    gitignore = repo / ".gitignore"
-    gitignore.write_text("custom-entry\n", encoding="utf-8")
-    _commit(repo)
-
-    commands.init(**SELECTORS, force=True, yes=True)
-
-    assert "--force" in capsys.readouterr().err
-    stamps = list((repo / ".rn-forge/kiln/backups").iterdir())
-    archive = next(stamp for stamp in stamps if (stamp / "Taskfile.yml").exists())
-    assert (archive / "Taskfile.yml").read_text(encoding="utf-8") == "# hand made\n"
-    assert (archive / "CLAUDE.md").read_bytes() == claude_before
-    assert gitignore.read_text(encoding="utf-8").startswith("custom-entry\n")
-    assert "tampered" not in (repo / "CLAUDE.md").read_text(encoding="utf-8")
-    assert (repo / "Taskfile.yml").read_text(encoding="utf-8") != "# hand made\n"
-
-
-def test_s4_5_8_5_a_second_unforced_init_fails_naming_the_state(repo: Path) -> None:
+def test_s4_5_8_5_a_second_init_is_refused_naming_apply(repo: Path) -> None:
     commands.init(**SELECTORS, yes=True)
     _commit(repo)
     before = _snapshot(repo)
 
-    with pytest.raises(AppException, match="state.json"):
+    with pytest.raises(AppException, match="state.json.*kiln apply"):
         commands.init(**SELECTORS, yes=True)
     assert _snapshot(repo) == before
 
 
-def test_s4_5_8_5_a_forced_reinit_archives_state_and_applies_the_new_selectors(
-    repo: Path,
-) -> None:
+def test_s4_5_8_6_init_runs_no_scaffold(repo: Path, scaffold_calls: list[str]) -> None:
     commands.init(**SELECTORS, yes=True)
-    _commit(repo)
-    old_state = (repo / STATE).read_bytes()
-    old_config = (repo / CONFIG).read_bytes()
-
-    commands.init(archetype="python-app", docs="none", force=True, yes=True)
-
-    archived = {
-        relative: [
-            (stamp / relative).read_bytes()
-            for stamp in (repo / ".rn-forge/kiln/backups").iterdir()
-            if (stamp / relative).exists()
-        ]
-        for relative in (STATE, CONFIG)
-    }
-    assert old_state in archived[STATE]
-    assert old_config in archived[CONFIG]
-    config = tomllib.loads((repo / CONFIG).read_text(encoding="utf-8"))
-    assert config["docs"]["profile"] == "none"
-    assert _entries(repo) != json.loads(old_state)["entries"]
-
-
-def test_s4_5_8_6_neither_path_runs_a_scaffold(
-    repo: Path, scaffold_calls: list[str]
-) -> None:
-    (repo / "Taskfile.yml").write_text("# hand made\n", encoding="utf-8")
-    _commit(repo)
-    commands.init(**SELECTORS, force=True, yes=True)
-    _commit(repo)
-    commands.init(**SELECTORS, force=True, yes=True)
     assert scaffold_calls == []
 
 
@@ -378,29 +305,25 @@ def test_s4_5_8_preview_prints_the_plan_and_writes_nothing(
     assert not (repo / ".rn-forge").exists()
 
 
-def test_s4_5_8_force_does_not_imply_yes_and_dry_run_beats_yes(repo: Path) -> None:
-    (repo / "Taskfile.yml").write_text("# hand made\n", encoding="utf-8")
+def test_s4_5_8_without_yes_and_with_dry_run_nothing_is_written(repo: Path) -> None:
     before = _snapshot(repo)
-    commands.init(**SELECTORS, force=True)
-    commands.init(**SELECTORS, force=True, yes=True, dry_run=True)
+    commands.init(**SELECTORS)
+    commands.init(**SELECTORS, yes=True, dry_run=True)
     assert _snapshot(repo) == before
 
 
-def test_s4_5_8_a_failing_check_keeps_the_writes_and_the_archive(
+def test_s4_5_8_a_failing_check_keeps_the_writes(
     repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    (repo / "Taskfile.yml").write_text("# hand made\n", encoding="utf-8")
     monkeypatch.setattr(
         commands.checks,
         "run",
         lambda *_a, **_k: [Finding("x.y", Severity.ERROR, "broken")],
     )
-    _commit(repo)
     with pytest.raises(AppException, match="check"):
-        commands.init(**SELECTORS, force=True, yes=True)
+        commands.init(**SELECTORS, yes=True)
     assert (repo / STATE).is_file()
     assert (repo / CONFIG).is_file()
-    assert any((repo / ".rn-forge/kiln/backups").glob("*/Taskfile.yml"))
 
 
 @pytest.fixture
@@ -613,17 +536,18 @@ _MINE = (
 )
 
 
-def test_s6_1_7_1_force_fences_and_keeps_the_contracts(repo: Path, fresh: Path) -> None:
+def test_s6_1_7_1_an_unfenced_importlinter_is_fenced_and_keeps_the_contracts(
+    repo: Path,
+) -> None:
     (repo / ".importlinter").write_text(_MINE, encoding="utf-8")
     _commit(repo)
 
-    commands.init(**SELECTORS, force=True, yes=True)
+    with pytest.raises(AppException, match=r"conflict.*\.importlinter"):
+        commands.init(**SELECTORS, yes=True)
 
     block = IMPORTLINTER_BLOCK
     text = (repo / ".importlinter").read_text(encoding="utf-8")
-    assert block.extract(text) == block.extract(
-        (fresh / ".importlinter").read_text(encoding="utf-8")
-    )
+    assert block.extract(text) is not None
     after = text.split(block.end, 1)[1]
     assert "; mine" in after
     assert _MINE.split("\n\n", 1)[1] in after
@@ -631,16 +555,6 @@ def test_s6_1_7_1_force_fences_and_keeps_the_contracts(repo: Path, fresh: Path) 
     assert "other" not in after
     archives = (repo / ".rn-forge/kiln/backups").glob("*/.importlinter")
     assert [a.read_bytes() for a in archives if a.read_bytes() == _MINE.encode()]
-
-
-def test_s6_1_7_2_without_force_it_is_still_refused(repo: Path) -> None:
-    (repo / ".importlinter").write_text(_MINE, encoding="utf-8")
-    _commit(repo)
-    before = _snapshot(repo)
-
-    with pytest.raises(AppException, match="core.block-unfenced"):
-        commands.init(**SELECTORS, yes=True)
-    assert _snapshot(repo) == before
 
 
 _DUPLICATES = "# mine\n.DS_Store\n.ruff_cache\nnode_stuff/\n.pytest_cache\n"
@@ -710,15 +624,16 @@ def test_s6_1_16_2_without_a_config_name_the_directory_names_it(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     scaffold_calls: list[str],
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
-    root = _renamed_repo(fresh, tmp_path, monkeypatch)
+    _renamed_repo(fresh, tmp_path, monkeypatch)
     layer = tmp_path / "layer.toml"
     layer.write_text("# no repository name\n", encoding="utf-8")
 
-    commands.init(**SELECTORS, config=str(layer), force=True, yes=True)
+    commands.init(**SELECTORS, config=str(layer), json=True)
 
-    written = tomllib.loads((root / CONFIG).read_text(encoding="utf-8"))
-    assert written["repository"]["name"] == "other-dir"
+    payload = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert payload["config"]["repository"]["name"] == "other-dir"
 
 
 def _before_block(repo: Path) -> str:
@@ -756,31 +671,19 @@ def _unmark_nav(repo: Path) -> bytes:
     return text.encode()
 
 
-def test_s6_1_9_1_unmarked_nav_is_refused_before_anything_is_written(
-    repo: Path,
+def test_s6_1_9_2_an_unmarked_nav_is_archived_marked_and_derived(
+    repo: Path, fresh: Path
 ) -> None:
-    _unmark_nav(repo)
-    before = _snapshot(repo)
-
-    with pytest.raises(AppException, match="init.nav-unmarked") as error:
-        commands.init(**SELECTORS, yes=True)
-    assert "mkdocs.yml" in str(error.value)
-    assert "--force" in str(error.value)
-    assert _snapshot(repo) == before
-    assert not (repo / ".rn-forge").exists()
-
-
-def test_s6_1_9_2_force_marks_the_nav_and_derives_it(repo: Path, fresh: Path) -> None:
     unmarked = _unmark_nav(repo)
 
-    commands.init(**SELECTORS, force=True, yes=True)
+    commands.init(**SELECTORS, yes=True)
 
     assert (repo / "mkdocs.yml").read_bytes() == (fresh / "mkdocs.yml").read_bytes()
     archives = (repo / ".rn-forge/kiln/backups").glob("*/mkdocs.yml")
     assert [a for a in archives if a.read_bytes() == unmarked]
 
 
-def test_s6_1_9_3_force_adds_a_nav_when_there_is_none(repo: Path, fresh: Path) -> None:
+def test_s6_1_9_3_a_nav_is_added_when_there_is_none(repo: Path, fresh: Path) -> None:
     text = (repo / "mkdocs.yml").read_text(encoding="utf-8")
     head = text.split("\nnav:\n", 1)[0]
     tail = text.split(NAV_BLOCK.end, 1)[1]
@@ -788,13 +691,14 @@ def test_s6_1_9_3_force_adds_a_nav_when_there_is_none(repo: Path, fresh: Path) -
     assert "nav:" not in (repo / "mkdocs.yml").read_text(encoding="utf-8")
     _commit(repo)
 
-    commands.init(**SELECTORS, force=True, yes=True)
+    with pytest.raises(AppException, match=r"conflict.*mkdocs\.yml"):
+        commands.init(**SELECTORS, yes=True)
 
     def nav(root: Path) -> str | None:
         return NAV_BLOCK.extract((root / "mkdocs.yml").read_text(encoding="utf-8"))
 
     assert nav(repo) is not None
-    assert nav(repo) == nav(fresh)
+    assert list((repo / ".rn-forge/kiln/backups").glob("*-nav/mkdocs.yml"))
 
 
 # S9.1.15 — `kiln init` gives an existing `node-lib` what `kiln new` does.
@@ -905,7 +809,7 @@ def test_s9_1_15_2_a_python_archetype_also_gets_a_missing_mkdocs_yml(
     monkeypatch.undo()
     monkeypatch.chdir(repo)
 
-    commands.init(**SELECTORS, force=True, yes=True)
+    commands.init(**SELECTORS, yes=True)
 
     text = (repo / "mkdocs.yml").read_text(encoding="utf-8")
     assert NAV_BLOCK.extract(text) is not None
@@ -968,3 +872,32 @@ def test_s9_1_15_4_the_adopt_prompt_does_not_ask_for_these_files_by_hand() -> No
     section = text.split("## 2. Prepare", 1)[1].split("## 3.", 1)[0]
     assert "mkdocs.yml" not in section
     assert "pyproject.toml" not in section.split("node-lib", 1)[-1].split("```", 1)[0]
+
+
+# S16.1.1 — `init` refuses a dirty worktree, always.
+
+
+def test_s16_1_1_1_dirty_tree_is_refused(lib_repo: Path) -> None:
+    (lib_repo / "scratch.txt").write_text("x\n", encoding="utf-8")
+    before = _snapshot(lib_repo)
+
+    with pytest.raises(AppException, match="init.dirty-tree"):
+        commands.init(archetype="python-lib", docs="mkdocs", yes=True)
+
+    assert _snapshot(lib_repo) == before
+    assert not (lib_repo / ".rn-forge").exists()
+
+
+def test_s16_1_1_2_dry_run_does_not_need_a_clean_tree(lib_repo: Path) -> None:
+    (lib_repo / "scratch.txt").write_text("x\n", encoding="utf-8")
+    before = _snapshot(lib_repo)
+
+    commands.init(archetype="python-lib", docs="mkdocs", yes=True, dry_run=True)
+
+    assert _snapshot(lib_repo) == before
+    assert not (lib_repo / ".rn-forge").exists()
+
+
+def test_s16_1_1_3_force_is_gone() -> None:
+    assert "force" not in inspect.signature(commands.init).parameters
+    assert main.app(["init", "--archetype", "python-app", "--force"]) == 2

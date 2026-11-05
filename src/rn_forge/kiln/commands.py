@@ -313,7 +313,6 @@ def init(
     frontend: str | None = None,
     module: str | None = None,
     config: str | None = None,
-    force: bool = False,
     dry_run: bool = False,
     yes: bool = False,
     json: bool = False,
@@ -339,24 +338,23 @@ def init(
     `--config` layer may list `packages`, each an existing directory with a
     `pyproject.toml` (S6.1.5).
 
-    An existing `mkdocs.yml` without the derived-nav markers is refused
-    (`init.nav-unmarked`); under `--force` it is archived and the markers are
-    placed around the nav's entries, which `docs-generate` then replaces
-    (S6.1.9).
+    An existing `mkdocs.yml` without the derived-nav markers is archived
+    (`-nav`) and the markers are placed around the nav's entries, which
+    `docs-generate` then replaces (S6.1.9).
 
-    `--force` first fences an unfenced `.importlinter` (S6.1.7): kiln's
-    `[importlinter]` section is dropped, the rest kept below the markers, and
-    the original archived. It also approves every conflict at once: each
-    conflicting target, and a prior `config.toml` and `state.json`, is first
-    copied to `.rn-forge/kiln/backups/<UTC timestamp>/`. It never implies
-    `--yes`.
+    An unfenced `.importlinter` is archived (`-unfenced`) and fenced first
+    (S6.1.7): kiln's `[importlinter]` section is dropped and the rest kept
+    below the markers.
+
+    A conflicting managed file, or a prior `config.toml`, is refused with
+    nothing written.
 
     Raises:
         AppException: `--archetype` is missing, the current directory fails the
             preflight (each failed condition is named), a listed package has
             no `pyproject.toml` (`init.package-missing`), `state.json` already
-            exists, a conflict exists without `--force`, or the config, apply
-            or check step fails.
+            exists, a conflict exists, the working tree is dirty
+            (`init.dirty-tree`), or the config, apply or check step fails.
     """
     if json:
         console.set_mode(OutputMode.JSON)
@@ -368,10 +366,9 @@ def init(
         _require_clean(root)
 
     state_path = root / umbrella.STATE_PATH
-    if state_path.exists() and not force:
+    if state_path.exists():
         raise AppException(
-            "{} already exists; this repository is under kiln — pass --force "
-            "to archive it and initialise again",
+            "{} already exists; this repository is under kiln; use `kiln apply`",
             state_path,
         )
 
@@ -390,13 +387,11 @@ def init(
     _require_packages(root, resolved.packages)
     if yes and not dry_run:
         unfenced = cycle.unfenced(root, resolved)
-        if unfenced and not force:
-            raise cycle.CycleRefused(unfenced)
         if unfenced:
             _archive(root, [str(finding.path) for finding in unfenced], tag="-unfenced")
             cycle.fence(root, resolved)
     if yes and not dry_run and resolved.docs_profile == "mkdocs":
-        _settle_nav(root, force)
+        _settle_nav(root)
     planned = cycle.adoption_plan(root, resolved)
     seeds = _missing_seeds(root, resolved)
 
@@ -405,31 +400,24 @@ def init(
         return
 
     config_path = root / CONFIG_PATH
-    conflicts = [
-        change
+    conflicting = {
+        change.path
         for change in planned.changes
         if change.action is generation.Action.CONFLICT
-    ]
-    conflicting = {change.path for change in conflicts}
+    }
     if config_path.exists():
         conflicting.add(CONFIG_PATH.as_posix())
-    if conflicting and not force:
+    if conflicting:
         raise AppException(
-            "{} conflict(s), nothing written: {} — pass --force to archive "
-            "them and overwrite",
+            "{} conflict(s), nothing written: {}",
             len(conflicting),
             ", ".join(sorted(conflicting)),
         )
-    if force:
-        if state_path.exists():
-            conflicting.add(umbrella.STATE_PATH.as_posix())
-        _archive(root, sorted(conflicting))
 
     _write_config(root, resolved)
     _seed(root, resolved, seeds)
     result = cycle.apply(
         root,
-        force=[change.key for change in conflicts],
         provenance=resolution.provenance_metadata(),
         adopt=True,
     )
@@ -474,20 +462,14 @@ def _seed(root: Path, config: KilnConfig, seeds: Sequence[str]) -> None:
             shutil.copy2(Path(scratch) / "pyproject.toml", root / "pyproject.toml")
 
 
-def _settle_nav(root: Path, force: bool) -> None:
-    """Refuse an unmarked `mkdocs.yml`, or under *force* archive it and mark its nav (S6.1.9)."""
+def _settle_nav(root: Path) -> None:
+    """Archive an unmarked `mkdocs.yml` (`-nav`) and mark its nav (S6.1.9)."""
     path = root / "mkdocs.yml"
     if not path.is_file():
         return
     text = path.read_text(encoding="utf-8")
     if NAV_BLOCK.extract(text) is not None:
         return
-    if not force:
-        raise AppException(
-            "init.nav-unmarked: mkdocs.yml has no '# BEGIN derived nav' / "
-            "'# END derived nav' markers — add them around nav's entries, or "
-            "pass --force to have kiln place them and derive the nav"
-        )
     _archive(root, ["mkdocs.yml"], tag="-nav")
     path.write_text(mark_nav(text), encoding="utf-8")
 
@@ -649,7 +631,7 @@ def _archive(root: Path, paths: Sequence[str], tag: str = "") -> None:
         suffix += 1
         archive = base / f"{stamp}{tag}-{suffix}"
     console.warning(
-        "--force: archiving {} target(s) to {} before overwriting",
+        "archiving {} target(s) to {} before overwriting",
         len(paths),
         archive,
     )

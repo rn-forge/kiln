@@ -100,22 +100,20 @@ made now is the one you will check against at review.
 ## 4. Apply
 
 ```bash
-uv run --project <kiln> kiln init --archetype <archetype> --docs mkdocs --config <file> --yes --force
+uv run --project <kiln> kiln init --archetype <archetype> --docs mkdocs --config <file> --yes
 ```
 
-The archetype is the one section 3 used, `python-lib` or `node-lib`. `--force`
-approves every conflict. Before it overwrites, kiln copies each conflicting
-file, and every file it restructures, to
-`.rn-forge/kiln/backups/<UTC timestamp>/` (gitignored). It also restructures
-three things for you:
+The archetype is the one section 3 used, `python-lib` or `node-lib`. `init`
+refuses a dirty worktree and a conflict, writing nothing. Before it restructures
+a file, kiln copies it to `.rn-forge/kiln/backups/<UTC timestamp>/`
+(gitignored). It restructures three things for you:
 
 - An unfenced `.importlinter` is fenced: kiln's `[importlinter]` root section
   goes inside the markers and your contracts stay below them.
 - Lines in your `.gitignore` that kiln's block already holds are dropped (unless
   a `!` negation makes order matter); the block is appended.
-- A `mkdocs.yml` without the derived-nav markers is refused without `--force`
-  (`init.nav-unmarked`); with it, kiln places the markers around the nav's
-  entries and `docs-generate` replaces them.
+- A `mkdocs.yml` without the derived-nav markers is archived, and kiln places
+  the markers around the nav's entries; `docs-generate` replaces them.
 
 The tree was clean, so `git diff` and `git status` now show every file kiln
 replaced, inserted into or created, against the repository's own version, and
