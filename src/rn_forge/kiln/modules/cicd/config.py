@@ -9,7 +9,14 @@ from pydantic import Field, ValidationInfo, field_validator
 
 from rn_forge.kiln.modules.core.config.schema import ConfigModel
 
-__all__ = ["GENERATED_JOBS", "CiConfig", "CiHooks", "CiJob", "resolve_release"]
+__all__ = [
+    "GENERATED_JOBS",
+    "CiConfig",
+    "CiHooks",
+    "CiJob",
+    "LicensePolicy",
+    "resolve_release",
+]
 
 GENERATED_JOBS = frozenset(
     {
@@ -35,6 +42,17 @@ _HOOK = re.compile(r"^\./\.github/actions/[a-z0-9][a-z0-9-]*$")
 _SETUP_ACTION = "./.github/actions/setup"
 _CALLABLE = re.compile(r"^\./\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml$")
 _GENERATED_WORKFLOW = "./.github/workflows/ci.yml"
+
+
+class LicensePolicy(ConfigModel):
+    """The policy of the `licenses` check."""
+
+    deny: list[str] = Field(
+        default_factory=lambda: ["GPL", "GPL-*", "AGPL", "AGPL-*", "UNKNOWN"]
+    )
+    """License identifiers (globs allowed) the check fails on."""
+    ignore: list[str] = Field(default_factory=list[str])
+    """Packages the check skips."""
 
 
 class CiHooks(ConfigModel):
