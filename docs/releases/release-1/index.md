@@ -86,7 +86,7 @@ are [release-2](../release-2/index.md).
 | [F15.2 — The licences check](../../specs/epics/E15-ci-standard/F15.2-licences-check.md) | E15 | Active |
 | [F15.3 — The secret scan](../../specs/epics/E15-ci-standard/F15.3-secret-scan.md) | E15 | Active |
 | [F15.4 — Internal ranges](../../specs/epics/E15-ci-standard/F15.4-internal-ranges.md) | E15 | Closed |
-| [F15.5 — The umbrella release](../../specs/epics/E15-ci-standard/F15.5-umbrella-release.md) | E15 | New |
+| [F15.5 — The umbrella release](../../specs/epics/E15-ci-standard/F15.5-umbrella-release.md) | E15 | Active |
 | [F15.6 — OpenSSF Scorecard](../../specs/epics/E15-ci-standard/F15.6-scorecard.md) | E15 | New |
 | [F15.7 — Repository-owned workflows](../../specs/epics/E15-ci-standard/F15.7-repo-owned-workflows.md) | E15 | New |
 | [F15.8 — Every archetype on the one-workflow contract](../../specs/epics/E15-ci-standard/F15.8-one-workflow-contract.md) | E15 | New |

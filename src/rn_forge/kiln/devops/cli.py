@@ -10,7 +10,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from rn_forge.kiln.devops import ci, github, licenses, notes, requirements, uv
+from rn_forge.kiln.devops import ci, github, licenses, notes, requirements, umbrella, uv
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -79,6 +79,12 @@ def _parser() -> argparse.ArgumentParser:
         default="python",
         help="node reads `pnpm ls -r --depth -1 --json` from stdin",
     )
+    release_all = commands.add_parser(
+        "umbrella", help="create a GitHub release per shipped release page"
+    )
+    release_all.add_argument("--releases", default="docs/releases", metavar="DIR")
+    release_all.add_argument("--sha", required=True, metavar="SHA")
+    release_all.add_argument("--dry-run", action="store_true")
     return parser
 
 
@@ -108,6 +114,9 @@ def _validate(args: argparse.Namespace) -> None:
         args.tag = _checked(r"[A-Za-z0-9][A-Za-z0-9._+-]*", "tag", args.tag)
     if hasattr(args, "target"):
         args.target = _checked(r"[0-9a-f]{7,40}", "target", args.target)
+    if args.command == "umbrella":
+        args.sha = _checked(r"[0-9a-f]{7,40}", "sha", args.sha)
+        args.releases = _inside(args.releases, cwd)
     if hasattr(args, "title"):
         args.title = _checked(
             r"[^\x00-\x1f\x7f-][^\x00-\x1f\x7f]*", "title", args.title
@@ -196,6 +205,14 @@ def _requirements(args: argparse.Namespace) -> int:
     return 1 if problems else 0
 
 
+def _umbrella(args: argparse.Namespace) -> int:
+    try:
+        return umbrella.run(Path(args.releases), args.sha, args.dry_run)
+    except FileNotFoundError as error:
+        print(f"kiln-devops: {error}", file=sys.stderr)
+        return 2
+
+
 def _releasable(workspace: ci.Workspace, args: argparse.Namespace) -> int:
     ok, blocked = ci.releasable(workspace.packages, Path(args.ok_dir), args.names)
     for name in blocked:
@@ -253,6 +270,8 @@ def main(argv: list[str] | None = None) -> int:
         return _notes(args)
     if args.command == "licenses":
         return _licenses(args)
+    if args.command == "umbrella":
+        return _umbrella(args)
     if args.command == "requirements":
         return _requirements(args)
     if args.command.startswith("release-"):

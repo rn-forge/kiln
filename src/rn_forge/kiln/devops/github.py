@@ -79,6 +79,11 @@ def release_draft(tag: str) -> str | None:
     return draft if draft in ("true", "false") else None
 
 
+def release_exists(tag: str) -> bool:
+    """Return whether `gh release view` finds a release (draft or not) for `tag`."""
+    return _capture(["gh", "release", "view", tag]).returncode == 0
+
+
 def remote_tag_exists(tag: str) -> bool:
     """Return whether `origin` has the tag `tag`.
 

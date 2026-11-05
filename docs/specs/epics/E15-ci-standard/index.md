@@ -13,7 +13,7 @@
 | [F15.2 — The licences check](F15.2-licences-check.md) | Active | release-1 | 4 Closed |
 | [F15.3 — The secret scan](F15.3-secret-scan.md) | Active | release-1 | 1 New · 2 Closed |
 | [F15.4 — Internal ranges](F15.4-internal-ranges.md) | Closed | release-1 | 3 Closed |
-| [F15.5 — The umbrella release](F15.5-umbrella-release.md) | New | release-1 | 3 New |
+| [F15.5 — The umbrella release](F15.5-umbrella-release.md) | Active | release-1 | 2 New · 1 Closed |
 | [F15.6 — OpenSSF Scorecard](F15.6-scorecard.md) | New | release-1 | 1 New |
 | [F15.7 — Repository-owned workflows](F15.7-repo-owned-workflows.md) | New | release-1 | 2 New |
 | [F15.8 — Every archetype on the one-workflow contract](F15.8-one-workflow-contract.md) | New | release-1 | 9 New |
