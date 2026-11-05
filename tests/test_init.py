@@ -31,7 +31,11 @@ from rn_forge.commons.generation import ArtifactKind, StateEntry
 from rn_forge.commons.generation.artifacts import block_from_entry
 
 from rn_forge.kiln import commands, main
+from rn_forge.commons.generation import Action
+
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.core import cycle
+from rn_forge.kiln.modules.core.config.manager import ConfigManager
 from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK
 from rn_forge.kiln.modules.docs.nav import NAV_BLOCK
 from rn_forge.kiln.modules.python.artifacts import IMPORTLINTER_BLOCK
@@ -235,46 +239,49 @@ def test_s4_5_8_2_archetype_is_required(repo: Path) -> None:
     assert not (repo / ".rn-forge").exists()
 
 
-def test_s4_5_8_3_conflicts_are_all_named_and_nothing_changes(
+def test_s4_5_8_3_conflicts_are_overwritten_and_archived(
     repo: Path, fresh: Path
 ) -> None:
     (repo / "Taskfile.yml").write_text("# hand made\n", encoding="utf-8")
     _tamper_block(repo, fresh, "CLAUDE.md")
     _commit(repo)
-    before = _snapshot(repo)
 
-    with pytest.raises(AppException) as raised:
-        commands.init(**SELECTORS, yes=True)
+    commands.init(**SELECTORS, yes=True)
 
-    assert "Taskfile.yml" in str(raised.value)
-    assert "CLAUDE.md" in str(raised.value)
-    assert "--force" not in str(raised.value)
-    assert _snapshot(repo) == before
-    assert not (repo / ".rn-forge").exists()
+    assert (repo / "Taskfile.yml").read_bytes() == (fresh / "Taskfile.yml").read_bytes()
+    assert "tampered" not in (repo / "CLAUDE.md").read_text(encoding="utf-8")
+    backups = repo / ".rn-forge/kiln/backups"
+    assert list(backups.glob("*/Taskfile.yml"))
+    assert list(backups.glob("*/CLAUDE.md"))
 
 
-def test_s4_5_8_3_a_block_without_a_state_entry_is_a_conflict_even_if_equal(
+def test_s4_5_8_3_a_block_without_a_state_entry_is_archived_even_if_equal(
     repo: Path, fresh: Path
 ) -> None:
     (repo / "CLAUDE.md").write_bytes((fresh / "CLAUDE.md").read_bytes())
     _commit(repo)
-    before = _snapshot(repo)
 
-    with pytest.raises(AppException, match="CLAUDE.md"):
-        commands.init(**SELECTORS, yes=True)
-    assert _snapshot(repo) == before
+    commands.init(**SELECTORS, yes=True)
+
+    assert list((repo / ".rn-forge/kiln/backups").glob("*/CLAUDE.md"))
+    assert (repo / "CLAUDE.md").read_bytes() == (fresh / "CLAUDE.md").read_bytes()
 
 
-def test_s4_5_8_3_an_existing_config_without_state_is_a_conflict(
+def test_s4_5_8_3_an_existing_config_without_state_is_archived_and_replaced(
     repo: Path, fresh: Path
 ) -> None:
     (repo / CONFIG).parent.mkdir(parents=True)
     (repo / CONFIG).write_text("# mine\n", encoding="utf-8")
     _commit(repo)
-    with pytest.raises(AppException, match="config.toml"):
-        commands.init(**SELECTORS, yes=True)
-    assert (repo / CONFIG).read_text(encoding="utf-8") == "# mine\n"
-    assert not (repo / STATE).exists()
+
+    commands.init(**SELECTORS, yes=True)
+
+    archives = list(
+        (repo / ".rn-forge/kiln/backups").glob("*/.rn-forge/kiln/config.toml")
+    )
+    assert [a.read_text(encoding="utf-8") for a in archives] == ["# mine\n"]
+    assert (repo / CONFIG).read_text(encoding="utf-8") != "# mine\n"
+    assert (repo / STATE).is_file()
 
 
 def test_s4_5_8_5_a_second_init_is_refused_naming_apply(repo: Path) -> None:
@@ -542,8 +549,7 @@ def test_s6_1_7_1_an_unfenced_importlinter_is_fenced_and_keeps_the_contracts(
     (repo / ".importlinter").write_text(_MINE, encoding="utf-8")
     _commit(repo)
 
-    with pytest.raises(AppException, match=r"conflict.*\.importlinter"):
-        commands.init(**SELECTORS, yes=True)
+    commands.init(**SELECTORS, yes=True)
 
     block = IMPORTLINTER_BLOCK
     text = (repo / ".importlinter").read_text(encoding="utf-8")
@@ -691,14 +697,13 @@ def test_s6_1_9_3_a_nav_is_added_when_there_is_none(repo: Path, fresh: Path) -> 
     assert "nav:" not in (repo / "mkdocs.yml").read_text(encoding="utf-8")
     _commit(repo)
 
-    with pytest.raises(AppException, match=r"conflict.*mkdocs\.yml"):
-        commands.init(**SELECTORS, yes=True)
+    commands.init(**SELECTORS, yes=True)
 
     def nav(root: Path) -> str | None:
         return NAV_BLOCK.extract((root / "mkdocs.yml").read_text(encoding="utf-8"))
 
     assert nav(repo) is not None
-    assert list((repo / ".rn-forge/kiln/backups").glob("*-nav/mkdocs.yml"))
+    assert list((repo / ".rn-forge/kiln/backups").glob("*/mkdocs.yml"))
 
 
 # S9.1.15 — `kiln init` gives an existing `node-lib` what `kiln new` does.
@@ -791,14 +796,19 @@ def test_s9_1_15_2_docs_none_writes_no_mkdocs_yml(node_repo: Path) -> None:
     assert not (node_repo / "mkdocs.yml").exists()
 
 
-def test_s9_1_15_2_an_existing_mkdocs_yml_is_a_conflict(node_repo: Path) -> None:
+def test_s9_1_15_2_an_existing_mkdocs_yml_is_archived_and_overwritten(
+    node_repo: Path, rendered: Callable[[str], Path]
+) -> None:
     own = "site_name: mine\n# BEGIN derived nav\nnav: []\n# END derived nav\n"
     (node_repo / "mkdocs.yml").write_text(own, encoding="utf-8")
     _commit(node_repo)
 
-    with pytest.raises(AppException, match=r"conflict.*mkdocs\.yml"):
-        commands.init(**NODE_SELECTORS, yes=True)
-    assert (node_repo / "mkdocs.yml").read_text(encoding="utf-8") == own
+    commands.init(**NODE_SELECTORS, yes=True)
+
+    fresh = rendered("node-lib") / "mkdocs.yml"
+    assert (node_repo / "mkdocs.yml").read_bytes() == fresh.read_bytes()
+    archives = (node_repo / ".rn-forge/kiln/backups").glob("*/mkdocs.yml")
+    assert [a.read_text(encoding="utf-8") for a in archives] == [own]
 
 
 def test_s9_1_15_2_a_python_archetype_also_gets_a_missing_mkdocs_yml(
@@ -901,3 +911,153 @@ def test_s16_1_1_2_dry_run_does_not_need_a_clean_tree(lib_repo: Path) -> None:
 def test_s16_1_1_3_force_is_gone() -> None:
     assert "force" not in inspect.signature(commands.init).parameters
     assert main.app(["init", "--archetype", "python-app", "--force"]) == 2
+
+
+# S16.1.2 — `init` overwrites kiln-shaped files and archives them.
+
+_LIB = {"archetype": "python-lib", "docs": "mkdocs"}
+_OVERWRITTEN = (
+    "Taskfile.yml",
+    "docs/_areas.yml",
+    "docs/specs/_structure.md",
+    "docs/specs/epics/index.md",
+    ".github/workflows/ci.yml",
+)
+
+
+def _hand_edit(root: Path) -> dict[str, bytes]:
+    """Replace each of `_OVERWRITTEN` with content of the repository's own; return the bytes."""
+    for relative in _OVERWRITTEN:
+        path = root / relative
+        mine = f"# mine: {relative}\n"
+        # nav is built from _areas.yml, so it stays a mapping
+        path.write_text(
+            path.read_text(encoding="utf-8") + mine
+            if relative == "docs/_areas.yml"
+            else mine,
+            encoding="utf-8",
+        )
+    _commit(root)
+    return {relative: (root / relative).read_bytes() for relative in _OVERWRITTEN}
+
+
+def _lib_init(root: Path, tmp_path: Path) -> None:
+    config = _packages_config(tmp_path, "packages/lib-alpha", "packages/lib-beta")
+    commands.init(**_LIB, config=config, yes=True)
+
+
+def test_s16_1_2_1_overwrites(lib_repo: Path, lib_fresh: Path, tmp_path: Path) -> None:
+    _hand_edit(lib_repo)
+
+    _lib_init(lib_repo, tmp_path)
+
+    for relative in _OVERWRITTEN:
+        assert (lib_repo / relative).read_bytes() == (lib_fresh / relative).read_bytes()
+    config = ConfigManager().load(lib_repo)
+    planned = cycle.adoption_plan(lib_repo, config)
+    stale = [
+        change.path
+        for change in planned.changes
+        if change.path in _OVERWRITTEN
+        and change.action not in (Action.UNCHANGED, Action.SKIP, Action.CONFLICT)
+    ]
+    assert stale == []
+
+
+def test_s16_1_2_2_backups(
+    lib_repo: Path,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    before = _hand_edit(lib_repo)
+
+    _lib_init(lib_repo, tmp_path)
+
+    backups = lib_repo / ".rn-forge/kiln/backups"
+    for relative, content in before.items():
+        assert [file.read_bytes() for file in backups.glob(f"*/{relative}")][0] == (
+            content
+        )
+    printed = "".join(capsys.readouterr().out.split())
+    assert any(str(directory) in printed for directory in backups.iterdir())
+
+
+def test_s16_1_2_3_content_is_never_touched(lib_repo: Path, tmp_path: Path) -> None:
+    kept = {
+        "README.md": "# mine\n",
+        "docs/guides/x.md": "# x\n\nwords\n",
+        "docs/adr/ADR-0001.md": "# ADR-0001\n\nwords\n",
+        "docs/guides/index.md": "# Guides\n\nour own guide index\n",
+        "docs/specs/epics/index.md": (
+            "# Epics\n\nour own intro\n\n<!-- BEGIN derived epics -->\n\n"
+            "| [E1 — Mine](E1/index.md) | Closed |\n\n<!-- END derived epics -->\n"
+        ),
+    }
+    source = next((lib_repo / "packages/lib-alpha/src").rglob("*.py"))
+    test = next((lib_repo / "packages/lib-alpha/tests").rglob("*.py"))
+    for relative, text in kept.items():
+        (lib_repo / relative).write_text(text, encoding="utf-8")
+    source.write_text("# mine\n", encoding="utf-8")
+    test.write_text("# mine\n", encoding="utf-8")
+    _commit(lib_repo)
+    paths = [
+        *kept,
+        source.relative_to(lib_repo).as_posix(),
+        test.relative_to(lib_repo).as_posix(),
+    ]
+    before = {path: (lib_repo / path).read_bytes() for path in paths}
+
+    _lib_init(lib_repo, tmp_path)
+
+    after = {path: (lib_repo / path).read_bytes() for path in paths}
+    epics = "docs/specs/epics/index.md"  # its fence is regenerated
+    assert b"our own intro" in after.pop(epics)
+    before.pop(epics)
+    assert after == before
+
+
+def test_s16_1_2_3_whitespace_only_differences_are_not_content(
+    lib_repo: Path, lib_fresh: Path, tmp_path: Path
+) -> None:
+    seed = (lib_fresh / "docs/guides/index.md").read_text(encoding="utf-8")
+    (lib_repo / "docs/guides/index.md").write_text(seed + "\n\n  \n", encoding="utf-8")
+    _commit(lib_repo)
+
+    _lib_init(lib_repo, tmp_path)
+
+    assert (lib_repo / "docs/guides/index.md").read_text(encoding="utf-8") == seed
+
+
+def test_s16_1_2_4_pyproject_and_gitignore_merge(
+    lib_repo: Path, tmp_path: Path
+) -> None:
+    pyproject = lib_repo / "pyproject.toml"
+    document = tomlkit.parse(pyproject.read_text(encoding="utf-8"))
+    document["project"]["description"] = "my own words"  # type: ignore[index]
+    pyproject.write_text(tomlkit.dumps(document), encoding="utf-8")
+    with (lib_repo / ".gitignore").open("a", encoding="utf-8") as handle:
+        handle.write("\nmine_only/\n")
+    _commit(lib_repo)
+
+    _lib_init(lib_repo, tmp_path)
+
+    written = tomllib.loads(pyproject.read_text(encoding="utf-8"))
+    assert written["project"]["description"] == "my own words"
+    ignore = (lib_repo / ".gitignore").read_text(encoding="utf-8")
+    assert "mine_only/" in ignore.split(GITIGNORE_BLOCK.begin, 1)[0]
+
+
+def test_s16_1_2_5_no_conflict_stage(
+    lib_repo: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _hand_edit(lib_repo)
+    config = _packages_config(tmp_path, "packages/lib-alpha", "packages/lib-beta")
+
+    code = main.app(["init", "--archetype", "python-lib", "--config", config, "--yes"])
+
+    assert code == 0
+    captured = capsys.readouterr()
+    assert "nothing written" not in captured.out + captured.err

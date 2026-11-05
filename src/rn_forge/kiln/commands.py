@@ -41,7 +41,7 @@ from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK
 from rn_forge.kiln.modules.core.config.manager import ConfigManager, Resolution
 from rn_forge.kiln.modules.core.config.sources import Source, fetch
 from rn_forge.kiln.modules.docs import generate
-from rn_forge.kiln.modules.docs.nav import NAV_BLOCK, mark_nav
+from rn_forge.kiln.modules.docs.artifacts import SEEDS
 from rn_forge.kiln.modules.docs.scaffold import add_package as docs_add_package
 from rn_forge.kiln.modules.instructions.scaffold import (
     scaffold as instructions_scaffold,
@@ -338,16 +338,17 @@ def init(
     `--config` layer may list `packages`, each an existing directory with a
     `pyproject.toml` (S6.1.5).
 
-    An existing `mkdocs.yml` without the derived-nav markers is archived
-    (`-nav`) and the markers are placed around the nav's entries, which
-    `docs-generate` then replaces (S6.1.9).
+    Every managed file that differs from its render, a prior `config.toml`, and
+    each docs seed that holds no content of its own (`docs/_areas.yml` always,
+    `docs/specs/epics/index.md` unless it lists an epic, any other docs seed
+    that differs from its render in whitespace only) is overwritten, after a
+    copy of it is written under `.rn-forge/kiln/backups/` (S16.1.2). A page with
+    content, `README.md`, source and tests are never touched; `pyproject.toml`
+    and `.gitignore` keep what is outside kiln's own table and block.
 
     An unfenced `.importlinter` is archived (`-unfenced`) and fenced first
     (S6.1.7): kiln's `[importlinter]` section is dropped and the rest kept
     below the markers.
-
-    A conflicting managed file, or a prior `config.toml`, is refused with
-    nothing written.
 
     Raises:
         AppException: `--archetype` is missing, the current directory fails the
@@ -385,39 +386,48 @@ def init(
     )
     resolved = resolution.config
     _require_packages(root, resolved.packages)
+    archived: list[str] = []
     if yes and not dry_run:
         unfenced = cycle.unfenced(root, resolved)
         if unfenced:
-            _archive(root, [str(finding.path) for finding in unfenced], tag="-unfenced")
+            archived = [str(finding.path) for finding in unfenced]
+            _archive(root, archived, tag="-unfenced")
             cycle.fence(root, resolved)
-    if yes and not dry_run and resolved.docs_profile == "mkdocs":
-        _settle_nav(root)
     planned = cycle.adoption_plan(root, resolved)
     seeds = _missing_seeds(root, resolved)
+    replaced = _replaced_seeds(root, planned)
+    # The nav is built from the docs tree, so overwriting a seed can change it.
+    dependents = (
+        ["mkdocs.yml"] if replaced and resolved.docs_profile == "mkdocs" else []
+    )
 
     if not yes or dry_run:
-        _report(root, resolved, [*_seed_rows(seeds), *_change_rows(planned.changes)])
+        rows = _change_rows(planned.changes)
+        for row in rows:
+            if row["path"] in replaced:
+                row["action"] = "overwrite"
+        _report(root, resolved, [*_seed_rows(seeds), *rows])
         return
 
-    config_path = root / CONFIG_PATH
     conflicting = {
-        change.path
+        change.key: change.path
         for change in planned.changes
         if change.action is generation.Action.CONFLICT
     }
-    if config_path.exists():
-        conflicting.add(CONFIG_PATH.as_posix())
-    if conflicting:
-        raise AppException(
-            "{} conflict(s), nothing written: {}",
-            len(conflicting),
-            ", ".join(sorted(conflicting)),
-        )
+    overwritten = {*conflicting.values(), *replaced, *dependents}
+    if (root / CONFIG_PATH).exists():
+        overwritten.add(CONFIG_PATH.as_posix())
+    backup = _archive(root, sorted(overwritten - set(archived)))
+    if backup is not None:
+        console.info("backed up {} file(s) to {}", len(backup[1]), backup[0])
+    for relative, content in replaced.items():
+        (root / relative).write_text(content, encoding="utf-8")
 
     _write_config(root, resolved)
     _seed(root, resolved, seeds)
     result = cycle.apply(
         root,
+        force=[*conflicting, *conflicting.values(), *dependents],
         provenance=resolution.provenance_metadata(),
         adopt=True,
     )
@@ -447,6 +457,40 @@ def _missing_seeds(root: Path, config: KilnConfig) -> list[str]:
     return [name for name, applies in wanted if applies and not (root / name).exists()]
 
 
+_ALWAYS_REPLACED = frozenset({"docs/_areas.yml"})
+_EPICS_INDEX = "docs/specs/epics/index.md"
+_EPIC_ROW = re.compile(r"^\| \[E\d+", re.MULTILINE)
+
+
+def _has_content(path: Path, seed: str) -> bool:
+    """Whether *path* differs from the *seed* render in more than whitespace."""
+    return "".join(path.read_text(encoding="utf-8").split()) != "".join(seed.split())
+
+
+def _replaced_seeds(root: Path, planned: generation.Plan) -> dict[str, str]:
+    """The existing docs seeds `init` overwrites, each with its render: those holding nothing of the repository's own."""
+    replaced: dict[str, str] = {}
+    for change in planned.changes:
+        artifact, path = change.artifact, root / change.path
+        if (
+            change.kind is not generation.ArtifactKind.SEEDED
+            or change.action is not generation.Action.SKIP
+            or artifact is None
+            or change.path not in SEEDS
+        ):
+            continue
+        if change.path in _ALWAYS_REPLACED:
+            replaced[change.path] = artifact.content
+        elif change.path == _EPICS_INDEX:
+            if not _EPIC_ROW.search(path.read_text(encoding="utf-8")):
+                replaced[change.path] = artifact.content
+        elif change.path.endswith("index.md") and not _has_content(
+            path, artifact.content
+        ):
+            replaced[change.path] = artifact.content
+    return replaced
+
+
 def _seed_rows(seeds: Sequence[str]) -> list[dict[str, str]]:
     return [
         {"key": name, "path": name, "kind": "seeded", "action": "create"}
@@ -460,18 +504,6 @@ def _seed(root: Path, config: KilnConfig, seeds: Sequence[str]) -> None:
         with tempfile.TemporaryDirectory() as scratch:
             python_scaffold(Path(scratch), config)
             shutil.copy2(Path(scratch) / "pyproject.toml", root / "pyproject.toml")
-
-
-def _settle_nav(root: Path) -> None:
-    """Archive an unmarked `mkdocs.yml` (`-nav`) and mark its nav (S6.1.9)."""
-    path = root / "mkdocs.yml"
-    if not path.is_file():
-        return
-    text = path.read_text(encoding="utf-8")
-    if NAV_BLOCK.extract(text) is not None:
-        return
-    _archive(root, ["mkdocs.yml"], tag="-nav")
-    path.write_text(mark_nav(text), encoding="utf-8")
 
 
 def _dedupe_gitignore(root: Path) -> list[str]:
@@ -617,12 +649,20 @@ def _project_name(pyproject: Path) -> str | None:
     return _canonical(name) if isinstance(name, str) else None
 
 
-def _archive(root: Path, paths: Sequence[str], tag: str = "") -> None:
-    """Warn, then copy each existing repo-relative *paths* under a fresh timestamped backup directory.
+def _archive(
+    root: Path, paths: Sequence[str], tag: str = ""
+) -> tuple[Path, list[str]] | None:
+    """Copy each existing repo-relative *paths* under a fresh timestamped backup directory.
 
     *tag* is appended to the directory name, so a copy that `generation.apply`'s
     own backup (named by the bare timestamp) must not overwrite stays apart.
+
+    Returns:
+        The backup directory and the paths copied, or `None` if none existed.
     """
+    existing = [relative for relative in paths if (root / relative).is_file()]
+    if not existing:
+        return None
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     base = root / umbrella.BACKUPS
     archive = base / f"{stamp}{tag}"
@@ -630,17 +670,11 @@ def _archive(root: Path, paths: Sequence[str], tag: str = "") -> None:
     while archive.exists():
         suffix += 1
         archive = base / f"{stamp}{tag}-{suffix}"
-    console.warning(
-        "archiving {} target(s) to {} before overwriting",
-        len(paths),
-        archive,
-    )
-    for relative in paths:
-        source = root / relative
-        if source.is_file():
-            destination = archive / relative
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, destination)
+    for relative in existing:
+        destination = archive / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(root / relative, destination)
+    return archive, existing
 
 
 def _resolve_config(
