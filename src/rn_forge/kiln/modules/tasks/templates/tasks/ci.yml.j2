@@ -57,7 +57,12 @@ tasks:
     desc: "CI only: print the Sonar branch argument for this run as a $GITHUB_OUTPUT line"
     cmds:
       - '{{.DEVOPS}} sonar-target'
-{% if not workspace and not node_lib %}
+{% if umbrella_release_enabled %}
+  release:umbrella:
+    desc: "CI only: create a GitHub release for each shipped release page that has none"
+    cmds:
+      - '{{.DEVOPS}} umbrella --sha "$GITHUB_SHA"'
+{% endif %}{% if not workspace and not node_lib %}
   release-state:
     desc: "CI only: print the release's state for this version as $GITHUB_OUTPUT lines"
     cmds:

@@ -12,6 +12,7 @@ validate, dependency-review
 {%- endmacro %}
 {%- macro postrelease_needs() -%}
 {%- if release != "none" %}, release, verify-release{% endif -%}
+{%- if umbrella_release_enabled and not node_lib %}, umbrella{% endif -%}
 {%- if docs %}, docs{% endif -%}
 {%- endmacro %}
 {#- `docs` waits for the barrier and for each release stage that is rendered; a skipped
@@ -1019,7 +1020,36 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]
-{% endif %}{% endif %}{% for job in jobs %}
+{% endif %}{% endif %}{% if umbrella_release_enabled and not node_lib %}
+  # One GitHub release per shipped release page. Gated on the barrier and on
+  # `release` not failing, never on which packages were selected: a push that
+  # only marks a release page shipped selects none and skips `release`.
+  umbrella:
+    needs: [checks-ok, release]
+    if: ${{ !cancelled() && needs.checks-ok.result == 'success' && needs.release.result != 'failure' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: release
+      cancel-in-progress: false # never cancel a running release
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
+        with:
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create the umbrella releases
+        run: task ci:release:umbrella
+        env:
+          GH_TOKEN: ${{ github.token }}
+{% endif %}{% for job in jobs %}
   [[ job.name ]]:
     needs: validate
 {% if job.events | length < 3 %}    if: ${{ {% for event in job.events %}github.event_name == '[[ event ]]'{% if not loop.last %} || {% endif %}{% endfor %} }}

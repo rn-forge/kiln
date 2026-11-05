@@ -91,6 +91,8 @@ def render(config: KilnConfig) -> list[Artifact]:
     secret_scan_enabled = registry.enabled(scan, ci, config.archetype, len(packages))
     ranges = next(c for c in registry.CHECKS if c.name == "internal-ranges")
     ranges_enabled = registry.enabled(ranges, ci, config.archetype, len(packages))
+    umbrella = next(c for c in registry.CHECKS if c.name == "umbrella-release")
+    umbrella_enabled = registry.enabled(umbrella, ci, config.archetype, len(packages))
     gitleaks = cast("dict[str, Any]", load_pins()["gitleaks"])
 
     known = {
@@ -136,6 +138,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "overrides": tasks_config.command_overrides,
         "secret_scan_enabled": secret_scan_enabled,
         "internal_ranges_enabled": ranges_enabled,
+        "umbrella_release_enabled": umbrella_enabled,
         "gitleaks": [
             {
                 "uname": uname,

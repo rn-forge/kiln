@@ -103,10 +103,10 @@ def render(config: KilnConfig) -> list[Artifact]:
     docs = config.docs_profile == "mkdocs"
     release = config.release
     umbrella = next(c for c in registry.CHECKS if c.name == "umbrella-release")
-    if (
-        registry.enabled(umbrella, ci, config.archetype, len(config.packages))
-        and ci.release == "none"
-    ):
+    umbrella_enabled = registry.enabled(
+        umbrella, ci, config.archetype, len(config.packages)
+    )
+    if umbrella_enabled and ci.release == "none":
         raise AppException(
             "cicd.render: ci.checks.umbrella-release needs [ci] release other than none"
         )
@@ -135,6 +135,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "sonar_coverage_exclusions": list(ci.sonar_coverage_exclusions),
         "release": release,
         "doctor_full": ci.doctor_full,
+        "umbrella_release_enabled": umbrella_enabled,
         "internal_ranges_enabled": registry.enabled(
             ranges, ci, config.archetype, len(config.packages)
         ),

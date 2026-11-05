@@ -3609,3 +3609,95 @@ def test_s15_7_1_3_new_pin_is_ignored(
     monkeypatch.setattr("rn_forge.kiln.modules.cicd.artifacts.load_pins", lambda: pins)
     names = [i["dependency-name"] for i in _actions_entry(_root(tmp_path))["ignore"]]  # type: ignore[attr-defined,index]
     assert "x/y" in names
+
+
+# S15.5.2 — an `umbrella` job runs `kiln-devops umbrella`.
+
+UMBRELLA_ARCHETYPES = (*ARCHETYPES, "python-web-api", "python-web-app")
+UMBRELLA_IF = (
+    "${{ !cancelled() && needs.checks-ok.result == 'success' && "
+    "needs.release.result != 'failure' && github.event_name == 'push' && "
+    "github.ref == 'refs/heads/main' }}"
+)
+
+
+def _umbrella_root(tmp_path: Path, archetype: str, on: bool) -> Path:
+    root = _sonar_root(tmp_path, archetype)
+    if on:
+        config = root / ".rn-forge" / "kiln" / "config.toml"
+        config.write_text(
+            config.read_text(encoding="utf-8")
+            + "\n[ci.checks]\numbrella-release = true\n",
+            encoding="utf-8",
+        )
+    return root
+
+
+def _umbrella_files(
+    root: Path,
+) -> tuple[dict[str, dict[str, object]], dict[str, object]]:
+    jobs = _ci_jobs(root)
+    return jobs, _ci_tasks_text_of(root)["tasks"]  # type: ignore[return-value]
+
+
+@pytest.mark.parametrize("archetype", [*UMBRELLA_ARCHETYPES, "node-lib"])
+def test_s15_5_2_1_off_by_default(tmp_path: Path, archetype: str) -> None:
+    jobs, tasks = _umbrella_files(_umbrella_root(tmp_path, archetype, False))
+    assert "umbrella" not in jobs
+    assert "release:umbrella" not in tasks
+
+
+@pytest.mark.parametrize("archetype", UMBRELLA_ARCHETYPES)
+def test_s15_5_2_2_on(tmp_path: Path, archetype: str) -> None:
+    jobs, tasks = _umbrella_files(_umbrella_root(tmp_path, archetype, True))
+    job = jobs["umbrella"]
+    assert job["needs"] == ["checks-ok", "release"]
+    assert job["permissions"] == {"contents": "write"}
+    assert job["concurrency"] == {"group": "release", "cancel-in-progress": False}
+    steps = job["steps"]
+    assert "actions/checkout" in steps[0]["uses"]  # type: ignore[index]
+    assert steps[1]["uses"] == "./.github/actions/setup"  # type: ignore[index]
+    assert steps[2]["run"] == "task ci:release:umbrella"  # type: ignore[index]
+    assert len(steps) == 3  # type: ignore[arg-type]
+    assert steps[2]["env"] == {"GH_TOKEN": "${{ github.token }}"}  # type: ignore[index]
+    for name, other in jobs.items():
+        if name != "umbrella":
+            assert "umbrella" not in str(other.get("steps", "")), name
+    assert tasks["release:umbrella"]["cmds"] == [  # type: ignore[index]
+        '{{.DEVOPS}} umbrella --sha "$GITHUB_SHA"'
+    ]
+
+
+@pytest.mark.parametrize("archetype", UMBRELLA_ARCHETYPES)
+def test_s15_5_2_3_needs_a_release(tmp_path: Path, archetype: str) -> None:
+    root = _umbrella_root(tmp_path, archetype, True)
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    text = config.read_text(encoding="utf-8")
+    config.write_text(
+        text + '\n[ci]\nrelease = "none"\n'
+        if "[ci]" not in text
+        else text.replace('release = "tag-exists"', 'release = "none"'),
+        encoding="utf-8",
+    )
+    with pytest.raises(
+        AppException,
+        match=r"cicd\.render: ci\.checks\.umbrella-release needs \[ci\] release other than none",
+    ):
+        _rendered(root)
+
+
+@pytest.mark.parametrize("archetype", UMBRELLA_ARCHETYPES)
+def test_s15_5_2_4_docs_only_shipped_transition(tmp_path: Path, archetype: str) -> None:
+    jobs = _ci_jobs(_umbrella_root(tmp_path, archetype, True))
+    assert jobs["umbrella"]["if"] == UMBRELLA_IF
+    assert "release-order" not in str(jobs["umbrella"]["if"])
+    if archetype == "python-lib":
+        assert "release-order != '[]'" in str(jobs["release"]["if"])
+
+
+@pytest.mark.parametrize("archetype", UMBRELLA_ARCHETYPES)
+def test_s15_5_2_5_ci_ok(tmp_path: Path, archetype: str) -> None:
+    on = _ci_jobs(_umbrella_root(tmp_path / "on", archetype, True))
+    assert "umbrella" in on["ci-ok"]["needs"]  # type: ignore[operator]
+    off = _ci_jobs(_umbrella_root(tmp_path / "off", archetype, False))
+    assert "umbrella" not in off["ci-ok"]["needs"]  # type: ignore[operator]
