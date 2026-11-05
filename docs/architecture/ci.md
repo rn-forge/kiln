@@ -120,6 +120,10 @@ it owns.
 |  | `[ci.hooks] docs` | Local composite actions every Pages-uploading job runs before the upload, with `SITE_DIR` set |
 | A repository's own job | `[[ci.jobs]]` | Renders a reusable-workflow call that needs `validate` and that `ci-ok` needs unless `required = false` |
 
+A repository-owned workflow is allowed only for a scheduled or non-gating run;
+it keeps its own action pins current through Dependabot, which ignores the
+actions kiln pins.
+
 A `[[ci.jobs]]` entry has `name` (kebab-case, not a job kiln generates), `uses`
 (`./.github/workflows/<file>.yml`, not `ci.yml`), `events` (default all three of
 `pull_request`, `push`, `workflow_dispatch`) and `contents` (`read`, or `write`

@@ -15,7 +15,7 @@
 | [F15.4 — Internal ranges](F15.4-internal-ranges.md) | Closed | release-1 | 3 Closed |
 | [F15.5 — The umbrella release](F15.5-umbrella-release.md) | Active | release-1 | 2 New · 1 Closed |
 | [F15.6 — OpenSSF Scorecard](F15.6-scorecard.md) | Closed | release-1 | 1 Closed |
-| [F15.7 — Repository-owned workflows](F15.7-repo-owned-workflows.md) | Active | release-1 | 1 New · 1 Closed |
+| [F15.7 — Repository-owned workflows](F15.7-repo-owned-workflows.md) | Closed | release-1 | 2 Closed |
 | [F15.8 — Every archetype on the one-workflow contract](F15.8-one-workflow-contract.md) | New | release-1 | 9 New |
 
 <!-- END derived features -->

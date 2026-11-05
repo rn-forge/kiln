@@ -237,3 +237,7 @@ model.
 | `secret-scan` | `task ci:lint:secrets` | C: `[ci.checks] secret-scan`, default `true` |
 | `umbrella-release` | `task ci:release:umbrella` | C: `[ci.checks] umbrella-release`, default `false` |
 | `scorecard` | none | C: `[ci.checks] scorecard`, default `false`; public repositories only |
+
+A repository-owned workflow is allowed only for a scheduled or non-gating run;
+it keeps its own action pins current through Dependabot, which ignores the
+actions kiln pins.

@@ -733,3 +733,30 @@ def test_s15_1_4_4_standard_lists_this_archetypes_checks(tmp_path: Path) -> None
     assert "pip-audit" not in node
     lib = _rendered(_root(tmp_path / "lib", "python-lib"))[STANDARD]
     assert "licenses" in lib
+
+
+@pytest.mark.parametrize(
+    "archetype",
+    ("python-app", "python-tool", "python-lib", "python-web-api", "python-web-app"),
+)
+def test_s15_7_2_1_standard_states_repository_workflows(
+    tmp_path: Path, archetype: str
+) -> None:
+    root = _root(tmp_path, archetype)
+    if archetype.startswith("python-web"):
+        key = "backend" if archetype == "python-web-api" else "frontend"
+        value = "fastapi" if archetype == "python-web-api" else "angular"
+        config = root / ".rn-forge/kiln/config.toml"
+        config.write_text(
+            config.read_text(encoding="utf-8")
+            + f'\n[archetype."{archetype}"]\n{key} = "{value}"\n',
+            encoding="utf-8",
+        )
+    sentence = (
+        "A repository-owned workflow is allowed only for a scheduled or "
+        "non-gating run; it keeps its own action pins current through "
+        "Dependabot, which ignores the actions kiln pins."
+    )
+    assert sentence in " ".join(_rendered(root)[STANDARD].split())
+    node = _rendered(_root(tmp_path / "node", "node-lib"))[STANDARD]
+    assert sentence in " ".join(node.split())

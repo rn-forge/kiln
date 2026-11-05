@@ -325,6 +325,10 @@ Switch a configured check in `[ci.checks]`; see the CI architecture page for the
 model.
 
 {{ ci_matrix }}
+
+A repository-owned workflow is allowed only for a scheduled or non-gating run;
+it keeps its own action pins current through Dependabot, which ignores the
+actions kiln pins.
 {% if node_lib %}
 ## 9. What a node-lib repository declares
 
