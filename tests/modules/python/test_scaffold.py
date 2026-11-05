@@ -907,3 +907,8 @@ def test_s16_4_3_3_task_tools_stay_bare_in_the_check(tmp_path: Path) -> None:
     )
     assert "ruff" not in missing_task_tools(root, config)
     assert not [t for t in missing_task_tools(root, config) if t in TASK_TOOLS]
+
+
+def test_s15_2_2_4_pip_licenses_is_a_task_tool() -> None:
+    assert "pip-licenses" in TASK_TOOLS
+    assert any(e.startswith("pip-licenses") for e in python_scaffold._DEV_GROUP)

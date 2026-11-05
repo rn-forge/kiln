@@ -5,6 +5,9 @@ version: "3"
 # compose. Everything here is `internal: true` — it exists to be called from a
 # wrapper, not run directly.
 
+vars:
+  DEVOPS: 'uv run kiln-devops'
+
 tasks:
   install:
     desc: Sync the virtualenv with the dev and docs dependency groups.
@@ -36,6 +39,24 @@ tasks:
         set -o pipefail;
         uv export --frozen --all-packages --all-groups --no-emit-workspace --no-header
         | uv run pip-audit --disable-pip --require-hashes --strict -r /dev/stdin
+
+  lint:licenses:
+    desc: Fail if a dependency's licence matches the deny list (pip-licenses).
+    internal: true
+    # `set -o pipefail`, as in `lint:audit`: a failing `pip-licenses` must not
+    # let the matcher pass on empty input.
+    cmds:
+      - >-
+        set -o pipefail;
+        uv run pip-licenses --format=json
+        | {{.DEVOPS}} licenses --format pip-licenses
+        --deny 'GPL'
+        --deny 'GPL-*'
+        --deny 'AGPL'
+        --deny 'AGPL-*'
+        --deny 'UNKNOWN'
+        --ignore 'kiln'
+        --ignore 'text-unidecode'
 
   format:
     desc: Fix and format src/ (and tests/, when present) in place with ruff.

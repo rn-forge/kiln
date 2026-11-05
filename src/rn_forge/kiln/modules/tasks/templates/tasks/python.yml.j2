@@ -18,6 +18,10 @@ version: "3"
 vars:
   PACKAGE_DIRS: [[ package_dirs | join(" ") ]]
   PACKAGES: [[ packages | join(" ") ]]
+{% if licenses_task %}  DEVOPS: '[[ devops ]]'
+{% endif %}{% elif licenses_task %}
+vars:
+  DEVOPS: '[[ devops ]]'
 {% endif %}
 tasks:
   install:
@@ -69,6 +73,19 @@ tasks:
         uv export --frozen --all-packages --all-groups --no-emit-workspace --no-header
         | uv run pip-audit --disable-pip --require-hashes --strict -r /dev/stdin
 {% for id in audit_ignore %}        --ignore-vuln [[ id ]]
+{% endfor %}{% endif %}{% if licenses_task %}
+  lint:licenses:
+    desc: Fail if a dependency's licence matches the deny list (pip-licenses).
+    internal: true
+    # `set -o pipefail`, as in `lint:audit`: a failing `pip-licenses` must not
+    # let the matcher pass on empty input.
+    cmds:
+      - >-
+        set -o pipefail;
+        uv run pip-licenses --format=json
+        | {{.DEVOPS}} licenses --format pip-licenses
+{% for d in licenses_deny %}        --deny '[[ d ]]'
+{% endfor %}{% for i in licenses_ignore %}        --ignore '[[ i ]]'
 {% endfor %}{% endif %}
   format:
 {% if workspace %}    desc: Fix and format every workspace package in place with ruff.

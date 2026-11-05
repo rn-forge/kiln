@@ -12,6 +12,8 @@ from rn_forge.commons.text.templates import TemplateEngine
 from rn_forge.kiln import __version__
 from rn_forge.kiln.archetypes import KILN_REF, kiln_command
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.cicd import registry
+from rn_forge.kiln.modules.cicd.config import CiConfig
 from rn_forge.kiln.modules.docs.config import DocsConfig
 from rn_forge.kiln.modules.python.artifacts import root_package
 from rn_forge.kiln.modules.tasks.config import TasksConfig
@@ -38,6 +40,9 @@ _PYTHON_TASKS = (
     "python:version",
 )
 _CI_TASKS = ("ci:lint:workflows",)
+# Dual-licensed Artistic or GPL, taken under Artistic; reached through the
+# rendered docs group (mkdocs-monorepo-plugin -> python-slugify).
+_LICENSES_ALWAYS_IGNORED = ("text-unidecode",)
 _NODE_TASKS = (
     "node:install",
     "node:lint",
@@ -71,6 +76,11 @@ def render(config: KilnConfig) -> list[Artifact]:
     web_dir = config.web_dir
     docs = config.docs_profile == "mkdocs"
     tasks_config = _tasks_config(config)
+    ci = getattr(config.document, "ci", None)
+    ci = ci if isinstance(ci, CiConfig) else CiConfig()
+    check = next(c for c in registry.CHECKS if c.name == "licenses")
+    licenses_enabled = registry.enabled(check, ci, config.archetype, len(packages))
+    policy = ci.licenses_policy()
 
     known = {
         *_WORKSPACE_TASKS,
@@ -113,6 +123,14 @@ def render(config: KilnConfig) -> list[Artifact]:
         "includes": tasks_config.includes,
         "extra_refs": tasks_config.extra_refs,
         "overrides": tasks_config.command_overrides,
+        "licenses_enabled": licenses_enabled,
+        "licenses_task": licenses_enabled and not node_lib,
+        "licenses_deny": policy.deny,
+        "licenses_ignore": [
+            *policy.ignore,
+            *sorted({config.name, *packages, *([api_package] if api_package else [])}),
+            *_LICENSES_ALWAYS_IGNORED,
+        ],
         "audit_ignore": [entry.id for entry in tasks_config.audit.ignore],
         "web": web,
         "web_app": web_app,

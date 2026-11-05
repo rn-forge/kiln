@@ -51,6 +51,7 @@ tasks:
       - task: kiln:doctor
       - task: ci:lint:workflows
       - task: python:lint:audit
+      - task: python:lint:licenses
 
   format:
     desc: Format Python code, TOML and Markdown prose in place.

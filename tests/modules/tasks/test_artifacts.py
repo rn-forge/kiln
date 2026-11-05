@@ -1820,6 +1820,7 @@ PYTHON_TASKS = (
     "lint",
     "lint:imports",
     "lint:audit",
+    "lint:licenses",
     "format",
     "typecheck",
     "test",
@@ -1899,7 +1900,11 @@ def test_s4_12_4_4_workspace_is_clean_only(
 def test_s4_12_4_5_python_lib_vars_move_with_the_tasks(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-lib")
     cycle.apply(root, home=tmp_path / "home")
-    assert set(_load(root, "tasks/python.yml")["vars"]) == {"PACKAGE_DIRS", "PACKAGES"}
+    assert set(_load(root, "tasks/python.yml")["vars"]) == {
+        "PACKAGE_DIRS",
+        "PACKAGES",
+        "DEVOPS",
+    }
 
 
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
@@ -1998,6 +2003,7 @@ LINT_ORDER = [
     "kiln:doctor",
     "ci:lint:workflows",
     "python:lint:audit",
+    "python:lint:licenses",
 ]
 REMOVED_KEYS = [
     "quality:lint:generated",
@@ -3137,3 +3143,50 @@ def test_s16_4_5_3_ten_root_verbs(tmp_path: Path, archetype: str) -> None:
         for f in TASKS.checks(KilnConfig.load(root), root)
         if f.code.startswith("taskgraph")
     ]
+
+
+# S15.2.2 — Python repositories run the licences check in `lint`.
+
+LICENSES_REF = {"task": "python:lint:licenses"}
+LICENSES_DENY = " ".join(
+    f"--deny '{d}'" for d in ("GPL", "GPL-*", "AGPL", "AGPL-*", "UNKNOWN")
+)
+
+
+def test_s15_2_2_1_python_lint_licenses_task(tmp_path: Path) -> None:
+    root = _root(tmp_path, "python-lib")
+    cycle.apply(root, home=tmp_path / "home")
+    root_tasks, python = _rendered_yaml(root)
+    cmds = root_tasks["lint"]["cmds"]
+    assert cmds[cmds.index(AUDIT_REF) + 1] == LICENSES_REF
+    task = python["lint:licenses"]
+    assert task["internal"] is True
+    (cmd,) = task["cmds"]
+    assert cmd == (
+        "set -o pipefail; uv run pip-licenses --format=json "
+        f"| {{{{.DEVOPS}}}} licenses --format pip-licenses {LICENSES_DENY} "
+        "--ignore 'alpha' --ignore 'beta' --ignore 'demo' --ignore 'text-unidecode'"
+    )
+
+
+def test_s15_2_2_2_policy_reaches_the_task(tmp_path: Path) -> None:
+    root = _root(
+        tmp_path,
+        extra='\n[ci.checks]\nlicenses = { deny = ["GPL-*"], ignore = ["foo"] }\n',
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    _, python = _rendered_yaml(root)
+    (cmd,) = python["lint:licenses"]["cmds"]
+    assert cmd.endswith(
+        "--format pip-licenses --deny 'GPL-*' --ignore 'foo' "
+        "--ignore 'demo' --ignore 'text-unidecode'"
+    )
+    assert cmd.count("--deny") == 1
+
+
+def test_s15_2_2_3_off(tmp_path: Path) -> None:
+    root = _root(tmp_path, extra="\n[ci.checks]\nlicenses = false\n")
+    cycle.apply(root, home=tmp_path / "home")
+    root_tasks, python = _rendered_yaml(root)
+    assert "lint:licenses" not in python
+    assert LICENSES_REF not in root_tasks["lint"]["cmds"]

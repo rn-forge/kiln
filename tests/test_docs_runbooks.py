@@ -128,8 +128,13 @@ def test_s16_3_1_4_sequence_runs(
         ["git", "status", "--porcelain"], cwd=root, capture_output=True, text=True
     ).stdout
     changed = {line[3:] for line in status.splitlines()}
-    # the pinned ref is rendered into these three task files, so they move with it
-    ref_carriers = {"tasks/ci.yml", "tasks/docs.yml", "tasks/kiln.yml"}
+    # the pinned ref is rendered into these task files, so they move with it
+    ref_carriers = {
+        "tasks/ci.yml",
+        "tasks/docs.yml",
+        "tasks/kiln.yml",
+        "tasks/python.yml",
+    }
     assert changed <= {
         ".rn-forge/kiln/config.toml",
         ".rn-forge/kiln/state.json",
