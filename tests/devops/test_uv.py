@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import re
 import subprocess
 import zipfile
 from pathlib import Path
 
 import pytest
 
-from rn_forge.kiln.devops import Package, Smoke, Workspace, uv
+from rn_forge.kiln.devops import Package, Service, Smoke, Workspace, uv
 
 
 def _write(path: Path, text: str) -> None:
@@ -28,17 +29,60 @@ def _workspace(root: Path) -> None:
     _write(
         root / "pkgs/app/pyproject.toml",
         '[project]\nname = "App_X"\nversion = "1"\ndependencies = ["base>=1"]\n\n'
-        '[tool.workspace-ci.postgres]\nenv = "DSN"\n\n'
-        '[tool.workspace-ci.redis]\nenv = "URL"\n',
+        '[tool.workspace-ci.integration.postgres]\nimage = "postgres:17"\n'
+        'ports = ["5432:5432"]\nhealth-cmd = "pg_isready -U ci"\n\n'
+        '[tool.workspace-ci.integration.postgres.env]\nPOSTGRES_USER = "ci"\n\n'
+        "[tool.workspace-ci.integration.postgres.expose]\n"
+        'DATABASE_URL = "postgresql://ci@localhost:5432/ci"\n\n'
+        '[tool.workspace-ci.integration.redis]\nimage = "redis:7"\n',
     )
 
 
-def test_s6_8_1_8_redis_table_sets_redis_env(tmp_path: Path) -> None:
+def test_s15_8_2_1_load(tmp_path: Path) -> None:
     _workspace(tmp_path)
     packages = uv.load_workspace(tmp_path).packages
-    assert packages["app-x"].redis_env == "URL"
-    assert packages["base"].redis_env is None
+    assert packages["base"].services == ()
+    assert packages["app-x"].services == (
+        Service(
+            "postgres",
+            "postgres:17",
+            ports=("5432:5432",),
+            health_cmd="pg_isready -U ci",
+            env={"POSTGRES_USER": "ci"},
+            expose={"DATABASE_URL": "postgresql://ci@localhost:5432/ci"},
+        ),
+        Service("redis", "redis:7"),
+    )
     assert packages["app-x"].release_requires == {"base"}
+
+
+def test_s15_8_2_1_image_is_required(tmp_path: Path) -> None:
+    _workspace(tmp_path)
+    _write(
+        tmp_path / "pkgs/base/pyproject.toml",
+        '[project]\nname = "base"\nversion = "1"\n\n'
+        '[tool.workspace-ci.integration.redis]\nports = ["6379:6379"]\n',
+    )
+    with pytest.raises(ValueError, match="integration.redis.*image"):
+        uv.load_workspace(tmp_path)
+
+
+@pytest.mark.parametrize("old", ["postgres", "redis"])
+def test_s15_8_2_4_old_table_is_refused(tmp_path: Path, old: str) -> None:
+    _workspace(tmp_path)
+    _write(
+        tmp_path / "pkgs/base/pyproject.toml",
+        f'[project]\nname = "base"\nversion = "1"\n\n'
+        f'[tool.workspace-ci.{old}]\nenv = "X"\n',
+    )
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            f"[tool.workspace-ci.{old}] was replaced by "
+            f"[tool.workspace-ci.integration.{old}]"
+        ),
+    ):
+        uv.load_workspace(tmp_path)
 
 
 def test_s6_8_1_9_load_workspace_keeps_dependency_groups_out_of_release_requires(
@@ -73,7 +117,7 @@ def test_s6_7_2_load_workspace_reads_members_and_settings(tmp_path: Path) -> Non
     assert sorted(workspace.packages) == ["app-x", "base"]
     app = workspace.packages["app-x"]
     assert (app.dir, app.module, app.requires) == ("pkgs/app", "app_x", {"base"})
-    assert app.postgres_env == "DSN"
+    assert [s.name for s in app.services] == ["postgres", "redis"]
     assert workspace.pytest_args == ["-m", "not slow"]
 
 

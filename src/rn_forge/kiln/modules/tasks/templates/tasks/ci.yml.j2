@@ -341,19 +341,11 @@ tasks:
       - uv run --directory "$PACKAGE_DIR" --package {{.CLI_ARGS}} pyright src
       - uv run --directory "$PACKAGE_DIR" --package {{.CLI_ARGS}} pytest -q $PYTEST_ARGS
 
-  postgres:
-    desc: "CI only: a member's tests again against PostgreSQL (-- <package>, with PACKAGE_DIR)"
+  integration:
+    desc: "CI only: a member's tests against the service containers it declares (-- <package>)"
+    silent: true
     cmds:
-      - |
-        export "$DSN_VAR=postgresql://ci:ci@localhost:5432/ci"
-        uv run --directory "$PACKAGE_DIR" --package {{.CLI_ARGS}} pytest -q $PYTEST_ARGS
-
-  redis:
-    desc: "CI only: a member's tests again against Redis (-- <package>, with PACKAGE_DIR)"
-    cmds:
-      - |
-        export "$URL_VAR=redis://localhost:6379/0"
-        uv run --directory "$PACKAGE_DIR" --package {{.CLI_ARGS}} pytest -q $PYTEST_ARGS
+      - '{{.DEVOPS}} integration {{.CLI_ARGS}}'
 
   smoke:
     desc: "CI only: install one extra from the built wheel and import it (-- <package> [extra])"

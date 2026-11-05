@@ -39,7 +39,7 @@ vocabulary, one for every archetype, is in
 
 | Archetype | `ci.yml` job order | Other workflows |
 | -- | -- | -- |
-| `python-lib` | `validate` > `dependency-review`, `secret-scan`, `plan` > `test`, `postgres`, `redis`, `smoke`, `suites` > `sonar` > `checks-ok` > `release` > `external-install`, `docs` > `ci-ok` | none: `docs` is the one Pages deploy |
+| `python-lib` | `validate` > `dependency-review`, `secret-scan`, `plan` > `test`, `integration`, `smoke`, `suites` > `sonar` > `checks-ok` > `release` > `external-install`, `docs` > `ci-ok` | none: `docs` is the one Pages deploy |
 | `python-tool`, `python-app`, `python-web-api`, `python-web-app` | `validate` > `dependency-review`, `secret-scan`, `sonar` > `checks-ok` > `release` > `ci-ok` | `docs.yml` |
 | `node-lib` | `validate` > `dependency-review`, `secret-scan`, `test-cloud` or `test-local` > `sonar`, `smoke` > `checks-ok`; `docs` > `ci-ok` | `release.yml` (dispatch) |
 
@@ -52,7 +52,7 @@ vocabulary, one for every archetype, is in
 | `secret-scan` | `task ci:lint:secrets`: gitleaks over the full git history; skipped for a fork's pull request | `[ci.checks] secret-scan`, on |
 | `plan` | selects changed packages and their dependents | `task ci:plan` |
 | `test` | one leg per selected package | `task ci:test` |
-| `postgres`, `redis` | one leg per selected package declaring the service | `task ci:postgres`, `task ci:redis` |
+| `integration` | one leg per selected package declaring a service in `[tool.workspace-ci.integration.<service>]`: the task starts the containers, runs the tests, removes them | `task ci:integration` |
 | `smoke` | one leg per selected package, plus one per declared extra: the wheel installs and imports | `task ci:smoke` |
 | `suites` | the root workspace-wide pytest suites | `task ci:suite` |
 | `test-cloud`, `test-local` | `nx affected` on Nx Cloud agents, or on the runner; one runs per `USE_NX_CLOUD` | `task ci:affected` |
@@ -238,32 +238,30 @@ A newer push to the same pull request cancels the run in progress. Pushes to
 | `validate` | `task lint` (ruff and format, generated-file drift, rn-forge dependency pins, import contracts, task layout, `ci-entrypoint`, docs links, structure and derived regions, markdown), `task ci:adapters`, and the strict docs build of the root and every package site | runs | runs, with `kiln doctor --full` | runs, with `kiln doctor --full` |
 | `plan` | the selection above | runs | runs | runs, every package |
 | `test`, one per selected package | ruff, pyright and pytest for that member | selected | selected | every package |
-| `postgres`, one per selected package that declares `[tool.workspace-ci.postgres]` | that member's tests against a PostgreSQL 17 service | selected | selected | every declaring package |
-| `redis`, one per selected package that declares `[tool.workspace-ci.redis]` | that member's tests against a Redis 7 service | selected | selected | every declaring package |
+| `integration`, one per selected package that declares `[tool.workspace-ci.integration.<service>]` | that member's tests against the service containers it declares | selected | selected | every declaring package |
 | `smoke`, one per selected package with no extra, plus one per declared extra | the built wheel, with no extra or with that one extra, installs into a clean venv and imports | selected | selected | every package and declared extra |
 | `suites` | the root `[tool.workspace-ci.suites]` pytest runs | always, all suites | always | always |
 | `sonar` | whole-workspace coverage, then the scan, waiting on the quality gate | runs; skipped for a fork's pull request | runs, on branch `main` | runs, on the dispatched branch |
 | `release` | each selected package whose checks passed is built with its SBOM (`task ci:release-build`), attested, then published (`task ci:release-publish`) as `<package>-v<version>`, after `sonar` passed | skipped | builds and publishes | skipped |
 | `external-install` | each new tag installs from git, outside the workspace, and imports | skipped | runs | skipped |
 | `docs` | each package tagged at this commit deployed with `mike`, then the root site plus `packages/` to Pages; `[ci.hooks] docs` actions run before the upload | skipped | runs | skipped |
-| `checks-ok` | the pre-release barrier: `validate`, `dependency-review`, `plan`, `test`, `postgres`, `redis`, `smoke`, `suites`, `sonar`, `secret-scan`, and the checks and required jobs, none failed or cancelled | runs | runs | runs |
+| `checks-ok` | the pre-release barrier: `validate`, `dependency-review`, `plan`, `test`, `integration`, `smoke`, `suites`, `sonar`, `secret-scan`, and the checks and required jobs, none failed or cancelled | runs | runs | runs |
 | `ci-ok` | `checks-ok`, `release`, `external-install`, `docs`: none failed or cancelled; a skipped job is not a failure | runs | runs | runs |
 
 #### Ordering and gating
 
 ```text
-validate ─► plan ─┬─► test ─────┐
-                  ├─► postgres ─┤
-                  ├─► redis ────┼─► sonar ─► release ─► external-install
-                  ├─► smoke ────┘                 └───► docs
+validate ─► plan ─┬─► test ────────┐
+                  ├─► integration ─┼─► sonar ─► release ─► external-install
+                  ├─► smoke ───────┘                 └───► docs
                   └─► suites
 `validate` .. `sonar` ─► checks-ok ─► release
 `checks-ok`, `release`, `external-install`, `docs` ─► ci-ok
 ```
 
 - Nothing runs unless `validate` passes.
-- `sonar` waits for `test`, `postgres`, `redis` and `smoke`, and runs only if
-  none failed.
+- `sonar` waits for `test`, `integration` and `smoke`, and runs only if none
+  failed.
 - `checks-ok` waits for every job above it (and the declared checks) and fails
   when any failed or was cancelled; a skipped job passes.
 - `release` waits for `plan` and `checks-ok`. It runs only on a push to `main`,
@@ -274,12 +272,12 @@ validate ─► plan ─┬─► test ─────┐
 
 #### How a release is decided
 
-- Each passing `test`, `postgres`, `redis` and `smoke` leg uploads an
-  `ok-<marker>` artifact. `release` publishes a package only when every one of
-  its markers exists and every selected package it requires is releasable too.
-  Because `release` waits for `checks-ok`, any failed leg holds back the whole
-  run's releases; the run is red through `ci-ok`. The markers still guard a
-  leg that was skipped for a package that was not selected.
+- Each passing `test`, `integration` and `smoke` leg uploads an `ok-<marker>`
+  artifact. `release` publishes a package only when every one of its markers
+  exists and every selected package it requires is releasable too. Because
+  `release` waits for `checks-ok`, any failed leg holds back the whole run's
+  releases; the run is red through `ci-ok`. The markers still guard a leg that
+  was skipped for a package that was not selected.
 - Releases follow version bumps. A tag that is already published is skipped; a
   draft is rebuilt from its tag and replaced. A merge that changes a package
   without bumping its version re-verifies it and publishes nothing.
@@ -296,6 +294,6 @@ validate ─► plan ─┬─► test ─────┐
 
 #### Worked example: a docs-only pull request
 
-The selection is empty, so `test`, `postgres`, `redis`, `smoke` and `release`
-are skipped. `validate`, which builds the docs strictly, `suites` and `sonar`
-still run, and `ci-ok` passes.
+The selection is empty, so `test`, `integration`, `smoke` and `release` are
+skipped. `validate`, which builds the docs strictly, `suites` and `sonar` still
+run, and `ci-ok` passes.

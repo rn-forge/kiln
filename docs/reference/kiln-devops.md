@@ -17,6 +17,7 @@ subcommands load no workspace and run in any repository.
 | `releasable OK_DIR NAME...` | Prints, in dependency order, the selected packages whose checks all passed and whose selected prerequisites are releasable. |
 | `released` | Prints `name dir module version` for each `<name>-v<version>` tag at `HEAD`, for `external-install` and `docs`. |
 | `smoke PACKAGE [EXTRA]` | Builds the package and its internal requirements as wheels, installs one extra into a clean venv from the wheels' metadata, and imports the configured modules, or the package's own module when it has no smoke table. |
+| `integration PACKAGE` | Starts the package's declared service containers with `docker run`, waits until each is healthy, runs the package's pytest with every `expose` variable set, and removes the containers, also when pytest fails. Exits with pytest's status, or 1 when a service never becomes healthy. |
 | `adapters` | Checks each package that declares `adapters`: every name has a module or subpackage under the package's source directory and an extra of the same name, and none is repeated. Prints one line per problem to stderr and exits 1 if there are any. |
 | `sonar-target` | Prints the `branch-arg=` line for the Sonar scan, from the `EVENT_NAME`, `REF_TYPE` and `REF_NAME` environment variables. |
 | `release-state TAG` | Prints the release's state for `TAG` as `$GITHUB_OUTPUT` lines. |
@@ -87,8 +88,7 @@ package.
 | -- | -- | -- |
 | `[tool.workspace-ci]` | root | `pytest-args` for package test runs. |
 | `[tool.workspace-ci.suites]` | root | A named workspace-wide pytest run per key, each its own job. |
-| `[tool.workspace-ci.postgres]` | package | `env`: the variable that receives a PostgreSQL DSN; the package's tests run again against a service container. |
-| `[tool.workspace-ci.redis]` | package | `env`: the variable that receives a Redis URL; the package's tests run again against a service container. |
+| `[tool.workspace-ci.integration.<service>]` | package | One service container the package's tests need: `image` (required), `ports` (`host:container`), `health-cmd`, `env` (set in the container) and `expose` (set in the environment of the tests). The `integration` check starts each declared service, waits for its health, runs the package's tests and removes the containers. The older `[tool.workspace-ci.postgres]` and `[tool.workspace-ci.redis]` tables are refused. |
 | `[tool.workspace-ci.smoke]` | package | Optional: a package without it is still smoke-tested with no extra, importing its own module. `modules` imported for every smoke run, an optional `setup` script run first, and `extras`: one smoke job per extra with its own modules. |
 | `[tool.workspace-ci]` | package | `adapters`: the names of the package's adapter modules. Each must be a module or subpackage of the package and have an extra of the same name; `adapters` checks it. |
 
@@ -109,8 +109,7 @@ every workspace member, whatever the change.
 | -- | -- | -- |
 | `release-order` | List of package names. | Selected |
 | `packages` | List of rows `{name, dir}`. | Selected |
-| `postgres` | List of rows `{name, dir, env}`, one per package that declares a PostgreSQL run. `env` is the variable that receives the DSN. | Selected |
-| `redis` | List of rows `{name, dir, env}`, one per package that declares a Redis run. `env` is the variable that receives the URL. | Selected |
+| `integration` | List of rows `{name, dir, services, marker}`, one per package that declares a service. `services` is the list of service names; `marker` is the file name a passing check leaves for `releasable`. | Selected |
 | `smoke` | List of rows `{name, extra, marker}`, one per smoke check. `extra` is empty for the run with no extra. `marker` is the file name a passing check leaves for `releasable`. | Selected |
 | `suites` | List of rows `{name, args}`, one per `[tool.workspace-ci.suites]` key. `args` is a shell-quoted string. | Every suite |
 | `pytest-args` | Shell-quoted string of the root `pytest-args`; empty if none. | Workspace |

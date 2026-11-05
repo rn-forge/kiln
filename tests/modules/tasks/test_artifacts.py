@@ -758,36 +758,19 @@ def test_s6_4_2_2_ci_tasks_pass_task_layout_and_list(tmp_path: Path) -> None:
     assert {"ci:plan", "ci:adapters", "ci:test"} <= names
 
 
-def test_s6_4_3_1_postgres_smoke_and_suite_are_described_and_not_internal(
+def test_s6_4_3_1_integration_smoke_and_suite_are_described_and_not_internal(
     tmp_path: Path,
 ) -> None:
     tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
-    for name in ("postgres", "smoke", "suite"):
+    for name in ("integration", "smoke", "suite"):
         assert tasks[name]["desc"], name  # type: ignore[index]
         assert "internal" not in tasks[name], name  # type: ignore[operator]
 
 
 def test_s6_4_3_2_commands_follow_the_story(tmp_path: Path) -> None:
     tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
-    postgres = tasks["postgres"]["cmds"]  # type: ignore[index]
-    assert len(postgres) == 1
-    lines = postgres[0].splitlines()
-    assert lines[0] == 'export "$DSN_VAR=postgresql://ci:ci@localhost:5432/ci"'
-    assert "pytest -q $PYTEST_ARGS" in lines[1]
-    assert "{{.CLI_ARGS}}" in lines[1]
     assert tasks["smoke"]["cmds"] == ['{{.DEVOPS}} smoke {{.CLI_ARGS}} "${EXTRA:-}"']  # type: ignore[index]
     assert tasks["suite"]["cmds"] == ["uv run pytest $SUITE_ARGS"]  # type: ignore[index]
-
-
-def test_s6_8_2_5_redis_task(tmp_path: Path) -> None:
-    tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
-    assert tasks["redis"]["desc"]  # type: ignore[index]
-    assert "internal" not in tasks["redis"]  # type: ignore[operator]
-    cmds = tasks["redis"]["cmds"]  # type: ignore[index]
-    assert len(cmds) == 1
-    lines = cmds[0].splitlines()
-    assert lines[0] == 'export "$URL_VAR=redis://localhost:6379/0"'
-    assert tasks["postgres"]["cmds"][0].splitlines()[1] == lines[1]  # type: ignore[index]
 
 
 def test_s6_8_3_2_release_sign_task(tmp_path: Path) -> None:
@@ -823,7 +806,7 @@ def test_s6_4_6_2_ci_tasks_take_the_directory_from_package_dir(
     tmp_path: Path,
 ) -> None:
     tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
-    for name in ("test", "postgres", "redis"):
+    for name in ("test",):
         text = "\n".join(tasks[name]["cmds"])  # type: ignore[index]
         assert "packages/{{.CLI_ARGS}}" not in text, name
         assert '--directory "$PACKAGE_DIR"' in text, name
@@ -1402,8 +1385,7 @@ CI_PIPELINE_TASKS = {
     "requirements",
     "adapters",
     "test",
-    "postgres",
-    "redis",
+    "integration",
     "smoke",
     "suite",
     "release-build",

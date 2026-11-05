@@ -46,6 +46,27 @@ class Smoke:
     setup: str = ""
 
 
+@dataclass(frozen=True)
+class Service:
+    """A service container a package's integration tests run against.
+
+    Attributes:
+        name: The service's name, as declared under `integration`.
+        image: The container image.
+        ports: Port mappings, each `host:container`.
+        health_cmd: The container's health command; empty when it has none.
+        env: Variables set in the container.
+        expose: Variables set in the environment of the package's tests.
+    """
+
+    name: str
+    image: str
+    ports: tuple[str, ...] = ()
+    health_cmd: str = ""
+    env: dict[str, str] = field(default_factory=dict[str, str])
+    expose: dict[str, str] = field(default_factory=dict[str, str])
+
+
 @dataclass
 class Package:
     """A workspace member.
@@ -59,10 +80,7 @@ class Package:
         release_requires: Names of the workspace members this package requires
             through dependencies or optional dependencies only. Release order and
             release gating follow these.
-        postgres_env: Variable that receives a PostgreSQL DSN, or `None` when the
-            package needs no database run.
-        redis_env: Variable that receives a Redis URL, or `None` when the package
-            needs no Redis run.
+        services: The service containers the package's integration tests need.
         smoke: The smoke-test declaration, or `None` when the package declares none.
         adapters: Names of the package's adapters, or `None` when it declares none.
     """
@@ -72,8 +90,7 @@ class Package:
     module: str
     requires: set[str] = field(default_factory=lambda: set[str]())
     release_requires: set[str] = field(default_factory=lambda: set[str]())
-    postgres_env: str | None = None
-    redis_env: str | None = None
+    services: tuple[Service, ...] = ()
     smoke: Smoke | None = None
     adapters: list[str] | None = None
 
@@ -83,10 +100,8 @@ class Package:
         The empty-extra smoke check is listed whether or not `smoke` is set.
         """
         checks = [{"kind": "test", "marker": f"{self.name}.test"}]
-        if self.postgres_env is not None:
-            checks.append({"kind": "postgres", "marker": f"{self.name}.postgres"})
-        if self.redis_env is not None:
-            checks.append({"kind": "redis", "marker": f"{self.name}.redis"})
+        if self.services:
+            checks.append({"kind": "integration", "marker": f"{self.name}.integration"})
         checks.append({"kind": "smoke", "extra": "", "marker": f"{self.name}.smoke"})
         if self.smoke is not None:
             checks += [
@@ -209,7 +224,7 @@ def plan(workspace: Workspace, base: str) -> dict[str, object]:
     """Return every job's matrix and package list for a run against `base`.
 
     Command-line values are shell-quoted strings. The keys are `release-order`,
-    `packages`, `postgres`, `redis`, `smoke`, `suites`, `pytest-args`, `cov-args`,
+    `packages`, `integration`, `smoke`, `suites`, `pytest-args`, `cov-args`,
     `test-paths`, `sonar-sources`, `sonar-tests`, `sonar` and `docs`.
     """
     packages, root = workspace.packages, workspace.root
@@ -219,15 +234,15 @@ def plan(workspace: Workspace, base: str) -> dict[str, object]:
     return {
         "release-order": order,
         "packages": [{"name": p.name, "dir": p.dir} for p in chosen],
-        "postgres": [
-            {"name": p.name, "dir": p.dir, "env": p.postgres_env}
+        "integration": [
+            {
+                "name": p.name,
+                "dir": p.dir,
+                "services": [x.name for x in p.services],
+                "marker": f"{p.name}.integration",
+            }
             for p in chosen
-            if p.postgres_env is not None
-        ],
-        "redis": [
-            {"name": p.name, "dir": p.dir, "env": p.redis_env}
-            for p in chosen
-            if p.redis_env is not None
+            if p.services
         ],
         "smoke": [
             {"name": p.name, "extra": c["extra"], "marker": c["marker"]}

@@ -49,8 +49,7 @@ _WEB_APP_EXCLUSIONS = ("**/node_modules/**", "**/dist/**", "**/*.spec.ts")
 _PLAN_KEYS = (
     "release-order",
     "packages",
-    "postgres",
-    "redis",
+    "integration",
     "smoke",
     "suites",
     "pytest-args",

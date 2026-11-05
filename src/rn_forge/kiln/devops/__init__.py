@@ -3,6 +3,7 @@
 from rn_forge.kiln.devops.ci import (
     UNSCOPED,
     Package,
+    Service,
     Smoke,
     Workspace,
     changed_files,
@@ -18,6 +19,7 @@ from rn_forge.kiln.devops.ci import (
 __all__ = [
     "UNSCOPED",
     "Package",
+    "Service",
     "Smoke",
     "Workspace",
     "changed_files",

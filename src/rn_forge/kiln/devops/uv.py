@@ -21,6 +21,7 @@ from packaging.requirements import Requirement
 
 from rn_forge.kiln.devops.ci import (
     Package,
+    Service,
     Smoke,
     Workspace,
     normalize,
@@ -28,6 +29,7 @@ from rn_forge.kiln.devops.ci import (
 )
 
 TOOL = "workspace-ci"
+TOOL_TABLE = f"tool.{TOOL}"
 MANIFEST = "pyproject.toml"
 
 IMPORT_SNIPPET = """
@@ -57,8 +59,44 @@ def find_root(start: Path) -> Path:
     raise FileNotFoundError(f"no uv workspace at or above {start}")
 
 
+def _services(package: str, ci: dict[str, Any]) -> tuple[Service, ...]:
+    """Read a member's `integration` tables.
+
+    Raises:
+        ValueError: When the member declares a removed `postgres` or `redis`
+            table, or a service without an `image`.
+    """
+    for old in ("postgres", "redis"):
+        if old in ci:
+            raise ValueError(
+                f"{package}: [{TOOL_TABLE}.{old}] was replaced by "
+                f"[{TOOL_TABLE}.integration.{old}]"
+            )
+    services: list[Service] = []
+    for name, table in ci.get("integration", {}).items():
+        if "image" not in table:
+            raise ValueError(
+                f"{package}: [{TOOL_TABLE}.integration.{name}] needs an image"
+            )
+        services.append(
+            Service(
+                name=name,
+                image=table["image"],
+                ports=tuple(table.get("ports", ())),
+                health_cmd=table.get("health-cmd", ""),
+                env=dict(table.get("env", {})),
+                expose=dict(table.get("expose", {})),
+            )
+        )
+    return tuple(services)
+
+
 def load_workspace(root: Path) -> Workspace:
-    """Read the uv workspace at `root` into the core's graph."""
+    """Read the uv workspace at `root` into the core's graph.
+
+    Raises:
+        ValueError: When a member declares a removed or incomplete service table.
+    """
     manifest: dict[str, Any] = tomllib.loads((root / MANIFEST).read_text())
     workspace = manifest["tool"]["uv"]["workspace"]
     excluded = workspace.get("exclude", [])
@@ -99,8 +137,7 @@ def load_workspace(root: Path) -> Workspace:
                 r for r in map(requirement_name, release_requirements) if r in names
             }
             - {name},
-            postgres_env=ci["postgres"]["env"] if "postgres" in ci else None,
-            redis_env=ci["redis"]["env"] if "redis" in ci else None,
+            services=_services(name, ci),
             smoke=(
                 Smoke(
                     modules=smoke.get("modules", []),

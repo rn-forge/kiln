@@ -671,8 +671,7 @@ def _lib_jobs(tmp_path: Path, **kwargs: object) -> dict[str, dict[str, object]]:
 PLAN_KEYS = (
     "release-order",
     "packages",
-    "postgres",
-    "redis",
+    "integration",
     "smoke",
     "suites",
     "pytest-args",
@@ -693,8 +692,7 @@ def test_s6_4_2_4_python_lib_jobs_and_validate_steps(tmp_path: Path) -> None:
         "secret-scan",
         "plan",
         "test",
-        "postgres",
-        "redis",
+        "integration",
         "smoke",
         "suites",
         "sonar",
@@ -760,7 +758,7 @@ def test_s6_4_2_6_test_job(tmp_path: Path) -> None:
 
 def test_s6_4_2_6_sonar_waits_for_test(tmp_path: Path) -> None:
     sonar = _lib_jobs(tmp_path)["sonar"]
-    assert sonar["needs"] == ["validate", "test", "postgres", "redis", "smoke"]
+    assert sonar["needs"] == ["validate", "test", "integration", "smoke"]
     assert str(sonar["if"]).startswith(
         "${{ !cancelled() && !contains(needs.*.result, 'failure') && ("
     )
@@ -784,15 +782,13 @@ def test_s6_4_2_8_other_archetypes_keep_the_plain_pipeline(tmp_path: Path) -> No
 def test_s6_4_3_2_declared_jobs_follow_test(tmp_path: Path) -> None:
     jobs = _lib_jobs(tmp_path)
     names = list(jobs)
-    assert names[names.index("test") + 1 : names.index("test") + 5] == [
-        "postgres",
-        "redis",
+    assert names[names.index("test") + 1 : names.index("test") + 4] == [
+        "integration",
         "smoke",
         "suites",
     ]
     for name, key in (
-        ("postgres", "postgres"),
-        ("redis", "redis"),
+        ("integration", "integration"),
         ("smoke", "smoke"),
         ("suites", "suites"),
     ):
@@ -808,75 +804,9 @@ def test_s6_4_3_2_declared_jobs_follow_test(tmp_path: Path) -> None:
         }, name
 
 
-def test_s6_4_3_3_postgres_job(tmp_path: Path) -> None:
-    job = _lib_jobs(tmp_path)["postgres"]
-    assert job["services"] == {
-        "postgres": {
-            "image": "postgres:17",
-            "env": {
-                "POSTGRES_USER": "ci",
-                "POSTGRES_PASSWORD": "ci",
-                "POSTGRES_DB": "ci",
-            },
-            "ports": ["5432:5432"],
-            "options": (
-                '--health-cmd "pg_isready -U ci" --health-interval 5s '
-                "--health-timeout 5s --health-retries 10"
-            ),
-        }
-    }
-    steps = job["steps"]  # type: ignore[assignment]
-    runs = [s.get("run") for s in steps]  # type: ignore[attr-defined]
-    assert runs.index("task setup") < runs.index(
-        "task ci:postgres -- ${{ matrix.name }}"
-    )
-    step = steps[runs.index("task ci:postgres -- ${{ matrix.name }}")]  # type: ignore[index]
-    assert step["env"] == {
-        "PACKAGE_DIR": "${{ matrix.dir }}",
-        "DSN_VAR": "${{ matrix.env }}",
-        "PYTEST_ARGS": "${{ needs.plan.outputs.pytest-args }}",
-    }
-
-
-def test_s6_8_2_1_redis_job(tmp_path: Path) -> None:
-    job = _lib_jobs(tmp_path)["redis"]
-    assert job["services"] == {
-        "redis": {
-            "image": "redis:7",
-            "ports": ["6379:6379"],
-            "options": (
-                '--health-cmd "redis-cli ping" --health-interval 5s '
-                "--health-timeout 5s --health-retries 10"
-            ),
-        }
-    }
-    steps = job["steps"]  # type: ignore[assignment]
-    runs = [s.get("run") for s in steps]  # type: ignore[attr-defined]
-    command = "task ci:redis -- ${{ matrix.name }}"
-    assert runs.index("task setup") < runs.index(command)
-    assert steps[runs.index(command)]["env"] == {  # type: ignore[index]
-        "PACKAGE_DIR": "${{ matrix.dir }}",
-        "URL_VAR": "${{ matrix.env }}",
-        "PYTEST_ARGS": "${{ needs.plan.outputs.pytest-args }}",
-    }
-
-
-def test_s6_8_2_2_redis_uploads_its_marker(tmp_path: Path) -> None:
-    touch, upload = _marker_steps(_lib_jobs(tmp_path)["redis"])
-    assert touch["run"] == 'mkdir ok && touch "ok/${{ matrix.name }}.redis"'
-    assert upload["with"]["name"] == "ok-${{ matrix.name }}.redis"  # type: ignore[index]
-
-
-def test_s6_8_2_3_redis_gates_what_postgres_gates(tmp_path: Path) -> None:
-    jobs = _lib_jobs(tmp_path)
-    for name in ("sonar", "checks-ok"):
-        needs = list(jobs[name]["needs"])  # type: ignore[call-overload]
-        assert needs.index("redis") == needs.index("postgres") + 1, name
-
-
-def test_s6_8_2_4_redis_is_generated(tmp_path: Path) -> None:
-    assert "redis" in GENERATED_JOBS
-    extra = f'\n[[ci.jobs]]\nname = "redis"\nuses = "{CALL}"\n'
+def test_s15_8_2_integration_is_generated(tmp_path: Path) -> None:
+    assert "integration" in GENERATED_JOBS
+    extra = f'\n[[ci.jobs]]\nname = "integration"\nuses = "{CALL}"\n'
     root = _with_ci(_root(tmp_path, "python-lib"), extra)
     with pytest.raises(AppException):
         KilnConfig.load(root)
@@ -918,11 +848,10 @@ def test_s6_4_3_6_ci_ok_and_sonar_need_the_declared_jobs(tmp_path: Path) -> None
     assert jobs["sonar"]["needs"] == [
         "validate",
         "test",
-        "postgres",
-        "redis",
+        "integration",
         "smoke",
     ]
-    assert {"postgres", "redis", "smoke", "suites"} <= set(jobs["checks-ok"]["needs"])  # type: ignore[arg-type]
+    assert {"integration", "smoke", "suites"} <= set(jobs["checks-ok"]["needs"])  # type: ignore[arg-type]
 
 
 def _marker_steps(job: dict[str, object]) -> list[dict[str, object]]:
@@ -933,8 +862,7 @@ def test_s6_4_4_1_check_jobs_end_with_marker_steps(tmp_path: Path) -> None:
     jobs = _lib_jobs(tmp_path)
     markers = {
         "test": "${{ matrix.name }}.test",
-        "postgres": "${{ matrix.name }}.postgres",
-        "redis": "${{ matrix.name }}.redis",
+        "integration": "${{ matrix.marker }}",
         "smoke": "${{ matrix.marker }}",
     }
     for name, marker in markers.items():
@@ -1052,15 +980,11 @@ def test_s6_4_4_6_other_archetypes_keep_the_per_package_release_steps(
         assert "Publish GitHub Release" in names
 
 
-def test_s6_4_6_1_test_and_postgres_pass_the_matrix_dir_through_env(
+def test_s6_4_6_1_test_passes_the_matrix_dir_through_env(
     tmp_path: Path,
 ) -> None:
     jobs = _lib_jobs(tmp_path)
-    for name, task in (
-        ("test", "ci:test"),
-        ("postgres", "ci:postgres"),
-        ("redis", "ci:redis"),
-    ):
+    for name, task in (("test", "ci:test"),):
         assert jobs[name]["name"] == f"{name} (${{{{ matrix.name }}}})"
         step = next(
             s
@@ -1184,8 +1108,7 @@ def test_s6_4_7_1_release_needs_every_check_and_sonar(tmp_path: Path) -> None:
         "dependency-review",
         "plan",
         "test",
-        "postgres",
-        "redis",
+        "integration",
         "smoke",
         "suites",
         "sonar",

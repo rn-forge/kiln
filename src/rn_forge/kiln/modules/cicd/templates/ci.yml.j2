@@ -5,7 +5,7 @@ name: CI
 {%- macro prerelease_needs() -%}
 validate, dependency-review
 {%- if node_lib %}, test-cloud, test-local, smoke{% endif -%}
-{%- if workspace %}, plan, test, postgres, redis, smoke, suites{% endif -%}
+{%- if workspace %}, plan, test, integration, smoke, suites{% endif -%}
 {%- if sonar %}, sonar{% endif -%}
 {%- for job in check_jobs %}, [[ job ]]{% endfor -%}
 {%- for job in required_jobs %}, [[ job ]]{% endfor -%}
@@ -27,16 +27,16 @@ validate, dependency-review
         run: exit 1
 {%- endmacro %}
 
-{% if workspace %}# validate → plan → test, postgres, redis, smoke, suites → sonar → release → external-install, docs.
+{% if workspace %}# validate → plan → test, integration, smoke, suites → sonar → release → external-install, docs.
 #
 # validate: the repository-wide checks (lint, adapters, docs build), once.
 # plan:     reads the uv workspace and selects the changed packages and their
 #           dependents, as the outputs every later job reads.
 # test:     one job per selected package — lint, typecheck and test that member.
-# postgres, redis, smoke, suites: the jobs a package or the workspace declares —
-#           tests against PostgreSQL, tests against Redis, one extra installed
-#           alone, workspace-wide pytest.
-# sonar:    the scan, once test, postgres, redis and smoke have passed.
+# integration, smoke, suites: the jobs a package or the workspace declares —
+#           tests against the service containers a package declares, one extra
+#           installed alone, workspace-wide pytest.
+# sonar:    the scan, once test, integration and smoke have passed.
 # release:  the selected packages whose checks all passed, in dependency order,
 #           each on its own `<package>-v<version>` tag.
 # external-install: installs each new tag from git, outside the workspace.
@@ -433,12 +433,14 @@ jobs:
           path: ok/
           retention-days: 1
 
-  # For a package with `[tool.workspace-ci.postgres]`: its tests again, with the
-  # DSN in the environment variable it names.
-  postgres:
-    name: postgres (${{ matrix.name }})
+  # For a package with `[tool.workspace-ci.integration.<service>]` tables: its
+  # tests again, with the service containers `task ci:integration` starts around
+  # them. A job's `services` cannot vary with the matrix leg, so the task starts
+  # them.
+  integration:
+    name: integration (${{ matrix.name }})
     needs: [validate, plan]
-    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.plan.outputs.postgres != '[]' }}
+    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.plan.outputs.integration != '[]' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -446,21 +448,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(needs.plan.outputs.postgres) }}
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_USER: ci
-          POSTGRES_PASSWORD: ci
-          POSTGRES_DB: ci
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U ci"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
+        include: ${{ fromJSON(needs.plan.outputs.integration) }}
     steps:
       - name: Checkout
         uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
@@ -475,75 +463,16 @@ jobs:
       - name: Install dependencies
         run: task setup
 
-      - name: Test against PostgreSQL
-        env:
-          PACKAGE_DIR: ${{ matrix.dir }}
-          DSN_VAR: ${{ matrix.env }}
-          PYTEST_ARGS: ${{ needs.plan.outputs.pytest-args }}
-        run: task ci:postgres -- ${{ matrix.name }}
+      - name: Test against the declared services
+        run: task ci:integration -- ${{ matrix.name }}
 
       - name: Record the check
-        run: mkdir ok && touch "ok/${{ matrix.name }}.postgres"
+        run: mkdir ok && touch "ok/${{ matrix.marker }}"
 
       - name: Upload the check marker
         uses: [[ pins["upload-artifact"].uses ]]@[[ pins["upload-artifact"].sha ]] # [[ pins["upload-artifact"].version ]]
         with:
-          name: ok-${{ matrix.name }}.postgres
-          path: ok/
-          retention-days: 1
-
-  # For a package with `[tool.workspace-ci.redis]`: its tests again, with the
-  # URL in the environment variable it names.
-  redis:
-    name: redis (${{ matrix.name }})
-    needs: [validate, plan]
-    if: ${{ !cancelled() && needs.validate.result == 'success' && needs.plan.outputs.redis != '[]' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    permissions:
-      contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJSON(needs.plan.outputs.redis) }}
-    services:
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-    steps:
-      - name: Checkout
-        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
-        with:
-          persist-credentials: false
-
-      - name: Set up the toolchain
-        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install dependencies
-        run: task setup
-
-      - name: Test against Redis
-        env:
-          PACKAGE_DIR: ${{ matrix.dir }}
-          URL_VAR: ${{ matrix.env }}
-          PYTEST_ARGS: ${{ needs.plan.outputs.pytest-args }}
-        run: task ci:redis -- ${{ matrix.name }}
-
-      - name: Record the check
-        run: mkdir ok && touch "ok/${{ matrix.name }}.redis"
-
-      - name: Upload the check marker
-        uses: [[ pins["upload-artifact"].uses ]]@[[ pins["upload-artifact"].sha ]] # [[ pins["upload-artifact"].version ]]
-        with:
-          name: ok-${{ matrix.name }}.redis
+          name: ok-${{ matrix.marker }}
           path: ok/
           retention-days: 1
 
@@ -621,7 +550,7 @@ jobs:
         run: task ci:suite
 {% endif %}{% if sonar %}
   sonar:
-{% if workspace %}    needs: [validate, test, postgres, redis, smoke]
+{% if workspace %}    needs: [validate, test, integration, smoke]
     # The scan runs on a same-repository pull request and on main, nowhere else.
     # A fork's pull request cannot see SONAR_TOKEN, and SonarQube Cloud's free
     # plan keeps no readable result for any other branch, so the quality-gate

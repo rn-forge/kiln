@@ -10,6 +10,7 @@ import pytest
 
 from rn_forge.kiln.devops import (
     Package,
+    Service,
     Smoke,
     normalize,
     plan,
@@ -119,30 +120,44 @@ def test_s6_8_1_4_releasable_gates_on_release_requires_only(tmp_path: Path) -> N
     assert releasable(packages, tmp_path, ["auth", "web"]) == (["web"], ["auth"])
 
 
-def test_s6_8_1_5_plan_lists_redis_runs_of_selected_packages(tmp_path: Path) -> None:
+def _services() -> tuple[Service, ...]:
+    return (
+        Service("postgres", "postgres:17", ports=("5432:5432",)),
+        Service("redis", "redis:7"),
+    )
+
+
+def test_s15_8_2_2_plan(tmp_path: Path) -> None:
     packages = _packages()
-    packages["app"].redis_env = "REDIS_URL"
+    packages["app"].services = _services()
     outputs = plan(Workspace(root=tmp_path, packages=packages), "")
-    assert outputs["redis"] == [
-        {"name": "app", "dir": "packages/app", "env": "REDIS_URL"}
+    assert outputs["integration"] == [
+        {
+            "name": "app",
+            "dir": "packages/app",
+            "services": ["postgres", "redis"],
+            "marker": "app.integration",
+        }
     ]
-    assert outputs["postgres"] == []
-    assert plan(Workspace(root=tmp_path, packages=_packages()), "")["redis"] == []
+    assert "postgres" not in outputs
+    assert "redis" not in outputs
+    assert plan(Workspace(root=tmp_path, packages=_packages()), "")["integration"] == []
 
 
-def test_s6_8_1_6_checks_include_the_redis_marker_only_when_declared() -> None:
+def test_s15_8_2_3_marker() -> None:
     package = Package("app", "packages/app", "app")
-    assert {"kind": "redis", "marker": "app.redis"} not in package.checks()
-    package.redis_env = "REDIS_URL"
-    assert {"kind": "redis", "marker": "app.redis"} in package.checks()
+    assert not [c for c in package.checks() if c["kind"] == "integration"]
+    package.services = _services()
+    assert {"kind": "integration", "marker": "app.integration"} in package.checks()
+    assert {c["kind"] for c in package.checks()} == {"test", "integration", "smoke"}
 
 
-def test_s6_8_1_7_missing_redis_marker_blocks_a_package(tmp_path: Path) -> None:
+def test_s15_8_2_3_missing_marker_blocks_a_package(tmp_path: Path) -> None:
     packages = _packages()
-    packages["base"].redis_env = "REDIS_URL"
+    packages["base"].services = _services()
     for package in packages.values():
         for check in package.checks():
-            if check["marker"] != "base.redis":
+            if check["marker"] != "base.integration":
                 (tmp_path / check["marker"]).touch()
     assert releasable(packages, tmp_path, ["base", "app"]) == ([], ["base", "app"])
 

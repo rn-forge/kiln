@@ -68,8 +68,7 @@ def test_s15_8_1_1_lib_jobs(tmp_path: Path) -> None:
         "dependency-review",
         "plan",
         "test",
-        "postgres",
-        "redis",
+        "integration",
         "smoke",
         "suites",
         "sonar",
@@ -125,3 +124,29 @@ def test_s15_8_1_5_no_old_name(tmp_path: Path, archetype: str) -> None:
     jobs = workflows.jobs(files)
     assert "package" not in jobs
     assert "verify" not in jobs
+
+
+def test_s15_8_2_7_job(tmp_path: Path) -> None:
+    jobs = _jobs(tmp_path, "python-lib")
+    assert not {"postgres", "redis"} & set(jobs)
+    job = jobs["integration"]
+    assert job["strategy"]["matrix"] == {
+        "include": "${{ fromJSON(needs.plan.outputs.integration) }}"
+    }
+    assert "needs.plan.outputs.integration != '[]'" in job["if"]
+    runs = [s.get("run") for s in job["steps"]]
+    assert "task ci:integration -- ${{ matrix.name }}" in runs
+    assert "services" not in job
+    upload = job["steps"][-1]
+    assert upload["with"]["name"] == "ok-${{ matrix.marker }}"
+    for name in ("sonar", "release", "ci-ok"):
+        needs = jobs[name]["needs"]
+        assert not {"postgres", "redis"} & set(needs), name
+    assert "integration" in jobs["sonar"]["needs"]
+    assert "integration" in jobs["checks-ok"]["needs"]
+
+
+def test_s15_8_2_8_task(tmp_path: Path) -> None:
+    tasks = YamlUtils.load(_render(tmp_path, "python-lib")["tasks/ci.yml"])["tasks"]
+    assert tasks["integration"]["cmds"] == ["{{.DEVOPS}} integration {{.CLI_ARGS}}"]
+    assert not {"postgres", "redis"} & set(tasks)

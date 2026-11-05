@@ -157,7 +157,7 @@ def _barrier(archetype: str, sonar: bool) -> list[str]:
     if archetype == "node-lib":
         needs += ["test-cloud", "test-local", "smoke"]
     if archetype == "python-lib":
-        needs += ["plan", "test", "postgres", "redis", "smoke", "suites"]
+        needs += ["plan", "test", "integration", "smoke", "suites"]
     return needs + (["sonar"] if sonar else []) + ["secret-scan"]
 
 

@@ -10,7 +10,16 @@ import sys
 import tempfile
 from pathlib import Path
 
-from rn_forge.kiln.devops import ci, github, licenses, notes, requirements, umbrella, uv
+from rn_forge.kiln.devops import (
+    ci,
+    github,
+    integration,
+    licenses,
+    notes,
+    requirements,
+    umbrella,
+    uv,
+)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -34,6 +43,10 @@ def _parser() -> argparse.ArgumentParser:
     )
     smoke.add_argument("package", metavar="PACKAGE")
     smoke.add_argument("extra", nargs="?", default="", metavar="EXTRA")
+    services = commands.add_parser(
+        "integration", help="run one package's tests against its service containers"
+    )
+    services.add_argument("package", metavar="PACKAGE")
     commands.add_parser(
         "adapters", help="check each declared adapter has a module and an extra"
     )
@@ -243,6 +256,11 @@ def _run(workspace: ci.Workspace, args: argparse.Namespace) -> int:
     elif command == "released":
         for found in ci.released(workspace):
             print(*found)
+    elif command == "integration":
+        package = workspace.packages[ci.normalize(args.package)]
+        return integration.run(
+            package, integration.subprocess_runner, workspace.pytest_args
+        )
     else:
         return uv.smoke(workspace, args.package, args.extra)
     return 0
@@ -279,6 +297,6 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         workspace = uv.load_workspace(uv.find_root(Path.cwd()))
-    except FileNotFoundError as error:
+    except (FileNotFoundError, ValueError) as error:
         sys.exit(str(error))
     return _run(workspace, args)
