@@ -89,7 +89,7 @@ def _ci_config(config: KilnConfig) -> CiConfig:
 
 
 def render(config: KilnConfig) -> list[Artifact]:
-    """Render the setup action, `ci.yml`, `dependabot.yml`, `docs.yml`, `scorecard.yml` (when `ci.checks.scorecard` is on), `sonar-project.properties` and, for `node-lib`, `.nx/workflows/agents.yaml`, `tools/ci/*.mjs` and, when `ci.release` is `nx-dispatch`, `release.yml`.
+    """Render the setup action, `ci.yml`, `dependabot.yml`, `docs.yml`, `scorecard.yml` (when `ci.checks.scorecard` is on), `sonar-project.properties` and, for `node-lib`, `.nx/workflows/agents.yaml`, `tools/ci/*.mjs`.
 
     A `python-lib` and a `node-lib` render no `docs.yml`: their `ci.yml` has the one Pages deploy.
 
@@ -176,7 +176,6 @@ def render(config: KilnConfig) -> list[Artifact]:
             "docs.yml.j2",
             docs and not workspace and not node_lib,
         ),
-        (".github/workflows/release.yml", "release.yml.j2", release == "nx-dispatch"),
         (
             ".github/workflows/scorecard.yml",
             "scorecard.yml.j2",

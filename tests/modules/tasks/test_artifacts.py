@@ -1689,11 +1689,13 @@ def test_s9_1_9_2_node_lib_calls_no_python_task_that_needs_a_package(
     root = _node_lib_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "Taskfile.yml")["tasks"]
-    called = {cmd["task"] for task in tasks.values() for cmd in task["cmds"]}
-    assert {t for t in called if t.startswith("python:")} <= {
-        "python:install",
-        "python:version",
+    called = {
+        cmd["task"]
+        for task in tasks.values()
+        for cmd in task["cmds"]
+        if isinstance(cmd, dict)
     }
+    assert {t for t in called if t.startswith("python:")} <= {"python:install"}
     assert {"task": "python:format"} not in tasks["format"]["cmds"]
 
 
@@ -2560,17 +2562,16 @@ def test_s9_3_1_2_node_lib_has_no_docs_affected_task(tmp_path: Path) -> None:
 # S9.1.5 — dispatch release.
 
 RELEASE_TASKS = (
-    "release:gate",
     "release:state",
     "release:author",
-    "release:version",
     "release:tag",
     "release:verify",
     "release:push",
     "release:github",
     "release:publish",
+    "release:finalize",
     "release:latest",
-    "published-install",
+    "verify-release",
 )
 
 
@@ -2630,166 +2631,14 @@ def test_s9_1_5_4_other_archetypes_render_no_release_tasks(
     tmp_path: Path, archetype: str
 ) -> None:
     tasks = _ci_tasks(_root(tmp_path, archetype))["tasks"]
-    assert not {"release:gate", "published-install"} & set(tasks)  # type: ignore[arg-type]
-
-
-GH_RUNS = 'case "$1" in run) echo {count} ;; esac'
-
-
-@pytest.mark.parametrize(
-    ("ref", "dry", "count", "ok", "message"),
-    [
-        ("feature", "false", "1", False, "Release runs from main, not feature"),
-        ("feature", "true", "0", True, "No successful ci.yml run"),
-        ("main", "false", "1", True, "Found a successful ci.yml run"),
-        ("main", "false", "0", False, "::error::No successful ci.yml run"),
-        ("main", "true", "0", True, "::warning::No successful ci.yml run"),
-    ],
-)
-def test_s9_1_5_4_gate_needs_main_and_a_green_run(
-    tmp_path: Path, ref: str, dry: str, count: str, ok: bool, message: str
-) -> None:
-    _needs_task()
-    done = _release_run(
-        tmp_path,
-        "release:gate",
-        {"GITHUB_REF_NAME": ref, "DRY_RUN": dry},
-        {"gh": GH_RUNS.format(count=count)},
-    )
-    assert (done.returncode == 0) is ok, done.stdout + done.stderr
-    assert message in done.stdout + done.stderr
-
-
-def test_s9_1_5_4_gate_checks_the_parent_of_a_tagged_head(tmp_path: Path) -> None:
-    _needs_task()
-    done = _release_run(
-        tmp_path,
-        "release:gate",
-        {"GITHUB_REF_NAME": "main", "DRY_RUN": "false"},
-        {"gh": GH_RUNS.format(count=1)},
-        tag="v1.0.0",
-    )
-    assert done.returncode == 0, done.stderr
-    assert "Found a successful ci.yml run for" in done.stdout
-
-
-@pytest.mark.parametrize(
-    ("tag", "draft", "mode"),
-    [(None, "", "new"), ("v1.0.0", "false", "released"), ("v1.0.0", "true", "resume")],
-)
-def test_s9_1_5_4_state_writes_the_mode(
-    tmp_path: Path, tag: str | None, draft: str, mode: str
-) -> None:
-    _needs_task()
-    done = _release_run(
-        tmp_path, "release:state", stubs={"gh": f"echo {draft}"}, tag=tag
-    )
-    assert done.returncode == 0, done.stderr
-    assert (tmp_path / "output").read_text() == f"mode={mode}\n"
-
-
-def test_s9_1_5_4_state_refuses_two_tags(tmp_path: Path) -> None:
-    _needs_task()
-    two = tmp_path / "two"
-    two.mkdir()
-    # A second tag on the same commit.
-    root = _node_lib_root(two / "cell")
-    cycle.apply(root, home=two / "home")
-    repo = two / "work"
-    repo.mkdir()
-    _git(repo, "init", "-q")
-    _commit(repo, "a.txt")
-    _git(repo, "tag", "v1.0.0")
-    _git(repo, "tag", "v1.0.1")
-    done = subprocess.run(
-        [
-            "task",
-            "-t",
-            str(root / "Taskfile.yml"),
-            "--dir",
-            str(repo),
-            "ci:release:state",
-        ],
-        capture_output=True,
-        text=True,
-        env={**os.environ, "GITHUB_OUTPUT": str(two / "out")},
-    )
-    assert done.returncode != 0
-    assert "More than one v* tag at HEAD" in done.stdout + done.stderr
-
-
-def test_s9_1_5_4_tag_writes_the_one_tag_and_fails_without(tmp_path: Path) -> None:
-    _needs_task()
-    done = _release_run(tmp_path / "a", "release:tag", tag="v2.0.0")
-    assert done.returncode == 0, done.stderr
-    assert (tmp_path / "a" / "output").read_text() == "name=v2.0.0\n"
-    none = _release_run(tmp_path / "b", "release:tag")
-    assert none.returncode != 0
-    assert (
-        "Expected exactly one v* tag at HEAD, found: none" in none.stdout + none.stderr
-    )
+    assert "release:state" not in tasks  # type: ignore[arg-type]
 
 
 PNPM_ECHO = 'for a in "$@"; do printf "<%s>" "$a"; done; echo'
 PNPM_ECHO_TARBALL = PNPM_ECHO + "; mkdir -p dist/tarballs; : > dist/tarballs/x.tgz"
 
 
-@pytest.mark.parametrize(
-    ("dry", "first", "expected"),
-    [
-        ("false", "false", "<exec><nx><release><1.2.3><--skip-publish>"),
-        (
-            "false",
-            "true",
-            "<exec><nx><release><1.2.3><--skip-publish><--first-release>",
-        ),
-        (
-            "true",
-            "false",
-            "<exec><nx><release><version><1.2.3><--git-commit=false><--git-tag=false><--stage-changes=false>",
-        ),
-        (
-            "true",
-            "true",
-            "<exec><nx><release><version><1.2.3><--git-commit=false><--git-tag=false><--stage-changes=false><--first-release>",
-        ),
-    ],
-)
-def test_s9_1_5_4_version_branches_on_dry_run(
-    tmp_path: Path, dry: str, first: str, expected: str
-) -> None:
-    _needs_task()
-    done = _release_run(
-        tmp_path,
-        "release:version",
-        {"VERSION_SPEC": "1.2.3", "FIRST_RELEASE": first, "DRY_RUN": dry},
-        {"pnpm": PNPM_ECHO},
-    )
-    assert done.returncode == 0, done.stderr
-    assert done.stdout.strip() == expected
-
-
-def test_s9_1_5_4_verify_packs_then_verifies_unless_resuming(tmp_path: Path) -> None:
-    _needs_task()
-    plain = _release_run(
-        tmp_path / "a", "release:verify", stubs={"pnpm": PNPM_ECHO_TARBALL}
-    )
-    assert plain.stdout.splitlines() == [
-        f"<exec><nx><run-many><-t><{t}><-p><tag:publishable><--excludeTaskDependencies>"
-        for t in ("pack", "verify-dist", "verify-consumer")
-    ]
-    resume = _release_run(
-        tmp_path / "b",
-        "release:verify",
-        {"MODE": "resume"},
-        {"pnpm": PNPM_ECHO_TARBALL},
-    )
-    assert resume.stdout.splitlines() == [
-        "<exec><nx><run-many><-t><pack><verify-dist><verify-consumer><-p><tag:publishable>"
-    ]
-
-
-@pytest.mark.parametrize("env", [{}, {"MODE": "resume"}])
+@pytest.mark.parametrize("env", [{}])
 def test_s9_3_5_5_verify_fails_when_no_tarball_was_written(
     tmp_path: Path, env: dict[str, str]
 ) -> None:
@@ -2802,7 +2651,7 @@ def test_s9_3_5_5_verify_fails_when_no_tarball_was_written(
     assert "::error::No tarball in dist/tarballs" in output
 
 
-@pytest.mark.parametrize("env", [{}, {"MODE": "resume"}])
+@pytest.mark.parametrize("env", [{}])
 def test_s9_3_5_6_verify_passes_when_a_tarball_was_written(
     tmp_path: Path, env: dict[str, str]
 ) -> None:
@@ -2824,31 +2673,6 @@ def test_s9_3_5_7_package_is_unguarded(tmp_path: Path) -> None:
     )
     assert done.returncode == 0, done.stderr
     assert "No tasks were run" in done.stdout
-
-
-@pytest.mark.parametrize(
-    ("dry", "first", "tail"),
-    [
-        ("", "", ""),
-        ("--dry-run", "", "<--dry-run>"),
-        ("", "--first-release", "<--first-release>"),
-    ],
-)
-def test_s9_1_5_4_publish_takes_its_flags_from_the_environment(
-    tmp_path: Path, dry: str, first: str, tail: str
-) -> None:
-    _needs_task()
-    done = _release_run(
-        tmp_path,
-        "release:publish",
-        {"DIST_TAG": "next", "DRY_RUN_FLAG": dry, "FIRST_RELEASE_FLAG": first},
-        {"pnpm": PNPM_ECHO},
-    )
-    assert done.returncode == 0, done.stderr
-    assert (
-        done.stdout.strip()
-        == f"<exec><nx><release><publish><--tag=next><--excludeTaskDependencies>{tail}"
-    )
 
 
 @pytest.mark.parametrize("local", [True, False])
@@ -2892,36 +2716,6 @@ def test_s9_1_5_4_latest_downloads_tarballs_only_when_none_are_local(
     assert "git push origin latest --force" in calls
 
 
-NGKIT = Path(__file__).resolve().parents[4] / "ngkit"
-NGKIT_REF = "0c2cd2a"
-VERBATIM = {
-    "Detect release state": "release:state",
-    "Configure git author": "release:author",
-    "Resolve release tag": "release:tag",
-    "Push release commit and tag": "release:push",
-    "Create GitHub Release": "release:github",
-    "Verify the released tarballs": "published-install",
-}
-
-
-def test_s9_1_5_4_verbatim_bodies_are_ngkits(tmp_path: Path) -> None:
-    if not (NGKIT / ".git").exists():
-        pytest.skip("no ngkit checkout beside this repository")
-    golden = subprocess.run(
-        ["git", "-C", str(NGKIT), "show", f"{NGKIT_REF}:.github/workflows/release.yml"],
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout
-    jobs = YamlUtils.load(golden)["jobs"]
-    steps = [s for job in jobs.values() for s in job["steps"]]
-    tasks = _ci_tasks(_node_lib_root(tmp_path))["tasks"]
-    for step in steps:
-        task = VERBATIM.get(step.get("name", ""))
-        if task:
-            assert "\n".join(tasks[task]["cmds"]).strip() == step["run"].strip(), task  # type: ignore[index]
-
-
 # S9.2.9 — task descriptions by archetype.
 
 PYTHON_DESCS = {
@@ -2951,7 +2745,10 @@ NODE_LIB_DESCS = {
     "test": "Run every project's tests with Nx.",
     "test:coverage": "Run every project's tests, writing lcov reports to coverage/.",
     "build": "Build every project with Nx.",
-    "version": "Print the root pyproject.toml's version.",
+    "version": (
+        "Print the publishable projects' version, or bump it "
+        "(pass -- patch|minor|major|x.y.z)."
+    ),
 }
 WEB_APP_DESCS = {
     **PYTHON_DESCS,

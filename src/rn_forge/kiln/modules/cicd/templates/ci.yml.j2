@@ -11,7 +11,7 @@ validate, dependency-review
 {%- for job in required_jobs %}, [[ job ]]{% endfor -%}
 {%- endmacro %}
 {%- macro postrelease_needs() -%}
-{%- if release != "none" and not node_lib %}, release, verify-release{% endif -%}
+{%- if release != "none" %}, release, verify-release{% endif -%}
 {%- if (workspace or node_lib) and docs %}, docs{% endif -%}
 {%- endmacro %}
 {%- macro gate_job(name, needs) %}
@@ -308,7 +308,139 @@ jobs:
           name: package-tarballs
           path: dist/tarballs/*.tgz
           retention-days: 14
-{% if docs %}
+{% if release != "none" %}
+  # The version is bumped in a pull request (`task version -- <bump>`); this job
+  # tags it, publishes it, and never commits. Only a push to the default branch,
+  # after `checks-ok`, gets here.
+  release:
+    needs: [checks-ok]
+    if: ${{ !cancelled() && needs.checks-ok.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: release
+      cancel-in-progress: false # never cancel a running release
+    permissions:
+      contents: write # create GitHub Releases
+      id-token: write # npm OIDC trusted publishing
+    # The tag this run published; empty when the version was already released.
+    outputs:
+      tag: ${{ steps.state.outputs.mode != 'released' && steps.state.outputs.tag || '' }}
+    steps:
+      # The tag is pushed to a protected ref, so git runs as the release GitHub
+      # App (a bypass actor on the tag ruleset); GITHUB_TOKEN cannot bypass it.
+      - uses: [[ pins["create-github-app-token"].uses ]]@[[ pins["create-github-app-token"].sha ]] # [[ pins["create-github-app-token"].version ]]
+        id: app-token
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+
+      - uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0 # every v* tag, to tell a first release
+          filter: tree:0
+          persist-credentials: true # the tag is pushed with this token
+
+      # npm >= 11.5.1 is required for OIDC publishing (Node version from .nvmrc)
+      - uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          registry-url: 'https://registry.npmjs.org'
+
+      # A version counts as shipped only when its GitHub Release is published.
+      - name: Detect release state
+        id: state
+        run: task ci:release:state
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Configure git author
+        if: ${{ steps.state.outputs.mode != 'released' }}
+        run: task ci:release:author
+
+      - name: Tag the release
+        if: ${{ steps.state.outputs.mode == 'new' }}
+        run: task ci:release:tag
+        env:
+          TAG: ${{ steps.state.outputs.tag }}
+
+      # dist/ is rebuilt from the tagged source, with task dependencies, and pack
+      # stamps the exact internal pins.
+      - name: Rebuild and verify
+        if: ${{ steps.state.outputs.mode != 'released' }}
+        run: task ci:release:verify
+
+      - name: Push the tag
+        if: ${{ steps.state.outputs.mode == 'new' }}
+        run: task ci:release:push
+        env:
+          TAG: ${{ steps.state.outputs.tag }}
+
+      # A draft until npm has the version, so a published release is a finished one.
+      - name: Create the draft GitHub Release
+        if: ${{ steps.state.outputs.mode != 'released' }}
+        run: task ci:release:github
+        env:
+          TAG: ${{ steps.state.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+
+      # --excludeTaskDependencies to not invalidate cache and use the dist/ the
+      # verify step built. nx skips a version npm already has.
+      - name: Publish
+        if: ${{ steps.state.outputs.mode != 'released' }}
+        run: task ci:release:publish
+        env:
+          DIST_TAG: ${{ steps.state.outputs.dist-tag }}
+          FIRST_RELEASE_FLAG: ${{ steps.state.outputs.first-release == 'true' && '--first-release' || '' }}
+
+      - name: Publish the GitHub Release
+        if: ${{ steps.state.outputs.mode != 'released' }}
+        run: task ci:release:finalize
+        env:
+          TAG: ${{ steps.state.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+
+      # Rolling pointer so consumers can depend on a stable, version-less URL
+      # (.../releases/download/latest/<pkg>.tgz) instead of tracking exact tags.
+      - name: Update rolling "latest" release
+        if: ${{ steps.state.outputs.mode != 'released' }}
+        run: task ci:release:latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.state.outputs.tag }}
+
+      - name: Already released
+        if: ${{ steps.state.outputs.mode == 'released' }}
+        run: echo "::notice::$TAG is already released"
+        env:
+          TAG: ${{ steps.state.outputs.tag }}
+
+  # Installs what consumers download, not what the release runner built.
+  verify-release:
+    needs: [release]
+    if: ${{ !cancelled() && needs.release.result == 'success' && needs.release.outputs.tag != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
+        with:
+          ref: ${{ needs.release.outputs.tag }}
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify the released tarballs
+        run: task ci:verify-release
+        env:
+          TAG: ${{ needs.release.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+{% endif %}{% if docs %}
   # Publishes the one Pages site from main after the checks pass: MkDocs, with
   # Compodoc and Storybook assembled under it. deploy-pages replaces the whole
   # site, so every deploy builds all three.

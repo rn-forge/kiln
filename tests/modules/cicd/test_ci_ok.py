@@ -177,7 +177,7 @@ def test_s15_8_7_2_barrier_needs(tmp_path: Path, archetype: str) -> None:
 
 def _after(archetype: str) -> list[str]:
     if archetype == "node-lib":
-        return ["docs"]
+        return ["release", "verify-release", "docs"]
     if archetype == "python-lib":
         return ["release", "verify-release", "docs"]
     return ["release", "verify-release"]
@@ -193,12 +193,11 @@ def test_s15_8_7_3_ci_ok_needs(tmp_path: Path, archetype: str) -> None:
 @pytest.mark.parametrize("archetype", ARCHETYPES)
 def test_s15_8_7_4_release_waits_on_the_barrier(tmp_path: Path, archetype: str) -> None:
     jobs = _jobs(_write(tmp_path, archetype))
-    if "release" not in jobs:
-        # node-lib releases from `release.yml` until S15.8.5 moves it here.
-        assert archetype == "node-lib"
-        return
     release = jobs["release"]
-    assert release["needs"] == ["plan", "checks-ok"]
+    # node-lib's inactive test job is always skipped, so its release needs the barrier only.
+    assert release["needs"] == (
+        ["checks-ok"] if archetype == "node-lib" else ["plan", "checks-ok"]
+    )
     condition = str(release["if"])
     assert "needs.checks-ok.result == 'success'" in condition
     assert "!cancelled()" in condition
@@ -257,9 +256,6 @@ def test_s15_3_3_3_gates(tmp_path: Path, archetype: str) -> None:
 @pytest.mark.parametrize("archetype", ARCHETYPES)
 def test_s15_3_3_3b_failed_scan_blocks_release(tmp_path: Path, archetype: str) -> None:
     jobs = _jobs(_write(tmp_path, archetype))
-    if "release" not in jobs:
-        assert archetype == "node-lib"  # releases from `release.yml` until S15.8.5
-        return
     needs = jobs["release"]["needs"]
     assert "checks-ok" in (needs if isinstance(needs, list) else [needs])
     assert "needs.checks-ok.result == 'success'" in str(jobs["release"]["if"])

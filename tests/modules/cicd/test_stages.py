@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import re
 from pathlib import Path
 from typing import Any
@@ -309,3 +310,140 @@ def test_s15_8_4_6_none(tmp_path: Path) -> None:
     jobs = workflows.jobs(files)
     assert "verify-release" not in jobs
     assert "verify-release" not in jobs["ci-ok"]["needs"]
+
+
+# S15.8.5 — `node-lib` releases from `ci.yml`.
+
+RELEASE_TASKS = (
+    "state",
+    "author",
+    "tag",
+    "verify",
+    "push",
+    "github",
+    "publish",
+    "finalize",
+    "latest",
+)
+
+
+def _node(tmp_path: Path, release: str = "nx-dispatch") -> dict[str, str]:
+    root = tmp_path / f"node-{release}"
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True, exist_ok=True)
+    config.write_text(
+        CONFIG.format(archetype="node-lib", release=release), encoding="utf-8"
+    )
+    loaded = KilnConfig.load(root)
+    files = {a.path: a.content for a in CICD.artifacts(loaded, root)}
+    files.update({a.path: a.content for a in TASKS.artifacts(loaded, root)})
+    return files
+
+
+def test_s15_8_5_1_no_release_yml(tmp_path: Path) -> None:
+    files = _node(tmp_path)
+    assert ".github/workflows/release.yml" not in files
+    assert not [p for p in files if p.endswith("release.yml")]
+
+
+def test_s15_8_5_2_release_job(tmp_path: Path) -> None:
+    job = workflows.jobs(_node(tmp_path))["release"]
+    assert job["needs"] == ["checks-ok"]
+    assert job["if"] == (
+        "${{ !cancelled() && needs.checks-ok.result == 'success' && "
+        "github.event_name == 'push' && github.ref == 'refs/heads/main' }}"
+    )
+    assert job["concurrency"] == {"group": "release", "cancel-in-progress": False}
+    assert job["permissions"] == {"contents": "write", "id-token": "write"}
+    assert "tag" in job["outputs"]
+    runs = [s.get("run", "") for s in job["steps"]]
+    assert [r for r in runs if r.startswith("task ")] == [
+        f"task ci:release:{name}" for name in RELEASE_TASKS
+    ]
+    text = json.dumps(job)
+    assert "inputs." not in text
+    assert "ci:release:gate" not in text and "ci:release:version" not in text
+    assert job["steps"][0]["id"] == "app-token"
+    assert job["steps"][1]["with"]["token"] == "${{ steps.app-token.outputs.token }}"
+
+
+def test_s15_8_5_4_modes_gate_the_steps(tmp_path: Path) -> None:
+    job = workflows.jobs(_node(tmp_path))["release"]
+    by_run = {s.get("run"): s for s in job["steps"]}
+    new = "${{ steps.state.outputs.mode == 'new' }}"
+    not_released = "${{ steps.state.outputs.mode != 'released' }}"
+    assert by_run["task ci:release:tag"]["if"] == new
+    assert by_run["task ci:release:push"]["if"] == new
+    for name in ("author", "verify", "github", "publish", "finalize", "latest"):
+        assert by_run[f"task ci:release:{name}"]["if"] == not_released, name
+    assert "if" not in by_run["task ci:release:state"]
+    notice = by_run['echo "::notice::$TAG is already released"']
+    assert notice["if"] == "${{ steps.state.outputs.mode == 'released' }}"
+    assert job["outputs"]["tag"] == (
+        "${{ steps.state.outputs.mode != 'released' && steps.state.outputs.tag || '' }}"
+    )
+
+
+def test_s15_8_5_6_publish_flags(tmp_path: Path) -> None:
+    job = workflows.jobs(_node(tmp_path))["release"]
+    publish = next(s for s in job["steps"] if s.get("run") == "task ci:release:publish")
+    assert publish["env"] == {
+        "DIST_TAG": "${{ steps.state.outputs.dist-tag }}",
+        "FIRST_RELEASE_FLAG": (
+            "${{ steps.state.outputs.first-release == 'true' && '--first-release' || '' }}"
+        ),
+    }
+    assert "DRY_RUN" not in json.dumps(job)
+
+
+def test_s15_8_5_7_version_task(tmp_path: Path) -> None:
+    files = _node(tmp_path)
+    root = YamlUtils.load(files["Taskfile.yml"])["tasks"]
+    assert root["version"]["cmds"] == [{"task": "ci:version"}]
+    cmds = "\n".join(YamlUtils.load(files["tasks/ci.yml"])["tasks"]["version"]["cmds"])
+    assert (
+        "pnpm exec nx release version {{.CLI_ARGS}} --git-commit=false "
+        "--git-tag=false --stage-changes=false"
+    ) in cmds
+
+
+def test_s15_8_5_8_verify_release(tmp_path: Path) -> None:
+    files = _node(tmp_path)
+    jobs = workflows.jobs(files)
+    job = jobs["verify-release"]
+    assert job["needs"] == ["release"]
+    assert "needs.release.outputs.tag != ''" in job["if"]
+    assert job["steps"][-1]["run"] == "task ci:verify-release"
+    assert job["steps"][-1]["env"]["TAG"] == "${{ needs.release.outputs.tag }}"
+    tasks = YamlUtils.load(files["tasks/ci.yml"])["tasks"]
+    assert "verify-release" in tasks and "published-install" not in tasks
+    assert "gh release download" in "\n".join(tasks["verify-release"]["cmds"])
+
+
+def test_s15_8_5_9_ci_ok(tmp_path: Path) -> None:
+    jobs = workflows.jobs(_node(tmp_path))
+    assert jobs["ci-ok"]["needs"] == ["checks-ok", "release", "verify-release", "docs"]
+    none = _node(tmp_path, "none")
+    jobs = workflows.jobs(none)
+    assert not {"release", "verify-release"} & set(jobs)
+    assert jobs["ci-ok"]["needs"] == ["checks-ok", "docs"]
+    tasks = YamlUtils.load(none["tasks/ci.yml"])["tasks"]
+    assert not [t for t in tasks if t.startswith("release:") or t == "verify-release"]
+
+
+def test_s15_8_5_10_no_dispatch_inputs(tmp_path: Path) -> None:
+    files = _node(tmp_path)
+    for path, text in files.items():
+        if not path.startswith(".github/workflows/"):
+            continue
+        triggers = YamlUtils.load(text).get("on") or {}
+        inputs = (triggers.get("workflow_dispatch") or {}).get("inputs") or {}
+        assert not {
+            "specifier",
+            "exact-version",
+            "dist-tag",
+            "dry-run",
+            "first-release",
+        } & set(inputs), path
+    jobs = workflows.jobs(files)
+    assert "github.event_name == 'push'" in jobs["release"]["if"]

@@ -144,12 +144,11 @@ CHECKS: tuple[CiCheck, ...] = (
         Switch.STANDARD,
         "C: `[ci] release`, default `tag-exists`; `pypi` for `python-lib`; "
         "`nx-dispatch` for `node-lib`; `none`",
-        cells={"node-lib": "`release.yml`"},
     ),
     CiCheck(
         "verify-release",
         "ci:verify-release",
-        _PY,
+        _ALL,
         Switch.STANDARD,
         "D: a release mode other than `none`",
     ),

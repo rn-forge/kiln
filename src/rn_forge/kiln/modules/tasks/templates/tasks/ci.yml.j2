@@ -159,50 +159,74 @@ tasks:
     desc: "CI only: pack the publishable projects and verify their tarballs"
     cmds:
       - pnpm exec nx run-many -t pack verify-dist verify-consumer
-{% if release == "nx-dispatch" %}
-  release:gate:
-    desc: "CI only: fail unless a CI run for the release commit succeeded, and the release runs from main (a dry run only warns)"
-    cmds:
-      - |
-        if [ "$GITHUB_REF_NAME" != main ] && [ "$DRY_RUN" != "true" ]; then
-          echo "::error::Release runs from main, not $GITHUB_REF_NAME"
-          exit 1
-        fi
-        if [ -n "$(git tag --points-at HEAD --list 'v*')" ]; then
-          sha=$(git rev-parse HEAD^)
-        else
-          sha=$(git rev-parse HEAD)
-        fi
-        count=$(gh run list --workflow ci.yml --commit "$sha" --status success --json databaseId --jq length)
-        if [ "$count" -ge 1 ]; then
-          echo "Found a successful ci.yml run for $sha"
-          exit 0
-        fi
-        msg="No successful ci.yml run for $sha"
-        if [ "$DRY_RUN" = "true" ]; then
-          echo "::warning::$msg"
-        else
-          echo "::error::$msg"
-          exit 1
-        fi
 
-  release:state:
-    desc: "CI only: write mode=new|resume|released for the tag at HEAD to $GITHUB_OUTPUT"
+  version:
+    desc: Print the publishable projects' version, or bump it (pass -- patch|minor|major|x.y.z); the root version task runs it.
+    internal: true
+    silent: true
     cmds:
       - |
-        tag=$(git tag --points-at HEAD --list 'v*')
-        if [ -z "$tag" ]; then
+        if [ -n "{{.CLI_ARGS}}" ]; then
+          pnpm exec nx release version {{.CLI_ARGS}} --git-commit=false --git-tag=false --stage-changes=false
+        else
+          node -e '
+          const fs = require("node:fs");
+          const path = require("node:path");
+          const skip = new Set(["node_modules", "dist", ".git", ".nx"]);
+          const versions = new Set();
+          const walk = (dir) => {
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const file = path.join(dir, entry.name);
+              if (entry.isDirectory()) {
+                if (!skip.has(entry.name)) walk(file);
+              } else if (entry.name === "project.json") {
+                const tags = JSON.parse(fs.readFileSync(file, "utf8")).tags ?? [];
+                if (tags.includes("publishable")) {
+                  versions.add(JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8")).version);
+                }
+              }
+            }
+          };
+          walk(".");
+          if (versions.size !== 1) {
+            console.error("::error::Expected one version across the publishable projects, found: " + ([...versions].join(", ") || "none"));
+            process.exit(1);
+          }
+          console.log([...versions][0]);
+          '
+        fi
+{% if release == "nx-dispatch" %}
+  release:state:
+    desc: "CI only: write tag, mode=new|resume|released, first-release and dist-tag for the version in the pull request to $GITHUB_OUTPUT"
+    cmds:
+      - |
+        v=$({{.TASK_EXE}} --silent version)
+        tag="v$v"
+        if ! git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
           mode=new
-        elif [ "$(wc -l <<<"$tag")" -ne 1 ]; then
-          echo "::error::More than one v* tag at HEAD: $tag"
-          exit 1
         elif [ "$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null)" = false ]; then
           mode=released
+        elif [ "$(git rev-parse "$tag^{commit}")" != "$(git rev-parse HEAD)" ]; then
+          echo "::error::$tag exists but is not at HEAD; a failed release resumes only from its own commit"
+          exit 1
         else
           mode=resume
         fi
-        echo "::notice::Release mode: $mode${tag:+ ($tag)}"
-        echo "mode=$mode" >> "$GITHUB_OUTPUT"
+        first=true
+        for other in $(git tag --list 'v*'); do
+          if [ "$other" != "$tag" ]; then first=false; fi
+        done
+        case "$v" in
+          *-*) pre=${v#*-}; dist=${pre%%.*} ;;
+          *) dist=latest ;;
+        esac
+        echo "::notice::Release mode: $mode ($tag, npm tag $dist)"
+        {
+          echo "tag=$tag"
+          echo "mode=$mode"
+          echo "first-release=$first"
+          echo "dist-tag=$dist"
+        } >> "$GITHUB_OUTPUT"
 
   release:author:
     desc: "CI only: set the git author to the github-actions bot"
@@ -211,66 +235,47 @@ tasks:
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-  release:version:
-    desc: "CI only: version the libraries (VERSION_SPEC, FIRST_RELEASE); DRY_RUN=true writes files only, else commits and tags locally"
-    cmds:
-      - |
-        if [ "$DRY_RUN" = "true" ]; then
-          args=(release version "$VERSION_SPEC" --git-commit=false --git-tag=false --stage-changes=false)
-        else
-          args=(release "$VERSION_SPEC" --skip-publish)
-        fi
-        if [ "$FIRST_RELEASE" = "true" ]; then args+=(--first-release); fi
-        pnpm exec nx "${args[@]}"
-
   release:tag:
-    desc: "CI only: write name=<the one v* tag at HEAD> to $GITHUB_OUTPUT"
+    desc: "CI only: tag HEAD with TAG"
     cmds:
-      - |
-        tags=$(git tag --points-at HEAD --list 'v*')
-        if [ -z "$tags" ] || [ "$(wc -l <<<"$tags")" -ne 1 ]; then
-          echo "::error::Expected exactly one v* tag at HEAD, found: ${tags:-none}"
-          exit 1
-        fi
-        echo "name=$tags" >> "$GITHUB_OUTPUT"
+      - git tag "$TAG"
 
   release:verify:
-    desc: "CI only: pack and verify the publishable projects; MODE=resume rebuilds dist/ from the tagged source first; fails when no tarball was written"
+    desc: "CI only: rebuild dist/ from the tagged source, then pack and verify the publishable projects; fails when no tarball was written"
     cmds:
       - |
-        if [ "${MODE:-}" = resume ]; then
-          pnpm exec nx run-many -t pack verify-dist verify-consumer -p tag:publishable
-        else
-          pnpm exec nx run-many -t pack -p tag:publishable --excludeTaskDependencies
-          pnpm exec nx run-many -t verify-dist -p tag:publishable --excludeTaskDependencies
-          pnpm exec nx run-many -t verify-consumer -p tag:publishable --excludeTaskDependencies
-        fi
+        pnpm exec nx run-many -t pack verify-dist verify-consumer -p tag:publishable
         if ! ls dist/tarballs/*.tgz >/dev/null 2>&1; then
           echo "::error::No tarball in dist/tarballs: give each publishable project the pack and verify-dist targets"
           exit 1
         fi
 
   release:push:
-    desc: "CI only: push the release commit and TAG atomically to the current branch"
+    desc: "CI only: push the tag TAG, and nothing else"
     cmds:
-      - git push --atomic origin "HEAD:refs/heads/$GITHUB_REF_NAME" "refs/tags/$TAG"
+      - git push origin "refs/tags/$TAG"
 
   release:github:
-    desc: "CI only: create the GitHub Release for TAG from the tarballs and release-notes.mjs"
+    desc: "CI only: create the GitHub Release for TAG as a draft, from the tarballs and release-notes.mjs"
     cmds:
       - |
         tag="$TAG"
-        # Only a draft can reach this step (published means released mode); keeps the tag.
+        # A draft is what an earlier run left behind (published means released mode); keeps the tag.
         if gh release view "$tag" --json isDraft --jq .isDraft >/dev/null 2>&1; then
           gh release delete "$tag" --yes
         fi
         node tools/ci/release-notes.mjs "${tag#v}" > "$RUNNER_TEMP/notes.md"
-        gh release create "$tag" dist/tarballs/*.tgz --verify-tag --title "$tag" --notes-file "$RUNNER_TEMP/notes.md"
+        gh release create "$tag" dist/tarballs/*.tgz --verify-tag --title "$tag" --notes-file "$RUNNER_TEMP/notes.md" --draft
 
   release:publish:
-    desc: "CI only: publish to npm under DIST_TAG; DRY_RUN_FLAG and FIRST_RELEASE_FLAG hold the flags, or nothing"
+    desc: "CI only: publish to npm under DIST_TAG; FIRST_RELEASE_FLAG holds the flag, or nothing"
     cmds:
-      - pnpm exec nx release publish --tag="$DIST_TAG" --excludeTaskDependencies $DRY_RUN_FLAG $FIRST_RELEASE_FLAG
+      - pnpm exec nx release publish --tag="$DIST_TAG" --excludeTaskDependencies $FIRST_RELEASE_FLAG
+
+  release:finalize:
+    desc: "CI only: publish the draft GitHub Release for TAG, once npm has the version"
+    cmds:
+      - gh release edit "$TAG" --draft=false
 
   release:latest:
     desc: "CI only: move the rolling latest release to TAG"
@@ -297,7 +302,7 @@ tasks:
         git push origin latest --force
         gh release create latest dist/tarballs/*.tgz --title "Latest" --notes "Rolling pointer to $TAG"
 
-  published-install:
+  verify-release:
     desc: "CI only: install what consumers download, the tarballs of the release TAG"
     cmds:
       - |

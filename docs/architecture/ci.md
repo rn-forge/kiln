@@ -32,8 +32,7 @@ Triggers are the same everywhere: a pull request into the default branch, a push
 to it, and `workflow_dispatch`. A newer push to a pull request cancels its run;
 default-branch runs queue. `validate` gates every other job.
 
-The stages are not named alike yet: `node-lib` releases from `release.yml` and
-has no `verify-release` in `ci.yml`. The target vocabulary, one for every
+The stages are not named alike yet. The target vocabulary, one for every
 archetype, is in
 [the design](../specs/epics/E15-ci-standard/design.md#stage-vocabulary).
 
@@ -41,7 +40,7 @@ archetype, is in
 | -- | -- | -- |
 | `python-lib` | `validate` > `dependency-review`, `secret-scan`, `plan` > `test`, `integration`, `smoke`, `suites` > `sonar` > `checks-ok` > `release` > `verify-release`, `docs` > `ci-ok` | none: `docs` is the one Pages deploy |
 | `python-tool`, `python-app`, `python-web-api`, `python-web-app` | `validate` > `dependency-review`, `secret-scan`, `plan` > `test`, `integration`, `smoke`, `suites` > `sonar` > `checks-ok` > `release` > `verify-release` > `ci-ok` | `docs.yml` |
-| `node-lib` | `validate` > `dependency-review`, `secret-scan`, `test-cloud` or `test-local` > `sonar`, `smoke` > `checks-ok`; `docs` > `ci-ok` | `release.yml` (dispatch) |
+| `node-lib` | `validate` > `dependency-review`, `secret-scan`, `test-cloud` or `test-local` > `sonar`, `smoke` > `checks-ok` > `release` > `verify-release`; `docs` > `ci-ok` | none |
 
 | Job | Runs | Task verb |
 | -- | -- | -- |
@@ -57,7 +56,7 @@ archetype, is in
 | `suites` | the root workspace-wide pytest suites | `task ci:suite` |
 | `test-cloud`, `test-local` | `nx affected` on Nx Cloud agents, or on the runner; one runs per `USE_NX_CLOUD` | `task ci:affected` |
 | `sonar` | coverage, then the scan, waiting on the quality gate | `task ci:sonar-target`, `task test:coverage` (`python-lib`: after the check legs; `node-lib`: `task ci:coverage`) |
-| `release` | publishes from the default branch only, after `sonar` | `python-lib`: `task ci:release-build`, `task ci:release-publish`; single-package Python: `task ci:release-state`, `task build`, `task ci:release-publish`; `node-lib`: in `release.yml` (see below) |
+| `release` | publishes from the default branch only, after `sonar` | `python-lib`: `task ci:release-build`, `task ci:release-publish`; single-package Python: `task ci:release-state`, `task build`, `task ci:release-publish`; `node-lib`: `task ci:release:*` (see below) |
 | `verify-release` | installs what was published, from PyPI (`[ci] release = "pypi"`) or from its git tag, into a clean venv outside the repository and imports it; `python-lib` verifies every new tag, a single-package repository the tag `release` output | `task ci:verify-release` (`kiln-devops verify-release`) |
 | `smoke` (`node-lib`) | packs and verifies publishable tarballs | `task ci:package` |
 | `docs` | deploys Pages once | `python-lib`: `task ci:docs-publish`; `node-lib`: `task docs:build`, `task ci:docs:site` |
@@ -93,8 +92,8 @@ checks" in `.rn-forge/kiln/standard.md`.
 | Docs strict build | `task docs:build` | yes | yes | yes | yes | yes | yes | D: `[docs] profile = "mkdocs"` |
 | `dependency-review` | action | yes | yes | yes | yes | yes | yes | S |
 | Sonar | `sonar` job | yes | yes | yes | yes | yes | yes | C: `[ci] sonar`, default `true` |
-| Release | `release` job | yes | yes | yes | yes | yes | `release.yml` | C: `[ci] release`, default `tag-exists`; `pypi` for `python-lib`; `nx-dispatch` for `node-lib`; `none` |
-| `verify-release` | `task ci:verify-release` | yes | yes | yes | yes | yes |  | D: a release mode other than `none` |
+| Release | `release` job | yes | yes | yes | yes | yes | yes | C: `[ci] release`, default `tag-exists`; `pypi` for `python-lib`; `nx-dispatch` for `node-lib`; `none` |
+| `verify-release` | `task ci:verify-release` | yes | yes | yes | yes | yes | yes | D: a release mode other than `none` |
 | Docs deploy | `docs` job or `docs.yml` | `ci.yml` | `docs.yml` | `docs.yml` | `docs.yml` | `docs.yml` | `ci.yml` | D: `[docs] profile = "mkdocs"` |
 | Package tarballs | `task ci:package` |  |  |  |  |  | yes | S |
 | `ci-ok` | none | yes | yes | yes | yes | yes | yes | S |
@@ -199,9 +198,16 @@ macro (no `jq`): a failed or cancelled need fails them, and the inactive one of
 `test-cloud` and `test-local` is skipped, which passes. Sonar is skipped for
 Dependabot's pull requests.
 
-`release.yml` is dispatched (`task ci:release:*`): a gate on a green CI run,
-version, verify, push, publish and a rolling `latest` release, then
-`published-install`. [ADR-0015](../adr/ADR-0015.md) records it.
+The `node-lib` `release` runs on a push to the default branch, after `checks-ok`
+only (the inactive one of `test-cloud` and `test-local` is skipped, so the
+release does not wait on a test job). The version is bumped in a pull request
+with `task version -- <bump>`; CI never commits. `ci:release:state` reads the
+version `V`: no `vV` tag is a new release (tag, verify, push the tag, create the
+GitHub Release as a draft, publish to npm, publish the draft, move `latest`); a
+`vV` tag with a draft or no release resumes and republishes, since
+`nx release publish` skips a version npm already has; a published release does
+nothing. `verify-release` then runs `task ci:verify-release` when `release`
+published. [ADR-0015](../adr/ADR-0015.md) records it.
 
 ### `python-lib`, event by event
 

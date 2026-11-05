@@ -132,7 +132,7 @@ The assignment is normative:
 | `packages/<pkg>/mkdocs.yml` | `python-lib` only; repo, seeded once by `kiln generate package`; no managed block ([ADR-0008](../adr/ADR-0008.md)) | **seeded** |
 | `packages/<pkg>/docs/**` | `python-lib` only; repo, seeded once by `kiln generate package` | **seeded** |
 | `packages/<pkg>/CHANGELOG.md`, `packages/<pkg>/README.md` | `python-lib` only; repo, seeded once by `kiln generate package` | **seeded** |
-| `.github/workflows/ci.yml`, `docs.yml`, `release.yml` (`node-lib`); `.github/dependabot.yml`; `.github/actions/setup`; `sonar-project.properties`; `tools/ci/*.mjs` for `node-lib` | kiln (`cicd`) | managed |
+| `.github/workflows/ci.yml`, `docs.yml`; `.github/dependabot.yml`; `.github/actions/setup`; `sonar-project.properties`; `tools/ci/*.mjs` for `node-lib` | kiln (`cicd`) | managed |
 | `CLAUDE.md`, `AGENTS.md` | bodies written once by `kiln new`, then repo; the `<!-- BEGIN rn-forge kiln -->` block in `CLAUDE.md` → kiln | block (`CLAUDE.md` only; `AGENTS.md` points at it) |
 | `.claude/**`, `.codex/**`, installed skills | not kiln's | — |
 | Repo-specific lints (`check_brand.py`, `check_gate_tags.py`, …) | repo, wired via `[tasks.extra_refs]` | repo |
@@ -429,12 +429,13 @@ that do not run Nx and the repository's own `[tasks.extra_refs]`, because
 `test-cloud` or `test-local` runs lint, test and build on the affected projects.
 `task validate` is unchanged locally.
 
-A `node-lib` repository releases by `workflow_dispatch`
-(`[ci] release = "nx-dispatch"`, its default), from
-`.github/workflows/release.yml`: gated on a green `ci.yml` run for the commit,
-from `main` unless it is a dry run, tagged `v<version>`, with the release commit
-pushed by a GitHub App token. It may call `nx start-ci-run` and `nx fix-ci`
-directly, the only `ci-entrypoint` exemption ([ADR-0015](../adr/ADR-0015.md)).
+A `node-lib` repository releases from `ci.yml` (`[ci] release = "nx-dispatch"`,
+its default), as the `release` and `verify-release` jobs. The version is bumped
+in a pull request (`task version -- <patch|minor|major|x.y.z>`); on a push to
+the default branch, after `checks-ok`, `release` tags `v<version>`, publishes to
+npm, and publishes the GitHub Release last. The tag is pushed with a GitHub App
+token; CI never commits. It may call `nx start-ci-run` and `nx fix-ci` directly,
+the only `ci-entrypoint` exemption ([ADR-0015](../adr/ADR-0015.md)).
 
 The rules:
 
@@ -541,7 +542,7 @@ release = "tag-exists"     # tag-exists | pypi | nx-dispatch | none
                            # pypi: python-lib only; tag-exists plus a PyPI upload (section 8)
                            # nx-dispatch: node-lib only, and its default; tag-exists and pypi
                            # are refused there. Unset, the archetype's default applies.
-                           # none: no release (node-lib renders no release.yml)
+                           # none: no release (node-lib renders no release or verify-release job)
 [ci.hooks]
 setup = ["./.github/actions/setup-node"]
                            # optional: local composite actions the setup action runs as its

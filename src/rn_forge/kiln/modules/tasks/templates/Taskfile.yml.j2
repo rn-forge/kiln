@@ -104,11 +104,12 @@ tasks:
 {% endfor %}
   version:
 {% if workspace %}    desc: Print one package's version (pass -- <package>), or every package's.
-{% elif node_lib %}    desc: Print the root pyproject.toml's version.
+{% elif node_lib %}    desc: Print the publishable projects' version, or bump it (pass -- patch|minor|major|x.y.z).
 {% else %}    desc: Print the package version from pyproject.toml.
 {% endif %}    cmds:
-      - task: python:version
-{% for ref in extra_refs.get("version", []) %}      - task: [[ ref ]]
+{% if node_lib %}      - task: ci:version
+{% else %}      - task: python:version
+{% endif %}{% for ref in extra_refs.get("version", []) %}      - task: [[ ref ]]
 {% endfor %}
   clean:
     desc: Remove build outputs, caches, and the rendered docs site.
