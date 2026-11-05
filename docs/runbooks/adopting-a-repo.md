@@ -1,8 +1,9 @@
 # Adopting an existing repo
 
-`kiln init` does the mechanical part of bringing a repository under kiln. A
-coding agent does the rest by following the `adopt` prompt. This runbook covers
-how to hand the prompt over, and the points where the decision is yours.
+`kiln init` does the mechanical part of bringing a repository under kiln: it
+overwrites what kiln owns, backs it up, and formats. A coding agent does the
+rest by following the `adopt` prompt. This runbook covers how to hand the prompt
+over, and the points where the decision is yours.
 
 ## 1. Choose the route
 
@@ -28,11 +29,13 @@ kiln prompt --name adopt | claude
   `v<version>` tag after. kiln is not added to the repository's dependencies.
 - Every judgement the prompt marks as the owner's.
 
-## 4. Commit in three steps
+## 4. Commit in two steps
 
-1. `init`'s change, on its own.
-1. The `task format` commit: `init` formats nothing.
-1. The reconciliation the prompt walks through.
+1. `init`'s change, on its own: `init` formats and generates last, so there is
+   no separate formatting commit.
+1. The reconciliation the prompt walks through. It ends by pointing at
+   `docs/runbooks/cutover.md`, which reviews the diff and records what the
+   repository loses.
 
 ## 5. Done when
 

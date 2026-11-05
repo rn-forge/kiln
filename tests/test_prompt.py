@@ -88,8 +88,6 @@ def test_s6_1_12_adopt_is_shipped(capsys: pytest.CaptureFixture[str]) -> None:
         "Preview and sort the plan",
         "Apply",
         "Reconcile the files kiln inserted a block into",
-        "Seeded files that kiln's checks need in a given shape",
-        "Convert the specs to kiln's work model",
         "Make the gate runnable",
         "Run the gate and sort what is left",
         "Review",
@@ -114,8 +112,8 @@ def test_s6_6_3_1_adopt_names_what_init_now_does(
 ) -> None:
     commands.prompt("adopt")
     text = " ".join(capsys.readouterr().out.split())
-    assert "task format" in text
-    assert "separate commit" in text
+    assert "task format" not in text
+    assert "separate commit" not in text
     assert "init.kiln-dev-dependency-missing" not in text
 
 
@@ -125,7 +123,7 @@ def test_s6_6_3_2_adopt_says_where_quality_findings_appear() -> None:
         "`init`'s closing check, like a plain `kiln doctor`, runs only the "
         "ownership checks; `task lint` also runs `rn-forge-deps`, "
         "`docs-structure` and `docs-site`, so read its findings too."
-    ) in sections["9"]
+    ) in sections["7"]
 
 
 def test_s9_1_14_1_adopt_section_1_names_a_node_lib() -> None:
@@ -159,19 +157,10 @@ def test_s9_1_14_4_adopt_section_5_rewrites_node_verbs() -> None:
     assert "`pnpm add`" in section
 
 
-def test_s9_1_14_5_adopt_section_6_names_prettierignore() -> None:
-    section = _adopt_sections()["6"]
+def test_s9_1_14_5_adopt_section_5_names_prettierignore() -> None:
+    section = _adopt_sections()["5"]
     assert ".prettierignore" in section
     assert "*.md" in section
-
-
-def test_s9_1_14_6_adopt_section_7_names_the_ngkit_docs_rules() -> None:
-    section = _adopt_sections()["7"]
-    assert "#s821-accept" in section
-    assert "#s821--accept" in section
-    assert "index-only" in section
-    assert "docs/specs/epics/index.md" in section
-    assert "docs/specs/ideas/index.md" in section
 
 
 def test_s9_1_14_7_adopt_opening_cites_run_4() -> None:
@@ -181,3 +170,33 @@ def test_s9_1_14_7_adopt_opening_cites_run_4() -> None:
     assert "ngkit" in opening
     assert "node-lib" in opening
     assert "run 1" in opening
+
+
+def _adopt_text(capsys: pytest.CaptureFixture[str]) -> str:
+    commands.prompt("adopt")
+    return " ".join(capsys.readouterr().out.split())
+
+
+def test_s16_1_4_1_prompt_has_no_mechanics(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    text = _adopt_text(capsys)
+    for mechanic in ("task format", "_areas.yml", "board:start", "--force"):
+        assert mechanic not in text
+
+
+def test_s16_1_4_2_prompt_points_at_the_runbook(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    assert "docs/runbooks/cutover.md" in _adopt_text(capsys)
+
+
+def test_s16_1_4_3_judgement_sections_remain() -> None:
+    sections = _adopt_sections()
+    assert "node-lib" in sections["1"]
+    assert "rebuild" in sections["1"].lower()
+    assert "`python-lib` or `node-lib`" in sections["3"]
+    assert "import_contracts" in sections["2"]
+    assert "modules" in sections["2"]
+    assert "`[source]`" in sections["2"]
+    assert "Report to the owner" in sections["8"]

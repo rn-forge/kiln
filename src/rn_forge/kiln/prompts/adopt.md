@@ -4,14 +4,14 @@ Bring an existing repository under kiln without rebuilding it: choose the route,
 run `kiln init` in place, and make the judgement calls that kiln's code cannot,
 reconciling instructions, specs and the gate.
 
-`kiln init` settles everything every repository hits and that has one right
-answer: a missing file is created, a duplicate `.gitignore` line is dropped, an
-unfenced `.importlinter` is fenced, the derived-nav markers are placed, the task
-tools the repository lacks are added to its dependency groups. It reports what
-it cannot settle. This prompt is the rest, the judgement. It prints guidance and
-installs nothing, and it is written from in-place adoptions (run 1: pykit, a
-`python-lib` workspace; run 4: ngkit, a `node-lib` workspace). Facts from those
-runs are examples, not rules.
+`kiln init` settles everything with one right answer: it overwrites the files it
+owns (after copying each to a backup), fences an unfenced `.importlinter`, adds
+the task tools the repository lacks, and ends by running `task setup`, the
+formatter and the docs generator, so the tree it leaves is already formatted. It
+reports what it cannot settle. This prompt is the rest, the judgement. It prints
+guidance and installs nothing, and it is written from in-place adoptions (run 1:
+pykit, a `python-lib` workspace; run 4: ngkit, a `node-lib` workspace). Facts
+from those runs are examples, not rules.
 
 ## 1. Choose the route
 
@@ -83,14 +83,16 @@ Run the preview, which writes nothing. `<archetype>` is `python-lib` or
 uv run --project <kiln> kiln init --archetype <archetype> --docs mkdocs --config <file> --dry-run
 ```
 
-The plan lists creates, conflicts and block inserts. Sort each conflict by how
-kiln owns the file:
+The plan lists creates, conflicts (files `init` overwrites) and block inserts.
+Sort each conflict by how kiln owns the file:
 
-- **Kiln's whole file replaces yours.** Read yours first for anything worth
-  keeping. What is worth keeping goes to a repository-owned place (a seeded
-  file, a guide, a runbook, the README), not into the generated file.
+- **Kiln's whole file replaces yours** (a conflict). Read yours first for
+  anything worth keeping. What is worth keeping goes to a repository-owned
+  place (a seeded file, a guide, a runbook, the README), not into the
+  generated file.
 - **A block.** Kiln owns a fenced block; your content stays outside it.
-- **Seeded.** Kiln writes it once; yours is kept as is.
+- **Seeded.** Kiln replaces a seeded page that holds nothing beyond the seed
+  text, and keeps one that holds content.
 
 The plan lists each path and its kind, not its content. The list made here is of
 *which* files to read: for each conflict, read the repository's file now, and
@@ -104,29 +106,17 @@ uv run --project <kiln> kiln init --archetype <archetype> --docs mkdocs --config
 ```
 
 The archetype is the one section 3 used, `python-lib` or `node-lib`. `init`
-refuses a dirty worktree and a conflict, writing nothing. Before it restructures
-a file, kiln copies it to `.rn-forge/kiln/backups/<UTC timestamp>/`
-(gitignored). It restructures three things for you:
-
-- An unfenced `.importlinter` is fenced: kiln's `[importlinter]` root section
-  goes inside the markers and your contracts stay below them.
-- Lines in your `.gitignore` that kiln's block already holds are dropped (unless
-  a `!` negation makes order matter); the block is appended.
-- A `mkdocs.yml` without the derived-nav markers is archived, and kiln places
-  the markers around the nav's entries; `docs-generate` replaces them.
+refuses a dirty worktree, and copies every file it overwrites to
+`.rn-forge/kiln/backups/<UTC timestamp>/` (gitignored) first. Do not re-run it;
+it refuses a repository that is already under kiln.
 
 The tree was clean, so `git diff` and `git status` now show every file kiln
 replaced, inserted into or created, against the repository's own version, and
-the originals are also under `.rn-forge/kiln/backups/`. Finish the carry-over
-list from that diff before section 5.
+the originals are also under the backups. Finish the carry-over list from that
+diff before section 5. Commit `init`'s change on its own.
 
 `init` ends by running the checks, so it may exit non-zero on findings in files
-you have not reconciled yet. Read them in section 9; do not re-run `init`.
-Commit `init`'s change on its own. Then run `task setup` and `task format`, and
-commit the formatting as a separate commit: `init` formats nothing, and a
-repository that predates kiln's TOML and Markdown style fails
-`quality:lint:toml` until then (run 3: pykit's member `pyproject.toml` files and
-its seeded `.mdformat.toml`).
+you have not reconciled yet. Read them in section 7.
 
 ## 5. Reconcile the files kiln inserted a block into
 
@@ -152,48 +142,12 @@ Read kiln's block and the repository's text together:
   `mkdocs` (run 2: pykit's `development.md`, `README.md`,
   `releasing-packages.md`) and, in a `node-lib`, `pnpm exec`, `pnpm dlx`,
   `npx` and a bare `nx` command.
-
-## 6. Seeded files that kiln's checks need in a given shape
-
-`init` keeps a seeded file as it found it, so a stale one survives and a check
-fails or, worse, stays silent.
-
-- The nav lists packages in the order of `packages` in
-  `.rn-forge/kiln/config.toml`; reorder that list, not the nav.
-- Page titles in the nav come from each page's H1. If a title reads wrong, fix
-  the H1.
 - A repository with Prettier lists `*.md` in `.prettierignore`, because mdformat
   formats Markdown in every archetype (run 4: ngkit).
+- Specs and decisions that do not follow kiln's work model are converted by
+  `kiln prompt --name port-docs`'s rules, not here.
 
-## 7. Convert the specs to kiln's work model
-
-kiln keeps every repository's specs in one structure, so a reader never learns a
-second one. Convert by `kiln prompt --name port-docs`'s rules (content moves
-verbatim, nothing is dropped silently), and in particular:
-
-- `### S…` story headings become `## S…`, and a `## Stories` heading over them
-  goes: kiln derives a feature's stories table from `## S…` headings.
-- The board's and each release's Scope markers become kiln's `BEGIN derived …`
-  fences, which `task docs:generate` writes.
-- An epic's hand-written table of the features that have files goes. First check
-  that each `Scope` cell is said in its feature: a feature with no summary
-  takes the cell as one, and any other column goes to the feature's
-  `## Context`.
-- The `specs` area becomes `nav: work` in `docs/_areas.yml`, and
-  `docs/specs/epics/index.md` is seeded.
-- The repository's own board script retires, with whatever calls it.
-- Heading anchors are MkDocs' slugs, not GitHub's: `## S8.2.1 — Accept` is
-  `#s821-accept`, not `#s821--accept`. Rewrite every such link, and let
-  `task lint`'s `broken anchor` findings list them (run 4: ngkit).
-- When an area is `index-only`, its `index.md` links the pages kiln seeds in it
-  (`docs/specs/epics/index.md`, `docs/specs/ideas/index.md`), or they are
-  unreachable from the nav.
-
-Then run `task docs:generate`, and fix every `docs.state-contradicts-work`
-finding on the page (an epic or feature state that its features or stories
-contradict). Never edit a derived region by hand.
-
-## 8. Make the gate runnable
+## 6. Make the gate runnable
 
 `task validate` runs kiln's checks through the kiln that `[kiln] ref` in
 `.rn-forge/kiln/config.toml` pins. `kiln init` writes that ref; confirm it is
@@ -204,9 +158,7 @@ and `pyproject.toml` do not change for it. If the repository already lists
 `rn-forge-kiln` in a dependency group, or carries an `override-dependencies`
 entry only so kiln resolves, remove them (`deps.kiln-in-lock`).
 
-Then `task setup`.
-
-## 9. Run the gate and sort what is left
+## 7. Run the gate and sort what is left
 
 ```bash
 task validate
@@ -229,10 +181,13 @@ so read its findings too.
 
 Done when both commands exit `0`.
 
-## 10. Review
+## 8. Review
 
 Read one `git diff`, file by file, before the first commit. Check it against
 section 3's carry-over list and `.rn-forge/kiln/backups/`: nothing the
 repository relied on was lost, and nothing is said twice. Report to the owner
 what was carried over, what was deleted because kiln's block now states it,
-which findings were kiln's, and the final output of both commands in section 9.
+which findings were kiln's, and the final output of both commands in section 7.
+
+After `init`, follow `docs/runbooks/cutover.md`: it reviews the diff and records
+what the repository loses.
