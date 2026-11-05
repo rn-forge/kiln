@@ -10,6 +10,8 @@ import pytest
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.text.markdown import MarkdownUtils
 
+from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.docs import DOCS
 from rn_forge.kiln.modules.docs.areas import Area, load_areas
 from rn_forge.kiln.modules.docs.nav import (
     NAV_BLOCK,
@@ -562,3 +564,79 @@ class TestGenerate:
 
         assert generate.generate(tmp_path) == ([], [])
         assert generate.stale(tmp_path) == []
+
+
+_SEEDED_AREAS = """\
+version: 1
+areas:
+  - key: architecture
+    title: Architecture
+  - key: guides
+    title: Guides
+  - key: runbooks
+    title: Runbooks
+    optional: true
+"""
+
+
+def _top_titles(body: str) -> list[str]:
+    return re.findall(r"^  - ([^:\n]+):", body, flags=re.MULTILINE)
+
+
+def _packages_repo(repo):
+    write(repo / "docs/_areas.yml", _SEEDED_AREAS)
+    write(repo / "docs/architecture/index.md", "# Architecture\n")
+    write(repo / "docs/runbooks/index.md", "# Runbooks\n")
+    return repo
+
+
+def test_s16_2_3_1_packages_without_an_area(repo):
+    _packages_repo(repo)
+    body = build_nav(repo / "docs", ("packages/b", "packages/a"))
+    assert _top_titles(body) == [
+        "Home",
+        "Architecture",
+        "Guides",
+        "Packages",
+        "Runbooks",
+    ]
+    assert body.index("b: '!include packages/b/mkdocs.yml'") < body.index(
+        "a: '!include packages/a/mkdocs.yml'"
+    )
+
+
+def test_s16_2_3_2_area_overrides_title_and_position(repo):
+    _packages_repo(repo)
+    write(
+        repo / "docs/_areas.yml",
+        _SEEDED_AREAS + "  - key: packages\n    title: Libraries\n    nav: include\n",
+    )
+    titles = _top_titles(build_nav(repo / "docs", ("packages/a",)))
+    assert titles[-1] == "Libraries"
+    assert "Packages" not in titles
+
+
+def test_s16_2_3_3_no_packages_no_section(repo):
+    _packages_repo(repo)
+    assert "Packages" not in _top_titles(build_nav(repo / "docs"))
+    assert "Packages" not in _top_titles(build_nav(repo / "docs", ()))
+
+
+def test_s16_2_3_5_seed_header(tmp_path):
+    root = tmp_path
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(
+        'schema_version = 1\n\n[repository]\nname = "demo"\n'
+        'archetype = "python-lib"\n\n[docs]\nprofile = "mkdocs"\n'
+        '\n[archetype."python-lib"]\npackages = ["packages/alpha"]\n',
+        encoding="utf-8",
+    )
+    text = next(
+        a.content
+        for a in DOCS.artifacts(KilnConfig.load(root), root)
+        if a.key == "docs/_areas.yml"
+    )
+    assert "nav additions go here; kiln derives the rest" in text
+    assert "manual" not in text.lower()
+    assert "key: packages" not in text

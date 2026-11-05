@@ -121,12 +121,6 @@ def test_s6_6_3_1_adopt_names_what_init_now_does(
 
 def test_s6_6_3_2_adopt_says_where_quality_findings_appear() -> None:
     sections = _adopt_sections()
-    bullet = next(
-        part
-        for part in sections["6"].split(" - ")
-        if "docs.packages-area-missing" in part
-    )
-    assert "task lint" in bullet
     assert (
         "`init`'s closing check, like a plain `kiln doctor`, runs only the "
         "ownership checks; `task lint` also runs `rn-forge-deps`, "

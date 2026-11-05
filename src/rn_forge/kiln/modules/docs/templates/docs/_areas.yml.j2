@@ -1,10 +1,13 @@
-# Seeded by kiln — this file is yours to extend.
+# Seeded by kiln — nav additions go here; kiln derives the rest.
 #
 # kiln writes it once and never touches it again: a repo
 # that needs an area kiln has never heard of adds it here, and the docs checkers
 # validate the tree against this file rather than against a list baked into
 # them. Order is nav order; re-run `task docs:generate` after editing.
-#
+{% if archetype == "python-lib" %}#
+# A `python-lib`'s Packages section comes from `packages` in kiln's config, after
+# `guides`. To retitle or move it, declare an area with `nav: include`.
+{% endif %}#
 # `nav` is one of: children (the area's pages), index-only (its index.md),
 # include (one entry per package site) or work (its index, its epic list and
 # its epics in ranges of ten, with their features and design).
@@ -16,10 +19,7 @@ areas:
   - key: guides
     title: Guides
     nav: children
-{% if archetype == "python-lib" %}  - key: packages
-    title: Packages
-    nav: include
-{% endif %}  - key: runbooks
+  - key: runbooks
     title: Runbooks
     nav: children
     optional: true

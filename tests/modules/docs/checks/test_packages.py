@@ -70,12 +70,6 @@ CASES = {
     "docs.package-readme-relative-link": {
         f"{PKG}/README.md": "# alpha\n\n[docs](docs/index.md)\n"
     },
-    "docs.packages-area-missing": {
-        "docs/_areas.yml": (
-            "version: 1\nareas:\n  - key: guides\n    title: Guides\n"
-            "    nav: children\n"
-        )
-    },
     "docs.package-unlisted": {
         "pyproject.toml": "[tool.uv.workspace]\nmembers = ['packages/*']\n",
         "packages/stray/pyproject.toml": "[project]\nname = 'stray'\n",
@@ -192,3 +186,17 @@ def test_s6_1_10_3_a_tagged_scalar_in_the_nav_is_not_a_page(tmp_path: Path) -> N
     assert not isinstance(nav[2]["Name"], str)
     assert not _nav_names(nav, "PAGE")
     assert _nav_names(nav, "index.md")
+
+
+def test_s16_2_3_4_checker_agrees(repo) -> None:
+    root = _lib(
+        repo,
+        **{
+            "docs/_areas.yml": (
+                "version: 1\nareas:\n  - key: guides\n    title: Guides\n"
+                "    nav: children\n"
+            )
+        },
+    )
+    assert "docs.packages-area-missing" not in _codes(root)
+    assert _codes(root) == []

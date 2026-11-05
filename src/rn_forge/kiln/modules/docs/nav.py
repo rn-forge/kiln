@@ -87,6 +87,9 @@ def _children_entries(docs_root: Path, area_key: str) -> list[tuple[str | None, 
 NavEntry = dict[str, "str | list[str | NavEntry]"]
 """One mkdocs nav entry: a title mapped to a page path or to nested entries."""
 
+PACKAGES_AREA = Area(key="packages", title="Packages", nav="include")
+"""The area kiln derives for a `python-lib`'s packages when `_areas.yml` has none."""
+
 BLOCK_INDENT = "  "
 """What every serialized nav line is indented by, to sit under ``nav:``."""
 
@@ -179,13 +182,25 @@ def _area_entry(
     }
 
 
+def _with_packages(areas: list[Area]) -> list[Area]:
+    """*areas*, plus kiln's `Packages` area after `guides` when none declares one.
+
+    An `include` area in `_areas.yml` overrides the title and position. With no
+    `guides` area the derived one goes first.
+    """
+    if any(area.nav == "include" for area in areas):
+        return areas
+    after = next((i + 1 for i, area in enumerate(areas) if area.key == "guides"), 0)
+    return [*areas[:after], PACKAGES_AREA, *areas[after:]]
+
+
 def build_nav(docs_root: str | Path, packages: Sequence[str] = ()) -> str:
     """Render the derived nav's body for the docs tree at *docs_root*."""
     docs_root = Path(docs_root)
     nav: list[NavEntry] = [{"Home": "index.md"}]
     nav.extend(
         entry
-        for area in load_areas(docs_root)
+        for area in _with_packages(load_areas(docs_root))
         if (entry := _area_entry(docs_root, area, packages)) is not None
     )
     serialized = YamlUtils.serialize(nav, width=sys.maxsize)

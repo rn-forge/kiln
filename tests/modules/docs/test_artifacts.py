@@ -390,10 +390,7 @@ def test_s11_2_2_4_python_lib_adds_the_packages_area_and_the_package_docs_sectio
         return {a.key: a.content for a in DOCS.artifacts(KilnConfig.load(root), root)}
 
     lib, tool = rendered("python-lib"), rendered("python-tool")
-    assert (
-        "  - key: packages\n    title: Packages\n    nav: include\n"
-        in (lib["docs/_areas.yml"])
-    )
+    assert "key: packages" not in lib["docs/_areas.yml"]
     assert "## Package docs" in lib["docs/_structure.md"]
     assert "packages" not in tool["docs/_areas.yml"]
     assert "## Package docs" not in tool["docs/_structure.md"]

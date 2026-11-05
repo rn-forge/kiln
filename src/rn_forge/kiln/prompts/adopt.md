@@ -160,12 +160,6 @@ Read kiln's block and the repository's text together:
 `init` keeps a seeded file as it found it, so a stale one survives and a check
 fails or, worse, stays silent.
 
-- `docs/_areas.yml` in a library needs an area with `nav: include` for the
-  package sites (conventionally `packages`). Without it the derived nav drops
-  every package site; `docs.packages-area-missing` reports it in `task lint`
-  (`kiln doctor`'s `docs-structure` check), not in `init`'s closing check. Put
-  the area where you want Packages in the nav (run 1: first, so Packages
-  follows Home).
 - The nav lists packages in the order of `packages` in
   `.rn-forge/kiln/config.toml`; reorder that list, not the nav.
 - Page titles in the nav come from each page's H1. If a title reads wrong, fix
