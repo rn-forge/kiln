@@ -168,8 +168,12 @@ not run the check. Defaults are on unless stated.
 
 The matrix is generated from kiln's check registry
 (`rn_forge/kiln/modules/cicd/registry.py`): adding a check is one registry row
-plus its task. The same table, cut to the repository's archetype, is under "CI
-checks" in `.rn-forge/kiln/standard.md`.
+plus its task. A check that changes what a file renders also needs an
+`{% if "<name>" in checks %}` guard in that template: `checks` is
+`registry.enabled_names(...)`, the one set of names that run for the repository,
+and is in the context of both the tasks and the CI templates. The same table,
+cut to the repository's archetype, is under "CI checks" in
+`.rn-forge/kiln/standard.md`.
 
 <!-- BEGIN derived ci-matrix -->
 

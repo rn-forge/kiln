@@ -85,13 +85,12 @@ class KilnConfig:
     def licenses_enabled(self) -> bool:
         """Whether the registry's licences check runs for this repository."""
         ci = getattr(self.document, "ci", None)
-        check = next(c for c in registry.CHECKS if c.name == "licenses")
-        return registry.enabled(
-            check,
+        names = registry.enabled_names(
             ci if isinstance(ci, CiConfig) else CiConfig(),
             self.archetype,
             len(self.packages),
         )
+        return "licenses" in names
 
     @property
     def packages(self) -> tuple[str, ...]:

@@ -151,3 +151,21 @@ def test_s17_1_1_3_plain_verbs_unchanged() -> None:
         assert _verb_of_row(c.name) == registry._verb_cell(  # pyright: ignore[reportPrivateUsage]
             c.verb, "python"
         )
+
+
+def test_s17_2_3_1_enabled_names() -> None:
+    switchable = registry.configured_names()
+    settings = (
+        {},
+        dict.fromkeys(switchable, True),
+        dict.fromkeys(switchable, False),
+    )
+    for checks in settings:
+        ci = _ci(checks)
+        for archetype in ALL:
+            for members in (1, 2):
+                assert registry.enabled_names(ci, archetype, members) == {
+                    c.name
+                    for c in registry.CHECKS
+                    if registry.enabled(c, ci, archetype, members)
+                }

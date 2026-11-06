@@ -12,7 +12,7 @@ validate, dependency-review
 {%- endmacro %}
 {%- macro postrelease_needs() -%}
 {%- if release != "none" %}, release, verify-release{% endif -%}
-{%- if umbrella_release_enabled %}, umbrella{% endif -%}
+{%- if "umbrella-release" in checks %}, umbrella{% endif -%}
 {%- if docs %}, docs{% endif -%}
 {%- endmacro %}
 {#- `docs` waits for the barrier and for each release stage that is rendered; a skipped
@@ -333,7 +333,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-{% if internal_ranges_enabled %}      - name: Check internal ranges
+{% if "internal-ranges" in checks %}      - name: Check internal ranges
         run: task ci:internal-ranges
 
 {% endif %}      - name: Plan
@@ -520,7 +520,7 @@ jobs:
       pages: write
       id-token: write
     uses: ./.github/workflows/_docs.yml # zizmor: ignore[self-repository] actionlint rejects the $/ form
-{% endif %}{% endif %}{% if umbrella_release_enabled %}
+{% endif %}{% endif %}{% if "umbrella-release" in checks %}
   # One GitHub release per shipped release page. Gated on the barrier and on
   # `release` not failing, never on which packages were selected: a push that
   # only marks a release page shipped selects none and skips `release`.

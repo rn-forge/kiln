@@ -102,11 +102,8 @@ def render(config: KilnConfig) -> list[Artifact]:
         )
     docs = config.docs_profile == "mkdocs"
     release = config.release
-    umbrella = next(c for c in registry.CHECKS if c.name == "umbrella-release")
-    umbrella_enabled = registry.enabled(
-        umbrella, ci, config.archetype, len(config.packages)
-    )
-    if umbrella_enabled and ci.release == "none":
+    checks = registry.enabled_names(ci, config.archetype, len(config.packages))
+    if "umbrella-release" in checks and ci.release == "none":
         raise AppException(
             "cicd.render: ci.checks.umbrella-release needs [ci] release other than none"
         )
@@ -115,8 +112,6 @@ def render(config: KilnConfig) -> list[Artifact]:
             "cicd.render: ci.hooks.docs is set but nothing deploys Pages (docs profile is not mkdocs)"
         )
     workspace = config.archetype == "python-lib"
-    ranges = next(c for c in registry.CHECKS if c.name == "internal-ranges")
-    scorecard = next(c for c in registry.CHECKS if c.name == "scorecard")
     web = config.archetype in {"python-web-api", "python-web-app"}
     web_app = config.archetype == "python-web-app"
     node_lib = config.archetype == "node-lib"
@@ -135,10 +130,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "sonar_coverage_exclusions": list(ci.sonar_coverage_exclusions),
         "release": release,
         "doctor_full": ci.doctor_full,
-        "umbrella_release_enabled": umbrella_enabled,
-        "internal_ranges_enabled": registry.enabled(
-            ranges, ci, config.archetype, len(config.packages)
-        ),
+        "checks": checks,
         "plan_keys": _PLAN_KEYS,
         "pins": load_pins(),
         "pinned_actions": pinned_actions(),
@@ -154,9 +146,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "check_jobs": [
             check.job
             for check in registry.CHECKS
-            if check.gates
-            and check.job
-            and registry.enabled(check, ci, config.archetype, len(config.packages))
+            if check.gates and check.job and check.name in checks
         ],
         "api_dir": config.api_dir,
         "web_dir": config.web_dir,
@@ -185,7 +175,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         (
             ".github/workflows/scorecard.yml",
             "scorecard.yml.j2",
-            registry.enabled(scorecard, ci, config.archetype, len(config.packages)),
+            "scorecard" in checks,
         ),
         (".nx/workflows/agents.yaml", "agents.yaml.j2", node_lib),
         ("sonar-project.properties", "sonar-project.properties.j2", ci.sonar),

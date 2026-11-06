@@ -48,7 +48,7 @@ tasks:
 {% endif %}{% for ref in extra_refs.get("validate", []) %}      - task: [[ ref ]]
 {% endfor %}
   lint:
-    desc: Every lint — {% if node_lib %}Nx projects, Markdown and TOML formatting, kiln's checks{% elif web_app %}Python, imports, the frontend's Nx lint, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs){% else %}Python, imports, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs){% endif %}, workflow security, dependency vulnerabilities{% if licenses_enabled %}, dependency licences{% endif %}.
+    desc: Every lint — {% if node_lib %}Nx projects, Markdown and TOML formatting, kiln's checks{% elif web_app %}Python, imports, the frontend's Nx lint, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs){% else %}Python, imports, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs){% endif %}, workflow security, dependency vulnerabilities{% if "licenses" in checks %}, dependency licences{% endif %}.
     cmds:
 {% if not node_lib %}      - task: python:lint
       - task: python:lint:imports
@@ -59,8 +59,8 @@ tasks:
       - task: ci:lint:workflows
 {% if not node_lib %}      - task: python:lint:audit
 {% else %}      - task: node:lint:audit
-{% endif %}{% if licenses_enabled and not node_lib %}      - task: python:lint:licenses
-{% endif %}{% if licenses_enabled and node_lib %}      - task: node:lint:licenses
+{% endif %}{% if "licenses" in checks and not node_lib %}      - task: python:lint:licenses
+{% endif %}{% if "licenses" in checks and node_lib %}      - task: node:lint:licenses
 {% endif %}{% for ref in extra_refs.get("lint", []) %}      - task: [[ ref ]]
 {% endfor %}
   format:

@@ -83,15 +83,8 @@ def render(config: KilnConfig) -> list[Artifact]:
     tasks_config = _tasks_config(config)
     ci = getattr(config.document, "ci", None)
     ci = ci if isinstance(ci, CiConfig) else CiConfig()
-    check = next(c for c in registry.CHECKS if c.name == "licenses")
-    licenses_enabled = registry.enabled(check, ci, config.archetype, len(packages))
+    checks = registry.enabled_names(ci, config.archetype, len(packages))
     policy = ci.licenses_policy()
-    scan = next(c for c in registry.CHECKS if c.name == "secret-scan")
-    secret_scan_enabled = registry.enabled(scan, ci, config.archetype, len(packages))
-    ranges = next(c for c in registry.CHECKS if c.name == "internal-ranges")
-    ranges_enabled = registry.enabled(ranges, ci, config.archetype, len(packages))
-    umbrella = next(c for c in registry.CHECKS if c.name == "umbrella-release")
-    umbrella_enabled = registry.enabled(umbrella, ci, config.archetype, len(packages))
     gitleaks = cast("dict[str, Any]", load_pins()["gitleaks"])
 
     known = {
@@ -135,9 +128,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "includes": tasks_config.includes,
         "extra_refs": tasks_config.extra_refs,
         "overrides": tasks_config.command_overrides,
-        "secret_scan_enabled": secret_scan_enabled,
-        "internal_ranges_enabled": ranges_enabled,
-        "umbrella_release_enabled": umbrella_enabled,
+        "checks": checks,
         "gitleaks": [
             {
                 "uname": uname,
@@ -146,9 +137,6 @@ def render(config: KilnConfig) -> list[Artifact]:
             }
             for uname, platform in _GITLEAKS_PLATFORMS
         ],
-        "licenses_enabled": licenses_enabled,
-        "licenses_task": licenses_enabled and not node_lib,
-        "licenses_node_task": licenses_enabled and node_lib,
         "licenses_deny": policy.deny,
         "licenses_ignore": [
             *policy.ignore,

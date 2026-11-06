@@ -17,6 +17,7 @@ __all__ = [
     "Switch",
     "configured_names",
     "enabled",
+    "enabled_names",
     "for_archetype",
     "render_matrix",
 ]
@@ -227,6 +228,11 @@ def enabled(check: CiCheck, ci: CiConfig, archetype: str, members: int) -> bool:
     if check.name == "internal-ranges":
         return archetype == "node-lib" or (archetype == "python-lib" and members >= 2)
     return True
+
+
+def enabled_names(ci: CiConfig, archetype: str, members: int) -> frozenset[str]:
+    """The names of every check that runs for *archetype* with *members* packages."""
+    return frozenset(c.name for c in CHECKS if enabled(c, ci, archetype, members))
 
 
 def _name_cell(name: str) -> str:

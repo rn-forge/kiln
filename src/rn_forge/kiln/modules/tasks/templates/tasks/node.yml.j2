@@ -3,7 +3,7 @@ version: "3"
 
 # The pnpm-managed Nx toolchain the frontend scaffold owns. Internal — reached
 # through the root wrappers, as `python`'s is.
-{% if licenses_node_task %}
+{% if "licenses" in checks and node_lib %}
 vars:
   DEVOPS: '[[ devops ]]'
 {% endif %}
@@ -27,7 +27,7 @@ tasks:
     internal: true
     cmds:
       - pnpm audit --prod --audit-level moderate
-{% endif %}{% if licenses_node_task %}
+{% endif %}{% if "licenses" in checks and node_lib %}
   lint:licenses:
     desc: Fail if a dependency's licence matches the deny list (pnpm licenses).
     internal: true

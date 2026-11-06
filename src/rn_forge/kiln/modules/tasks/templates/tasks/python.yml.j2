@@ -18,8 +18,8 @@ version: "3"
 vars:
   PACKAGE_DIRS: [[ package_dirs | join(" ") ]]
   PACKAGES: [[ packages | join(" ") ]]
-{% if licenses_task %}  DEVOPS: '[[ devops ]]'
-{% endif %}{% elif licenses_task %}
+{% if "licenses" in checks and not node_lib %}  DEVOPS: '[[ devops ]]'
+{% endif %}{% elif "licenses" in checks and not node_lib %}
 vars:
   DEVOPS: '[[ devops ]]'
 {% endif %}
@@ -72,7 +72,7 @@ tasks:
         uv export --frozen --all-packages --all-groups --no-emit-workspace --no-header
         | uv run pip-audit --disable-pip --require-hashes --strict -r /dev/stdin
 {% for id in audit_ignore %}        --ignore-vuln [[ id ]]
-{% endfor %}{% if licenses_task %}
+{% endfor %}{% if "licenses" in checks and not node_lib %}
   lint:licenses:
     desc: Fail if a dependency's licence matches the deny list (pip-licenses).
     internal: true

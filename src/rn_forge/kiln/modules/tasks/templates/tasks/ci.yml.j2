@@ -21,7 +21,7 @@ tasks:
 {% else %}      - uv run zizmor --offline .github
       - uv run actionlint
 {% endif %}
-{% if secret_scan_enabled %}  secret-scan:
+{% if "secret-scan" in checks %}  secret-scan:
     desc: "CI only: Scan the git history for secrets with the pinned gitleaks (downloads it on first run, so it is not part of lint)."
     cmds:
       - task: secrets:install
@@ -57,7 +57,7 @@ tasks:
     desc: "CI only: Print the Sonar branch argument for this run as a $GITHUB_OUTPUT line."
     cmds:
       - '{{.DEVOPS}} sonar-target'
-{% if umbrella_release_enabled %}
+{% if "umbrella-release" in checks %}
   release:umbrella:
     desc: "CI only: Create a GitHub release for each shipped release page that has none."
     cmds:
@@ -308,7 +308,7 @@ tasks:
     cmds:
       - task: :test
 
-{% else %}{% if internal_ranges_enabled %}  internal-ranges:
+{% else %}{% if "internal-ranges" in checks %}  internal-ranges:
     desc: "CI only: Check that members depend on each other by range, not by exact pin."
     silent: true
     cmds:
