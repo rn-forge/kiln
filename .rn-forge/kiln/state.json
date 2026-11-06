@@ -93,7 +93,7 @@
     },
     ".rn-forge/kiln/standard.md": {
       "begin_marker": null,
-      "content_hash": "4517276e7782e73acd02ede62866dfdb3e5464c2b69f3bac0b38c378604fa1d3",
+      "content_hash": "cec6805760ece786ddecac76c4edccab3c3df5872a4c4b44bf4f6b9a91e0749b",
       "end_marker": null,
       "kind": "managed",
       "path": ".rn-forge/kiln/standard.md"
@@ -345,7 +345,7 @@
     }
   },
   "metadata": {
-    "config_hash": "b4cfcfafece7554117c24c4f09b8c7a10c943059a8890282810f5b99ce8891b2",
+    "config_hash": "51ecda7a531d2052083e78c1a835e7c0926f54260383f665bd7b80a99d5d33d8",
     "config_provenance": {
       "archetype.python-app.module": {
         "layer": "repo",

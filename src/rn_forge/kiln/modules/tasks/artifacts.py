@@ -143,7 +143,7 @@ def render(config: KilnConfig) -> list[Artifact]:
             *sorted({config.name, *packages, *([api_package] if api_package else [])}),
             *_LICENSES_ALWAYS_IGNORED,
         ],
-        "audit_ignore": [entry.id for entry in tasks_config.audit.ignore],
+        "audit_ignore": [entry.id for entry in ci.audit_policy().ignore],
         "web": web,
         "web_app": web_app,
         "node": node,

@@ -27,7 +27,7 @@ def test_s15_1_2_2_unknown_name() -> None:
 
 
 @pytest.mark.parametrize(
-    ("name", "kind"), [("internal-ranges", "derived"), ("pip-audit", "standard")]
+    ("name", "kind"), [("internal-ranges", "derived"), ("pnpm-audit", "standard")]
 )
 def test_s15_1_2_3_switchless_check(name: str, kind: str) -> None:
     with pytest.raises(
@@ -52,3 +52,12 @@ def test_s15_1_2_5_table_for_a_check_without_policy() -> None:
 def test_s15_1_2_6_unknown_policy_key() -> None:
     with pytest.raises(ValidationError):
         _load({"licenses": {"allow": []}})
+
+
+@pytest.mark.parametrize("value", [False, True])
+def test_s17_2_4_1_table_only(value: bool) -> None:
+    with pytest.raises(
+        ValidationError,
+        match="ci.checks.pip-audit is always on; set a table with ignore",
+    ):
+        _load({"pip-audit": value})

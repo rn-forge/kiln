@@ -475,7 +475,8 @@ The rules:
   on pull requests only, with `contents: read`, and `ci-ok` needs it, so a
   skipped run on a push is a pass. `task lint` also audits the locked
   dependencies with `pip-audit` (`lint:audit`); a vulnerability that cannot be
-  fixed is accepted in `[[tasks.audit.ignore]]` with a reason.
+  fixed is accepted in `[ci.checks] pip-audit` (`ignore` entries with `id` and
+  `reason`).
 - The `release` job attests what it ships before it publishes: build provenance
   (`actions/attest`) over each distribution and its CycloneDX SBOM, which
   `task build` writes beside them as `*.cdx.json` and lists runtime
@@ -558,6 +559,11 @@ release = "tag-exists"     # tag-exists | pypi | nx-dispatch | none
                            # nx-dispatch: node-lib only, and its default; tag-exists and pypi
                            # are refused there. Unset, the archetype's default applies.
                            # none: no release (node-lib renders no release or verify-release job)
+
+# [[ci.checks.pip-audit.ignore]]   # optional: a vulnerability the audit accepts; a table
+# id = "PYSEC-0000-0000"           # only, never a boolean; id and reason are both
+# reason = "not reachable: we never parse untrusted input with it"   # required, ids unique
+
 [ci.hooks]
 setup = ["./.github/actions/setup-node"]
                            # optional: local composite actions the setup action runs as its
@@ -585,10 +591,6 @@ lint = ["self:check:dist"]
 
 [tasks.command_overrides]
 "python:test" = "uv run pytest -q -p no:randomly"
-
-# [[tasks.audit.ignore]]   # optional: a vulnerability the audit accepts; id and
-# id = "PYSEC-0000-0000"   # reason are both required, ids are unique
-# reason = "not reachable: we never parse untrusted input with it"
 
 [archetype.python-lib]
 packages = ["packages/rn-forge-commons", "packages/rn-forge-django"]

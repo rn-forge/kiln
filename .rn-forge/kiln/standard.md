@@ -246,7 +246,7 @@ model.
 | Markdown and TOML formatting | `task lint` | S |
 | `kiln doctor` | `task lint` | S; `--full` per `[ci] doctor_full`, default `default-branch` |
 | zizmor, actionlint | `task lint` | S |
-| `pip-audit` | `task lint` | S; ignore list `[tasks.audit] ignore` |
+| `pip-audit` | `task lint` | S; ignore list `[ci.checks] pip-audit` |
 | pytest | `task test` | S |
 | Docs strict build | `task docs:build` | D: `[docs] profile = "mkdocs"` |
 | `dependency-review` | action | S |

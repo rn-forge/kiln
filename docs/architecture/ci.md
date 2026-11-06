@@ -185,7 +185,7 @@ cut to the repository's archetype, is under "CI checks" in
 | Markdown and TOML formatting | `task lint` | yes | yes | yes | yes | yes | yes | S |
 | `kiln doctor` | `task lint` | yes | yes | yes | yes | yes | yes | S; `--full` per `[ci] doctor_full`, default `default-branch` |
 | zizmor, actionlint | `task lint` | yes | yes | yes | yes | yes | yes | S |
-| `pip-audit` | `task lint` | yes | yes | yes | yes | yes |  | S; ignore list `[tasks.audit] ignore` |
+| `pip-audit` | `task lint` | yes | yes | yes | yes | yes |  | S; ignore list `[ci.checks] pip-audit` |
 | `pnpm-audit` | `task node:lint:audit` |  |  |  |  |  | yes | S |
 | Nx lint, typecheck, test, build | `task node:*`, `task ci:test` |  |  |  |  | yes | yes | S |
 | pytest | `task test` | test | yes | yes | yes | yes |  | S |

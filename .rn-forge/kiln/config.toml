@@ -153,12 +153,6 @@ taskfile = "tasks/self.yml"
 # Default: {}.
 [tasks.command_overrides]
 
-# How the dependency audit runs.
-[tasks.audit]
-# Accepted vulnerabilities, passed to `pip-audit --ignore-vuln` in order.
-# Changing the list rewrites the audit task on `kiln apply`.
-ignore = []
-
 # Which CI provider the workflows target, and what they run.
 [ci]
 # The CI provider the workflows target. `ado` is reserved and not yet

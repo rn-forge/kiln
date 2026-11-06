@@ -12,6 +12,8 @@ from rn_forge.kiln.modules.core.config.schema import ConfigModel
 __all__ = [
     "GENERATED_JOBS",
     "STAGE_WORKFLOWS",
+    "AuditIgnore",
+    "AuditPolicy",
     "CiConfig",
     "CiHooks",
     "CiJob",
@@ -58,6 +60,50 @@ _HOOK = re.compile(r"^\./\.github/actions/[a-z0-9][a-z0-9-]*$")
 _SETUP_ACTION = "./.github/actions/setup"
 _CALLABLE = re.compile(r"^\./\.github/workflows/[A-Za-z0-9_.-]+\.ya?ml$")
 _GENERATED_WORKFLOW = "./.github/workflows/ci.yml"
+_VULN_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]*$")
+
+
+class AuditIgnore(ConfigModel):
+    """A vulnerability the dependency audit accepts, and why."""
+
+    id: str
+    """The advisory id (`GHSA-…`, `PYSEC-…`, `CVE-…`) the audit accepts.
+    Changing it rewrites the audit command on `kiln apply`."""
+    reason: str
+    """Why the vulnerability is accepted; never empty. It is recorded beside the
+    id, and changing it rewrites the audit task on `kiln apply`."""
+
+    @field_validator("id")
+    @classmethod
+    def _id_is_an_advisory_id(cls, value: str) -> str:
+        if not _VULN_ID.match(value):
+            raise ValueError(
+                f"ci.checks.pip-audit ignore id {value!r} is not an advisory id"
+            )
+        return value
+
+    @field_validator("reason")
+    @classmethod
+    def _reason_is_given(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("ci.checks.pip-audit ignore reason must not be empty")
+        return value.strip()
+
+
+class AuditPolicy(ConfigModel):
+    """The policy of the `pip-audit` check."""
+
+    ignore: list[AuditIgnore] = Field(default_factory=list[AuditIgnore])
+    """Accepted vulnerabilities, passed to `pip-audit --ignore-vuln` in order.
+    Changing the list rewrites the audit task on `kiln apply`."""
+
+    @field_validator("ignore")
+    @classmethod
+    def _ids_are_unique(cls, value: list[AuditIgnore]) -> list[AuditIgnore]:
+        ids = [entry.id for entry in value]
+        if len(set(ids)) != len(ids):
+            raise ValueError("ci.checks.pip-audit ignore ids must be unique")
+        return value
 
 
 class LicensePolicy(ConfigModel):
@@ -171,7 +217,8 @@ class CiConfig(ConfigModel):
     the list rewrites `ci.yml` on `kiln apply`."""
     checks: dict[str, bool | dict[str, object]] = Field(default_factory=dict)
     """Switches for the configurable checks: a name from the check registry set to
-    a bool, or for `licenses` a table of its policy. Changing it re-renders
+    a bool, or for `licenses` a table of its policy; `pip-audit` is always on and
+    takes a table only. Changing it re-renders
     `ci.yml` and the check tasks on `kiln apply`."""
 
     @field_validator("checks")
@@ -187,7 +234,10 @@ class CiConfig(ConfigModel):
             row = rows.get(name)
             if row is None:
                 raise ValueError(f"{field} is not a configurable check")
-            if row.switch is not registry.Switch.CONFIGURED:
+            standard = row.switch is registry.Switch.STANDARD and row.policy
+            if standard and not isinstance(entry, dict):
+                raise ValueError(f"{field} is always on; set a table with ignore")
+            if row.switch is not registry.Switch.CONFIGURED and not standard:
                 raise ValueError(f"{field} is {row.switch} and has no switch")
             if isinstance(entry, dict):
                 if row.policy is None:
@@ -199,6 +249,11 @@ class CiConfig(ConfigModel):
         """The `licenses` check's policy: the `[ci.checks]` table, or the default."""
         entry = self.checks.get("licenses")
         return LicensePolicy.model_validate(entry if isinstance(entry, dict) else {})
+
+    def audit_policy(self) -> AuditPolicy:
+        """The `pip-audit` check's policy: the `[ci.checks]` table, or an empty one."""
+        entry = self.checks.get("pip-audit")
+        return AuditPolicy.model_validate(entry if isinstance(entry, dict) else {})
 
     @field_validator("sonar_exclusions", "sonar_coverage_exclusions")
     @classmethod

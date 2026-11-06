@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import StrEnum
 
 from rn_forge.commons.lang.models import StrictModel
 
-from rn_forge.kiln.modules.cicd.config import CiConfig, LicensePolicy
+from rn_forge.kiln.modules.cicd.config import AuditPolicy, CiConfig, LicensePolicy
 
 __all__ = [
     "CHECKS",
@@ -107,7 +107,10 @@ CHECKS: tuple[CiCheck, ...] = (
         "S; `--full` per `[ci] doctor_full`, default `default-branch`",
     ),
     _std("zizmor, actionlint", "lint", _ALL),
-    _std("pip-audit", "lint", _PY, "S; ignore list `[tasks.audit] ignore`"),
+    replace(
+        _std("pip-audit", "lint", _PY, "S; ignore list `[ci.checks] pip-audit`"),
+        policy=AuditPolicy,
+    ),
     _std("pnpm-audit", "{stack}:lint:audit", frozenset({"node-lib"})),
     _std(
         "Nx lint, typecheck, test, build",

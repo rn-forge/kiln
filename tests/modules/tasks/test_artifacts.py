@@ -22,10 +22,11 @@ from rn_forge.commons.generation import Action, ArtifactKind
 
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.cicd.config import CiConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.tasks import TASKS
 from rn_forge.kiln.modules.tasks.artifacts import render
-from rn_forge.kiln.modules.tasks.config import ROOT_VERBS, TasksConfig
+from rn_forge.kiln.modules.tasks.config import ROOT_VERBS
 from rn_forge.kiln.modules.tasks.checks import layout
 
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
@@ -1098,7 +1099,7 @@ def test_s4_11_5_4_ignore_entries_become_flags(tmp_path: Path) -> None:
     one = _root(
         tmp_path / "one",
         extra=(
-            '\n[[tasks.audit.ignore]]\nid = "GHSA-xxxx-xxxx-xxxx"\n'
+            '\n[[ci.checks.pip-audit.ignore]]\nid = "GHSA-xxxx-xxxx-xxxx"\n'
             'reason = "not reachable"\n'
         ),
     )
@@ -1107,8 +1108,8 @@ def test_s4_11_5_4_ignore_entries_become_flags(tmp_path: Path) -> None:
     two = _root(
         tmp_path / "two",
         extra=(
-            '\n[[tasks.audit.ignore]]\nid = "PYSEC-2026-1"\nreason = "a"\n'
-            '\n[[tasks.audit.ignore]]\nid = "CVE-2026-2"\nreason = "b"\n'
+            '\n[[ci.checks.pip-audit.ignore]]\nid = "PYSEC-2026-1"\nreason = "a"\n'
+            '\n[[ci.checks.pip-audit.ignore]]\nid = "CVE-2026-2"\nreason = "b"\n'
         ),
     )
     cycle.apply(two, home=tmp_path / "two" / "home")
@@ -1126,14 +1127,14 @@ def test_s4_11_5_4_ignore_entries_become_flags(tmp_path: Path) -> None:
         'reason = "why"',
         'id = ""\nreason = "why"',
         'id = "PYSEC-1"\nreason = "why"\nextra = "x"',
-        'id = "PYSEC-1"\nreason = "why"\n\n[[tasks.audit.ignore]]\n'
+        'id = "PYSEC-1"\nreason = "why"\n\n[[ci.checks.pip-audit.ignore]]\n'
         'id = "PYSEC-1"\nreason = "again"',
     ],
 )
 def test_s4_11_5_5_ignore_entries_need_id_and_reason(
     tmp_path: Path, entry: str
 ) -> None:
-    root = _root(tmp_path, extra=f"\n[[tasks.audit.ignore]]\n{entry}\n")
+    root = _root(tmp_path, extra=f"\n[[ci.checks.pip-audit.ignore]]\n{entry}\n")
     with pytest.raises(AppException):
         KilnConfig.load(root)
 
@@ -1141,14 +1142,14 @@ def test_s4_11_5_5_ignore_entries_need_id_and_reason(
 def test_s4_11_5_5_an_id_with_shell_characters_is_refused(tmp_path: Path) -> None:
     root = _root(
         tmp_path,
-        extra='\n[[tasks.audit.ignore]]\nid = "x; rm"\nreason = "why"\n',
+        extra='\n[[ci.checks.pip-audit.ignore]]\nid = "x; rm"\nreason = "why"\n',
     )
     with pytest.raises(AppException):
         KilnConfig.load(root)
 
 
 def test_s4_11_5_5_the_default_config_has_an_empty_list() -> None:
-    assert TasksConfig().audit.ignore == []
+    assert CiConfig().audit_policy().ignore == []
 
 
 def test_s4_11_5_6_command_override_is_refused(tmp_path: Path) -> None:
@@ -3451,3 +3452,24 @@ def test_s17_2_2_2_node_lib_reports(tmp_path: Path) -> None:
     assert reports["run"] == 'task ci:sonar:reports >> "$GITHUB_OUTPUT"'
     scan = steps[-1]
     assert f"steps.{reports['id']}.outputs.reports" in scan["with"]["args"]
+
+
+def test_s17_2_4_2_old_key_refused(tmp_path: Path) -> None:
+    root = _root(tmp_path, extra="\n[tasks.audit]\nignore = []\n")
+    with pytest.raises(
+        AppException, match=r"tasks.audit moved to \[ci.checks\] pip-audit"
+    ):
+        KilnConfig.load(root)
+
+
+def test_s17_2_4_3_ignored_ids_render(tmp_path: Path) -> None:
+    root = _root(
+        tmp_path,
+        extra=(
+            '\n[ci.checks]\npip-audit = { ignore = [{ id = "PYSEC-2026-1", '
+            'reason = "a" }] }\n'
+        ),
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    _, python = _rendered_yaml(root)
+    assert "--ignore-vuln PYSEC-2026-1" in YamlUtils.serialize(python["lint:audit"])

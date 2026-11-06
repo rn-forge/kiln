@@ -126,7 +126,10 @@ A repository reaches the generated tasks only through `config.toml`.
 | `[tasks] includes` | Wires a repository-owned namespace file (`namespace`, `taskfile`) into the root file. The namespace may not be one kiln owns |
 | `[tasks.extra_refs]` | Appends a call to a root verb, keyed by the verb |
 | `[tasks.command_overrides]` | Replaces one toolchain primitive's command, keyed by the task name: install, ruff, `lint-imports`, format, pyright, pytest, build, version, the formatters, the workflow linters and the docs verbs. A key for a task the archetype does not render is an error that lists the keys it does |
-| `[tasks.audit] ignore` | Advisory ids (`id`, `reason`) the Python dependency audit accepts. This moves to `[ci.checks]` in [E17](../specs/epics/E17-task-standard/design.md) |
+
+The audit's accepted advisories are check policy, so they live in
+`[ci.checks] pip-audit` (a table of `ignore` entries with `id` and `reason`;
+never a boolean), not here.
 
 `command_overrides` has no key for the dependency audits, the licences check,
 the secret scan or internal ranges. `python:lint:audit` took one until S17.1.2;
