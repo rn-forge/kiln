@@ -38,7 +38,7 @@ jobs:
         id: check
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: task ci:release-state >> "$GITHUB_OUTPUT"
+        run: task ci:release:state >> "$GITHUB_OUTPUT"
 
       # A tag without a published release is a failed release: rebuild from it.
       - name: Check out the release source
@@ -46,7 +46,7 @@ jobs:
         if: steps.check.outputs.should-release == 'true'
         env:
           TAG: ${{ steps.check.outputs.tag }}
-        run: task ci:release-source >> "$GITHUB_OUTPUT"
+        run: task ci:release:source >> "$GITHUB_OUTPUT"
 
       - name: Build
         if: steps.check.outputs.should-release == 'true'
@@ -70,4 +70,4 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.check.outputs.tag }}
           SOURCE_SHA: ${{ steps.source.outputs.sha }}
-        run: task ci:release-publish
+        run: task ci:release:publish

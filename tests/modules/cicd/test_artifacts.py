@@ -523,7 +523,7 @@ def test_s6_7_4_1_the_target_step_is_a_task_call(tmp_path: Path) -> None:
             "REF_TYPE": "${{ github.ref_type }}",
             "REF_NAME": "${{ github.ref_name }}",
         }, root.name
-        assert step["run"] == 'task ci:sonar-target >> "$GITHUB_OUTPUT"', root.name
+        assert step["run"] == 'task ci:sonar:target >> "$GITHUB_OUTPUT"', root.name
 
 
 def test_s6_3_8_sonar_runs_only_on_a_pull_request_or_main(tmp_path: Path) -> None:
@@ -575,7 +575,7 @@ def test_s6_3_4_check_step_outputs_the_tag_state(tmp_path: Path) -> None:
         steps = _release_steps(root)
         check = next(step for step in steps if step.get("id") == "check")
         assert check["env"] == {"GH_TOKEN": "${{ secrets.GITHUB_TOKEN }}"}, root.name
-        assert check["run"] == 'task ci:release-state >> "$GITHUB_OUTPUT"', root.name
+        assert check["run"] == 'task ci:release:state >> "$GITHUB_OUTPUT"', root.name
 
 
 def test_s6_3_4_checkout_of_the_tag_precedes_build(tmp_path: Path) -> None:
@@ -586,7 +586,7 @@ def test_s6_3_4_checkout_of_the_tag_precedes_build(tmp_path: Path) -> None:
         assert step["id"] == "source"
         assert step["if"] == "steps.check.outputs.should-release == 'true'"
         assert step["env"] == {"TAG": "${{ steps.check.outputs.tag }}"}
-        assert step["run"] == 'task ci:release-source >> "$GITHUB_OUTPUT"'
+        assert step["run"] == 'task ci:release:source >> "$GITHUB_OUTPUT"'
         check = next(i for i, s in enumerate(steps) if s.get("id") == "check")
         assert check < index < _step_index(steps, "Build"), root.name
 
@@ -597,7 +597,7 @@ def test_s6_3_4_draft_is_deleted_before_publish(tmp_path: Path) -> None:
         names = [s["name"] for s in steps]
         assert "Delete the leftover draft" not in names, root.name
         publish = steps[_step_index(steps, "Publish GitHub Release")]
-        assert publish["run"] == "task ci:release-publish", root.name
+        assert publish["run"] == "task ci:release:publish", root.name
         assert _step_index(steps, "Build") < names.index("Publish GitHub Release")
 
 
@@ -616,9 +616,9 @@ def test_s6_3_6_release_uploads_distributions_and_sbom_only(tmp_path: Path) -> N
     for root in _release_roots(tmp_path):
         steps = _release_steps(root)
         publish = steps[_step_index(steps, "Publish GitHub Release")]
-        assert publish["run"] == "task ci:release-publish", root.name
+        assert publish["run"] == "task ci:release:publish", root.name
         tasks = _ci_tasks_text_of(root)["tasks"]
-        run = " ".join(tasks["release-publish"]["cmds"])  # type: ignore[index]
+        run = " ".join(tasks["release:publish"]["cmds"])  # type: ignore[index]
         assert "dist/*.whl dist/*.tar.gz dist/*.cdx.json" in run, root.name
         assert "dist/*" not in run.split(), root.name
 
@@ -854,7 +854,7 @@ def test_s6_8_3_1_attest_step(tmp_path: Path) -> None:
     assert names[index - 1] == "Generate provenance"
     assert names[index + 1] == "Publish releases"
     assert steps[index]["if"] == "steps.build.outputs.built != '0'"
-    assert steps[index]["run"] == "task ci:release-sign"
+    assert steps[index]["run"] == "task ci:release:sign"
     plain = _release_steps(_lib_root(tmp_path / "plain"))
     assert "Attest PyPI publish" not in [step.get("name") for step in plain]
 
@@ -872,8 +872,8 @@ def test_s6_4_3_5_suites_job(tmp_path: Path) -> None:
     assert job["name"] == "suite (${{ matrix.name }})"
     steps = job["steps"]  # type: ignore[assignment]
     runs = [s.get("run") for s in steps]  # type: ignore[attr-defined]
-    assert runs.index("task setup") < runs.index("task ci:suite")
-    assert steps[runs.index("task ci:suite")]["env"] == {  # type: ignore[index]
+    assert runs.index("task setup") < runs.index("task ci:suites")
+    assert steps[runs.index("task ci:suites")]["env"] == {  # type: ignore[index]
         "SUITE_ARGS": "${{ matrix.args }}"
     }
 
@@ -930,9 +930,9 @@ def test_s6_4_4_2_python_lib_release_job(tmp_path: Path) -> None:
         "GH_TOKEN": "${{ github.token }}",
         "SELECTED": "${{ needs.plan.outputs.release-order }}",
     }
-    assert steps[3]["run"] == "task ci:release-build"  # type: ignore[index]
+    assert steps[3]["run"] == "task ci:release:build"  # type: ignore[index]
     assert steps[3]["env"] == env  # type: ignore[index]
-    assert steps[5]["run"] == "task ci:release-publish"  # type: ignore[index]
+    assert steps[5]["run"] == "task ci:release:publish"  # type: ignore[index]
     assert steps[5]["env"] == env  # type: ignore[index]
     assert len(steps) == 6  # type: ignore[arg-type]
 
@@ -941,7 +941,7 @@ def test_s6_4_4_3_release_task_is_pykit_s_script(tmp_path: Path) -> None:
     tasks = _ci_tasks_text(tmp_path)["tasks"]
     script = "\n".join(
         "\n".join(tasks[name]["cmds"])  # type: ignore[index]
-        for name in ("release-build", "release-publish")
+        for name in ("release:build", "release:publish")
     )
     for text in (
         "releasable ok",
@@ -1084,7 +1084,7 @@ def test_s11_5_1_2_python_lib_docs_job(tmp_path: Path) -> None:
         "persist-credentials": True,
     }
     assert steps[1]["uses"] == "./.github/actions/setup"  # type: ignore[index]
-    publish = next(s for s in steps if s.get("run") == "task ci:docs-publish")  # type: ignore[attr-defined]
+    publish = next(s for s in steps if s.get("run") == "task ci:docs:publish")  # type: ignore[attr-defined]
     assert publish["env"] == {"SITE_DIR": "${{ runner.temp }}/site"}
     uses = [str(s.get("uses", "")) for s in steps]  # type: ignore[attr-defined]
     upload = next(u for u in uses if u.startswith("actions/upload-pages-artifact@"))
@@ -1174,7 +1174,7 @@ def test_s6_4_7_4_release_has_no_publish_switch(tmp_path: Path) -> None:
     tasks = _ci_tasks_text(tmp_path)["tasks"]
     script = "\n".join(
         "\n".join(tasks[name]["cmds"])  # type: ignore[index]
-        for name in ("release-build", "release-publish")
+        for name in ("release:build", "release:publish")
     )
     assert "PUBLISH" not in script
     assert "release-publish" in script
@@ -1583,7 +1583,7 @@ def test_s4_11_3_2_the_release_version_is_read_through_env(tmp_path: Path) -> No
             if "run" in step:
                 assert "${{" not in str(step["run"]), (root.name, step.get("name"))
         tasks = _ci_tasks_text_of(root)["tasks"]
-        assert tasks["release-state"]["cmds"] == [  # type: ignore[index]
+        assert tasks["release:state"]["cmds"] == [  # type: ignore[index]
             '{{.DEVOPS}} release-state "v$({{.TASK_EXE}} version)"'
         ]
 
@@ -1594,7 +1594,7 @@ def test_s4_11_3_3_release_publishes_with_gh_release_create(tmp_path: Path) -> N
         publish = steps[_step_index(steps, "Publish GitHub Release")]
         assert "uses" not in publish
         assert "with" not in publish
-        assert publish["run"] == "task ci:release-publish"
+        assert publish["run"] == "task ci:release:publish"
         env = publish["env"]  # type: ignore[index]
         assert env == {
             "GH_TOKEN": "${{ secrets.GITHUB_TOKEN }}",
@@ -1910,7 +1910,7 @@ def test_s4_11_6_4_single_package_release_attests_before_publishing(
     assert step["uses"] == f"{pin['uses']}@{pin['sha']}"
     assert step["if"] == "steps.check.outputs.should-release == 'true'"
     assert step["with"] == {"subject-path": SUBJECTS}  # type: ignore[comparison-overlap]
-    assert steps[publish]["run"] == "task ci:release-publish"
+    assert steps[publish]["run"] == "task ci:release:publish"
 
 
 def test_s4_11_6_4_lib_release_attests_between_build_and_publish(
@@ -1928,14 +1928,14 @@ def test_s4_11_6_4_lib_release_attests_between_build_and_publish(
         "GH_TOKEN": "${{ github.token }}",
         "SELECTED": "${{ needs.plan.outputs.release-order }}",
     }
-    assert build["run"] == "task ci:release-build"
+    assert build["run"] == "task ci:release:build"
     assert build["env"] == env
     assert build["id"] == "build"
     pin = load_pins()["attest"]
     assert provenance["uses"] == f"{pin['uses']}@{pin['sha']}"
     assert provenance["if"] == "steps.build.outputs.built != '0'"
     assert provenance["with"] == {"subject-path": LIB_SUBJECTS}
-    assert publish["run"] == "task ci:release-publish"
+    assert publish["run"] == "task ci:release:publish"
     assert publish["env"] == env
 
 
@@ -2547,7 +2547,7 @@ def test_s9_1_2_3_ci_cloud_matches_ngkit(tmp_path: Path) -> None:
         '--stop-agents-after="lint,test,build,e2e-ci"'
     )
     assert shas["uses"].startswith(f"nrwl/nx-set-shas@{pins['nx-set-shas']['sha']}")
-    assert affected == {"run": "task ci:affected -- lint test build e2e-ci"}
+    assert affected == {"run": "task ci:test -- lint test build e2e-ci"}
     assert fix == {"run": "pnpm exec nx fix-ci", "if": "always()"}
 
 
@@ -2567,22 +2567,22 @@ def test_s9_1_2_4_ci_local_matches_ngkit(tmp_path: Path) -> None:
     }
     assert setup["with"] == {"github-token": "${{ secrets.GITHUB_TOKEN }}"}
     assert e2e["id"] == "e2e"
-    assert e2e["run"] == 'task ci:has-e2e >> "$GITHUB_OUTPUT"'
+    assert e2e["run"] == 'task ci:test:has-e2e >> "$GITHUB_OUTPUT"'
     assert cache["uses"].startswith(f"actions/cache@{pins['cache']['sha']}")
     assert cache["id"] == "playwright-cache"
     assert cache["with"]["path"] == "~/.cache/ms-playwright"
-    assert install["run"] == "task ci:playwright"
+    assert install["run"] == "task ci:test:playwright"
     assert install["if"] == (
         "steps.e2e.outputs.has-e2e == 'true' "
         "&& steps.playwright-cache.outputs.cache-hit != 'true'"
     )
-    assert deps["run"] == "task ci:playwright:deps"
+    assert deps["run"] == "task ci:test:playwright-deps"
     assert deps["if"] == (
         "steps.e2e.outputs.has-e2e == 'true' "
         "&& steps.playwright-cache.outputs.cache-hit == 'true'"
     )
     assert shas["uses"].startswith("nrwl/nx-set-shas@")
-    assert affected == {"run": "task ci:affected -- lint test build e2e"}
+    assert affected == {"run": "task ci:test -- lint test build e2e"}
 
 
 def test_s9_1_2_6_ci_ok_needs_every_job_and_checks_both_paths(tmp_path: Path) -> None:
@@ -2830,7 +2830,7 @@ def test_s9_1_4_1_package_job_matches_ngkit(tmp_path: Path) -> None:
         "persist-credentials": False,
     }
     assert setup["uses"].startswith("./.github/actions/setup")
-    assert pack["run"] == "task ci:package"
+    assert pack["run"] == "task ci:smoke"
     upload_pin = pins["upload-artifact"]
     assert upload["uses"] == f"{upload_pin['uses']}@{upload_pin['sha']}"
     assert upload["with"] == {

@@ -20,8 +20,8 @@ tasks:
       - uv run zizmor --offline .github
       - uv run actionlint
 
-  lint:secrets:
-    desc: "CI only: scan the git history for secrets with the pinned gitleaks (downloads it on first run, so it is not part of lint)"
+  secret-scan:
+    desc: "CI only: Scan the git history for secrets with the pinned gitleaks (downloads it on first run, so it is not part of lint)."
     cmds:
       - task: secrets:install
       - .rn-forge/kiln/rendered/bin/gitleaks detect --source . --redact --no-banner --exit-code 1
@@ -56,28 +56,28 @@ tasks:
         tar -xzf "$tmp/gitleaks.tar.gz" -C .rn-forge/kiln/rendered/bin gitleaks
         rm -rf "$tmp"
 
-  sonar-target:
-    desc: "CI only: print the Sonar branch argument for this run as a $GITHUB_OUTPUT line"
+  sonar:target:
+    desc: "CI only: Print the Sonar branch argument for this run as a $GITHUB_OUTPUT line."
     cmds:
       - '{{.DEVOPS}} sonar-target'
 
-  release-state:
-    desc: "CI only: print the release's state for this version as $GITHUB_OUTPUT lines"
+  release:state:
+    desc: "CI only: Print the release's state for this version as $GITHUB_OUTPUT lines."
     cmds:
       - '{{.DEVOPS}} release-state "v$({{.TASK_EXE}} version)"'
 
-  release-source:
-    desc: "CI only: check out the tagged source of a resumed release (with TAG), print its commit"
+  release:source:
+    desc: "CI only: Check out the tagged source of a resumed release (with TAG), print its commit."
     cmds:
       - '{{.DEVOPS}} release-source "$TAG"'
 
-  release-publish:
-    desc: "CI only: publish the GitHub release for TAG, from the built distributions, at SOURCE_SHA"
+  release:publish:
+    desc: "CI only: Publish the GitHub release for TAG, from the built distributions, at SOURCE_SHA."
     cmds:
       - '{{.DEVOPS}} release-publish "$TAG" --title "$TAG" --target "$SOURCE_SHA" dist/*.whl dist/*.tar.gz dist/*.cdx.json'
 
   plan:
-    desc: "CI only: print the plan's outputs for $GITHUB_OUTPUT"
+    desc: "CI only: Print the plan's outputs for $GITHUB_OUTPUT."
     silent: true
     cmds:
       - |
@@ -89,35 +89,35 @@ tasks:
         {{.DEVOPS}} plan "$base"
 
   validate:
-    desc: "CI only: the repository-wide checks — lint, typecheck, docs build; `test` runs the tests"
+    desc: "CI only: Run the repository-wide checks — lint, typecheck, docs build; `test` runs the tests."
     cmds:
       - task: :lint
       - task: :typecheck
       - task: :docs:build
 
   test:
-    desc: "CI only: run the repository's tests (the plan's one member)"
+    desc: "CI only: Run the repository's tests (the plan's one member)."
     cmds:
       - task: :test
 
   integration:
-    desc: "CI only: a member's tests against the service containers it declares (-- <package>)"
+    desc: "CI only: A member's tests against the service containers it declares (-- <package>)."
     silent: true
     cmds:
       - '{{.DEVOPS}} integration {{.CLI_ARGS}}'
 
   smoke:
-    desc: "CI only: install one extra from the built wheel and import it (-- <package> [extra])"
+    desc: "CI only: Install one extra from the built wheel and import it (-- <package> [extra])."
     silent: true
     cmds:
       - '{{.DEVOPS}} smoke {{.CLI_ARGS}} "${EXTRA:-}"'
 
-  suite:
-    desc: "CI only: run one workspace-wide pytest suite"
+  suites:
+    desc: "CI only: Run one workspace-wide pytest suite."
     cmds:
       - uv run pytest $SUITE_ARGS
 
   verify-release:
-    desc: "CI only: install the release from its git tag, outside the repository, and import it (-- <tag>)"
+    desc: "CI only: Install the release from its git tag, outside the repository, and import it (-- <tag>)."
     cmds:
       - '{{.DEVOPS}} verify-release --source git {{.CLI_ARGS}}'

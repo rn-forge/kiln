@@ -107,7 +107,7 @@ tasks:
 {% elif node_lib %}    desc: Print the publishable projects' version, or bump it (pass -- patch|minor|major|x.y.z).
 {% else %}    desc: Print the package version from pyproject.toml.
 {% endif %}    cmds:
-{% if node_lib %}      - task: ci:version
+{% if node_lib %}      - task: node:version
 {% else %}      - task: python:version
 {% endif %}{% for ref in extra_refs.get("version", []) %}      - task: [[ ref ]]
 {% endfor %}

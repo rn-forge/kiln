@@ -21,8 +21,8 @@ tasks:
 {% else %}      - uv run zizmor --offline .github
       - uv run actionlint
 {% endif %}
-{% if secret_scan_enabled %}  lint:secrets:
-    desc: "CI only: scan the git history for secrets with the pinned gitleaks (downloads it on first run, so it is not part of lint)"
+{% if secret_scan_enabled %}  secret-scan:
+    desc: "CI only: Scan the git history for secrets with the pinned gitleaks (downloads it on first run, so it is not part of lint)."
     cmds:
       - task: secrets:install
       - .rn-forge/kiln/rendered/bin/gitleaks detect --source . --redact --no-banner --exit-code 1
@@ -53,51 +53,51 @@ tasks:
         tar -xzf "$tmp/gitleaks.tar.gz" -C .rn-forge/kiln/rendered/bin gitleaks
         rm -rf "$tmp"
 {% endif %}
-  sonar-target:
-    desc: "CI only: print the Sonar branch argument for this run as a $GITHUB_OUTPUT line"
+  sonar:target:
+    desc: "CI only: Print the Sonar branch argument for this run as a $GITHUB_OUTPUT line."
     cmds:
       - '{{.DEVOPS}} sonar-target'
 {% if umbrella_release_enabled %}
   release:umbrella:
-    desc: "CI only: create a GitHub release for each shipped release page that has none"
+    desc: "CI only: Create a GitHub release for each shipped release page that has none."
     cmds:
       - '{{.DEVOPS}} umbrella --sha "$GITHUB_SHA"'
 {% endif %}{% if not workspace and not node_lib %}
-  release-state:
-    desc: "CI only: print the release's state for this version as $GITHUB_OUTPUT lines"
+  release:state:
+    desc: "CI only: Print the release's state for this version as $GITHUB_OUTPUT lines."
     cmds:
       - '{{.DEVOPS}} release-state "v$({{.TASK_EXE}} version)"'
 
-  release-source:
-    desc: "CI only: check out the tagged source of a resumed release (with TAG), print its commit"
+  release:source:
+    desc: "CI only: Check out the tagged source of a resumed release (with TAG), print its commit."
     cmds:
       - '{{.DEVOPS}} release-source "$TAG"'
 
-  release-publish:
-    desc: "CI only: publish the GitHub release for TAG, from the built distributions, at SOURCE_SHA"
+  release:publish:
+    desc: "CI only: Publish the GitHub release for TAG, from the built distributions, at SOURCE_SHA."
     cmds:
       - '{{.DEVOPS}} release-publish "$TAG" --title "$TAG" --target "$SOURCE_SHA" dist/*.whl dist/*.tar.gz dist/*.cdx.json'
 {% endif %}{% if node_lib %}
-  requirements:
-    desc: "CI only: check that members depend on each other by workspace:^ or workspace:~"
+  internal-ranges:
+    desc: "CI only: Check that members depend on each other by workspace:^ or workspace:~."
     silent: true
     cmds:
       - "set -o pipefail; pnpm ls -r --depth -1 --json | {{.DEVOPS}} requirements --stack node"
 
   validate:
-    desc: "CI only: the checks that do not run Nx — Markdown and TOML formatting, kiln's checks, workflow security{% if docs %}, the docs build{% endif %}; test-cloud or test-local run the Nx projects"
+    desc: "CI only: Run the checks that do not run Nx — Markdown and TOML formatting, kiln's checks, workflow security{% if docs %}, the docs build{% endif %}; test-cloud or test-local run the Nx projects."
     cmds:
       - task: :quality:lint:markdown
       - task: :quality:lint:toml
       - task: :kiln:doctor
       - task: lint:workflows
-      - task: requirements
+      - task: internal-ranges
 {% for verb in ["lint", "typecheck", "test"] %}{% for ref in extra_refs.get(verb, []) %}      - task: :[[ ref ]]
 {% endfor %}{% endfor %}{% if docs %}      - task: :docs:build
 {% endif %}{% for ref in extra_refs.get("validate", []) %}      - task: :[[ ref ]]
 {% endfor %}
-  affected:
-    desc: "CI only: run Nx targets (-- <targets>) on the affected projects, or on all of them for a dispatch or a change outside every project"
+  test:
+    desc: "CI only: Run Nx targets (-- <targets>) on the affected projects, or on all of them for a dispatch or a change outside every project."
     cmds:
       - |
         set -euo pipefail
@@ -132,23 +132,23 @@ tasks:
           pnpm exec nx affected -t {{.CLI_ARGS}}
         fi
 
-  has-e2e:
-    desc: "CI only: print whether any project has an e2e target, as a $GITHUB_OUTPUT line"
+  test:has-e2e:
+    desc: "CI only: Print whether any project has an e2e target, as a $GITHUB_OUTPUT line."
     cmds:
       - echo "has-e2e=$(pnpm exec nx show projects --with-target e2e --json | jq 'length > 0')"
 
-  playwright:
-    desc: "CI only: install Playwright's browsers and their system dependencies"
+  test:playwright:
+    desc: "CI only: Install Playwright's browsers and their system dependencies."
     cmds:
       - pnpm exec playwright install --with-deps
 
-  playwright:deps:
-    desc: "CI only: install Playwright's system dependencies, the browsers being cached"
+  test:playwright-deps:
+    desc: "CI only: Install Playwright's system dependencies, the browsers being cached."
     cmds:
       - pnpm exec playwright install-deps
 
   coverage:
-    desc: "CI only: run every project's tests, print the lcov reports found as a reports=<list> $GITHUB_OUTPUT line"
+    desc: "CI only: Run every project's tests, print the lcov reports found as a reports=<list> $GITHUB_OUTPUT line."
     cmds:
       - |
         set -eu
@@ -160,49 +160,13 @@ tasks:
         fi
         echo "reports=$reports"
 
-  package:
-    desc: "CI only: pack the publishable projects and verify their tarballs"
+  smoke:
+    desc: "CI only: Pack the publishable projects and verify their tarballs."
     cmds:
       - pnpm exec nx run-many -t pack verify-dist verify-consumer
-
-  version:
-    desc: Print the publishable projects' version, or bump it (pass -- patch|minor|major|x.y.z); the root version task runs it.
-    internal: true
-    silent: true
-    cmds:
-      - |
-        if [ -n "{{.CLI_ARGS}}" ]; then
-          pnpm exec nx release version {{.CLI_ARGS}} --git-commit=false --git-tag=false --stage-changes=false
-        else
-          node -e '
-          const fs = require("node:fs");
-          const path = require("node:path");
-          const skip = new Set(["node_modules", "dist", ".git", ".nx"]);
-          const versions = new Set();
-          const walk = (dir) => {
-            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-              const file = path.join(dir, entry.name);
-              if (entry.isDirectory()) {
-                if (!skip.has(entry.name)) walk(file);
-              } else if (entry.name === "project.json") {
-                const tags = JSON.parse(fs.readFileSync(file, "utf8")).tags ?? [];
-                if (tags.includes("publishable")) {
-                  versions.add(JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8")).version);
-                }
-              }
-            }
-          };
-          walk(".");
-          if (versions.size !== 1) {
-            console.error("::error::Expected one version across the publishable projects, found: " + ([...versions].join(", ") || "none"));
-            process.exit(1);
-          }
-          console.log([...versions][0]);
-          '
-        fi
 {% if release == "nx-dispatch" %}
   release:state:
-    desc: "CI only: write tag, mode=new|resume|released, first-release and dist-tag for the version in the pull request to $GITHUB_OUTPUT"
+    desc: "CI only: Write tag, mode=new|resume|released, first-release and dist-tag for the version in the pull request to $GITHUB_OUTPUT."
     cmds:
       - |
         v=$({{.TASK_EXE}} --silent version)
@@ -234,19 +198,19 @@ tasks:
         } >> "$GITHUB_OUTPUT"
 
   release:author:
-    desc: "CI only: set the git author to the github-actions bot"
+    desc: "CI only: Set the git author to the github-actions bot."
     cmds:
       - |
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
   release:tag:
-    desc: "CI only: tag HEAD with TAG"
+    desc: "CI only: Tag HEAD with TAG."
     cmds:
       - git tag "$TAG"
 
   release:verify:
-    desc: "CI only: rebuild dist/ from the tagged source, then pack and verify the publishable projects; fails when no tarball was written"
+    desc: "CI only: Rebuild dist/ from the tagged source, then pack and verify the publishable projects; fails when no tarball was written."
     cmds:
       - |
         pnpm exec nx run-many -t pack verify-dist verify-consumer -p tag:publishable
@@ -256,12 +220,12 @@ tasks:
         fi
 
   release:push:
-    desc: "CI only: push the tag TAG, and nothing else"
+    desc: "CI only: Push the tag TAG, and nothing else."
     cmds:
       - git push origin "refs/tags/$TAG"
 
   release:github:
-    desc: "CI only: create the GitHub Release for TAG as a draft, from the tarballs and release-notes.mjs"
+    desc: "CI only: Create the GitHub Release for TAG as a draft, from the tarballs and release-notes.mjs."
     cmds:
       - |
         tag="$TAG"
@@ -273,17 +237,17 @@ tasks:
         gh release create "$tag" dist/tarballs/*.tgz --verify-tag --title "$tag" --notes-file "$RUNNER_TEMP/notes.md" --draft
 
   release:publish:
-    desc: "CI only: publish to npm under DIST_TAG; FIRST_RELEASE_FLAG holds the flag, or nothing"
+    desc: "CI only: Publish to npm under DIST_TAG; FIRST_RELEASE_FLAG holds the flag, or nothing."
     cmds:
       - pnpm exec nx release publish --tag="$DIST_TAG" --excludeTaskDependencies $FIRST_RELEASE_FLAG
 
   release:finalize:
-    desc: "CI only: publish the draft GitHub Release for TAG, once npm has the version"
+    desc: "CI only: Publish the draft GitHub Release for TAG, once npm has the version."
     cmds:
       - gh release edit "$TAG" --draft=false
 
   release:latest:
-    desc: "CI only: move the rolling latest release to TAG"
+    desc: "CI only: Move the rolling latest release to TAG."
     cmds:
       - |
         # Skip when the remote "latest" tag already sits on this tag's commit and
@@ -308,20 +272,20 @@ tasks:
         gh release create latest dist/tarballs/*.tgz --title "Latest" --notes "Rolling pointer to $TAG"
 
   verify-release:
-    desc: "CI only: install what consumers download, the tarballs of the release TAG"
+    desc: "CI only: Install what consumers download, the tarballs of the release TAG."
     cmds:
       - |
         gh release download "$TAG" --dir dist/tarballs --pattern '*.tgz'
         pnpm exec nx run-many -t verify-consumer --excludeTaskDependencies
 {% endif %}{% if docs %}
   docs:site:
-    desc: "CI only: build Compodoc and Storybook and assemble them under the MkDocs site in .docs-site"
+    desc: "CI only: Build Compodoc and Storybook and assemble them under the MkDocs site in .docs-site."
     cmds:
       - pnpm exec nx run-many -t compodoc build-storybook
       - node tools/ci/assemble-site.mjs .docs-site
 {% endif %}{% endif %}{% if not node_lib %}
   plan:
-    desc: "CI only: print the plan's outputs for $GITHUB_OUTPUT"
+    desc: "CI only: Print the plan's outputs for $GITHUB_OUTPUT."
     silent: true
     cmds:
       - |
@@ -333,7 +297,7 @@ tasks:
         {{.DEVOPS}} plan "$base"
 
 {% if not workspace %}  validate:
-    desc: "CI only: the repository-wide checks — lint, typecheck{% if docs %}, docs build{% endif %}; `test` runs the tests"
+    desc: "CI only: Run the repository-wide checks — lint, typecheck{% if docs %}, docs build{% endif %}; `test` runs the tests."
     cmds:
       - task: :lint
       - task: :typecheck
@@ -341,53 +305,53 @@ tasks:
 {% endif %}{% for ref in extra_refs.get("validate", []) %}      - task: :[[ ref ]]
 {% endfor %}
   test:
-    desc: "CI only: run the repository's tests (the plan's one member)"
+    desc: "CI only: Run the repository's tests (the plan's one member)."
     cmds:
       - task: :test
 
-{% else %}{% if internal_ranges_enabled %}  requirements:
-    desc: "CI only: check that members depend on each other by range, not by exact pin"
+{% else %}{% if internal_ranges_enabled %}  internal-ranges:
+    desc: "CI only: Check that members depend on each other by range, not by exact pin."
     silent: true
     cmds:
       - "{{.DEVOPS}} requirements"
 
 {% endif %}  adapters:
-    desc: "CI only: check each package's declared adapters"
+    desc: "CI only: Check each package's declared adapters."
     silent: true
     cmds:
       - "{{.DEVOPS}} adapters"
 
   test:
-    desc: "CI only: lint, typecheck and test one member (-- <package>, with PACKAGE_DIR)"
+    desc: "CI only: Lint, typecheck and test one member (-- <package>, with PACKAGE_DIR)."
     cmds:
       - uv run --directory "$PACKAGE_DIR" --package {{.CLI_ARGS}} ruff check src $(test -d "$PACKAGE_DIR/tests" && echo tests)
       - uv run --directory "$PACKAGE_DIR" --package {{.CLI_ARGS}} pyright src
       - uv run --directory "$PACKAGE_DIR" --package {{.CLI_ARGS}} pytest -q $PYTEST_ARGS
 
 {% endif %}  integration:
-    desc: "CI only: a member's tests against the service containers it declares (-- <package>)"
+    desc: "CI only: A member's tests against the service containers it declares (-- <package>)."
     silent: true
     cmds:
       - '{{.DEVOPS}} integration {{.CLI_ARGS}}'
 
   smoke:
-    desc: "CI only: install one extra from the built wheel and import it (-- <package> [extra])"
+    desc: "CI only: Install one extra from the built wheel and import it (-- <package> [extra])."
     silent: true
     cmds:
       - '{{.DEVOPS}} smoke {{.CLI_ARGS}} "${EXTRA:-}"'
 
-  suite:
-    desc: "CI only: run one workspace-wide pytest suite"
+  suites:
+    desc: "CI only: Run one workspace-wide pytest suite."
     cmds:
       - uv run pytest $SUITE_ARGS
 
   verify-release:
-    desc: "CI only: install the release from {% if release == "pypi" %}PyPI{% else %}its git tag{% endif %}, outside the repository, and import it{% if not workspace %} (-- <tag>){% endif %}"
+    desc: "CI only: Install the release from {% if release == "pypi" %}PyPI{% else %}its git tag{% endif %}, outside the repository, and import it{% if not workspace %} (-- <tag>){% endif %}."
     cmds:
       - '{{.DEVOPS}} verify-release --source [[ "pypi" if release == "pypi" else "git" ]] {{.CLI_ARGS}}'
 {% if workspace %}
-  release-build:
-    desc: "CI only: build the releasable packages and their SBOMs into dist/<package>/, prerequisites first"
+  release:build:
+    desc: "CI only: Build the releasable packages and their SBOMs into dist/<package>/, prerequisites first."
     cmds:
       - |
         set -euo pipefail
@@ -426,8 +390,8 @@ tasks:
         done
         printf 'built=%s\n' "$built" >> "$GITHUB_OUTPUT"
 
-{% if release == "pypi" %}  release-sign:
-    desc: "CI only: sign each built wheel and sdist, writing a PEP 740 *.publish.attestation beside it"
+{% if release == "pypi" %}  release:sign:
+    desc: "CI only: Sign each built wheel and sdist, writing a PEP 740 *.publish.attestation beside it."
     cmds:
       - |
         set -euo pipefail
@@ -445,8 +409,8 @@ tasks:
           done
         done
 
-{% endif %}  release-publish:
-    desc: "CI only: publish a GitHub release for each package release-build built, prerequisites first"
+{% endif %}  release:publish:
+    desc: "CI only: Publish a GitHub release for each package release:build built, prerequisites first."
     cmds:
       - |
         set -euo pipefail
@@ -468,8 +432,8 @@ tasks:
         done
 
 {% if docs %}
-  docs-publish:
-    desc: "CI only: deploy each released package's versioned site, then build the root site (SITE_DIR) with packages/ merged in"
+  docs:publish:
+    desc: "CI only: Deploy each released package's versioned site, then build the root site (SITE_DIR) with packages/ merged in."
     cmds:
       - |
         set -euo pipefail

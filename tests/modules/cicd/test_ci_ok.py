@@ -103,7 +103,7 @@ def test_s15_1_3_4_default_render_is_unchanged(tmp_path: Path, archetype: str) -
     assert "secret-scan" not in off
 
 
-# S15.4.2 — the `plan` job runs `task ci:requirements`.
+# S15.4.2 — the `plan` job runs `task ci:internal-ranges`.
 
 
 def _plan_steps(root: Path) -> list[str]:
@@ -113,8 +113,8 @@ def _plan_steps(root: Path) -> list[str]:
 
 def test_s15_4_2_2_plan_job_step(tmp_path: Path) -> None:
     two = _plan_steps(_write(tmp_path / "two"))
-    assert "task ci:requirements" in two
-    assert two.index("task ci:requirements") < two.index(
+    assert "task ci:internal-ranges" in two
+    assert two.index("task ci:internal-ranges") < two.index(
         'task ci:plan >> "$GITHUB_OUTPUT"'
     )
 
@@ -126,13 +126,13 @@ def test_s15_4_2_2_plan_job_step(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
-    assert "task ci:requirements" not in _plan_steps(one_root)
+    assert "task ci:internal-ranges" not in _plan_steps(one_root)
 
     for archetype in ARCHETYPES:
         if archetype == "python-lib":
             continue
         root = _write(tmp_path / archetype, archetype)
-        assert "task ci:requirements" not in _ci(root)
+        assert "task ci:internal-ranges" not in _ci(root)
 
 
 # S15.8.7 — one `ci-ok` logic, and the pre-release barrier.
@@ -231,7 +231,7 @@ def test_s15_3_3_1_job_shape(tmp_path: Path, archetype: str) -> None:
     assert steps[0]["with"] == {"fetch-depth": 0, "persist-credentials": False}
     assert "actions/checkout" in steps[0]["uses"]
     assert steps[1]["uses"] == "./.github/actions/setup"
-    assert [s.get("run") for s in steps[2:]] == ["task ci:lint:secrets"]
+    assert [s.get("run") for s in steps[2:]] == ["task ci:secret-scan"]
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)

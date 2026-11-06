@@ -100,9 +100,9 @@ def test_s15_8_1_4_node_jobs(tmp_path: Path) -> None:
     assert {"test-cloud", "test-local", "smoke"} <= set(jobs["checks-ok"]["needs"])
     files = _render(tmp_path, "node-lib")
     tasks = YamlUtils.load(files["tasks/ci.yml"])["tasks"]
-    assert {"affected", "package"} <= set(tasks)
+    assert {"test", "smoke"} <= set(tasks)
     smoke_runs = [s.get("run") for s in jobs["smoke"]["steps"]]
-    assert "task ci:package" in smoke_runs
+    assert "task ci:smoke" in smoke_runs
 
 
 @pytest.mark.parametrize(
@@ -201,7 +201,7 @@ def test_s15_8_3_4_validate_task(tmp_path: Path, archetype: str) -> None:
         {"task": ":docs:build"},
     ]
     assert tasks["test"]["cmds"] == [{"task": ":test"}]
-    assert {"plan", "integration", "smoke", "suite"} <= set(tasks)
+    assert {"plan", "integration", "smoke", "suites"} <= set(tasks)
     root = YamlUtils.load(files["Taskfile.yml"])["tasks"]
     assert {"task": "node:test"} in root["test"]["cmds"] or archetype != (
         "python-web-app"
@@ -410,8 +410,10 @@ def test_s15_8_5_6_publish_flags(tmp_path: Path) -> None:
 def test_s15_8_5_7_version_task(tmp_path: Path) -> None:
     files = _node(tmp_path)
     root = YamlUtils.load(files["Taskfile.yml"])["tasks"]
-    assert root["version"]["cmds"] == [{"task": "ci:version"}]
-    cmds = "\n".join(YamlUtils.load(files["tasks/ci.yml"])["tasks"]["version"]["cmds"])
+    assert root["version"]["cmds"] == [{"task": "node:version"}]
+    cmds = "\n".join(
+        YamlUtils.load(files["tasks/node.yml"])["tasks"]["version"]["cmds"]
+    )
     assert (
         "pnpm exec nx release version {{.CLI_ARGS}} --git-commit=false "
         "--git-tag=false --stage-changes=false"

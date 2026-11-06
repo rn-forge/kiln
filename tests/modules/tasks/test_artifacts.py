@@ -743,7 +743,7 @@ def test_s6_7_3_1_devops_is_kiln_devops(tmp_path: Path) -> None:
 def test_s6_7_4_2_sonar_target_is_a_public_task_everywhere(tmp_path: Path) -> None:
     for archetype in ARCHETYPES:
         task = _ci_tasks(_root(tmp_path / archetype, archetype))["tasks"][  # type: ignore[index]
-            "sonar-target"
+            "sonar:target"
         ]
         assert task["cmds"] == ["{{.DEVOPS}} sonar-target"], archetype
         assert "internal" not in task, archetype
@@ -763,7 +763,7 @@ def test_s6_4_3_1_integration_smoke_and_suite_are_described_and_not_internal(
     tmp_path: Path,
 ) -> None:
     tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
-    for name in ("integration", "smoke", "suite"):
+    for name in ("integration", "smoke", "suites"):
         assert tasks[name]["desc"], name  # type: ignore[index]
         assert "internal" not in tasks[name], name  # type: ignore[operator]
 
@@ -771,12 +771,12 @@ def test_s6_4_3_1_integration_smoke_and_suite_are_described_and_not_internal(
 def test_s6_4_3_2_commands_follow_the_story(tmp_path: Path) -> None:
     tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
     assert tasks["smoke"]["cmds"] == ['{{.DEVOPS}} smoke {{.CLI_ARGS}} "${EXTRA:-}"']  # type: ignore[index]
-    assert tasks["suite"]["cmds"] == ["uv run pytest $SUITE_ARGS"]  # type: ignore[index]
+    assert tasks["suites"]["cmds"] == ["uv run pytest $SUITE_ARGS"]  # type: ignore[index]
 
 
 def test_s6_8_3_2_release_sign_task(tmp_path: Path) -> None:
     pypi = _root(tmp_path / "pypi", "python-lib", extra='\n[ci]\nrelease = "pypi"\n')
-    task = _ci_tasks(pypi)["tasks"]["release-sign"]  # type: ignore[index]
+    task = _ci_tasks(pypi)["tasks"]["release:sign"]  # type: ignore[index]
     script = "\n".join(task["cmds"])
     assert task["desc"]
     assert 'uvx pypi-attestations==0.0.30 sign "$file"' in script
@@ -788,7 +788,7 @@ def test_s6_8_3_2_release_sign_task(tmp_path: Path) -> None:
     assert "exit 1" in script
     assert "::warning::Signing $file failed on attempt $attempt." in script
     plain = _ci_tasks(_root(tmp_path / "plain", "python-lib"))["tasks"]
-    assert "release-sign" not in plain  # type: ignore[operator]
+    assert "release:sign" not in plain  # type: ignore[operator]
 
 
 def _libs_root(tmp_path: Path) -> Path:
@@ -858,7 +858,7 @@ def test_s6_4_6_5_packages_dir_layout_renders_as_before(tmp_path: Path) -> None:
 
 
 def test_s11_5_1_1_docs_publish_runs_mike_builds_and_merges(tmp_path: Path) -> None:
-    task = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]["docs-publish"]  # type: ignore[index]
+    task = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]["docs:publish"]  # type: ignore[index]
     assert task["desc"]
     assert "internal" not in task
     script = "\n".join(task["cmds"])
@@ -880,14 +880,14 @@ def test_s11_5_1_1_docs_publish_runs_mike_builds_and_merges(tmp_path: Path) -> N
 
 def test_s11_5_1_1_docs_publish_is_absent_without_docs(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-lib", profile="none")
-    assert "docs-publish" not in _ci_tasks(root)["tasks"]  # type: ignore[operator]
+    assert "docs:publish" not in _ci_tasks(root)["tasks"]  # type: ignore[operator]
 
 
 def test_s6_4_7_4_release_task_always_publishes(tmp_path: Path) -> None:
     tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
-    for name in ("release-build", "release-publish"):
+    for name in ("release:build", "release:publish"):
         assert "PUBLISH" not in "\n".join(tasks[name]["cmds"])  # type: ignore[index]
-    publish = "\n".join(tasks["release-publish"]["cmds"])  # type: ignore[index]
+    publish = "\n".join(tasks["release:publish"]["cmds"])  # type: ignore[index]
     assert publish.count("continue") == 1  # only the published skip remains
 
 
@@ -1240,9 +1240,9 @@ def test_s4_11_6_1_build_override_is_untouched(tmp_path: Path) -> None:
 def test_s4_11_6_2_lib_release_is_split(tmp_path: Path) -> None:
     tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
     assert "release" not in tasks
-    build = "\n".join(tasks["release-build"]["cmds"])  # type: ignore[index]
-    publish = "\n".join(tasks["release-publish"]["cmds"])  # type: ignore[index]
-    for name in ("release-build", "release-publish"):
+    build = "\n".join(tasks["release:build"]["cmds"])  # type: ignore[index]
+    publish = "\n".join(tasks["release:publish"]["cmds"])  # type: ignore[index]
+    for name in ("release:build", "release:publish"):
         assert tasks[name]["desc"], name  # type: ignore[index]
         assert "internal" not in tasks[name], name  # type: ignore[operator]
     for text in ("releasable ok", "uv build", "uv export --format cyclonedx1.5"):
@@ -1257,7 +1257,7 @@ def test_s4_11_6_2_lib_release_is_split(tmp_path: Path) -> None:
 
 def test_s6_7_5_5_lib_publish_calls_release_publish(tmp_path: Path) -> None:
     tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
-    publish = "\n".join(tasks["release-publish"]["cmds"])  # type: ignore[index]
+    publish = "\n".join(tasks["release:publish"]["cmds"])  # type: ignore[index]
     assert 'if [ ! -d "dist/$name" ]; then' in publish
     assert "continue" in publish
     assert (
@@ -1265,13 +1265,13 @@ def test_s6_7_5_5_lib_publish_calls_release_publish(tmp_path: Path) -> None:
         ' --target "$GITHUB_SHA" --notes-file "$notes" dist/"$name"/*'
     ) in publish.replace('"$tag"', '"$name-v$version"')
     assert "gh release" not in publish
-    for name in ("release-state", "release-source"):
+    for name in ("release:state", "release:source"):
         assert name not in tasks
 
 
 def test_s7_6_3_3_lib_publish_carries_the_changelog(tmp_path: Path) -> None:
     tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
-    publish = "\n".join(tasks["release-publish"]["cmds"])  # type: ignore[index]
+    publish = "\n".join(tasks["release:publish"]["cmds"])  # type: ignore[index]
     assert 'notes="$(mktemp)"' in publish
     assert '{{.DEVOPS}} notes "$dir/CHANGELOG.md" "$version" > "$notes"' in publish
     assert (
@@ -1281,14 +1281,14 @@ def test_s7_6_3_3_lib_publish_carries_the_changelog(tmp_path: Path) -> None:
     assert "--generate-notes" not in publish
     for archetype in ("python-app", "python-tool"):
         single = _ci_tasks(_root(tmp_path / archetype, archetype))["tasks"]
-        assert "--notes-file" not in "\n".join(single["release-publish"]["cmds"])  # type: ignore[index]
+        assert "--notes-file" not in "\n".join(single["release:publish"]["cmds"])  # type: ignore[index]
 
 
 def test_s6_7_5_4_single_package_release_tasks(tmp_path: Path) -> None:
     expected = {
-        "release-state": ['{{.DEVOPS}} release-state "v$({{.TASK_EXE}} version)"'],
-        "release-source": ['{{.DEVOPS}} release-source "$TAG"'],
-        "release-publish": [
+        "release:state": ['{{.DEVOPS}} release-state "v$({{.TASK_EXE}} version)"'],
+        "release:source": ['{{.DEVOPS}} release-source "$TAG"'],
+        "release:publish": [
             '{{.DEVOPS}} release-publish "$TAG" --title "$TAG" --target "$SOURCE_SHA"'
             " dist/*.whl dist/*.tar.gz dist/*.cdx.json"
         ],
@@ -1303,7 +1303,7 @@ def test_s6_7_5_4_single_package_release_tasks(tmp_path: Path) -> None:
 
 def test_s4_11_6_2_lib_build_reports_how_many_it_built(tmp_path: Path) -> None:
     build = "\n".join(
-        _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]["release-build"]["cmds"]  # type: ignore[index]
+        _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]["release:build"]["cmds"]  # type: ignore[index]
     )
     assert "built=" in build
     assert "$GITHUB_OUTPUT" in build
@@ -1311,9 +1311,9 @@ def test_s4_11_6_2_lib_build_reports_how_many_it_built(tmp_path: Path) -> None:
 
 def test_s4_11_6_2_lib_publish_uploads_the_sbom(tmp_path: Path) -> None:
     tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
-    publish = "\n".join(tasks["release-publish"]["cmds"])  # type: ignore[index]
+    publish = "\n".join(tasks["release:publish"]["cmds"])  # type: ignore[index]
     assert publish.count('dist/"$name"/*') == 1
-    build = "\n".join(tasks["release-build"]["cmds"])  # type: ignore[index]
+    build = "\n".join(tasks["release:build"]["cmds"])  # type: ignore[index]
     assert build.count('dist/$name/$name.cdx.json"') == 2  # tag and worktree
     assert '--out-dir "$GITHUB_WORKSPACE/dist/$name"' in build
     assert '--out-dir "dist/$name"' in build
@@ -1381,16 +1381,16 @@ CI_LINT_CHECKS = {
 }
 CI_PIPELINE_TASKS = {
     "plan",
-    "requirements",
+    "internal-ranges",
     "adapters",
     "test",
     "integration",
     "smoke",
-    "suite",
-    "release-build",
-    "release-publish",
+    "suites",
+    "release:build",
+    "release:publish",
     "verify-release",
-    "docs-publish",
+    "docs:publish",
 }
 SINGLE_PIPELINE_TASKS = {
     "validate",
@@ -1398,7 +1398,7 @@ SINGLE_PIPELINE_TASKS = {
     "plan",
     "integration",
     "smoke",
-    "suite",
+    "suites",
     "verify-release",
 }
 ALL_CELLS = [(a, "") for a in ARCHETYPES] + list(WEB_CELLS)
@@ -1440,15 +1440,15 @@ def test_s4_12_2_3_only_python_lib_has_the_pipeline_tasks(
     root = _s4_12_1_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     document = _load(root, "tasks/ci.yml")
-    assert "sonar-target" in document["tasks"]
-    single = {"release-state", "release-source", "release-publish"}
+    assert "sonar:target" in document["tasks"]
+    single = {"release:state", "release:source", "release:publish"}
     if archetype != "python-lib":
         assert single <= set(document["tasks"])
     others = {
         k
         for k in document["tasks"]
         if not k.startswith("lint:")
-        and k not in {"sonar-target", "secrets:install"}
+        and k not in {"sonar:target", "secret-scan", "secrets:install"}
         and not (archetype != "python-lib" and k in single)
     }
     if archetype == "python-lib":
@@ -1651,7 +1651,7 @@ def test_s9_1_9_1_node_yml_adds_typecheck_and_e2e_for_node_lib(
     root = _node_lib_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "tasks/node.yml")["tasks"]
-    assert set(tasks) == {*NODE_CHECKS, "lint:audit", "lint:licenses"}
+    assert set(tasks) == {*NODE_CHECKS, "lint:audit", "lint:licenses", "version"}
     for name, cmds in NODE_CHECKS.items():
         assert tasks[name]["internal"] is True
         assert tasks[name]["desc"].strip()
@@ -1747,6 +1747,7 @@ def test_s9_2_5_1_node_yml_is_byte_identical_in_both_cells(tmp_path: Path) -> No
     text = (app / "tasks/node.yml").read_text(encoding="utf-8")
     assert lib_doc.pop("vars").keys() == {"DEVOPS"}
     del lib_doc["tasks"]["lint:licenses"], lib_doc["tasks"]["lint:audit"]
+    del lib_doc["tasks"]["version"]
     assert lib_doc == YamlUtils.load(text)
     assert set(YamlUtils.load(text)["tasks"]) == set(NODE_CHECKS)
 
@@ -2214,8 +2215,8 @@ def _release_script(root: Path, task: str) -> str:
 
 def test_s7_6_4_6_release_tasks_upload(tmp_path: Path) -> None:
     pypi = _root(tmp_path / "pypi", "python-lib", extra='\n[ci]\nrelease = "pypi"\n')
-    build = _release_script(pypi, "release-build")
-    publish = _release_script(pypi, "release-publish")
+    build = _release_script(pypi, "release:build")
+    publish = _release_script(pypi, "release:publish")
     assert build.count("uv build") == 3
     assert build.count(TWINE) == build.count("uv build")
     for position in [m.start() for m in re.finditer("uv build", build)]:
@@ -2227,7 +2228,7 @@ def test_s7_6_4_6_release_tasks_upload(tmp_path: Path) -> None:
     assert 'if [ "${TESTPYPI:-}" = true ]; then upload=testpypi; fi' in publish
     assert '--notes-file "$notes" --upload "$upload" dist/"$name"/*' in publish
     plain = _root(tmp_path / "plain", "python-lib")
-    for task in ("release-build", "release-publish"):
+    for task in ("release:build", "release:publish"):
         text = _release_script(plain, task)
         for forbidden in ("twine", "TESTPYPI", "--upload", "upload="):
             assert forbidden not in text, (task, forbidden)
@@ -2237,7 +2238,7 @@ def test_s7_6_5_1_verify_release_from_pypi(tmp_path: Path) -> None:
     pypi = _root(tmp_path / "pypi", "python-lib", extra='\n[ci]\nrelease = "pypi"\n')
     task = _ci_tasks(pypi)["tasks"]["verify-release"]  # type: ignore[index]
     assert task["desc"] == (
-        "CI only: install the release from PyPI, outside the repository, and import it"
+        "CI only: Install the release from PyPI, outside the repository, and import it."
     )
     assert task["cmds"] == ["{{.DEVOPS}} verify-release --source pypi {{.CLI_ARGS}}"]
     plain = _ci_tasks(_root(tmp_path / "plain", "python-lib"))["tasks"]
@@ -2250,12 +2251,12 @@ def test_s7_6_5_1_verify_release_from_pypi(tmp_path: Path) -> None:
 
 # S9.1.2 — affected CI.
 
-NODE_LIB_CI_TASKS = ("affected", "has-e2e", "playwright", "playwright:deps")
+NODE_LIB_CI_TASKS = ("test", "test:has-e2e", "test:playwright", "test:playwright-deps")
 
 
 def _affected_rule(tmp_path: Path) -> str:
-    """The `outside_projects` function the `ci:affected` task defines."""
-    cmd = _ci_tasks(_node_lib_root(tmp_path))["tasks"]["affected"]["cmds"][0]  # type: ignore[index]
+    """The `outside_projects` function the `ci:test` task defines."""
+    cmd = _ci_tasks(_node_lib_root(tmp_path))["tasks"]["test"]["cmds"][0]  # type: ignore[index]
     match = re.search(r"^outside_projects\(\) \{\n.*?^\}\n", cmd, re.M | re.S)
     assert match
     return match.group(0)
@@ -2361,7 +2362,7 @@ def test_s9_1_2_5_affected_selects_run_many_or_affected(tmp_path: Path) -> None:
                 str(root / "Taskfile.yml"),
                 "--dir",
                 str(repo),
-                "ci:affected",
+                "ci:test",
                 "--",
                 "lint test",
             ],
@@ -2389,17 +2390,22 @@ def test_s9_1_2_5_node_lib_ci_tasks_are_described_and_public(tmp_path: Path) -> 
     for name in NODE_LIB_CI_TASKS:
         assert tasks[name]["desc"], name  # type: ignore[index]
         assert "internal" not in tasks[name], name  # type: ignore[operator]
-    assert tasks["has-e2e"]["cmds"] == [  # type: ignore[index]
+    assert tasks["test:has-e2e"]["cmds"] == [  # type: ignore[index]
         "echo \"has-e2e=$(pnpm exec nx show projects --with-target e2e --json | jq 'length > 0')\""
     ]
-    assert tasks["playwright"]["cmds"] == ["pnpm exec playwright install --with-deps"]  # type: ignore[index]
-    assert tasks["playwright:deps"]["cmds"] == ["pnpm exec playwright install-deps"]  # type: ignore[index]
+    assert tasks["test:playwright"]["cmds"] == [
+        "pnpm exec playwright install --with-deps"
+    ]  # type: ignore[index]
+    assert tasks["test:playwright-deps"]["cmds"] == [
+        "pnpm exec playwright install-deps"
+    ]  # type: ignore[index]
 
 
 def test_s9_1_2_5_other_archetypes_render_no_affected_tasks(tmp_path: Path) -> None:
     for archetype in ARCHETYPES:
         tasks = _ci_tasks(_root(tmp_path / archetype, archetype))["tasks"]
-        assert not set(NODE_LIB_CI_TASKS) & set(tasks), archetype  # type: ignore[arg-type]
+        assert not set(NODE_LIB_CI_TASKS[1:]) & set(tasks), archetype  # type: ignore[arg-type]
+        assert "nx" not in json.dumps(tasks["test"]), archetype
 
 
 # S9.1.3 — node Sonar.
@@ -2508,7 +2514,7 @@ def test_s9_1_3_2_coverage_is_described_and_public(tmp_path: Path) -> None:
 
 
 def test_s9_1_4_2_package_packs_and_verifies(tmp_path: Path) -> None:
-    task = _ci_tasks(_node_lib_root(tmp_path))["tasks"]["package"]  # type: ignore[index]
+    task = _ci_tasks(_node_lib_root(tmp_path))["tasks"]["smoke"]  # type: ignore[index]
     assert task["desc"]
     assert "internal" not in task
     assert task["cmds"] == ["pnpm exec nx run-many -t pack verify-dist verify-consumer"]
@@ -2632,7 +2638,7 @@ def test_s9_1_5_4_other_archetypes_render_no_release_tasks(
     tmp_path: Path, archetype: str
 ) -> None:
     tasks = _ci_tasks(_root(tmp_path, archetype))["tasks"]
-    assert "release:state" not in tasks  # type: ignore[arg-type]
+    assert "release:author" not in tasks  # type: ignore[arg-type]
 
 
 PNPM_ECHO = 'for a in "$@"; do printf "<%s>" "$a"; done; echo'
@@ -2666,11 +2672,11 @@ def test_s9_3_5_6_verify_passes_when_a_tarball_was_written(
 def test_s9_3_5_7_package_is_unguarded(tmp_path: Path) -> None:
     _needs_task()
     tasks = _ci_tasks(_node_lib_root(tmp_path))["tasks"]
-    assert tasks["package"]["cmds"] == [  # type: ignore[index]
+    assert tasks["smoke"]["cmds"] == [  # type: ignore[index]
         "pnpm exec nx run-many -t pack verify-dist verify-consumer"
     ]
     done = _release_run(
-        tmp_path / "run", "package", stubs={"pnpm": "echo No tasks were run"}
+        tmp_path / "run", "smoke", stubs={"pnpm": "echo No tasks were run"}
     )
     assert done.returncode == 0, done.stderr
     assert "No tasks were run" in done.stdout
@@ -2825,7 +2831,7 @@ CI_VALIDATE_HEAD = [
     {"task": ":quality:lint:toml"},
     {"task": ":kiln:doctor"},
     {"task": "lint:workflows"},
-    {"task": "requirements"},
+    {"task": "internal-ranges"},
 ]
 
 
@@ -3059,7 +3065,7 @@ def test_s15_2_4_2_python_archetypes_have_none(tmp_path: Path) -> None:
             assert "node:lint:audit" not in text, path
 
 
-# S15.3.2 — `task ci:lint:secrets`.
+# S15.3.2 — `task ci:secret-scan`.
 
 SIX_ARCHETYPES = (*ARCHETYPES, "python-web-api", "python-web-app", "node-lib")
 
@@ -3087,12 +3093,12 @@ def test_s15_3_2_1_task_renders_for_every_archetype(
     tmp_path: Path, archetype: str
 ) -> None:
     tasks = _ci_rendered(_secrets_root(tmp_path, archetype))
-    assert tasks["lint:secrets"]["cmds"] == [
+    assert tasks["secret-scan"]["cmds"] == [
         {"task": "secrets:install"},
         ".rn-forge/kiln/rendered/bin/gitleaks detect --source . --redact "
         "--no-banner --exit-code 1",
     ]
-    assert "internal" not in tasks["lint:secrets"]
+    assert "internal" not in tasks["secret-scan"]
     assert tasks["secrets:install"]["internal"] is True
 
 
@@ -3125,7 +3131,7 @@ def test_s15_3_2_3_off(tmp_path: Path, archetype: str) -> None:
     on = _secrets_root(on_dir, archetype)
     off = _secrets_root(off_dir, archetype, "\n[ci.checks]\nsecret-scan = false\n")
     tasks = _ci_rendered(off)
-    assert "lint:secrets" not in tasks
+    assert "secret-scan" not in tasks
     assert "secrets:install" not in tasks
     assert "gitleaks" not in (off / "tasks/ci.yml").read_text(encoding="utf-8")
     on_lint = YamlUtils.load((on / "Taskfile.yml").read_text(encoding="utf-8"))
@@ -3136,22 +3142,24 @@ def test_s15_3_2_3_off(tmp_path: Path, archetype: str) -> None:
 
 def test_s15_4_2_1_task(tmp_path: Path) -> None:
     tasks = _ci_rendered(_applied(tmp_path / "lib", "python-lib"))
-    assert tasks["requirements"]["cmds"] == ["{{.DEVOPS}} requirements"]
+    assert tasks["internal-ranges"]["cmds"] == ["{{.DEVOPS}} requirements"]
     for archetype in ("python-tool", "python-app"):
         other = _ci_rendered(_applied(tmp_path / archetype, archetype))
-        assert "requirements" not in other
+        assert "internal-ranges" not in other
 
 
 def test_s15_4_3_8_node_task(tmp_path: Path) -> None:
     tasks = _ci_rendered(_applied(tmp_path / "lib", "node-lib"))
-    assert tasks["requirements"]["cmds"] == [
+    assert tasks["internal-ranges"]["cmds"] == [
         "set -o pipefail; pnpm ls -r --depth -1 --json"
         " | {{.DEVOPS}} requirements --stack node"
     ]
-    assert {"task": "requirements"} in tasks["validate"]["cmds"]
+    assert {"task": "internal-ranges"} in tasks["validate"]["cmds"]
     for archetype in ("python-lib", "python-tool", "python-app"):
         other = _ci_rendered(_applied(tmp_path / archetype, archetype))
-        assert {"task": "requirements"} not in other.get("validate", {}).get("cmds", [])
+        assert {"task": "internal-ranges"} not in other.get("validate", {}).get(
+            "cmds", []
+        )
 
 
 def _applied(tmp_path: Path, archetype: str) -> Path:
@@ -3181,8 +3189,8 @@ GUARDED = (
     "python:lint:licenses",
     "node:lint:audit",
     "node:lint:licenses",
-    "ci:lint:secrets",
-    "ci:requirements",
+    "ci:secret-scan",
+    "ci:internal-ranges",
 )
 
 
@@ -3301,3 +3309,106 @@ def test_s17_1_4_3_workspace_verbs(tmp_path: Path) -> None:
         "Run each package's tests with coverage, combined into one XML report "
         "(used by CI/Sonar)."
     )
+
+
+# S17.2.1 — the `ci:` tasks follow one grammar.
+
+CI_FIRST_LEVELS = (
+    "validate",
+    "plan",
+    "test",
+    "integration",
+    "smoke",
+    "suites",
+    "sonar",
+    "release",
+    "verify-release",
+    "docs",
+    "secret-scan",
+    "internal-ranges",
+    "adapters",
+)
+# `ci:coverage` is renamed by S17.2.2, not here: it is the one first level the
+# grammar does not yet name.
+CI_PENDING = ("coverage",)
+CI_WORD = r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*"
+CI_NAME = re.compile(rf"^ci:{CI_WORD}(?::{CI_WORD})?$")
+CI_OLD_NAMES = (
+    "ci:sonar-target",
+    "ci:release-state",
+    "ci:release-source",
+    "ci:release-publish",
+    "ci:release-build",
+    "ci:release-sign",
+    "ci:docs-publish",
+    "ci:suite",
+    "ci:lint:secrets",
+    "ci:requirements",
+    "ci:affected",
+    "ci:has-e2e",
+    "ci:playwright",
+    "ci:playwright:deps",
+    "ci:package",
+    "ci:version",
+)
+CI_CELLS = (
+    *((a, "") for a in SIX_ARCHETYPES),
+    ("python-lib", '\n[ci]\nrelease = "pypi"\n'),
+    *((a, "\n[ci.checks]\numbrella-release = true\n") for a in SIX_ARCHETYPES),
+)
+
+
+def _ci_cells(tmp_path: Path) -> list[tuple[str, Path]]:
+    cells: list[tuple[str, Path]] = []
+    for index, (archetype, extra) in enumerate(CI_CELLS):
+        cell = tmp_path / str(index)
+        cells.append((archetype, _secrets_root(cell, archetype, extra)))
+    return cells
+
+
+def test_s17_2_1_1_grammar(tmp_path: Path) -> None:
+    for archetype, root in _ci_cells(tmp_path):
+        tasks = _ci_rendered(root)
+        public = [n for n, t in tasks.items() if not t.get("internal")]
+        assert public, archetype
+        for name in public:
+            full = f"ci:{name}"
+            assert CI_NAME.match(full), (archetype, full)
+            first = name.split(":")[0]
+            assert first in (*CI_FIRST_LEVELS, *CI_PENDING), (archetype, full)
+            assert tasks[name]["desc"].startswith("CI only: "), (archetype, full)
+            sentence = tasks[name]["desc"].removeprefix("CI only: ")
+            assert sentence[0].isupper() and sentence.endswith("."), (archetype, full)
+
+
+def test_s17_2_1_2_one_name_per_idea(tmp_path: Path) -> None:
+    for archetype, root in _ci_cells(tmp_path):
+        names = {f"ci:{name}" for name in _ci_rendered(root)}
+        assert not names & set(CI_OLD_NAMES), (archetype, names & set(CI_OLD_NAMES))
+        files = {
+            p: p.read_text(encoding="utf-8")
+            for p in (root / "tasks").glob("*.yml")
+            if p.name != "ci.yml"
+        }
+        for path, text in files.items():
+            used = set(re.findall(r"ci:[\w:-]+", text))
+            assert not used & set(CI_OLD_NAMES), (archetype, path.name)
+    node = _ci_rendered(_secrets_root(tmp_path / "node", "node-lib"))
+    assert "version" not in node
+    node_yml = YamlUtils.load(
+        (tmp_path / "node" / "tasks/node.yml").read_text(encoding="utf-8")
+    )
+    assert node_yml["tasks"]["version"]["internal"] is True
+    root_yml = YamlUtils.load(
+        (tmp_path / "node" / "Taskfile.yml").read_text(encoding="utf-8")
+    )
+    assert {"task": "node:version"} in root_yml["tasks"]["version"]["cmds"]
+
+
+def test_s17_2_1_3_workflows_call_the_new_names(tmp_path: Path) -> None:
+    for archetype, root in _ci_cells(tmp_path):
+        files = [p for p in (root / ".github").rglob("*") if p.is_file()]
+        assert files, archetype
+        for path in files:
+            used = set(re.findall(r"ci:[\w:-]+", path.read_text(encoding="utf-8")))
+            assert not used & set(CI_OLD_NAMES), (archetype, path.name)

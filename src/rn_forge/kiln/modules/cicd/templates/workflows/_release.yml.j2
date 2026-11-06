@@ -172,7 +172,7 @@ jobs:{% if node_lib %}
           GH_TOKEN: ${{ github.token }}
 {% if release == "pypi" %}          TESTPYPI: ${{ github.event_name == 'workflow_dispatch' && inputs.testpypi }}
 {% endif %}          SELECTED: ${{ inputs.release-order }}
-        run: task ci:release-build
+        run: task ci:release:build
 
       # Attested before anything is published, because the release, not the
       # tag, is the record: a failure here leaves nothing published, and a
@@ -189,14 +189,14 @@ jobs:{% if node_lib %}
 {% if release == "pypi" %}      # uv publish uploads the *.publish.attestation files it is given. One file at a time, because a Rekor write can stall into a 502 and signing never retries.
       - name: Attest PyPI publish
         if: steps.build.outputs.built != '0'
-        run: task ci:release-sign
+        run: task ci:release:sign
 
 {% endif %}      - name: Publish releases
         env:
           GH_TOKEN: ${{ github.token }}
 {% if release == "pypi" %}          TESTPYPI: ${{ github.event_name == 'workflow_dispatch' && inputs.testpypi }}
 {% endif %}          SELECTED: ${{ inputs.release-order }}
-        run: task ci:release-publish{% else %}
+        run: task ci:release:publish{% else %}
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -223,7 +223,7 @@ jobs:{% if node_lib %}
         id: check
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: task ci:release-state >> "$GITHUB_OUTPUT"
+        run: task ci:release:state >> "$GITHUB_OUTPUT"
 
       # A tag without a published release is a failed release: rebuild from it.
       - name: Check out the release source
@@ -231,7 +231,7 @@ jobs:{% if node_lib %}
         if: steps.check.outputs.should-release == 'true'
         env:
           TAG: ${{ steps.check.outputs.tag }}
-        run: task ci:release-source >> "$GITHUB_OUTPUT"
+        run: task ci:release:source >> "$GITHUB_OUTPUT"
 
       - name: Build
         if: steps.check.outputs.should-release == 'true'
@@ -255,4 +255,4 @@ jobs:{% if node_lib %}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.check.outputs.tag }}
           SOURCE_SHA: ${{ steps.source.outputs.sha }}
-        run: task ci:release-publish{% endif %}
+        run: task ci:release:publish{% endif %}

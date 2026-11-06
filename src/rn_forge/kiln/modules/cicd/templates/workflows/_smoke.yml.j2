@@ -34,7 +34,7 @@ jobs:{% if node_lib %}
       # Plain `nx pack` (unlike the release path) never stamps workspace:*
       # peers to exact pins, so verify-dist checks the CI tarballs' manifests.
       - name: Pack and verify publishable tarballs
-        run: task ci:package
+        run: task ci:smoke
 
       - name: Upload package tarballs
         uses: [[ pins["upload-artifact"].uses ]]@[[ pins["upload-artifact"].sha ]] # [[ pins["upload-artifact"].version ]]

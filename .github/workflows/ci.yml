@@ -90,7 +90,7 @@ jobs:
       - name: Review dependency changes
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
 
-  # Scans the full git history for leaked secrets (gitleaks, `task ci:lint:secrets`). A pull
+  # Scans the full git history for leaked secrets (gitleaks, `task ci:secret-scan`). A pull
   # request from a fork cannot be scanned with this checkout, so it is skipped, which
   # `checks-ok` treats as a pass.
   secret-scan:
@@ -112,7 +112,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Scan the history for secrets
-        run: task ci:lint:secrets
+        run: task ci:secret-scan
 
   plan:
     needs: validate
@@ -251,7 +251,7 @@ jobs:
       - name: Run the suite
         env:
           SUITE_ARGS: ${{ matrix.args }}
-        run: task ci:suite
+        run: task ci:suites
 
   sonar:
     needs: [validate, test, integration, smoke, suites]

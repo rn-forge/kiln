@@ -78,26 +78,26 @@ a task is read from the golden cells' `task --list`.
 
 | Task | Archetypes |
 | -- | -- |
-| `ci:sonar-target` | all |
-| `ci:lint:secrets` | all, unless `[ci.checks] secret-scan = false` |
+| `ci:sonar:target`, `ci:secret-scan` | all; `ci:secret-scan` unless `[ci.checks] secret-scan = false` |
 | `ci:release:umbrella` | with the `umbrella-release` check on |
-| `ci:plan`, `ci:test`, `ci:integration`, `ci:smoke`, `ci:suite`, `ci:verify-release`, `ci:release-publish` | every Python archetype |
+| `ci:plan`, `ci:test`, `ci:integration`, `ci:smoke`, `ci:suites`, `ci:verify-release`, `ci:release:publish` | every Python archetype |
 | `ci:validate` | every Python archetype but `python-lib`, and `node-lib` |
-| `ci:release-state`, `ci:release-source` | `python-tool`, `python-app`, `python-web-api`, `python-web-app` |
-| `ci:adapters`, `ci:release-build` | `python-lib` |
-| `ci:requirements` | `python-lib`, with two or more members (the `internal-ranges` check); always in `node-lib` |
-| `ci:release-sign` | `python-lib`, with `[ci] release = "pypi"` |
-| `ci:docs-publish` | `python-lib`, with the `mkdocs` profile |
-| `ci:affected`, `ci:has-e2e`, `ci:playwright`, `ci:playwright:deps`, `ci:coverage`, `ci:package` | `node-lib` |
+| `ci:release:state`, `ci:release:source` | `python-tool`, `python-app`, `python-web-api`, `python-web-app` |
+| `ci:adapters`, `ci:release:build` | `python-lib` |
+| `ci:internal-ranges` | `python-lib`, with two or more members; always in `node-lib` |
+| `ci:release:sign` | `python-lib`, with `[ci] release = "pypi"` |
+| `ci:docs:publish` | `python-lib`, with the `mkdocs` profile |
+| `ci:test`, `ci:test:has-e2e`, `ci:test:playwright`, `ci:test:playwright-deps`, `ci:smoke`, `ci:coverage` | `node-lib` |
 | `ci:release:state`, `:author`, `:tag`, `:verify`, `:push`, `:github`, `:publish`, `:finalize`, `:latest`, and `ci:verify-release` | `node-lib`, with `[ci] release = "nx-dispatch"` |
 | `ci:docs:site` | `node-lib`, with the `mkdocs` profile |
 
-`node-lib`'s `tasks/ci.yml` also holds the internal `ci:version`, which F17.2
-moves to `node:version`.
-
-The names are not yet one grammar: some tasks say `ci:release-state` where
-others say `ci:release:state`. The target names are in
-[the design](../specs/epics/E17-task-standard/design.md#the-ci-names-after-f172).
+The names are one grammar: `ci:<stage>[:<step>]`. The first level is a stage of
+[ADR-0016](../adr/ADR-0016.md) (`validate`, `plan`, `test`, `integration`,
+`smoke`, `suites`, `sonar`, `release`, `verify-release`, `docs`) or the name of
+a CI-only check (`secret-scan`, `internal-ranges`, `adapters`); a second level
+is a step in that stage. Hyphens join words inside a level. One idea has one
+name in every archetype. `ci:coverage` is the one exception until S17.2.2.
+`node-lib`'s internal version primitive is `node:version`, in `tasks/node.yml`.
 [CI](ci.md) says which job runs each.
 
 ## The gate

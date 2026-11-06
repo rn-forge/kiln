@@ -156,7 +156,7 @@ jobs:
       - name: Review dependency changes
         uses: [[ pins["dependency-review"].uses ]]@[[ pins["dependency-review"].sha ]] # [[ pins["dependency-review"].version ]]
 {% if "secret-scan" in check_jobs %}
-  # Scans the full git history for leaked secrets (gitleaks, `task ci:lint:secrets`). A pull
+  # Scans the full git history for leaked secrets (gitleaks, `task ci:secret-scan`). A pull
   # request from a fork cannot be scanned with this checkout, so it is skipped, which
   # `checks-ok` treats as a pass.
   secret-scan:
@@ -178,7 +178,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Scan the history for secrets
-        run: task ci:lint:secrets
+        run: task ci:secret-scan
 {% endif %}{% if node_lib %}
   # Distributes lint/test/build/e2e across Nx Cloud agents (.nx/workflows/agents.yaml) when USE_NX_CLOUD=true.
   # This job excludes playwright as they are managed by Nx Cloud agents
@@ -207,7 +207,7 @@ jobs:
 
       - uses: [[ pins["nx-set-shas"].uses ]]@[[ pins["nx-set-shas"].sha ]] # [[ pins["nx-set-shas"].version ]]
 
-      - run: task ci:affected -- lint test build e2e-ci
+      - run: task ci:test -- lint test build e2e-ci
 
       # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
       - run: pnpm exec nx fix-ci
@@ -236,7 +236,7 @@ jobs:
       # Browsers are only needed when some project has an e2e target
       - name: Detect e2e projects
         id: e2e
-        run: task ci:has-e2e >> "$GITHUB_OUTPUT"
+        run: task ci:test:has-e2e >> "$GITHUB_OUTPUT"
 
       - name: Cache Playwright browsers
         if: steps.e2e.outputs.has-e2e == 'true'
@@ -246,14 +246,14 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
-      - run: task ci:playwright
+      - run: task ci:test:playwright
         if: steps.e2e.outputs.has-e2e == 'true' && steps.playwright-cache.outputs.cache-hit != 'true'
-      - run: task ci:playwright:deps
+      - run: task ci:test:playwright-deps
         if: steps.e2e.outputs.has-e2e == 'true' && steps.playwright-cache.outputs.cache-hit == 'true'
 
       - uses: [[ pins["nx-set-shas"].uses ]]@[[ pins["nx-set-shas"].sha ]] # [[ pins["nx-set-shas"].version ]]
 
-      - run: task ci:affected -- lint test build e2e
+      - run: task ci:test -- lint test build e2e
 {% if sonar %}
   # Scans one tree, so it runs after either path. Skipped for Dependabot and fork
   # pull requests: GitHub sandboxes both (no Actions secrets), so SONAR_TOKEN is
@@ -334,7 +334,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
 {% if internal_ranges_enabled %}      - name: Check internal ranges
-        run: task ci:requirements
+        run: task ci:internal-ranges
 
 {% endif %}      - name: Plan
         id: plan
@@ -441,7 +441,7 @@ jobs:
       - name: Run the suite
         env:
           SUITE_ARGS: ${{ matrix.args }}
-        run: task ci:suite
+        run: task ci:suites
 {% if sonar %}
   sonar:
     needs: [validate, test, integration, smoke, suites]

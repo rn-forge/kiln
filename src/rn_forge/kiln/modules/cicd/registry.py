@@ -110,7 +110,7 @@ CHECKS: tuple[CiCheck, ...] = (
     _std("pnpm-audit", "{stack}:lint:audit", frozenset({"node-lib"})),
     _std(
         "Nx lint, typecheck, test, build",
-        "`task node:*`, `task ci:affected`",
+        "`task node:*`, `task ci:test`",
         frozenset({"python-web-app", "node-lib"}),
     ),
     _std("pytest", "test", _PY, lib="test"),
@@ -159,7 +159,7 @@ CHECKS: tuple[CiCheck, ...] = (
         Switch.STANDARD,
         'D: `[docs] profile = "mkdocs"`',
     ),
-    _std("Package tarballs", "ci:package", frozenset({"node-lib"})),
+    _std("Package tarballs", "ci:smoke", frozenset({"node-lib"})),
     _std("ci-ok", None, _ALL),
     CiCheck(
         "licenses",
@@ -171,7 +171,7 @@ CHECKS: tuple[CiCheck, ...] = (
     ),
     CiCheck(
         "secret-scan",
-        "ci:lint:secrets",
+        "ci:secret-scan",
         _ALL,
         Switch.CONFIGURED,
         "C: `[ci.checks] secret-scan`, default `true`",
@@ -180,7 +180,7 @@ CHECKS: tuple[CiCheck, ...] = (
     ),
     CiCheck(
         "internal-ranges",
-        "ci:requirements",
+        "ci:internal-ranges",
         frozenset({"python-lib", "node-lib"}),
         Switch.DERIVED,
         "D: two or more workspace members",

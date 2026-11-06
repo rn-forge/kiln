@@ -89,7 +89,7 @@ jobs:{% if node_lib %}
       - name: Deploy the package sites and build the root site
         env:
           SITE_DIR: ${{ runner.temp }}/site
-        run: task ci:docs-publish
+        run: task ci:docs:publish
 
 {% for hook in hooks.docs %}      - name: Run [[ hook ]]
         uses: [[ hook ]] # zizmor: ignore[self-repository] actionlint rejects the $/ form

@@ -46,18 +46,18 @@ a developer has no reason to call it:
 
 | Task | What it does |
 | -- | -- |
-| `task ci:integration` | CI only: a member's tests against the service containers it declares (-- \<package>) |
-| `task ci:lint:secrets` | CI only: scan the git history for secrets with the pinned gitleaks (downloads it on first run, so it is not part of lint) |
-| `task ci:plan` | CI only: print the plan's outputs for $GITHUB_OUTPUT |
-| `task ci:release-publish` | CI only: publish the GitHub release for TAG, from the built distributions, at SOURCE_SHA |
-| `task ci:release-source` | CI only: check out the tagged source of a resumed release (with TAG), print its commit |
-| `task ci:release-state` | CI only: print the release's state for this version as $GITHUB_OUTPUT lines |
-| `task ci:smoke` | CI only: install one extra from the built wheel and import it (-- \<package> [extra]) |
-| `task ci:sonar-target` | CI only: print the Sonar branch argument for this run as a $GITHUB_OUTPUT line |
-| `task ci:suite` | CI only: run one workspace-wide pytest suite |
-| `task ci:test` | CI only: run the repository's tests (the plan's one member) |
-| `task ci:validate` | CI only: the repository-wide checks — lint, typecheck, docs build; `test` runs the tests |
-| `task ci:verify-release` | CI only: install the release from its git tag, outside the repository, and import it (-- \<tag>) |
+| `task ci:integration` | CI only: A member's tests against the service containers it declares (-- \<package>). |
+| `task ci:plan` | CI only: Print the plan's outputs for $GITHUB_OUTPUT. |
+| `task ci:release:publish` | CI only: Publish the GitHub release for TAG, from the built distributions, at SOURCE_SHA. |
+| `task ci:release:source` | CI only: Check out the tagged source of a resumed release (with TAG), print its commit. |
+| `task ci:release:state` | CI only: Print the release's state for this version as $GITHUB_OUTPUT lines. |
+| `task ci:secret-scan` | CI only: Scan the git history for secrets with the pinned gitleaks (downloads it on first run, so it is not part of lint). |
+| `task ci:smoke` | CI only: Install one extra from the built wheel and import it (-- \<package> [extra]). |
+| `task ci:sonar:target` | CI only: Print the Sonar branch argument for this run as a $GITHUB_OUTPUT line. |
+| `task ci:suites` | CI only: Run one workspace-wide pytest suite. |
+| `task ci:test` | CI only: Run the repository's tests (the plan's one member). |
+| `task ci:validate` | CI only: Run the repository-wide checks — lint, typecheck, docs build; `test` runs the tests. |
+| `task ci:verify-release` | CI only: Install the release from its git tag, outside the repository, and import it (-- \<tag>). |
 
 Every other task is `internal: true`. The root `Taskfile.yml` holds wrappers
 only: each of its commands is a `task:` call into a `tasks/*.yml` namespace.
@@ -256,7 +256,7 @@ model.
 | Docs deploy | `docs` job | D: `[docs] profile = "mkdocs"` |
 | `ci-ok` | none | S |
 | `licenses` | `task python:lint:licenses` | C: `[ci.checks] licenses`, default `true`; a table sets `deny` and `ignore` |
-| `secret-scan` | `task ci:lint:secrets` | C: `[ci.checks] secret-scan`, default `true` |
+| `secret-scan` | `task ci:secret-scan` | C: `[ci.checks] secret-scan`, default `true` |
 | `umbrella-release` | `task ci:release:umbrella` | C: `[ci.checks] umbrella-release`, default `false` |
 | `scorecard` | none | C: `[ci.checks] scorecard`, default `false`; public repositories only |
 

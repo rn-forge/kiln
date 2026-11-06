@@ -62,6 +62,42 @@ tasks:
 {% if overrides.get("node:typecheck") %}      - [[ overrides["node:typecheck"] ]]
 {% else %}      - pnpm nx run-many -t build
 {% endif %}
+{% if node_lib %}  version:
+    desc: Print the publishable projects' version, or bump it (pass -- patch|minor|major|x.y.z); the root version task runs it.
+    internal: true
+    silent: true
+    cmds:
+      - |
+        if [ -n "{{.CLI_ARGS}}" ]; then
+          pnpm exec nx release version {{.CLI_ARGS}} --git-commit=false --git-tag=false --stage-changes=false
+        else
+          node -e '
+          const fs = require("node:fs");
+          const path = require("node:path");
+          const skip = new Set(["node_modules", "dist", ".git", ".nx"]);
+          const versions = new Set();
+          const walk = (dir) => {
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const file = path.join(dir, entry.name);
+              if (entry.isDirectory()) {
+                if (!skip.has(entry.name)) walk(file);
+              } else if (entry.name === "project.json") {
+                const tags = JSON.parse(fs.readFileSync(file, "utf8")).tags ?? [];
+                if (tags.includes("publishable")) {
+                  versions.add(JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8")).version);
+                }
+              }
+            }
+          };
+          walk(".");
+          if (versions.size !== 1) {
+            console.error("::error::Expected one version across the publishable projects, found: " + ([...versions].join(", ") || "none"));
+            process.exit(1);
+          }
+          console.log([...versions][0]);
+          '
+        fi
+{% endif %}
   e2e:
     desc: Run the workspace's end-to-end tests with Nx.
     internal: true

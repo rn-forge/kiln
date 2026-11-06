@@ -427,8 +427,8 @@ planned by `kiln-devops` ([ADR-0017](../adr/ADR-0017.md)) through the public
 ([ADR-0014](../adr/ADR-0014.md)):
 
 - `ci` namespace: `ci:plan`, `ci:adapters`, `ci:test -- <package>`,
-  `ci:integration`, `ci:smoke`, `ci:suite`, `ci:release-build`,
-  `ci:release-publish` and `ci:verify-release`.
+  `ci:integration`, `ci:smoke`, `ci:suites`, `ci:release:build`,
+  `ci:release:publish` and `ci:verify-release`.
 - `python-lib` jobs, in order: `validate`, `dependency-review`, `plan`, `test`,
   `integration`, `smoke`, `suites`, `sonar`, `release`, `verify-release`,
   `ci-ok`.
@@ -480,8 +480,8 @@ The rules:
   (`actions/attest`) over each distribution and its CycloneDX SBOM, which
   `task build` writes beside them as `*.cdx.json` and lists runtime
   dependencies only. `id-token: write` and `attestations: write` are on that
-  job alone (and `python-lib` splits `ci:release` into `ci:release-build` and
-  `ci:release-publish` with the attestation between them). The release carries
+  job alone (and `python-lib` splits `ci:release` into `ci:release:build` and
+  `ci:release:publish` with the attestation between them). The release carries
   the wheels, the sdists and the `*.cdx.json`, and nothing else.
 - `UV_LOCKED: "1"` at workflow level: CI resolves the committed lockfile and
   never rewrites it.
@@ -498,7 +498,7 @@ The rules:
 - `[ci] release = "pypi"` (`python-lib` only) does everything `tag-exists` does
   and uploads each package to pypi.org by trusted publishing
   (`uv publish --trusted-publishing always`, with each wheel's and sdist's PEP
-  740 `*.publish.attestation`, which `ci:release-sign` writes) first, unless
+  740 `*.publish.attestation`, which `ci:release:sign` writes) first, unless
   pypi.org already has the version, so a published GitHub release implies the
   version is on PyPI. The package's `CHANGELOG.md` section is the release
   notes, and a per-package release is never "Latest". A `workflow_dispatch`

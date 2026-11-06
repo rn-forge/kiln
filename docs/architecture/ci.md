@@ -64,19 +64,19 @@ Job names other than `ci-ok` are not required checks, so renaming is safe.
 | `validate` (single-package Python) | lint, typecheck and the docs build, once | `task ci:validate` |
 | `validate` (`node-lib`) | what Nx does not run | `task ci:validate` |
 | `dependency-review` | pull requests only; fails on a new dependency with a known vulnerability | none: a pinned action |
-| `secret-scan` | `task ci:lint:secrets`: gitleaks over the full git history; skipped for a fork's pull request | `[ci.checks] secret-scan`, on |
+| `secret-scan` | `task ci:secret-scan`: gitleaks over the full git history; skipped for a fork's pull request | `[ci.checks] secret-scan`, on |
 | `plan` | selects changed packages and their dependents | `task ci:plan` |
 | `test` | one leg per selected package; for a single-package Python repository, `task test` | `task ci:test` |
 | `integration` | one leg per selected package declaring a service in `[tool.workspace-ci.integration.<service>]`: the task starts the containers, runs the tests, removes them | `task ci:integration` |
 | `smoke` | one leg per selected package, plus one per declared extra: the wheel installs and imports | `task ci:smoke` |
-| `suites` | the root workspace-wide pytest suites | `task ci:suite` |
-| `test-cloud`, `test-local` | `nx affected` on Nx Cloud agents, or on the runner; one runs per `USE_NX_CLOUD` | `task ci:affected` |
-| `sonar` | coverage, then the scan, waiting on the quality gate | `task ci:sonar-target`, `task test:coverage` (`python-lib`: after the check legs; `node-lib`: `task ci:coverage`) |
-| `release` | publishes from the default branch only, after `sonar` | `python-lib`: `task ci:release-build`, `task ci:release-publish`; single-package Python: `task ci:release-state`, `task build`, `task ci:release-publish`; `node-lib`: `task ci:release:*` (see below) |
+| `suites` | the root workspace-wide pytest suites | `task ci:suites` |
+| `test-cloud`, `test-local` | `nx affected` on Nx Cloud agents, or on the runner; one runs per `USE_NX_CLOUD` | `task ci:test` |
+| `sonar` | coverage, then the scan, waiting on the quality gate | `task ci:sonar:target`, `task test:coverage` (`python-lib`: after the check legs; `node-lib`: `task ci:coverage`) |
+| `release` | publishes from the default branch only, after `sonar` | `python-lib`: `task ci:release:build`, `task ci:release:publish`; single-package Python: `task ci:release:state`, `task build`, `task ci:release:publish`; `node-lib`: `task ci:release:*` (see below) |
 | `verify-release` | installs what was published, from PyPI (`[ci] release = "pypi"`) or from its git tag, into a clean venv outside the repository and imports it; `python-lib` verifies every new tag, a single-package repository the tag `release` output | `task ci:verify-release` (`kiln-devops verify-release`) |
-| `smoke` (`node-lib`) | packs and verifies publishable tarballs | `task ci:package` |
+| `smoke` (`node-lib`) | packs and verifies publishable tarballs | `task ci:smoke` |
 | `umbrella` (`[ci.checks] umbrella-release`) | creates one GitHub release `release-<n>` per shipped release page that has none, on a push to `main` after `checks-ok` and unless `release` failed; a skipped `release` still lets it run, so a push that only marks a page `shipped` releases it | `task ci:release:umbrella` (`kiln-devops umbrella`) |
-| `docs` | deploys Pages once, on a push to the default branch, after `checks-ok` and each of `release` and `verify-release` that is rendered; a skipped release stage still lets it deploy, a failed or cancelled one does not | `python-lib`: `task ci:docs-publish`; single-package Python: `task docs:build`; `node-lib`: `task docs:build`, `task ci:docs:site` |
+| `docs` | deploys Pages once, on a push to the default branch, after `checks-ok` and each of `release` and `verify-release` that is rendered; a skipped release stage still lets it deploy, a failed or cancelled one does not | `python-lib`: `task ci:docs:publish`; single-package Python: `task docs:build`; `node-lib`: `task docs:build`, `task ci:docs:site` |
 | `checks-ok` | the pre-release barrier: every job that runs before `release` passed or was skipped | none |
 | `ci-ok` | `checks-ok`, and every job after it, passed or was skipped | none |
 
@@ -85,15 +85,15 @@ Job names other than `ci-ok` are not required checks, so renaming is safe.
 | Stage | `python-lib` | `python-tool`, `python-app` | `python-web-api`, `python-web-app` | `node-lib` |
 | -- | -- | -- | -- | -- |
 | `validate` | `task lint`, `task ci:adapters`, `task docs:build` | `task validate` | `task validate` | `task ci:validate` |
-| `plan` | `task ci:plan` | `task ci:plan` (one unit) | `task ci:plan` (one unit) | n/a: Nx computes the affected graph inside `ci:affected` |
-| `test` | `task ci:test`, a leg per package | `task ci:test` | `task ci:test`; `python-web-app` adds `task node:*` | `task ci:affected` (`test-cloud` or `test-local`) |
+| `plan` | `task ci:plan` | `task ci:plan` (one unit) | `task ci:plan` (one unit) | n/a: Nx computes the affected graph inside `ci:test` |
+| `test` | `task ci:test`, a leg per package | `task ci:test` | `task ci:test`; `python-web-app` adds `task node:*` | `task ci:test` (`test-cloud` or `test-local`) |
 | `integration` | `task ci:integration`, a leg per package with services | `task ci:integration` when declared | `task ci:integration` when declared | n/a |
-| `smoke` | `task ci:smoke`, a leg per package and declared extra | `task ci:smoke` | `task ci:smoke` | `task ci:package` |
-| `suites` | `task ci:suite` | `task ci:suite` when declared | `task ci:suite` when declared | n/a |
-| `sonar` | `task ci:sonar-target`, `task test:coverage` | the same | the same | `task ci:sonar-target`, `task ci:coverage` |
-| `release` | `task ci:release-build`, `task ci:release-publish` | `task ci:release-state`, `task build`, `task ci:release-publish` | the same | `task ci:release:*` |
+| `smoke` | `task ci:smoke`, a leg per package and declared extra | `task ci:smoke` | `task ci:smoke` | `task ci:smoke` |
+| `suites` | `task ci:suites` | `task ci:suites` when declared | `task ci:suites` when declared | n/a |
+| `sonar` | `task ci:sonar:target`, `task test:coverage` | the same | the same | `task ci:sonar:target`, `task ci:coverage` |
+| `release` | `task ci:release:build`, `task ci:release:publish` | `task ci:release:state`, `task build`, `task ci:release:publish` | the same | `task ci:release:*` |
 | `verify-release` | `task ci:verify-release` | `task ci:verify-release` | `task ci:verify-release` | `task ci:verify-release` |
-| `docs` | `task ci:docs-publish` | `task docs:build`, then the Pages deploy | the same | `task docs:build`, `task ci:docs:site`, then the Pages deploy |
+| `docs` | `task ci:docs:publish` | `task docs:build`, then the Pages deploy | the same | `task docs:build`, `task ci:docs:site`, then the Pages deploy |
 
 - `verify-release` installs from the registry the release went to (PyPI with
   `[ci] release = "pypi"`, the git tag with `tag-exists`, the release tarballs
@@ -183,7 +183,7 @@ checks" in `.rn-forge/kiln/standard.md`.
 | zizmor, actionlint | `task lint` | yes | yes | yes | yes | yes | yes | S |
 | `pip-audit` | `task lint` | yes | yes | yes | yes | yes |  | S; ignore list `[tasks.audit] ignore` |
 | `pnpm-audit` | `task node:lint:audit` |  |  |  |  |  | yes | S |
-| Nx lint, typecheck, test, build | `task node:*`, `task ci:affected` |  |  |  |  | yes | yes | S |
+| Nx lint, typecheck, test, build | `task node:*`, `task ci:test` |  |  |  |  | yes | yes | S |
 | pytest | `task test` | test | yes | yes | yes | yes |  | S |
 | Services, smoke, suites | `task ci:*` | yes |  |  |  |  |  | D: a package declares them |
 | Adapters check | `task ci:adapters` | yes |  |  |  |  |  | S |
@@ -193,11 +193,11 @@ checks" in `.rn-forge/kiln/standard.md`.
 | Release | `release` job | yes | yes | yes | yes | yes | yes | C: `[ci] release`, default `tag-exists`; `pypi` for `python-lib`; `nx-dispatch` for `node-lib`; `none` |
 | `verify-release` | `task ci:verify-release` | yes | yes | yes | yes | yes | yes | D: a release mode other than `none` |
 | Docs deploy | `docs` job | yes | yes | yes | yes | yes | yes | D: `[docs] profile = "mkdocs"` |
-| Package tarballs | `task ci:package` |  |  |  |  |  | yes | S |
+| Package tarballs | `task ci:smoke` |  |  |  |  |  | yes | S |
 | `ci-ok` | none | yes | yes | yes | yes | yes | yes | S |
 | `licenses` | `task python:lint:licenses`; `node-lib`: `task node:lint:licenses` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] licenses`, default `true`; a table sets `deny` and `ignore` |
-| `secret-scan` | `task ci:lint:secrets` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] secret-scan`, default `true` |
-| `internal-ranges` | `task ci:requirements` | yes |  |  |  |  | yes | D: two or more workspace members |
+| `secret-scan` | `task ci:secret-scan` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] secret-scan`, default `true` |
+| `internal-ranges` | `task ci:internal-ranges` | yes |  |  |  |  | yes | D: two or more workspace members |
 | `umbrella-release` | `task ci:release:umbrella` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] umbrella-release`, default `false` |
 | `scorecard` | none | yes | yes | yes | yes | yes | yes | C: `[ci.checks] scorecard`, default `false`; public repositories only |
 
@@ -288,21 +288,20 @@ project, so `plan` selects that member or nothing, and they run the same `test`,
   `python-web-app` keep the API package under `api_dir`. A change under
   `docs/` alone selects nothing.
 - `release` waits for `plan` and `checks-ok`. A single-package repository builds
-  with `task build` and publishes with `task ci:release-publish`, after
-  `task ci:release-state` decides whether the version is new; `python-lib`
+  with `task build` and publishes with `task ci:release:publish`, after
+  `task ci:release:state` decides whether the version is new; `python-lib`
   releases each selected package in dependency order.
 - `docs` deploys Pages once, after `checks-ok`, `release` and `verify-release`.
 
 ### `node-lib`
 
 `validate` runs `task ci:validate`; `test-cloud` or `test-local` runs
-`task ci:affected` (Nx's lint, typecheck, test and build on the affected
-projects); `sonar` and `smoke` wait for one of them, and `smoke` packs and
-verifies the publishable tarballs; `docs` builds the site after `checks-ok`,
-`release` and `verify-release`. `checks-ok` and `ci-ok` share one macro (no
-`jq`): a failed or cancelled need fails them, and the inactive one of
-`test-cloud` and `test-local` is skipped, which passes. Sonar is skipped for
-Dependabot's pull requests.
+`task ci:test` (Nx's lint, typecheck, test and build on the affected projects);
+`sonar` and `smoke` wait for one of them, and `smoke` packs and verifies the
+publishable tarballs; `docs` builds the site after `checks-ok`, `release` and
+`verify-release`. `checks-ok` and `ci-ok` share one macro (no `jq`): a failed or
+cancelled need fails them, and the inactive one of `test-cloud` and `test-local`
+is skipped, which passes. Sonar is skipped for Dependabot's pull requests.
 
 The `node-lib` `release` runs on a push to the default branch, after `checks-ok`
 only (the inactive one of `test-cloud` and `test-local` is skipped, so the
@@ -399,7 +398,7 @@ A newer push to the same pull request cancels the run in progress. Pushes to
 | `smoke`, one per selected package with no extra, plus one per declared extra | the built wheel, with no extra or with that one extra, installs into a clean venv and imports | selected | selected | every package and declared extra |
 | `suites` | the root `[tool.workspace-ci.suites]` pytest runs | always, all suites | always | always |
 | `sonar` | whole-workspace coverage, then the scan, waiting on the quality gate | runs; skipped for a fork's pull request | runs, on branch `main` | runs, on the dispatched branch |
-| `release` | each selected package whose checks passed is built with its SBOM (`task ci:release-build`), attested, then published (`task ci:release-publish`) as `<package>-v<version>`, after `sonar` passed | skipped | builds and publishes | skipped |
+| `release` | each selected package whose checks passed is built with its SBOM (`task ci:release:build`), attested, then published (`task ci:release:publish`) as `<package>-v<version>`, after `sonar` passed | skipped | builds and publishes | skipped |
 | `verify-release` | each new release installs from PyPI or its git tag, outside the repository, and imports; a single-package repository runs it only when `release` published (its `tag` output is not empty) | skipped | runs | skipped |
 | `docs` | each package tagged at this commit deployed with `mike`, then the root site plus `packages/` to Pages; `[ci.hooks] docs` actions run before the upload | skipped | runs | skipped |
 | `checks-ok` | the pre-release barrier: `validate`, `dependency-review`, `plan`, `test`, `integration`, `smoke`, `suites`, `sonar`, `secret-scan`, and the checks and required jobs, none failed or cancelled | runs | runs | runs |
@@ -441,8 +440,8 @@ validate ─► plan ─┬─► test ────────┐
 - Releases follow version bumps. A tag that is already published is skipped; a
   draft is rebuilt from its tag and replaced. A merge that changes a package
   without bumping its version re-verifies it and publishes nothing.
-- With `[ci] release = "pypi"`, `release-publish` uploads a package's wheel and
-  sdist, with their PEP 740 attestations, to PyPI before it creates that
+- With `[ci] release = "pypi"`, `ci:release:publish` uploads a package's wheel
+  and sdist, with their PEP 740 attestations, to PyPI before it creates that
   package's GitHub release, unless PyPI already has the version. A rerun
   resumes: what PyPI and GitHub have is skipped. A dispatch with `testpypi`
   set builds every releasable package from `HEAD`, uploads each to TestPyPI,
