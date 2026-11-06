@@ -48,7 +48,7 @@ tasks:
 {% endif %}{% for ref in extra_refs.get("validate", []) %}      - task: [[ ref ]]
 {% endfor %}
   lint:
-    desc: {% if node_lib %}Every lint — Nx projects, Markdown and TOML formatting, kiln's checks, workflow security.{% else %}Every lint — Python, imports, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs), workflow security, dependency vulnerabilities.{% endif %}
+    desc: Every lint — {% if node_lib %}Nx projects, Markdown and TOML formatting, kiln's checks{% elif web_app %}Python, imports, the frontend's Nx lint, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs){% else %}Python, imports, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs){% endif %}, workflow security, dependency vulnerabilities{% if licenses_enabled %}, dependency licences{% endif %}.
     cmds:
 {% if not node_lib %}      - task: python:lint
       - task: python:lint:imports
@@ -72,21 +72,21 @@ tasks:
 {% for ref in extra_refs.get("format", []) %}      - task: [[ ref ]]
 {% endfor %}
   typecheck:
-    desc: {% if node_lib %}Type-check every project through its Angular build.{% elif web_app %}Type-check the API in pyright strict mode and the frontend through its Angular build.{% else %}Static type-check the package in pyright strict mode.{% endif %}
+    desc: {% if node_lib %}Type-check every project through its Angular build.{% elif web_app %}Type-check the API in pyright strict mode and the frontend through its Angular build.{% elif workspace %}Type-check each package in pyright strict mode.{% else %}Static type-check the package in pyright strict mode.{% endif %}
     cmds:
 {% if not node_lib %}      - task: python:typecheck
 {% endif %}{% if node %}      - task: node:typecheck
 {% endif %}{% for ref in extra_refs.get("typecheck", []) %}      - task: [[ ref ]]
 {% endfor %}
   test:
-    desc: {% if node_lib %}Run every project's tests with Nx.{% elif web_app %}Run the API's pytest suite and the frontend's tests.{% else %}Run the pytest suite.{% endif %}
+    desc: {% if node_lib %}Run every project's tests with Nx.{% elif web_app %}Run the API's pytest suite and the frontend's tests.{% elif workspace %}Run each package's pytest suite.{% else %}Run the pytest suite.{% endif %}
     cmds:
 {% if not node_lib %}      - task: python:test
 {% endif %}{% if node %}      - task: node:test
 {% endif %}{% for ref in extra_refs.get("test", []) %}      - task: [[ ref ]]
 {% endfor %}
   test:coverage:
-    desc: {% if node_lib %}Run every project's tests, writing lcov reports to coverage/.{% elif web_app %}Run both test suites with coverage reports (used by CI/Sonar).{% else %}Run the pytest suite with an XML coverage report (used by CI/Sonar).{% endif %}
+    desc: {% if node_lib %}Run every project's tests, writing lcov reports to coverage/.{% elif web_app %}Run both test suites with coverage reports (used by CI/Sonar).{% elif workspace %}Run each package's tests with coverage, combined into one XML report (used by CI/Sonar).{% else %}Run the pytest suite with an XML coverage report (used by CI/Sonar).{% endif %}
     cmds:
 {% if not node_lib %}      - task: python:test:coverage
 {% endif %}{% if node %}      - task: node:test

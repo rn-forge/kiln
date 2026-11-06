@@ -241,6 +241,20 @@ def _verb_cell(verb: str | None, stack: str) -> str:
     return f"`task {verb.format(stack=stack)}`"
 
 
+def _verb_cell_all(check: CiCheck) -> str:
+    if check.verb is None or "{stack}" not in check.verb:
+        return _verb_cell(check.verb, "python")
+    stacks = {"node" if a == "node-lib" else "python" for a in check.archetypes}
+    if stacks == {"node"}:
+        return _verb_cell(check.verb, "node")
+    if stacks == {"python"}:
+        return _verb_cell(check.verb, "python")
+    return (
+        f"{_verb_cell(check.verb, 'python')}; "
+        f"`node-lib`: {_verb_cell(check.verb, 'node')}"
+    )
+
+
 def _table(header: list[str], rows: list[list[str]]) -> str:
     lines = [
         "| " + " | ".join(header) + " |",
@@ -261,7 +275,7 @@ def render_matrix(archetype: str | None) -> str:
         rows = [
             [
                 _name_cell(c.name),
-                _verb_cell(c.verb, "python"),
+                _verb_cell_all(c),
                 *(
                     c.cells.get(a, "yes") if a in c.archetypes else ""
                     for _, a in COLUMNS

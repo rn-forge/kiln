@@ -38,46 +38,20 @@ is a kiln ADR; this file states the rule.
 `mkdocs`, `pnpm`, `npx`, `nx`, `ng` or `kiln`{% else %}`uv`,
 `pytest`, `ruff`, `pyright`, `mkdocs` or `kiln`{% endif %} directly.
 
-The public surface for this repo is exactly:
+The developer surface for this repo is exactly:
 
-{% if workspace %}| Verb                  | What it does                                          |
-| --------------------- | ----------------------------------------------------- |
-| `task setup`          | sync the whole workspace with the dev and docs groups |
-| `task validate`       | lint → typecheck → test{% if docs %} → docs build{% else %}             {% endif %}                  |
-| `task lint`           | every lint                                            |
-| `task format`         | format every package in place                         |
-| `task typecheck`      | pyright, strict, per package                          |
-| `task test`           | pytest, per package                                   |
-| `task test:coverage`  | the workspace's tests with an XML coverage report     |
-| `task build`          | one package's wheel and sdist, or every package's     |
-| `task clean`          | remove build outputs and caches                       |
-| `task version`        | one package's version, or every package's             |
-{% if docs %}| `task docs:build`     | strict MkDocs build into `.docs-site/`                |
-{% endif %}{% if docs %}| `task docs:serve`     | live-reload docs on `127.0.0.1:8080`                  |
-{% endif %}{% if docs %}| `task docs:generate`  | regenerate the docs' derived regions                  |
-{% endif %}{% else %}| Verb                | What it does                                        |
-| ------------------- | --------------------------------------------------- |
-| `task setup`        | sync the venv with the dev and docs groups          |
-| `task validate`     | lint → typecheck → test{% if docs %} → docs build{% else %}             {% endif %}                |
-| `task lint`         | every lint                                          |
-| `task format`       | format in place                                     |
-{% if node_lib %}| `task typecheck`    | Type-check every project through its Angular build. |
-| `task test`         | Run every project's tests with Nx.                  |
-| `task test:coverage`| Run every project's tests, writing lcov reports to coverage/. |
-| `task build`        | Build every project with Nx.                        |
-{% else %}| `task typecheck`    | pyright, strict                                     |
-| `task test`         | pytest                                              |
-| `task test:coverage`| pytest with an XML coverage report                  |
-| `task build`        | wheel and sdist into `dist/`                        |
-{% endif %}| `task clean`        | remove build outputs and caches                     |
-| `task version`      | print the version from `pyproject.toml`             |
-{% if docs %}| `task docs:build`   | strict MkDocs build into `.docs-site/`              |
-{% endif %}{% if docs %}| `task docs:serve`   | live-reload docs on `127.0.0.1:8080`                |
-{% endif %}{% if docs %}| `task docs:generate`| regenerate the docs' derived regions                |
-{% endif %}{% if web %}| `task api:dev`      | run the API dev server on port 8000                 |
-{% endif %}{% if web and backend == "django" %}| `task api:migrate`  | apply the API's Django migrations                   |
-{% endif %}{% if web_app %}| `task web:dev`      | run the frontend dev server via Nx, proxying `/v1` to `api:dev` |
-{% endif %}{% endif %}
+| Verb | What it does |
+| -- | -- |
+{% for t in developer_tasks %}| `task {{ t.name }}` | {{ t.desc | md_cell }} |
+{% endfor %}
+The CI surface, `ci:*`, is public only because a workflow step runs it from
+the command line, which go-task refuses for an internal task. It is CI's;
+a developer has no reason to call it:
+
+| Task | What it does |
+| -- | -- |
+{% for t in ci_tasks %}| `task {{ t.name }}` | {{ t.desc | md_cell }} |
+{% endfor %}
 {% if web_app %}**Frontend:** `{{ frontend }}`, managed by pnpm + Nx. Its one application is the
 Nx project at `{{ web_dir }}` (project `{{ web_project }}`). Every file the
 frontend scaffold wrote is repo-owned; kiln renders nothing under
@@ -87,7 +61,7 @@ frontend scaffold wrote is repo-owned; kiln renders nothing under
 {% endif %}{% if workspace %}`build` and `version` take a package name after `--`
 (`task version -- {{ packages[0] if packages else "<package>" }}`); given none, they act on every member.
 
-{% endif %}`kiln:diff` and `kiln:apply` are public too. Every other task is `internal: true`. The root `Taskfile.yml` holds wrappers
+{% endif %}Every other task is `internal: true`. The root `Taskfile.yml` holds wrappers
 only: each of its commands is a `task:` call into a `tasks/*.yml` namespace.
 `kiln doctor`'s `task-layout` check enforces both halves of that, and fails if
 any gate stops being reachable from `validate`.

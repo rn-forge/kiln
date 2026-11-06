@@ -280,3 +280,38 @@ def test_s4_12_1_6_required_validate_names_the_docs_tasks(tmp_path, name: str) -
     required = archetypes.for_config(KilnConfig.load(tmp_path)).required_validate
     assert "docs:build" in required
     assert not [t for t in required if t.startswith(("docs:lint", "quality:lint:docs"))]
+
+
+def _gate(tmp_path, archetype: str, extra: str = "") -> list[str]:
+    lines = [
+        "schema_version = 1",
+        "",
+        "[repository]",
+        'name = "demo"',
+        f'archetype = "{archetype}"',
+    ]
+    if archetype in WEB_ARCHETYPES:
+        lines += ["", f'[archetype."{archetype}"]', 'backend = "fastapi"']
+        if archetype == "python-web-app":
+            lines.append('frontend = "angular"')
+    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True, exist_ok=True)
+    config.write_text("\n".join(lines) + "\n" + extra, encoding="utf-8")
+    return archetypes.for_config(KilnConfig.load(tmp_path)).required_validate
+
+
+def test_s17_1_3_1_licences_in_the_gate(tmp_path) -> None:
+    assert "python:lint:licenses" in _gate(tmp_path / "on", "python-tool")
+    off = _gate(tmp_path / "off", "python-tool", "\n[ci.checks]\nlicenses = false\n")
+    assert "python:lint:licenses" not in off
+
+
+def test_s17_1_3_2_node_lib_gate(tmp_path) -> None:
+    required = _gate(tmp_path, "node-lib")
+    for task in ("node:lint:audit", "node:typecheck", "node:lint:licenses"):
+        assert task in required
+    assert "python:lint:licenses" not in required
+
+
+def test_s17_1_3_3_web_app_typecheck(tmp_path) -> None:
+    assert "node:typecheck" in _gate(tmp_path, "python-web-app")

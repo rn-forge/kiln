@@ -49,6 +49,10 @@ tasks:
     desc: Audit dependencies
     cmds: [pip-audit]
     internal: true
+  lint:licenses:
+    desc: Check licences
+    cmds: [pip-licenses]
+    internal: true
   typecheck:
     desc: Typecheck
     cmds: [pyright src]
@@ -85,6 +89,7 @@ GATE_REFS = "\n".join(
         "python:lint:imports",
         "ci:lint:workflows",
         "python:lint:audit",
+        "python:lint:licenses",
         "quality:lint:markdown",
         "quality:lint:toml",
         "python:typecheck",

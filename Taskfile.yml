@@ -42,7 +42,7 @@ tasks:
       - task: docs:build
 
   lint:
-    desc: Every lint — Python, imports, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs), workflow security, dependency vulnerabilities.
+    desc: Every lint — Python, imports, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs), workflow security, dependency vulnerabilities, dependency licences.
     cmds:
       - task: python:lint
       - task: python:lint:imports

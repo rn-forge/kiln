@@ -18,8 +18,9 @@ from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.docs import DOCS, generate
 from rn_forge.kiln.modules.instructions import INSTRUCTIONS
-from rn_forge.kiln.modules.instructions.artifacts import KILN_BLOCK
+from rn_forge.kiln.modules.instructions.artifacts import KILN_BLOCK, md_cell
 from rn_forge.kiln.modules.instructions.scaffold import scaffold
+from rn_forge.kiln.modules.tasks import surface
 
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
 
@@ -761,3 +762,96 @@ def test_s15_7_2_1_standard_states_repository_workflows(
     assert sentence in " ".join(_rendered(root)[STANDARD].split())
     node = _rendered(_root(tmp_path / "node", "node-lib"))[STANDARD]
     assert sentence in " ".join(node.split())
+
+
+# S17.1.5 — the standard's task tables are generated from the task files.
+
+SURFACE_CELLS = (
+    ("python-app", ""),
+    ("python-tool", ""),
+    ("python-lib", ""),
+    ("node-lib", ""),
+    ("python-web-api", ""),
+    ("python-web-app", 'frontend = "angular"'),
+)
+
+
+def _surface_root(tmp_path: Path, archetype: str, frontend: str) -> Path:
+    if archetype.startswith("python-web"):
+        extra = f'\n[archetype."{archetype}"]\nbackend = "fastapi"\n{frontend}\n'
+        _write_config(tmp_path, archetype, docs_extra=extra)
+        return tmp_path
+    return _root(tmp_path, archetype)
+
+
+def _tables(standard: str) -> tuple[str, str]:
+    section = _section(standard, 1)
+    developer, _, rest = section.partition("The CI surface")
+    ci, _, _ = rest.partition("Every other task is")
+    return developer, ci
+
+
+@pytest.mark.parametrize(("archetype", "frontend"), SURFACE_CELLS)
+def test_s17_1_5_2_developer_table(
+    tmp_path: Path, archetype: str, frontend: str
+) -> None:
+    root = _surface_root(tmp_path, archetype, frontend)
+    standard = _rendered(root)[STANDARD]
+    developer, _ = _tables(standard)
+    public = surface.public_tasks(KilnConfig.load(root))
+    rows = [t for t in public if not t.name.startswith("ci:")]
+    assert rows
+    for t in rows:
+        assert f"| `task {t.name}` | {md_cell(t.desc)} |" in developer
+    assert "The public surface for this repo is exactly" not in standard
+    assert "The developer surface for this repo is exactly:" in standard
+
+
+@pytest.mark.parametrize(("archetype", "frontend"), SURFACE_CELLS)
+def test_s17_1_5_3_ci_table(tmp_path: Path, archetype: str, frontend: str) -> None:
+    root = _surface_root(tmp_path, archetype, frontend)
+    standard = _rendered(root)[STANDARD]
+    developer, ci = _tables(standard)
+    public = surface.public_tasks(KilnConfig.load(root))
+    rows = [t for t in public if t.name.startswith("ci:")]
+    assert rows
+    for t in rows:
+        assert f"| `task {t.name}` | {md_cell(t.desc)} |" in ci
+        assert f"`task {t.name}`" not in developer
+    if archetype == "node-lib":
+        (state,) = (t for t in rows if t.name == "ci:release:state")
+        assert "|" in state.desc
+        assert md_cell(state.desc) != state.desc
+        assert (
+            f"| `task ci:release:state` | {state.desc.replace('|', chr(92) + '|')} |"
+            in ci
+        )
+
+
+@pytest.mark.parametrize(("archetype", "frontend"), SURFACE_CELLS)
+def test_s17_1_5_4_internal_sentence(
+    tmp_path: Path, archetype: str, frontend: str
+) -> None:
+    root = _surface_root(tmp_path, archetype, frontend)
+    section = _section(_rendered(root)[STANDARD], 1)
+    sentence = "Every other task is `internal: true`"
+    assert sentence in section
+    assert "`kiln:diff` and `kiln:apply` are public too" not in section
+    assert section.index(sentence) > section.rindex("\n| `task ")
+
+
+@pytest.mark.parametrize(("archetype", "frontend"), SURFACE_CELLS)
+def test_s17_1_5_5_task_tables_are_mdformat_clean(
+    tmp_path: Path, archetype: str, frontend: str
+) -> None:
+    root = _surface_root(tmp_path / "repo", archetype, frontend)
+    out = tmp_path / "out"
+    out.mkdir()
+    developer, ci = _tables(_rendered(root)[STANDARD])
+    tables = "\n\n".join(
+        "\n".join(line for line in part.splitlines() if line.startswith("|"))
+        for part in (developer, ci)
+    )
+    (out / "tables.md").write_text(tables + "\n", encoding="utf-8")
+    result = _mdformat_check(out)
+    assert result.returncode == 0, result.stdout + result.stderr

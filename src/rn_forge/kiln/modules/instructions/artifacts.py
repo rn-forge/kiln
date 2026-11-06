@@ -15,8 +15,9 @@ from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd import registry
 from rn_forge.kiln.modules.cicd.config import CiConfig
 from rn_forge.kiln.modules.docs.config import DocsConfig
+from rn_forge.kiln.modules.tasks.surface import public_tasks
 
-__all__ = ["KILN_BLOCK", "context", "render"]
+__all__ = ["KILN_BLOCK", "context", "md_cell", "render"]
 
 KILN_BLOCK = ManagedBlock("rn-forge kiln", comment="<!--")
 """kiln's fenced block in the repo's `CLAUDE.md`."""
@@ -72,6 +73,19 @@ def _paragraph(text: str) -> str:
             line = f"{line} {token}" if line else token
     lines.append(line)
     return "\n".join(lines)
+
+
+_CELL_ESCAPE = re.compile(r"(`[^`]*`)|([<*])")
+
+
+def md_cell(text: str) -> str:
+    """*text* as the content of one Markdown table cell.
+
+    A pipe is escaped everywhere; `<` and `*` are escaped outside a code span,
+    as mdformat writes them.
+    """
+    escaped = _CELL_ESCAPE.sub(lambda m: m.group(1) or f"\\{m.group(2)}", text)
+    return escaped.replace("|", "\\|")
 
 
 def context(config: KilnConfig) -> dict[str, object]:
@@ -151,8 +165,11 @@ def context(config: KilnConfig) -> dict[str, object]:
             f"**Docs:** external, at [docs]({docs.external_url if isinstance(docs, DocsConfig) else ''})."
         ),
     }
+    public = public_tasks(config)
     return {
         **bullets,
+        "developer_tasks": [t for t in public if not t.name.startswith("ci:")],
+        "ci_tasks": [t for t in public if t.name.startswith("ci:")],
         "ci_matrix": registry.render_matrix(config.archetype),
         "kiln_version": __version__,
         "name": config.name,
@@ -179,6 +196,7 @@ def context(config: KilnConfig) -> dict[str, object]:
 def render(config: KilnConfig) -> list[Artifact]:
     """Render the kiln block in `CLAUDE.md` and `.rn-forge/kiln/standard.md`."""
     engine = TemplateEngine.cached(package=_PACKAGE)
+    engine.environment.filters["md_cell"] = md_cell
     values = context(config)
     return render_artifacts(
         engine,

@@ -24,6 +24,7 @@ from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.tasks import TASKS
+from rn_forge.kiln.modules.tasks.artifacts import render
 from rn_forge.kiln.modules.tasks.config import ROOT_VERBS, TasksConfig
 from rn_forge.kiln.modules.tasks.checks import layout
 
@@ -1150,17 +1151,15 @@ def test_s4_11_5_5_the_default_config_has_an_empty_list() -> None:
     assert TasksConfig().audit.ignore == []
 
 
-def test_s4_11_5_6_command_override_is_accepted(tmp_path: Path) -> None:
+def test_s4_11_5_6_command_override_is_refused(tmp_path: Path) -> None:
     root = _root(
         tmp_path,
         extra=(
             '\n[tasks]\n[tasks.command_overrides]\n"python:lint:audit" = "echo hi"\n'
         ),
     )
-    cycle.apply(root, home=tmp_path / "home")
-    _, python = _rendered_yaml(root)
-    assert python["lint:audit"]["cmds"] == ["echo hi"]
-    assert "--ignore-vuln" not in YamlUtils.serialize(python["lint:audit"])
+    with pytest.raises(AppException, match="python:lint:audit: unknown task"):
+        TASKS.artifacts(KilnConfig.load(root), root)
 
 
 @pytest.mark.parametrize("name", [n for n in archetypes.shipped() if n != "node-lib"])
@@ -1942,7 +1941,9 @@ def test_s4_12_4_6_the_wrappers_call_python_in_place(
     ]
 
 
-@pytest.mark.parametrize("new", PYTHON_OLD_KEYS.values())
+@pytest.mark.parametrize(
+    "new", [n for n in PYTHON_OLD_KEYS.values() if n != "python:lint:audit"]
+)
 def test_s4_12_4_7_overrides_take_the_new_keys(tmp_path: Path, new: str) -> None:
     root = _root(
         tmp_path,
@@ -2723,7 +2724,7 @@ PYTHON_DESCS = {
     "lint": (
         "Every lint — Python, imports, Markdown and TOML formatting, kiln's checks "
         "(generated files, task layout, CI, dependencies, docs), workflow security, "
-        "dependency vulnerabilities."
+        "dependency vulnerabilities, dependency licences."
     ),
     "format": "Format Python code, TOML and Markdown prose in place.",
     "typecheck": "Static type-check the package in pyright strict mode.",
@@ -2738,7 +2739,7 @@ NODE_LIB_DESCS = {
     "setup": "Install the pnpm workspace and the docs tooling.",
     "lint": (
         "Every lint — Nx projects, Markdown and TOML formatting, kiln's checks, "
-        "workflow security."
+        "workflow security, dependency vulnerabilities, dependency licences."
     ),
     "format": "Format TOML and Markdown prose in place.",
     "typecheck": "Type-check every project through its Angular build.",
@@ -2752,6 +2753,11 @@ NODE_LIB_DESCS = {
 }
 WEB_APP_DESCS = {
     **PYTHON_DESCS,
+    "lint": (
+        "Every lint — Python, imports, the frontend's Nx lint, Markdown and TOML "
+        "formatting, kiln's checks (generated files, task layout, CI, dependencies, "
+        "docs), workflow security, dependency vulnerabilities, dependency licences."
+    ),
     "typecheck": (
         "Type-check the API in pyright strict mode and the frontend through its "
         "Angular build."
@@ -2802,6 +2808,12 @@ def test_s9_2_9_5_python_lib_keeps_its_descs(tmp_path: Path) -> None:
             "or every package's."
         ),
         "version": "Print one package's version (pass -- <package>), or every package's.",
+        "typecheck": "Type-check each package in pyright strict mode.",
+        "test": "Run each package's pytest suite.",
+        "test:coverage": (
+            "Run each package's tests with coverage, combined into one XML report "
+            "(used by CI/Sonar)."
+        ),
     }
     assert _descs(root) == expected
 
@@ -3147,3 +3159,145 @@ def _applied(tmp_path: Path, archetype: str) -> Path:
     root = _root(tmp_path, archetype)
     cycle.apply(root, home=tmp_path / "home")
     return root
+
+
+# S17.1.2 — the audit takes no override key.
+
+
+def test_s17_1_2_1_audit_override_is_refused(tmp_path: Path) -> None:
+    root = _root(
+        tmp_path,
+        extra='\n[tasks]\n[tasks.command_overrides]\n"python:lint:audit" = "true"\n',
+    )
+    with pytest.raises(AppException) as raised:
+        render(KilnConfig.load(root))
+    assert "tasks.command_overrides.python:lint:audit: unknown task" in str(
+        raised.value
+    )
+
+
+GUARDED = (
+    "python:lint:audit",
+    "python:lint:licenses",
+    "node:lint:audit",
+    "node:lint:licenses",
+    "ci:lint:secrets",
+    "ci:requirements",
+)
+
+
+@pytest.mark.parametrize(
+    ("archetype", "extra"),
+    [(a, "") for a in (*ARCHETYPES, "node-lib")] + list(WEB_CELLS),
+)
+def test_s17_1_2_2_no_guarded_check_is_overridable(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    bad = '\n[tasks]\n[tasks.command_overrides]\n"x:y" = "true"\n'
+    if archetype in WEB_CELLS[0] or archetype == "python-web-app":
+        root = _web_root(tmp_path, archetype, "fastapi", extra=extra + bad)
+    else:
+        root = _root(tmp_path, archetype, extra=bad)
+    with pytest.raises(AppException) as raised:
+        render(KilnConfig.load(root))
+    listed = str(raised.value).split("this archetype renders", 1)[1]
+    names = {n.strip() for n in listed.split(",")}
+    assert names.isdisjoint(GUARDED)
+
+
+def test_s17_1_2_3_primitives_stay_overridable(tmp_path: Path) -> None:
+    root = _root(
+        tmp_path,
+        extra=(
+            '\n[tasks]\n[tasks.command_overrides]\n"python:lint:imports" = "echo hi"\n'
+        ),
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    _, python = _rendered_yaml(root)
+    assert python["lint:imports"]["cmds"] == ["echo hi"]
+
+
+def test_s17_1_3_4_unreachable_licences_is_a_finding(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    taskfile = root / "Taskfile.yml"
+    line = "      - task: python:lint:licenses\n"
+    text = taskfile.read_text(encoding="utf-8")
+    assert line in text
+    taskfile.write_text(text.replace(line, ""), encoding="utf-8")
+    findings = TASKS.checks(KilnConfig.load(root), root)
+    assert any(
+        f.code == "gate.shrunk" and "python:lint:licenses" in str(f) for f in findings
+    )
+
+
+# S17.1.4 — descriptions say what runs.
+
+LINT_TAIL = "workflow security, dependency vulnerabilities"
+LINT_PYTHON = (
+    "Every lint — Python, imports, Markdown and TOML formatting, kiln's checks "
+    "(generated files, task layout, CI, dependencies, docs), " + LINT_TAIL
+)
+LINT_WEB_APP = (
+    "Every lint — Python, imports, the frontend's Nx lint, Markdown and TOML "
+    "formatting, kiln's checks (generated files, task layout, CI, dependencies, "
+    "docs), " + LINT_TAIL
+)
+LINT_NODE_LIB = (
+    "Every lint — Nx projects, Markdown and TOML formatting, kiln's checks, "
+    + LINT_TAIL
+)
+LINT_CELLS = (
+    ("python-app", LINT_PYTHON),
+    ("python-tool", LINT_PYTHON),
+    ("python-lib", LINT_PYTHON),
+    ("python-web-api", LINT_PYTHON),
+    ("python-web-app", LINT_WEB_APP),
+    ("node-lib", LINT_NODE_LIB),
+)
+
+
+def _lint_root(tmp_path: Path, archetype: str, extra: str = "") -> Path:
+    if archetype == "python-web-api":
+        return _web_root(tmp_path, archetype, "fastapi", extra=extra)
+    if archetype == "python-web-app":
+        return _web_root(
+            tmp_path, archetype, "fastapi", extra=f'frontend = "angular"{extra}'
+        )
+    return _root(tmp_path, archetype, extra=extra)
+
+
+@pytest.mark.parametrize(
+    ("archetype", "lead"), LINT_CELLS, ids=[a for a, _ in LINT_CELLS]
+)
+def test_s17_1_4_1_lint(tmp_path: Path, archetype: str, lead: str) -> None:
+    root = _lint_root(tmp_path, archetype)
+    cycle.apply(root, home=tmp_path / "home")
+    assert _load(root, "Taskfile.yml")["tasks"]["lint"]["desc"] == (
+        lead + ", dependency licences."
+    )
+
+
+@pytest.mark.parametrize(
+    ("archetype", "lead"), LINT_CELLS, ids=[a for a, _ in LINT_CELLS]
+)
+def test_s17_1_4_2_lint_without_licences(
+    tmp_path: Path, archetype: str, lead: str
+) -> None:
+    root = _lint_root(tmp_path, archetype, extra="\n[ci.checks]\nlicenses = false\n")
+    cycle.apply(root, home=tmp_path / "home")
+    assert _load(root, "Taskfile.yml")["tasks"]["lint"]["desc"] == lead + "."
+
+
+def test_s17_1_4_3_workspace_verbs(tmp_path: Path) -> None:
+    root = _root(tmp_path, "python-lib")
+    cycle.apply(root, home=tmp_path / "home")
+    tasks = _load(root, "Taskfile.yml")["tasks"]
+    assert (
+        tasks["typecheck"]["desc"] == "Type-check each package in pyright strict mode."
+    )
+    assert tasks["test"]["desc"] == "Run each package's pytest suite."
+    assert tasks["test:coverage"]["desc"] == (
+        "Run each package's tests with coverage, combined into one XML report "
+        "(used by CI/Sonar)."
+    )

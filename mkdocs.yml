@@ -54,6 +54,7 @@ nav:
     - architecture/index.md
     - The rn-forge workspace: architecture/workspace.md
     - CI: architecture/ci.md
+    - Tasks: architecture/tasks.md
   - Guides:
     - guides/index.md
     - Development: guides/development.md
@@ -172,6 +173,11 @@ nav:
         - F16.3 — The cutover SOP: specs/epics/E16-init-adopts-by-overwrite/F16.3-cutover-sop.md
         - F16.4 — Generated-file hygiene: specs/epics/E16-init-adopts-by-overwrite/F16.4-generated-file-hygiene.md
         - F16.5 — Rebuild an existing repository on kiln, and port it: specs/epics/E16-init-adopts-by-overwrite/F16.5-rebuild-and-port.md
+      - E17 — One task standard for every archetype:
+        - specs/epics/E17-task-standard/index.md
+        - F17.1 — The task surface says what it is: specs/epics/E17-task-standard/F17.1-task-surface.md
+        - F17.2 — One grammar for the CI surface, and one home for check policy: specs/epics/E17-task-standard/F17.2-ci-task-grammar.md
+        - 'E17 — Design: the target task surface': specs/epics/E17-task-standard/design.md
     - Ideas:
       - specs/ideas/index.md
       - kiln simplification: specs/ideas/kiln-simplification.md

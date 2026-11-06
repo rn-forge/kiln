@@ -35,6 +35,7 @@ required_validate = [
     "python:typecheck",
     "python:test",
     "node:lint",
+    "node:typecheck",
     "node:test",
 ]
 

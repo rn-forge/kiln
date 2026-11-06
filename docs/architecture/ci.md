@@ -182,7 +182,7 @@ checks" in `.rn-forge/kiln/standard.md`.
 | `kiln doctor` | `task lint` | yes | yes | yes | yes | yes | yes | S; `--full` per `[ci] doctor_full`, default `default-branch` |
 | zizmor, actionlint | `task lint` | yes | yes | yes | yes | yes | yes | S |
 | `pip-audit` | `task lint` | yes | yes | yes | yes | yes |  | S; ignore list `[tasks.audit] ignore` |
-| `pnpm-audit` | `task python:lint:audit` |  |  |  |  |  | yes | S |
+| `pnpm-audit` | `task node:lint:audit` |  |  |  |  |  | yes | S |
 | Nx lint, typecheck, test, build | `task node:*`, `task ci:affected` |  |  |  |  | yes | yes | S |
 | pytest | `task test` | test | yes | yes | yes | yes |  | S |
 | Services, smoke, suites | `task ci:*` | yes |  |  |  |  |  | D: a package declares them |
@@ -195,7 +195,7 @@ checks" in `.rn-forge/kiln/standard.md`.
 | Docs deploy | `docs` job | yes | yes | yes | yes | yes | yes | D: `[docs] profile = "mkdocs"` |
 | Package tarballs | `task ci:package` |  |  |  |  |  | yes | S |
 | `ci-ok` | none | yes | yes | yes | yes | yes | yes | S |
-| `licenses` | `task python:lint:licenses` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] licenses`, default `true`; a table sets `deny` and `ignore` |
+| `licenses` | `task python:lint:licenses`; `node-lib`: `task node:lint:licenses` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] licenses`, default `true`; a table sets `deny` and `ignore` |
 | `secret-scan` | `task ci:lint:secrets` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] secret-scan`, default `true` |
 | `internal-ranges` | `task ci:requirements` | yes |  |  |  |  | yes | D: two or more workspace members |
 | `umbrella-release` | `task ci:release:umbrella` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] umbrella-release`, default `false` |

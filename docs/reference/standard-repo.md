@@ -33,7 +33,10 @@ docs:build  docs:serve  docs:generate
 `validate` calls `lint`, `typecheck`, `test`, and — for `mkdocs` — `docs:build`.
 Web modules additionally expose `api:dev` (and `api:migrate` for Django) and,
 for `python-web-app`, `web:dev`. `kiln:diff` and `kiln:apply` are public too.
-Every task outside the declared public surface is `internal: true`. The root
+That is the developer surface. The CI surface, `ci:*`, is public only because a
+workflow step runs it from the command line, which go-task refuses for an
+internal task. It is CI's, each `desc:` starts `CI only:`, and a developer has
+no reason to call it. Every other task is `internal: true`. The root
 `Taskfile.yml` holds wrappers only: each of its `cmds:` entries is a `task:`
 call into a `tasks/*.yml` namespace. Every task carries a non-empty `desc:`.
 ([ADR-0007](../adr/ADR-0007.md))
@@ -46,14 +49,26 @@ In a workspace archetype, `build` and `version` take a package name after `--`
 `kiln doctor`'s `gate.shrunk`:
 
 ```text
-python:lint            kiln:doctor
-python:lint:imports    ci:lint:workflows
-python:lint:audit      quality:lint:markdown
-quality:lint:toml      python:typecheck
-python:test
+python-lib, python-tool, python-app, python-web-api:
+  python:lint            kiln:doctor
+  python:lint:imports    ci:lint:workflows
+  python:lint:audit      quality:lint:markdown
+  quality:lint:toml      python:typecheck
+  python:test
+
+python-web-app: the Python list, plus
+  node:lint  node:typecheck  node:test
+
+node-lib:
+  kiln:doctor            ci:lint:workflows
+  quality:lint:markdown  quality:lint:toml
+  node:lint              node:lint:audit
+  node:typecheck         node:test
 ```
 
-plus, under `docs.profile = mkdocs`, `docs:build`.
+plus, derived from the configuration: `docs:build` under
+`docs.profile = mkdocs`, and the licences task (`python:lint:licenses`, or
+`node:lint:licenses` for `node-lib`) while `[ci.checks] licenses` is on.
 
 An archetype adds to this list; it never removes from it.
 
@@ -64,7 +79,7 @@ editing a managed file:
 | -- | -- |
 | `[tasks] includes` | wire a repository-owned namespace file into the root Taskfile |
 | `[tasks.extra_refs]` | append a call to a managed wrapper verb |
-| `[tasks.command_overrides]` | replace one primitive's shell line |
+| `[tasks.command_overrides]` | replace one toolchain primitive's shell line; a dependency audit, the licences check, the secret scan and internal ranges take no key, because overriding one would turn it off without the config saying so |
 
 ## 2. One owner per file, or per block
 

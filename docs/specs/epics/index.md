@@ -33,5 +33,6 @@ Jump to: [E1–E10](#e1e10) · [E11–E20](#e11e20)
 | [E14 — Docs site navigation and work summaries](E14-site-navigation/index.md) | Closed | 2 Closed | release-1 |
 | [E15 — One CI standard for every archetype](E15-ci-standard/index.md) | Closed | 8 Closed | release-1 |
 | [E16 — `init` adopts by overwrite](E16-init-adopts-by-overwrite/index.md) | Active | 1 New · 4 Closed | release-1 |
+| [E17 — One task standard for every archetype](E17-task-standard/index.md) | Active | 1 New · 1 Closed | release-1 |
 
 <!-- END derived epics -->

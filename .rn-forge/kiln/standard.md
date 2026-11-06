@@ -20,25 +20,46 @@ is a kiln ADR; this file states the rule.
 `task` is the only entrypoint. Nobody — human, agent, or CI — invokes `uv`,
 `pytest`, `ruff`, `pyright`, `mkdocs` or `kiln` directly.
 
-The public surface for this repo is exactly:
+The developer surface for this repo is exactly:
 
-| Verb                | What it does                                        |
-| ------------------- | --------------------------------------------------- |
-| `task setup`        | sync the venv with the dev and docs groups          |
-| `task validate`     | lint → typecheck → test → docs build                |
-| `task lint`         | every lint                                          |
-| `task format`       | format in place                                     |
-| `task typecheck`    | pyright, strict                                     |
-| `task test`         | pytest                                              |
-| `task test:coverage`| pytest with an XML coverage report                  |
-| `task build`        | wheel and sdist into `dist/`                        |
-| `task clean`        | remove build outputs and caches                     |
-| `task version`      | print the version from `pyproject.toml`             |
-| `task docs:build`   | strict MkDocs build into `.docs-site/`              |
-| `task docs:serve`   | live-reload docs on `127.0.0.1:8080`                |
-| `task docs:generate`| regenerate the docs' derived regions                |
+| Verb | What it does |
+| -- | -- |
+| `task build` | Build the wheel and sdist into dist/. |
+| `task clean` | Remove build outputs, caches, and the rendered docs site. |
+| `task docs:build` | Build the MkDocs site into .docs-site/ (or $1 when given). |
+| `task docs:generate` | Regenerate the docs' derived regions. |
+| `task docs:serve` | Serve the docs site locally with live reload on http://127.0.0.1:8080. |
+| `task format` | Format Python code, TOML and Markdown prose in place. |
+| `task kiln:apply` | Re-render the generated files from .rn-forge/kiln/config.toml. Pass --dry-run, or --force \<path> to overwrite a drifted file, after `--`. |
+| `task kiln:diff` | Show every generated file that differs from a fresh render, writing nothing. Pass --artifact \<key or path> after `--` to limit it to one. |
+| `task lint` | Every lint — Python, imports, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs), workflow security, dependency vulnerabilities, dependency licences. |
+| `task setup` | Install the project and its dev + docs dependency groups. |
+| `task test` | Run the pytest suite. |
+| `task test:coverage` | Run the pytest suite with an XML coverage report (used by CI/Sonar). |
+| `task typecheck` | Static type-check the package in pyright strict mode. |
+| `task validate` | The aggregate gate — lint, typecheck, test, docs build. Any failure fails. |
+| `task version` | Print the package version from pyproject.toml. |
 
-`kiln:diff` and `kiln:apply` are public too. Every other task is `internal: true`. The root `Taskfile.yml` holds wrappers
+The CI surface, `ci:*`, is public only because a workflow step runs it from
+the command line, which go-task refuses for an internal task. It is CI's;
+a developer has no reason to call it:
+
+| Task | What it does |
+| -- | -- |
+| `task ci:integration` | CI only: a member's tests against the service containers it declares (-- \<package>) |
+| `task ci:lint:secrets` | CI only: scan the git history for secrets with the pinned gitleaks (downloads it on first run, so it is not part of lint) |
+| `task ci:plan` | CI only: print the plan's outputs for $GITHUB_OUTPUT |
+| `task ci:release-publish` | CI only: publish the GitHub release for TAG, from the built distributions, at SOURCE_SHA |
+| `task ci:release-source` | CI only: check out the tagged source of a resumed release (with TAG), print its commit |
+| `task ci:release-state` | CI only: print the release's state for this version as $GITHUB_OUTPUT lines |
+| `task ci:smoke` | CI only: install one extra from the built wheel and import it (-- \<package> [extra]) |
+| `task ci:sonar-target` | CI only: print the Sonar branch argument for this run as a $GITHUB_OUTPUT line |
+| `task ci:suite` | CI only: run one workspace-wide pytest suite |
+| `task ci:test` | CI only: run the repository's tests (the plan's one member) |
+| `task ci:validate` | CI only: the repository-wide checks — lint, typecheck, docs build; `test` runs the tests |
+| `task ci:verify-release` | CI only: install the release from its git tag, outside the repository, and import it (-- \<tag>) |
+
+Every other task is `internal: true`. The root `Taskfile.yml` holds wrappers
 only: each of its commands is a `task:` call into a `tasks/*.yml` namespace.
 `kiln doctor`'s `task-layout` check enforces both halves of that, and fails if
 any gate stops being reachable from `validate`.

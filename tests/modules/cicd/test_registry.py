@@ -123,3 +123,31 @@ def test_s15_2_4_3_registry_row() -> None:
         "umbrella-release",
         "scorecard",
     }
+
+
+def _verb_of_row(name: str) -> str:
+    cell = registry._name_cell(name)  # pyright: ignore[reportPrivateUsage]
+    for line in registry.render_matrix(None).splitlines()[2:]:
+        cols = [p.strip() for p in line.strip("|").split(" | ")]
+        if cols[0] == cell:
+            return cols[1]
+    raise AssertionError(name)
+
+
+def test_s17_1_1_1_node_only_row_uses_node() -> None:
+    assert _verb_of_row("pnpm-audit") == "`task node:lint:audit`"
+
+
+def test_s17_1_1_2_both_stacks_name_both() -> None:
+    assert _verb_of_row("licenses") == (
+        "`task python:lint:licenses`; `node-lib`: `task node:lint:licenses`"
+    )
+
+
+def test_s17_1_1_3_plain_verbs_unchanged() -> None:
+    plain = [c for c in registry.CHECKS if c.verb is None or "{stack}" not in c.verb]
+    assert plain
+    for c in plain:
+        assert _verb_of_row(c.name) == registry._verb_cell(  # pyright: ignore[reportPrivateUsage]
+            c.verb, "python"
+        )

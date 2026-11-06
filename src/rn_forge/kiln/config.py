@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from rn_forge.kiln.modules.cicd import registry
 from rn_forge.kiln.modules.cicd.config import CiConfig, resolve_release
 from rn_forge.kiln.modules.core.config.schema import RootConfig
 from rn_forge.kiln.modules.docs.config import DocsConfig
@@ -78,6 +79,18 @@ class KilnConfig:
         ci = getattr(self.document, "ci", None)
         return resolve_release(
             ci if isinstance(ci, CiConfig) else CiConfig(), self.archetype
+        )
+
+    @property
+    def licenses_enabled(self) -> bool:
+        """Whether the registry's licences check runs for this repository."""
+        ci = getattr(self.document, "ci", None)
+        check = next(c for c in registry.CHECKS if c.name == "licenses")
+        return registry.enabled(
+            check,
+            ci if isinstance(ci, CiConfig) else CiConfig(),
+            self.archetype,
+            len(self.packages),
         )
 
     @property

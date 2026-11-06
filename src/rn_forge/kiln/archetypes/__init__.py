@@ -126,7 +126,8 @@ def for_config(config: KilnConfig) -> Archetype:
 
     `lifecycle = true` adds `rn-forge-tooling` to the dependency set,
     `config.backend` (a web archetype only) adds `rn-forge-<backend>`, and
-    `docs.profile = "mkdocs"` adds the docs gate to `required_validate`.
+    `docs.profile = "mkdocs"` adds the docs gate and an enabled licences check
+    adds its task to `required_validate`.
 
     Raises:
         AppException: The config names an archetype this kiln does not ship.
@@ -145,6 +146,9 @@ def for_config(config: KilnConfig) -> Archetype:
     required_validate = list(archetype.required_validate)
     if config.docs_profile == "mkdocs":
         required_validate += _MKDOCS_VALIDATE
+    if config.licenses_enabled:
+        stack = "node" if config.archetype == "node-lib" else "python"
+        required_validate.append(f"{stack}:lint:licenses")
 
     return archetype.model_copy(
         update={

@@ -95,6 +95,7 @@ ignore_imports =
     rn_forge.kiln.modules.instructions.artifacts -> rn_forge.kiln.modules.cicd.config
     rn_forge.kiln.modules.instructions.artifacts -> rn_forge.kiln.modules.cicd.registry
     rn_forge.kiln.modules.instructions.artifacts -> rn_forge.kiln.modules.docs.config
+    rn_forge.kiln.modules.instructions.artifacts -> rn_forge.kiln.modules.tasks.surface
 
 ; The fifth and sixth contracts are kiln ADR-0017's: the CI planner,
 ; `rn_forge.kiln.devops`, keeps its core (`ci`) free of the uv and GitHub

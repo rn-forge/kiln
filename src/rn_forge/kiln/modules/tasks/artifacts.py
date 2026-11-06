@@ -33,7 +33,6 @@ _PYTHON_TASKS = (
     "python:install",
     "python:lint",
     "python:lint:imports",
-    "python:lint:audit",
     "python:format",
     "python:typecheck",
     "python:test",
