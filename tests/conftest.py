@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import subprocess
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -124,3 +124,16 @@ def rendered(tmp_path_factory: pytest.TempPathFactory) -> Callable[[str], Path]:
         return root
 
     return build
+
+
+@pytest.fixture(autouse=True, scope="session")
+def _no_uv_locked() -> Iterator[None]:
+    """CI sets UV_LOCKED=1 for kiln's own lock; tests that run `task setup` in a
+    repository they just wrote (no uv.lock yet) must not inherit it.
+
+    Session-scoped with its own MonkeyPatch, so a test's `monkeypatch.undo()`
+    cannot bring the variable back.
+    """
+    with pytest.MonkeyPatch.context() as patch:
+        patch.delenv("UV_LOCKED", raising=False)
+        yield
