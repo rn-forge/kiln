@@ -127,9 +127,9 @@ design (E15). The rest of the design is scattered:
 - Epic `design.md` files hold the real design for
   [E4](../epics/E4-generator/design.md),
   [E12](../epics/E12-architecture-baseline/design.md),
-  [E13](../epics/E13-docs-work-model/design.md) and
-  [E15](../epics/E15-ci-standard/design.md). They are frozen at implementation
-  time, and after that the code is the source of truth.
+  [E13](../epics/E13-docs-work-model/design.md) and E15 (its `design.md`,
+  deleted when the epic closed). They are frozen at implementation time, and
+  after that the code is the source of truth.
 - ADRs carry explanation in their Consequences and Influences, but nobody looks
   for a design in the decision log.
 

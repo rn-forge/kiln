@@ -2,8 +2,7 @@
 
 What the generated CI does in every archetype kiln has, as built now. The model
 it follows is [ADR-0016](../adr/ADR-0016.md); the rules it must meet are in
-[the standard, section 8](../reference/standard-repo.md#8-ci-shape). Work not
-yet built is in [E15's design](../specs/epics/E15-ci-standard/design.md).
+[the standard, section 8](../reference/standard-repo.md#8-ci-shape).
 
 ## The model
 

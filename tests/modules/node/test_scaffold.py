@@ -9,6 +9,7 @@ already holds a `python-web-app` scaffold.
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 from unittest import mock
@@ -22,6 +23,7 @@ from rn_forge.commons.runtime.subprocess import Process
 
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.node import angular
 from rn_forge.kiln.modules.node.angular import (
     VITEST_COVERAGE,
     scaffold_angular,
@@ -523,7 +525,9 @@ def test_s9_2_6_2_reconcile_node_keeps_what_nx_json_already_holds(
         **_COVERAGE_OPTIONS,
     }
     assert defaults["@angular/build:unit-test"]["cache"] is True
-    assert "@nx/eslint:lint" in defaults
+    assert DocumentUtils.read(root / "nx.json")["plugins"][0]["plugin"] == (
+        "@nx/eslint/plugin"
+    )
     assert DocumentUtils.read(root / "nx.json")["analytics"] is False
 
 
@@ -620,3 +624,27 @@ def test_s9_2_6_2_nx_json_is_identical_in_both_cells(tmp_path: Path) -> None:
     app, _ = _reconciled(tmp_path / "app", lib=False)
 
     assert (lib / "nx.json").read_bytes() == (app / "nx.json").read_bytes()
+
+
+def _version_tuple(spec: str) -> tuple[int, ...]:
+    return tuple(int(part) for part in spec.lstrip("~^").split("."))
+
+
+def test_s15_2_5_1_nx_version() -> None:
+    assert angular.NX_VERSION == "24.0.4"
+
+
+def test_s15_2_5_2_fixture_matches_the_pin() -> None:
+    package = json.loads((FIXTURE / "package.json").read_text(encoding="utf-8"))
+    deps = {**package["dependencies"], **package["devDependencies"]}
+    assert deps["nx"] == angular.NX_VERSION
+    assert _version_tuple(deps["@angular/router"])[:2] >= (22, 2)
+    lock = (FIXTURE / "pnpm-lock.yaml").read_text(encoding="utf-8")
+    resolved = re.findall(r"^  '@angular/router@(\d+\.\d+\.\d+)':", lock, re.M)
+    assert resolved
+    assert all(_version_tuple(v) >= (22, 2, 1) for v in resolved)
+
+
+def test_s15_2_5_3_command_md_names_the_pin() -> None:
+    text = (FIXTURE / "COMMAND.md").read_text(encoding="utf-8")
+    assert angular.NX_VERSION in text.split("\n\n")[1]

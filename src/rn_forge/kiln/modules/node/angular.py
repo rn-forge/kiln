@@ -24,8 +24,8 @@ __all__ = [
     "scaffold_angular",
 ]
 
-NX_VERSION = "23.2.1"
-"""`create-nx-workspace`/`@nx/angular`'s pinned release (recorded 2026-09-17,
+NX_VERSION = "24.0.4"
+"""`create-nx-workspace`/`@nx/angular`'s pinned release (recorded 2026-11-06,
 `tests/fixtures/scaffold/nx-angular/COMMAND.md`)."""
 
 NGKIT_URL = (

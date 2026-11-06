@@ -165,7 +165,6 @@ nav:
         - F15.6 — OpenSSF Scorecard: specs/epics/E15-ci-standard/F15.6-scorecard.md
         - F15.7 — Repository-owned workflows: specs/epics/E15-ci-standard/F15.7-repo-owned-workflows.md
         - F15.8 — Every archetype on the one-workflow contract: specs/epics/E15-ci-standard/F15.8-one-workflow-contract.md
-        - 'E15 — Design: the target CI': specs/epics/E15-ci-standard/design.md
       - E16 — `init` adopts by overwrite:
         - specs/epics/E16-init-adopts-by-overwrite/index.md
         - F16.1 — Opinionated `init`: specs/epics/E16-init-adopts-by-overwrite/F16.1-opinionated-init.md

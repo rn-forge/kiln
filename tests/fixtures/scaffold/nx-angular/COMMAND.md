@@ -1,17 +1,17 @@
 # How this fixture was captured
 
-**Date:** 2026-09-17 · **`create-nx-workspace` version:** 23.2.1
+**Date:** 2026-11-06 (first captured 2026-09-17 at 23.2.1) · **`create-nx-workspace` version:** 24.0.4
 (`NX_VERSION` in `modules/node/angular.py`)
 
 The story's planned one-liner —
 
 ```bash
-pnpm dlx create-nx-workspace@23.2.1 workspace --preset=angular-monorepo --appName=web \
+pnpm dlx create-nx-workspace@24.0.4 workspace --preset=angular-monorepo --appName=web \
   --style=scss --bundler=esbuild --ssr=false --e2eTestRunner=none --unitTestRunner=vitest \
   --packageManager=pnpm --nxCloud=skip --ci=skip --interactive=false --skipGit
 ```
 
-does not reproduce on this release. Two upstream changes broke it:
+does not reproduce on this release (it did not on 23.2.1, and 24.0.4 is no different). Two upstream changes broke it:
 
 1. **`create-nx-workspace` v23 no longer honours `--preset=angular-monorepo`
    with `--appName`.** In an environment with `CLAUDECODE` (or `OPENCODE`) set,
@@ -38,10 +38,10 @@ does not reproduce on this release. Two upstream changes broke it:
 `CLAUDE_CODE_ENTRYPOINT` unset:
 
 ```bash
-pnpm dlx create-nx-workspace@23.2.1 workspace --preset=apps --packageManager=pnpm \
+pnpm dlx create-nx-workspace@24.0.4 workspace --preset=apps --packageManager=pnpm \
   --nxCloud=skip --ci=skip --interactive=false --skipGit
 cd workspace
-pnpm add -D @nx/angular@23.2.1
+pnpm add -D @nx/angular@24.0.4
 pnpm nx g @nx/angular:application apps/web --name=web --style=scss \
   --bundler=esbuild --ssr=false --e2eTestRunner=none \
   --unitTestRunner=vitest-angular --standalone=true --routing=true \
@@ -60,10 +60,22 @@ application, because only the application generator writes the root files
 pnpm nx g @nx/workspace:remove web --forceRemove --interactive=false
 ```
 
+**Nx 24 changes (2026-11-06).** The commands below ran unchanged at 24.0.4,
+and `@nx/workspace:remove` still removes the app. What differs in the output:
+`@nx/angular` 24.0.4 writes `angularVersion = '~22.2.0'` (23.x wrote `~22.1.0`),
+so `@angular/router` resolves to 22.2.4, clear of the advisories on 22.1.8;
+`@nx/eslint` is now an inferred plugin (`nx.json` gains `plugins`, and
+`apps/web/project.json` loses its `lint` target); `serve` targets gain
+`readyWhen`; the root `README.md` title is `# Workspace`. The `@nx/angular:application`
+step no longer failed on the build-script gate (with pnpm 12.16.1): it left
+`allowBuilds` entries set to `false` for `esbuild`, `lmdb`, `msgpackr-extract`
+and `@parcel/watcher`, which `scaffold_angular`'s approval step overwrites with
+`true` as before.
+
 **pnpm's build-script gate.** pnpm 12 blocks native build scripts
 (`@parcel/watcher`, `esbuild`, `lmdb`, `msgpackr-extract`) behind an
-allow-list (`ERR_PNPM_IGNORED_BUILDS`) unless approved. Both `pnpm install`
-steps above fail on the first pass and leave `pnpm-workspace.yaml` stamped
+allow-list (`ERR_PNPM_IGNORED_BUILDS`) unless approved. At 23.2.1 both `pnpm install`
+steps above failed on the first pass and left `pnpm-workspace.yaml` stamped
 with an `allowBuilds` stub naming exactly the blocked packages; setting each
 to `true` and re-running `pnpm install` completes it. `scaffold_node`
 must do the same before treating a non-zero exit as failure, or must let the

@@ -52,6 +52,9 @@
     },
     "serve": {
       "continuous": true,
+      "readyWhen": {
+        "signal": true
+      },
       "executor": "@angular/build:dev-server",
       "defaultConfiguration": "development",
       "configurations": {
@@ -63,9 +66,6 @@
         }
       }
     },
-    "lint": {
-      "executor": "@nx/eslint:lint"
-    },
     "test": {
       "executor": "@angular/build:unit-test",
       "options": {
@@ -74,6 +74,12 @@
     },
     "serve-static": {
       "continuous": true,
+      "readyWhen": {
+        "signal": true
+      },
+      "dependsOn": [
+        "build"
+      ],
       "executor": "@nx/web:file-server",
       "options": {
         "buildTarget": "web:build",
