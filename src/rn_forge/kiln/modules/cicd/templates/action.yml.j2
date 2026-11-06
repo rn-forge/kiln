@@ -52,6 +52,7 @@ runs:
       with:
         version: 0.13.1
         enable-cache: true
+        ignore-nothing-to-cache: true
         cache-dependency-glob: '**/uv.lock'
 
     - uses: [[ pins["setup-task"].uses ]]@[[ pins["setup-task"].sha ]] # [[ pins["setup-task"].version ]]
@@ -78,6 +79,7 @@ runs:
       with:
         python-version: "3.14"
         enable-cache: true
+        ignore-nothing-to-cache: true
         # The kiln pin lives in config.toml, so a pin change saves a fresh cache.
         cache-dependency-glob: |
           **/uv.lock

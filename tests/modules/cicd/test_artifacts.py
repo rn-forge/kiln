@@ -3147,6 +3147,7 @@ runs:
       with:
         version: 0.13.1
         enable-cache: true
+        ignore-nothing-to-cache: true
         cache-dependency-glob: '**/uv.lock'
 
     - uses: arduino/setup-task@PIN
@@ -3502,6 +3503,28 @@ def test_s9_3_7_3_setup_uv_pin_is_v10_3_0(tmp_path: Path) -> None:
     for archetype, root in cases:
         action = _rendered(root)[".github/actions/setup/action.yml"]
         assert uses in action, archetype
+
+
+def test_s15_3_4_1_setup_uv_ignores_nothing_to_cache(tmp_path: Path) -> None:
+    cases = [(a, _root(tmp_path / a, a)) for a in (*ARCHETYPES, "node-lib")]
+    cases += [
+        ("python-web-api", _web_root(tmp_path / "api", "python-web-api")),
+        (
+            "python-web-app",
+            _web_root(tmp_path / "app", "python-web-app", extra='frontend = "angular"'),
+        ),
+    ]
+    for archetype, root in cases:
+        action = YamlUtils.load(_rendered(root)[".github/actions/setup/action.yml"])
+        steps = [
+            step
+            for step in action["runs"]["steps"]
+            if str(step.get("uses", "")).startswith("astral-sh/setup-uv")
+        ]
+        assert steps, archetype
+        for step in steps:
+            assert step["with"]["ignore-nothing-to-cache"] is True, archetype
+            assert step["with"]["enable-cache"] is True, archetype
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
