@@ -2752,16 +2752,17 @@ def test_s9_1_3_1_sonar_job_matches_ngkit(tmp_path: Path) -> None:
     )
     assert job["timeout-minutes"] == 15
     assert job["permissions"] == {"contents": "read", "pull-requests": "read"}
-    checkout, setup, coverage, scan = job["steps"]
+    checkout, setup, coverage, reports, scan = job["steps"]
     assert checkout["with"] == {"fetch-depth": 0, "persist-credentials": False}
     assert setup["uses"].startswith("./.github/actions/setup")
-    assert coverage["id"] == "coverage"
-    assert coverage["run"] == 'task ci:coverage >> "$GITHUB_OUTPUT"'
+    assert coverage["run"] == "task test:coverage"
+    assert reports["id"] == "reports"
+    assert reports["run"] == 'task ci:sonar:reports >> "$GITHUB_OUTPUT"'
     assert scan["uses"].startswith(
         f"SonarSource/sonarqube-scan-action@{pins['sonarqube-scan']['sha']}"
     )
     assert scan["with"]["args"] == (
-        "-Dsonar.javascript.lcov.reportPaths=${{ steps.coverage.outputs.reports }} "
+        "-Dsonar.javascript.lcov.reportPaths=${{ steps.reports.outputs.reports }} "
         "-Dsonar.qualitygate.wait=true\n"
     )
     assert scan["env"] == {"SONAR_TOKEN": "${{ secrets.SONAR_TOKEN }}"}

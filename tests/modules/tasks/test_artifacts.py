@@ -2411,7 +2411,7 @@ def test_s9_1_2_5_other_archetypes_render_no_affected_tasks(tmp_path: Path) -> N
 # S9.1.3 — node Sonar.
 
 
-def _coverage_run(
+def _reports_run(
     tmp_path: Path, lcov: tuple[str, ...]
 ) -> subprocess.CompletedProcess[str]:
     root = _node_lib_root(tmp_path / "cell")
@@ -2427,33 +2427,39 @@ def _coverage_run(
         (repo / name).write_text("")
     repo.mkdir(exist_ok=True)
     return subprocess.run(
-        ["task", "-t", str(root / "Taskfile.yml"), "--dir", str(repo), "ci:coverage"],
+        [
+            "task",
+            "-t",
+            str(root / "Taskfile.yml"),
+            "--dir",
+            str(repo),
+            "ci:sonar:reports",
+        ],
         capture_output=True,
         text=True,
         env={**os.environ, "PATH": f"{stub}:{os.environ['PATH']}"},
     )
 
 
-def test_s9_1_3_2_coverage_runs_tests_and_prints_the_reports(tmp_path: Path) -> None:
+def test_s9_1_3_2_reports_runs_tests_and_prints_the_reports(tmp_path: Path) -> None:
     if shutil.which("task") is None:
         pytest.skip("task is not on PATH")
-    done = _coverage_run(
+    done = _reports_run(
         tmp_path, ("coverage/b/lcov.info", "coverage/a/lcov.info", "coverage/a/x.txt")
     )
     assert done.returncode == 0, done.stderr
     assert done.stdout == "reports=coverage/a/lcov.info,coverage/b/lcov.info\n"
-    assert "pnpm exec nx run-many -t test" in done.stderr
 
 
-def test_s9_1_3_2_coverage_fails_without_an_lcov_report(tmp_path: Path) -> None:
+def test_s9_1_3_2_reports_fails_without_an_lcov_report(tmp_path: Path) -> None:
     if shutil.which("task") is None:
         pytest.skip("task is not on PATH")
-    done = _coverage_run(tmp_path, ())
+    done = _reports_run(tmp_path, ())
     assert done.returncode != 0
     assert "::error::No lcov.info found under coverage/" in done.stdout + done.stderr
 
 
-def _coverage_run_with_projects(
+def _reports_run_with_projects(
     tmp_path: Path, projects: str, lcov: tuple[str, ...]
 ) -> subprocess.CompletedProcess[str]:
     root = _node_lib_root(tmp_path / "cell")
@@ -2472,43 +2478,50 @@ def _coverage_run_with_projects(
         (repo / name).parent.mkdir(parents=True, exist_ok=True)
         (repo / name).write_text("")
     return subprocess.run(
-        ["task", "-t", str(root / "Taskfile.yml"), "--dir", str(repo), "ci:coverage"],
+        [
+            "task",
+            "-t",
+            str(root / "Taskfile.yml"),
+            "--dir",
+            str(repo),
+            "ci:sonar:reports",
+        ],
         capture_output=True,
         text=True,
         env={**os.environ, "PATH": f"{stub}:{os.environ['PATH']}"},
     )
 
 
-def test_s9_2_7_2_coverage_passes_a_workspace_with_no_projects(
+def test_s9_2_7_2_reports_passes_a_workspace_with_no_projects(
     tmp_path: Path,
 ) -> None:
     if shutil.which("task") is None:
         pytest.skip("task is not on PATH")
-    done = _coverage_run_with_projects(tmp_path, "[]", ())
+    done = _reports_run_with_projects(tmp_path, "[]", ())
     assert done.returncode == 0, done.stderr
     assert done.stdout == "reports=\n"
 
 
-def test_s9_2_7_3_coverage_fails_a_project_with_no_report(tmp_path: Path) -> None:
+def test_s9_2_7_3_reports_fails_a_project_with_no_report(tmp_path: Path) -> None:
     if shutil.which("task") is None:
         pytest.skip("task is not on PATH")
-    done = _coverage_run_with_projects(tmp_path, '["foo"]', ())
+    done = _reports_run_with_projects(tmp_path, '["foo"]', ())
     # task reports a failed command as 201 and names the command's own status.
     assert done.returncode != 0
     assert "exit status 1" in done.stderr
     assert "::error::No lcov.info found under coverage/" in done.stdout + done.stderr
 
 
-def test_s9_2_7_4_coverage_prints_the_report_path(tmp_path: Path) -> None:
+def test_s9_2_7_4_reports_prints_the_report_path(tmp_path: Path) -> None:
     if shutil.which("task") is None:
         pytest.skip("task is not on PATH")
-    done = _coverage_run_with_projects(tmp_path, '["foo"]', ("coverage/foo/lcov.info",))
+    done = _reports_run_with_projects(tmp_path, '["foo"]', ("coverage/foo/lcov.info",))
     assert done.returncode == 0, done.stderr
     assert done.stdout == "reports=coverage/foo/lcov.info\n"
 
 
-def test_s9_1_3_2_coverage_is_described_and_public(tmp_path: Path) -> None:
-    task = _ci_tasks(_node_lib_root(tmp_path))["tasks"]["coverage"]  # type: ignore[index]
+def test_s9_1_3_2_reports_is_described_and_public(tmp_path: Path) -> None:
+    task = _ci_tasks(_node_lib_root(tmp_path))["tasks"]["sonar:reports"]  # type: ignore[index]
     assert task["desc"]
     assert "internal" not in task
 
@@ -3328,12 +3341,10 @@ CI_FIRST_LEVELS = (
     "internal-ranges",
     "adapters",
 )
-# `ci:coverage` is renamed by S17.2.2, not here: it is the one first level the
-# grammar does not yet name.
-CI_PENDING = ("coverage",)
 CI_WORD = r"[a-z][a-z0-9]*(?:-[a-z0-9]+)*"
 CI_NAME = re.compile(rf"^ci:{CI_WORD}(?::{CI_WORD})?$")
 CI_OLD_NAMES = (
+    "ci:coverage",
     "ci:sonar-target",
     "ci:release-state",
     "ci:release-source",
@@ -3375,7 +3386,7 @@ def test_s17_2_1_1_grammar(tmp_path: Path) -> None:
             full = f"ci:{name}"
             assert CI_NAME.match(full), (archetype, full)
             first = name.split(":")[0]
-            assert first in (*CI_FIRST_LEVELS, *CI_PENDING), (archetype, full)
+            assert first in CI_FIRST_LEVELS, (archetype, full)
             assert tasks[name]["desc"].startswith("CI only: "), (archetype, full)
             sentence = tasks[name]["desc"].removeprefix("CI only: ")
             assert sentence[0].isupper() and sentence.endswith("."), (archetype, full)
@@ -3412,3 +3423,31 @@ def test_s17_2_1_3_workflows_call_the_new_names(tmp_path: Path) -> None:
         for path in files:
             used = set(re.findall(r"ci:[\w:-]+", path.read_text(encoding="utf-8")))
             assert not used & set(CI_OLD_NAMES), (archetype, path.name)
+
+
+# S17.2.2 — one coverage task for Sonar.
+
+
+def test_s17_2_2_1_sonar_runs_the_root_verb(tmp_path: Path) -> None:
+    for archetype, root in _ci_cells(tmp_path):
+        text = (root / ".github/workflows/_sonar.yml").read_text(encoding="utf-8")
+        steps = YamlUtils.load(text)["jobs"]["sonar"]["steps"]
+        runs = [step.get("run") for step in steps]
+        assert "task test:coverage" in runs, archetype
+        assert "ci:coverage" not in text, archetype
+
+
+def test_s17_2_2_2_node_lib_reports(tmp_path: Path) -> None:
+    root = _secrets_root(tmp_path, "node-lib")
+    tasks = _ci_rendered(root)
+    assert "coverage" not in tasks
+    assert tasks["sonar:reports"].get("internal") is not True
+    steps = YamlUtils.load(
+        (root / ".github/workflows/_sonar.yml").read_text(encoding="utf-8")
+    )["jobs"]["sonar"]["steps"]
+    reports = next(
+        s for s in steps if s.get("run", "").startswith("task ci:sonar:reports")
+    )
+    assert reports["run"] == 'task ci:sonar:reports >> "$GITHUB_OUTPUT"'
+    scan = steps[-1]
+    assert f"steps.{reports['id']}.outputs.reports" in scan["with"]["args"]

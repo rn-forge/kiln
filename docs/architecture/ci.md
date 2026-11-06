@@ -71,7 +71,7 @@ Job names other than `ci-ok` are not required checks, so renaming is safe.
 | `smoke` | one leg per selected package, plus one per declared extra: the wheel installs and imports | `task ci:smoke` |
 | `suites` | the root workspace-wide pytest suites | `task ci:suites` |
 | `test-cloud`, `test-local` | `nx affected` on Nx Cloud agents, or on the runner; one runs per `USE_NX_CLOUD` | `task ci:test` |
-| `sonar` | coverage, then the scan, waiting on the quality gate | `task ci:sonar:target`, `task test:coverage` (`python-lib`: after the check legs; `node-lib`: `task ci:coverage`) |
+| `sonar` | coverage, then the scan, waiting on the quality gate | `task ci:sonar:target`, `task test:coverage` (`python-lib`: after the check legs; `node-lib`: then `task ci:sonar:reports`) |
 | `release` | publishes from the default branch only, after `sonar` | `python-lib`: `task ci:release:build`, `task ci:release:publish`; single-package Python: `task ci:release:state`, `task build`, `task ci:release:publish`; `node-lib`: `task ci:release:*` (see below) |
 | `verify-release` | installs what was published, from PyPI (`[ci] release = "pypi"`) or from its git tag, into a clean venv outside the repository and imports it; `python-lib` verifies every new tag, a single-package repository the tag `release` output | `task ci:verify-release` (`kiln-devops verify-release`) |
 | `smoke` (`node-lib`) | packs and verifies publishable tarballs | `task ci:smoke` |
@@ -90,7 +90,7 @@ Job names other than `ci-ok` are not required checks, so renaming is safe.
 | `integration` | `task ci:integration`, a leg per package with services | `task ci:integration` when declared | `task ci:integration` when declared | n/a |
 | `smoke` | `task ci:smoke`, a leg per package and declared extra | `task ci:smoke` | `task ci:smoke` | `task ci:smoke` |
 | `suites` | `task ci:suites` | `task ci:suites` when declared | `task ci:suites` when declared | n/a |
-| `sonar` | `task ci:sonar:target`, `task test:coverage` | the same | the same | `task ci:sonar:target`, `task ci:coverage` |
+| `sonar` | `task ci:sonar:target`, `task test:coverage` | the same | the same | `task ci:sonar:target`, `task test:coverage`, `task ci:sonar:reports` |
 | `release` | `task ci:release:build`, `task ci:release:publish` | `task ci:release:state`, `task build`, `task ci:release:publish` | the same | `task ci:release:*` |
 | `verify-release` | `task ci:verify-release` | `task ci:verify-release` | `task ci:verify-release` | `task ci:verify-release` |
 | `docs` | `task ci:docs:publish` | `task docs:build`, then the Pages deploy | the same | `task docs:build`, `task ci:docs:site`, then the Pages deploy |

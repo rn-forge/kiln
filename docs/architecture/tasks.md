@@ -87,7 +87,7 @@ a task is read from the golden cells' `task --list`.
 | `ci:internal-ranges` | `python-lib`, with two or more members; always in `node-lib` |
 | `ci:release:sign` | `python-lib`, with `[ci] release = "pypi"` |
 | `ci:docs:publish` | `python-lib`, with the `mkdocs` profile |
-| `ci:test`, `ci:test:has-e2e`, `ci:test:playwright`, `ci:test:playwright-deps`, `ci:smoke`, `ci:coverage` | `node-lib` |
+| `ci:test`, `ci:test:has-e2e`, `ci:test:playwright`, `ci:test:playwright-deps`, `ci:smoke`, `ci:sonar:reports` | `node-lib` |
 | `ci:release:state`, `:author`, `:tag`, `:verify`, `:push`, `:github`, `:publish`, `:finalize`, `:latest`, and `ci:verify-release` | `node-lib`, with `[ci] release = "nx-dispatch"` |
 | `ci:docs:site` | `node-lib`, with the `mkdocs` profile |
 
@@ -96,9 +96,8 @@ The names are one grammar: `ci:<stage>[:<step>]`. The first level is a stage of
 `smoke`, `suites`, `sonar`, `release`, `verify-release`, `docs`) or the name of
 a CI-only check (`secret-scan`, `internal-ranges`, `adapters`); a second level
 is a step in that stage. Hyphens join words inside a level. One idea has one
-name in every archetype. `ci:coverage` is the one exception until S17.2.2.
-`node-lib`'s internal version primitive is `node:version`, in `tasks/node.yml`.
-[CI](ci.md) says which job runs each.
+name in every archetype. `node-lib`'s internal version primitive is
+`node:version`, in `tasks/node.yml`. [CI](ci.md) says which job runs each.
 
 ## The gate
 

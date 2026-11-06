@@ -31,9 +31,12 @@ jobs:{% if node_lib %}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Generate coverage and discover the lcov reports
-        id: coverage
-        run: task ci:coverage >> "$GITHUB_OUTPUT"
+      - name: Test with coverage
+        run: task test:coverage
+
+      - name: Discover the lcov reports
+        id: reports
+        run: task ci:sonar:reports >> "$GITHUB_OUTPUT"
 
       - name: SonarQube Cloud Scan
         uses: [[ pins["sonarqube-scan"].uses ]]@[[ pins["sonarqube-scan"].sha ]] # [[ pins["sonarqube-scan"].version ]]
@@ -41,7 +44,7 @@ jobs:{% if node_lib %}
           # Without qualitygate.wait the job passes on submitting the analysis,
           # so a failed quality gate would never fail CI.
           args: >
-            -Dsonar.javascript.lcov.reportPaths=${{ steps.coverage.outputs.reports }}
+            -Dsonar.javascript.lcov.reportPaths=${{ steps.reports.outputs.reports }}
             -Dsonar.qualitygate.wait=true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}{% else %}
