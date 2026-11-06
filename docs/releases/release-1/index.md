@@ -95,7 +95,7 @@ are [release-2](../release-2/index.md).
 | [F16.3 — The cutover SOP](../../specs/epics/E16-init-adopts-by-overwrite/F16.3-cutover-sop.md) | E16 | Closed |
 | [F16.4 — Generated-file hygiene](../../specs/epics/E16-init-adopts-by-overwrite/F16.4-generated-file-hygiene.md) | E16 | Closed |
 | [F17.1 — The task surface says what it is](../../specs/epics/E17-task-standard/F17.1-task-surface.md) | E17 | Closed |
-| [F17.2 — One grammar for the CI surface, and one home for check policy](../../specs/epics/E17-task-standard/F17.2-ci-task-grammar.md) | E17 | Active |
+| [F17.2 — One grammar for the CI surface, and one home for check policy](../../specs/epics/E17-task-standard/F17.2-ci-task-grammar.md) | E17 | Closed |
 
 <!-- END derived scope -->
 

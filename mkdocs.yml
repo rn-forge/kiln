@@ -177,7 +177,6 @@ nav:
         - specs/epics/E17-task-standard/index.md
         - F17.1 — The task surface says what it is: specs/epics/E17-task-standard/F17.1-task-surface.md
         - F17.2 — One grammar for the CI surface, and one home for check policy: specs/epics/E17-task-standard/F17.2-ci-task-grammar.md
-        - 'E17 — Design: the target task surface': specs/epics/E17-task-standard/design.md
     - Ideas:
       - specs/ideas/index.md
       - kiln simplification: specs/ideas/kiln-simplification.md

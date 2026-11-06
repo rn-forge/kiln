@@ -2,9 +2,7 @@
 
 The task surface kiln generates in every archetype it has, as built now. The
 model is [ADR-0007](../adr/ADR-0007.md); the rules it must meet are in
-[the standard, section 1](../reference/standard-repo.md#1-one-entrypoint). Work
-not yet built, including the `ci:` renames, is in
-[E17's design](../specs/epics/E17-task-standard/design.md).
+[the standard, section 1](../reference/standard-repo.md#1-one-entrypoint).
 
 ## The model
 
@@ -48,7 +46,7 @@ file under its own name.
 | `tasks/workspace.yml` | `workspace` | `clean` | none | every archetype |
 | `tasks/ci.yml` | `ci` | `lint:workflows` and `secrets:install` (internal); the CI surface | the CI surface | every archetype; the body differs |
 | `tasks/docs.yml` | `docs` | `build`, `serve`, `generate` | all three | `[docs] profile = "mkdocs"` |
-| `tasks/node.yml` | `node` | install, lint, `lint:audit` (`node-lib`), `lint:licenses` (`node-lib`), test, build, typecheck, e2e | none | `python-web-app`, `node-lib` |
+| `tasks/node.yml` | `node` | install, lint, `lint:audit` (`node-lib`), `lint:licenses` (`node-lib`), test, build, typecheck, e2e, `version` (`node-lib`; the internal primitive behind the root `version`) | none | `python-web-app`, `node-lib` |
 | `tasks/api.yml` | `api` | `dev`, and `migrate` for Django | `api:dev`, `api:migrate` | `python-web-api`, `python-web-app` |
 | `tasks/web.yml` | `web` | `dev` | `web:dev` | `python-web-app` |
 | `<repo's own>` | `[tasks] includes` | whatever the repository puts there | its own | seeded once, then the repository's |
@@ -91,13 +89,15 @@ a task is read from the golden cells' `task --list`.
 | `ci:release:state`, `:author`, `:tag`, `:verify`, `:push`, `:github`, `:publish`, `:finalize`, `:latest`, and `ci:verify-release` | `node-lib`, with `[ci] release = "nx-dispatch"` |
 | `ci:docs:site` | `node-lib`, with the `mkdocs` profile |
 
-The names are one grammar: `ci:<stage>[:<step>]`. The first level is a stage of
+Task names are one grammar: `<namespace>:<level>[:<level>]`, with colons between
+levels and hyphens joining words inside a level. Under `ci:` it is
+`ci:<stage>[:<step>]`. The first level is a stage of
 [ADR-0016](../adr/ADR-0016.md) (`validate`, `plan`, `test`, `integration`,
 `smoke`, `suites`, `sonar`, `release`, `verify-release`, `docs`) or the name of
 a CI-only check (`secret-scan`, `internal-ranges`, `adapters`); a second level
 is a step in that stage. Hyphens join words inside a level. One idea has one
-name in every archetype. `node-lib`'s internal version primitive is
-`node:version`, in `tasks/node.yml`. [CI](ci.md) says which job runs each.
+name in every archetype, and an archetype renders only its own body. [CI](ci.md)
+says which job runs each.
 
 ## The gate
 
@@ -115,7 +115,8 @@ removes from it.
 the licences task (`python:lint:licenses`, or `node:lint:licenses` for
 `node-lib`) when the `licenses` check is on. A concern module may not import a
 sibling, so `for_config` learns the licences switch from
-`KilnConfig.licenses_enabled`, which reads `[ci.checks]` through the registry.
+`KilnConfig.licenses_enabled`, which reads `[ci.checks]` through
+`registry.enabled_names`.
 
 ## Extending the surface
 
@@ -127,9 +128,10 @@ A repository reaches the generated tasks only through `config.toml`.
 | `[tasks.extra_refs]` | Appends a call to a root verb, keyed by the verb |
 | `[tasks.command_overrides]` | Replaces one toolchain primitive's command, keyed by the task name: install, ruff, `lint-imports`, format, pyright, pytest, build, version, the formatters, the workflow linters and the docs verbs. A key for a task the archetype does not render is an error that lists the keys it does |
 
-The audit's accepted advisories are check policy, so they live in
-`[ci.checks] pip-audit` (a table of `ignore` entries with `id` and `reason`;
-never a boolean), not here.
+Check policy lives in `[ci.checks]`, not in `[tasks]`, which holds wiring only:
+the licences policy (`[ci.checks] licenses`) and the audit's accepted advisories
+(`[ci.checks] pip-audit`, a table of `ignore` entries with `id` and `reason`;
+never a boolean, because the audit is standard and stays on).
 
 `command_overrides` has no key for the dependency audits, the licences check,
 the secret scan or internal ranges. `python:lint:audit` took one until S17.1.2;
