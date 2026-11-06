@@ -3,8 +3,7 @@
 What the generated CI does in every archetype kiln has, as built now. The model
 it follows is [ADR-0016](../adr/ADR-0016.md); the rules it must meet are in
 [the standard, section 8](../reference/standard-repo.md#8-ci-shape). Work not
-yet built, including the target stage vocabulary, is in
-[E15's design](../specs/epics/E15-ci-standard/design.md).
+yet built is in [E15's design](../specs/epics/E15-ci-standard/design.md).
 
 ## The model
 
@@ -32,9 +31,27 @@ Triggers are the same everywhere: a pull request into the default branch, a push
 to it, and `workflow_dispatch`. A newer push to a pull request cancels its run;
 default-branch runs queue. `validate` gates every other job.
 
-The stages are not named alike yet. The target vocabulary, one for every
-archetype, is in
-[the design](../specs/epics/E15-ci-standard/design.md#stage-vocabulary).
+### Stage vocabulary
+
+Every archetype's `ci.yml` runs the same stages, in this order, then `ci-ok`. An
+archetype maps each stage to a stack-specific `task`, or marks it n/a.
+
+| Stage | Means |
+| -- | -- |
+| `validate` | repository-wide checks, once; gates everything |
+| `plan` | selects the units to run. A single-package archetype is a plan of one unit |
+| `test` | unit tests (with lint and typecheck where the stack runs them per unit), per selected unit. `python-lib`'s `verify` is renamed `test` |
+| `integration` | tests against declared service containers. Replaces the `postgres` and `redis` jobs |
+| `smoke` | the built artifact installs and starts or imports |
+| `suites` | end-to-end or cross-unit tests |
+| `sonar` | coverage and the quality gate |
+| `release` | publish, from the default branch only, after every check (`checks-ok`) |
+| `verify-release` | install the published release from its registry. Replaces `external-install` and `node-lib`'s `published-install` |
+| `docs` | deploy Pages once, after the release stages |
+
+Job names other than `ci-ok` are not required checks, so renaming is safe.
+
+### Job order
 
 | Archetype | `ci.yml` job order | Other workflows |
 | -- | -- | -- |
@@ -63,6 +80,87 @@ archetype, is in
 | `docs` | deploys Pages once, on a push to the default branch, after `checks-ok` and each of `release` and `verify-release` that is rendered; a skipped release stage still lets it deploy, a failed or cancelled one does not | `python-lib`: `task ci:docs-publish`; single-package Python: `task docs:build`; `node-lib`: `task docs:build`, `task ci:docs:site` |
 | `checks-ok` | the pre-release barrier: every job that runs before `release` passed or was skipped | none |
 | `ci-ok` | `checks-ok`, and every job after it, passed or was skipped | none |
+
+### Archetype by stage
+
+| Stage | `python-lib` | `python-tool`, `python-app` | `python-web-api`, `python-web-app` | `node-lib` |
+| -- | -- | -- | -- | -- |
+| `validate` | `task lint`, `task ci:adapters`, `task docs:build` | `task validate` | `task validate` | `task ci:validate` |
+| `plan` | `task ci:plan` | `task ci:plan` (one unit) | `task ci:plan` (one unit) | n/a: Nx computes the affected graph inside `ci:affected` |
+| `test` | `task ci:test`, a leg per package | `task ci:test` | `task ci:test`; `python-web-app` adds `task node:*` | `task ci:affected` (`test-cloud` or `test-local`) |
+| `integration` | `task ci:integration`, a leg per package with services | `task ci:integration` when declared | `task ci:integration` when declared | n/a |
+| `smoke` | `task ci:smoke`, a leg per package and declared extra | `task ci:smoke` | `task ci:smoke` | `task ci:package` |
+| `suites` | `task ci:suite` | `task ci:suite` when declared | `task ci:suite` when declared | n/a |
+| `sonar` | `task ci:sonar-target`, `task test:coverage` | the same | the same | `task ci:sonar-target`, `task ci:coverage` |
+| `release` | `task ci:release-build`, `task ci:release-publish` | `task ci:release-state`, `task build`, `task ci:release-publish` | the same | `task ci:release:*` |
+| `verify-release` | `task ci:verify-release` | `task ci:verify-release` | `task ci:verify-release` | `task ci:verify-release` |
+| `docs` | `task ci:docs-publish` | `task docs:build`, then the Pages deploy | the same | `task docs:build`, `task ci:docs:site`, then the Pages deploy |
+
+- `verify-release` installs from the registry the release went to (PyPI with
+  `[ci] release = "pypi"`, the git tag with `tag-exists`, the release tarballs
+  with `nx-dispatch`). It is not rendered with `[ci] release = "none"`.
+- One Sonar guard serves every archetype: Sonar is skipped for a fork's pull
+  request and for Dependabot's.
+
+### The pre-release barrier
+
+One job, `checks-ok`, stands between the checks and anything that publishes. It
+has `ci-ok`'s logic (`if: always()`; it fails when any needed job failed or was
+cancelled, and a skipped job passes), and its `needs` are every job that runs
+before `release`: `validate`, `dependency-review`, `secret-scan`, `plan`, the
+test stages (`test`, or `node-lib`'s `test-cloud` and `test-local`),
+`integration`, `smoke`, `suites`, `sonar`, every configured check's job, and
+every `[[ci.jobs]]` with `required = true`, as rendered. The list is written
+once, in a template macro.
+
+| Job | `needs` | Runs when |
+| -- | -- | -- |
+| `release` | `checks-ok` (and `plan`, for its outputs) | `!cancelled() && needs.checks-ok.result == 'success'`, on a push to the default branch |
+| `verify-release` | `release` | `release` succeeded and published something (its `tag` output is not empty) |
+| `docs` | `checks-ok`, and `release` and `verify-release` where rendered (and `plan` for `python-lib`) | `!cancelled() && needs.checks-ok.result == 'success' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')`, on a push to the default branch |
+| `ci-ok` | `checks-ok`, `release`, `verify-release`, `docs`, as rendered | `always()`; fails on a failed or cancelled need |
+
+- No publishing job uses GitHub's default `success()` over a list of jobs, so
+  `node-lib`'s inactive test job (one of `test-cloud` and `test-local` is
+  always skipped) never skips the release: `checks-ok` takes the skip.
+- A failed check of any kind (the secret scan, a required declared job) blocks
+  `release`, not only `ci-ok`.
+- `docs` deploys when `release` or `verify-release` was skipped because there
+  was nothing to publish, and never before the test stages finish, with or
+  without Sonar and a release mode.
+- `python-lib` releases nothing when any check fails, including one package's
+  leg. With Sonar on this was already so (Sonar is skipped on a failure); with
+  Sonar off it no longer releases the passing packages alone.
+- `[ci.hooks] docs` actions run before the upload, against the site built into
+  `$RUNNER_TEMP/site` (`task docs:build -- <dir>` overrides the configured
+  `site_dir`).
+
+### Reusable workflows
+
+`ci.yml` stays the one entry workflow and `ci-ok` the one required check. kiln
+splits a stage into a reusable workflow, `.github/workflows/_<stage>.yml`
+(`on: workflow_call`), when the stage's YAML is large or shared across
+archetypes. All of them are rendered by kiln, carry its provenance header, and
+are read-only to the repository.
+
+| File | Stage | Why split |
+| -- | -- | -- |
+| `_integration.yml` | `integration` | a matrix leg with containers; Python archetypes |
+| `_smoke.yml` | `smoke` | a matrix leg; Python archetypes |
+| `_sonar.yml` | `sonar` | one body, one guard, every archetype |
+| `_release.yml` | `release` | the largest stage; one body per release mode |
+| `_verify-release.yml` | `verify-release` | every archetype |
+| `_docs.yml` | `docs` | every archetype; Pages permissions in one place |
+
+`validate`, `plan`, `test`, `suites`, `dependency-review`, `secret-scan`,
+`checks-ok` and `ci-ok` stay in `ci.yml`: each is short or needs `ci.yml`'s
+outputs.
+
+- The caller job in `ci.yml` grants the permissions; a called workflow can only
+  narrow them. Secrets are passed by name, never `secrets: inherit`.
+- A reusable workflow's checks appear as `<caller job> / <job>`. Only `ci-ok` is
+  required, so no ruleset changes.
+- `[[ci.jobs]] uses` may not name a `_<stage>.yml` file kiln renders.
 
 ## Checks by archetype
 
@@ -131,7 +229,8 @@ A `[[ci.jobs]]` entry has `name` (kebab-case, not a job kiln generates), `uses`
 `pull_request`, `push`, `workflow_dispatch`) and `contents` (`read`, or `write`
 for a job that creates releases). Every entry gates `checks-ok` (hence
 `release`) unless `required = false`. `ci-hooks` checks that each hook and job
-names a file that exists and, for a job, can be called.
+names a file that exists and, for a job, can be called, and refuses a job whose
+`uses` is a `_<stage>.yml` kiln renders (`ci.hook-reserved`).
 
 ### `[ci.checks]`
 
@@ -171,44 +270,89 @@ renders the job, still after `validate`, but nothing waits for it.
 
 ## Per-archetype detail
 
-### Single-package Python
+Every archetype runs the one flow above: `validate`, then the test stages, then
+`sonar`, the `checks-ok` barrier, `release`, `verify-release`, `docs` and
+`ci-ok`. What differs is the plan and the tasks under each stage.
 
-`python-tool`, `python-app`, `python-web-api` and `python-web-app` are a
-workspace of one member, the root project, so they run the same `plan`, `test`,
-`integration`, `smoke` and `suites` jobs as `python-lib`: `validate` > `plan` >
-`test`, `integration`, `smoke`, `suites` > `sonar` > `checks-ok` > `release`.
-`validate` runs `task ci:validate` (`task lint`, `task typecheck`, and
-`task docs:build` with docs); `test` runs `task test`, which for
-`python-web-app` includes the frontend. A change under `docs/` alone selects
-nothing; any other change selects the one member. `release` waits for `plan` and
-`checks-ok`, builds with `task build` and publishes with
-`task ci:release-publish`, after `task ci:release-state` decides whether the
-version is new. `python-web-api` and `python-web-app` run the same pipeline with
-the API package under `api_dir`; `python-web-app` adds the frontend
-(`task node:*`) to `lint`, `typecheck`, `test` and `build`. They deploy docs
-from the `docs` job (`task docs:build`), which waits for `checks-ok`, `release`
-and `verify-release` and is part of `ci-ok`.
+### Python archetypes
+
+`python-lib` plans a workspace of many members. `python-tool`, `python-app`,
+`python-web-api` and `python-web-app` are a workspace of one member, the root
+project, so `plan` selects that member or nothing, and they run the same `test`,
+`integration`, `smoke` and `suites` jobs.
+
+- `validate` runs `task ci:validate` (`task lint`, `task typecheck`, and
+  `task docs:build` with docs); `python-lib` runs `task lint`,
+  `task ci:adapters` and `task docs:build`.
+- `test` runs `task test` for a single-package repository, which for
+  `python-web-app` includes the frontend (`task node:*`); `python-web-api` and
+  `python-web-app` keep the API package under `api_dir`. A change under
+  `docs/` alone selects nothing.
+- `release` waits for `plan` and `checks-ok`. A single-package repository builds
+  with `task build` and publishes with `task ci:release-publish`, after
+  `task ci:release-state` decides whether the version is new; `python-lib`
+  releases each selected package in dependency order.
+- `docs` deploys Pages once, after `checks-ok`, `release` and `verify-release`.
 
 ### `node-lib`
 
 `validate` runs `task ci:validate`; `test-cloud` or `test-local` runs
 `task ci:affected` (Nx's lint, typecheck, test and build on the affected
-projects); `sonar` waits for one of them; `smoke` packs and verifies the
-publishable tarballs; `docs` builds the site after `checks-ok`, `release` and
-`verify-release`. `checks-ok` and `ci-ok` share one macro (no `jq`): a failed or
-cancelled need fails them, and the inactive one of `test-cloud` and `test-local`
-is skipped, which passes. Sonar is skipped for Dependabot's pull requests.
+projects); `sonar` and `smoke` wait for one of them, and `smoke` packs and
+verifies the publishable tarballs; `docs` builds the site after `checks-ok`,
+`release` and `verify-release`. `checks-ok` and `ci-ok` share one macro (no
+`jq`): a failed or cancelled need fails them, and the inactive one of
+`test-cloud` and `test-local` is skipped, which passes. Sonar is skipped for
+Dependabot's pull requests.
 
 The `node-lib` `release` runs on a push to the default branch, after `checks-ok`
 only (the inactive one of `test-cloud` and `test-local` is skipped, so the
-release does not wait on a test job). The version is bumped in a pull request
-with `task version -- <bump>`; CI never commits. `ci:release:state` reads the
-version `V`: no `vV` tag is a new release (tag, verify, push the tag, create the
-GitHub Release as a draft, publish to npm, publish the draft, move `latest`); a
-`vV` tag with a draft or no release resumes and republishes, since
-`nx release publish` skips a version npm already has; a published release does
-nothing. `verify-release` then runs `task ci:verify-release` when `release`
-published. [ADR-0015](../adr/ADR-0015.md) records it.
+release does not wait on a test job). [ADR-0015](../adr/ADR-0015.md) records it.
+
+#### Versions in the pull request
+
+The release follows a version bump, as for Python
+([ADR-0016](../adr/ADR-0016.md)); nothing is chosen at release time.
+
+| Was a `release.yml` input | Now |
+| -- | -- |
+| `specifier`, `exact-version` | A developer runs `task version -- <patch\|minor\|major\|x.y.z>` in a pull request (`nx release version`, no commit or tag) and commits the bump |
+| `first-release` | Derived: no `v*` tag exists in the repository |
+| `dist-tag` | Derived: `latest` for `x.y.z`; the prerelease identifier for `x.y.z-<id>.<n>` |
+| `dry-run` | Gone: `smoke` packs on every pull request; `release` runs only on the default branch |
+
+On a push to the default branch, `release` reads the release group's version
+`V`. No `vV` tag means a new release: tag `HEAD`, verify, push the tag only,
+create the GitHub Release as a draft, publish to npm, publish the draft, move
+`latest`. The GitHub Release is published only after npm publishing succeeds, so
+a published release means a finished one. A tag with a draft (or no) release
+resumes, and the resume republishes; `nx release publish` skips any version npm
+already has. A tag with a published release does nothing. CI never commits.
+
+### Integration: services as data
+
+A package declares the service containers its tests need in its own
+`pyproject.toml`. Nothing in kiln names a database.
+
+```toml
+[tool.workspace-ci.integration.postgres]
+image = "postgres:17"
+ports = ["5432:5432"]
+health-cmd = "pg_isready -U ci"
+
+[tool.workspace-ci.integration.postgres.env]
+POSTGRES_USER = "ci"
+POSTGRES_PASSWORD = "ci"
+POSTGRES_DB = "ci"
+
+[tool.workspace-ci.integration.postgres.expose]
+DATABASE_URL = "postgresql://ci:ci@localhost:5432/ci"
+```
+
+`plan` emits one `integration` entry per selected package with a non-empty set;
+one matrix job runs a leg per entry. The leg's `task ci:integration` starts the
+package's containers, waits for their health, runs the package's tests with the
+`expose` variables set, and removes the containers.
 
 ### `python-lib`, event by event
 

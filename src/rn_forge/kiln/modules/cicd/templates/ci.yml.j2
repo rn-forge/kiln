@@ -261,67 +261,21 @@ jobs:
   sonar:
     needs: [validate, test-cloud, test-local, smoke]
     if: [[ sonar_guard() ]]
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: read
-    steps:
-      - uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
-        with:
-          fetch-depth: 0 # Sonar needs full history, not a shallow clone
-          persist-credentials: false
-
-      - uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Generate coverage and discover the lcov reports
-        id: coverage
-        run: task ci:coverage >> "$GITHUB_OUTPUT"
-
-      - name: SonarQube Cloud Scan
-        uses: [[ pins["sonarqube-scan"].uses ]]@[[ pins["sonarqube-scan"].sha ]] # [[ pins["sonarqube-scan"].version ]]
-        with:
-          # Without qualitygate.wait the job passes on submitting the analysis,
-          # so a failed quality gate would never fail CI.
-          args: >
-            -Dsonar.javascript.lcov.reportPaths=${{ steps.coverage.outputs.reports }}
-            -Dsonar.qualitygate.wait=true
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    uses: ./.github/workflows/_sonar.yml # zizmor: ignore[self-repository] actionlint rejects the $/ form
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 {% endif %}
   # Runs regardless of which path above executed - the tarball smoke test isn't a
   # validation step, it just needs one of them to have succeeded first.
   smoke:
     needs: [validate, test-cloud, test-local]
     if: ${{ always() && (needs.test-cloud.result == 'success' || needs.test-local.result == 'success') }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
     permissions:
       contents: read
-    steps:
-      - uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
-        with:
-          filter: tree:0
-          fetch-depth: 0
-          persist-credentials: false
-
-      - uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      # Plain `nx pack` (unlike the release path) never stamps workspace:*
-      # peers to exact pins, so verify-dist checks the CI tarballs' manifests.
-      - name: Pack and verify publishable tarballs
-        run: task ci:package
-
-      - name: Upload package tarballs
-        uses: [[ pins["upload-artifact"].uses ]]@[[ pins["upload-artifact"].sha ]] # [[ pins["upload-artifact"].version ]]
-        with:
-          name: package-tarballs
-          path: dist/tarballs/*.tgz
-          retention-days: 14
+    uses: ./.github/workflows/_smoke.yml # zizmor: ignore[self-repository] actionlint rejects the $/ form
 {% if release != "none" %}
   # The version is bumped in a pull request (`task version -- <bump>`); this job
   # tags it, publishes it, and never commits. Only a push to the default branch,
@@ -329,131 +283,22 @@ jobs:
   release:
     needs: [checks-ok]
     if: ${{ !cancelled() && needs.checks-ok.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    concurrency:
-      group: release
-      cancel-in-progress: false # never cancel a running release
     permissions:
       contents: write # create GitHub Releases
       id-token: write # npm OIDC trusted publishing
-    # The tag this run published; empty when the version was already released.
-    outputs:
-      tag: ${{ steps.state.outputs.mode != 'released' && steps.state.outputs.tag || '' }}
-    steps:
-      # The tag is pushed to a protected ref, so git runs as the release GitHub
-      # App (a bypass actor on the tag ruleset); GITHUB_TOKEN cannot bypass it.
-      - uses: [[ pins["create-github-app-token"].uses ]]@[[ pins["create-github-app-token"].sha ]] # [[ pins["create-github-app-token"].version ]]
-        id: app-token
-        with:
-          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
-          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
-          permission-contents: write
-
-      - uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
-        with:
-          token: ${{ steps.app-token.outputs.token }}
-          fetch-depth: 0 # every v* tag, to tell a first release
-          filter: tree:0
-          persist-credentials: true # the tag is pushed with this token
-
-      # npm >= 11.5.1 is required for OIDC publishing (Node version from .nvmrc)
-      - uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          registry-url: 'https://registry.npmjs.org'
-
-      # A version counts as shipped only when its GitHub Release is published.
-      - name: Detect release state
-        id: state
-        run: task ci:release:state
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Configure git author
-        if: ${{ steps.state.outputs.mode != 'released' }}
-        run: task ci:release:author
-
-      - name: Tag the release
-        if: ${{ steps.state.outputs.mode == 'new' }}
-        run: task ci:release:tag
-        env:
-          TAG: ${{ steps.state.outputs.tag }}
-
-      # dist/ is rebuilt from the tagged source, with task dependencies, and pack
-      # stamps the exact internal pins.
-      - name: Rebuild and verify
-        if: ${{ steps.state.outputs.mode != 'released' }}
-        run: task ci:release:verify
-
-      - name: Push the tag
-        if: ${{ steps.state.outputs.mode == 'new' }}
-        run: task ci:release:push
-        env:
-          TAG: ${{ steps.state.outputs.tag }}
-
-      # A draft until npm has the version, so a published release is a finished one.
-      - name: Create the draft GitHub Release
-        if: ${{ steps.state.outputs.mode != 'released' }}
-        run: task ci:release:github
-        env:
-          TAG: ${{ steps.state.outputs.tag }}
-          GH_TOKEN: ${{ github.token }}
-
-      # --excludeTaskDependencies to not invalidate cache and use the dist/ the
-      # verify step built. nx skips a version npm already has.
-      - name: Publish
-        if: ${{ steps.state.outputs.mode != 'released' }}
-        run: task ci:release:publish
-        env:
-          DIST_TAG: ${{ steps.state.outputs.dist-tag }}
-          FIRST_RELEASE_FLAG: ${{ steps.state.outputs.first-release == 'true' && '--first-release' || '' }}
-
-      - name: Publish the GitHub Release
-        if: ${{ steps.state.outputs.mode != 'released' }}
-        run: task ci:release:finalize
-        env:
-          TAG: ${{ steps.state.outputs.tag }}
-          GH_TOKEN: ${{ github.token }}
-
-      # Rolling pointer so consumers can depend on a stable, version-less URL
-      # (.../releases/download/latest/<pkg>.tgz) instead of tracking exact tags.
-      - name: Update rolling "latest" release
-        if: ${{ steps.state.outputs.mode != 'released' }}
-        run: task ci:release:latest
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.state.outputs.tag }}
-
-      - name: Already released
-        if: ${{ steps.state.outputs.mode == 'released' }}
-        run: echo "::notice::$TAG is already released"
-        env:
-          TAG: ${{ steps.state.outputs.tag }}
+    uses: ./.github/workflows/_release.yml # zizmor: ignore[self-repository] actionlint rejects the $/ form
+    secrets:
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
 
   # Installs what consumers download, not what the release runner built.
   verify-release:
     needs: [release]
     if: ${{ !cancelled() && needs.release.result == 'success' && needs.release.outputs.tag != '' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
     permissions:
       contents: read
-    steps:
-      - uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
-        with:
-          ref: ${{ needs.release.outputs.tag }}
-          persist-credentials: false
-
-      - uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Verify the released tarballs
-        run: task ci:verify-release
-        env:
-          TAG: ${{ needs.release.outputs.tag }}
-          GH_TOKEN: ${{ github.token }}
+    uses: ./.github/workflows/_verify-release.yml # zizmor: ignore[self-repository] actionlint rejects the $/ form
+    with:
+      tag: ${{ needs.release.outputs.tag }}
 {% endif %}{% if docs %}
   # Publishes the one Pages site from main after the checks pass: MkDocs, with
   # Compodoc and Storybook assembled under it. deploy-pages replaces the whole
@@ -461,49 +306,11 @@ jobs:
   docs:
     needs: [[ "[" ~ docs_needs(false) ~ "]" ]]
     if: [[ docs_if(false) ]]
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
     permissions:
       contents: read
       pages: write
       id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    concurrency:
-      group: pages
-      cancel-in-progress: false
-    steps:
-      - uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
-        with:
-          filter: tree:0
-          fetch-depth: 0
-          persist-credentials: false
-
-      - uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build the MkDocs site
-        run: task docs:build
-
-      - name: Build Compodoc and Storybook and assemble the site
-        run: task ci:docs:site
-
-{% for hook in hooks.docs %}      - name: Run [[ hook ]]
-        uses: [[ hook ]] # zizmor: ignore[self-repository] actionlint rejects the $/ form
-        env:
-          SITE_DIR: .docs-site
-
-{% endfor %}      - uses: [[ pins["configure-pages"].uses ]]@[[ pins["configure-pages"].sha ]] # [[ pins["configure-pages"].version ]]
-
-      - uses: [[ pins["upload-pages-artifact"].uses ]]@[[ pins["upload-pages-artifact"].sha ]] # [[ pins["upload-pages-artifact"].version ]]
-        with:
-          path: .docs-site
-          include-hidden-files: true
-
-      - id: deployment
-        uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]
+    uses: ./.github/workflows/_docs.yml # zizmor: ignore[self-repository] actionlint rejects the $/ form
 {% endif %}{% else %}
   plan:
     needs: validate
@@ -584,84 +391,25 @@ jobs:
   # them. A job's `services` cannot vary with the matrix leg, so the task starts
   # them.
   integration:
-    name: integration (${{ matrix.name }})
     needs: [validate, plan]
     if: ${{ !cancelled() && needs.validate.result == 'success' && needs.plan.outputs.integration != '[]' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
     permissions:
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJSON(needs.plan.outputs.integration) }}
-    steps:
-      - name: Checkout
-        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
-        with:
-          persist-credentials: false
-
-      - name: Set up the toolchain
-        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install dependencies
-        run: task setup
-
-      - name: Test against the declared services
-        run: task ci:integration -- ${{ matrix.name }}
-
-      - name: Record the check
-        run: mkdir ok && touch "ok/${{ matrix.marker }}"
-
-      - name: Upload the check marker
-        uses: [[ pins["upload-artifact"].uses ]]@[[ pins["upload-artifact"].sha ]] # [[ pins["upload-artifact"].version ]]
-        with:
-          name: ok-${{ matrix.marker }}
-          path: ok/
-          retention-days: 1
+    uses: ./.github/workflows/_integration.yml # zizmor: ignore[self-repository] actionlint rejects the $/ form
+    with:
+      matrix: ${{ needs.plan.outputs.integration }}
 
   # Every other job syncs everything, which hides an extra that forgets a
   # dependency another extra brings. Each extra is installed alone, from the
   # built wheel's metadata, into a clean venv and imported.
   smoke:
-    name: smoke (${{ matrix.marker }})
     needs: [validate, plan]
     if: ${{ !cancelled() && needs.validate.result == 'success' && needs.plan.outputs.smoke != '[]' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
     permissions:
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJSON(needs.plan.outputs.smoke) }}
-    steps:
-      - name: Checkout
-        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
-        with:
-          persist-credentials: false
-
-      - name: Set up the toolchain
-        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install and import
-        env:
-          EXTRA: ${{ matrix.extra }}
-        run: task ci:smoke -- ${{ matrix.name }}
-
-      - name: Record the check
-        run: mkdir ok && touch "ok/${{ matrix.marker }}"
-
-      - name: Upload the check marker
-        uses: [[ pins["upload-artifact"].uses ]]@[[ pins["upload-artifact"].sha ]] # [[ pins["upload-artifact"].version ]]
-        with:
-          name: ok-${{ matrix.marker }}
-          path: ok/
-          retention-days: 1
+    uses: ./.github/workflows/_smoke.yml # zizmor: ignore[self-repository] actionlint rejects the $/ form
+    with:
+      matrix: ${{ needs.plan.outputs.smoke }}
 
   # Workspace-wide pytest runs from the root `[tool.workspace-ci.suites]`.
   suites:
@@ -702,51 +450,12 @@ jobs:
     # plan keeps no readable result for any other branch, so the quality-gate
     # wait fails there. Validation stays required; the scan is skipped.
     if: [[ sonar_guard() ]]
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
     permissions:
       contents: read
       pull-requests: read
-    steps:
-      - name: Checkout
-        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Set up the toolchain
-        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install dependencies
-        run: task setup
-
-      # A push or dispatch names its branch (main, by the job's `if`), so the
-      # analysis lands on it explicitly. A pull request keeps the scanner's own
-      # detection. A tag has no branch to analyse.
-      - name: Resolve the analysis target
-        id: target
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          REF_TYPE: ${{ github.ref_type }}
-          REF_NAME: ${{ github.ref_name }}
-        run: task ci:sonar-target >> "$GITHUB_OUTPUT"
-
-      - name: Test with coverage
-        run: task test:coverage
-
-      # `sonar.qualitygate.wait` is what makes the gate a gate: without it the
-      # job succeeds on *submitting* the analysis, and a release can ship while
-      # Sonar is still deciding it failed.
-      - name: SonarQube scan
-        uses: [[ pins["sonarqube-scan"].uses ]]@[[ pins["sonarqube-scan"].sha ]] # [[ pins["sonarqube-scan"].version ]]
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.qualitygate.wait=true
-            ${{ steps.target.outputs.branch-arg }}
+    uses: ./.github/workflows/_sonar.yml # zizmor: ignore[self-repository] actionlint rejects the $/ form
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 {% endif %}{% if release != "none" and workspace %}
   # Tags created with GITHUB_TOKEN start no workflow, so every release is created
   # here, prerequisites first, only on a push to the default branch and after
@@ -754,178 +463,41 @@ jobs:
   release:
     needs: [plan, checks-ok]
     if: ${{ !cancelled() && needs.checks-ok.result == 'success' && needs.plan.outputs.release-order != '[]' && {% if release == "pypi" %}((github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.testpypi)){% else %}github.event_name == 'push' && github.ref == 'refs/heads/main'{% endif %} }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-{% if release == "pypi" %}    environment: ${{ inputs.testpypi && 'testpypi' || 'pypi' }}
-    # The provenance step's `if:` reads this; a step's own `env:` is not in scope there.
-    env:
-      TESTPYPI: ${{ github.event_name == 'workflow_dispatch' && inputs.testpypi }}
-{% endif %}    permissions:
+    permissions:
       contents: write
       id-token: write
       attestations: write
-    steps:
-      - name: Checkout
-        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
-        with:
-          persist-credentials: false
-
-      - name: Set up the toolchain
-        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download the check markers
-        uses: [[ pins["download-artifact"].uses ]]@[[ pins["download-artifact"].sha ]] # [[ pins["download-artifact"].version ]]
-        with:
-          pattern: ok-*
-          merge-multiple: true
-          path: ok/
-
-      - name: Build releases
-        id: build
-        env:
-          GH_TOKEN: ${{ github.token }}
-{% if release == "pypi" %}          TESTPYPI: ${{ github.event_name == 'workflow_dispatch' && inputs.testpypi }}
-{% endif %}          SELECTED: ${{ needs.plan.outputs.release-order }}
-        run: task ci:release-build
-
-      # Attested before anything is published, because the release, not the
-      # tag, is the record: a failure here leaves nothing published, and a
-      # rerun attests again. Skipped when every package was already released.
-      - name: Generate provenance
-        if: steps.build.outputs.built != '0'{% if release == "pypi" %} && env.TESTPYPI != 'true'{% endif %}
-        uses: [[ pins["attest"].uses ]]@[[ pins["attest"].sha ]] # [[ pins["attest"].version ]]
-        with:
-          subject-path: |
-            dist/*/*.whl
-            dist/*/*.tar.gz
-            dist/*/*.cdx.json
-
-{% if release == "pypi" %}      # uv publish uploads the *.publish.attestation files it is given. One file at a time, because a Rekor write can stall into a 502 and signing never retries.
-      - name: Attest PyPI publish
-        if: steps.build.outputs.built != '0'
-        run: task ci:release-sign
-
-{% endif %}      - name: Publish releases
-        env:
-          GH_TOKEN: ${{ github.token }}
-{% if release == "pypi" %}          TESTPYPI: ${{ github.event_name == 'workflow_dispatch' && inputs.testpypi }}
-{% endif %}          SELECTED: ${{ needs.plan.outputs.release-order }}
-        run: task ci:release-publish
-
+    uses: ./.github/workflows/_release.yml # zizmor: ignore[self-repository] actionlint rejects the $/ form
+    with:
+      release-order: ${{ needs.plan.outputs.release-order }}
+{% if release == "pypi" %}      testpypi: ${{ github.event_name == 'workflow_dispatch' && inputs.testpypi }}
+{% endif %}
   # Package checks resolve internal dependencies from the workspace, which
   # never proves a tag installs on its own.
   verify-release:
     needs: [release]
     if: ${{ !cancelled() && needs.release.result == 'success' && github.event_name == 'push' && github.ref_name == 'main' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
     permissions:
       contents: read
-    steps:
-      - name: Checkout
-        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Set up the toolchain
-        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Verify remote tags and clean installs
-        env:
-          REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
-        run: task ci:verify-release
+    uses: ./.github/workflows/_verify-release.yml # zizmor: ignore[self-repository] actionlint rejects the $/ form
 {% elif release != "none" %}
   release:
     needs: [plan, checks-ok]
     if: ${{ !cancelled() && needs.checks-ok.result == 'success' && github.event_name == 'push' && github.ref_name == 'main' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    # The tag this run published; empty when the version was already released.
-    outputs:
-      tag: ${{ steps.check.outputs.should-release == 'true' && steps.check.outputs.tag || '' }}
     permissions:
       contents: write
       id-token: write
       attestations: write
-    steps:
-      - name: Checkout
-        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
-        with:
-          persist-credentials: false
-
-      - name: Set up the toolchain
-        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      # The release, not the tag, is the record of what shipped.
-      - name: Check whether this version has been released
-        id: check
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: task ci:release-state >> "$GITHUB_OUTPUT"
-
-      # A tag without a published release is a failed release: rebuild from it.
-      - name: Check out the release source
-        id: source
-        if: steps.check.outputs.should-release == 'true'
-        env:
-          TAG: ${{ steps.check.outputs.tag }}
-        run: task ci:release-source >> "$GITHUB_OUTPUT"
-
-      - name: Build
-        if: steps.check.outputs.should-release == 'true'
-        run: task build
-
-      # Attested before the release is published, because the release, not the
-      # tag, is the record: a failure here leaves nothing published.
-      - name: Generate provenance
-        if: steps.check.outputs.should-release == 'true'
-        uses: [[ pins["attest"].uses ]]@[[ pins["attest"].sha ]] # [[ pins["attest"].version ]]
-        with:
-          subject-path: |
-            dist/*.whl
-            dist/*.tar.gz
-            dist/*.cdx.json
-
-      # Publishing makes the tag at the source commit; a resumed release reuses its tag.
-      - name: Publish GitHub Release
-        if: steps.check.outputs.should-release == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.check.outputs.tag }}
-          SOURCE_SHA: ${{ steps.source.outputs.sha }}
-        run: task ci:release-publish
+    uses: ./.github/workflows/_release.yml # zizmor: ignore[self-repository] actionlint rejects the $/ form
 
   verify-release:
     needs: [release]
     if: ${{ !cancelled() && needs.release.result == 'success' && needs.release.outputs.tag != '' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
     permissions:
       contents: read
-    steps:
-      - name: Checkout
-        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Set up the toolchain
-        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Verify the remote tag and a clean install
-        env:
-          REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
-          TAG: ${{ needs.release.outputs.tag }}
-        run: task ci:verify-release -- "$TAG"
+    uses: ./.github/workflows/_verify-release.yml # zizmor: ignore[self-repository] actionlint rejects the $/ form
+    with:
+      tag: ${{ needs.release.outputs.tag }}
 {% endif %}{% if workspace and docs %}
   # Runs on a push with no package change too, when `release` is skipped. The one
   # job that deploys Pages for a workspace: a root-only deploy landing after it
@@ -933,98 +505,21 @@ jobs:
   docs:
     needs: [[ "[" ~ docs_needs(true) ~ "]" ]]
     if: [[ docs_if(true) ]]
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    concurrency:
-      group: pages
-      cancel-in-progress: false
     permissions:
       contents: write # mike pushes gh-pages
       pages: write
       id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Checkout
-        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
-        with:
-          fetch-depth: 0
-          persist-credentials: true # mike pushes gh-pages with this token
-
-      - name: Set up the toolchain
-        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install dependencies
-        run: task setup
-
-      - name: Deploy the package sites and build the root site
-        env:
-          SITE_DIR: ${{ runner.temp }}/site
-        run: task ci:docs-publish
-
-{% for hook in hooks.docs %}      - name: Run [[ hook ]]
-        uses: [[ hook ]] # zizmor: ignore[self-repository] actionlint rejects the $/ form
-        env:
-          SITE_DIR: ${{ runner.temp }}/site
-
-{% endfor %}      - name: Upload Pages artifact
-        uses: [[ pins["upload-pages-artifact"].uses ]]@[[ pins["upload-pages-artifact"].sha ]] # [[ pins["upload-pages-artifact"].version ]]
-        with:
-          path: ${{ runner.temp }}/site
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]
+    uses: ./.github/workflows/_docs.yml # zizmor: ignore[self-repository] actionlint rejects the $/ form
 {% endif %}{% if not workspace and docs %}
   # The one Pages deploy, after the barrier and the release stages.
   docs:
     needs: [[ "[" ~ docs_needs(false) ~ "]" ]]
     if: [[ docs_if(false) ]]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    concurrency:
-      group: pages
-      cancel-in-progress: false
     permissions:
       contents: read
       pages: write
       id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Checkout
-        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
-        with:
-          persist-credentials: false
-
-      - name: Set up the toolchain
-        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Install dependencies
-        run: task setup
-
-      - name: Build docs site
-        run: task docs:build -- "$RUNNER_TEMP/site"
-
-{% for hook in hooks.docs %}      - name: Run [[ hook ]]
-        uses: [[ hook ]] # zizmor: ignore[self-repository] actionlint rejects the $/ form
-        env:
-          SITE_DIR: ${{ runner.temp }}/site
-
-{% endfor %}      - name: Upload Pages artifact
-        uses: [[ pins["upload-pages-artifact"].uses ]]@[[ pins["upload-pages-artifact"].sha ]] # [[ pins["upload-pages-artifact"].version ]]
-        with:
-          path: ${{ runner.temp }}/site
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]
+    uses: ./.github/workflows/_docs.yml # zizmor: ignore[self-repository] actionlint rejects the $/ form
 {% endif %}{% endif %}{% if umbrella_release_enabled %}
   # One GitHub release per shipped release page. Gated on the barrier and on
   # `release` not failing, never on which packages were selected: a push that

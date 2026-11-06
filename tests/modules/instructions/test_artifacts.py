@@ -182,11 +182,12 @@ def test_s4_3_5_2_turning_sonar_off_updates_only_the_block_and_standard(
         for key, action in _actions(root, tmp_path).items()
         if action not in (Action.UNCHANGED, Action.SKIP)
     }
-    # `cicd` owns the Sonar job and properties file, so its two rows move as well.
+    # `cicd` owns the Sonar job, its workflow and the properties file, so those rows move as well.
     assert changed == {
         BLOCK_KEY,
         STANDARD,
         ".github/workflows/ci.yml",
+        ".github/workflows/_sonar.yml",
         "sonar-project.properties",
     }
 

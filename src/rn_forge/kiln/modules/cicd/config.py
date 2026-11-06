@@ -11,6 +11,7 @@ from rn_forge.kiln.modules.core.config.schema import ConfigModel
 
 __all__ = [
     "GENERATED_JOBS",
+    "STAGE_WORKFLOWS",
     "CiConfig",
     "CiHooks",
     "CiJob",
@@ -38,6 +39,19 @@ GENERATED_JOBS = frozenset(
     }
 )
 """The job names `ci.yml` renders itself, which a declared job cannot take."""
+
+STAGE_WORKFLOWS = frozenset(
+    f"./.github/workflows/_{stage}.yml"
+    for stage in (
+        "integration",
+        "smoke",
+        "sonar",
+        "release",
+        "verify-release",
+        "docs",
+    )
+)
+"""The reusable workflows kiln renders, which a declared job cannot call."""
 
 _KEBAB = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
 _HOOK = re.compile(r"^\./\.github/actions/[a-z0-9][a-z0-9-]*$")

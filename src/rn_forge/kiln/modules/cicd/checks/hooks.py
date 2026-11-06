@@ -1,9 +1,10 @@
 """`ci-hooks` — each `[ci.hooks]` action and each declared job's workflow exists and can be used.
 
-Two rules:
+Three rules:
 
 1. Every `[ci.hooks]` `setup` and `docs` entry has an `action.yml` or `action.yaml`.
 2. Every `[[ci.jobs]]` `uses` file exists, and its `on:` includes `workflow_call`.
+3. No `[[ci.jobs]]` `uses` names a reusable stage workflow kiln renders.
 """
 
 from __future__ import annotations
@@ -15,13 +16,14 @@ from rn_forge.commons.findings import Finding, Severity
 from rn_forge.commons.fs.documents import YamlUtils
 
 from rn_forge.kiln.config import KilnConfig
-from rn_forge.kiln.modules.cicd.config import CiConfig
+from rn_forge.kiln.modules.cicd.config import STAGE_WORKFLOWS, CiConfig
 
-__all__ = ["MISSING", "NAME", "NOT_CALLABLE", "check"]
+__all__ = ["MISSING", "NAME", "NOT_CALLABLE", "RESERVED", "check"]
 
 NAME = "ci-hooks"
 MISSING = "ci.hook-missing"
 NOT_CALLABLE = "ci.hook-not-callable"
+RESERVED = "ci.hook-reserved"
 
 
 def _calls(workflow: object) -> bool:
@@ -38,7 +40,7 @@ def _calls(workflow: object) -> bool:
 
 
 def check(config: KilnConfig, root: Path) -> list[Finding]:
-    """Report a hook or declared job whose file is missing, or a workflow that cannot be called."""
+    """Report a hook or declared job whose file is missing, a workflow that cannot be called, or a call to a workflow kiln renders."""
     section = getattr(config.document, "ci", None)
     ci = section if isinstance(section, CiConfig) else CiConfig()
     findings: list[Finding] = []
@@ -57,7 +59,16 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
             )
     for job in ci.jobs:
         path = root / job.uses
-        if not path.is_file():
+        if job.uses in STAGE_WORKFLOWS:
+            findings.append(
+                Finding(
+                    RESERVED,
+                    Severity.ERROR,
+                    f"job `{job.name}` calls `{job.uses}`, a workflow kiln renders",
+                    path=job.uses,
+                )
+            )
+        elif not path.is_file():
             findings.append(
                 Finding(
                     MISSING,

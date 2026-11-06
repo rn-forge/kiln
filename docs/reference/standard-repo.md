@@ -362,7 +362,7 @@ regeneration.
 | `deps.no-ceiling` | an rn-forge version range has a ceiling (`<…` or `==…`) |
 | `deps.no-index` | a range on a package outside the workspace has pykit's `[[tool.uv.index]]` declared at the root |
 | `ci.unpinned` / `ci.permissions` | every `uses:` SHA-pinned with a version comment; every job has `permissions:` |
-| `ci.hook-missing` / `ci.hook-not-callable` | every `[ci.hooks]` action and declared job's workflow exists; a declared job's workflow has `workflow_call` in its `on:` |
+| `ci.hook-missing` / `ci.hook-not-callable` / `ci.hook-reserved` | every `[ci.hooks]` action and declared job's workflow exists; a declared job's workflow has `workflow_call` in its `on:`; no declared job calls a `_<stage>.yml` workflow kiln renders |
 | `docs.nav-stale` | the derived nav (`docs-generate`) differs from what regenerating it from the docs tree would write |
 | `docs.board-*` / `docs.epics-*` / `docs.scope-*` | the derived board, epic list and release Scope regions are present (`-markers`) and current (`-stale`) |
 | `docs.state-contradicts-work` | a work item's state agrees with its children and Iteration ([ADR-0011](../adr/ADR-0011.md)) |

@@ -6,6 +6,7 @@ Also proves the five properties every F4.3 story owes its module
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import re
@@ -33,11 +34,24 @@ from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.docs import generate
 from rn_forge.kiln.modules.tasks import TASKS
 
+_spec = importlib.util.spec_from_file_location(
+    "cicd_workflows", Path(__file__).with_name("workflows.py")
+)
+assert _spec is not None and _spec.loader is not None
+workflows = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(workflows)
+
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
 
 CI_KEYS = (
     ".github/actions/setup/action.yml",
     ".github/workflows/ci.yml",
+    ".github/workflows/_integration.yml",
+    ".github/workflows/_smoke.yml",
+    ".github/workflows/_sonar.yml",
+    ".github/workflows/_release.yml",
+    ".github/workflows/_verify-release.yml",
+    ".github/workflows/_docs.yml",
     ".github/dependabot.yml",
     "sonar-project.properties",
 )
@@ -124,7 +138,13 @@ def test_s4_3_4_property1_without_mkdocs_or_sonar_renders_three_rows(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path, profile="none", sonar=False)
-    assert list(_rendered(root)) == list(CI_KEYS[:3])
+    assert list(_rendered(root)) == [
+        *CI_KEYS[:3],
+        ".github/workflows/_smoke.yml",
+        ".github/workflows/_release.yml",
+        ".github/workflows/_verify-release.yml",
+        ".github/dependabot.yml",
+    ]
 
 
 def test_s4_3_4_property1_ado_is_reserved(tmp_path: Path) -> None:
@@ -202,7 +222,7 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
     on = _rendered(_root(tmp_path / "on"))
     off = _rendered(_root(tmp_path / "off", sonar=False))
     assert "sonar-project.properties" not in off
-    jobs = YamlUtils.load(off[".github/workflows/ci.yml"])["jobs"]
+    jobs = workflows.jobs(off)
     assert set(jobs) == {
         "validate",
         "dependency-review",
@@ -232,7 +252,7 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
 
 def test_s4_3_4_3_release_none_renders_no_release_job(tmp_path: Path) -> None:
     rendered = _rendered(_root(tmp_path, release="none"))
-    jobs = YamlUtils.load(rendered[".github/workflows/ci.yml"])["jobs"]
+    jobs = workflows.jobs(rendered)
     assert set(jobs) == {
         "validate",
         "dependency-review",
@@ -421,6 +441,8 @@ def test_s6_3_1_every_job_has_a_timeout(tmp_path: Path) -> None:
         assert workflows
         for path, content in workflows.items():
             for name, job in YamlUtils.load(content)["jobs"].items():
+                if "uses" in job:  # a caller job takes no timeout
+                    continue
                 timeout = job.get("timeout-minutes")
                 assert isinstance(timeout, int), f"{root.name}:{path}:{name}"
 
@@ -435,7 +457,7 @@ def _ci_ok_roots(tmp_path: Path) -> list[Path]:
 
 
 def _ci_jobs(root: Path) -> dict[str, dict[str, object]]:
-    return YamlUtils.load(_rendered(root)[".github/workflows/ci.yml"])["jobs"]
+    return workflows.jobs(_rendered(root))
 
 
 def test_s6_3_2_ci_ok_needs_every_other_job(tmp_path: Path) -> None:
@@ -654,7 +676,7 @@ def test_s4_6_4_2_ci_sets_the_variable_on_default_branch_pushes(
 ) -> None:
     for archetype in ARCHETYPES:
         root = _root(tmp_path / archetype, archetype)
-        jobs = YamlUtils.load(_rendered(root)[".github/workflows/ci.yml"])["jobs"]
+        jobs = workflows.jobs(_rendered(root))
         step = next(s for s in jobs["validate"]["steps"] if s["name"] == "Validate")
         assert step["run"] == (
             "task lint" if archetype == "python-lib" else "task ci:validate"
@@ -1087,9 +1109,7 @@ def test_s11_5_1_4_other_archetypes_deploy_docs_from_ci(
     for archetype in ("python-app", "python-tool"):
         rendered = _rendered(_root(tmp_path / archetype, archetype))
         assert ".github/workflows/docs.yml" not in rendered, archetype
-        assert "docs" in YamlUtils.load(rendered[".github/workflows/ci.yml"])["jobs"], (
-            archetype
-        )
+        assert "docs" in workflows.jobs(rendered), archetype
 
 
 def test_s11_5_1_2_actionlint_passes_on_the_docs_job(tmp_path: Path) -> None:
@@ -1542,11 +1562,11 @@ def test_s16_4_6_1_docs_job_comment(tmp_path: Path, archetype: str, extra: str) 
                 assert line.strip() == (
                     "persist-credentials: true # mike pushes gh-pages with this token"
                 ), (archetype, path)
-    ci = YamlUtils.load(rendered[".github/workflows/ci.yml"])["jobs"]
+    ci = workflows.jobs(rendered)
     if "docs" in ci and archetype == "python-lib":
         assert (
             "persist-credentials: true # mike pushes gh-pages with this token"
-            in (rendered[".github/workflows/ci.yml"])
+            in (rendered[".github/workflows/_docs.yml"])
         )
 
 
@@ -1789,7 +1809,7 @@ def test_s4_11_4_9_every_entry_has_a_cooldown(tmp_path: Path) -> None:
 
 
 def _review_jobs(root: Path) -> dict[str, dict[str, object]]:
-    return YamlUtils.load(_rendered(root)[".github/workflows/ci.yml"])["jobs"]
+    return workflows.jobs(_rendered(root))
 
 
 @pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
@@ -1854,14 +1874,19 @@ def test_s4_11_6_3_release_job_permissions(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
     root = _cell_root(tmp_path, archetype, extra)
-    allowed = {("ci.yml", "release"), ("ci.yml", "docs"), ("docs.yml", "deploy")}
+    allowed = {
+        ("ci.yml", "release"),
+        ("ci.yml", "docs"),
+        ("_docs.yml", "docs"),
+        ("docs.yml", "deploy"),
+    }
     for path, content in _rendered(root).items():
         if not path.startswith(".github/workflows/"):
             continue
         workflow = Path(path).name
         for name, job in YamlUtils.load(content)["jobs"].items():
             permissions = job.get("permissions") or {}
-            if (workflow, name) == ("ci.yml", "release"):
+            if (workflow, name) in {("ci.yml", "release"), ("_release.yml", "release")}:
                 assert permissions == RELEASE_PERMISSIONS, archetype
                 continue
             assert "attestations" not in permissions, f"{workflow}:{name}"
@@ -1945,6 +1970,7 @@ def test_s4_11_6_6_release_none_renders_no_attestation(
             if "id-token" in (job.get("permissions") or {}):
                 assert (Path(path).name, name) in {
                     ("ci.yml", "docs"),
+                    ("_docs.yml", "docs"),
                     ("docs.yml", "deploy"),
                 }, f"{path}:{name}"
 
@@ -1970,7 +1996,7 @@ def _docs_hook_steps(*names: str) -> list[dict[str, object]]:
 
 
 def _job_steps(root: Path, workflow: str, job: str) -> list[dict[str, object]]:
-    return YamlUtils.load(_rendered(root)[workflow])["jobs"][job]["steps"]
+    return workflows.jobs(_rendered(root))[job]["steps"]
 
 
 def test_s4_11_7_1_docs_hooks_render_before_the_upload(tmp_path: Path) -> None:
@@ -2436,7 +2462,8 @@ AGENTS = ".nx/workflows/agents.yaml"
 
 
 def _node_lib_ci(tmp_path: Path) -> dict[str, object]:
-    return YamlUtils.load(_rendered(_root(tmp_path, "node-lib"))[CI_YML])
+    files = _rendered(_root(tmp_path, "node-lib"))
+    return {**YamlUtils.load(files[CI_YML]), "jobs": workflows.jobs(files)}
 
 
 def test_s9_1_2_1_node_lib_jobs_are_the_affected_set(tmp_path: Path) -> None:

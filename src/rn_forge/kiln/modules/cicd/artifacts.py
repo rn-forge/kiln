@@ -89,7 +89,7 @@ def _ci_config(config: KilnConfig) -> CiConfig:
 
 
 def render(config: KilnConfig) -> list[Artifact]:
-    """Render the setup action, `ci.yml`, `dependabot.yml`, `scorecard.yml` (when `ci.checks.scorecard` is on), `sonar-project.properties` and, for `node-lib`, `.nx/workflows/agents.yaml`, `tools/ci/*.mjs`.
+    """Render the setup action, `ci.yml` and its reusable stage workflows `_<stage>.yml`, `dependabot.yml`, `scorecard.yml` (when `ci.checks.scorecard` is on), `sonar-project.properties` and, for `node-lib`, `.nx/workflows/agents.yaml`, `tools/ci/*.mjs`.
 
     Raises:
         AppException: `ci.provider` is `ado`, which is reserved, or `ci.hooks.docs` is set without a docs site.
@@ -166,9 +166,21 @@ def render(config: KilnConfig) -> list[Artifact]:
     engine = TemplateEngine.cached(
         package=_PACKAGE, variable_start_string="[[", variable_end_string="]]"
     )
+    stages = {
+        "integration": not node_lib,
+        "smoke": True,
+        "sonar": ci.sonar,
+        "release": release != "none",
+        "verify-release": release != "none",
+        "docs": docs,
+    }
     rows = [
         (".github/actions/setup/action.yml", "action.yml.j2", True),
         (".github/workflows/ci.yml", "ci.yml.j2", True),
+        *(
+            (f".github/workflows/_{stage}.yml", f"workflows/_{stage}.yml.j2", enabled)
+            for stage, enabled in stages.items()
+        ),
         (".github/dependabot.yml", "dependabot.yml.j2", True),
         (
             ".github/workflows/scorecard.yml",

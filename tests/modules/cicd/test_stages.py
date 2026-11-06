@@ -354,7 +354,7 @@ def _node(tmp_path: Path, release: str = "nx-dispatch") -> dict[str, str]:
 def test_s15_8_5_1_no_release_yml(tmp_path: Path) -> None:
     files = _node(tmp_path)
     assert ".github/workflows/release.yml" not in files
-    assert not [p for p in files if p.endswith("release.yml")]
+    assert not [p for p in files if p.endswith("/release.yml")]
 
 
 def test_s15_8_5_2_release_job(tmp_path: Path) -> None:

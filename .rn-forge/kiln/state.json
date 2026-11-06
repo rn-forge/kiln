@@ -21,9 +21,51 @@
       "kind": "managed",
       "path": ".github/dependabot.yml"
     },
+    ".github/workflows/_docs.yml": {
+      "begin_marker": null,
+      "content_hash": "a1bea9bba4cb6f25c688f41c4943010457745d0320c81df7b047276d4905c0f3",
+      "end_marker": null,
+      "kind": "managed",
+      "path": ".github/workflows/_docs.yml"
+    },
+    ".github/workflows/_integration.yml": {
+      "begin_marker": null,
+      "content_hash": "72c1137d84cd9f894bef711785fdb70ae98817859abaa1e13e2f41b10413b98d",
+      "end_marker": null,
+      "kind": "managed",
+      "path": ".github/workflows/_integration.yml"
+    },
+    ".github/workflows/_release.yml": {
+      "begin_marker": null,
+      "content_hash": "5b7a561e9c54eaecd51027205de4ecb09cc1db250dbbe14b79e219bd374862a1",
+      "end_marker": null,
+      "kind": "managed",
+      "path": ".github/workflows/_release.yml"
+    },
+    ".github/workflows/_smoke.yml": {
+      "begin_marker": null,
+      "content_hash": "d778a528748b54db0b4334bbd6fea947770e08aa8d5342c1572e7090dfbadf64",
+      "end_marker": null,
+      "kind": "managed",
+      "path": ".github/workflows/_smoke.yml"
+    },
+    ".github/workflows/_sonar.yml": {
+      "begin_marker": null,
+      "content_hash": "bf653668d66ab23caf0a78ca928844438b48442941881d3bcf750af8dff34146",
+      "end_marker": null,
+      "kind": "managed",
+      "path": ".github/workflows/_sonar.yml"
+    },
+    ".github/workflows/_verify-release.yml": {
+      "begin_marker": null,
+      "content_hash": "a7a63da8f186782f274d8f16b7537b7f7a61bb6aa7920abe7cfecb61d4742455",
+      "end_marker": null,
+      "kind": "managed",
+      "path": ".github/workflows/_verify-release.yml"
+    },
     ".github/workflows/ci.yml": {
       "begin_marker": null,
-      "content_hash": "67fb926771dd6c834018e19061fba7e1a08697622b6126992ea9c5ab10856293",
+      "content_hash": "159bb82b9a07d5e4c98ebd1f9131ca5ef0a9b4104f5bf2fac618ae4a27f82061",
       "end_marker": null,
       "kind": "managed",
       "path": ".github/workflows/ci.yml"
