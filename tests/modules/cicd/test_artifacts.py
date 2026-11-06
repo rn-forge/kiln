@@ -763,9 +763,10 @@ def test_s6_4_2_6_test_job(tmp_path: Path) -> None:
 
 def test_s6_4_2_6_sonar_waits_for_test(tmp_path: Path) -> None:
     sonar = _lib_jobs(tmp_path)["sonar"]
-    assert sonar["needs"] == ["validate", "test", "integration", "smoke"]
+    assert sonar["needs"] == ["validate", "test", "integration", "smoke", "suites"]
     assert str(sonar["if"]).startswith(
-        "${{ !cancelled() && !contains(needs.*.result, 'failure') && ("
+        "${{ !cancelled() && !contains(needs.*.result, 'failure') && "
+        "github.actor != 'dependabot[bot]' && ("
     )
     assert "head.repo.full_name == github.repository" in str(sonar["if"])
 
@@ -862,6 +863,7 @@ def test_s6_4_3_6_ci_ok_and_sonar_need_the_declared_jobs(tmp_path: Path) -> None
         "test",
         "integration",
         "smoke",
+        "suites",
     ]
     assert {"integration", "smoke", "suites"} <= set(jobs["checks-ok"]["needs"])  # type: ignore[arg-type]
 
@@ -2712,12 +2714,14 @@ SONAR_PROPERTIES = "sonar-project.properties"
 def test_s9_1_3_1_sonar_job_matches_ngkit(tmp_path: Path) -> None:
     job = _node_lib_ci(tmp_path)["jobs"]["sonar"]  # type: ignore[index]
     pins = load_pins()
-    assert job["needs"] == ["validate", "test-cloud", "test-local"]
+    assert job["needs"] == ["validate", "test-cloud", "test-local", "smoke"]
     assert job["if"] == (
-        "${{ always() && github.actor != 'dependabot[bot]' "
-        "&& (needs.test-cloud.result == 'success' || needs.test-local.result == 'success') "
-        "&& (github.event_name != 'pull_request' "
-        "|| github.event.pull_request.head.repo.full_name == github.repository) }}"
+        "${{ !cancelled() && !contains(needs.*.result, 'failure') "
+        "&& github.actor != 'dependabot[bot]' "
+        "&& ((github.event_name == 'pull_request' "
+        "&& github.event.pull_request.head.repo.full_name == github.repository) "
+        "|| (github.event_name != 'pull_request' "
+        "&& github.ref == 'refs/heads/main')) }}"
     )
     assert job["timeout-minutes"] == 15
     assert job["permissions"] == {"contents": "read", "pull-requests": "read"}

@@ -23,6 +23,11 @@ checks-ok{% if plan %}, plan{% endif %}{% if release != "none" %}, release, veri
 {%- macro docs_if(plan) -%}
 ${{ !cancelled() && needs.checks-ok.result == 'success' && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') {% if plan %}&& needs.plan.outputs.docs == 'true' {% endif %}&& github.event_name == 'push' && github.ref_name == 'main' }}
 {%- endmacro %}
+{#- The one `if` of the `sonar` job in every archetype: it scans a same-repository pull
+    request and main, never Dependabot's (no Actions secrets there). #}
+{%- macro sonar_guard() -%}
+${{ !cancelled() && !contains(needs.*.result, 'failure') && github.actor != 'dependabot[bot]' && ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name != 'pull_request' && github.ref == 'refs/heads/main')) }}
+{%- endmacro %}
 {%- macro gate_job(name, needs) %}
   [[ name ]]:
     needs: [[ "[" ~ needs ~ "]" ]]
@@ -254,8 +259,8 @@ jobs:
   # pull requests: GitHub sandboxes both (no Actions secrets), so SONAR_TOKEN is
   # not available there; the next push to main still scans the merged code.
   sonar:
-    needs: [validate, test-cloud, test-local]
-    if: ${{ always() && github.actor != 'dependabot[bot]' && (needs.test-cloud.result == 'success' || needs.test-local.result == 'success') && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+    needs: [validate, test-cloud, test-local, smoke]
+    if: [[ sonar_guard() ]]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -691,12 +696,12 @@ jobs:
         run: task ci:suite
 {% if sonar %}
   sonar:
-    needs: [validate, test, integration, smoke]
+    needs: [validate, test, integration, smoke, suites]
     # The scan runs on a same-repository pull request and on main, nowhere else.
     # A fork's pull request cannot see SONAR_TOKEN, and SonarQube Cloud's free
     # plan keeps no readable result for any other branch, so the quality-gate
     # wait fails there. Validation stays required; the scan is skipped.
-    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name != 'pull_request' && github.ref == 'refs/heads/main')) }}
+    if: [[ sonar_guard() ]]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

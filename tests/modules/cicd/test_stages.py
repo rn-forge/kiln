@@ -95,8 +95,8 @@ def test_s15_8_1_4_node_jobs(tmp_path: Path) -> None:
     jobs = _jobs(tmp_path, "node-lib")
     assert {"test-cloud", "test-local", "smoke"} <= set(jobs)
     assert not {"ci-cloud", "ci-local", "package"} & set(jobs)
-    for name in ("sonar", "smoke"):
-        assert jobs[name]["needs"] == ["validate", "test-cloud", "test-local"]
+    assert jobs["smoke"]["needs"] == ["validate", "test-cloud", "test-local"]
+    assert jobs["sonar"]["needs"] == ["validate", "test-cloud", "test-local", "smoke"]
     assert {"test-cloud", "test-local", "smoke"} <= set(jobs["checks-ok"]["needs"])
     files = _render(tmp_path, "node-lib")
     tasks = YamlUtils.load(files["tasks/ci.yml"])["tasks"]
@@ -211,7 +211,13 @@ def test_s15_8_3_4_validate_task(tmp_path: Path, archetype: str) -> None:
 @pytest.mark.parametrize("archetype", SINGLE)
 def test_s15_8_3_5_needs(tmp_path: Path, archetype: str) -> None:
     jobs = workflows.jobs(_render_single(tmp_path, archetype))
-    assert jobs["sonar"]["needs"] == ["validate", "test", "integration", "smoke"]
+    assert jobs["sonar"]["needs"] == [
+        "validate",
+        "test",
+        "integration",
+        "smoke",
+        "suites",
+    ]
     assert jobs["checks-ok"]["needs"] == [
         "validate",
         "dependency-review",
@@ -608,3 +614,38 @@ def test_s15_8_6_7_lib_gate(tmp_path: Path) -> None:
     assert job["needs"] == ["checks-ok", "plan", "release", "verify-release"]
     assert PLAN_TERM in job["if"]
     assert job["if"].replace(PLAN_TERM, "") == DOCS_IF
+
+
+SONAR_IF = (
+    "${{ !cancelled() && !contains(needs.*.result, 'failure') "
+    "&& github.actor != 'dependabot[bot]' "
+    "&& ((github.event_name == 'pull_request' "
+    "&& github.event.pull_request.head.repo.full_name == github.repository) "
+    "|| (github.event_name != 'pull_request' "
+    "&& github.ref == 'refs/heads/main')) }}"
+)
+TEST_STAGES = ("test", "test-cloud", "test-local", "integration", "smoke", "suites")
+
+
+@pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
+def test_s15_8_8_1_same_guard(tmp_path: Path, archetype: str) -> None:
+    release = _release_for(archetype, "tag-exists")
+    jobs = workflows.jobs(_docs_render(tmp_path, archetype, release))
+    assert jobs["sonar"]["if"] == SONAR_IF
+
+
+@pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
+def test_s15_8_8_2_needs(tmp_path: Path, archetype: str) -> None:
+    release = _release_for(archetype, "tag-exists")
+    jobs = workflows.jobs(_docs_render(tmp_path, archetype, release))
+    rendered = [s for s in TEST_STAGES if s in jobs]
+    assert sorted(jobs["sonar"]["needs"]) == sorted(["validate", *rendered])
+
+
+@pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
+def test_s15_8_8_3_gate_waits(tmp_path: Path, archetype: str) -> None:
+    release = _release_for(archetype, "tag-exists")
+    jobs = workflows.jobs(_docs_render(tmp_path, archetype, release))
+    steps = jobs["sonar"]["steps"]
+    args = "".join(str(s.get("with", {}).get("args", "")) for s in steps)
+    assert "-Dsonar.qualitygate.wait=true" in args
