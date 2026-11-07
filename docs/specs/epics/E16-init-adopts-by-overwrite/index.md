@@ -9,7 +9,7 @@
 
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
-| [F16.1 — Opinionated `init`](F16.1-opinionated-init.md) | Active | release-1 | 1 Active · 4 Closed |
+| [F16.1 — Opinionated `init`](F16.1-opinionated-init.md) | Closed | release-1 | 5 Closed |
 | [F16.2 — kiln owns `mkdocs.yml`](F16.2-kiln-owns-mkdocs.md) | Closed | release-1 | 3 Closed |
 | [F16.3 — The cutover SOP](F16.3-cutover-sop.md) | Closed | release-1 | 2 Closed |
 | [F16.4 — Generated-file hygiene](F16.4-generated-file-hygiene.md) | Closed | release-1 | 7 Closed |

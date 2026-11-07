@@ -2,8 +2,9 @@
 
 |  |  |
 | -- | -- |
-| **State** | Active |
+| **State** | Closed |
 | **Start Date** | 2026-11-05 |
+| **Closed Date** | 2026-11-06 |
 
 <!-- BEGIN derived features -->
 
@@ -11,7 +12,7 @@
 | -- | -- | -- | -- |
 | [F15.1 — The check model](F15.1-check-model.md) | Closed | release-1 | 4 Closed |
 | [F15.2 — The licences check](F15.2-licences-check.md) | Closed | release-1 | 5 Closed |
-| [F15.3 — The secret scan](F15.3-secret-scan.md) | Active | release-1 | 1 Active · 3 Closed |
+| [F15.3 — The secret scan](F15.3-secret-scan.md) | Closed | release-1 | 4 Closed |
 | [F15.4 — Internal ranges](F15.4-internal-ranges.md) | Closed | release-1 | 3 Closed |
 | [F15.5 — The umbrella release](F15.5-umbrella-release.md) | Closed | release-1 | 3 Closed |
 | [F15.6 — OpenSSF Scorecard](F15.6-scorecard.md) | Closed | release-1 | 1 Closed |
