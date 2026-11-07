@@ -34,5 +34,6 @@ Jump to: [E1–E10](#e1e10) · [E11–E20](#e11e20)
 | [E15 — One CI standard for every archetype](E15-ci-standard/index.md) | Closed | 8 Closed | release-1 |
 | [E16 — `init` adopts by overwrite](E16-init-adopts-by-overwrite/index.md) | Active | 1 New · 4 Closed | release-1 |
 | [E17 — One task standard for every archetype](E17-task-standard/index.md) | Closed | 2 Closed | release-1 |
+| [E18 — The v1 spec rewrite and one commit on main](E18-v1-spec-rewrite/index.md) | New | 4 New | release-1 |
 
 <!-- END derived epics -->

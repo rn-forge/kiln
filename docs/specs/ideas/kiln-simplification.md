@@ -5,7 +5,8 @@
 An impartial review of kiln on 2026-10-20 asked whether kiln is
 over-complicated. It is, but mostly in its process and in the standard it
 enforces, not in the generator code. This page records the findings so they can
-be refined into work later. Nothing here is agreed.
+be refined into work later. Nothing here is agreed, except the v1 spec rewrite,
+which is now [E18](../epics/E18-v1-spec-rewrite/index.md).
 
 ## The evidence
 
@@ -265,6 +266,12 @@ is release correctness, P2 a functional defect, and P3 a standards gap.
 | 10 | P2 | Publish recovery treats any index hit for a version as complete, so a lost sdist upload is never retried. | `devops/github.py`, `devops/cli.py` |
 | 11 | P3 | `commands.py` docstrings carry ADR references and design rationale, against the README's rule that docstrings hold only the contract. | `commands.py` |
 
+## The v1 spec rewrite
+
+Promoted on 2026-11-07 to [E18](../epics/E18-v1-spec-rewrite/index.md), with the
+owner's decisions of 2026-11-06. It acts on findings 2 and 8 for the specs, and
+leaves the work-item model of finding 1 as it is.
+
 ## What to keep
 
 - **The core model:** each file has exactly one owner, renders read only
@@ -282,7 +289,8 @@ is release correctness, P2 a functional defect, and P3 a standards gap.
    each repository (finding 1).
 1. Limit archetypes and flags to what real repositories use today (finding 3).
 1. Promote each major design into an architecture page (finding 8), then archive
-   plans and history and trim closed stories and ADRs (finding 2).
+   plans and history and trim closed stories and ADRs (finding 2). For v1, the
+   specs and plans part is [E18](../epics/E18-v1-spec-rewrite/index.md).
 
 ## Open questions for refinement
 
