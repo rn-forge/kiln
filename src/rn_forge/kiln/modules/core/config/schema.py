@@ -42,8 +42,16 @@ class RepositoryConfig(ConfigModel):
     """What the repository asserts about itself."""
 
     name: str
-    """The repository's name. It names the package and the project, and is
-    written into generated files; changing it renames them on `kiln apply`."""
+    """The repository's name. It names the package and the project and is
+    written into generated files. Changing it re-renders them on `kiln apply`:
+    generated files follow the name, and seeded files keep the name they were
+    created with (the root `pyproject.toml`'s `[project].name`,
+    `<name>.code-workspace`)."""
+    owner: str
+    """The GitHub owner (user or organisation) that holds the repository. It
+    forms the absolute URLs kiln writes: each package's `[project.urls]` and
+    the docs site's `site_url` and `repo_url`. There is no default. `kiln new`
+    takes it from `--owner`, `kiln init` from the GitHub `origin` or `--owner`."""
     archetype: str
     """The repository's shape, which sets its modules, files and dependencies.
     Changing it re-renders most generated files, and `kiln apply` does not

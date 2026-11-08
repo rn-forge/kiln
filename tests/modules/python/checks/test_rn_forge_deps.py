@@ -174,6 +174,7 @@ def _web_root(tmp_path: Path, pyproject: str) -> Path:
         "schema_version = 1\n\n"
         "[repository]\n"
         'name = "demo"\n'
+        'owner = "rn-forge"\n'
         'archetype = "python-web-api"\n\n'
         '[archetype."python-web-api"]\n'
         'backend = "fastapi"\n',
@@ -293,7 +294,7 @@ def _lib_root(tmp_path: Path, packages: str) -> Path:
     config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
     config.parent.mkdir(parents=True, exist_ok=True)
     config.write_text(
-        'schema_version = 1\n\n[repository]\nname = "demo"\narchetype = "python-lib"\n'
+        'schema_version = 1\n\n[repository]\nname = "demo"\nowner = "rn-forge"\narchetype = "python-lib"\n'
         f'\n[archetype."python-lib"]\npackages = [{packages}]\n',
         encoding="utf-8",
     )

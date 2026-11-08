@@ -189,3 +189,13 @@ def test_s11_1_3_excluded_docs_is_empty_without_the_key_or_the_file(
     assert not excluded_docs(tmp_path / "mkdocs.yml").match_file("a.md")
     (tmp_path / "mkdocs.yml").write_text("site_name: x\n", encoding="utf-8")
     assert not excluded_docs(tmp_path / "mkdocs.yml").match_file("a.md")
+
+
+def test_s16_6_3_5_package_mounts_are_not_flagged(repo) -> None:
+    root = _repo(repo, "# Root\n\n[usage](alpha/index.md#usage)\n")
+    assert _codes(root) == []
+
+
+def test_s16_6_3_5_a_package_escape_is_not_also_leaves_docs(repo) -> None:
+    root = _repo(repo, alpha_page="[out](../../../docs/index.md)\n")
+    assert _codes(root) == ["docs.package-link-escapes"]

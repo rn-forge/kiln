@@ -21,7 +21,7 @@ SCAFFOLD = Path(__file__).resolve().parents[2] / "fixtures" / "scaffold"
 UV_BODY = (SCAFFOLD / "uv" / ".gitignore").read_text(encoding="utf-8")
 NX_BODY = (SCAFFOLD / "nx-angular" / ".gitignore").read_text(encoding="utf-8")
 
-CONFIG = 'schema_version = 1\n\n[repository]\nname = "demo"\narchetype = "python-app"\n\n[docs]\nprofile = "mkdocs"\n'
+CONFIG = 'schema_version = 1\n\n[repository]\nname = "demo"\nowner = "rn-forge"\narchetype = "python-app"\n\n[docs]\nprofile = "mkdocs"\n'
 
 
 def _kiln_body(root: Path) -> str:
@@ -228,7 +228,7 @@ def test_s4_4_8_4_kiln_block_stays_after_the_tool_sections(root: Path) -> None:
 def _block(root: Path, archetype: str, docs: str) -> str:
     config = root / ".rn-forge" / "kiln" / "config.toml"
     config.write_text(
-        'schema_version = 1\n\n[repository]\nname = "demo"\n'
+        'schema_version = 1\n\n[repository]\nname = "demo"\nowner = "rn-forge"\n'
         f'archetype = "{archetype}"\n\n[docs]\nprofile = "{docs}"\n',
         encoding="utf-8",
     )
@@ -268,7 +268,7 @@ def test_s16_4_1_1_groups(root: Path) -> None:
 def test_s16_4_1_1_site_dir_is_the_configured_one(root: Path) -> None:
     config = root / ".rn-forge" / "kiln" / "config.toml"
     config.write_text(
-        'schema_version = 1\n\n[repository]\nname = "demo"\n'
+        'schema_version = 1\n\n[repository]\nname = "demo"\nowner = "rn-forge"\n'
         'archetype = "python-lib"\n\n[docs]\nprofile = "mkdocs"\n'
         'site_dir = "out/site"\n',
         encoding="utf-8",

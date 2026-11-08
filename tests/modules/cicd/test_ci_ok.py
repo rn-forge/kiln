@@ -28,7 +28,7 @@ def _write(tmp_path: Path, archetype: str = "python-lib", extra: str = "") -> Pa
     config.parent.mkdir(parents=True)
     release = "nx-dispatch" if archetype == "node-lib" else "tag-exists"
     text = (
-        f'schema_version = 1\n\n[repository]\nname = "demo"\narchetype = "{archetype}"\n\n'
+        f'schema_version = 1\n\n[repository]\nname = "demo"\nowner = "rn-forge"\narchetype = "{archetype}"\n\n'
         f'[docs]\nprofile = "mkdocs"\n\n[ci]\nprovider = "github"\nsonar = true\n'
         f'release = "{release}"\n'
     )

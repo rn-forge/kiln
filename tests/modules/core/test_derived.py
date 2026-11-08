@@ -26,10 +26,10 @@ from rn_forge.kiln.modules.registry import builtin
 from rn_forge.kiln.modules.tasks import TASKS
 
 CONFIG = (
-    'schema_version = 1\n\n[repository]\nname = "demo"\narchetype = "python-tool"\n'
+    'schema_version = 1\n\n[repository]\nname = "demo"\nowner = "rn-forge"\narchetype = "python-tool"\n'
     '\n[docs]\nprofile = "mkdocs"\n'
 )
-BARE = 'schema_version = 1\n\n[repository]\nname = "demo"\narchetype = "python-tool"\n'
+BARE = 'schema_version = 1\n\n[repository]\nname = "demo"\nowner = "rn-forge"\narchetype = "python-tool"\n'
 
 
 class _NoDocs(DocsModule):

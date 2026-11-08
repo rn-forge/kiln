@@ -19,10 +19,24 @@ For a repository with no lineage worth keeping, use
    with `kiln` run from the `[kiln] ref` the cutover targets. It overwrites
    kiln-shaped files and backs each up under
    `.rn-forge/kiln/backups/<stamp>/`; it then runs `task setup`, `task format`
-   and `task docs:generate`. There is no `--force`.
+   and `task docs:generate`. There is no `--force`. Run it from a checkout
+   whose `origin` is the repository: the repository name comes from the
+   `origin` remote's name, not from the directory (then the root
+   `pyproject.toml`'s `[project].name`, then the directory). The owner comes
+   from a GitHub `origin` too; without one, pass `--owner <owner>` (it is
+   `[repository] owner`, which every URL kiln writes is built from). A
+   `python-lib` passes `--config` with `packages`, `modules`,
+   `import_contracts` and `[ci] release`; pykit's is in
+   [its cutover story](https://github.com/rn-forge/pykit/blob/main/docs/specs/epics/E16-kiln-adoption/F16.3-cutover.md).
+   `init` exits 1 while the old workflows are present, because its closing
+   `kiln doctor` checks them; see step 3.
 
 1. **Read the diff file by file.** `git diff` and `git status`; every file
    `init` deleted or replaced is a row. The originals are in the backups.
+   Delete the old workflows now (`git rm .github/workflows/<old>.yml`), not
+   only at merge: `init`'s closing `kiln doctor` fails on them and exits 1,
+   and the rewritten files are still on disk. Do it right after this read and
+   before step 6.
 
 1. **Record a verdict** for each behaviour the repository loses, in a table in
    the repository's own spec with this header:
@@ -41,7 +55,9 @@ For a repository with no lineage worth keeping, use
     `[tool.workspace-ci.redis]` tables become
     `[tool.workspace-ci.integration.<name>]` service declarations
     ([S15.8.2](../specs/epics/E15-ci-standard/F15.8-one-workflow-contract.md#s1582-the-integration-stage-services-as-data));
-    kiln does not read the old keys.
+    kiln does not read the old keys. Its `broker-profile.yml` row is absorb:
+    an `integration` service of `rn-forge-auth`
+    ([S16.6.5](../specs/epics/E16-init-adopts-by-overwrite/F16.6-cutover-rehearsal-findings.md#s1665-integration-services-cover-pykits-broker-profile-and-broker-profileyml-retires)).
 
 1. **Land the absorb stories** in kiln.
 
@@ -53,9 +69,9 @@ For a repository with no lineage worth keeping, use
    1 in a fresh worktree of the default branch.
 
 1. **Merge** when no absorb row is open. The cutover pull request deletes the
-   old CI workflow in the same change that adds `ci.yml`: both share the
-   concurrency group and a ruleset requires the context `ci-ok`, so a
-   follow-up would leave two.
+   old CI workflow (step 3 did) in the same change that adds `ci.yml`: both
+   share the concurrency group and a ruleset requires the context `ci-ok`, so
+   a follow-up would leave two.
 
 ## Examples
 

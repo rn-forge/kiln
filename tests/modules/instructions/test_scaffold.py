@@ -14,7 +14,7 @@ from rn_forge.kiln.modules.instructions.scaffold import scaffold
 
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
 
-CONFIG = 'schema_version = 1\n\n[repository]\nname = "demo"\narchetype = "python-app"\n'
+CONFIG = 'schema_version = 1\n\n[repository]\nname = "demo"\nowner = "rn-forge"\narchetype = "python-app"\n'
 
 README = """# demo
 
@@ -95,6 +95,7 @@ WEB_CONFIG = """schema_version = 1
 
 [repository]
 name = "{name}"
+owner = "rn-forge"
 archetype = "python-web-api"
 
 [archetype."python-web-api"]

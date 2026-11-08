@@ -27,6 +27,7 @@ schema_version = 1
 
 [repository]
 name = "demo"
+owner = "rn-forge"
 archetype = "node-lib"
 
 [docs]

@@ -14,6 +14,7 @@
 | [F16.3 — The cutover SOP](F16.3-cutover-sop.md) | Closed | release-1 | 2 Closed |
 | [F16.4 — Generated-file hygiene](F16.4-generated-file-hygiene.md) | Closed | release-1 | 7 Closed |
 | [F16.5 — Rebuild an existing repository on kiln, and port it](F16.5-rebuild-and-port.md) | New | — | 3 New |
+| [F16.6 — What the cutover rehearsals found](F16.6-cutover-rehearsal-findings.md) | Active | release-1 | 5 New · 8 Closed |
 
 <!-- END derived features -->
 

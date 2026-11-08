@@ -193,6 +193,23 @@ class Site:
                         )
                     )
                     continue
+                if (
+                    self.package is None
+                    and not self._within_docs(resolved)
+                    and not any(
+                        mount == resolved or mount in resolved.parents
+                        for mount in self.mounts.values()
+                    )
+                ):
+                    findings.append(
+                        _error(
+                            "link-leaves-docs",
+                            path,
+                            f"links outside {self.docs_dir.name}/: {link}; "
+                            "use an absolute URL",
+                        )
+                    )
+                    continue
                 if resolved.suffix and resolved.suffix != ".md":
                     continue  # a non-Markdown asset is not this check's job
                 if resolved.suffix == ".md" and self.is_excluded(resolved):

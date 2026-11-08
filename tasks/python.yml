@@ -37,7 +37,7 @@ tasks:
     cmds:
       - >-
         set -o pipefail;
-        uv export --frozen --all-packages --all-groups --no-emit-workspace --no-header
+        uv export --frozen --all-packages --all-groups --all-extras --no-emit-workspace --no-header
         | uv run pip-audit --disable-pip --require-hashes --strict -r /dev/stdin
 
   lint:licenses:

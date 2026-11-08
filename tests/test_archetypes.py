@@ -28,6 +28,7 @@ def _web_root(
         "",
         "[repository]",
         'name = "demo"',
+        'owner = "rn-forge"',
         f'archetype = "{archetype}"',
         "",
         f'[archetype."{archetype}"]',
@@ -157,6 +158,7 @@ def test_s5_1_1_5_an_old_framework_config_key_is_rejected(tmp_path) -> None:
         "schema_version = 1\n\n"
         "[repository]\n"
         'name = "demo"\n'
+        'owner = "rn-forge"\n'
         'archetype = "python-web-api"\n\n'
         '[archetype."python-web-api"]\n'
         'framework = "fastapi"\n',
@@ -176,6 +178,7 @@ def test_s5_1_1_5_a_web_app_table_under_a_python_app_config_is_rejected(
         "schema_version = 1\n\n"
         "[repository]\n"
         'name = "demo"\n'
+        'owner = "rn-forge"\n'
         'archetype = "python-app"\n\n'
         '[archetype."python-web-app"]\n'
         'backend = "django"\n',
@@ -267,6 +270,7 @@ def test_s4_12_1_6_required_validate_names_the_docs_tasks(tmp_path, name: str) -
         "",
         "[repository]",
         'name = "demo"',
+        'owner = "rn-forge"',
         f'archetype = "{name}"',
         "",
         "[docs]",
@@ -288,6 +292,7 @@ def _gate(tmp_path, archetype: str, extra: str = "") -> list[str]:
         "",
         "[repository]",
         'name = "demo"',
+        'owner = "rn-forge"',
         f'archetype = "{archetype}"',
     ]
     if archetype in WEB_ARCHETYPES:

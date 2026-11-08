@@ -25,6 +25,7 @@ schema_version = 1
 
 [repository]
 name = "demo"
+owner = "rn-forge"
 archetype = "{archetype}"
 
 [archetype."{archetype}"]

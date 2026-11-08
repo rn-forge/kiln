@@ -44,6 +44,7 @@ schema_version = 1
 
 [repository]
 name = "demo"
+owner = "rn-forge"
 archetype = "python-web-app"
 
 [archetype."python-web-app"]
@@ -226,6 +227,7 @@ schema_version = 1
 
 [repository]
 name = "demo"
+owner = "rn-forge"
 archetype = "node-lib"
 
 [docs]
@@ -327,7 +329,7 @@ def test_s9_2_2_4_python_web_api_has_no_node_scaffold(tmp_path: Path) -> None:
     config = root / ".rn-forge" / "kiln" / "config.toml"
     config.parent.mkdir(parents=True)
     config.write_text(
-        'schema_version = 1\n\n[repository]\nname = "demo"\n'
+        'schema_version = 1\n\n[repository]\nname = "demo"\nowner = "rn-forge"\n'
         'archetype = "python-web-api"\n\n[archetype."python-web-api"]\n'
         'backend = "fastapi"\n',
         encoding="utf-8",

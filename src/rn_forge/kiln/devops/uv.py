@@ -85,7 +85,7 @@ def _services(package: str, ci: dict[str, Any]) -> tuple[Service, ...]:
 
     Raises:
         ValueError: When the member declares a removed `postgres` or `redis`
-            table, or a service without an `image`.
+            table, a service without an `image`, or a `health-wait` below 1.
     """
     for old in ("postgres", "redis"):
         if old in ci:
@@ -99,6 +99,12 @@ def _services(package: str, ci: dict[str, Any]) -> tuple[Service, ...]:
             raise ValueError(
                 f"{package}: [{TOOL_TABLE}.integration.{name}] needs an image"
             )
+        wait = table.get("health-wait", 120)
+        if not isinstance(wait, int) or wait < 1:
+            raise ValueError(
+                f"{package}: [{TOOL_TABLE}.integration.{name}] health-wait "
+                "must be a whole number of seconds, 1 or more"
+            )
         services.append(
             Service(
                 name=name,
@@ -107,6 +113,10 @@ def _services(package: str, ci: dict[str, Any]) -> tuple[Service, ...]:
                 health_cmd=table.get("health-cmd", ""),
                 env=dict(table.get("env", {})),
                 expose=dict(table.get("expose", {})),
+                command=tuple(table.get("command", ())),
+                volumes=tuple(table.get("volumes", ())),
+                pytest_args=tuple(table.get("pytest-args", ())),
+                health_wait=wait,
             )
         )
     return tuple(services)

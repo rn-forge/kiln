@@ -97,6 +97,14 @@ def _require(cmd: list[str], cwd: Path) -> None:
         raise RuntimeError(f"failed in {cwd}: {' '.join(cmd)}")
 
 
+def _takes_owner(kiln_cmd: list[str], cwd: Path) -> bool:
+    """Whether this kiln's `new` has `--owner`: a ref from before S16.6.8 does not."""
+    done = subprocess.run(
+        [*kiln_cmd, "new", "--help"], cwd=cwd, capture_output=True, text=True
+    )
+    return "--owner" in done.stdout + done.stderr
+
+
 def render_cell(cell: Cell, dest: Path, kiln_cmd: list[str]) -> None:
     """Render *cell* into *dest*, replacing what is there.
 
@@ -112,6 +120,8 @@ def render_cell(cell: Cell, dest: Path, kiln_cmd: list[str]) -> None:
         _remove(built)
     shutil.rmtree(dest.parent / ".staging" / built.name, ignore_errors=True)
     new = [*kiln_cmd, "new", built.name, "--archetype", cell.archetype]
+    if _takes_owner(kiln_cmd, dest.parent):
+        new += ["--owner", "rn-forge"]
     for flag, value in cell.flags:
         new += [f"--{flag}", value]
     _require([*new, "--yes"], dest.parent)

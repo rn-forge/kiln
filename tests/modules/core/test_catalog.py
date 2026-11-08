@@ -17,7 +17,7 @@ CONFIG = Path(".rn-forge") / "kiln" / "config.toml"
 
 def _config(name: str = "python-tool", **sections: dict[str, object]) -> KilnConfig:
     flags: dict[str, object] = {
-        "repository": {"name": "demo", "archetype": name},
+        "repository": {"name": "demo", "owner": "rn-forge", "archetype": name},
         **sections,
     }
     return ConfigManager().resolve(flags=flags).config
@@ -97,3 +97,12 @@ def test_s16_4_7_5_round_trip(tmp_path: Path) -> None:
     assert loaded.document.model_dump() == config.document.model_dump()
     again = tmp_path / "again"
     assert _written(again, loaded) == first
+
+
+def test_s16_6_2_1_name_comment() -> None:
+    specs = {spec.path: spec for spec in catalog.for_archetype("python-tool")}
+
+    description = specs["repository.name"].description
+    assert "generated files follow" in description
+    assert "seeded files keep" in description
+    assert "renames them" not in description

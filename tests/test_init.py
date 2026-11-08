@@ -36,6 +36,7 @@ from rn_forge.commons.generation import Action
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.core.config.manager import ConfigManager
+from rn_forge.kiln.modules.core.remote import origin_url
 from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK
 from rn_forge.kiln.modules.docs.nav import NAV_BLOCK
 from rn_forge.kiln.modules.python.artifacts import IMPORTLINTER_BLOCK
@@ -154,6 +155,9 @@ def _unadopted(fresh: Path, tmp_path: Path) -> Path:
         )
     shutil.rmtree(root / ".rn-forge")
     _git(root, "init", "-q")
+    origin = origin_url(fresh)
+    if origin:
+        _git(root, "remote", "add", "origin", origin)
     _git(root, "add", "-A")
     _git(root, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "base")
     return root
@@ -646,7 +650,15 @@ def test_s6_1_16_2_without_a_config_name_the_directory_names_it(
     scaffold_calls: list[str],
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    _renamed_repo(fresh, tmp_path, monkeypatch)
+    root = _renamed_repo(fresh, tmp_path, monkeypatch)
+    # S16.6.1: a `[project].name` outranks the directory.
+    pyproject = root / "pyproject.toml"
+    pyproject.write_text(
+        re.sub(
+            r'(?m)^name = ".*"\n', "", pyproject.read_text(encoding="utf-8"), count=1
+        ),
+        encoding="utf-8",
+    )
     layer = tmp_path / "layer.toml"
     layer.write_text("# no repository name\n", encoding="utf-8")
 
@@ -822,7 +834,9 @@ def test_s9_1_15_2_an_existing_mkdocs_yml_is_archived_and_overwritten(
     fresh = rendered("node-lib") / "mkdocs.yml"
     assert (node_repo / "mkdocs.yml").read_bytes() == fresh.read_bytes()
     archives = (node_repo / ".rn-forge/kiln/backups").glob("*/mkdocs.yml")
-    assert [a.read_text(encoding="utf-8") for a in archives] == [own]
+    # `init` and `generation.apply` each back it up; a second boundary between
+    # them makes two directories of one content.
+    assert {a.read_text(encoding="utf-8") for a in archives} == {own}
 
 
 def test_s9_1_15_2_a_python_archetype_also_gets_a_missing_mkdocs_yml(
@@ -832,8 +846,10 @@ def test_s9_1_15_2_a_python_archetype_also_gets_a_missing_mkdocs_yml(
     _commit(repo)
     monkeypatch.undo()
     monkeypatch.chdir(repo)
+    # The repository pins kiln on GitHub, which predates `repository.owner`.
+    _real_tasks(monkeypatch)
 
-    commands.init(**SELECTORS, yes=True)
+    commands.init(**SELECTORS, owner="rn-forge", yes=True)
 
     text = (repo / "mkdocs.yml").read_text(encoding="utf-8")
     assert NAV_BLOCK.extract(text) is not None
@@ -1177,3 +1193,164 @@ def test_s16_4_7_6_init_writes_the_commented_form(repo: Path) -> None:
 
     text = (repo / CONFIG).read_text(encoding="utf-8")
     assert '# One of: "default-branch", "every-run".' in text
+
+
+# S16.6.1 — `init` takes the repository name from git, not the directory.
+
+
+def _remote(root: Path, url: str) -> None:
+    _git(root, "remote", "add", "origin", url)
+
+
+def _written_name(root: Path) -> str:
+    text = (root / CONFIG).read_text(encoding="utf-8")
+    return tomllib.loads(text)["repository"]["name"]
+
+
+def _name_layer(tmp_path: Path, name: str) -> str:
+    layer = tmp_path / "name-layer"
+    layer.mkdir()
+    (layer / "config.toml").write_text(
+        f'[repository]\nname = "{name}"\n', encoding="utf-8"
+    )
+    return str(layer)
+
+
+def test_s16_6_1_1_remote_https(repo: Path) -> None:
+    renamed = repo.rename(repo.parent / "work-1")
+    os.chdir(renamed)
+    _remote(renamed, "https://github.com/rn-forge/kiln.git")
+
+    commands.init(**SELECTORS, yes=True)
+
+    assert _written_name(renamed) == "kiln"
+
+
+@pytest.mark.parametrize(
+    "url", ["git@github.com:rn-forge/kiln.git", "git@github.com:rn-forge/kiln"]
+)
+def test_s16_6_1_2_remote_ssh(repo: Path, url: str) -> None:
+    _remote(repo, url)
+
+    commands.init(**SELECTORS, yes=True)
+
+    assert _written_name(repo) == "kiln"
+
+
+def test_s16_6_1_3_config_wins(repo: Path, tmp_path: Path) -> None:
+    _remote(repo, "https://github.com/rn-forge/kiln.git")
+
+    commands.init(**SELECTORS, config=_name_layer(tmp_path, "other"), yes=True)
+
+    assert _written_name(repo) == "other"
+
+
+def test_s16_6_1_4_pyproject_then_directory(repo: Path) -> None:
+    (repo / "pyproject.toml").write_text(
+        '[project]\nname = "Rn_Thing"\nversion = "0"\n', encoding="utf-8"
+    )
+    assert commands._init_name(repo) == ("rn-thing", "pyproject.toml")
+
+    (repo / "pyproject.toml").write_text('[project]\nversion = "0"\n', encoding="utf-8")
+    assert commands._init_name(repo) == (repo.name, "directory")
+
+
+def test_s16_6_1_5_package_json_ignored(repo: Path) -> None:
+    (repo / "package.json").write_text('{"name": "@ngkit/source"}\n', encoding="utf-8")
+    (repo / "pyproject.toml").unlink()
+
+    assert commands._init_name(repo) == (repo.name, "directory")
+
+
+def test_s16_6_1_6_logs_source(
+    repo: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def logged(**options: Any) -> str:
+        capsys.readouterr()
+        commands.init(**SELECTORS, **options)
+        captured = capsys.readouterr()
+        return captured.out + captured.err
+
+    (repo / "pyproject.toml").write_text('[project]\nversion = "0"\n', encoding="utf-8")
+    _commit(repo)
+    assert "repository name" not in logged(dry_run=True)
+
+    (repo / "pyproject.toml").write_text(
+        '[project]\nname = "from-pyproject"\nversion = "0"\n', encoding="utf-8"
+    )
+    _commit(repo)
+    assert "repository name from-pyproject from pyproject.toml" in logged(dry_run=True)
+
+    _remote(repo, "https://github.com/rn-forge/kiln.git")
+    assert "repository name kiln from the origin remote" in logged(dry_run=True)
+
+    text = logged(dry_run=True, config=_name_layer(tmp_path, "other"))
+    assert "repository name other from --config" in text
+
+
+def test_s16_6_1_7_new_unchanged(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    directory = tmp_path / "x"
+
+    commands.new(directory, archetype="python-tool", docs="none", yes=True)
+
+    assert _written_name(directory) == "x"
+
+
+# S16.6.8 — `repository.owner` is configured.
+
+
+def _written_owner(root: Path) -> str:
+    text = (root / CONFIG).read_text(encoding="utf-8")
+    return tomllib.loads(text)["repository"]["owner"]
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://github.com/acme/kiln.git",
+        "https://github.com/acme/kiln",
+        "git@github.com:acme/kiln.git",
+    ],
+)
+def test_s16_6_8_3_init_takes_owner_from_a_github_origin(
+    ownerless: None, repo: Path, url: str
+) -> None:
+    _remote(repo, url)
+
+    commands.init(**SELECTORS, yes=True)
+
+    assert _written_owner(repo) == "acme"
+
+
+def test_s16_6_8_3_the_flag_beats_the_origin(ownerless: None, repo: Path) -> None:
+    _remote(repo, "https://github.com/acme/kiln.git")
+
+    commands.init(**SELECTORS, owner="flag", yes=True)
+
+    assert _written_owner(repo) == "flag"
+
+
+@pytest.mark.parametrize("url", [None, "https://gitlab.com/acme/kiln.git"])
+def test_s16_6_8_4_init_without_a_github_origin_or_owner_fails(
+    ownerless: None, repo: Path, url: str | None
+) -> None:
+    if url:
+        _remote(repo, url)
+
+    with pytest.raises(AppException) as raised:
+        commands.init(**SELECTORS, yes=True)
+
+    assert raised.value.message.startswith("init.owner-required: ")
+    assert "--owner" in raised.value.message
+    assert not (repo / STATE).exists()
+
+
+def test_s16_6_8_4_init_takes_the_flag_without_an_origin(
+    ownerless: None, repo: Path
+) -> None:
+    commands.init(**SELECTORS, owner="acme", yes=True)
+
+    assert _written_owner(repo) == "acme"

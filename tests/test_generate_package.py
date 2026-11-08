@@ -27,13 +27,8 @@ from rn_forge.kiln import commands, main
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs.nav import NAV_BLOCK
 from rn_forge.kiln.modules.docs.scaffold import PACKAGE_SEEDS
-from rn_forge.kiln.modules.python.scaffold import github_remote
 
 HTTPS = "https://github.com/rn-forge/golden-lib"
-NO_REMOTE = (
-    "generate.no-remote: a published package needs the repository's GitHub "
-    "remote: git remote add origin https://github.com/<owner>/<repo>"
-)
 
 
 def _new(parent: Path, name: str, archetype: str = "python-lib") -> Path:
@@ -41,7 +36,9 @@ def _new(parent: Path, name: str, archetype: str = "python-lib") -> Path:
     parent.mkdir(parents=True, exist_ok=True)
     with pytest.MonkeyPatch.context() as patch:
         patch.chdir(parent)
-        commands.new(Path(name), archetype=archetype, docs="mkdocs", yes=True)
+        commands.new(
+            Path(name), archetype=archetype, docs="mkdocs", owner="rn-forge", yes=True
+        )
     return parent / name
 
 
@@ -258,45 +255,31 @@ def test_s11_3_1_3_ssh_and_https_remotes_write_the_same_urls(tmp_path: Path) -> 
     )
 
 
-@pytest.mark.parametrize(
-    ("url", "expected"),
-    [
-        ("https://github.com/o/r", "https://github.com/o/r"),
-        ("https://github.com/o/r.git", "https://github.com/o/r"),
-        ("git@github.com:o/r", "https://github.com/o/r"),
-        ("git@github.com:o/r.git", "https://github.com/o/r"),
-        ("https://gitlab.com/o/r", None),
-        ("git@gitlab.com:o/r.git", None),
-        ("../local", None),
-    ],
-)
-def test_s11_3_1_3_github_remote_accepts_https_and_ssh_only(
-    tmp_path: Path, url: str, expected: str | None
-) -> None:
-    _git(tmp_path, "init", "-q")
-    _git(tmp_path, "remote", "add", "origin", url)
-    assert github_remote(tmp_path) == expected
-
-
-def test_s11_3_1_4_no_origin_fails_with_no_remote_and_writes_nothing(
-    tmp_path: Path,
-) -> None:
+def test_s16_6_8_5_generate_package_needs_no_remote(tmp_path: Path) -> None:
     root = _lib(tmp_path, None)
-    before = _git(root, "status", "--porcelain")
-    tree = _tree(root)
-    with pytest.raises(AppException) as raised:
-        _generate(root, "alpha")
-    assert raised.value.message == NO_REMOTE
-    assert _git(root, "status", "--porcelain") == before
-    assert _tree(root) == tree
+
+    _generate(root, "alpha")
+
+    assert _toml(root / "packages/alpha/pyproject.toml")["project"]["urls"] == {
+        "Documentation": "https://rn-forge.github.io/golden-lib/packages/alpha/latest/",
+        "Source": "https://github.com/rn-forge/golden-lib",
+        "Changelog": "https://github.com/rn-forge/golden-lib/blob/main/packages/alpha/CHANGELOG.md",
+        "Issues": "https://github.com/rn-forge/golden-lib/issues",
+    }
 
 
-def test_s11_3_1_4_a_non_github_origin_fails_with_no_remote(tmp_path: Path) -> None:
-    root = _lib(tmp_path, "https://gitlab.com/rn-forge/golden-lib")
-    tree = _tree(root)
-    with _refused("generate.no-remote"):
-        _generate(root, "alpha")
-    assert _tree(root) == tree
+@pytest.mark.parametrize(
+    "remote", [None, "https://gitlab.com/x/y", "https://github.com/other/elsewhere"]
+)
+def test_s16_6_8_6_urls_come_from_config_not_from_git(
+    tmp_path: Path, remote: str | None
+) -> None:
+    root = _lib(tmp_path, remote)
+
+    _generate(root, "alpha")
+
+    urls = _toml(root / "packages/alpha/pyproject.toml")["project"]["urls"]
+    assert urls["Source"] == "https://github.com/rn-forge/golden-lib"
 
 
 def test_s11_3_1_5_a_repeated_name_fails_with_package_exists_and_writes_nothing(

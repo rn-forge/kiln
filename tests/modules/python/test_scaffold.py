@@ -45,6 +45,7 @@ schema_version = 1
 
 [repository]
 name = "demo-tool"
+owner = "rn-forge"
 archetype = "{archetype}"
 
 [docs]
@@ -58,6 +59,7 @@ schema_version = 1
 
 [repository]
 name = "demo-lib"
+owner = "rn-forge"
 archetype = "python-lib"
 
 [archetype."python-lib"]
@@ -494,6 +496,7 @@ schema_version = 1
 
 [repository]
 name = "demo"
+owner = "rn-forge"
 archetype = "python-web-api"
 
 [archetype."python-web-api"]

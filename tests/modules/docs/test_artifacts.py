@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -35,6 +36,7 @@ schema_version = 1
 
 [repository]
 name = "demo"
+owner = "rn-forge"
 archetype = "{archetype}"
 
 [docs]
@@ -83,9 +85,17 @@ def _root(
     return tmp_path
 
 
-def _new(tmp_path: Path, archetype: str = "python-tool") -> Path:
+def _origin(root: Path, url: str) -> None:
+    """Make *root* a Git worktree whose `origin` is *url*."""
+    for args in (["init", "-q"], ["remote", "add", "origin", url]):
+        subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
+
+
+def _new(tmp_path: Path, archetype: str = "python-tool", origin: str = "") -> Path:
     """Scaffold and apply into an empty directory, as `kiln new` will."""
     root = _root(tmp_path, archetype)
+    if origin:
+        _origin(root, origin)
     config = KilnConfig.load(root)
     instructions_scaffold(root, config)
     cycle.apply(root, home=tmp_path / "home")
@@ -607,7 +617,7 @@ def test_s16_2_2_3_docs_mkdocs_table(tmp_path: Path) -> None:
         'theme = { logo = "x.png" }\n'
         'extra = { k = "v" }\n',
     )
-    document = YamlUtils.load(_mkdocs_text(root))
+    document = YamlUtils.load(_mkdocs_text(root).replace("!!python/name:", ""))
 
     assert document["plugins"][-1] == "glightbox"
     assert document["plugins"][0] == "search"
@@ -694,3 +704,113 @@ def test_s16_2_2_7_add_page_cycle(tmp_path: Path, archetype: str) -> None:
         cycle.apply(root, home=tmp_path / "home")
         assert (root / STATE).read_bytes() == state
         assert (root / "mkdocs.yml").read_bytes() == mkdocs
+
+
+# S16.6.7 — the rendered `mkdocs.yml` carries what pykit's hand-written one needed.
+
+GITHUB = "https://github.com/rn-forge/pykit.git"
+
+
+def _mkdocs_origin(tmp_path: Path, origin: str, archetype: str = "python-tool") -> str:
+    root = _config_root(tmp_path, archetype, "")
+    if origin:
+        _origin(root, origin)
+    cycle.apply(root, home=tmp_path / "home")
+    return _mkdocs_text(root)
+
+
+# S16.6.8 revised S16.6.7: the URLs come from `[repository] owner` and `name`,
+# never from git.
+
+
+@pytest.mark.parametrize(
+    "origin", ["", GITHUB, "git@github.com:other/pykit.git", "https://gitlab.com/x/y"]
+)
+def test_s16_6_8_7_mkdocs_urls_come_from_config(tmp_path: Path, origin: str) -> None:
+    text = _mkdocs_origin(tmp_path, origin)
+
+    assert "\nsite_url: https://rn-forge.github.io/demo/\n" in text
+    assert "\nrepo_url: https://github.com/rn-forge/demo\n" in text
+
+
+def test_s16_6_8_8_mkdocs_urls_need_no_git(tmp_path: Path) -> None:
+    root = _config_root(tmp_path, "python-tool", "")
+    assert not (root / ".git").exists()
+
+    cycle.apply(root, home=tmp_path / "home")
+
+    assert "site_url: https://rn-forge.github.io/demo/\n" in _mkdocs_text(root)
+
+
+def test_s16_6_8_9_owner_is_the_configured_one(tmp_path: Path) -> None:
+    root = _config_root(tmp_path, "python-tool", "")
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(
+        config.read_text(encoding="utf-8").replace("rn-forge", "some-owner"),
+        encoding="utf-8",
+    )
+
+    cycle.apply(root, home=tmp_path / "home")
+
+    text = _mkdocs_text(root)
+    assert "site_url: https://some-owner.github.io/demo/\n" in text
+    assert "repo_url: https://github.com/some-owner/demo\n" in text
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s16_6_7_4_mermaid_fence(tmp_path: Path, archetype: str) -> None:
+    text = _mkdocs_origin(tmp_path, "", archetype)
+
+    assert text.count("- pymdownx.superfences") == 1
+    assert (
+        "  - pymdownx.superfences:\n"
+        "      custom_fences:\n"
+        "        - name: mermaid\n"
+        "          class: mermaid\n"
+        "          format: !!python/name:pymdownx.superfences.fence_code_format\n"
+    ) in text
+
+
+def test_s16_6_7_5_builds(tmp_path: Path) -> None:
+    from mkdocs.commands.build import build
+    from mkdocs.config import load_config
+
+    root = _new(tmp_path / "repo", "python-tool", origin=GITHUB)
+    (root / "src" / "demo").mkdir(parents=True)
+    (root / "src" / "demo" / "__init__.py").write_text(
+        '"""Demo."""\n', encoding="utf-8"
+    )
+    assert "site_url" in _mkdocs_text(root)
+
+    build(
+        load_config(
+            str(root / "mkdocs.yml"), strict=True, site_dir=str(tmp_path / "site")
+        )
+    )
+    assert (tmp_path / "site" / "index.html").is_file()
+
+
+MKDOCSTRINGS_OPTIONS = {
+    "docstring_style": "auto",
+    "heading_level": 2,
+    "inherited_members": True,
+    "merge_init_into_class": True,
+    "show_source": False,
+    "show_root_heading": True,
+    "show_symbol_type_heading": True,
+    "show_symbol_type_toc": True,
+}
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s16_6_7_6_mkdocstrings_options(tmp_path: Path, archetype: str) -> None:
+    text = _mkdocs_origin(tmp_path, "", archetype)
+
+    # The safe loader has no `!!python/name` constructor; the fence is not under test here.
+    document = YamlUtils.load(text.replace("!!python/name:", ""))
+    (handlers,) = [
+        plugin["mkdocstrings"]
+        for plugin in document["plugins"]
+        if isinstance(plugin, dict) and "mkdocstrings" in plugin
+    ]
+    assert handlers["handlers"]["python"]["options"] == MKDOCSTRINGS_OPTIONS

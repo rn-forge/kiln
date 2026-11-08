@@ -35,7 +35,7 @@ from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.core.config.manager import FLAGS_LAYER, ConfigManager
 from rn_forge.kiln.modules.core.config.sources import Source
 
-FLAGS = {"repository": {"name": "demo", "archetype": "python-app"}}
+FLAGS = {"repository": {"name": "demo", "owner": "rn-forge", "archetype": "python-app"}}
 CONFIG_PATH = Path(".rn-forge") / "kiln" / "config.toml"
 STATE_PATH = Path(".rn-forge") / "kiln" / "state.json"
 

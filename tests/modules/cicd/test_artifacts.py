@@ -68,6 +68,7 @@ schema_version = 1
 
 [repository]
 name = "demo"
+owner = "rn-forge"
 archetype = "{archetype}"
 
 [docs]
@@ -293,6 +294,7 @@ schema_version = 1
 
 [repository]
 name = "demo"
+owner = "rn-forge"
 archetype = "{archetype}"
 
 [docs]
@@ -2729,6 +2731,7 @@ def test_s9_2_8_4_web_app_config_has_no_nx_cloud(tmp_path: Path) -> None:
         allow_untested=False,
     )
     flags["repository"]["name"] = "demo"
+    flags["repository"]["owner"] = "rn-forge"
     document = commands.ConfigManager().resolve(flags=flags).config.to_document()
     assert "nx_cloud" not in document["archetype"]["python-web-app"]
 
@@ -3049,7 +3052,7 @@ def test_s9_1_5_1_nx_dispatch_is_node_libs_default(tmp_path: Path) -> None:
     config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
     config.parent.mkdir(parents=True)
     config.write_text(
-        'schema_version = 1\n\n[repository]\nname = "demo"\narchetype = "node-lib"\n',
+        'schema_version = 1\n\n[repository]\nname = "demo"\nowner = "rn-forge"\narchetype = "node-lib"\n',
         encoding="utf-8",
     )
     rendered = _rendered(tmp_path)

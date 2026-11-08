@@ -69,7 +69,9 @@ def _children_entries(docs_root: Path, area_key: str) -> list[tuple[str | None, 
         ordered.append(f"{area_key}/index.md")
     for link in _linked_order(index_path):
         rel = link if link.startswith(f"{area_key}/") else f"{area_key}/{link}"
-        if (docs_root / rel).exists() and rel not in ordered:
+        target = (docs_root / rel).resolve()
+        inside = area_dir.resolve() in target.parents
+        if inside and target.exists() and rel not in ordered:
             ordered.append(rel)
     for page in sorted(area_dir.glob("*.md")):
         rel = f"{area_key}/{page.name}"

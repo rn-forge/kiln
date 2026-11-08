@@ -21,7 +21,7 @@ from rn_forge.kiln.modules.core import CORE, cycle, umbrella
 from rn_forge.kiln.modules.core.cycle import CycleRefused
 from rn_forge.kiln.modules.python import PYTHON
 
-CONFIG = 'schema_version = 1\n\n[repository]\nname = "demo"\narchetype = "python-app"\n'
+CONFIG = 'schema_version = 1\n\n[repository]\nname = "demo"\nowner = "rn-forge"\narchetype = "python-app"\n'
 STATE = Path(".rn-forge/kiln/state.json")
 TAPLO = Path(sys.executable).parent / "taplo"
 

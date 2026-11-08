@@ -9,7 +9,6 @@ sections check 8a verifies, using the same expected values that check reads.
 from __future__ import annotations
 
 import os
-import re
 import shutil
 import tempfile
 from collections.abc import Mapping
@@ -33,7 +32,6 @@ __all__ = [
     "add_package",
     "add_task_tools",
     "docs_group",
-    "github_remote",
     "missing_task_tools",
     "reconcile_backend",
     "sample_test",
@@ -171,34 +169,6 @@ def scaffold_backend(raw: Path, config: KilnConfig) -> None:
     (raw / gitignore.GITIGNORE).write_text(uv_gitignore(), encoding="utf-8")
 
 
-_GITHUB_REMOTE = re.compile(
-    r"^(?:https://github\.com/|git@github\.com:)"
-    r"(?P<owner>[A-Za-z0-9_.-]+)/(?P<repo>[A-Za-z0-9_.-]+?)(?:\.git)?/?$"
-)
-
-
-def github_remote(root: Path) -> str | None:
-    """`https://github.com/<owner>/<repo>` for *root*'s `origin`, or `None`.
-
-    `None` when `git remote get-url origin` fails or names no GitHub
-    repository; `https` and `ssh` URLs, with or without `.git`, give the same
-    value.
-    """
-    result = Process.execute(
-        "git-remote[origin]",
-        "git",
-        "remote",
-        "get-url",
-        "origin",
-        cwd=str(root),
-        fail_on_error=False,
-    )
-    match = _GITHUB_REMOTE.match((result.stdout or "").strip())
-    if not result.succeeded or match is None:
-        return None
-    return f"https://github.com/{match['owner']}/{match['repo']}"
-
-
 def add_package(root: Path, config: KilnConfig, name: str, remote: str) -> None:
     """Add the `python-lib` member `packages/<name>` to the repository at *root*.
 
@@ -210,7 +180,8 @@ def add_package(root: Path, config: KilnConfig, name: str, remote: str) -> None:
         root: The repository root.
         config: The config, already listing the package.
         name: The package's distribution name.
-        remote: The GitHub repository, as `https://github.com/<owner>/<repo>`.
+        remote: The GitHub repository, as `https://github.com/<owner>/<repo>`,
+            built from the config's `repository.owner` and name.
 
     Raises:
         AppException: `uv` is not on `PATH`, or exits non-zero.

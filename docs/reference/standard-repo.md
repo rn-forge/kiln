@@ -533,6 +533,7 @@ commit = "…"                     # the resolved commit
 
 [repository]
 name = "my-tool"
+owner = "my-org"            # the GitHub owner; required, no default
 archetype = "python-tool"  # python-app | python-tool | python-lib
                            # python-web-api | python-web-app
                            # node-lib
@@ -614,6 +615,7 @@ web_dir = "apps/web"
 
 [cli]                            # shared CLI design; read by rn-forge-cli, not by kiln
 name = "my-tool"
+owner = "my-org"            # the GitHub owner; required, no default
 options = ["json", "dry-run", "yes", "log-level"]
 ```
 

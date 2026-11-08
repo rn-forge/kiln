@@ -1,20 +1,18 @@
 # Adding a package
 
 A `python-lib` repository starts with no packages, and each one is added with
-`kiln generate package`. The command writes the package's published URLs, so it
-needs this repository's GitHub remote.
+`kiln generate package`. The command writes the package's published URLs from
+`[repository] owner` and `name` in `.rn-forge/kiln/config.toml`, so it needs no
+git remote.
 
-## 1. Set `origin`
+## 1. Check the owner
 
 ```bash
-git remote get-url origin
-git remote add origin https://github.com/<owner>/<repo>
+grep -A3 '^\[repository\]' .rn-forge/kiln/config.toml
 ```
 
-Both `https://github.com/<owner>/<repo>[.git]` and
-`git@github.com:<owner>/<repo>[.git]` work. With no `origin`, or one that is not
-on GitHub, the command stops with `generate.no-remote` before it writes
-anything.
+`owner` is the GitHub user or organisation that holds the repository. `kiln new`
+and `kiln init` write it; set it by hand if it is wrong, then run `kiln apply`.
 
 ## 2. Generate the package
 

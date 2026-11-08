@@ -41,6 +41,11 @@ from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK
 from rn_forge.kiln.modules.core.config import catalog
 from rn_forge.kiln.modules.core.config.manager import ConfigManager, Resolution
 from rn_forge.kiln.modules.core.config.sources import Source, fetch
+from rn_forge.kiln.modules.core.remote import (
+    github_owner,
+    origin_url,
+    repository_name,
+)
 from rn_forge.kiln.modules.docs import generate
 from rn_forge.kiln.modules.docs.artifacts import SEEDS
 from rn_forge.kiln.modules.docs.scaffold import add_package as docs_add_package
@@ -58,7 +63,6 @@ from rn_forge.kiln.modules.python.scaffold import (
 )
 from rn_forge.kiln.modules.python.scaffold import (
     add_task_tools,
-    github_remote,
     reconcile_backend,
     scaffold_backend,
 )
@@ -226,6 +230,7 @@ def new(
     frontend: str | None = None,
     module: str | None = None,
     config: str | None = None,
+    owner: str | None = None,
     allow_untested: bool = False,
     dry_run: bool = False,
     yes: bool = False,
@@ -234,7 +239,8 @@ def new(
     """Create a repository at DIRECTORY, previewing unless `--yes` is given.
 
     The repository's name is `--config`'s `[repository] name`, else the
-    directory's.
+    directory's. Its GitHub owner is `--owner`, else `--config`'s
+    `[repository] owner`; there is no default (`new.owner-required`).
 
     Without `--yes`, prints the resolved config and the artifacts it would
     produce, and writes nothing. With `--yes`, writes `config.toml`, scaffolds
@@ -248,7 +254,8 @@ def new(
     in place of the one derived from the name.
 
     Raises:
-        AppException: `--archetype` is missing or unknown, a flag names an
+        AppException: `--archetype` is missing or unknown, no owner is given
+            (`new.owner-required`), a flag names an
             untested value without `--allow-untested`, a `python-lib` config
             lists packages (`config.packages-at-new`), DIRECTORY is non-empty,
             or the config, scaffold, apply or check step fails.
@@ -266,6 +273,9 @@ def new(
         frontend=frontend,
         module=module,
         config=config,
+        owner=owner,
+        owner_error="new.owner-required: pass --owner <owner> or set "
+        "repository.owner in --config",
         allow_untested=allow_untested,
         allow_packages=False,
     )
@@ -314,6 +324,7 @@ def init(
     frontend: str | None = None,
     module: str | None = None,
     config: str | None = None,
+    owner: str | None = None,
     dry_run: bool = False,
     yes: bool = False,
     json: bool = False,
@@ -321,7 +332,10 @@ def init(
     """Bring the existing standard repository in the current directory under kiln.
 
     The repository's name is `--config`'s `[repository] name`, else the
-    directory's.
+    `origin` remote's repository name, else the root `pyproject.toml`'s
+    `[project].name`, else the directory's. The owner is `--owner`, else
+    `--config`'s `[repository] owner`, else the owner of a GitHub `origin`;
+    with none of them `init` stops (`init.owner-required`).
 
     `new`'s configuration and first-apply flow, run in place and never
     scaffolding. `--module` sets the dotted import module of a `python-app` or
@@ -376,14 +390,21 @@ def init(
             state_path,
         )
 
+    name, source = _init_name(root)
+    if source != "directory":
+        console.info("repository name {} from {}", name, source)
     _, resolution = _resolve_config(
-        root.name,
+        name,
         archetype=archetype,
         docs=docs,
         backend=backend,
         frontend=frontend,
         module=module,
         config=config,
+        owner=owner,
+        fallback_owner=_origin_owner(root),
+        owner_error="init.owner-required: no GitHub origin to take the owner "
+        "from; pass --owner <owner> or set repository.owner in --config",
         allow_untested=False,
         allow_packages=True,
     )
@@ -630,6 +651,37 @@ def _require_clean(root: Path) -> None:
         )
 
 
+def _git_remote_name(root: Path) -> str | None:
+    """The repository name in *root*'s `origin` remote URL, or `None` if it has none."""
+    url = origin_url(root)
+    return repository_name(url) or None if url else None
+
+
+def _origin_owner(root: Path) -> str | None:
+    """The owner in *root*'s GitHub `origin` remote, or `None`."""
+    url = origin_url(root)
+    return github_owner(url) if url else None
+
+
+def _init_name(root: Path) -> tuple[str, str]:
+    """The name `init` gives *root* and where it came from, before `--config`.
+
+    The `origin` remote's repository name, else the root `pyproject.toml`'s
+    `[project].name`, else the directory's.
+
+    Returns:
+        The name, and its source: `the origin remote`, `pyproject.toml` or
+        `directory`.
+    """
+    remote = _git_remote_name(root)
+    if remote:
+        return remote, "the origin remote"
+    project = _project_name(root / "pyproject.toml")
+    if project:
+        return project, "pyproject.toml"
+    return root.name, "directory"
+
+
 def _init_preflight(root: Path, archetype: str) -> None:
     """Refuse *root* unless it is a standard repository's Git worktree root.
 
@@ -707,10 +759,16 @@ def _resolve_config(
     frontend: str | None,
     module: str | None,
     config: str | None,
+    owner: str | None,
+    owner_error: str,
     allow_untested: bool,
     allow_packages: bool,
+    fallback_owner: str | None = None,
 ) -> tuple[ConfigManager, Resolution]:
     """Merge defaults, the `--config` layer and the flags for a repository called *name*.
+
+    The owner is *owner* (`--owner`), else the `--config` layer's, else
+    *fallback_owner*; with none, *owner_error* is raised.
 
     `new` starts a `python-lib` repository empty; `init` adopts one with its
     members, so only it passes *allow_packages*.
@@ -721,9 +779,11 @@ def _resolve_config(
             without *allow_packages*.
     """
     layer_pins_kiln = False
+    layer_owner: object = None
     if config:
         fetched = fetch(Source.parse(config), Path.cwd())
         layer_pins_kiln = bool(DictUtils.get(fetched.document, "kiln.ref"))
+        layer_owner = DictUtils.get(fetched.document, "repository.owner")
         configured = DictUtils.get(fetched.document, "repository.name")
         if isinstance(configured, str):
             if configured != name:
@@ -743,6 +803,11 @@ def _resolve_config(
         frontend=frontend,
     )
     DictUtils.set(flags, "repository.name", name)
+    chosen = owner or (None if layer_owner else fallback_owner)
+    if not chosen and not layer_owner:
+        raise AppException(owner_error)
+    if chosen:
+        DictUtils.set(flags, "repository.owner", chosen)
     if not layer_pins_kiln:
         DictUtils.set(flags, "kiln.ref", archetypes.KILN_REF)
     if module is not None:
@@ -823,8 +888,7 @@ def generate_package(
             distribution name (`generate.invalid-name`), `--module` is not a
             dotted import module (`generate.invalid-module`), NAME is already a
             package or `packages/NAME` exists (`generate.package-exists`),
-            `origin` is not a GitHub remote (`generate.no-remote`), or a step
-            or the apply fails.
+            or a step or the apply fails.
     """
     if json:
         console.set_mode(OutputMode.JSON)
@@ -881,13 +945,7 @@ def _package_preflight(
     relative = f"packages/{name}"
     if relative in config.packages or (root / relative).exists():
         raise AppException("generate.package-exists: {} already exists", relative)
-    remote = github_remote(root)
-    if remote is None:
-        raise AppException(
-            "generate.no-remote: a published package needs the repository's "
-            "GitHub remote: git remote add origin https://github.com/<owner>/<repo>"
-        )
-    return remote
+    return f"https://github.com/{config.owner}/{config.name}"
 
 
 def config_update(

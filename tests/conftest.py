@@ -19,6 +19,7 @@ schema_version = 1
 
 [repository]
 name = "example"
+owner = "rn-forge"
 archetype = "{archetype}"
 lifecycle = {lifecycle}
 
@@ -106,6 +107,7 @@ def rendered(tmp_path_factory: pytest.TempPathFactory) -> Callable[[str], Path]:
                 Path(archetype),
                 archetype=archetype,
                 docs="mkdocs",
+                owner="rn-forge",
                 yes=True,
                 **FLAGS.get(archetype, {}),
             )
@@ -113,7 +115,7 @@ def rendered(tmp_path_factory: pytest.TempPathFactory) -> Callable[[str], Path]:
         if archetype == "python-lib":
             for args in (
                 ("init", "-q"),
-                ("remote", "add", "origin", "https://github.com/rn-forge/example-lib"),
+                ("remote", "add", "origin", "https://github.com/rn-forge/python-lib"),
             ):
                 subprocess.run(
                     ["git", *args], cwd=root, check=True, capture_output=True
@@ -124,6 +126,37 @@ def rendered(tmp_path_factory: pytest.TempPathFactory) -> Callable[[str], Path]:
         return root
 
     return build
+
+
+@pytest.fixture(autouse=True)
+def _default_owner(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Give `kiln new` and `kiln init` `owner="rn-forge"` unless the test says not to.
+
+    S16.6.8 made the owner required; a test about the owner itself asks for the
+    `ownerless` fixture and passes its own.
+    """
+    if "ownerless" in request.fixturenames:
+        return
+    import functools
+
+    from rn_forge.kiln import commands
+
+    for name in ("new", "init"):
+        original = getattr(commands, name)
+
+        @functools.wraps(original)
+        def with_owner(*args: object, _original=original, **kwargs: object) -> object:
+            kwargs.setdefault("owner", "rn-forge")
+            return _original(*args, **kwargs)
+
+        monkeypatch.setattr(commands, name, with_owner)
+
+
+@pytest.fixture
+def ownerless() -> None:
+    """Opt a test out of `_default_owner`."""
 
 
 @pytest.fixture(autouse=True, scope="session")

@@ -282,7 +282,7 @@
     },
     "mkdocs.yml": {
       "begin_marker": null,
-      "content_hash": "97735193e653401b157940e0f18edd11d0e9d698a469433ffff2d64937ba1543",
+      "content_hash": "93c56f9eb1657aab2e333a87d562e0049dd88820d8d8370aacc4ebdf82b4c87b",
       "end_marker": null,
       "kind": "managed",
       "path": "mkdocs.yml"
@@ -317,7 +317,7 @@
     },
     "tasks/python.yml": {
       "begin_marker": null,
-      "content_hash": "faf6cd3fe0e74b3b45612a92f47d1767d6fc76d42e0f3254100e7ad6cff14dac",
+      "content_hash": "d8d0605e64d9e39d1a292b1016bb36868c8728eb8949ab2dac9ed31b1c822124",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/python.yml"
@@ -345,7 +345,7 @@
     }
   },
   "metadata": {
-    "config_hash": "51ecda7a531d2052083e78c1a835e7c0926f54260383f665bd7b80a99d5d33d8",
+    "config_hash": "6b706407c762acd3e74df62f2d6e53b940301ddbcec543aec32b2839ebc450f0",
     "config_provenance": {
       "archetype.python-app.module": {
         "layer": "repo",

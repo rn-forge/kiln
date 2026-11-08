@@ -58,6 +58,11 @@ class KilnConfig:
         return self.document.repository.name
 
     @property
+    def owner(self) -> str:
+        """The GitHub owner that holds the repository."""
+        return self.document.repository.owner
+
+    @property
     def docs_profile(self) -> str:
         """`mkdocs`, `external` or `none`."""
         docs = getattr(self.document, "docs", None)

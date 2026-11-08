@@ -341,6 +341,7 @@ A package declares the service containers its tests need in its own
 image = "postgres:17"
 ports = ["5432:5432"]
 health-cmd = "pg_isready -U ci"
+health-wait = 120
 
 [tool.workspace-ci.integration.postgres.env]
 POSTGRES_USER = "ci"
@@ -355,6 +356,17 @@ DATABASE_URL = "postgresql://ci:ci@localhost:5432/ci"
 one matrix job runs a leg per entry. The leg's `task ci:integration` starts the
 package's containers, waits for their health, runs the package's tests with the
 `expose` variables set, and removes the containers.
+
+| Key | Holds |
+| -- | -- |
+| `image` | Required. |
+| `command` | Arguments appended after the image. |
+| `ports` | `host:container`, passed to `-p`. |
+| `volumes` | `src:dst[:ro]`; `src` is relative to the package directory and made absolute. |
+| `health-cmd` | The container's health command. |
+| `health-wait` | Seconds to wait for health, default 120, at least 1; sets `--health-retries` to `ceil(health-wait / 2)` and the leg's polling to the same count. |
+| `env`, `expose` | Set in the container, set in the environment of the tests. |
+| `pytest-args` | Added after the root `pytest-args` for the package's integration run. |
 
 ### `python-lib`, event by event
 

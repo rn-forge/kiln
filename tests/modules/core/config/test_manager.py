@@ -17,7 +17,7 @@ from rn_forge.kiln.modules.core.config import manager as manager_module
 from rn_forge.kiln.modules.core.config.manager import ConfigManager
 from rn_forge.kiln.modules.core.config.sources import Source
 
-FLAGS = {"repository": {"name": "demo", "archetype": "python-app"}}
+FLAGS = {"repository": {"name": "demo", "owner": "rn-forge", "archetype": "python-app"}}
 
 
 def write_config(root: Path, text: str) -> Path:
@@ -121,7 +121,7 @@ def test_s4_2_2_a_config_from_a_newer_schema_is_refused_naming_the_version_it_ne
 ) -> None:
     root = write_config(
         tmp_path,
-        'schema_version = 2\n[repository]\nname = "x"\narchetype = "python-app"\n',
+        'schema_version = 2\n[repository]\nname = "x"\nowner = "rn-forge"\narchetype = "python-app"\n',
     )
     with pytest.raises(AppException) as caught:
         ConfigManager().load(root)
@@ -135,7 +135,7 @@ def test_s4_2_2_a_section_for_a_module_the_archetype_does_not_enable_is_rejected
         update={"modules": ["core", "python", "tasks", "cicd", "instructions"]}
     )
     monkeypatch.setattr(archetypes, "load", lambda name: without_docs)
-    base = '\nschema_version = 1\n[repository]\nname = "x"\narchetype = "python-app"\n'
+    base = '\nschema_version = 1\n[repository]\nname = "x"\nowner = "rn-forge"\narchetype = "python-app"\n'
 
     assert ConfigManager().load(write_config(tmp_path, base)).docs_profile == "none"
     with pytest.raises(AppException, match=r"\[docs\] belongs to module 'docs'"):
@@ -197,7 +197,9 @@ def test_s4_4_6_2_new_python_tool_writes_lifecycle_true(
     archetype: str, lifecycle: bool
 ) -> None:
     resolution = ConfigManager().resolve(
-        flags={"repository": {"name": "demo", "archetype": archetype}}
+        flags={
+            "repository": {"name": "demo", "owner": "rn-forge", "archetype": archetype}
+        }
     )
     assert resolution.config.document.repository.lifecycle is lifecycle
 

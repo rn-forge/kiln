@@ -126,7 +126,11 @@ def test_s4_5_5_root_config_carries_the_lifecycle_table() -> None:
     config = RootConfig.model_validate(
         {
             "schema_version": 1,
-            "repository": {"name": "x", "archetype": "python-tool"},
+            "repository": {
+                "name": "x",
+                "owner": "rn-forge",
+                "archetype": "python-tool",
+            },
             "lifecycle": {"product": "a:B", "namespace": "self"},
         }
     )

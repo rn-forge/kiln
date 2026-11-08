@@ -57,6 +57,10 @@ class Service:
         health_cmd: The container's health command; empty when it has none.
         env: Variables set in the container.
         expose: Variables set in the environment of the package's tests.
+        command: Arguments appended after the image.
+        volumes: Bind mounts, each `src:dst[:ro]`; `src` is relative to the package directory.
+        pytest_args: Arguments added to the pytest run of the services' legs.
+        health_wait: The longest, in seconds, the leg waits for the service to become ready.
     """
 
     name: str
@@ -65,6 +69,10 @@ class Service:
     health_cmd: str = ""
     env: dict[str, str] = field(default_factory=dict[str, str])
     expose: dict[str, str] = field(default_factory=dict[str, str])
+    command: tuple[str, ...] = ()
+    volumes: tuple[str, ...] = ()
+    pytest_args: tuple[str, ...] = ()
+    health_wait: int = 120
 
 
 @dataclass

@@ -144,3 +144,47 @@ def test_s16_3_1_4_sequence_runs(
 
     with pytest.raises(AppException, match="use `kiln apply`"):
         commands.init(archetype="python-app", docs="mkdocs", yes=True)
+
+
+# S16.6.6 — the runbook says what the rehearsal needed.
+
+
+def _flat() -> str:
+    return " ".join(_text().split())
+
+
+def test_s16_6_6_1_origin() -> None:
+    text = _flat()
+
+    assert "Run it from a checkout whose `origin` is the repository" in text
+    assert "the repository name comes from the `origin` remote" in text
+
+
+def test_s16_6_6_2_python_lib_config() -> None:
+    text = _flat()
+
+    assert (
+        "A `python-lib` passes `--config` with `packages`, `modules`, "
+        "`import_contracts` and `[ci] release`"
+    ) in text
+    assert (
+        "https://github.com/rn-forge/pykit/blob/main/docs/specs/epics/"
+        "E16-kiln-adoption/F16.3-cutover.md"
+    ) in text
+
+
+def test_s16_6_6_3_old_workflows() -> None:
+    text = _flat()
+
+    assert "`init` exits 1 while the old workflows are present" in text
+    assert "because its closing `kiln doctor` checks them" in text
+    assert "Delete the old workflows now (`git rm .github/workflows/<old>.yml`)" in text
+    assert "right after this read and before step 6" in text
+
+
+def test_s16_6_6_4_steps_unchanged() -> None:
+    found = re.findall(r"^(\d+)\. \*\*(.+?)\.?\*\*", _text(), re.MULTILINE)
+
+    assert len(found) == len(STEPS)
+    for (_, heading), expected in zip(found, STEPS, strict=True):
+        assert heading.replace("`", "").startswith(expected)

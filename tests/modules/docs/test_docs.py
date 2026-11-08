@@ -8,6 +8,7 @@ import re
 import pytest
 
 from rn_forge.commons.exceptions import AppException
+from rn_forge.commons.findings import Severity
 from rn_forge.commons.text.markdown import MarkdownUtils
 
 from rn_forge.kiln.config import KilnConfig
@@ -340,6 +341,30 @@ class TestNav:
         assert "Packages" not in build_nav(repo / "docs")
         assert "Packages" not in build_nav(repo / "docs", ())
 
+    def test_s16_6_3_1_nav_skips_a_link_outside_docs(self, repo):
+        write(repo / "docs/_areas.yml", AREAS + "  - key: reference\n    title: Ref\n")
+        write(repo / "libs/ng/README.md", "# ng\n")
+        write(
+            repo / "docs/reference/index.md",
+            "# Reference\n\n- [ng](../../libs/ng/README.md)\n",
+        )
+        body = build_nav(repo / "docs")
+        assert "reference/index.md" in body
+        assert ".." not in body
+
+    def test_s16_6_3_2_nav_keeps_a_link_inside_docs(self, repo):
+        write(repo / "docs/_areas.yml", AREAS + "  - key: reference\n    title: Ref\n")
+        write(repo / "docs/reference/a.md", "# A\n")
+        write(repo / "docs/guides/b.md", "# B\n")
+        write(
+            repo / "docs/reference/index.md",
+            "# Reference\n\n- [a](a.md)\n- [b](../guides/b.md)\n",
+        )
+        body = build_nav(repo / "docs")
+        assert "reference/a.md" in body
+        assert "reference/../guides/b.md" not in body
+        assert "reference/b.md" not in body
+
     def test_generated_area_is_skipped_when_absent(self, repo):
         assert "api/index.md" not in build_nav(repo / "docs")
 
@@ -507,6 +532,37 @@ class TestCheckSite:
         write(navved / "docs/guides/setup.md", "# Setup\n\n[api](../api/index.md)\n")
         assert check_site(navved) == []
 
+    @pytest.mark.parametrize(
+        "link",
+        [
+            "../../.github/workflows/ci.yml",
+            "../../libs/ng/README.md",
+            "../../libs/ng/project.json",
+        ],
+    )
+    def test_s16_6_3_3_doctor_reports_a_link_outside_docs(self, navved, link):
+        write(navved / link.removeprefix("../../"), "x\n")
+        page = navved / "docs/guides/setup.md"
+        write(page, f"# Setup\n\n[x]({link})\n")
+        findings = check_site(navved)
+        assert [f.code for f in findings] == ["docs.link-leaves-docs"]
+        assert findings[0].severity == Severity.ERROR
+        assert findings[0].path == str(page)
+        assert (
+            findings[0].message == f"links outside docs/: {link}; use an absolute URL"
+        )
+
+    def test_s16_6_3_4_covers_markdown_and_other_files(self, navved):
+        write(navved / "libs/ng/README.md", "# ng\n")
+        write(navved / "libs/ng/project.json", "{}\n")
+        write(
+            navved / "docs/guides/setup.md",
+            "# Setup\n\n[a](../../libs/ng/README.md)\n[b](../../libs/ng/project.json)\n",
+        )
+        messages = [f.message for f in check_site(navved)]
+        assert len(messages) == 2
+        assert all("use an absolute URL" in m for m in messages)
+
     def test_underscore_pages_do_not_need_navigating(self, navved):
         assert "docs.orphan-page" not in codes(check_site(navved))
 
@@ -627,7 +683,7 @@ def test_s16_2_3_5_seed_header(tmp_path):
     config = root / ".rn-forge" / "kiln" / "config.toml"
     config.parent.mkdir(parents=True)
     config.write_text(
-        'schema_version = 1\n\n[repository]\nname = "demo"\n'
+        'schema_version = 1\n\n[repository]\nname = "demo"\nowner = "rn-forge"\n'
         'archetype = "python-lib"\n\n[docs]\nprofile = "mkdocs"\n'
         '\n[archetype."python-lib"]\npackages = ["packages/alpha"]\n',
         encoding="utf-8",

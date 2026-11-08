@@ -94,6 +94,7 @@ are [release-2](../release-2/index.md).
 | [F16.2 — kiln owns `mkdocs.yml`](../../specs/epics/E16-init-adopts-by-overwrite/F16.2-kiln-owns-mkdocs.md) | E16 | Closed |
 | [F16.3 — The cutover SOP](../../specs/epics/E16-init-adopts-by-overwrite/F16.3-cutover-sop.md) | E16 | Closed |
 | [F16.4 — Generated-file hygiene](../../specs/epics/E16-init-adopts-by-overwrite/F16.4-generated-file-hygiene.md) | E16 | Closed |
+| [F16.6 — What the cutover rehearsals found](../../specs/epics/E16-init-adopts-by-overwrite/F16.6-cutover-rehearsal-findings.md) | E16 | Active |
 | [F17.1 — The task surface says what it is](../../specs/epics/E17-task-standard/F17.1-task-surface.md) | E17 | Closed |
 | [F17.2 — One grammar for the CI surface, and one home for check policy](../../specs/epics/E17-task-standard/F17.2-ci-task-grammar.md) | E17 | Closed |
 | [F18.1 — Tests named by behaviour](../../specs/epics/E18-v1-spec-rewrite/F18.1-tests-named-by-behaviour.md) | E18 | New |
@@ -144,6 +145,13 @@ are [release-2](../release-2/index.md).
   follow the cut; the tag is `v0.1.0`, distributed by git.
 
 ## Progress
+
+As of 2026-11-07, F16.6 (what the cutover rehearsals found) has 8 stories closed
+and 5 new, S16.6.9 to S16.6.13, from S7.2.4's rehearsal run 4 on pykit and
+ngkit. Owner decision: pykit and ngkit cut over on `feature/v1` before the tag,
+so that kiln keeps being refined from their findings; the `v0.1.0` tag follows.
+E18 is not yet re-sequenced; the owner question, whether to move E18 after the
+tag, is open.
 
 As of 2026-11-04, E15 (one CI standard) and E16 (`init` adopts by overwrite)
 joined the scope; the tag waits for both and for S7.2.4 run on them. As of

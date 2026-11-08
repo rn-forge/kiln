@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 import os
 import subprocess
 import sys
@@ -11,8 +12,11 @@ from typing import Protocol
 
 from rn_forge.kiln.devops.ci import Package, Service
 
-ATTEMPTS = 60
 INTERVAL = 2.0
+
+
+def _retries(service: Service) -> int:
+    return math.ceil(service.health_wait / INTERVAL)
 
 
 class Runner(Protocol):
@@ -54,14 +58,18 @@ def start_command(package: Package, service: Service) -> list[str]:
         command += ["-e", f"{key}={value}"]
     for port in service.ports:
         command += ["-p", port]
+    for volume in service.volumes:
+        source, _, rest = volume.partition(":")
+        target = os.path.abspath(os.path.join(package.dir, source))
+        command += ["-v", f"{target}:{rest}"]
     if service.health_cmd:
         command += [
             "--health-cmd", service.health_cmd,
             "--health-interval", "2s",
             "--health-timeout", "5s",
-            "--health-retries", "30",
+            "--health-retries", str(_retries(service)),
         ]  # fmt: skip
-    return [*command, service.image]
+    return [*command, service.image, *service.command]
 
 
 def _ready(
@@ -93,7 +101,7 @@ def run(
     runner: Runner,
     pytest_args: list[str],
     sleep: Callable[[float], None] = time.sleep,
-    attempts: int = ATTEMPTS,
+    attempts: int | None = None,
 ) -> int:
     """Start `package`'s services, run its tests against them and remove them.
 
@@ -103,14 +111,17 @@ def run(
     Args:
         package: The member, with its services.
         runner: Runs every command.
-        pytest_args: Arguments added to the pytest run.
+        pytest_args: Arguments added to the pytest run, before the services' own.
         sleep: Waits between health checks.
-        attempts: Health checks per service before giving up.
+        attempts: Health checks per service before giving up; by default
+            `ceil(health_wait / 2)` of each service.
 
     Returns:
         The exit status of pytest, or the status of a failed `docker run`, or 1 when a service does not become
         ready.
     """
+    lists = dict.fromkeys(s.pytest_args for s in package.services)
+    extra = [arg for args in lists for arg in args]
     expose = {k: v for s in package.services for k, v in s.expose.items()}
     try:
         for service in package.services:
@@ -118,13 +129,15 @@ def run(
             if started.returncode:
                 return started.returncode
         for service in package.services:
-            if not _ready(package, service, runner, sleep, attempts):
+            if not _ready(
+                package, service, runner, sleep, attempts or _retries(service)
+            ):
                 print(f"{service.name} did not become ready", file=sys.stderr)
                 return 1
         return runner(
             [
                 "uv", "run", "--directory", package.dir, "--package", package.name,
-                "pytest", "-q", *pytest_args,
+                "pytest", "-q", *pytest_args, *extra,
             ],
             env=expose,
         ).returncode  # fmt: skip

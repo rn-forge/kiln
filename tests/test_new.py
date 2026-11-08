@@ -184,6 +184,7 @@ def test_s5_3_1_web_defaults_select_fastapi(archetype: str) -> None:
         allow_untested=False,
     )
     flags["repository"]["name"] = "demo"
+    flags["repository"]["owner"] = "rn-forge"
     resolved = commands.ConfigManager().resolve(flags=flags).config
     assert resolved.backend == "fastapi"
     assert resolved.frontend == ("angular" if archetype == "python-web-app" else None)
@@ -208,6 +209,7 @@ def test_s5_3_1_explicit_selectors_override_web_defaults(
         **{selector: value},
     )
     flags["repository"]["name"] = "demo"
+    flags["repository"]["owner"] = "rn-forge"
     resolved = commands.ConfigManager().resolve(flags=flags).config
     assert getattr(resolved, selector) == value
 
@@ -548,6 +550,7 @@ def test_s4_5_9_6_no_retention_or_cleanup_flag_and_no_rnf_home() -> None:
         "frontend",
         "module",
         "config",
+        "owner",
         "allow_untested",
         "dry_run",
         "yes",
@@ -835,3 +838,77 @@ def test_s16_4_7_6_new_writes_the_commented_form(tmp_path: Path) -> None:
         encoding="utf-8"
     )
     assert '# One of: "default-branch", "every-run".' in text
+
+
+# S16.6.8 — `repository.owner` is configured.
+
+
+def _owner_written(directory: Path) -> str:
+    text = (directory / ".rn-forge/kiln/config.toml").read_text(encoding="utf-8")
+    return tomllib.loads(text)["repository"]["owner"]
+
+
+def test_s16_6_8_1_new_without_owner_fails(ownerless: None, tmp_path: Path) -> None:
+    directory = tmp_path / "demo"
+
+    with pytest.raises(AppException) as raised:
+        commands.new(directory, archetype="python-tool", docs="none", yes=True)
+
+    assert raised.value.message.startswith("new.owner-required: ")
+    assert "--owner" in raised.value.message
+    assert not directory.exists()
+
+
+def test_s16_6_8_1_new_without_owner_exits_non_zero(
+    ownerless: None, tmp_path: Path
+) -> None:
+    from rn_forge.kiln import main
+
+    code = main.app(["new", str(tmp_path / "demo"), "--archetype", "python-tool"])
+
+    assert code != 0
+
+
+def test_s16_6_8_2_new_with_owner_writes_it(ownerless: None, tmp_path: Path) -> None:
+    directory = tmp_path / "demo"
+
+    commands.new(
+        directory, archetype="python-tool", docs="none", owner="acme", yes=True
+    )
+
+    assert _owner_written(directory) == "acme"
+
+
+def test_s16_6_8_2_new_takes_owner_from_config(ownerless: None, tmp_path: Path) -> None:
+    layer = tmp_path / "layer"
+    layer.mkdir()
+    (layer / "config.toml").write_text(
+        '[repository]\nowner = "from-config"\n', encoding="utf-8"
+    )
+    directory = tmp_path / "demo"
+
+    commands.new(
+        directory, archetype="python-tool", docs="none", config=str(layer), yes=True
+    )
+
+    assert _owner_written(directory) == "from-config"
+
+
+def test_s16_6_8_2_the_flag_beats_config(ownerless: None, tmp_path: Path) -> None:
+    layer = tmp_path / "layer"
+    layer.mkdir()
+    (layer / "config.toml").write_text(
+        '[repository]\nowner = "from-config"\n', encoding="utf-8"
+    )
+    directory = tmp_path / "demo"
+
+    commands.new(
+        directory,
+        archetype="python-tool",
+        docs="none",
+        config=str(layer),
+        owner="flag",
+        yes=True,
+    )
+
+    assert _owner_written(directory) == "flag"

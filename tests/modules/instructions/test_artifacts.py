@@ -32,6 +32,7 @@ schema_version = 1
 
 [repository]
 name = "demo"
+owner = "rn-forge"
 archetype = "{archetype}"
 
 [docs]
@@ -241,6 +242,7 @@ schema_version = 1
 
 [repository]
 name = "demo"
+owner = "rn-forge"
 archetype = "{archetype}"
 
 [docs]
@@ -371,7 +373,7 @@ def test_s5_3_5_3_the_kiln_block_is_mdformat_clean(
         extra = ""
     docs_extra = f"{extra}\n" if extra else ""
     config.write_text(
-        f'schema_version = 1\n\n[repository]\nname = "demo"\narchetype = "{archetype}"\n\n'
+        f'schema_version = 1\n\n[repository]\nname = "demo"\nowner = "rn-forge"\narchetype = "{archetype}"\n\n'
         f'[docs]\nprofile = "{profile}"\n{docs_extra}\n[ci]\nsonar = {str(sonar).lower()}\n\n{tables}',
         encoding="utf-8",
     )
@@ -396,7 +398,7 @@ def test_s5_3_5_3_the_scaffolded_bodies_are_mdformat_clean(
     root = tmp_path / "repo"
     (root / ".rn-forge" / "kiln").mkdir(parents=True)
     (root / ".rn-forge" / "kiln" / "config.toml").write_text(
-        f'schema_version = 1\n\n[repository]\nname = "{name}"\narchetype = "python-tool"\n',
+        f'schema_version = 1\n\n[repository]\nname = "{name}"\nowner = "rn-forge"\narchetype = "python-tool"\n',
         encoding="utf-8",
     )
     scaffold(root, KilnConfig.load(root))

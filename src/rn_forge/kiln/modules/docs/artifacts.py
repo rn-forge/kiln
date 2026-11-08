@@ -104,10 +104,15 @@ def _mkdocs_yml(engine: TemplateEngine, config: KilnConfig, root: Path) -> Artif
         extra.site_description
         or f"{config.name} — architecture, guides, and API reference."
     )
+    github = config.ci_provider == "github"
     text = engine.render(
         "mkdocs.yml.j2",
         {
             "name": config.name,
+            "site_url": f"https://{config.owner}.github.io/{config.name}/"
+            if github
+            else "",
+            "repo_url": f"https://github.com/{config.owner}/{config.name}",
             "archetype": config.archetype,
             "kiln_version": __version__,
             "source_paths": ", ".join(sources),

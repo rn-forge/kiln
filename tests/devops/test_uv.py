@@ -281,3 +281,23 @@ def test_s15_8_3_2_plan_of_one(tmp_path: Path) -> None:
         }
     ]
     assert outputs["sonar-sources"] == "src"
+
+
+def test_s16_6_5_1_load(tmp_path: Path) -> None:
+    _write(
+        tmp_path / "pyproject.toml",
+        '[tool.uv.workspace]\nmembers = ["pkgs/*"]\n',
+    )
+    _write(
+        tmp_path / "pkgs/app/pyproject.toml",
+        '[project]\nname = "app"\nversion = "1"\n\n'
+        '[tool.workspace-ci.integration.kc]\nimage = "kc:1"\n'
+        'command = ["start-dev", "--import-realm"]\n'
+        'volumes = ["realms:/data:ro"]\npytest-args = ["-m", "broker"]\n\n'
+        '[tool.workspace-ci.integration.plain]\nimage = "redis:7"\n',
+    )
+    kc, plain = uv.load_workspace(tmp_path).packages["app"].services
+    assert kc.command == ("start-dev", "--import-realm")
+    assert kc.volumes == ("realms:/data:ro",)
+    assert kc.pytest_args == ("-m", "broker")
+    assert (plain.command, plain.volumes, plain.pytest_args) == ((), (), ())

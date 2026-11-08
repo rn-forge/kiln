@@ -46,6 +46,7 @@ schema_version = 1
 
 [repository]
 name = "demo"
+owner = "rn-forge"
 archetype = "{archetype}"
 
 [docs]
@@ -323,6 +324,7 @@ schema_version = 1
 
 [repository]
 name = "demo"
+owner = "rn-forge"
 archetype = "{archetype}"
 
 [docs]
@@ -1026,7 +1028,8 @@ def test_s4_11_3_8_gate_shrunk_fires_when_lint_drops_workflows(
 
 AUDIT_REF = {"task": "python:lint:audit"}
 AUDIT_PREFIX = (
-    "uv export --frozen --all-packages --all-groups --no-emit-workspace --no-header"
+    "uv export --frozen --all-packages --all-groups --all-extras "
+    "--no-emit-workspace --no-header"
 )
 AUDIT_SUFFIX = (
     "| uv run pip-audit --disable-pip --require-hashes --strict -r /dev/stdin"
@@ -1074,6 +1077,15 @@ def test_s4_11_5_1_the_command(tmp_path: Path) -> None:
     assert "--ignore-vuln" not in cmd
     expected = f"set -o pipefail; {AUDIT_PREFIX} {AUDIT_SUFFIX}"
     assert cmd == expected
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s16_6_4_1_audit_exports_extras(tmp_path: Path, archetype: str) -> None:
+    root = _root(tmp_path, archetype)
+    cycle.apply(root, home=tmp_path / "home")
+    cmd = _audit_cmd(root)
+    assert "--all-extras" in cmd.split("|")[0]
+    assert "set -o pipefail" in cmd
 
 
 def test_s16_4_4_1_audit_command_has_no_exclude_flags(tmp_path: Path) -> None:
