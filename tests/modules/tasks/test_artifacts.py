@@ -3485,3 +3485,18 @@ def test_s17_2_4_3_ignored_ids_render(tmp_path: Path) -> None:
     cycle.apply(root, home=tmp_path / "home")
     _, python = _rendered_yaml(root)
     assert "--ignore-vuln PYSEC-2026-1" in YamlUtils.serialize(python["lint:audit"])
+
+
+def test_s16_6_11_3_workspace_test_tolerates_no_tests(tmp_path: Path) -> None:
+    guard = "|| [ $? -eq 5 ]"
+    for archetype, guarded in (("python-lib", True), ("python-app", False)):
+        root = _root(tmp_path / archetype, archetype)
+        rendered = {
+            a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)
+        }
+        tasks = YamlUtils.load(rendered["tasks/python.yml"])["tasks"]
+        for task in ("test", "test:coverage"):
+            text = "\n".join(
+                c["cmd"] if isinstance(c, dict) else c for c in tasks[task]["cmds"]
+            )
+            assert (guard in text) is guarded

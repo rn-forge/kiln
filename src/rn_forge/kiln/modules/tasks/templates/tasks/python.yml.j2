@@ -129,7 +129,7 @@ tasks:
 {% if overrides.get("python:test") %}      - [[ overrides["python:test"] ]]
 {% elif workspace and not packages %}      - echo "no packages to check; add one with 'kiln generate package <name>'"
 {% elif workspace %}      - for: { var: PACKAGE_DIRS, split: " " }
-        cmd: uv run --directory {{.ITEM}} --package {{base .ITEM}} pytest -q
+        cmd: uv run --directory {{.ITEM}} --package {{base .ITEM}} pytest -q || [ $? -eq 5 ]
 {% elif web %}      - uv run --directory [[ api_dir ]] --package [[ api_package ]] pytest -q
 {% else %}      - uv run pytest -q
 {% endif %}
@@ -157,7 +157,7 @@ tasks:
         cmd: >-
           COVERAGE_FILE="{{.ROOT_DIR}}/.coverage.{{base .ITEM}}"
           uv run --directory {{.ITEM}} --package {{base .ITEM}}
-          coverage run --rcfile "{{.ROOT_DIR}}/pyproject.toml" --source src -m pytest -q
+          coverage run --rcfile "{{.ROOT_DIR}}/pyproject.toml" --source src -m pytest -q || [ $? -eq 5 ]
       - uv run coverage combine
       - uv run coverage xml -o coverage.xml
 {% elif web %}      - rm -f "{{.ROOT_DIR}}/.coverage" "{{.ROOT_DIR}}/.coverage."* coverage.xml

@@ -977,3 +977,14 @@ def test_s16_6_10_3_other_archetypes_keep_theirs(tmp_path: Path) -> None:
     root, _ = _scaffolded(tmp_path, "python-app")
     ignores = _toml(root / "pyproject.toml")["tool"]["ruff"]["lint"]["per-file-ignores"]
     assert sorted(ignores["tests/*"]) == ["ANN", "D", "PLR2004", "S101"]
+
+
+def test_s16_6_11_2_kiln_new_packages_keep_their_starter(tmp_path: Path) -> None:
+    root, config = _scaffolded(tmp_path, "python-lib")
+    cycle.apply(root, home=tmp_path / "home", starters="")
+    for package in ("demo-alpha", "demo-beta"):
+        module = package.replace("-", "_")
+        member = root / "packages" / package
+        assert (member / "src" / module / "settings.py").is_file()
+        assert (member / "tests/test_settings.py").is_file()
+        assert (member / "tests/test_package.py").is_file()

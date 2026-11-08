@@ -904,7 +904,7 @@ def generate_package(
     config = ConfigManager().load(root)
     python_add_package(root, config, name, remote)
     docs_add_package(root, config, name)
-    result = cycle.apply(root, starters=f"{relative}/")
+    result = cycle.apply(root)
     generate.generate(root, config.packages)
 
     written = sorted(

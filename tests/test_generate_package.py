@@ -339,9 +339,6 @@ def test_s6_1_3_3_generate_package_with_a_module(tmp_path: Path) -> None:
         _toml(member / "pyproject.toml")["tool"]["uv"]["build-backend"]["module-name"]
         == "rn_forge.cli"
     )
-    assert "import rn_forge.cli\n" in (member / "tests/test_package.py").read_text(
-        encoding="utf-8"
-    )
     assert "::: rn_forge.cli" in (member / "docs/reference/api.md").read_text(
         encoding="utf-8"
     )
@@ -370,19 +367,29 @@ def test_s6_1_3_3_an_invalid_module_is_refused(tmp_path: Path) -> None:
     assert _tree(root) == tree
 
 
-def test_s6_9_1_3_generate_package_seeds_only_the_new_package(
+def test_s16_6_11_1_a_generated_package_is_a_skeleton(
     generated: Path, tmp_path: Path
 ) -> None:
     root = tmp_path / "golden-lib"
     shutil.copytree(generated, root)
-    alpha = root / "packages/golden-alpha/src/golden_alpha/settings.py"
-    alpha.unlink()
-
     _generate(root, "golden-gamma")
-
-    assert (root / "packages/golden-gamma/src/golden_gamma/settings.py").is_file()
-    assert (root / "packages/golden-gamma/tests/test_settings.py").is_file()
-    assert not alpha.exists()
+    package = root / "packages/golden-gamma"
+    found = sorted(
+        path.relative_to(package).as_posix()
+        for path in package.rglob("*")
+        if path.is_file()
+        and "__pycache__" not in path.parts
+        and ".uv-cache" not in path.parts
+    )
+    assert found == sorted(
+        [
+            "pyproject.toml",
+            "src/golden_gamma/__init__.py",
+            "src/golden_gamma/py.typed",
+            *PACKAGE_SEEDS,
+        ]
+    )
+    assert not (package / "tests").exists()
 
 
 def test_s16_6_9_3_generate_package_writes_no_self_dependency(tmp_path: Path) -> None:

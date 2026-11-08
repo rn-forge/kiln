@@ -94,6 +94,7 @@ def rendered(tmp_path_factory: pytest.TempPathFactory) -> Callable[[str], Path]:
     The result is read-only; a test that changes it copies it first.
     """
     from rn_forge.kiln import commands
+    from rn_forge.kiln.modules.core import cycle
 
     cache: dict[str, Path] = {}
 
@@ -122,6 +123,9 @@ def rendered(tmp_path_factory: pytest.TempPathFactory) -> Callable[[str], Path]:
                 )
             for package in ("lib-alpha", "lib-beta"):
                 commands.generate_package(package, path=root)
+            # generate_package writes a bare skeleton (S16.6.11); the init
+            # tests adopt a library whose packages carry their starter.
+            cycle.apply(root, starters="packages/")
         cache[archetype] = root
         return root
 

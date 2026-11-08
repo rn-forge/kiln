@@ -191,7 +191,6 @@ def add_package(root: Path, config: KilnConfig, name: str, remote: str) -> None:
     member.mkdir(parents=True, exist_ok=True)
     module = config.module_for(relative)
     _uv_init(member, name=name, bare=False, member=True, lib=True, module=module)
-    _write_sample_test(member, name, module)
     _reconcile_pyproject(root, config, Path(relative) / "pyproject.toml")
     _join_workspace(root / "pyproject.toml", relative, name)
     slug = remote.removeprefix("https://github.com/")
