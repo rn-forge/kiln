@@ -23,6 +23,7 @@ def test_every_check_is_named_by_its_module() -> None:
     assert checks.names() == (
         "generated",
         "rn-forge-deps",
+        "workspace-ci",
         "task-layout",
         "ci-entrypoint",
         "ci-pins",
@@ -76,6 +77,7 @@ def test_quality_checks_run_by_default(repo) -> None:
     root = repo(**{"pyproject.toml": "[project]\nname = 'x'\n"})
     assert [c.name for c in checks.CHECKS if c.scope == "quality"] == [
         "rn-forge-deps",
+        "workspace-ci",
         "docs-structure",
         "docs-site",
     ]

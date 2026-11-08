@@ -307,9 +307,10 @@ CI runs the pinned kiln read-only ([ADR-0006](../adr/ADR-0006.md)): it never
 runs `kiln apply` and never writes a generated file. `task validate` runs every
 render-free `kiln doctor` check: the six ownership checks — `generated`,
 `task-layout`, `ci-entrypoint`, `ci-pins`, `ci-hooks` and `docs-generate` — and
-the three that read repository-owned content, `rn-forge-deps`, `docs-structure`
-and `docs-site` ([ADR-0003](../adr/ADR-0003.md)). The root `lint` runs them
-once, through the internal task `kiln:doctor`. It also runs the workflow linters
+the four that read repository-owned content, `rn-forge-deps`, `workspace-ci` (a
+`python-lib` member's `[tool.workspace-ci]` tables), `docs-structure` and
+`docs-site` ([ADR-0003](../adr/ADR-0003.md)). The root `lint` runs them once,
+through the internal task `kiln:doctor`. It also runs the workflow linters
 `zizmor` and `actionlint` (`lint:workflows`) and the dependency audit
 (`lint:audit`, which runs `pip-audit` against the lock and needs the network).
 `kiln doctor --full`, which adds a full render and diff, runs where the workflow
@@ -354,15 +355,15 @@ kiln is modules under one contract ([ADR-0001](../adr/ADR-0001.md)): `core`,
 `python`, `docs`, `tasks`, `cicd` and `instructions`, each owning its config
 section, its `kiln new` options, its `artifacts()` and its `checks()`.
 `kiln doctor` collects every module's `Finding` rows into one report; a module's
-render-free checks are the ones `kiln doctor` runs by default. Six of the nine
+render-free checks are the ones `kiln doctor` runs by default. Six of the ten
 are **ownership** checks: they read only kiln-owned files and blocks, and
-`kiln new`, `kiln init`, `kiln apply` and `kiln config` fail on them alone.
-Three read repository-owned content against a rule this standard defines and
-kiln supplies the means to meet: `rn-forge-deps` (the dependency set, §3;
-`kiln config upgrade` and the scaffold), and `docs-structure` and `docs-site`
-(the area model and the links; `task docs:generate`). `kiln doctor` runs all
-nine, so a broken link or a dependency edit fails `task validate` and never a
-regeneration.
+`kiln new`, `kiln init`, `kiln apply` and `kiln config` fail on them alone. Four
+read repository-owned content against a rule this standard defines and kiln
+supplies the means to meet: `rn-forge-deps` (the dependency set, §3;
+`kiln config upgrade` and the scaffold), `workspace-ci` (the service tables
+`task ci:plan` reads), and `docs-structure` and `docs-site` (the area model and
+the links; `task docs:generate`). `kiln doctor` runs all ten, so a broken link
+or a dependency edit fails `task validate` and never a regeneration.
 
 | Code prefix | Check |
 | -- | -- |

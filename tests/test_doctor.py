@@ -176,11 +176,16 @@ DOCS = frozenset({"docs-structure", "docs-generate", "docs-site"})
 QUALITY = frozenset({"rn-forge-deps", "docs-structure", "docs-site"})
 
 
+# `workspace-ci` reads a python-lib only; tests/modules/python/checks/test_workspace_ci.py
+# breaks it, and this python-app copy never fires it.
+LIB_ONLY = frozenset({"workspace-ci"})
+
+
 def test_s4_6_1_1_every_registered_check_has_a_break() -> None:
-    assert set(BREAKS) == set(checks.names())
+    assert set(BREAKS) | LIB_ONLY == set(checks.names())
 
 
-@pytest.mark.parametrize("name", checks.names())
+@pytest.mark.parametrize("name", [n for n in checks.names() if n not in LIB_ONLY])
 def test_s4_6_1_1_each_check_reports_only_its_own_code(copy: Path, name: str) -> None:
     breaker, prefix = BREAKS[name]
     assert checks.run(copy) == []
