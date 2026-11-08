@@ -384,3 +384,13 @@ def test_s6_9_1_3_generate_package_seeds_only_the_new_package(
     assert (root / "packages/golden-gamma/src/golden_gamma/settings.py").is_file()
     assert (root / "packages/golden-gamma/tests/test_settings.py").is_file()
     assert not alpha.exists()
+
+
+def test_s16_6_9_3_generate_package_writes_no_self_dependency(tmp_path: Path) -> None:
+    root = _lib(tmp_path, HTTPS)
+    commands.generate_package("rn-forge-commons", path=root, module="rn_forge.commons")
+    document = _toml(root / "packages/rn-forge-commons/pyproject.toml")
+    assert not any(
+        d.startswith("rn-forge-commons") for d in document["project"]["dependencies"]
+    )
+    assert "sources" not in document["tool"]["uv"]

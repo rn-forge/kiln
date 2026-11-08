@@ -915,3 +915,50 @@ def test_s16_4_3_3_task_tools_stay_bare_in_the_check(tmp_path: Path) -> None:
 def test_s15_2_2_4_pip_licenses_is_a_task_tool() -> None:
     assert "pip-licenses" in TASK_TOOLS
     assert any(e.startswith("pip-licenses") for e in python_scaffold._DEV_GROUP)
+
+
+COMMONS_LIB_CONFIG = """
+schema_version = 1
+
+[repository]
+name = "demo-lib"
+owner = "rn-forge"
+archetype = "python-lib"
+
+[archetype."python-lib"]
+packages = {packages}
+
+[docs]
+profile = "mkdocs"
+"""
+
+
+def _commons_lib(tmp_path: Path, packages: list[str]) -> tuple[Path, KilnConfig]:
+    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    listed = "[" + ", ".join(f'"packages/{p}"' for p in packages) + "]"
+    config.write_text(COMMONS_LIB_CONFIG.format(packages=listed), encoding="utf-8")
+    loaded = KilnConfig.load(tmp_path)
+    scaffold(tmp_path, loaded)
+    return tmp_path, loaded
+
+
+def test_s16_6_9_1_member_named_like_the_requirement_has_no_self_dependency(
+    tmp_path: Path,
+) -> None:
+    root, _ = _commons_lib(tmp_path, ["rn-forge-commons", "rn-forge-cli"])
+    document = _toml(root / "packages/rn-forge-commons/pyproject.toml")
+    names = [rn_forge_deps.distribution(d) for d in document["project"]["dependencies"]]
+    assert "rn-forge-commons" not in names
+
+
+def test_s16_6_9_2_other_members_keep_the_requirement(tmp_path: Path) -> None:
+    root, _ = _commons_lib(tmp_path, ["rn-forge-commons", "rn-forge-cli"])
+    document = _toml(root / "packages/rn-forge-cli/pyproject.toml")
+    assert "rn-forge-commons>=0.8.1,<0.9" in document["project"]["dependencies"]
+
+
+def test_s16_6_9_4_a_lone_required_member_passes_the_check(tmp_path: Path) -> None:
+    root, config = _commons_lib(tmp_path, ["rn-forge-commons"])
+    findings = rn_forge_deps.check(config, root)
+    assert [f for f in findings if f.code == "deps.required-missing"] == []

@@ -352,6 +352,6 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
             path="pyproject.toml",
         )
         for name in archetype.dependencies.required
-        if name.lower() not in declared
+        if name.lower() not in declared and distribution(name) not in members
     )
     return findings

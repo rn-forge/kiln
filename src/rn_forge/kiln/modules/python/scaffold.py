@@ -420,7 +420,11 @@ def _reconcile_pyproject(root: Path, config: KilnConfig, relative: Path) -> None
         is_workspace_root=is_workspace_root,
         dependencies=()
         if is_workspace_root
-        else tuple(archetypes.requirement(d) for d in required),
+        else tuple(
+            archetypes.requirement(d)
+            for d in required
+            if distribution(d) != distribution(name)
+        ),
         mkdocs=config.docs_profile == "mkdocs",
         lib=workspace,
         extra_dev=extra_dev,
