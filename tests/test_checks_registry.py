@@ -24,6 +24,7 @@ def test_every_check_is_named_by_its_module() -> None:
         "generated",
         "rn-forge-deps",
         "workspace-ci",
+        "nx-version",
         "task-layout",
         "ci-entrypoint",
         "ci-pins",
@@ -78,6 +79,7 @@ def test_quality_checks_run_by_default(repo) -> None:
     assert [c.name for c in checks.CHECKS if c.scope == "quality"] == [
         "rn-forge-deps",
         "workspace-ci",
+        "nx-version",
         "docs-structure",
         "docs-site",
     ]

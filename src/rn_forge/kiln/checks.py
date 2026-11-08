@@ -19,6 +19,7 @@ from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd.checks import entrypoint, hooks, pins
 from rn_forge.kiln.modules.core.checks import generated
 from rn_forge.kiln.modules.docs.checks import derived, site, structure
+from rn_forge.kiln.modules.node.checks import nx_version
 from rn_forge.kiln.modules.python.checks import rn_forge_deps, workspace_ci
 from rn_forge.kiln.modules.tasks.checks import layout
 
@@ -47,6 +48,7 @@ CHECKS: tuple[Check, ...] = (
     Check(generated.NAME, "core", generated.check),
     Check(rn_forge_deps.NAME, "python", rn_forge_deps.check, "quality"),
     Check(workspace_ci.NAME, "python", workspace_ci.check, "quality"),
+    Check(nx_version.NAME, "node", nx_version.check, "quality"),
     Check(layout.NAME, "tasks", layout.check),
     Check(entrypoint.NAME, "cicd", entrypoint.check),
     Check(pins.NAME, "cicd", pins.check),

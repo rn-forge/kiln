@@ -68,6 +68,12 @@ For a repository with no lineage worth keeping, use
    task files render it. To rehearse `init` itself again, start over from step
    1 in a fresh worktree of the default branch.
 
+    For a `node-lib`, also run `pnpm exec nx migrate <NX_VERSION>` (the version
+    in `src/rn_forge/kiln/modules/node/angular.py`) and its migrations, then
+    `pnpm audit --prod --audit-level moderate`; add pnpm overrides only for
+    what the migrate leaves vulnerable. `kiln doctor`'s `nx-version` check
+    fails while `nx` is behind.
+
 1. **Merge** when no absorb row is open. The cutover pull request deletes the
    old CI workflow (step 3 did) in the same change that adds `ci.yml`: both
    share the concurrency group and a ruleset requires the context `ci-ok`, so

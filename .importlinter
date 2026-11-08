@@ -64,6 +64,7 @@ type = forbidden
 source_modules =
     rn_forge.kiln.checks
     rn_forge.kiln.modules.core.checks
+    rn_forge.kiln.modules.node.checks
     rn_forge.kiln.modules.python.checks
     rn_forge.kiln.modules.tasks.checks
     rn_forge.kiln.modules.cicd.checks

@@ -188,3 +188,10 @@ def test_s16_6_6_4_steps_unchanged() -> None:
     assert len(found) == len(STEPS)
     for (_, heading), expected in zip(found, STEPS, strict=True):
         assert heading.replace("`", "").startswith(expected)
+
+
+def test_s16_6_13_5_runbook_names_migrate() -> None:
+    text = RUNBOOK.read_text(encoding="utf-8")
+    assert "node-lib" in text
+    assert "nx migrate" in text
+    assert "pnpm audit" in text
