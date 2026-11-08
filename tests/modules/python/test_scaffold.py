@@ -962,3 +962,18 @@ def test_s16_6_9_4_a_lone_required_member_passes_the_check(tmp_path: Path) -> No
     root, config = _commons_lib(tmp_path, ["rn-forge-commons"])
     findings = rn_forge_deps.check(config, root)
     assert [f for f in findings if f.code == "deps.required-missing"] == []
+
+
+def test_s16_6_10_1_lib_members_have_no_ruff_table(tmp_path: Path) -> None:
+    root, _ = _scaffolded(tmp_path, "python-lib")
+    for member in ("demo-alpha", "demo-beta"):
+        document = _toml(root / "packages" / member / "pyproject.toml")
+        assert "ruff" not in document["tool"]
+    ignores = _toml(root / "pyproject.toml")["tool"]["ruff"]["lint"]["per-file-ignores"]
+    assert sorted(ignores["**/tests/*"]) == ["ANN", "D", "PLR2004", "S101"]
+
+
+def test_s16_6_10_3_other_archetypes_keep_theirs(tmp_path: Path) -> None:
+    root, _ = _scaffolded(tmp_path, "python-app")
+    ignores = _toml(root / "pyproject.toml")["tool"]["ruff"]["lint"]["per-file-ignores"]
+    assert sorted(ignores["tests/*"]) == ["ANN", "D", "PLR2004", "S101"]

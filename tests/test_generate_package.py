@@ -166,8 +166,7 @@ def test_s11_3_1_1_member_pyproject_where_the_command_writes_is_pinned(
     assert pyright["venv"] == ".venv"
     assert pyright["venvPath"] == "../.."
     assert pyright["reportMissingTypeStubs"] is False
-    ignores = ours["tool"]["ruff"]["lint"]["per-file-ignores"]["tests/*"]
-    assert sorted(ignores) == ["ANN", "D", "PLR2004", "S101"]
+    assert "ruff" not in ours["tool"]
 
 
 def test_s11_3_1_1_root_pyproject_workspace_sources_and_groups_are_pinned(
@@ -394,3 +393,8 @@ def test_s16_6_9_3_generate_package_writes_no_self_dependency(tmp_path: Path) ->
         d.startswith("rn-forge-commons") for d in document["project"]["dependencies"]
     )
     assert "sources" not in document["tool"]["uv"]
+
+
+def test_s16_6_10_2_generate_package_writes_no_ruff_table(generated: Path) -> None:
+    document = _toml(generated / "packages/golden-alpha/pyproject.toml")
+    assert "ruff" not in document["tool"]

@@ -500,8 +500,11 @@ def _reconcile(
     tool: dict[str, object] = {
         "pyright": {**PYRIGHT_EXPECTED, "venv": ".venv", "venvPath": venv_path},
         "pytest": {"ini_options": {"addopts": PYTEST_ADDOPTS}},
-        "ruff": {"lint": {"per-file-ignores": {test_glob: sorted(RUFF_TEST_IGNORES)}}},
     }
+    if not (lib and not is_root):
+        tool["ruff"] = {
+            "lint": {"per-file-ignores": {test_glob: sorted(RUFF_TEST_IGNORES)}}
+        }
     if not is_workspace_root:
         tool["uv"] = {
             "build-backend": {
