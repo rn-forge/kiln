@@ -43,20 +43,20 @@ class NodeModule:
         )
 
     def artifacts(self, config: KilnConfig, root: Path) -> Sequence[Artifact]:
-        """The seeded Angular starter; nothing else under `web_dir`.
+        """`.prettierrc` and the `.prettierignore` block for the node archetypes, then the seeded Angular starter.
 
         Args:
             config: The loaded config.
             root: The repository root.
 
         Returns:
-            `SEEDED` artifacts for `python-web-app` with `frontend = "angular"`
+            The Prettier artifacts for `node-lib` and `python-web-app`, then `SEEDED` artifacts for `python-web-app` with `frontend = "angular"`
             once the stock `app.config.ts` exists and the root `package.json` depends
             on `@rn-forge/ng`; otherwise nothing.
         """
-        from rn_forge.kiln.modules.node import starter
+        from rn_forge.kiln.modules.node import prettier, starter
 
-        return tuple(starter.render(config, root))
+        return (*prettier.render(config), *starter.render(config, root))
 
     def starters(self, config: KilnConfig, root: Path) -> Sequence[str]:
         """The paths in :meth:`artifacts` that are starter source."""

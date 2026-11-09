@@ -195,3 +195,15 @@ def test_s16_6_13_5_runbook_names_migrate() -> None:
     assert "node-lib" in text
     assert "nx migrate" in text
     assert "pnpm audit" in text
+
+
+def test_s16_7_3_10_docs() -> None:
+    assert "prettier@~3.9.10" in _flat()
+    for page in (
+        "docs/adr/ADR-0012.md",
+        "docs/specs/epics/E9-node-archetypes/index.md",
+        "docs/specs/epics/E9-node-archetypes/F9.2-one-node-scaffold.md",
+        "docs/reference/standard-repo.md",
+    ):
+        text = " ".join((ROOT / page).read_text(encoding="utf-8").split())
+        assert "Revised 2026-11-09 (S16.7.3)" in text, page

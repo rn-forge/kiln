@@ -48,11 +48,12 @@ tasks:
 {% endif %}{% for ref in extra_refs.get("validate", []) %}      - task: [[ ref ]]
 {% endfor %}
   lint:
-    desc: Every lint — {% if node_lib %}Nx projects, Markdown and TOML formatting, kiln's checks{% elif web_app %}Python, imports, the frontend's Nx lint, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs){% else %}Python, imports, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs){% endif %}, workflow security, dependency vulnerabilities{% if "licenses" in checks %}, dependency licences{% endif %}.
+    desc: Every lint — {% if node_lib %}Nx projects, Prettier formatting, Markdown and TOML formatting, kiln's checks{% elif web_app %}Python, imports, the frontend's Nx lint, Prettier formatting, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs){% else %}Python, imports, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs){% endif %}, workflow security, dependency vulnerabilities{% if "licenses" in checks %}, dependency licences{% endif %}.
     cmds:
 {% if not node_lib %}      - task: python:lint
       - task: python:lint:imports
 {% endif %}{% if node %}      - task: node:lint
+      - task: node:lint:format
 {% endif %}      - task: quality:lint:markdown
       - task: quality:lint:toml
       - task: kiln:doctor
@@ -64,9 +65,10 @@ tasks:
 {% endif %}{% for ref in extra_refs.get("lint", []) %}      - task: [[ ref ]]
 {% endfor %}
   format:
-    desc: {% if node_lib %}Format TOML and Markdown prose in place.{% else %}Format Python code, TOML and Markdown prose in place.{% endif %}
+    desc: {% if node_lib %}Format Prettier-formatted files, TOML and Markdown prose in place.{% elif web_app %}Format Python code, Prettier-formatted files, TOML and Markdown prose in place.{% else %}Format Python code, TOML and Markdown prose in place.{% endif %}
     cmds:
 {% if not node_lib %}      - task: python:format
+{% endif %}{% if node %}      - task: node:format
 {% endif %}      - task: quality:format:markdown
       - task: quality:format:toml
 {% for ref in extra_refs.get("format", []) %}      - task: [[ ref ]]

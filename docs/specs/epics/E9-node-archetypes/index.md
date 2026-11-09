@@ -38,6 +38,10 @@ Prettier configuration; a repository that adds Prettier lists `*.md` in
 `.prettierignore`, so the docs tree stays byte-identical across archetypes.
 ngkit's configuration is the prior art.
 
+Revised 2026-11-09 (S16.7.3): kiln renders `.prettierrc` and a fenced
+`.prettierignore` block for node-lib and python-web-app; the block lists `*.md`,
+so Prettier and mdformat still never format the same file.
+
 ## Decisions
 
 **Unparked 2026-10-14.** The owner wants ngkit to adopt kiln before release-1

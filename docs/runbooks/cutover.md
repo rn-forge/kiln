@@ -74,6 +74,10 @@ For a repository with no lineage worth keeping, use
     what the migrate leaves vulnerable. `kiln doctor`'s `nx-version` check
     fails while `nx` is behind.
 
+    Also make sure `prettier` is a dev dependency
+    (`pnpm add -D prettier@~3.9.10`), then run `task format`; commit the
+    formatting separately.
+
 1. **Merge** when no absorb row is open. The cutover pull request deletes the
    old CI workflow (step 3 did) in the same change that adds `ci.yml`: both
    share the concurrency group and a ruleset requires the context `ci-ok`, so

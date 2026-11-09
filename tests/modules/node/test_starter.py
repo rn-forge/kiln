@@ -9,7 +9,7 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
-from rn_forge.commons.generation import ArtifactKind
+from rn_forge.commons.generation import Artifact, ArtifactKind
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.base import StarterModule
@@ -43,6 +43,15 @@ def _config(root: Path, *, archetype: str = "python-web-app", extra: str) -> Kil
     return KilnConfig.load(root)
 
 
+def _starter(config: KilnConfig, root: Path) -> tuple[Artifact, ...]:
+    """`NODE.artifacts` less the Prettier files (S16.7.3), which have their own tests."""
+    return tuple(
+        a
+        for a in NODE.artifacts(config, root)
+        if a.path not in {".prettierrc", ".prettierignore"}
+    )
+
+
 def _stock(root: Path, web_dir: str, *, ngkit: bool = True) -> None:
     dependencies = {"@rn-forge/ng": NGKIT_URL} if ngkit else {}
     (root / "package.json").write_text(
@@ -67,7 +76,7 @@ def _paths(web_dir: str) -> set[str]:
 def test_s4_9_3_1_angular_starter_artifacts(tmp_path: Path) -> None:
     config = _config(tmp_path, extra='frontend = "angular"')
     _stock(tmp_path, "apps/web")
-    artifacts = NODE.artifacts(config, tmp_path)
+    artifacts = _starter(config, tmp_path)
     assert {a.path for a in artifacts} == _paths("apps/web")
     assert all(a.kind is ArtifactKind.SEEDED for a in artifacts)
     assert all("{{ name }}" not in a.content for a in artifacts)
@@ -79,7 +88,7 @@ def test_s4_9_3_1_angular_starter_artifacts(tmp_path: Path) -> None:
 def test_s4_9_4_1_starter_paths(tmp_path: Path) -> None:
     config = _config(tmp_path, extra='frontend = "angular"')
     _stock(tmp_path, "apps/web")
-    artifacts = NODE.artifacts(config, tmp_path)
+    artifacts = _starter(config, tmp_path)
     assert {a.path for a in artifacts} == _paths("apps/web")
     assert all(a.kind is ArtifactKind.SEEDED for a in artifacts)
     assert all("{{ name }}" not in a.content for a in artifacts)
@@ -105,31 +114,31 @@ def test_s6_9_1_5_node_starters_include_the_proxy_config(tmp_path: Path) -> None
 def test_s4_9_3_1_web_dir_moves_the_paths(tmp_path: Path) -> None:
     config = _config(tmp_path, extra='frontend = "angular"\nweb_dir = "services/web"')
     _stock(tmp_path, "services/web")
-    assert {a.path for a in NODE.artifacts(config, tmp_path)} == _paths("services/web")
+    assert {a.path for a in _starter(config, tmp_path)} == _paths("services/web")
 
 
 def test_s4_9_3_1_no_stock_config_gives_nothing(tmp_path: Path) -> None:
     config = _config(tmp_path, extra='frontend = "angular"')
-    assert NODE.artifacts(config, tmp_path) == ()
+    assert _starter(config, tmp_path) == ()
 
 
 def test_s4_9_3_1_no_ngkit_dependency_gives_nothing(tmp_path: Path) -> None:
     config = _config(tmp_path, extra='frontend = "angular"')
     _stock(tmp_path, "apps/web", ngkit=False)
-    assert NODE.artifacts(config, tmp_path) == ()
+    assert _starter(config, tmp_path) == ()
     (tmp_path / "package.json").unlink()
-    assert NODE.artifacts(config, tmp_path) == ()
+    assert _starter(config, tmp_path) == ()
     (tmp_path / "package.json").write_text("{not json", encoding="utf-8")
-    assert NODE.artifacts(config, tmp_path) == ()
+    assert _starter(config, tmp_path) == ()
 
 
 def test_s4_9_3_1_other_archetype_or_frontend_gives_nothing(tmp_path: Path) -> None:
     api = _config(tmp_path / "api", archetype="python-web-api", extra="")
     _stock(tmp_path / "api", "apps/web")
-    assert NODE.artifacts(api, tmp_path / "api") == ()
+    assert _starter(api, tmp_path / "api") == ()
     react = _config(tmp_path / "react", extra='frontend = "react"')
     _stock(tmp_path / "react", "apps/web")
-    assert NODE.artifacts(react, tmp_path / "react") == ()
+    assert _starter(react, tmp_path / "react") == ()
 
 
 @pytest.mark.parametrize("web_dir", ["apps/web", "services/web"])

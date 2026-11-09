@@ -21,6 +21,20 @@ tasks:
     cmds:
 {% if overrides.get("node:lint") %}      - [[ overrides["node:lint"] ]]
 {% else %}      - pnpm nx run-many -t lint
+{% endif %}
+  lint:format:
+    desc: Fail if Prettier would reformat a file it owns (everything not ignored by .prettierignore).
+    internal: true
+    cmds:
+{% if overrides.get("node:lint:format") %}      - [[ overrides["node:lint:format"] ]]
+{% else %}      - pnpm exec prettier --check .
+{% endif %}
+  format:
+    desc: Format the frontend workspace's TypeScript, HTML, SCSS, JSON and YAML with Prettier.
+    internal: true
+    cmds:
+{% if overrides.get("node:format") %}      - [[ overrides["node:format"] ]]
+{% else %}      - pnpm exec prettier --write .
 {% endif %}{% if node_lib %}
   lint:audit:
     desc: Fail if a production dependency has a known vulnerability (pnpm audit; needs the network).

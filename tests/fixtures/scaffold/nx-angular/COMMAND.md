@@ -52,6 +52,8 @@ The application generator brought in `@nx/eslint` and wrote
 `eslint.config.mjs` (root and `apps/web`) itself, since no linter existed yet
 in the freshly-created `apps`-preset workspace.
 
+The scaffold then adds Prettier (2026-11-09, S16.7.3) with `pnpm add -D prettier@~3.9.10`.
+
 **`node-lib`.** A `node-lib` runs the same commands, then removes the
 application, because only the application generator writes the root files
 (`eslint.config.mjs`, `tsconfig.base.json`):

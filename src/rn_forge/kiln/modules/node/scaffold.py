@@ -24,18 +24,21 @@ from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import DocumentUtils
+from rn_forge.commons.runtime.subprocess import Process
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import gitignore
 from rn_forge.kiln.modules.node import starter
 from rn_forge.kiln.modules.node.angular import (
+    PRETTIER_VERSION,
     SCAFFOLD_APP_DIR,
     add_ngkit,
     remove_scaffold_app,
     scaffold_angular,
+    scaffold_env,
 )
 
-__all__ = ["reconcile_node", "scaffold_node"]
+__all__ = ["format_node", "reconcile_node", "scaffold_node"]
 
 _SCAFFOLDERS: dict[str, Callable[[Path], Path]] = {"angular": scaffold_angular}
 """Each implemented frontend: it scaffolds into a raw directory and returns
@@ -200,6 +203,24 @@ def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
         (root / artifact.path).write_text(artifact.content, encoding="utf-8")
     if artifacts:
         _wire_starter(root, web_dir)
+
+
+def format_node(workspace: Path) -> None:
+    """Run Prettier over the finished *workspace*, so its scaffolded files are clean.
+
+    Raises:
+        AppException: `pnpm dlx prettier` fails.
+    """
+    Process.execute(
+        "prettier-write",
+        "pnpm",
+        "dlx",
+        f"prettier@{PRETTIER_VERSION}",
+        "--write",
+        ".",
+        cwd=str(workspace),
+        env=scaffold_env(),
+    )
 
 
 def _pin_package_manager(package_path: Path) -> None:

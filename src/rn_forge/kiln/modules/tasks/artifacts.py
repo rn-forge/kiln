@@ -54,6 +54,8 @@ _NODE_TASKS = (
     "node:build",
     "node:typecheck",
     "node:e2e",
+    "node:format",
+    "node:lint:format",
 )
 _DOCS_TASKS = ("docs:build", "docs:serve", "docs:generate")
 

@@ -1550,6 +1550,8 @@ NODE_CHECKS = {
     "build": ["pnpm nx run-many -t build"],
     "typecheck": ["pnpm nx run-many -t build"],
     "e2e": ["pnpm nx run-many -t e2e"],
+    "format": ["pnpm exec prettier --write ."],
+    "lint:format": ["pnpm exec prettier --check ."],
 }
 NODE_CELL = ("python-web-app", 'frontend = "angular"')
 
@@ -2063,7 +2065,7 @@ def test_s4_12_6_2_root_lint_runs_in_the_exact_order(
     root = _s4_12_1_root(tmp_path, archetype, extra)
     expected = list(LINT_ORDER)
     if archetype == "python-web-app":
-        expected.insert(2, "node:lint")
+        expected[2:2] = ["node:lint", "node:lint:format"]
     for profile in ("mkdocs", "none"):
         config = root / ".rn-forge/kiln/config.toml"
         text = config.read_text(encoding="utf-8")
@@ -2770,10 +2772,10 @@ PYTHON_DESCS = {
 NODE_LIB_DESCS = {
     "setup": "Install the pnpm workspace and the docs tooling.",
     "lint": (
-        "Every lint — Nx projects, Markdown and TOML formatting, kiln's checks, "
-        "workflow security, dependency vulnerabilities, dependency licences."
+        "Every lint — Nx projects, Prettier formatting, Markdown and TOML "
+        "formatting, kiln's checks, workflow security, dependency vulnerabilities, dependency licences."
     ),
-    "format": "Format TOML and Markdown prose in place.",
+    "format": "Format Prettier-formatted files, TOML and Markdown prose in place.",
     "typecheck": "Type-check every project through its Angular build.",
     "test": "Run every project's tests with Nx.",
     "test:coverage": "Run every project's tests, writing lcov reports to coverage/.",
@@ -2786,9 +2788,14 @@ NODE_LIB_DESCS = {
 WEB_APP_DESCS = {
     **PYTHON_DESCS,
     "lint": (
-        "Every lint — Python, imports, the frontend's Nx lint, Markdown and TOML "
-        "formatting, kiln's checks (generated files, task layout, CI, dependencies, "
-        "docs), workflow security, dependency vulnerabilities, dependency licences."
+        "Every lint — Python, imports, the frontend's Nx lint, Prettier formatting, "
+        "Markdown and TOML formatting, kiln's checks (generated files, task layout, "
+        "CI, dependencies, docs), workflow security, dependency vulnerabilities, "
+        "dependency licences."
+    ),
+    "format": (
+        "Format Python code, Prettier-formatted files, TOML and Markdown prose in "
+        "place."
     ),
     "typecheck": (
         "Type-check the API in pyright strict mode and the frontend through its "
@@ -3273,13 +3280,13 @@ LINT_PYTHON = (
     "(generated files, task layout, CI, dependencies, docs), " + LINT_TAIL
 )
 LINT_WEB_APP = (
-    "Every lint — Python, imports, the frontend's Nx lint, Markdown and TOML "
-    "formatting, kiln's checks (generated files, task layout, CI, dependencies, "
-    "docs), " + LINT_TAIL
+    "Every lint — Python, imports, the frontend's Nx lint, Prettier formatting, "
+    "Markdown and TOML formatting, kiln's checks (generated files, task layout, "
+    "CI, dependencies, docs), " + LINT_TAIL
 )
 LINT_NODE_LIB = (
-    "Every lint — Nx projects, Markdown and TOML formatting, kiln's checks, "
-    + LINT_TAIL
+    "Every lint — Nx projects, Prettier formatting, Markdown and TOML "
+    "formatting, kiln's checks, " + LINT_TAIL
 )
 LINT_CELLS = (
     ("python-app", LINT_PYTHON),

@@ -39,6 +39,7 @@ from rn_forge.kiln.modules.core.config.manager import ConfigManager
 from rn_forge.kiln.modules.core.remote import origin_url
 from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK
 from rn_forge.kiln.modules.docs.nav import NAV_BLOCK
+from rn_forge.kiln.modules.node.prettier import PRETTIERIGNORE_BLOCK
 from rn_forge.kiln.modules.python.artifacts import IMPORTLINTER_BLOCK
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -62,6 +63,7 @@ _SCAFFOLDS = (
     "scaffold_node",
     "reconcile_backend",
     "reconcile_node",
+    "format_node",
     "instructions_scaffold",
     "python_add_package",
     "docs_add_package",
@@ -1354,3 +1356,51 @@ def test_s16_6_8_4_init_takes_the_flag_without_an_origin(
     commands.init(**SELECTORS, owner="acme", yes=True)
 
     assert _written_owner(repo) == "acme"
+
+
+NGKIT_PRETTIERRC = """\
+{
+  "singleQuote": true,
+  "bracketSameLine": true,
+  "overrides": [
+    {
+      "files": "*.html",
+      "options": {
+        "parser": "angular"
+      }
+    }
+  ]
+}
+"""
+
+
+def test_s16_7_3_9_init_adopts_an_existing_prettier_setup(
+    node_repo: Path,
+    rendered: Callable[[str], Path],
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    (node_repo / ".prettierrc").write_text(NGKIT_PRETTIERRC, encoding="utf-8")
+    (node_repo / ".prettierignore").write_text("/dist\nREADME.md\n", encoding="utf-8")
+    _commit(node_repo)
+
+    commands.init(**NODE_SELECTORS, dry_run=True, json=True)
+    plan = _plan(capsys)
+    assert (plan[".prettierrc"]["kind"], plan[".prettierrc"]["action"]) == (
+        "managed",
+        "conflict",
+    )
+    ignore = plan[".prettierignore"]
+    assert (ignore["kind"], ignore["action"]) == ("block", "insert")
+
+    commands.init(**NODE_SELECTORS, yes=True)
+
+    fresh = rendered("node-lib")
+    assert (node_repo / ".prettierrc").read_bytes() == (
+        fresh / ".prettierrc"
+    ).read_bytes()
+    backups = (node_repo / ".rn-forge/kiln/backups").glob("*/.prettierrc")
+    assert NGKIT_PRETTIERRC in {b.read_text(encoding="utf-8") for b in backups}
+    text = (node_repo / ".prettierignore").read_text(encoding="utf-8")
+    assert text.startswith("/dist\nREADME.md\n")
+    assert text.index(PRETTIERIGNORE_BLOCK.begin) > text.index("README.md")
+    assert PRETTIERIGNORE_BLOCK.end in text

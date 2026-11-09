@@ -94,13 +94,15 @@ Every path kiln writes or reads has exactly one of these kinds:
 - Paths kiln neither writes nor reads (`.claude/**`, `.codex/**`, installed
   skills) are not kiln's and have no kind.
 
-Managed here: `Taskfile.yml`, `tasks/*.yml`, `.editorconfig`,
+Managed here: `Taskfile.yml`, `tasks/*.yml`, `.editorconfig`,{% if node_lib or web_app %} `.prettierrc`,{% endif %}
 `.github/workflows/*.yml`, `.github/actions/setup`, {% if sonar %}`sonar-project.properties`
 and {% else %}and
 {% endif %}this file. `.rn-forge/kiln/state.json` is generated and committed, and
 never hashes itself.
 
-Blocks here: the `# BEGIN rn-forge kiln` region in `.gitignore`{% if not node_lib %} and
+Blocks here: the `# BEGIN rn-forge kiln` region in `.gitignore`{% if web_app %},
+`.prettierignore`{% elif node_lib %} and
+`.prettierignore`{% endif %}{% if not node_lib %} and
 `.importlinter`{% endif %}, and the `<!-- BEGIN rn-forge kiln -->` region in `CLAUDE.md` and
 `AGENTS.md`.
 {% if docs %}

@@ -912,3 +912,36 @@ def test_s16_6_8_2_the_flag_beats_config(ownerless: None, tmp_path: Path) -> Non
     )
 
     assert _owner_written(directory) == "flag"
+
+
+@pytest.mark.parametrize("archetype", ["node-lib", "python-tool"])
+def test_s16_7_3_8_new_formats_after_apply(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, archetype: str
+) -> None:
+    calls: list[tuple[Path, bool]] = []
+    frontend = tmp_path / "prepared"
+    frontend.mkdir()
+
+    monkeypatch.setattr(commands, "scaffold_backend", lambda *_: None)
+    monkeypatch.setattr(commands, "reconcile_backend", lambda *_: None)
+    monkeypatch.setattr(
+        commands,
+        "scaffold_node",
+        lambda _raw, config: frontend if config.archetype == "node-lib" else None,
+    )
+    monkeypatch.setattr(commands, "reconcile_node", lambda *_: None)
+    monkeypatch.setattr(
+        commands,
+        "format_node",
+        lambda workspace: calls.append(
+            (workspace, (workspace / ".prettierrc").is_file())
+        ),
+    )
+
+    commands.new(tmp_path / "demo", archetype=archetype, docs="none", yes=True)
+
+    if archetype == "node-lib":
+        assert len(calls) == 1
+        assert calls[0][1] is True
+    else:
+        assert calls == []

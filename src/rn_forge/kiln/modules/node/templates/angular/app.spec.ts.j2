@@ -34,12 +34,15 @@ describe('App', () => {
   it('renders the problem detail when the API fails', async () => {
     const fixture = TestBed.createComponent(App);
     fixture.detectChanges();
-    http
-      .expectOne('/v1/items')
-      .flush(
-        { type: 'about:blank', title: 'Not Found', status: 404, detail: 'gone' },
-        { status: 404, statusText: 'Not Found' },
-      );
+    http.expectOne('/v1/items').flush(
+      {
+        type: 'about:blank',
+        title: 'Not Found',
+        status: 404,
+        detail: 'gone',
+      },
+      { status: 404, statusText: 'Not Found' },
+    );
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(

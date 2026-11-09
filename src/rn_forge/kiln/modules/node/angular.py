@@ -17,11 +17,14 @@ from rn_forge.commons.runtime.subprocess import Process
 __all__ = [
     "NGKIT_URL",
     "NX_VERSION",
+    "PRETTIER",
+    "PRETTIER_VERSION",
     "SCAFFOLD_APP_DIR",
     "VITEST_COVERAGE",
     "add_ngkit",
     "remove_scaffold_app",
     "scaffold_angular",
+    "scaffold_env",
 ]
 
 NX_VERSION = "24.0.4"
@@ -40,6 +43,12 @@ SCAFFOLD_APP_DIR = "apps/web"
 VITEST_COVERAGE = "@vitest/coverage-v8@^4.0.8"
 """The coverage provider the scaffold adds; its major matches `vitest`'s."""
 
+PRETTIER = "prettier@~3.9.10"
+"""The formatter the scaffold adds as a dev dependency (ngkit's range)."""
+
+PRETTIER_VERSION = "3.9.10"
+"""The release `scaffold.format_node` runs with `pnpm dlx`."""
+
 _ALLOW_BUILDS = ("@parcel/watcher", "esbuild", "lmdb", "msgpackr-extract")
 """Native build scripts pnpm 12 blocks by default (`ERR_PNPM_IGNORED_BUILDS`);
 `create-nx-workspace` stamps `pnpm-workspace.yaml` with an `allowBuilds` stub
@@ -52,7 +61,7 @@ its AI-agent template flow, which ignores `--appName` (COMMAND.md)."""
 
 def scaffold_nx_workspace(raw: Path) -> Path:
     """Run `create-nx-workspace` with the `apps` preset inside *raw*; return the workspace."""
-    env = _scaffold_env()
+    env = scaffold_env()
     # Keep Nx's native scanner from inheriting staging and checkout ignore rules.
     Process.execute("nx-git-boundary", "git", "init", "-q", cwd=str(raw), env=env)
     Process.execute(
@@ -73,7 +82,7 @@ def scaffold_nx_workspace(raw: Path) -> Path:
     return raw / "workspace"
 
 
-def _scaffold_env() -> dict[str, str]:
+def scaffold_env() -> dict[str, str]:
     return {k: v for k, v in os.environ.items() if k not in _AGENT_ENV_VARS}
 
 
@@ -83,7 +92,7 @@ def scaffold_angular(raw: Path) -> Path:
     The workspace holds the application at `SCAFFOLD_APP_DIR`, and has been
     installed.
     """
-    env = _scaffold_env()
+    env = scaffold_env()
     workspace = scaffold_nx_workspace(raw)
     Process.execute(
         "nx-angular-plugin",
@@ -129,6 +138,9 @@ def scaffold_angular(raw: Path) -> Path:
         cwd=str(workspace),
         env=env,
     )
+    Process.execute(
+        "prettier", "pnpm", "add", "-D", PRETTIER, cwd=str(workspace), env=env
+    )
     Process.execute("nx-install", "pnpm", "install", cwd=str(workspace), env=env)
     return workspace
 
@@ -141,7 +153,7 @@ def add_ngkit(workspace: Path) -> None:
         "add",
         NGKIT_URL,
         cwd=str(workspace),
-        env=_scaffold_env(),
+        env=scaffold_env(),
     )
 
 
@@ -157,7 +169,7 @@ def remove_scaffold_app(workspace: Path) -> None:
         "--forceRemove",
         "--interactive=false",
         cwd=str(workspace),
-        env=_scaffold_env(),
+        env=scaffold_env(),
     )
 
 

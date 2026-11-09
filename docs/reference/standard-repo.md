@@ -335,7 +335,10 @@ installed kiln, no `$RNF_HOME`, no bootstrap script — proves all of this:
   current, every tracked Markdown file is mdformat-clean, and no link or
   anchor is broken (`mkdocs` profile). mdformat formats every Markdown file; a
   repository that uses Prettier lists `*.md` in `.prettierignore`
-  ([ADR-0012](../adr/ADR-0012.md));
+  ([ADR-0012](../adr/ADR-0012.md)). Revised 2026-11-09 (S16.7.3): kiln renders
+  `.prettierrc` and a fenced `.prettierignore` block for node-lib and
+  python-web-app; the block lists `*.md`, so Prettier and mdformat still never
+  format the same file;
 - **every managed file and every managed block still hashes to the value
   committed in `.rn-forge/kiln/state.json`**;
 - pyright is clean in strict mode ([ADR-0002](../adr/ADR-0002.md));

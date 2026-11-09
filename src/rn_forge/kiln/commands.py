@@ -53,6 +53,7 @@ from rn_forge.kiln.modules.instructions.scaffold import (
     scaffold as instructions_scaffold,
 )
 from rn_forge.kiln.modules.node.scaffold import (
+    format_node,
     reconcile_node,
     scaffold_node,
 )
@@ -307,6 +308,8 @@ def new(
     if resolved.docs_profile == "mkdocs":
         packages = resolved.packages if resolved.archetype == "python-lib" else ()
         generate.generate(workspace, packages)
+    if frontend_workspace is not None:
+        format_node(workspace)
     _fail_on_errors(workspace)
 
     directory.mkdir(parents=True, exist_ok=True)

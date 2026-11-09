@@ -276,6 +276,7 @@ _SHARED_STEPS = [
     "nx-angular-plugin",
     "nx-angular-app",
     "coverage-v8",
+    "prettier",
     "nx-install",
 ]
 

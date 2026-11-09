@@ -142,8 +142,9 @@ Read kiln's block and the repository's text together:
   `mkdocs` (run 2: pykit's `development.md`, `README.md`,
   `releasing-packages.md`) and, in a `node-lib`, `pnpm exec`, `pnpm dlx`,
   `npx` and a bare `nx` command.
-- A repository with Prettier lists `*.md` in `.prettierignore`, because mdformat
-  formats Markdown in every archetype (run 4: ngkit).
+- In a node archetype kiln writes the `.prettierignore` block, which already
+  lists `*.md` because mdformat formats Markdown in every archetype (run 4:
+  ngkit); the repository keeps its own lines above it.
 - Specs and decisions that do not follow kiln's work model are converted by
   `kiln prompt --name port-docs`'s rules, not here.
 
