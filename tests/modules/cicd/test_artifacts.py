@@ -3798,3 +3798,17 @@ def test_s16_7_1_5_assemble_header(tmp_path: Path) -> None:
     header = text[: text.index("*/")].replace("\n * ", " ")
     assert "(`dist/site/` when none is given)" in header
     assert len(re.findall(r"dist/site/(?![\w<])", header)) == 1
+
+
+def test_s16_7_4_5_the_setup_action_follows_the_constant(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _root(tmp_path)
+    path = ".github/actions/setup/action.yml"
+    assert 'python-version: "3.14"' in _rendered(root)[path]
+
+    monkeypatch.setattr(
+        "rn_forge.kiln.modules.cicd.artifacts.PYTHON_VERSION", "3.99", raising=False
+    )
+
+    assert 'python-version: "3.99"' in _rendered(root)[path]

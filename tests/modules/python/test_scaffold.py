@@ -988,3 +988,7 @@ def test_s16_6_11_2_kiln_new_packages_keep_their_starter(tmp_path: Path) -> None
         assert (member / "src" / module / "settings.py").is_file()
         assert (member / "tests/test_settings.py").is_file()
         assert (member / "tests/test_package.py").is_file()
+
+
+def test_s16_7_4_5_requires_python_follows_the_pin() -> None:
+    assert python_scaffold.REQUIRES_PYTHON == ">=3.14"

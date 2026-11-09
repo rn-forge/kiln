@@ -77,7 +77,7 @@ runs:
     - name: Install uv
       uses: [[ pins["setup-uv"].uses ]]@[[ pins["setup-uv"].sha ]] # [[ pins["setup-uv"].version ]]
       with:
-        python-version: "3.14"
+        python-version: "[[ python_version ]]"
         enable-cache: true
         ignore-nothing-to-cache: true
         # The kiln pin lives in config.toml, so a pin change saves a fresh cache.

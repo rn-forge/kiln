@@ -1404,3 +1404,54 @@ def test_s16_7_3_9_init_adopts_an_existing_prettier_setup(
     assert text.startswith("/dist\nREADME.md\n")
     assert text.index(PRETTIERIGNORE_BLOCK.begin) > text.index("README.md")
     assert PRETTIERIGNORE_BLOCK.end in text
+
+
+# S16.7.4 — `kiln init` seeds `.python-version`.
+
+
+def _without_pin(root: Path) -> None:
+    (root / ".python-version").unlink(missing_ok=True)
+    _commit(root)
+
+
+def test_s16_7_4_1_init_seeds_python_version(lib_repo: Path, tmp_path: Path) -> None:
+    _without_pin(lib_repo)
+
+    _lib_init(lib_repo, tmp_path)
+
+    assert (lib_repo / ".python-version").read_bytes() == b"3.14\n"
+
+
+def test_s16_7_4_2_an_existing_pin_is_kept(
+    lib_repo: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (lib_repo / ".python-version").write_bytes(b"3.13\n")
+    _commit(lib_repo)
+
+    commands.init(**_LIB, dry_run=True, json=True)
+    assert ".python-version" not in _plan(capsys)
+    _lib_init(lib_repo, tmp_path)
+
+    assert (lib_repo / ".python-version").read_bytes() == b"3.13\n"
+    backups = lib_repo / ".rn-forge/kiln/backups"
+    assert list(backups.glob("*/.python-version")) == []
+
+
+def test_s16_7_4_3_the_dry_run_lists_it(
+    lib_repo: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _without_pin(lib_repo)
+    before = _snapshot(lib_repo)
+
+    commands.init(**_LIB, dry_run=True, json=True)
+
+    row = _plan(capsys)[".python-version"]
+    assert (row["kind"], row["action"]) == ("seeded", "create")
+    assert _snapshot(lib_repo) == before
+
+
+def test_s16_7_4_4_node_lib_gets_both_seeds(node_repo: Path) -> None:
+    commands.init(**NODE_SELECTORS, yes=True)
+
+    assert (node_repo / "pyproject.toml").is_file()
+    assert (node_repo / ".python-version").read_bytes() == b"3.14\n"

@@ -46,6 +46,7 @@ from rn_forge.kiln.modules.core.remote import (
     origin_url,
     repository_name,
 )
+from rn_forge.kiln.modules.core.versions import PYTHON_VERSION
 from rn_forge.kiln.modules.docs import generate
 from rn_forge.kiln.modules.docs.artifacts import SEEDS
 from rn_forge.kiln.modules.docs.scaffold import add_package as docs_add_package
@@ -344,8 +345,8 @@ def init(
     scaffolding. `--module` sets the dotted import module of a `python-app` or
     `python-tool` repository in place of the one derived from the name.
     Requires a `.git` entry and a `pyproject.toml`, which a `node-lib` is
-    given; kiln renders every managed path that is missing, and writes a
-    missing `mkdocs.yml` under `--docs mkdocs` as `new` does. Without `--yes` (or with `--dry-run`)
+    given, and seeds a missing `.python-version` (`3.14`); kiln renders every
+    managed path that is missing, and writes a missing `mkdocs.yml` under `--docs mkdocs` as `new` does. Without `--yes` (or with `--dry-run`)
     prints the resolved config and the artifact plan, and writes nothing. With
     `--yes`, the Git
     working tree must be clean (`init.dirty-tree`); it then writes
@@ -495,9 +496,10 @@ def _run_task(root: Path, name: str) -> None:
 
 
 def _missing_seeds(root: Path, config: KilnConfig) -> list[str]:
-    """The files `init` creates once, as `new` does: a `node-lib`'s `pyproject.toml`."""
+    """The files `init` creates once, as `new` does: a `node-lib`'s `pyproject.toml`, and every archetype's `.python-version`."""
     wanted = [
         ("pyproject.toml", config.archetype == "node-lib"),
+        (".python-version", True),
     ]
     return [name for name, applies in wanted if applies and not (root / name).exists()]
 
@@ -549,6 +551,8 @@ def _seed(root: Path, config: KilnConfig, seeds: Sequence[str]) -> None:
         with tempfile.TemporaryDirectory() as scratch:
             python_scaffold(Path(scratch), config)
             shutil.copy2(Path(scratch) / "pyproject.toml", root / "pyproject.toml")
+    if ".python-version" in seeds:
+        (root / ".python-version").write_text(f"{PYTHON_VERSION}\n", encoding="utf-8")
 
 
 def _dedupe_gitignore(root: Path) -> list[str]:

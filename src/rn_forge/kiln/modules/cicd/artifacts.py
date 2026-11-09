@@ -16,6 +16,7 @@ from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd import registry
 from rn_forge.kiln.modules.cicd.config import CiConfig
+from rn_forge.kiln.modules.core.versions import PYTHON_VERSION
 
 __all__ = ["SONAR_ORGANIZATION", "load_pins", "render"]
 
@@ -121,6 +122,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "workspace": workspace,
         "packages": [Path(package).name for package in config.packages],
         "docs": docs,
+        "python_version": PYTHON_VERSION,
         "site_dir": config.docs_site_dir,
         "sonar": ci.sonar,
         "sonar_exclusions": [

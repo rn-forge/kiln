@@ -24,6 +24,7 @@ from rn_forge.commons.runtime.subprocess import Process
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import gitignore
+from rn_forge.kiln.modules.core.versions import PYTHON_VERSION
 from rn_forge.kiln.modules.python.checks.rn_forge_deps import distribution
 
 __all__ = [
@@ -40,7 +41,7 @@ __all__ = [
     "uv_gitignore",
 ]
 
-REQUIRES_PYTHON = ">=3.14"
+REQUIRES_PYTHON = f">={PYTHON_VERSION}"
 PYTEST_ADDOPTS = "-ra --import-mode=importlib"
 PYRIGHT_EXPECTED = {"typeCheckingMode": "strict", "reportMissingTypeStubs": False}
 RUFF_TEST_IGNORES = {"S101", "D", "ANN", "PLR2004"}
