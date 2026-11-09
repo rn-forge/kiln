@@ -149,7 +149,6 @@ IGNORED = (
     ".coverage.host.1",
     "coverage.xml",
     ".docs-site/index.html",
-    "site/index.html",
     ".rn-forge/kiln/backups/x",
     ".rn-forge/kiln/rendered/x",
     ".rn-forge/kiln/state.lock",
@@ -255,9 +254,8 @@ S16_4_1_BLOCK = """\
 .coverage.*
 coverage.xml
 
-# Docs build output ([docs] site_dir), and mkdocs's default
+# Docs build output ([docs] site_dir)
 .docs-site/
-site/
 """
 
 
@@ -305,3 +303,33 @@ def test_s16_4_1_4_dedupe_ignores_comments(root: Path) -> None:
     assert "secrets.env" in text
     assert "# mine" in text
     assert text.count(".DS_Store") == 1
+
+
+def _s16_7_1_lines(root: Path, docs: str, site_dir: str | None) -> list[str]:
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    extra = "" if site_dir is None else f'site_dir = "{site_dir}"\n'
+    config.write_text(
+        'schema_version = 1\n\n[repository]\nname = "demo"\nowner = "rn-forge"\n'
+        f'archetype = "python-lib"\n\n[docs]\nprofile = "{docs}"\n{extra}',
+        encoding="utf-8",
+    )
+    return _kiln_body(root).splitlines()
+
+
+def test_s16_7_1_2_gitignore_has_one_build_line(root: Path) -> None:
+    lines = _s16_7_1_lines(root, "mkdocs", "out/site")
+    assert "out/site/" in lines
+    assert "site/" not in lines
+    assert "# Docs build output ([docs] site_dir)" in lines
+
+    lines = _s16_7_1_lines(root, "mkdocs", None)
+    assert ".docs-site/" in lines
+    assert "site/" not in lines
+
+    lines = _s16_7_1_lines(root, "mkdocs", "")
+    assert lines.count("site/") == 1
+    assert ".docs-site/" not in lines
+
+    lines = _s16_7_1_lines(root, "none", "out/site")
+    assert not {"out/site/", ".docs-site/", "site/"} & set(lines)
+    assert not [line for line in lines if line.startswith("# Docs build output")]

@@ -32,7 +32,6 @@ wheels/
 .coverage.*
 coverage.xml
 
-# Docs build output ([docs] site_dir), and mkdocs's default
+# Docs build output ([docs] site_dir)
 .docs-site/
-site/
 # END rn-forge kiln

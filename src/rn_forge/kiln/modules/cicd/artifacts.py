@@ -121,6 +121,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "workspace": workspace,
         "packages": [Path(package).name for package in config.packages],
         "docs": docs,
+        "site_dir": config.docs_site_dir,
         "sonar": ci.sonar,
         "sonar_exclusions": [
             *(_NODE_LIB_EXCLUSIONS if node_lib else ()),

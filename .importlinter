@@ -87,7 +87,6 @@ modules =
 ignore_imports =
     rn_forge.kiln.config -> rn_forge.kiln.modules.**
     rn_forge.kiln.modules.registry -> rn_forge.kiln.modules.**
-    rn_forge.kiln.modules.tasks.artifacts -> rn_forge.kiln.modules.docs.config
     rn_forge.kiln.modules.tasks.artifacts -> rn_forge.kiln.modules.python.artifacts
     rn_forge.kiln.modules.tasks.artifacts -> rn_forge.kiln.modules.cicd.artifacts
     rn_forge.kiln.modules.tasks.artifacts -> rn_forge.kiln.modules.cicd.config

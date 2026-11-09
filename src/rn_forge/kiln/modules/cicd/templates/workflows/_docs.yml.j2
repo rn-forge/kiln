@@ -44,13 +44,13 @@ jobs:{% if node_lib %}
 {% for hook in hooks.docs %}      - name: Run [[ hook ]]
         uses: [[ hook ]] # zizmor: ignore[self-repository] actionlint rejects the $/ form
         env:
-          SITE_DIR: .docs-site
+          SITE_DIR: [[ site_dir ]]
 
 {% endfor %}      - uses: [[ pins["configure-pages"].uses ]]@[[ pins["configure-pages"].sha ]] # [[ pins["configure-pages"].version ]]
 
       - uses: [[ pins["upload-pages-artifact"].uses ]]@[[ pins["upload-pages-artifact"].sha ]] # [[ pins["upload-pages-artifact"].version ]]
         with:
-          path: .docs-site
+          path: [[ site_dir ]]
           include-hidden-files: true
 
       - id: deployment

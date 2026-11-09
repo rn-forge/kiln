@@ -2390,8 +2390,8 @@ def _without_t7(body: str) -> str:
 
 T7_HUNKS = (
     (
-        " * Assembles the docs site into `dist/site/` (or the directory given as the\n"
-        " * first argument) from every project that declares\n",
+        " * Assembles the docs site into the directory given as the first argument\n"
+        " * (`dist/site/` when none is given) from every project that declares\n",
         " * Assembles the docs site into `dist/site/` from every project that declares\n",
     ),
     (
@@ -3791,3 +3791,10 @@ def test_s15_5_3_2_node_lib_on(tmp_path: Path) -> None:
     release_steps = str(jobs["release"]["steps"])
     assert "steps.state.outputs.mode == 'released'" in release_steps
     assert "verify-release" not in job["needs"]  # type: ignore[operator]
+
+
+def test_s16_7_1_5_assemble_header(tmp_path: Path) -> None:
+    text = _rendered(_root(tmp_path, "node-lib"))["tools/ci/assemble-site.mjs"]
+    header = text[: text.index("*/")].replace("\n * ", " ")
+    assert "(`dist/site/` when none is given)" in header
+    assert len(re.findall(r"dist/site/(?![\w<])", header)) == 1

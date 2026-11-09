@@ -69,6 +69,13 @@ class KilnConfig:
         return docs.profile if isinstance(docs, DocsConfig) else "none"
 
     @property
+    def docs_site_dir(self) -> str:
+        """Where `mkdocs` builds the site: `[docs] site_dir`, else mkdocs's own `site`."""
+        docs = getattr(self.document, "docs", None)
+        configured = docs.site_dir if isinstance(docs, DocsConfig) else ".docs-site"
+        return configured or "site"
+
+    @property
     def ci_provider(self) -> str:
         """`github`; `ado` is reserved."""
         ci = getattr(self.document, "ci", None)

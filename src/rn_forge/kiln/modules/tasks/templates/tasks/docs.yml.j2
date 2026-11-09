@@ -10,7 +10,7 @@ vars:
 
 tasks:
   build:
-    desc: Build the MkDocs site into .docs-site/ (or $1 when given).
+    desc: Build the MkDocs site into [[ site_dir ]]/ (or $1 when given).
     cmds:
 {% if overrides.get("docs:build") %}      - [[ overrides["docs:build"] ]]
 {% else %}      - uv run --group docs mkdocs build --strict{{if .CLI_ARGS}} --site-dir "{{.CLI_ARGS}}"{{end}}

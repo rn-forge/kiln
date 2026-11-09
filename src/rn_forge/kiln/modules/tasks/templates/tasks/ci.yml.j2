@@ -278,10 +278,10 @@ tasks:
         pnpm exec nx run-many -t verify-consumer --excludeTaskDependencies
 {% endif %}{% if docs %}
   docs:site:
-    desc: "CI only: Build Compodoc and Storybook and assemble them under the MkDocs site in .docs-site."
+    desc: "CI only: Build Compodoc and Storybook and assemble them under the MkDocs site in [[ site_dir ]]."
     cmds:
       - pnpm exec nx run-many -t compodoc build-storybook
-      - node tools/ci/assemble-site.mjs .docs-site
+      - node tools/ci/assemble-site.mjs [[ site_dir ]]
 {% endif %}{% endif %}{% if not node_lib %}
   plan:
     desc: "CI only: Print the plan's outputs for $GITHUB_OUTPUT."

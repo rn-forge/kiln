@@ -16,7 +16,6 @@ from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd import registry
 from rn_forge.kiln.modules.cicd.artifacts import load_pins
 from rn_forge.kiln.modules.cicd.config import CiConfig
-from rn_forge.kiln.modules.docs.config import DocsConfig
 from rn_forge.kiln.modules.python.artifacts import root_package
 from rn_forge.kiln.modules.tasks.config import TasksConfig
 
@@ -62,11 +61,6 @@ _DOCS_TASKS = ("docs:build", "docs:serve", "docs:generate")
 def _tasks_config(config: KilnConfig) -> TasksConfig:
     section = getattr(config.document, "tasks", None)
     return section if isinstance(section, TasksConfig) else TasksConfig()
-
-
-def _site_dir(config: KilnConfig) -> str:
-    docs = getattr(config.document, "docs", None)
-    return docs.site_dir if isinstance(docs, DocsConfig) else ".docs-site"
 
 
 def render(config: KilnConfig) -> list[Artifact]:
@@ -124,7 +118,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "package_dirs": list(config.packages),
         "docs": docs,
         "release": config.release,
-        "site_dir": _site_dir(config),
+        "site_dir": config.docs_site_dir,
         "includes": tasks_config.includes,
         "extra_refs": tasks_config.extra_refs,
         "overrides": tasks_config.command_overrides,

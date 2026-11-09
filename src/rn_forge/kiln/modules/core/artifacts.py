@@ -9,7 +9,6 @@ from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
-from rn_forge.kiln.modules.docs.config import DocsConfig
 
 __all__ = ["GITIGNORE_BLOCK", "render"]
 
@@ -20,12 +19,11 @@ GITIGNORE_BLOCK = ManagedBlock("rn-forge kiln")
 def render(config: KilnConfig) -> list[Artifact]:
     """Render `.editorconfig`, `.mdformat.toml`, `.taplo.toml`, the workspace file and the `.gitignore` block."""
     engine = TemplateEngine.cached(package="rn_forge.kiln.modules.core")
-    docs = getattr(config.document, "docs", None)
     context = {
         "kiln_version": __version__,
         "python": config.archetype != "node-lib",
         "docs": config.docs_profile == "mkdocs",
-        "site_dir": docs.site_dir if isinstance(docs, DocsConfig) else ".docs-site",
+        "site_dir": config.docs_site_dir,
     }
     return render_artifacts(
         engine,
