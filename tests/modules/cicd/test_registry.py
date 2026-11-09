@@ -114,8 +114,8 @@ def test_s15_1_1_6_matrix_for_one_archetype() -> None:
 def test_s15_2_4_3_registry_row() -> None:
     row = _check("pnpm-audit")
     assert row.switch is Switch.STANDARD
-    assert row.archetypes == frozenset({"node-lib"})
-    assert row.verb == "{stack}:lint:audit"
+    assert row.archetypes == frozenset({"python-web-app", "node-lib"})
+    assert row.verb == "`task node:lint:audit`"
     assert "pnpm-audit" not in registry.configured_names()
     assert registry.configured_names() == {
         "licenses",
@@ -123,6 +123,10 @@ def test_s15_2_4_3_registry_row() -> None:
         "umbrella-release",
         "scorecard",
     }
+
+
+def test_s16_7_6_3_the_registry() -> None:
+    assert _check("pnpm-audit").archetypes == frozenset({"python-web-app", "node-lib"})
 
 
 def _verb_of_row(name: str) -> str:

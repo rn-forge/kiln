@@ -3,7 +3,7 @@ version: "3"
 
 # The pnpm-managed Nx toolchain the frontend scaffold owns. Internal — reached
 # through the root wrappers, as `python`'s is.
-{% if "licenses" in checks and node_lib %}
+{% if "licenses" in checks %}
 vars:
   DEVOPS: '[[ devops ]]'
 {% endif %}
@@ -35,13 +35,13 @@ tasks:
     cmds:
 {% if overrides.get("node:format") %}      - [[ overrides["node:format"] ]]
 {% else %}      - pnpm exec prettier --write .
-{% endif %}{% if node_lib %}
+{% endif %}
   lint:audit:
     desc: Fail if a production dependency has a known vulnerability (pnpm audit; needs the network).
     internal: true
     cmds:
       - pnpm audit --prod --audit-level moderate
-{% endif %}{% if "licenses" in checks and node_lib %}
+{% if "licenses" in checks %}
   lint:licenses:
     desc: Fail if a dependency's licence matches the deny list (pnpm licenses).
     internal: true
@@ -53,7 +53,7 @@ tasks:
         pnpm licenses list --json --prod
         | {{.DEVOPS}} licenses --format pnpm
 {% for d in licenses_deny %}        --deny '[[ d ]]'
-{% endfor %}{% for i in licenses_ignore %}        --ignore '[[ i ]]'
+{% endfor %}{% for i in licenses_ignore_node %}        --ignore '[[ i ]]'
 {% endfor %}{% endif %}
   test:
     desc: Test the frontend workspace with Nx.

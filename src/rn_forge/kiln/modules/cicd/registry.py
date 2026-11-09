@@ -111,7 +111,11 @@ CHECKS: tuple[CiCheck, ...] = (
         _std("pip-audit", "lint", _PY, "S; ignore list `[ci.checks] pip-audit`"),
         policy=AuditPolicy,
     ),
-    _std("pnpm-audit", "{stack}:lint:audit", frozenset({"node-lib"})),
+    _std(
+        "pnpm-audit",
+        "`task node:lint:audit`",
+        frozenset({"python-web-app", "node-lib"}),
+    ),
     _std(
         "Nx lint, typecheck, test, build",
         "`task node:*`, `task ci:test`",

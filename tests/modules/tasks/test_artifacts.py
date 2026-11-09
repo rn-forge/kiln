@@ -1553,6 +1553,7 @@ NODE_CHECKS = {
     "format": ["pnpm exec prettier --write ."],
     "lint:format": ["pnpm exec prettier --check ."],
 }
+NODE_AUDITS = {"lint:audit", "lint:licenses"}
 NODE_CELL = ("python-web-app", 'frontend = "angular"')
 
 
@@ -1566,7 +1567,7 @@ def test_s4_12_3_1_node_yml_holds_the_toolchain(tmp_path: Path) -> None:
     root = _node_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "tasks/node.yml")["tasks"]
-    assert set(tasks) == set(NODE_CHECKS)
+    assert set(tasks) == {*NODE_CHECKS, *NODE_AUDITS}
     for name, cmds in NODE_CHECKS.items():
         assert tasks[name]["internal"] is True
         assert tasks[name]["desc"].strip()
@@ -1666,7 +1667,7 @@ def test_s9_1_9_1_node_yml_adds_typecheck_and_e2e_for_node_lib(
     root = _node_lib_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "tasks/node.yml")["tasks"]
-    assert set(tasks) == {*NODE_CHECKS, "lint:audit", "lint:licenses", "version"}
+    assert set(tasks) == {*NODE_CHECKS, *NODE_AUDITS, "version"}
     for name, cmds in NODE_CHECKS.items():
         assert tasks[name]["internal"] is True
         assert tasks[name]["desc"].strip()
@@ -1755,16 +1756,12 @@ def test_s9_2_5_1_node_yml_is_byte_identical_in_both_cells(tmp_path: Path) -> No
     app = _node_root(tmp_path / "app")
     cycle.apply(lib, home=tmp_path / "home")
     cycle.apply(app, home=tmp_path / "home")
-    # S15.2.3: the licences check is `node-lib`'s alone, so the lib file adds
-    # exactly the `DEVOPS` var and the `lint:licenses` task (and, S15.2.4, `lint:audit`)
-    # to the shared one.
+    # Only a library publishes, so the lib file adds exactly `version` (S16.7.6).
     lib_doc = YamlUtils.load((lib / "tasks/node.yml").read_text(encoding="utf-8"))
     text = (app / "tasks/node.yml").read_text(encoding="utf-8")
-    assert lib_doc.pop("vars").keys() == {"DEVOPS"}
-    del lib_doc["tasks"]["lint:licenses"], lib_doc["tasks"]["lint:audit"]
     del lib_doc["tasks"]["version"]
     assert lib_doc == YamlUtils.load(text)
-    assert set(YamlUtils.load(text)["tasks"]) == set(NODE_CHECKS)
+    assert set(YamlUtils.load(text)["tasks"]) == {*NODE_CHECKS, *NODE_AUDITS}
 
 
 @pytest.mark.parametrize("cell", ["lib", "app"])
@@ -2066,6 +2063,8 @@ def test_s4_12_6_2_root_lint_runs_in_the_exact_order(
     expected = list(LINT_ORDER)
     if archetype == "python-web-app":
         expected[2:2] = ["node:lint", "node:lint:format"]
+        expected.insert(expected.index("python:lint:audit") + 1, "node:lint:audit")
+        expected.append("node:lint:licenses")
     for profile in ("mkdocs", "none"):
         config = root / ".rn-forge/kiln/config.toml"
         text = config.read_text(encoding="utf-8")
@@ -3087,7 +3086,7 @@ def test_s15_2_4_1_node_lint_audit_task(tmp_path: Path) -> None:
 
 
 def test_s15_2_4_2_python_archetypes_have_none(tmp_path: Path) -> None:
-    for archetype in ("python-tool", "python-web-app"):
+    for archetype in ("python-tool",):
         sub = tmp_path / archetype
         sub.mkdir()
         root = _root(sub, archetype)
@@ -3096,6 +3095,54 @@ def test_s15_2_4_2_python_archetypes_have_none(tmp_path: Path) -> None:
             text = path.read_text(encoding="utf-8")
             assert "pnpm audit" not in text, path
             assert "node:lint:audit" not in text, path
+
+
+# S16.7.6 — `python-web-app` audits its frontend.
+
+WEB_LINT_TAIL = [
+    {"task": "ci:lint:workflows"},
+    {"task": "python:lint:audit"},
+    {"task": "node:lint:audit"},
+    {"task": "python:lint:licenses"},
+    {"task": "node:lint:licenses"},
+]
+
+
+def test_s16_7_6_1_web_app_audits_its_frontend(tmp_path: Path) -> None:
+    lib = _node_lib_root(tmp_path / "lib")
+    app = _node_root(tmp_path / "app")
+    cycle.apply(lib, home=tmp_path / "home")
+    cycle.apply(app, home=tmp_path / "home")
+    root_tasks, node = _node_lib_rendered(app)
+    audit = node["lint:audit"]
+    assert audit["internal"] is True
+    assert audit["cmds"] == ["pnpm audit --prod --audit-level moderate"]
+    assert node["lint:licenses"]["internal"] is True
+    app_vars = YamlUtils.load((app / "tasks/node.yml").read_text(encoding="utf-8"))[
+        "vars"
+    ]
+    lib_vars = YamlUtils.load((lib / "tasks/node.yml").read_text(encoding="utf-8"))[
+        "vars"
+    ]
+    assert set(app_vars) == {"DEVOPS"}
+    assert app_vars == lib_vars
+    cmds = root_tasks["lint"]["cmds"]
+    assert cmds[-len(WEB_LINT_TAIL) :] == WEB_LINT_TAIL
+
+
+def test_s16_7_6_2_licences_off_drops_only_the_licences_task(tmp_path: Path) -> None:
+    app = _node_root(tmp_path, "\n[ci.checks]\nlicenses = false\n")
+    cycle.apply(app, home=tmp_path / "home")
+    root_tasks, node = _node_lib_rendered(app)
+    assert "lint:audit" in node
+    assert "lint:licenses" not in node
+    assert "vars" not in YamlUtils.load(
+        (app / "tasks/node.yml").read_text(encoding="utf-8")
+    )
+    cmds = root_tasks["lint"]["cmds"]
+    assert {"task": "node:lint:audit"} in cmds
+    assert {"task": "python:lint:licenses"} not in cmds
+    assert NODE_LICENSES_REF not in cmds
 
 
 # S15.3.2 — `task ci:secret-scan`.

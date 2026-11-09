@@ -548,16 +548,86 @@ def test_s9_2_10_1_other_files_compare_as_bytes(
     assert [line for line in matrix.parity_cells(lib, web) if name in line]
 
 
-def test_s9_2_10_1_tasks_node_yml_compares_as_bytes(
+def test_s16_7_6_6_tasks_node_yml_compares_parsed(
     matrix: ModuleType, tmp_path: Path
 ) -> None:
-    # `.yml` is not `.yaml`: same parsed value, different layout, is a difference.
     layout = "version: '3'\ntasks:\n  a:\n    cmds:\n      - b\n"
     lib, web = _cells(
         tmp_path, _parity_files(), _parity_files(**{"tasks/node.yml": layout})
     )
+    assert matrix.parity_cells(lib, web) == []
+    changed = "version: '3'\ntasks:\n  a:\n    cmds:\n      - c\n"
+    lib, web = _cells(
+        tmp_path / "b", _parity_files(), _parity_files(**{"tasks/node.yml": changed})
+    )
     lines = matrix.parity_cells(lib, web)
     assert len(lines) == 1 and "tasks/node.yml" in lines[0]
+
+
+def _node_yml(*extra: str) -> str:
+    return "version: '3'\ntasks:\n  a:\n    cmds: [b]\n" + "".join(
+        f"  {name}:\n    cmds: [x]\n" for name in extra
+    )
+
+
+def test_s16_7_6_4_parity_allows_the_lib_version_task(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    assert matrix.LIB_ONLY_TASKS == ("version",)
+    lib, web = _cells(
+        tmp_path,
+        _parity_files(**{"tasks/node.yml": _node_yml("version")}),
+        _parity_files(),
+    )
+    assert matrix.parity_cells(lib, web) == []
+    lib, web = _cells(
+        tmp_path / "web",
+        _parity_files(),
+        _parity_files(**{"tasks/node.yml": _node_yml("version")}),
+    )
+    assert [line for line in matrix.parity_cells(lib, web) if "tasks/node.yml" in line]
+    lib, web = _cells(
+        tmp_path / "other",
+        _parity_files(**{"tasks/node.yml": _node_yml("publish")}),
+        _parity_files(),
+    )
+    assert [line for line in matrix.parity_cells(lib, web) if "tasks/node.yml" in line]
+
+
+GITIGNORE_GROUPS = (
+    "# Python tool caches\n.pytest_cache/\n.ruff_cache/\n\n"
+    "# Coverage output\n.coverage\nhtmlcov/\n\n"
+)
+
+
+def test_s16_7_6_5_parity_allows_the_web_python_groups(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    assert matrix.WEB_ONLY_GITIGNORE_GROUPS == (
+        "# Python tool caches",
+        "# Coverage output",
+    )
+    base = "# Nx\n.nx\n\n"
+    web_text = "# Nx\n.nx\n\n" + GITIGNORE_GROUPS + "# End\ndist\n"
+    lib_text = base + "# End\ndist\n"
+    lib, web = _cells(
+        tmp_path,
+        _parity_files(**{".gitignore": lib_text}),
+        _parity_files(**{".gitignore": web_text}),
+    )
+    assert matrix.parity_cells(lib, web) == []
+    lib, web = _cells(
+        tmp_path / "swap",
+        _parity_files(**{".gitignore": web_text}),
+        _parity_files(**{".gitignore": lib_text}),
+    )
+    assert [line for line in matrix.parity_cells(lib, web) if ".gitignore" in line]
+    lib, web = _cells(
+        tmp_path / "extra",
+        _parity_files(**{".gitignore": lib_text}),
+        _parity_files(**{".gitignore": web_text + "extra\n"}),
+    )
+    assert [line for line in matrix.parity_cells(lib, web) if ".gitignore" in line]
 
 
 @pytest.mark.parametrize(

@@ -56,6 +56,10 @@ PARITY_FILES = (
     "tasks/node.yml",
 )
 WEB_ONLY_DEPENDENCY = "@rn-forge/ng"
+LIB_ONLY_TASKS = ("version",)
+"""Tasks in the lib side's `tasks/node.yml` that the web side does not render, because only a library publishes."""
+WEB_ONLY_GITIGNORE_GROUPS = ("# Python tool caches", "# Coverage output")
+"""`.gitignore` groups only an archetype with Python code renders."""
 
 
 @dataclass(frozen=True)
@@ -393,8 +397,23 @@ def ngkit(checkout: Path, out_root: Path) -> int:
     return 0
 
 
+def _without_groups(text: str) -> str:
+    """*text* without each `WEB_ONLY_GITIGNORE_GROUPS` group: its comment line through the next blank line."""
+    lines = text.splitlines(keepends=True)
+    kept: list[str] = []
+    skipping = False
+    for line in lines:
+        if skipping:
+            skipping = line.strip() != ""
+        elif line.rstrip("\n") in WEB_ONLY_GITIGNORE_GROUPS:
+            skipping = True
+        else:
+            kept.append(line)
+    return "".join(kept)
+
+
 def _parity_value(path: Path, relative: str, web: bool) -> object:
-    """The comparable form of one parity file: parsed for `.json` and `.yaml`, else its bytes."""
+    """The comparable form of one parity file: parsed for `.json`, `.yaml` and `.yml`, else its bytes."""
     data = path.read_bytes()
     try:
         if relative.endswith(".json"):
@@ -403,18 +422,26 @@ def _parity_value(path: Path, relative: str, web: bool) -> object:
                 # The one allowance: the web side's dependencies entry, nothing else.
                 value["dependencies"].pop(WEB_ONLY_DEPENDENCY, None)
             return value
-        if relative.endswith(".yaml"):
-            return YamlUtils.load(data.decode("utf-8"))
+        if relative.endswith((".yaml", ".yml")):
+            value = YamlUtils.load(data.decode("utf-8"))
+            if not web and relative == "tasks/node.yml":
+                for name in LIB_ONLY_TASKS:
+                    value["tasks"].pop(name, None)
+            return value
     except (ValueError, KeyError, TypeError, AttributeError):
         pass
+    if web and relative == ".gitignore":
+        return _without_groups(data.decode("utf-8")).encode("utf-8")
     return data
 
 
 def parity_cells(lib_dir: Path, web_dir: Path) -> list[str]:
     """Differences between the `PARITY_FILES` of two cells, one line each, in file order.
 
-    `.json` and `.yaml` files compare parsed, the rest as bytes. The web side's
-    `package.json` may carry `@rn-forge/ng` under `dependencies`.
+    `.json`, `.yaml` and `.yml` files compare parsed, the rest as bytes. The web
+    side's `package.json` may carry `@rn-forge/ng` under `dependencies`, and its
+    `.gitignore` the `WEB_ONLY_GITIGNORE_GROUPS`; the lib side's `tasks/node.yml`
+    may carry the `LIB_ONLY_TASKS`.
     """
     lines: list[str] = []
     for relative in PARITY_FILES:
