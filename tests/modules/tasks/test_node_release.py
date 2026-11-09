@@ -1,7 +1,7 @@
 """S15.8.5 — the `node-lib` release tasks, run in a temporary git repository.
 
 The rendered cell is copied into a repository with a local bare `origin`, and
-`gh`, `pnpm` and `node` are fakes on `PATH` that log their arguments, so no test
+`gh`, `pnpm`, `uv` and `node` are fakes on `PATH` that log their arguments, so no test
 reaches the network or a real GitHub.
 """
 
@@ -122,6 +122,7 @@ def run(repo: Path, tmp_path: Path) -> Run:
         )
         make = "mkdir -p dist/tarballs; : > dist/tarballs/x.tgz" if tarball else ":"
         _stub(bin_dir, "pnpm", f'echo "pnpm $*" >> "{log}"\n{make}')
+        _stub(bin_dir, "uv", f'echo "uv $*" >> "{log}"\ncat > /dev/null')
         # `-e` is `task version` reading package.json files; the release-notes script is faked.
         real = shutil.which("node")
         _stub(
@@ -290,15 +291,86 @@ def test_s15_8_5_7_version_prints_the_release_version(run: Run) -> None:
     assert done.stdout.strip() == "1.2.3"
 
 
-def test_s15_8_5_7_version_with_a_bump_runs_nx_and_nothing_else(
+BUMP = "pnpm exec nx release version {} --git-commit=false --git-tag=false --stage-changes=false"
+CHANGELOG = (
+    "pnpm exec nx release changelog 1.2.3 --git-commit=false --git-tag=false"
+    " --stage-changes=false"
+)
+
+
+def _bump_calls(tmp_path: Path, spec: str, tail: str) -> None:
+    calls = _calls(tmp_path)
+    assert len(calls) == 3, calls
+    assert calls[0] == BUMP.format(spec)
+    assert calls[1] == CHANGELOG + tail
+    assert calls[2].startswith("uv run --group docs mdformat")
+
+
+def test_s16_7_2_1_a_bump_writes_the_changelog_then_formats(
     run: Run, tmp_path: Path
 ) -> None:
     done = run("version", "--", "minor")
     assert done.returncode == 0, done.stdout + done.stderr
-    assert _calls(tmp_path) == [
-        "pnpm exec nx release version minor --git-commit=false --git-tag=false --stage-changes=false"
-    ]
+    _bump_calls(tmp_path, "minor", " --first-release")
     assert done.stdout.strip() == ""
+
+
+def test_s16_7_2_2_no_first_release_flag_once_a_tag_exists(
+    run: Run, tmp_path: Path, repo: Path
+) -> None:
+    _git(repo, "tag", "v1.0.0")
+    done = run("version", "--", "minor")
+    assert done.returncode == 0, done.stdout + done.stderr
+    _bump_calls(tmp_path, "minor", "")
+
+
+def test_s16_7_2_3_an_exact_version_is_passed_through(run: Run, tmp_path: Path) -> None:
+    done = run("version", "--", "1.3.0")
+    assert done.returncode == 0, done.stdout + done.stderr
+    _bump_calls(tmp_path, "1.3.0", " --first-release")
+
+
+def test_s16_7_2_4_no_argument_has_no_side_effects(run: Run, tmp_path: Path) -> None:
+    done = run("version")
+    assert done.returncode == 0, done.stderr
+    assert done.stdout.strip() == "1.2.3"
+    assert _calls(tmp_path) == []
+
+
+def test_s16_7_2_5_the_heading_shape_survives_formatting(
+    cell: Path, tmp_path: Path
+) -> None:
+    (tmp_path / "CHANGELOG.md").write_text(
+        "## 1.3.0 (2026-11-09)\n\n"
+        "### Features\n\n"
+        "- **core:** a long bullet that wraps over more than one line so that the\n"
+        "  formatter's shape is the one Nx writes ([abc1234](https://example.invalid))\n\n"
+        "## 1.2.0 (2026-10-25)\n\n- older\n",
+        encoding="utf-8",
+    )
+    script = cell / "tools" / "ci" / "release-notes.mjs"
+
+    def notes(version: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            ["node", str(script), version],
+            cwd=tmp_path,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    found = notes("1.3.0")
+    assert found.returncode == 0, found.stdout + found.stderr
+    assert found.stdout.startswith("## 1.3.0 (2026-11-09)")
+    assert notes("1.30.0").returncode != 0
+
+
+def test_s16_7_2_6_descriptions(cell: Path) -> None:
+    rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(cell), cell)}
+    node = YamlUtils.load(rendered["tasks/node.yml"])["tasks"]["version"]["desc"]
+    root = YamlUtils.load(rendered["Taskfile.yml"])["tasks"]["version"]["desc"]
+    assert "CHANGELOG.md" in node
+    assert "CHANGELOG.md" in root
 
 
 def test_s15_8_5_11_draft_until_published(run: Run, tmp_path: Path, repo: Path) -> None:

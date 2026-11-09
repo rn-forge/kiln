@@ -2779,8 +2779,8 @@ NODE_LIB_DESCS = {
     "test:coverage": "Run every project's tests, writing lcov reports to coverage/.",
     "build": "Build every project with Nx.",
     "version": (
-        "Print the publishable projects' version, or bump it "
-        "(pass -- patch|minor|major|x.y.z)."
+        "Print the publishable projects' version, or bump it, write its "
+        "CHANGELOG.md section and format it (pass -- patch|minor|major|x.y.z)."
     ),
 }
 WEB_APP_DESCS = {

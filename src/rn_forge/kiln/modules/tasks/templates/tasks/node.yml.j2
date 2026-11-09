@@ -63,14 +63,12 @@ tasks:
 {% else %}      - pnpm nx run-many -t build
 {% endif %}
 {% if node_lib %}  version:
-    desc: Print the publishable projects' version, or bump it (pass -- patch|minor|major|x.y.z); the root version task runs it.
+    desc: Print the publishable projects' version, or bump it, write its CHANGELOG.md section and format it (pass -- patch|minor|major|x.y.z); the root version task runs it.
     internal: true
     silent: true
     cmds:
       - |
-        if [ -n "{{.CLI_ARGS}}" ]; then
-          pnpm exec nx release version {{.CLI_ARGS}} --git-commit=false --git-tag=false --stage-changes=false
-        else
+        read_version() {
           node -e '
           const fs = require("node:fs");
           const path = require("node:path");
@@ -96,7 +94,17 @@ tasks:
           }
           console.log([...versions][0]);
           '
+        }
+        if [ -n "{{.CLI_ARGS}}" ]; then
+          pnpm exec nx release version {{.CLI_ARGS}} --git-commit=false --git-tag=false --stage-changes=false
+          version="$(read_version)" || exit 1
+          first=""; [ -z "$(git tag --list 'v*')" ] && first=" --first-release"
+          pnpm exec nx release changelog "$version" --git-commit=false --git-tag=false --stage-changes=false$first
+        else
+          read_version
         fi
+      - task: :quality:format:markdown
+        if: '[ -n "{{.CLI_ARGS}}" ]'
 {% endif %}
   e2e:
     desc: Run the workspace's end-to-end tests with Nx.

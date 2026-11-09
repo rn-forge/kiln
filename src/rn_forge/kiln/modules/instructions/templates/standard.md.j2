@@ -332,8 +332,9 @@ not write it, and without it the release's Publish step publishes to npm.
 
 **Releasing.** A release follows a version bump made in a pull request: run
 `task version -- <patch|minor|major|x.y.z>` (`nx release version`, no commit or
-tag), commit the changed `package.json` files, and merge. `task version` with no
-argument prints the version. On the push to the default branch, `release` tags
+tag), commit the changed `package.json` files and the new `CHANGELOG.md`
+section, and merge. `task version` with no argument prints the version. On the
+push to the default branch, `release` tags
 `v<version>`, publishes to npm under the dist-tag the version names (`latest`
 for `x.y.z`, the prerelease identifier for `x.y.z-<id>.<n>`), and publishes the
 GitHub Release last. CI never commits. A version whose GitHub Release is

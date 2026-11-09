@@ -413,7 +413,9 @@ def test_s15_8_5_7_version_task(tmp_path: Path) -> None:
     root = YamlUtils.load(files["Taskfile.yml"])["tasks"]
     assert root["version"]["cmds"] == [{"task": "node:version"}]
     cmds = "\n".join(
-        YamlUtils.load(files["tasks/node.yml"])["tasks"]["version"]["cmds"]
+        c
+        for c in YamlUtils.load(files["tasks/node.yml"])["tasks"]["version"]["cmds"]
+        if isinstance(c, str)
     )
     assert (
         "pnpm exec nx release version {{.CLI_ARGS}} --git-commit=false "

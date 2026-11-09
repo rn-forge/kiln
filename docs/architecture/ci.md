@@ -318,7 +318,7 @@ The release follows a version bump, as for Python
 
 | Was a `release.yml` input | Now |
 | -- | -- |
-| `specifier`, `exact-version` | A developer runs `task version -- <patch\|minor\|major\|x.y.z>` in a pull request (`nx release version`, no commit or tag) and commits the bump |
+| `specifier`, `exact-version` | A developer runs `task version -- <patch\|minor\|major\|x.y.z>` in a pull request (`nx release version`, no commit or tag), which also writes and formats its `CHANGELOG.md` section (`nx release changelog`), and commits the bump |
 | `first-release` | Derived: no `v*` tag exists in the repository |
 | `dist-tag` | Derived: `latest` for `x.y.z`; the prerelease identifier for `x.y.z-<id>.<n>` |
 | `dry-run` | Gone: `smoke` packs on every pull request; `release` runs only on the default branch |
