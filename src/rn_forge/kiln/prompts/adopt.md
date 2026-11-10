@@ -63,7 +63,7 @@ In the reference, `.rn-forge/kiln/state.json` lists every file's kind:
   copied whole like any managed file; its `nav` is a derived region, so run
   `task docs:generate` after the copy and the repository's own pages fill it
   (about 150 lines of the first diff are this, and no verdict row).
-- **`block`** (`.gitignore`, `.importlinter`, `CLAUDE.md`): only the fenced
+- **`block`** (`.gitignore`, `.importlinter`, `AGENTS.md`): only the fenced
   region is taken, markers included; the repository's text stays outside it.
 - **`seeded`**: the repository's version wins; a seed the repository lacks is
   added.
@@ -74,7 +74,7 @@ code.
 
 ## 4. Reconcile the files kiln has a block in
 
-`CLAUDE.md` (and any other file that holds a kiln block) has two authors. Read
+`AGENTS.md` (and any other file that holds a kiln block) has two authors. Read
 kiln's block and the repository's text together:
 
 - Delete from the repository's part what the block now states.
@@ -83,6 +83,9 @@ kiln's block and the repository's text together:
   pykit's `CLAUDE.md` pointed at `uv run` commands that the block forbids).
 - Check the guides and runbooks the instructions link to for the same
   contradictions, and fix them on the page.
+- `CLAUDE.md` is repository-owned and carries no block. Make it `@AGENTS.md` and
+  a Claude-only section, and move agent rules from `README.md` and the old
+  `CLAUDE.md` into `AGENTS.md` ([ADR-0020](../../../adr/ADR-0020.md)).
 - Specs and decisions that do not follow kiln's work model are converted by
   `kiln prompt --name port-docs`'s rules, not here.
 
@@ -97,8 +100,8 @@ kiln's block and the repository's text together:
   those to the verb. Leave commands with no verb (`uv add`, `uv lock`,
   `uv build`, `pnpm add`), and commands for a consumer outside the repository
   (a README's `uvx …` install line). No check finds these: grep the docs,
-  `README.md` and `CLAUDE.md` for `uv run`, `pytest`, `ruff`, `pyright`,
-  `mkdocs` (run 2: pykit's `development.md`, `README.md`,
+  `README.md`, `AGENTS.md` and `CLAUDE.md` for `uv run`, `pytest`, `ruff`,
+  `pyright`, `mkdocs` (run 2: pykit's `development.md`, `README.md`,
   `releasing-packages.md`) and, in a `node-lib`, `pnpm exec`, `pnpm dlx`,
   `npx` and a bare `nx` command.
 - In a node archetype kiln writes the `.prettierignore` block, which already

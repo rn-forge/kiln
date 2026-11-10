@@ -101,7 +101,8 @@ agreement before writing anything in the new repo.
 
 - Every epic on the board in exactly one group; every ADR in `adr/index.md`.
 - `task docs:generate`.
-- `CLAUDE.md` links to the specs board and the ADR log; it describes neither.
+- `README.md` and `AGENTS.md` link to the specs board and the ADR log; they
+  describe neither.
 - Strip provenance notes ("moved verbatim from §14") before calling it done:
   they point at a file that no longer exists.
 
