@@ -105,7 +105,7 @@ Every path kiln writes or reads has exactly one of these kinds:
 | **derived data** | kiln | kiln, at run time | nothing | nothing; gitignored |
 
 - A file has one kind, except that a file holding a **block** or **derived
-  region** is otherwise scaffolded or repo-owned: `.gitignore`, `CLAUDE.md`
+  region** is otherwise scaffolded or repo-owned: `.gitignore`, `AGENTS.md`
   and `mkdocs.yml`.
 - **Seeded** and **scaffolded** differ only in who writes them. A seeded file is
   an apply artifact, so a later `kiln apply` recreates it if it is absent and
@@ -113,14 +113,19 @@ Every path kiln writes or reads has exactly one of these kinds:
   `kiln new` and `kiln generate package` write it (`kiln new` generates the
   packages its config lists, and `kiln generate package` adds the rest one at
   a time; *Revised 2026-11-09 (S16.7.10)*), and a later `kiln apply` does not
-  recreate it. A scaffolded file (`pyproject.toml`, `README.md`, the bodies of
-  `CLAUDE.md`, `AGENTS.md` and `mkdocs.yml`, the first `src/` and `tests/`) is
-  written by `kiln new` before its first apply, and never again.
+  recreate it. A scaffolded file (`pyproject.toml`, `README.md`, `CLAUDE.md`,
+  the bodies of `AGENTS.md` and `mkdocs.yml`, the first `src/` and `tests/`)
+  is written by `kiln new` before its first apply, and never again.
 - "Nothing, including presence" for **seeded** is the target set by
   [ADR-0003](../adr/ADR-0003.md). The `generated` check skips a seeded state
   entry.
 - Paths kiln neither writes nor reads (`.claude/**`, `.codex/**`, installed
   skills) are not kiln's and have no kind.
+- The instruction files are **split by audience.** `README.md` is for people and
+  carries no agent directive. `AGENTS.md` is the agent instructions: its body
+  is repo-owned and kiln's block is in it, and a tool that adds its own block
+  does not own the file. `CLAUDE.md` is `@AGENTS.md` plus what only Claude
+  should read, and carries no block.
 
 Two owners never write the same bytes. After scaffolding, doctor checks
 kiln-owned files and blocks for artifact conformance, and the three rules over
@@ -145,7 +150,7 @@ The assignment is normative:
 | `tasks/self.yml` and any include declared `ownership = "repository"` | repo | seeded once, never rewritten |
 | `scripts/**` | **repo only** — a repo's own lints, wired via `[tasks.extra_refs]`. kiln and `cicd` generate nothing here ([ADR-0006](../adr/ADR-0006.md)) | repo |
 | `src/**`, `tests/**` | **repo** — scaffolded once; no doctor structure policing | scaffolded |
-| `README.md` | written once by `kiln new`, then repo | scaffolded — the single prose home; never rewritten |
+| `README.md` | written once by `kiln new`, then repo | scaffolded — for people and developers, with no agent directive; never rewritten |
 | `docs/_structure.md`, `docs/<area>/_structure.md` for each area kiln seeds | kiln | managed — one rule set in every repo; an area a repo adds keeps its rules in its own, repo-owned `_structure.md` |
 | `docs/_areas.yml` | repo after scaffolding | **seeded** — repos may extend areas |
 | `docs/index.md`, `docs/<area>/index.md` | repo after scaffolding | **seeded** — written once |
@@ -157,7 +162,8 @@ The assignment is normative:
 | `packages/<pkg>/docs/**` | `python-lib` only; repo, seeded once by `kiln generate package` | **seeded** |
 | `packages/<pkg>/CHANGELOG.md`, `packages/<pkg>/README.md` | `python-lib` only; repo, seeded once by `kiln generate package` | **seeded** |
 | `.github/workflows/ci.yml`; `.github/dependabot.yml`; `.github/actions/setup`; `sonar-project.properties`; `tools/ci/*.mjs` for `node-lib` | kiln (`cicd`) | managed |
-| `CLAUDE.md`, `AGENTS.md` | bodies written once by `kiln new`, then repo; the `<!-- BEGIN rn-forge kiln -->` block in `CLAUDE.md` → kiln | block (`CLAUDE.md` only; `AGENTS.md` points at it) |
+| `AGENTS.md` | body written once by `kiln new`, then repo; the `<!-- BEGIN rn-forge kiln -->` block → kiln; a later agent tool may add its own block, and never owns the file | block |
+| `CLAUDE.md` | written once by `kiln new` as `@AGENTS.md` and a Claude-only section, then repo | scaffolded — carries no block |
 | `.claude/**`, `.codex/**`, installed skills | not kiln's | — |
 | Repo-specific lints (`check_brand.py`, `check_gate_tags.py`, …) | repo, wired via `[tasks.extra_refs]` | repo |
 

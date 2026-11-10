@@ -905,3 +905,16 @@ def test_s16_10_2_4_the_block_lands_beneath_the_agents_body(tmp_path: Path) -> N
     assert agents.startswith(AGENTS)
     assert agents.endswith("<!-- END rn-forge kiln -->\n")
     assert (root / "CLAUDE.md").read_text(encoding="utf-8") == CLAUDE
+
+
+def test_s16_10_6_1_standard_puts_the_block_in_agents_md(tmp_path: Path) -> None:
+    text = _squash(_rendered(_root(tmp_path))[STANDARD])
+    assert "region in `AGENTS.md`" in text
+    assert "`.gitignore`, `AGENTS.md` and `mkdocs.yml`" in text
+    assert "region in `CLAUDE.md`" not in text
+
+
+def test_s16_10_6_2_standard_states_the_split_by_audience(tmp_path: Path) -> None:
+    text = _squash(_rendered(_root(tmp_path))[STANDARD])
+    for phrase in ("split by audience", "`@AGENTS.md`", "does not own the file"):
+        assert phrase in text, phrase
