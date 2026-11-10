@@ -13,7 +13,7 @@ Backlog sections below are derived from the epic, feature and release pages by
 | Release | Status | Features |
 | -- | -- | -- |
 | [Release 2 — the architecture baseline and taskkit retired](../releases/release-2/index.md) | planned | 3 New |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 1 Active · 4 New · 61 Closed |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 1 Active · 6 New · 61 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -77,7 +77,7 @@ now:   ADRs accepted ─→ S13.1.1 derived nav ─→ F13.2 board/scope ─→ 
        F7.5 pykit from PyPI ─→ S6.4.5 and F6.7 reruns ─→ F6.8 pykit Release 7 CI ─→ F7.2 the cut
        F6.9 adopted repositories left alone (pykit's 2026-11-01 trial) ─→ F7.2 the cut
        E15 CI standard (F15.1 ─→ F15.2–F15.7 · F15.8 owner decision) ─┐
-       E16 init adopts by overwrite (F16.2 · F16.1 ─→ F16.3 · F16.4) ──┤
+       E16 init adopts by overwrite (F16.2 · F16.1 ─→ F16.3 · F16.4 ─→ F16.8 retire init ─→ F16.9) ─┤
        E17 task standard (F17.1 now · F17.2 after E15) ─────────────────┴─→ S7.2.4 cutover SOP on pykit, then ngkit ─→ S7.2.2 the tag
 triggered: E7 pykit tags · E8 ADO · backlog: E10 generators
 ```

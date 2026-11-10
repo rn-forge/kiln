@@ -96,6 +96,8 @@ are [release-2](../release-2/index.md).
 | [F16.4 — Generated-file hygiene](../../specs/epics/E16-init-adopts-by-overwrite/F16.4-generated-file-hygiene.md) | E16 | Closed |
 | [F16.6 — What the cutover rehearsals found](../../specs/epics/E16-init-adopts-by-overwrite/F16.6-cutover-rehearsal-findings.md) | E16 | Closed |
 | [F16.7 — What the cutover found](../../specs/epics/E16-init-adopts-by-overwrite/F16.7-cutover-findings.md) | E16 | Closed |
+| [F16.8 — Retire `kiln init`](../../specs/epics/E16-init-adopts-by-overwrite/F16.8-retire-kiln-init.md) | E16 | New |
+| [F16.9 — What the overlay cutovers found](../../specs/epics/E16-init-adopts-by-overwrite/F16.9-overlay-cutover-findings.md) | E16 | New |
 | [F17.1 — The task surface says what it is](../../specs/epics/E17-task-standard/F17.1-task-surface.md) | E17 | Closed |
 | [F17.2 — One grammar for the CI surface, and one home for check policy](../../specs/epics/E17-task-standard/F17.2-ci-task-grammar.md) | E17 | Closed |
 | [F18.1 — Tests named by behaviour](../../specs/epics/E18-v1-spec-rewrite/F18.1-tests-named-by-behaviour.md) | E18 | New |
@@ -243,7 +245,9 @@ Earlier release-1 work also landed in commits whose subjects name no ID:
   check E15 covers.
 - [E16](../../specs/epics/E16-init-adopts-by-overwrite/index.md)'s acceptance
   blocks pass: `init` adopts by overwrite and the cutover SOP exists. Added
-  2026-11-04.
+  2026-11-04. Revised 2026-11-09: `init` is retired and the SOP is the overlay
+  ([ADR-0019](../../adr/ADR-0019.md),
+  [F16.8](../../specs/epics/E16-init-adopts-by-overwrite/F16.8-retire-kiln-init.md)).
 
 ## Shipped
 

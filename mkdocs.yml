@@ -186,6 +186,8 @@ nav:
         - F16.5 — Rebuild an existing repository on kiln, and port it: specs/epics/E16-init-adopts-by-overwrite/F16.5-rebuild-and-port.md
         - F16.6 — What the cutover rehearsals found: specs/epics/E16-init-adopts-by-overwrite/F16.6-cutover-rehearsal-findings.md
         - F16.7 — What the cutover found: specs/epics/E16-init-adopts-by-overwrite/F16.7-cutover-findings.md
+        - F16.8 — Retire `kiln init`: specs/epics/E16-init-adopts-by-overwrite/F16.8-retire-kiln-init.md
+        - F16.9 — What the overlay cutovers found: specs/epics/E16-init-adopts-by-overwrite/F16.9-overlay-cutover-findings.md
       - E17 — One task standard for every archetype:
         - specs/epics/E17-task-standard/index.md
         - F17.1 — The task surface says what it is: specs/epics/E17-task-standard/F17.1-task-surface.md

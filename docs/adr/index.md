@@ -31,3 +31,4 @@ it generates.
 | [0016](ADR-0016.md) | Every archetype's CI follows one contract, planned by rn-forge-devops | the generated CI of every archetype |
 | [0017](ADR-0017.md) | kiln ships the CI planner as `kiln-devops` | the generated CI of every archetype, and kiln's distribution |
 | [0018](ADR-0018.md) | rn-forge dependencies are version ranges from PyPI | the rn-forge requirements kiln renders, and `rn-forge-deps` everywhere |
+| [0019](ADR-0019.md) | Cutovers overlay a `kiln new` reference; `kiln init` is retired | the cutover of a repository with a pre-kiln lineage, and kiln's command set |
