@@ -857,3 +857,8 @@ def test_s17_1_5_5_task_tables_are_mdformat_clean(
     (out / "tables.md").write_text(tables + "\n", encoding="utf-8")
     result = _mdformat_check(out)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_s16_9_6_3_the_standard_names_it(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    assert "metadata.scaffolded" in _rendered(root)[STANDARD]

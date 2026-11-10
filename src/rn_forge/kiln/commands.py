@@ -15,6 +15,7 @@ from __future__ import annotations
 import dataclasses
 import re
 import shutil
+import subprocess
 from collections.abc import Sequence
 from importlib import metadata
 from importlib.resources import files
@@ -311,8 +312,42 @@ def new(
     shutil.copytree(workspace, directory, symlinks=True, dirs_exist_ok=True)
     # Last, so a failed run leaves no repository; the file linters need a root.
     Process.execute("git-init", "git", "init", "-q", cwd=str(directory))
+    _record_scaffolded(directory)
     rows = _change_rows(result.changes)
     _report(directory, resolved, rows)
+
+
+def _record_scaffolded(directory: Path) -> None:
+    """Record in `state.json` the files `kiln new` wrote that no artifact owns.
+
+    Args:
+        directory: The new repository, already `git init`-ed.
+    """
+    listed = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(directory),
+            "ls-files",
+            "--others",
+            "--exclude-standard",
+            "-z",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    state_path = directory / ".rn-forge" / "kiln" / "state.json"
+    state = DocumentUtils.read(state_path)
+    owned = {entry["path"] for entry in state["entries"].values()}
+    state["metadata"]["scaffolded"] = sorted(
+        path
+        for path in listed.split("\0")
+        if path and path not in owned and not path.startswith(".rn-forge/")
+    )
+    state_path.write_text(
+        DocumentUtils.dumps(state, ConfigFormat.JSON), encoding="utf-8"
+    )
 
 
 def _resolve_config(

@@ -434,7 +434,14 @@ def test_s4_5_9_1_success_retains_staging_and_target_equals_workspace(
     run = tmp_path / ".staging" / "demo"
     assert all((run / part).is_dir() for part in ("backend", "frontend", "workspace"))
     assert (run / "backend" / "pyproject.toml").is_file()
-    assert _hashes(run / "workspace") == _hashes(target)
+    state = ".rn-forge/kiln/state.json"
+    staged, final = _hashes(run / "workspace"), _hashes(target)
+    # `new` records the scaffolded list in the target's state.json last (S16.9.6).
+    for hashes in (staged, final):
+        document = json.loads(hashes[state])
+        document["metadata"].pop("scaffolded", None)
+        hashes[state] = json.dumps(document, sort_keys=True).encode()
+    assert staged == final
     assert (tmp_path / ".staging" / ".gitignore").read_text(encoding="utf-8") == "/*\n"
 
 
@@ -1164,3 +1171,23 @@ def test_s16_7_3_8_new_formats_after_apply(
         assert calls[0][1] is True
     else:
         assert calls == []
+
+
+@pytest.mark.parametrize(
+    ("archetype", "expected"),
+    [
+        ("python-lib", {"pyproject.toml"}),
+        ("node-lib", {"package.json", "nx.json"}),
+    ],
+)
+def test_s16_9_6_1_new_records_the_scaffolded_files(
+    rendered: Callable[[str], Path], archetype: str, expected: set[str]
+) -> None:
+    root = rendered(archetype)
+    state = json.loads((root / ".rn-forge/kiln/state.json").read_text("utf-8"))
+    scaffolded = state["metadata"]["scaffolded"]
+    assert scaffolded == sorted(scaffolded)
+    assert {"README.md", "AGENTS.md"} | expected <= set(scaffolded)
+    assert not set(scaffolded) & {e["path"] for e in state["entries"].values()}
+    forbidden = (".rn-forge/", ".git/", "node_modules/", ".venv/")
+    assert not [p for p in scaffolded if p.startswith(forbidden)]

@@ -74,7 +74,7 @@ Every path kiln writes or reads has exactly one of these kinds:
 | **block** | kiln (the fence); repo (the rest of the file) | `kiln apply` | the body's SHA-256 and the markers | `generated`: drift if the body differs |
 | **derived region** | kiln (the fence); repo (the rest of the file) | `kiln docs-generate`, and `kiln new` | nothing | `docs-generate`: stale if regenerating it from the repo's inputs differs |
 | **seeded** | repo, after the first write | `kiln apply`, once, when absent | creation only | nothing, including presence |
-| **scaffolded** | repo | `kiln new`'s scaffold step, once | nothing | nothing |
+| **scaffolded** | repo | `kiln new`'s scaffold step, once | its path, in `metadata.scaffolded`, by `kiln new` only | nothing |
 | **repo** | repo | never kiln | nothing | the repo's own tasks |
 | **input** | repo | the owner, or `kiln config-update` | the hash of its parsed content, as `config_hash` | nothing compares it; `kiln apply` re-renders from it |
 | **baseline** | kiln | `kiln apply` | — (it is the record; it never hashes itself) | `generated` reads it |
@@ -210,7 +210,8 @@ fresh render; it does not compare repository-owned files with scaffold defaults.
 the repo-relative path, the kind, and a SHA-256 — of the whole file for managed
 artifacts, of the body for blocks — plus the exact fence markers for blocks, and
 a creation record for seeded files, whose presence is not enforced. It records `kiln_version` and `config_hash`
-in its metadata, and it never contains an entry for itself.
+in its metadata, and it never contains an entry for itself. `scaffolded` lists
+the paths `kiln new` wrote that no artifact owns; nothing checks them.
 
 `kiln doctor`'s `generated` check reads it without rendering anything.
 

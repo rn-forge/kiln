@@ -181,3 +181,12 @@ def test_s6_9_1_2_apply_does_not_recreate_a_deleted_starter(
     capsys.readouterr()
     commands.apply(dry_run=True, json=True)
     assert all(row["path"] != relative for row in _last_json(capsys)["artifacts"])
+
+
+def test_s16_9_6_2_apply_keeps_the_scaffolded_list(repo: Path) -> None:
+    state = repo / ".rn-forge/kiln/state.json"
+    before = json.loads(state.read_text("utf-8"))["metadata"]["scaffolded"]
+    assert before
+    cycle.apply(repo)
+    after = json.loads(state.read_text("utf-8"))["metadata"]["scaffolded"]
+    assert after == before

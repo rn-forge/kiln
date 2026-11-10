@@ -32,6 +32,7 @@ from rn_forge.kiln.modules.core import settle, umbrella
 from rn_forge.kiln.modules.core.config.manager import PROVENANCE_KEY, ConfigManager
 
 __all__ = [
+    "SCAFFOLDED_KEY",
     "CycleRefused",
     "apply",
     "classify",
@@ -39,6 +40,8 @@ __all__ = [
 ]
 
 STATE_SCHEMA_VERSION = "1"
+
+SCAFFOLDED_KEY = "scaffolded"
 
 UNFENCED_CODE = "core.block-unfenced"
 
@@ -166,6 +169,9 @@ def _prepare(
         recorded = previous.metadata.get(PROVENANCE_KEY)
         if recorded is not None:
             metadata[PROVENANCE_KEY] = recorded
+        scaffolded = previous.metadata.get(SCAFFOLDED_KEY)
+        if scaffolded is not None:
+            metadata[SCAFFOLDED_KEY] = scaffolded
 
     store = StateStore(
         state_path,

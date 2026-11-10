@@ -91,7 +91,7 @@ Every path kiln writes or reads has exactly one of these kinds:
 | **block** | kiln (the fence); repo (the rest of the file) | `kiln apply` | the body's SHA-256 and the markers | `generated`: drift if the body differs |
 | **derived region** | kiln (the fence); repo (the rest of the file) | `kiln docs-generate`, and `kiln new` | nothing | `docs-generate`: stale if regenerating it from the repo's inputs differs |
 | **seeded** | repo, after the first write | `kiln apply`, once, when absent | creation only | nothing, including presence (see below) |
-| **scaffolded** | repo | `kiln new`'s scaffold step, once | nothing | nothing |
+| **scaffolded** | repo | `kiln new`'s scaffold step, once | its path, in `metadata.scaffolded`, by `kiln new` only | nothing |
 | **repo** | repo | never kiln | nothing | the repo's own tasks |
 | **input** | repo | the owner, or `kiln config-update` | the hash of its parsed content, as `config_hash` | nothing compares it; `kiln apply` re-renders from it |
 | **baseline** | kiln | `kiln apply` | — (it is the record; it never hashes itself) | `generated` reads it |
@@ -400,7 +400,7 @@ one table.
 ```json
 {
   "schema_version": "1",
-  "metadata": { "kiln_version": "…", "config_hash": "…" },
+  "metadata": { "kiln_version": "…", "config_hash": "…", "scaffolded": ["…"] },
   "entries": {
     "Taskfile.yml":      { "path": "Taskfile.yml", "kind": "managed", "content_hash": "…" },
     ".gitignore#rn-forge kiln": { "path": ".gitignore", "kind": "block",
@@ -416,7 +416,8 @@ It is written by tooling's generation engine, in that engine's format: a
 `content_hash` is the SHA-256 hex digest of the file — of a block's body, as
 read between its markers — and a block's key is its path and block name. It
 never contains an entry for itself. `kiln doctor`'s `generated` check reads it
-without rendering anything ([ADR-0006](../adr/ADR-0006.md)).
+without rendering anything ([ADR-0006](../adr/ADR-0006.md)). `scaffolded` lists
+the paths `kiln new` wrote that no artifact owns; nothing checks them.
 
 ## 8. CI shape
 
