@@ -39,6 +39,7 @@ from rn_forge.kiln.modules.core import cycle, umbrella
 from rn_forge.kiln.modules.core.config import catalog
 from rn_forge.kiln.modules.core.config.manager import ConfigManager, Resolution
 from rn_forge.kiln.modules.core.config.sources import Source, fetch
+from rn_forge.kiln.modules.core.inventory import KINDS, inventory
 from rn_forge.kiln.modules.docs import generate
 from rn_forge.kiln.modules.docs.scaffold import add_package as docs_add_package
 from rn_forge.kiln.modules.instructions.scaffold import (
@@ -596,7 +597,9 @@ def config_upgrade(
     )
 
 
-def diff(artifact: str | None = None, json: bool = False) -> None:
+def diff(
+    artifact: str | None = None, old: str | None = None, json: bool = False
+) -> None:
     """Unified diff of on-disk content against a fresh render, writing nothing.
 
     With no `--artifact`, every managed and block artifact whose disk content
@@ -606,12 +609,33 @@ def diff(artifact: str | None = None, json: bool = False) -> None:
     `--archetype`), which kiln's commands never import, so this is `--artifact`
     rather than the design table's bare positional.
 
+    `--old` is another repository's checkout: instead of diffing the artifacts,
+    list every file of this (reference) repository and of that one with its
+    class and whether the bytes match; exits 0.
+
     Raises:
-        AppException: ARTIFACT names no known artifact, or a difference was
-            found — `diff(1)`'s own exit-1 convention.
+        AppException: ARTIFACT names no known artifact, a difference was
+            found — `diff(1)`'s own exit-1 convention — or `--old` is not a git
+            repository or is given with `--artifact`.
     """
     if json:
         console.set_mode(OutputMode.JSON)
+    if old is not None:
+        if artifact is not None:
+            raise AppException(
+                "inventory.artifact-with-old: --artifact and --old exclude each other"
+            )
+        rows = inventory(umbrella.find_root(Path.cwd()), Path(old))
+        if console.mode is OutputMode.JSON:
+            console.json({"inventory": [dataclasses.asdict(row) for row in rows]})
+            return
+        for row in rows:
+            console.print(f"{row.kind:<11} {row.status:<15} {row.path}", markup=False)
+        console.print(
+            ", ".join(f"{sum(r.kind == kind for r in rows)} {kind}" for kind in KINDS),
+            markup=False,
+        )
+        return
     root = umbrella.find_root(Path.cwd())
     changes = cycle.plan(root).changes
 
