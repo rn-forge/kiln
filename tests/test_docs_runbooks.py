@@ -9,11 +9,13 @@ ROOT = Path(__file__).resolve().parents[1]
 RUNBOOK = ROOT / "docs/runbooks/cutover.md"
 STEPS = (
     "Branch",
-    "Run kiln init",
+    "Build the reference",
+    "Bring the files over",
     "Read the diff file by file",
     "Record a verdict",
     "Land the absorb stories",
-    "Bump [kiln] ref and run kiln apply",
+    "Rebuild the reference and re-run the overlay",
+    "Reconcile and gate",
     "Merge",
 )
 
@@ -22,7 +24,11 @@ def _text() -> str:
     return RUNBOOK.read_text(encoding="utf-8")
 
 
-def test_s16_3_1_1_runbook_steps() -> None:
+def _flat() -> str:
+    return " ".join(_text().split())
+
+
+def test_s16_8_2_1_runbook_steps() -> None:
     text = _text()
 
     assert text.startswith("# Cutting a repository over to kiln")
@@ -32,58 +38,30 @@ def test_s16_3_1_1_runbook_steps() -> None:
         assert heading.replace("`", "").startswith(expected)
 
 
-def test_s16_3_1_2_table_format() -> None:
+def test_s16_8_2_2_runbook_has_no_init() -> None:
+    text = _text()
+
+    for absent in ("kiln init", "backups/"):
+        assert absent not in text
+    for present in (
+        "kiln new",
+        "kiln diff --old",
+        "byte-for-byte",
+        "S16.3.1",
+        "S17.2.1",
+        "ADR-0019",
+    ):
+        assert present in text, present
+
+
+def test_s16_8_2_3_table_format() -> None:
     assert "| File | What is lost | Verdict | Where it went |" in _text()
 
 
-def test_s16_3_1_3_listed() -> None:
+def test_s16_8_2_4_listed() -> None:
     index = (ROOT / "docs/runbooks/index.md").read_text(encoding="utf-8")
 
     assert "](cutover.md)" in index
-
-
-# S16.6.6 — the runbook says what the rehearsal needed.
-
-
-def _flat() -> str:
-    return " ".join(_text().split())
-
-
-def test_s16_6_6_1_origin() -> None:
-    text = _flat()
-
-    assert "Run it from a checkout whose `origin` is the repository" in text
-    assert "the repository name comes from the `origin` remote" in text
-
-
-def test_s16_6_6_2_python_lib_config() -> None:
-    text = _flat()
-
-    assert (
-        "A `python-lib` passes `--config` with `packages`, `modules`, "
-        "`import_contracts` and `[ci] release`"
-    ) in text
-    assert (
-        "https://github.com/rn-forge/pykit/blob/main/docs/specs/epics/"
-        "E16-kiln-adoption/F16.3-cutover.md"
-    ) in text
-
-
-def test_s16_6_6_3_old_workflows() -> None:
-    text = _flat()
-
-    assert "`init` exits 1 while the old workflows are present" in text
-    assert "because its closing `kiln doctor` checks them" in text
-    assert "Delete the old workflows now (`git rm .github/workflows/<old>.yml`)" in text
-    assert "right after this read and before step 6" in text
-
-
-def test_s16_6_6_4_steps_unchanged() -> None:
-    found = re.findall(r"^(\d+)\. \*\*(.+?)\.?\*\*", _text(), re.MULTILINE)
-
-    assert len(found) == len(STEPS)
-    for (_, heading), expected in zip(found, STEPS, strict=True):
-        assert heading.replace("`", "").startswith(expected)
 
 
 def test_s16_6_13_5_runbook_names_migrate() -> None:

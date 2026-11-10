@@ -363,9 +363,9 @@ section, its `kiln new` options, its `artifacts()` and its `checks()`.
 `kiln doctor` collects every module's `Finding` rows into one report; a module's
 render-free checks are the ones `kiln doctor` runs by default. Six of the ten
 are **ownership** checks: they read only kiln-owned files and blocks, and
-`kiln new`, `kiln init`, `kiln apply` and `kiln config` fail on them alone. Four
-read repository-owned content against a rule this standard defines and kiln
-supplies the means to meet: `rn-forge-deps` (the dependency set, §3;
+`kiln new`, `kiln apply` and `kiln config` fail on them alone. Four read
+repository-owned content against a rule this standard defines and kiln supplies
+the means to meet: `rn-forge-deps` (the dependency set, §3;
 `kiln config upgrade` and the scaffold), `workspace-ci` (the service tables
 `task ci:plan` reads), and `docs-structure` and `docs-site` (the area model and
 the links; `task docs:generate`). `kiln doctor` runs all ten, so a broken link

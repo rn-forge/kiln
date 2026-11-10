@@ -1,46 +1,32 @@
-# Adopting kiln in an existing repository
+# Cutting over to kiln by overlay
 
-Bring an existing repository under kiln without rebuilding it: choose the route,
-run `kiln init` in place, and make the judgement calls that kiln's code cannot,
-reconciling instructions, specs and the gate.
-
-`kiln init` settles everything with one right answer: it overwrites the files it
-owns (after copying each to a backup), fences an unfenced `.importlinter`, adds
-the task tools the repository lacks, and ends by running `task setup`, the
-formatter and the docs generator, so the tree it leaves is already formatted. It
-reports what it cannot settle. This prompt is the rest, the judgement. It prints
-guidance and installs nothing, and it is written from in-place adoptions (run 1:
-pykit, a `python-lib` workspace; run 4: ngkit, a `node-lib` workspace). Facts
-from those runs are examples, not rules.
+This prompt is the judgement for an overlay cutover: the steps are in
+`docs/runbooks/cutover.md`, and this is what an agent decides once the reference
+is built and its files are brought over. It prints guidance and installs
+nothing. Facts from pykit (a `python-lib` workspace) and ngkit (a `node-lib`
+workspace) are examples, not rules.
 
 ## 1. Choose the route
 
-- **In place** (`kiln init`, this prompt) when the repository already has the
-  archetype's shape: for a `python-lib`, a `src/` layout or a `packages/`
-  workspace, a `pyproject.toml`, tests, and a docs tree that is close to
-  kiln's areas; for a `node-lib`, a pnpm workspace with `nx.json`, projects
-  under `libs/` or `apps/`, and a docs tree that is close to kiln's areas.
-- **Rebuild and port** (`kiln new`, then carry the specs and decisions over with
-  `kiln prompt --name port-docs`) when it does not: a different layout, a
-  different toolchain, or docs that share nothing with the standard. The
-  rebuild route in this prompt is not yet written.
+The overlay is the only route: build a reference repository with `kiln new`,
+bring its files onto a branch of the existing repository, and review one diff. A
+repository with no pre-kiln lineage is rebuilt with `kiln new` and its
+generators and does not use this prompt.
 
-If you cannot tell, run section 3's dry run: a plan with a handful of conflicts
-is an in-place adoption; a plan that replaces most of the repository is a
-rebuild.
+## 2. Build the reference
 
-## 2. Prepare
+Outside the repository, run one `kiln new` command per archetype, `python-lib`
+or `node-lib`, with a `--config` file carrying the repository's archetype keys
+(`docs/reference/standard-repo.md`, section 9):
 
-- Work on a branch, and start from a clean tree: `init --yes` refuses a dirty
-  one (`init.dirty-tree`) so that the review is kiln's change alone. Commit or
-  `git stash -u`.
+```bash
+kiln new <dir> --archetype <archetype> --docs mkdocs --owner <owner> --config <file> --yes
+```
 
-- Use kiln from a checkout when it is not released:
-  `uv run --project <kiln> kiln …`. Run it from the repository being adopted.
+Use kiln from a checkout when it is not released:
+`uv run --project <kiln> kiln …`.
 
-- Write a config file for `--config`, outside the repository or ignored, with
-  the archetype's keys (`docs/reference/standard-repo.md`, section 9). A
-  library workspace lists its members, which `init` (unlike `new`) accepts:
+- A library workspace lists its members:
 
     ```toml
     [archetype.python-lib]
@@ -49,18 +35,13 @@ rebuild.
     import_contracts = "own"                       # keep the repository's own import contracts
     ```
 
-    Each package must be an existing directory with a `pyproject.toml`
-    (`init.package-missing` otherwise). Use `import_contracts = "own"` when the
-    repository already has `.importlinter` contracts worth keeping; kiln then
-    renders only the root packages (run 1: pykit's layering contracts).
+    Each package must be an existing directory with a `pyproject.toml`. Use
+    `import_contracts = "own"` when the repository already has `.importlinter`
+    contracts worth keeping; kiln then renders only the root packages (run 1:
+    pykit's layering contracts).
 
-    `init` records the file as `[source]`, and `kiln config-update` re-reads it
-    from there. For a one-off file kept outside the repository or git-ignored,
-    delete the `[source]` table from `.rn-forge/kiln/config.toml` after `init`
-    (run 3: pykit's `dist/pykit-kiln.toml`, which `task clean` also deletes).
-
-    A `node-lib` has no `[archetype.node-lib]` table; its file carries the
-    repository's own CI and task declarations (run 4: ngkit):
+- A `node-lib` has no `[archetype.node-lib]` table; its file carries the
+  repository's own CI and task declarations (run 4: ngkit):
 
     ```toml
     [ci]
@@ -74,54 +55,24 @@ rebuild.
     The archetype's release default is `nx-dispatch`, so `[ci] release` is left
     unset.
 
-## 3. Preview and sort the plan
+## 3. Classify the files
 
-Run the preview, which writes nothing. `<archetype>` is `python-lib` or
-`node-lib`:
+In the reference, `.rn-forge/kiln/state.json` lists every file's kind:
 
-```bash
-uv run --project <kiln> kiln init --archetype <archetype> --docs mkdocs --config <file> --dry-run
-```
+- **`managed`**: the whole file is kiln's, taken byte-for-byte.
+- **`block`** (`.gitignore`, `.importlinter`, `CLAUDE.md`): only the fenced
+  region is taken, markers included; the repository's text stays outside it.
+- **`seeded`**: the repository's version wins; a seed the repository lacks is
+  added.
 
-The plan lists creates, conflicts (files `init` overwrites) and block inserts.
-Sort each conflict by how kiln owns the file:
+Anything else in the repository is its own. A difference the repository keeps in
+a managed file or block is not edited in: it goes back to kiln as config or
+code.
 
-- **Kiln's whole file replaces yours** (a conflict). Read yours first for
-  anything worth keeping. What is worth keeping goes to a repository-owned
-  place (a seeded file, a guide, a runbook, the README), not into the
-  generated file.
-- **A block.** Kiln owns a fenced block; your content stays outside it.
-- **Seeded.** Kiln replaces a seeded page that holds nothing beyond the seed
-  text, and keeps one that holds content.
+## 4. Reconcile the files kiln has a block in
 
-The plan lists each path and its kind, not its content. The list made here is of
-*which* files to read: for each conflict, read the repository's file now, and
-note what it holds that kiln's will not. The originals are archived, but a list
-made now is the one you will check against at review.
-
-## 4. Apply
-
-```bash
-uv run --project <kiln> kiln init --archetype <archetype> --docs mkdocs --config <file> --yes
-```
-
-The archetype is the one section 3 used, `python-lib` or `node-lib`. `init`
-refuses a dirty worktree, and copies every file it overwrites to
-`.rn-forge/kiln/backups/<UTC timestamp>/` (gitignored) first. Do not re-run it;
-it refuses a repository that is already under kiln.
-
-The tree was clean, so `git diff` and `git status` now show every file kiln
-replaced, inserted into or created, against the repository's own version, and
-the originals are also under the backups. Finish the carry-over list from that
-diff before section 5. Commit `init`'s change on its own.
-
-`init` ends by running the checks, so it may exit non-zero on findings in files
-you have not reconciled yet. Read them in section 7.
-
-## 5. Reconcile the files kiln inserted a block into
-
-`CLAUDE.md` (and any other file that now holds a kiln block) has two authors.
-Read kiln's block and the repository's text together:
+`CLAUDE.md` (and any other file that holds a kiln block) has two authors. Read
+kiln's block and the repository's text together:
 
 - Delete from the repository's part what the block now states.
 - Where they contradict, kiln's block wins on structure: the `task` entrypoint,
@@ -129,6 +80,11 @@ Read kiln's block and the repository's text together:
   pykit's `CLAUDE.md` pointed at `uv run` commands that the block forbids).
 - Check the guides and runbooks the instructions link to for the same
   contradictions, and fix them on the page.
+- Specs and decisions that do not follow kiln's work model are converted by
+  `kiln prompt --name port-docs`'s rules, not here.
+
+## 5. Rewrite commands to verbs
+
 - A document contradicts kiln's block when it tells a developer to run, in this
   repository, a tool that a root `task` verb wraps (`uv run pytest` is
   `task test`, `uv run ruff check` is `task lint`, `uv sync` is `task setup`,
@@ -145,19 +101,18 @@ Read kiln's block and the repository's text together:
 - In a node archetype kiln writes the `.prettierignore` block, which already
   lists `*.md` because mdformat formats Markdown in every archetype (run 4:
   ngkit); the repository keeps its own lines above it.
-- Specs and decisions that do not follow kiln's work model are converted by
-  `kiln prompt --name port-docs`'s rules, not here.
 
 ## 6. Make the gate runnable
 
 `task validate` runs kiln's checks through the kiln that `[kiln] ref` in
-`.rn-forge/kiln/config.toml` pins. `kiln init` writes that ref; confirm it is
-there. Before kiln's first release the ref is a branch, and `kiln.pin-mismatch`
-only starts checking once it is a `v<version>` tag. kiln is not a dependency:
-the tasks run it with `uvx`, in its own environment, so the repository's lock
-and `pyproject.toml` do not change for it. If the repository already lists
-`rn-forge-kiln` in a dependency group, or carries an `override-dependencies`
-entry only so kiln resolves, remove them (`deps.kiln-in-lock`).
+`.rn-forge/kiln/config.toml` pins. `kiln new` wrote that ref in the reference;
+confirm it is there. Before kiln's first release the ref is a branch, and
+`kiln.pin-mismatch` only starts checking once it is a `v<version>` tag. kiln is
+not a dependency: the tasks run it with `uvx`, in its own environment, so the
+repository's lock and `pyproject.toml` do not change for it. If the repository
+already lists `rn-forge-kiln` in a dependency group, or carries an
+`override-dependencies` entry only so kiln resolves, remove them
+(`deps.kiln-in-lock`).
 
 ## 7. Run the gate and sort what is left
 
@@ -176,19 +131,15 @@ Sort each finding by who owns the file:
   (run 1: pykit's `main.yml` failed `ci-entrypoint` with direct `uv` steps,
   and retires with the generated workflows).
 
-`init`'s closing check, like a plain `kiln doctor`, runs only the ownership
-checks; `task lint` also runs `rn-forge-deps`, `docs-structure` and `docs-site`,
-so read its findings too.
-
 Done when both commands exit `0`.
 
 ## 8. Review
 
-Read one `git diff`, file by file, before the first commit. Check it against
-section 3's carry-over list and `.rn-forge/kiln/backups/`: nothing the
-repository relied on was lost, and nothing is said twice. Report to the owner
-what was carried over, what was deleted because kiln's block now states it,
-which findings were kiln's, and the final output of both commands in section 7.
+Read one `git diff`, file by file, before the first commit. Check it against the
+reference and the `kiln diff --old` inventory: nothing the repository relied on
+was lost, and nothing is said twice. Report to the owner what was carried over,
+what was deleted because kiln's block now states it, which findings were kiln's,
+and the final output of both commands in section 7.
 
-After `init`, follow `docs/runbooks/cutover.md`: it reviews the diff and records
-what the repository loses.
+The verdict table for what the repository loses is in
+`docs/runbooks/cutover.md`.

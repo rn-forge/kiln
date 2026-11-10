@@ -76,23 +76,25 @@ def test_s4_5_6_5_the_runbook_is_gone_and_unlinked() -> None:
     )
 
 
-def test_s6_1_12_adopt_is_shipped(capsys: pytest.CaptureFixture[str]) -> None:
+def test_s16_8_2_5_adopt_sections(capsys: pytest.CaptureFixture[str]) -> None:
     commands.prompt(json=True)
     names = [p["name"] for p in json.loads(capsys.readouterr().out)["prompts"]]
     assert "adopt" in names
     commands.prompt("adopt")
-    text = capsys.readouterr().out
-    for heading in (
+    assert "Choose the route" in capsys.readouterr().out
+    text = (ROOT / "src/rn_forge/kiln/prompts/adopt.md").read_text(encoding="utf-8")
+    headings = (
         "Choose the route",
-        "Prepare",
-        "Preview and sort the plan",
-        "Apply",
-        "Reconcile the files kiln inserted a block into",
+        "Build the reference",
+        "Classify the files",
+        "Reconcile the files kiln has a block in",
+        "Rewrite commands to verbs",
         "Make the gate runnable",
         "Run the gate and sort what is left",
         "Review",
-    ):
-        assert f". {heading}" in text
+    )
+    found = re.findall(r"^## \d+\. (.+)$", text, flags=re.MULTILINE)
+    assert tuple(found) == headings
 
 
 def test_s6_1_15_no_prompt_names_itself_positionally() -> None:
@@ -107,82 +109,9 @@ def _adopt_sections() -> dict[str, str]:
     return {parts[i]: " ".join(parts[i + 1].split()) for i in range(1, len(parts), 2)}
 
 
-def test_s6_6_3_1_adopt_names_what_init_now_does(
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    commands.prompt("adopt")
-    text = " ".join(capsys.readouterr().out.split())
-    assert "task format" not in text
-    assert "separate commit" not in text
-    assert "init.kiln-dev-dependency-missing" not in text
-
-
-def test_s6_6_3_2_adopt_says_where_quality_findings_appear() -> None:
-    sections = _adopt_sections()
-    assert (
-        "`init`'s closing check, like a plain `kiln doctor`, runs only the "
-        "ownership checks; `task lint` also runs `rn-forge-deps`, "
-        "`docs-structure` and `docs-site`, so read its findings too."
-    ) in sections["7"]
-
-
-def test_s9_1_14_1_adopt_section_1_names_a_node_lib() -> None:
-    section = _adopt_sections()["1"]
-    assert "node-lib" in section
-    assert "nx.json" in section
-
-
-def test_s9_1_14_2_adopt_does_not_hard_code_the_archetype() -> None:
-    sections = _adopt_sections()
-    for number in ("3", "4"):
-        assert "--archetype python-lib" not in sections[number]
-        assert "--archetype <archetype>" in sections[number]
-        assert "`python-lib` or `node-lib`" in sections[number]
-
-
-def test_s9_1_14_3_adopt_section_2_has_a_node_lib_config_example() -> None:
-    section = _adopt_sections()["2"]
-    assert "sonar_exclusions" in section
-    assert "sonar_coverage_exclusions" in section
-    assert "extra_refs" in section
-    assert "nx-dispatch" in section
-
-
-def test_s9_1_14_4_adopt_section_5_rewrites_node_verbs() -> None:
-    section = _adopt_sections()["5"]
-    for name in ("pnpm exec nx", "pnpm dlx", "npx", "nx run-many -t lint"):
-        assert name in section
-    for rewrite in ("`task lint`", "`task test`", "`task build`", "`task setup`"):
-        assert rewrite in section
-    assert "`pnpm add`" in section
-
-
-def test_s9_1_14_5_adopt_section_5_names_prettierignore() -> None:
-    section = _adopt_sections()["5"]
-    assert ".prettierignore" in section
-    assert "*.md" in section
-
-
-def test_s9_1_14_7_adopt_opening_cites_run_4() -> None:
-    text = (ROOT / "src/rn_forge/kiln/prompts/adopt.md").read_text(encoding="utf-8")
-    opening = " ".join(text.split("## 1. ")[0].split())
-    assert "run 4" in opening
-    assert "ngkit" in opening
-    assert "node-lib" in opening
-    assert "run 1" in opening
-
-
 def _adopt_text(capsys: pytest.CaptureFixture[str]) -> str:
     commands.prompt("adopt")
     return " ".join(capsys.readouterr().out.split())
-
-
-def test_s16_1_4_1_prompt_has_no_mechanics(
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    text = _adopt_text(capsys)
-    for mechanic in ("task format", "_areas.yml", "board:start", "--force"):
-        assert mechanic not in text
 
 
 def test_s16_1_4_2_prompt_points_at_the_runbook(
@@ -191,12 +120,28 @@ def test_s16_1_4_2_prompt_points_at_the_runbook(
     assert "docs/runbooks/cutover.md" in _adopt_text(capsys)
 
 
-def test_s16_1_4_3_judgement_sections_remain() -> None:
+def test_s16_8_2_6_adopt_has_no_init(capsys: pytest.CaptureFixture[str]) -> None:
+    text = _adopt_text(capsys)
+    for absent in ("kiln init", "--dry-run", "backups", "--force"):
+        assert absent not in text
+    for present in (
+        "docs/runbooks/cutover.md",
+        "kiln new",
+        "`task`",
+        "byte-for-byte",
+    ):
+        assert present in text, present
+
+
+def test_s16_8_2_7_adopt_rewrites_verbs() -> None:
     sections = _adopt_sections()
-    assert "node-lib" in sections["1"]
-    assert "rebuild" in sections["1"].lower()
-    assert "`python-lib` or `node-lib`" in sections["3"]
-    assert "import_contracts" in sections["2"]
-    assert "modules" in sections["2"]
-    assert "`[source]`" in sections["2"]
-    assert "Report to the owner" in sections["8"]
+    section = sections["5"]
+    for needle in (
+        "uv run",
+        "pytest",
+        "pnpm exec",
+        "`task lint`",
+        "`task test`",
+        ".prettierignore",
+    ):
+        assert needle in section, needle

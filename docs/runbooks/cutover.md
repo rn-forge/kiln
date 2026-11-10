@@ -1,42 +1,45 @@
 # Cutting a repository over to kiln
 
-The one-time move of a repository with a pre-kiln lineage onto kiln. It holds
-the steps and the format of the absorb/extend/drop table; each repository's
-verdict table lives in its own specs and links here. A repository too far from
-its archetype's shape for `kiln init` takes the rebuild route instead
-([F16.5](../specs/epics/E16-init-adopts-by-overwrite/F16.5-rebuild-and-port.md)).
-
-For a repository with no lineage worth keeping, use
-[adopting an existing repo](adopting-a-repo.md); to start a new one,
-[creating a repository](creating-a-repo.md).
+The one-time move of a repository with a pre-kiln lineage onto kiln, by the
+overlay of [ADR-0019](../adr/ADR-0019.md): build a reference repository with
+`kiln new`, bring its files onto a branch of the existing repository, review one
+diff. The old `init` command is gone. It holds the steps and the format of the
+absorb/extend/drop table; each repository's verdict table lives in its own specs
+and links here. A repository with no pre-kiln lineage is rebuilt with `kiln new`
+([creating a repository](creating-a-repo.md)).
 
 ## Steps
 
-1. **Branch.** From the repository's default branch, with a clean worktree.
-   `init` refuses a dirty tree.
+1. **Branch.** In the existing repository, from its default branch with a clean
+   worktree: `git switch -c feature/kiln-cutover`. History and tags stay.
 
-1. **Run kiln init.** `kiln init --archetype <archetype> --docs mkdocs --yes`,
-   with `kiln` run from the `[kiln] ref` the cutover targets. It overwrites
-   kiln-shaped files and backs each up under
-   `.rn-forge/kiln/backups/<stamp>/`; it then runs `task setup`, `task format`
-   and `task docs:generate`. There is no `--force`. Run it from a checkout
-   whose `origin` is the repository: the repository name comes from the
-   `origin` remote's name, not from the directory (then the root
-   `pyproject.toml`'s `[project].name`, then the directory). The owner comes
-   from a GitHub `origin` too; without one, pass `--owner <owner>` (it is
-   `[repository] owner`, which every URL kiln writes is built from). A
-   `python-lib` passes `--config` with `packages`, `modules`,
-   `import_contracts` and `[ci] release`; pykit's is in
-   [its cutover story](https://github.com/rn-forge/pykit/blob/main/docs/specs/epics/E16-kiln-adoption/F16.3-cutover.md).
-   `init` exits 1 while the old workflows are present, because its closing
-   `kiln doctor` checks them; see step 3.
+1. **Build the reference.** Outside the repository, run
+   `kiln new <dir> --archetype <archetype> --docs mkdocs --owner <owner> --config <file> --yes`
+   from the `[kiln] ref` the cutover targets. The config file, and any
+   `kiln generate package` or generator runs, are listed in the repository's
+   own cutover story (pykit S16.3.1, ngkit S17.2.1). Run `task setup` and
+   `task validate` in the reference; it must pass before anything is brought
+   over.
+
+1. **Bring the files over.** Take the inventory: from the reference, run
+   `kiln diff --old <old repo>`
+   ([S16.9.11](../specs/epics/E16-init-adopts-by-overwrite/F16.9-overlay-cutover-findings.md#s16911-kiln-diff-old-old-repo-the-cutovers-inventory)).
+   It lists every file with its class (`managed`, `block`, `seeded`,
+   `scaffolded`, `old-only`) and whether the bytes match; the `old-only` rows
+   are the deletions list. Then, by class: copy each `managed` file
+   byte-for-byte (`cp`); replace each `block` file's fenced region with the
+   reference's, markers included, leaving the repository's text outside; add
+   each `seeded` file the repository lacks and keep the repository's version
+   of one it has; keep every `scaffolded` file the repository has; copy
+   `.rn-forge/kiln/config.toml` and `state.json` last. Source, tests and docs
+   content are never copied. Every repository-owned or seeded difference the
+   repository keeps is a step in its cutover story, not a rule here.
 
 1. **Read the diff file by file.** `git diff` and `git status`; every file
-   `init` deleted or replaced is a row. The originals are in the backups.
-   Delete the old workflows now (`git rm .github/workflows/<old>.yml`), not
-   only at merge: `init`'s closing `kiln doctor` fails on them and exits 1,
-   and the rewritten files are still on disk. Do it right after this read and
-   before step 6.
+   deleted or replaced is a row. Delete the old workflows now
+   (`git rm .github/workflows/<old>.yml`): the reference's `ci.yml` and an old
+   workflow share a concurrency group, and a ruleset requires the context
+   `ci-ok`.
 
 1. **Record a verdict** for each behaviour the repository loses, in a table in
    the repository's own spec with this header:
@@ -61,17 +64,19 @@ For a repository with no lineage worth keeping, use
 
 1. **Land the absorb stories** in kiln.
 
-1. **Bump `[kiln] ref` and run kiln apply.** `init` wrote `state.json` in step
-   2, so the repository is under kiln and `init` refuses it with "use
-   `kiln apply`". `kiln apply`, run from the new ref, takes the absorbed
-   behaviour, and its diff is only that behaviour, plus the new ref where the
-   task files render it. To rehearse `init` itself again, start over from step
-   1 in a fresh worktree of the default branch.
+1. **Rebuild the reference and re-run the overlay.** Bump `[kiln] ref`, rebuild
+   the reference from step 2 and repeat step 3; the diff of the repeat is only
+   the absorbed behaviour. A difference a repository needs inside a managed
+   file or block is an absorb or extend row, never an edit of the copy.
 
-    For a `node-lib`, also run `pnpm exec nx migrate <NX_VERSION>` (the version
-    in `src/rn_forge/kiln/modules/node/angular.py`) and its migrations, then
-    `pnpm audit --prod --audit-level moderate`; add pnpm overrides only for
-    what the migrate leaves vulnerable. `kiln doctor`'s `nx-version` check
+1. **Reconcile and gate.** Hand `kiln prompt --name adopt` to an agent; then
+   `task validate` and `KILN_DOCTOR_FULL=1 task validate` exit 0, and
+   `task kiln:apply` changes nothing.
+
+    For a `node-lib` only, also run `pnpm exec nx migrate <NX_VERSION>` (the
+    version in `src/rn_forge/kiln/modules/node/angular.py`) and its migrations,
+    then `pnpm audit --prod --audit-level moderate`; add pnpm overrides only
+    for what the migrate leaves vulnerable. `kiln doctor`'s `nx-version` check
     fails while `nx` is behind.
 
     Also make sure `prettier` is a dev dependency
@@ -79,7 +84,7 @@ For a repository with no lineage worth keeping, use
     formatting separately.
 
 1. **Merge** when no absorb row is open. The cutover pull request deletes the
-   old CI workflow (step 3 did) in the same change that adds `ci.yml`: both
+   old CI workflow (step 4 did) in the same change that adds `ci.yml`: both
    share the concurrency group and a ruleset requires the context `ci-ok`, so
    a follow-up would leave two.
 
