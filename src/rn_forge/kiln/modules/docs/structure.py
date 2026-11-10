@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
@@ -25,6 +26,9 @@ from rn_forge.kiln.modules.docs.policy import (
 )
 
 __all__ = ["check_structure"]
+
+# A Claude Code `@path` import line, which counts as a link to `path`.
+_IMPORT = re.compile(r"^@(\S+)[ \t]*$", re.MULTILINE)
 
 
 def _error(code: str, path: Path, message: str) -> Finding:
@@ -268,10 +272,14 @@ def _check_no_underscore_refs(
 
 
 def _resolved_links(path: Path) -> set[Path]:
-    return {
+    text = path.read_text(encoding="utf-8")
+    links = {
         (path.parent / link.partition("#")[0]).resolve()
-        for link in MarkdownUtils.links(path.read_text(encoding="utf-8"))
+        for link in MarkdownUtils.links(text)
         if not MarkdownUtils.is_external(link)
+    }
+    return links | {
+        (path.parent / target).resolve() for target in _IMPORT.findall(text)
     }
 
 
@@ -280,8 +288,8 @@ def _check_instruction_pointer(
 ) -> list[Finding]:
     """Require an instruction file to link the docs index and structure rules.
 
-    Other instruction files may link to that file instead of duplicating the
-    two links.
+    Other instruction files may link to that file, or import it with an ``@path``
+    line, instead of duplicating the two links.
     """
     present = [
         repo_root / name for name in instruction_files if (repo_root / name).exists()

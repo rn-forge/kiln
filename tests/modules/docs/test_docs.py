@@ -53,7 +53,7 @@ nav:
 # The rn-forge policy, as a test fixture. It lives here rather than in the
 # library on purpose: `docs/structure.py` must not know what an ADR is.
 POLICY = DocsPolicy(
-    instruction_files=("CLAUDE.md", "AGENTS.md"),
+    instruction_files=("AGENTS.md", "CLAUDE.md"),
     numbered=NumberedArea(
         path="adr",
         filename=re.compile(r"^(\d{4})-[a-z0-9-]+\.md$"),
@@ -101,10 +101,10 @@ def repo(tmp_path):
     write(docs / "guides/index.md", "# Guides\n\n- [Setup](setup.md)\n")
     write(docs / "guides/setup.md", "# Setup\n")
     write(
-        tmp_path / "CLAUDE.md",
-        "# Repo\n\n- [rules](docs/_structure.md)\n- [docs](docs/index.md)\n",
+        tmp_path / "AGENTS.md",
+        "# Agents\n\n- [rules](docs/_structure.md)\n- [docs](docs/index.md)\n",
     )
-    write(tmp_path / "AGENTS.md", "See [CLAUDE.md](CLAUDE.md).\n")
+    write(tmp_path / "CLAUDE.md", "@AGENTS.md\n")
     write(tmp_path / "mkdocs.yml", MKDOCS)
     return tmp_path
 
@@ -241,7 +241,39 @@ class TestCheckStructure:
 
     def test_instruction_pointer_must_reach_the_rules(self, repo):
         write(repo / "AGENTS.md", "# Agents\n\nNothing useful here.\n")
+        write(repo / "CLAUDE.md", "# Repo\n")
         assert "docs.missing-docs-pointer" in codes(
+            check_structure(repo, repo / "docs", POLICY)
+        )
+
+    def test_s16_10_4_1_an_import_line_counts_as_a_pointer(self, repo):
+        assert "docs.missing-docs-pointer" not in codes(
+            check_structure(repo, repo / "docs", POLICY)
+        )
+
+    def test_s16_10_4_2_a_claude_md_with_neither_import_nor_link_is_flagged(self, repo):
+        write(repo / "CLAUDE.md", "# Repo\n\nRead README.md.\n")
+        found = [
+            f
+            for f in check_structure(repo, repo / "docs", POLICY)
+            if f.code == "docs.missing-docs-pointer"
+        ]
+        assert len(found) == 1
+        assert found[0].path.endswith("CLAUDE.md")
+        assert "AGENTS.md" in found[0].message
+
+    def test_s16_10_4_3_an_import_in_a_code_span_is_not_a_pointer(self, repo):
+        write(repo / "CLAUDE.md", "`@AGENTS.md`\n")
+        found = [
+            f
+            for f in check_structure(repo, repo / "docs", POLICY)
+            if f.code == "docs.missing-docs-pointer"
+        ]
+        assert [f.path.endswith("CLAUDE.md") for f in found] == [True]
+
+    def test_s16_10_4_4_a_relative_import_resolves(self, repo):
+        write(repo / "CLAUDE.md", "@./AGENTS.md\n")
+        assert "docs.missing-docs-pointer" not in codes(
             check_structure(repo, repo / "docs", POLICY)
         )
 

@@ -114,9 +114,9 @@ class DocsPolicy:
 
 
 POLICY = DocsPolicy(
-    # One of these leads to the docs rules, never all of them: AGENTS.md is
-    # typically a pointer at CLAUDE.md, not a second copy.
-    instruction_files=("CLAUDE.md", "AGENTS.md"),
+    # AGENTS.md carries kiln's block, which links the docs rules; CLAUDE.md
+    # imports it.
+    instruction_files=("AGENTS.md", "CLAUDE.md"),
     page_name=KEBAB_NAME,
     numbered=NumberedArea(
         path="adr",

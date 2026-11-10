@@ -406,6 +406,21 @@ def test_s11_2_2_4_python_lib_adds_the_packages_area_and_the_package_docs_sectio
     assert "## Package docs" not in tool["docs/_structure.md"]
 
 
+def test_s16_10_4_5_structure_names_the_instruction_files_by_audience(
+    tmp_path: Path,
+) -> None:
+    root = _config_root(tmp_path, "python-lib")
+    rendered = {a.key: a.content for a in DOCS.artifacts(KilnConfig.load(root), root)}
+    text = " ".join(rendered["docs/_structure.md"].split())
+    assert (
+        "`README.md` is for people and links to the specs board and the ADR log" in text
+    )
+    assert "`AGENTS.md` is for agents: it carries kiln's block" in text
+    assert "`CLAUDE.md` imports `AGENTS.md` with `@AGENTS.md`" in text
+    assert "one instruction file links this file and `docs/index.md`" in text
+    assert "`CLAUDE.md` links to the specs board" not in text
+
+
 def test_s11_2_2_5_python_lib_seeds_no_reference_area_and_the_others_keep_it(
     tmp_path: Path,
 ) -> None:
