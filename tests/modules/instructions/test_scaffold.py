@@ -23,18 +23,57 @@ What this repository is, in a paragraph.
 ## Working here
 
 - Run everything through `task`. `task validate` is the gate.
-- Do not edit a file whose first line says it was generated. The kiln block in
-  [CLAUDE.md](CLAUDE.md) says what that means and what to do instead.
+- A file whose first line says it was generated is owned by kiln: edit
+  `.rn-forge/kiln/config.toml` and run `task kiln:apply`, never the file. The
+  standard is [.rn-forge/kiln/standard.md](.rn-forge/kiln/standard.md).
 
 ## Conventions
 
 - Python 3.14, `src/` layout, pyright strict, ruff for lint and format.
 """
 
+CLAUDE = """@AGENTS.md
+
+## Claude-only
+
+Instructions that only Claude Code should follow go here. Everything every agent
+should follow is in [AGENTS.md](AGENTS.md).
+"""
+
+AGENTS = """# AGENTS.md
+
+What this repository is, how to set it up and the conventions everyone follows
+are in [README.md](README.md). This file holds what an agent needs beyond that.
+
+## Rules
+
+- Replace this line with a rule every agent must follow in this repository.
+
+## Guardrails
+
+- Replace this line with something an agent must not do without asking.
+
+## Do and don't
+
+- Do: replace this line.
+- Don't: replace this line.
+
+## Examples
+
+Replace this section with one worked example of a change made the way this
+repository wants it.
+
+## Story workflow
+
+Replace this section with how a story is picked up, built, checked and handed
+back in this repository.
+"""
+
 BULLETS = (
     "- Run everything through `task`. `task validate` is the gate.\n",
-    "- Do not edit a file whose first line says it was generated. The kiln block in\n"
-    "  [CLAUDE.md](CLAUDE.md) says what that means and what to do instead.\n",
+    "- A file whose first line says it was generated is owned by kiln: edit\n"
+    "  `.rn-forge/kiln/config.toml` and run `task kiln:apply`, never the file. The\n"
+    "  standard is [.rn-forge/kiln/standard.md](.rn-forge/kiln/standard.md).\n",
 )
 
 
@@ -49,7 +88,6 @@ def test_s4_3_5_scaffold_writes_the_three_bodies(tmp_path: Path) -> None:
     root = _root(tmp_path)
     scaffold(root, KilnConfig.load(root))
     assert (root / "README.md").read_text(encoding="utf-8") == README
-    assert (root / "CLAUDE.md").read_text(encoding="utf-8").startswith("# demo\n")
     assert (root / "AGENTS.md").is_file()
 
 
@@ -204,3 +242,29 @@ def test_s5_3_6_8_non_web_readme_has_no_api_section(tmp_path: Path) -> None:
     root = _root(tmp_path)
     scaffold(root, KilnConfig.load(root))
     assert "api:dev" not in (root / "README.md").read_text(encoding="utf-8")
+
+
+def test_s16_10_2_1_claude_md_is_the_import_and_a_claude_only_stub(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path)
+    scaffold(root, KilnConfig.load(root))
+    assert (root / "CLAUDE.md").read_text(encoding="utf-8") == CLAUDE
+
+
+def test_s16_10_2_2_agents_md_is_a_skeleton_that_links_readme(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path)
+    scaffold(root, KilnConfig.load(root))
+    assert (root / "AGENTS.md").read_text(encoding="utf-8") == AGENTS
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s16_10_2_3_readme_carries_no_agent_directive(
+    archetype: str, rendered: Callable[[str], Path]
+) -> None:
+    text = (rendered(archetype) / "README.md").read_text(encoding="utf-8")
+    assert "CLAUDE.md" not in text
+    assert "AGENTS.md" not in text
+    assert "agent" not in text.lower()

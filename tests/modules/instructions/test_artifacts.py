@@ -895,3 +895,13 @@ def test_s17_1_5_5_task_tables_are_mdformat_clean(
 def test_s16_9_6_3_the_standard_names_it(tmp_path: Path) -> None:
     root = _root(tmp_path)
     assert "metadata.scaffolded" in _rendered(root)[STANDARD]
+
+
+def test_s16_10_2_4_the_block_lands_beneath_the_agents_body(tmp_path: Path) -> None:
+    from tests.modules.instructions.test_scaffold import AGENTS, CLAUDE
+
+    root = _new(tmp_path)
+    agents = (root / "AGENTS.md").read_text(encoding="utf-8")
+    assert agents.startswith(AGENTS)
+    assert agents.endswith("<!-- END rn-forge kiln -->\n")
+    assert (root / "CLAUDE.md").read_text(encoding="utf-8") == CLAUDE
