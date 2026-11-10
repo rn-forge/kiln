@@ -36,6 +36,7 @@ lifecycle = true
 [cli]
 name = "kiln"
 help = "The rn-forge repository generator, and the canon it generates against."
+default_log_level = "info"
 
 [[cli.commands]]
 name = "doctor"

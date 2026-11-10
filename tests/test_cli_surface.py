@@ -10,7 +10,9 @@ them. F4.8 makes one render the other, and this test goes away with the copy.
 from __future__ import annotations
 
 import importlib.util
+import shutil
 import tomllib
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -104,3 +106,40 @@ def test_s16_8_1_4_no_source_mentions_init() -> None:
         if path != adopt and "kiln init" in path.read_text(encoding="utf-8")
     ]
     assert hits == []
+
+
+def test_s16_9_7_1_the_default_log_level_is_info() -> None:
+    from rn_forge.cli import CliSurface
+    from rn_forge.cli.options import LogLevel
+    from rn_forge.commons.fs.documents import DocumentUtils
+
+    surface = CliSurface.load(
+        DocumentUtils.read(ROOT / "src" / "rn_forge" / "kiln" / "cli.toml"),
+        key="cli",
+    )
+
+    assert surface.default_log_level is LogLevel.INFO
+
+
+def test_s16_9_7_2_apply_prints_no_verbose_lines(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    rendered: Callable[[str], Path],
+    capfd: pytest.CaptureFixture[str],
+) -> None:
+    from rn_forge.kiln import main
+
+    root = tmp_path / "repo"
+    shutil.copytree(
+        rendered("python-tool"),
+        root,
+        ignore=shutil.ignore_patterns(".venv", ".uv-cache", ".git", "__pycache__"),
+    )
+    monkeypatch.chdir(root)
+
+    code = main.app(["apply", "--dry-run"])
+
+    captured = capfd.readouterr()
+    output = captured.out + captured.err
+    assert code == 0
+    assert "read_file" not in output
