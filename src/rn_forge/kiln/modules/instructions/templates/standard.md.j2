@@ -78,7 +78,7 @@ Every path kiln writes or reads has exactly one of these kinds:
 | **seeded** | repo, after the first write | `kiln apply`, once, when absent | creation only | nothing, including presence |
 | **scaffolded** | repo | `kiln new`'s scaffold step, once | nothing | nothing |
 | **repo** | repo | never kiln | nothing | the repo's own tasks |
-| **input** | repo | the owner, or `kiln config-update` | its hash, as `config_hash` | nothing compares it; `kiln apply` re-renders from it |
+| **input** | repo | the owner, or `kiln config-update` | the hash of its parsed content, as `config_hash` | nothing compares it; `kiln apply` re-renders from it |
 | **baseline** | kiln | `kiln apply` | — (it is the record; it never hashes itself) | `generated` reads it |
 | **derived data** | kiln | kiln, at run time | nothing | nothing; gitignored |
 

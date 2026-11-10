@@ -6,12 +6,14 @@ engine then stages, backs up and swaps them in, and writes `state.json` last.
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 
 from rn_forge.commons import generation
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding, Severity
+from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.fs.hashing import ContentHash
 from rn_forge.commons.fs.state import StateStore
 from rn_forge.commons.generation import (
@@ -147,7 +149,13 @@ def _prepare(
     state_path = root / umbrella.STATE_PATH
     metadata: dict[str, JsonValue] = {
         "kiln_version": __version__,
-        "config_hash": ContentHash.of((root / CONFIG_PATH).read_text(encoding="utf-8")),
+        "config_hash": ContentHash.of(
+            json.dumps(
+                DocumentUtils.read(root / CONFIG_PATH),
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+        ),
     }
     if provenance is not None:
         metadata[PROVENANCE_KEY] = dict(provenance)

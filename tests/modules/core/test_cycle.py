@@ -214,6 +214,38 @@ def test_s4_2_3_a_second_apply_is_unchanged_and_leaves_state_byte_identical(
     assert (root / STATE).read_bytes() == before
 
 
+def test_s16_9_4_1_config_hash_ignores_comments_and_layout(
+    root: Path, home: Path
+) -> None:
+    cycle.apply(root, home=home)
+    before = (root / STATE).read_bytes()
+
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(
+        "# a comment\n\n"
+        + CONFIG.replace("[repository]\n", "[repository]\n# moved\n")
+        + "\n",
+        encoding="utf-8",
+    )
+    cycle.apply(root, home=home)
+
+    assert (root / STATE).read_bytes() == before
+
+
+def test_s16_9_4_2_config_hash_follows_a_value(root: Path, home: Path) -> None:
+    cycle.apply(root, home=home)
+    first = json.loads((root / STATE).read_text(encoding="utf-8"))["metadata"]
+
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(
+        CONFIG.replace('owner = "rn-forge"', 'owner = "other"'), encoding="utf-8"
+    )
+    cycle.apply(root, home=home)
+    second = json.loads((root / STATE).read_text(encoding="utf-8"))["metadata"]
+
+    assert first["config_hash"] != second["config_hash"]
+
+
 def test_s4_2_3_a_hand_edited_artifact_is_drift_and_nothing_is_written(
     root: Path, home: Path
 ) -> None:
