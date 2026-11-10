@@ -188,6 +188,7 @@ nav:
         - F16.7 — What the cutover found: specs/epics/E16-init-adopts-by-overwrite/F16.7-cutover-findings.md
         - F16.8 — Retire `kiln init`: specs/epics/E16-init-adopts-by-overwrite/F16.8-retire-kiln-init.md
         - F16.9 — What the overlay cutovers found: specs/epics/E16-init-adopts-by-overwrite/F16.9-overlay-cutover-findings.md
+        - F16.10 — Agent instructions live in AGENTS.md: specs/epics/E16-init-adopts-by-overwrite/F16.10-agent-instructions-in-agents-md.md
       - E17 — One task standard for every archetype:
         - specs/epics/E17-task-standard/index.md
         - F17.1 — The task surface says what it is: specs/epics/E17-task-standard/F17.1-task-surface.md

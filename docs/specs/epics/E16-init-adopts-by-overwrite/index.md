@@ -17,7 +17,8 @@
 | [F16.6 — What the cutover rehearsals found](F16.6-cutover-rehearsal-findings.md) | Closed | release-1 | 13 Closed |
 | [F16.7 — What the cutover found](F16.7-cutover-findings.md) | Closed | release-1 | 9 Closed · 1 Removed |
 | [F16.8 — Retire `kiln init`](F16.8-retire-kiln-init.md) | Active | release-1 | 2 Closed |
-| [F16.9 — What the overlay cutovers found](F16.9-overlay-cutover-findings.md) | Active | release-1 | 1 New · 8 Closed · 2 Removed |
+| [F16.9 — What the overlay cutovers found](F16.9-overlay-cutover-findings.md) | Active | release-1 | 8 Closed · 3 Removed |
+| [F16.10 — Agent instructions live in AGENTS.md](F16.10-agent-instructions-in-agents-md.md) | New | release-1 | 7 New |
 
 <!-- END derived features -->
 
@@ -27,8 +28,10 @@ repository in place, was reversed by the owner after the cutover reruns on
 `kiln new` reference onto the existing repository
 ([ADR-0019](../../../adr/ADR-0019.md)). [F16.8](F16.8-retire-kiln-init.md) does
 the work, and [F16.9](F16.9-overlay-cutover-findings.md) holds what the overlay
-cutovers of pykit and ngkit found. The closed features below keep their text as
-history; what they say of `init` no longer holds.
+cutovers of pykit and ngkit found, and
+[F16.10](F16.10-agent-instructions-in-agents-md.md) moves the agent instructions
+into `AGENTS.md` ([ADR-0020](../../../adr/ADR-0020.md)). The closed features
+below keep their text as history; what they say of `init` no longer holds.
 
 `kiln init` brought an existing repository onto the standard the way `kiln new`
 makes one: it writes `new`'s file set over the tree, with no merging of
