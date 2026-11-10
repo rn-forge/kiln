@@ -68,8 +68,10 @@ non-optional area in `docs/_areas.yml` exists and has both a `_structure.md` and
 an `index.md`; ADRs are named `ADR-<nnnn>.md`, numbered without gaps, and carry
 a valid `**Status:**` line; every relative link resolves, including anchors; no
 shipped page links to a `_*.md` file; there is no `specs/ideas.md`, and every
-page under `specs/ideas/` is kebab-case and linked from its `index.md`; and
-`CLAUDE.md`/`AGENTS.md` both point at this file and at `docs/index.md`.
+page under `specs/ideas/` is kebab-case and linked from its `index.md`; and one
+instruction file links this file and `docs/index.md` (`AGENTS.md`, through
+kiln's block), while any other links that file or imports it with an
+`@AGENTS.md` line.
 
 `kiln doctor`'s `docs-generate` check confirms that the derived regions — the
 nav, the spec board, the epic list and each release's Scope table — are current,
@@ -91,8 +93,11 @@ fixing it silently — some of it is deliberate:
 - Design prose collecting in a top-level page instead of under its feature.
 - A `progress.md`, `decisions.md` or `overview.md` has appeared; each restates
   what the epics, ADRs or README already own.
-- `README.md`, `CLAUDE.md` or `AGENTS.md` describing the tree instead of linking
-  to it. `CLAUDE.md` links to the specs board and the ADR log and says what
-  each is for; `AGENTS.md` points at `CLAUDE.md`.
+- `README.md`, `AGENTS.md` or `CLAUDE.md` describing the tree instead of linking
+  to it. `README.md` is for people and links to the specs board and the ADR
+  log, saying what each is for. `AGENTS.md` is for agents: it carries kiln's
+  block and links to `README.md` for context. `CLAUDE.md` imports `AGENTS.md`
+  with `@AGENTS.md` and holds only what is Claude-only.
+- Agent directives in `README.md`, or developer setup prose in `AGENTS.md`.
 - A `README.md` inside `docs/`: MkDocs drops one that sits beside an `index.md`,
   and the strict build fails.

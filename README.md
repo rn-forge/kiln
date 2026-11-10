@@ -4,9 +4,9 @@ The rn-forge repository generator, and the canon it generates against.
 
 kiln owns anything deterministic about a repository: the `.rn-forge/` umbrella,
 `Taskfile.yml` and `tasks/**`, the docs tree and its MkDocs site, the workflows,
-and the bodies of `README.md`, `CLAUDE.md` and `AGENTS.md`. Every managed file —
-or every fenced block inside a shared file — has exactly one owner, and kiln is
-it.
+and kiln's fenced block in `AGENTS.md`, and seeds `README.md`, `CLAUDE.md` and
+`AGENTS.md`. Every managed file — or every fenced block inside a shared file —
+has exactly one owner, and kiln is it.
 
 **kiln is a developer tool, and a pinned dev dependency of every repo it
 generates.** CI runs that pinned kiln through `task validate` to check the
@@ -40,13 +40,6 @@ pipelines, so the standard is reviewed as complete runnable repositories.
 task self:golden:render && task self:golden:validate
 ```
 
-**Picking this up in a new session?** Read [the spec board](docs/specs/index.md)
-for status — what is done and what is next — then the epic you are starting. The
-[decision log](docs/adr/index.md) and [context](docs/plans/context.md) record
-why, so you do not re-derive it.
-[The standard repository](docs/reference/standard-repo.md) is the normative
-text.
-
 ## Working here
 
 - Run everything through `task`. `task validate` is the gate.
@@ -62,20 +55,6 @@ text.
 - **After changing a managed file's source, run `kiln apply`.** It rewrites the
   file and `.rn-forge/kiln/state.json`; `task lint` fails with
   `has drifted from the committed state` on an edit in place.
-- **A template change lands on this repo in the same change.** Run `kiln apply`
-  here after editing a template, so kiln's own generated files match a fresh
-  render, and prove it with `task lint KILN_DOCTOR_FULL=1`. CI runs the same
-  check on every pull request (`[ci] doctor_full`). Never hand-copy a rendered
-  file into this repo; S4.8.1 retired that.
-- An ADR carries a decision and the alternatives rejected. The moment it starts
-  enumerating — verbs, paths, dependency sets — it has become a spec and
-  belongs in `docs/reference/standard-repo.md`.
-- Work is an epic under `docs/specs/`, a decision is an ADR, and an open
-  question lives on the feature it blocks until it becomes one or the other.
-  Nothing new goes into `docs/plans/`.
-- Prose has one home: this file. `CLAUDE.md` points here and carries the fenced
-  blocks; `AGENTS.md` points at `CLAUDE.md`. Do not restate a paragraph in two
-  of them.
 
 ## Conventions
 
@@ -107,6 +86,8 @@ text.
   graphs
 
 - [Creating a repository](docs/runbooks/creating-a-repo.md)
+
+- [Agent instructions](AGENTS.md) — what AI coding agents follow here
 
 - [Agent configuration after kiln](docs/plans/agent-config-future.md) — parked
 

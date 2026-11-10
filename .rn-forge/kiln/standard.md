@@ -81,16 +81,21 @@ Every path kiln writes or reads has exactly one of these kinds:
 | **derived data** | kiln | kiln, at run time | nothing | nothing; gitignored |
 
 - A file has one kind, except that a file holding a **block** or **derived
-  region** is otherwise scaffolded or repo-owned: `.gitignore`, `CLAUDE.md`
+  region** is otherwise scaffolded or repo-owned: `.gitignore`, `AGENTS.md`
   and `mkdocs.yml`.
 - **Seeded** and **scaffolded** differ only in who writes them. A seeded file is
   an apply artifact, so a later `kiln apply` recreates it if it is absent and
   never touches it if present. A scaffolded file (`pyproject.toml`,
-  `README.md`, the bodies of `CLAUDE.md`, `AGENTS.md` and `mkdocs.yml`, the
+  `README.md`, `CLAUDE.md`, the bodies of `AGENTS.md` and `mkdocs.yml`, the
   first `src/` and `tests/`) is written by `kiln new` before its first apply,
   and never again.
 - Paths kiln neither writes nor reads (`.claude/**`, `.codex/**`, installed
   skills) are not kiln's and have no kind.
+- The instruction files are **split by audience.** `README.md` is for
+  people and carries no agent directive. `AGENTS.md` is the agent
+  instructions: its body is repo-owned and kiln's block is in it, and a tool
+  that adds its own block does not own the file. `CLAUDE.md` is `@AGENTS.md`
+  plus what only Claude should read, and carries no block.
 
 Managed here: `Taskfile.yml`, `tasks/*.yml`, `.editorconfig`,
 `.github/workflows/*.yml`, `.github/actions/setup`, `sonar-project.properties`
@@ -98,8 +103,7 @@ and this file. `.rn-forge/kiln/state.json` is generated and committed, and
 never hashes itself.
 
 Blocks here: the `# BEGIN rn-forge kiln` region in `.gitignore` and
-`.importlinter`, and the `<!-- BEGIN rn-forge kiln -->` region in `CLAUDE.md` and
-`AGENTS.md`.
+`.importlinter`, and the `<!-- BEGIN rn-forge kiln -->` region in `AGENTS.md`.
 
 Derived regions here: the `# BEGIN derived nav` region in `mkdocs.yml`, the
 `<!-- BEGIN derived board -->` region in `docs/specs/index.md` and the

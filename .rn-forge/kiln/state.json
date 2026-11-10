@@ -93,7 +93,7 @@
     },
     ".rn-forge/kiln/standard.md": {
       "begin_marker": null,
-      "content_hash": "b29ea8f5bc61827376d83dcb3b1df2ac8e177a0cebcb8eccb14341b93fc3b83b",
+      "content_hash": "b9ecd0181a5048a317e07b7de87c03ad541ce15a8e3cc47afc1c87d09bcc15e5",
       "end_marker": null,
       "kind": "managed",
       "path": ".rn-forge/kiln/standard.md"
@@ -105,12 +105,12 @@
       "kind": "seeded",
       "path": ".taplo.toml"
     },
-    "CLAUDE.md#rn-forge kiln": {
+    "AGENTS.md#rn-forge kiln": {
       "begin_marker": "<!-- BEGIN rn-forge kiln -->",
       "content_hash": "de55685da2d6e07c244ffbad071e1cf16b14f4b96e0ea5bff8a21a1c3ecfb963",
       "end_marker": "<!-- END rn-forge kiln -->",
       "kind": "block",
-      "path": "CLAUDE.md"
+      "path": "AGENTS.md"
     },
     "Taskfile.yml": {
       "begin_marker": null,
@@ -128,7 +128,7 @@
     },
     "docs/_structure.md": {
       "begin_marker": null,
-      "content_hash": "e46db4751e223760d74a8ff39132ba11374337bcc6ae6bb254ebca52fa5a8f6d",
+      "content_hash": "263b6f301afd3f9780f24b85d86324bf3d34ac0bd1915b57b77dab6eb0448e31",
       "end_marker": null,
       "kind": "managed",
       "path": "docs/_structure.md"
