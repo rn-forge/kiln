@@ -126,7 +126,7 @@ profile = "mkdocs"
 # Default: ".docs-site".
 site_dir = ".docs-site"
 
-# Where the docs live, linked from the generated `CLAUDE.md` block. Changing
+# Where the docs live, linked from the generated `AGENTS.md` block. Changing
 # it rewrites that block on `kiln apply`. `external` only.
 # Default: "".
 external_url = ""

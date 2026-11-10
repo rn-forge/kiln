@@ -1,6 +1,6 @@
 """Scaffolding: the repo-owned bodies of `README.md`, `CLAUDE.md` and `AGENTS.md`.
 
-Runs once, from `kiln new`, before the first `apply`. `CLAUDE.md`'s body carries
+Runs once, from `kiln new`, before the first `apply`. `AGENTS.md`'s body carries
 no block markers, so the apply that follows appends the kiln block beneath it.
 """
 

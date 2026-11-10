@@ -1,4 +1,4 @@
-"""The artifacts `instructions` renders: the kiln block in `CLAUDE.md`, and `standard.md`."""
+"""The artifacts `instructions` renders: the kiln block in `AGENTS.md`, and `standard.md`."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from rn_forge.kiln.modules.tasks.surface import public_tasks
 __all__ = ["KILN_BLOCK", "context", "md_cell", "render"]
 
 KILN_BLOCK = ManagedBlock("rn-forge kiln", comment="<!--")
-"""kiln's fenced block in the repo's `CLAUDE.md`."""
+"""kiln's fenced block in the repo's `AGENTS.md`."""
 
 _PACKAGE = "rn_forge.kiln.modules.instructions"
 
@@ -194,7 +194,7 @@ def context(config: KilnConfig) -> dict[str, object]:
 
 
 def render(config: KilnConfig) -> list[Artifact]:
-    """Render the kiln block in `CLAUDE.md` and `.rn-forge/kiln/standard.md`."""
+    """Render the kiln block in `AGENTS.md` and `.rn-forge/kiln/standard.md`."""
     engine = TemplateEngine.cached(package=_PACKAGE)
     engine.environment.filters["md_cell"] = md_cell
     values = context(config)
@@ -203,7 +203,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         values,
         [
             TemplateArtifact(
-                "CLAUDE.md",
+                "AGENTS.md",
                 ArtifactKind.BLOCK,
                 template="block.md.j2",
                 block=KILN_BLOCK,

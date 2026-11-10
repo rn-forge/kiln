@@ -24,7 +24,7 @@ from rn_forge.kiln.modules.tasks import surface
 
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
 
-BLOCK_KEY = "CLAUDE.md#rn-forge kiln"
+BLOCK_KEY = "AGENTS.md#rn-forge kiln"
 STANDARD = ".rn-forge/kiln/standard.md"
 
 CONFIG = """
@@ -176,7 +176,7 @@ def test_s4_3_5_2_turning_sonar_off_updates_only_the_block_and_standard(
     tmp_path: Path,
 ) -> None:
     root = _new(tmp_path, profile="none")
-    claude_before = (root / "CLAUDE.md").read_text(encoding="utf-8")
+    agents_before = (root / "AGENTS.md").read_text(encoding="utf-8")
     _write_config(root, profile="none", sonar=False)
 
     changed = {
@@ -194,10 +194,34 @@ def test_s4_3_5_2_turning_sonar_off_updates_only_the_block_and_standard(
     }
 
     cycle.apply(root, home=tmp_path / "home")
-    claude_after = (root / "CLAUDE.md").read_text(encoding="utf-8")
-    assert "Sonar off" in (KILN_BLOCK.extract(claude_after) or "")
+    agents_after = (root / "AGENTS.md").read_text(encoding="utf-8")
+    assert "Sonar off" in (KILN_BLOCK.extract(agents_after) or "")
     assert "Sonar off" in (root / STANDARD).read_text(encoding="utf-8")
-    assert KILN_BLOCK.remove(claude_after) == KILN_BLOCK.remove(claude_before)
+    assert KILN_BLOCK.remove(agents_after) == KILN_BLOCK.remove(agents_before)
+
+
+def test_s16_10_1_1_the_block_is_an_agents_md_artifact(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    artifacts = {a.key: a for a in INSTRUCTIONS.artifacts(KilnConfig.load(root), root)}
+    assert "AGENTS.md#rn-forge kiln" in artifacts
+    assert not [key for key in artifacts if key.startswith("CLAUDE.md")]
+    block = artifacts["AGENTS.md#rn-forge kiln"]
+    assert block.kind is ArtifactKind.BLOCK
+    assert block.path == "AGENTS.md"
+
+
+def test_s16_10_1_2_apply_puts_the_block_in_agents_md_only(tmp_path: Path) -> None:
+    root = _new(tmp_path)
+    block = KILN_BLOCK.extract((root / "AGENTS.md").read_text(encoding="utf-8"))
+    assert block is not None
+    assert block.lstrip().startswith("<!--")
+    assert KILN_BLOCK.extract((root / "CLAUDE.md").read_text(encoding="utf-8")) is None
+
+
+def test_s16_10_1_3_the_block_text_is_unchanged(tmp_path: Path) -> None:
+    block = _rendered(_root(tmp_path))[BLOCK_KEY]
+    assert "## Repository standard (kiln)" in block
+    assert "[.rn-forge/kiln/standard.md](.rn-forge/kiln/standard.md)" in block
 
 
 def test_s4_3_5_3_a_hand_edit_to_standard_md_is_drift(tmp_path: Path) -> None:
@@ -380,7 +404,7 @@ def test_s5_3_5_3_the_kiln_block_is_mdformat_clean(
     root = config.parents[2]
     out = tmp_path / "out"
     out.mkdir()
-    (out / "CLAUDE.md").write_text(
+    (out / "AGENTS.md").write_text(
         _rendered(root)[BLOCK_KEY].strip() + "\n", encoding="utf-8"
     )
 
@@ -723,7 +747,7 @@ def test_s9_3_6_5_other_archetypes_render_no_section_nine(
 
 def test_s16_4_5_2_block_names_the_task(tmp_path: Path) -> None:
     root = _new(tmp_path)
-    block = KILN_BLOCK.extract((root / "CLAUDE.md").read_text(encoding="utf-8")) or ""
+    block = KILN_BLOCK.extract((root / "AGENTS.md").read_text(encoding="utf-8")) or ""
     assert "`task kiln:apply`" in block
     body = re.sub(r"<!--.*?-->", "", block)  # the provenance header stays as is
     assert re.search(r"(?<!task )(?<!:)kiln apply", body) is None

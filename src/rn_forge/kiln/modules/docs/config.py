@@ -71,7 +71,7 @@ class DocsConfig(ConfigModel):
     `task clean`; changing it rewrites `.gitignore`, the docs tasks and the CI
     workflows on `kiln apply`. `mkdocs` only."""
     external_url: str = ""
-    """Where the docs live, linked from the generated `CLAUDE.md` block. Changing
+    """Where the docs live, linked from the generated `AGENTS.md` block. Changing
     it rewrites that block on `kiln apply`. `external` only."""
     mkdocs: DocsMkdocs = Field(default_factory=DocsMkdocs)
     """Settings added to the rendered `mkdocs.yml`. `mkdocs` only."""

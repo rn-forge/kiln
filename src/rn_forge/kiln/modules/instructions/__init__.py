@@ -29,7 +29,7 @@ class InstructionsModule:
         return ()
 
     def artifacts(self, config: KilnConfig, root: Path) -> Sequence[Artifact]:
-        """Render the kiln block in `CLAUDE.md` and `.rn-forge/kiln/standard.md`."""
+        """Render the kiln block in `AGENTS.md` and `.rn-forge/kiln/standard.md`."""
         del root
         # Imported here so importing a module object never loads jinja2.
         from rn_forge.kiln.modules.instructions import artifacts
