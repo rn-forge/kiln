@@ -9,7 +9,8 @@ Cells land in `.goldens/<ref_dir>/<cell name>/`, beneath the repository root.
 `compare` diffs the kiln-owned files of every cell between two rendered refs.
 `ngkit` diffs the rendered `node-lib` cell against ngkit's files at `NGKIT_REF`,
 and leaves `before-ngkit/` and `after-kiln/` under `scratch/ngkit-review/` to read.
-`parity` compares the working `node-lib` and web-app cells' shared files.
+`parity` compares the working `node-lib` and web-app cells' shared files, and the
+Python cells' task names and tool tables against `python-tool`.
 """
 
 from __future__ import annotations
@@ -22,8 +23,10 @@ import subprocess
 import sys
 import tempfile
 import time
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from rn_forge.commons.fs.documents import YamlUtils
 
@@ -60,6 +63,13 @@ LIB_ONLY_TASKS = ("version",)
 """Tasks in the lib side's `tasks/node.yml` that the web side does not render, because only a library publishes."""
 WEB_ONLY_GITIGNORE_GROUPS = ("# Python tool caches", "# Coverage output")
 """`.gitignore` groups only an archetype with Python code renders."""
+PYTHON_TESTS_GLOBS = ("tests/*", "**/tests/*")
+"""The two spellings of the ruff `per-file-ignores` key for the tests directory, which differ by layout. Both normalize to the first before comparing."""
+LIB_ONLY_DEV_GROUP = ({"include-group": "workspace"}, "coverage[toml]>=")
+"""The `python-lib` dev-group entries no other cell has. The string matches by prefix, so a raised floor is not a difference."""
+LIB_ONLY_TOOL_KEYS = (("pyright", "include"), ("pytest", "testpaths"))
+"""The `[tool]` keys only `python-lib` sets, because its code lives in `packages/`."""
+PYTHON_REFERENCE = "python-tool"
 
 
 @dataclass(frozen=True)
@@ -456,18 +466,109 @@ def parity_cells(lib_dir: Path, web_dir: Path) -> list[str]:
     return lines
 
 
-def parity(out_root: Path) -> int:
-    """Print the differences between the working `node-lib` and web-app cells; 1 on any."""
-    cells = [
-        next(c for c in CELLS if c.archetype == archetype).name
-        for archetype in ("node-lib", "python-web-app")
+def _drop_tool_keys(tool: dict[str, Any]) -> None:
+    """Remove each `LIB_ONLY_TOOL_KEYS` key from *tool*, looking in `ini_options` for pytest."""
+    for table, key in LIB_ONLY_TOOL_KEYS:
+        section = tool.get(table)
+        if not isinstance(section, dict):
+            continue
+        section.pop(key, None)
+        options = section.get("ini_options")
+        if isinstance(options, dict):
+            options.pop(key, None)
+
+
+def _drop_dev_entries(dev: list[Any]) -> list[Any]:
+    """*dev* without the `LIB_ONLY_DEV_GROUP` entries."""
+    prefix = LIB_ONLY_DEV_GROUP[1]
+    return [
+        entry
+        for entry in dev
+        if entry != LIB_ONLY_DEV_GROUP[0]
+        and not (isinstance(entry, str) and entry.startswith(str(prefix)))
     ]
-    lib_dir, web_dir = (out_root / ref_dir("") / name for name in cells)
-    for cell_dir in (lib_dir, web_dir):
+
+
+def _python_tables(cell_dir: Path, lib: bool) -> dict[str, object] | None:
+    """The compared `pyproject.toml` tables of one Python cell, allowances applied; None when the file is missing."""
+    file = cell_dir / "pyproject.toml"
+    if not file.is_file():
+        return None
+    data = tomllib.loads(file.read_text(encoding="utf-8"))
+    tool: dict[str, Any] = data.get("tool", {})
+    if lib:
+        _drop_tool_keys(tool)
+    ruff = tool.get("ruff")
+    if isinstance(ruff, dict):
+        ignores = ruff.get("lint", {}).get("per-file-ignores")
+        if isinstance(ignores, dict):
+            for glob in PYTHON_TESTS_GLOBS[1:]:
+                if glob in ignores:
+                    ignores[PYTHON_TESTS_GLOBS[0]] = ignores.pop(glob)
+    dev = data.get("dependency-groups", {}).get("dev")
+    if lib and isinstance(dev, list):
+        dev = _drop_dev_entries(dev)
+    return {
+        "tool.ruff": ruff,
+        "tool.pyright": tool.get("pyright"),
+        "tool.pytest": tool.get("pytest"),
+        "dependency-groups.dev": dev,
+    }
+
+
+def _python_tasks(cell_dir: Path) -> set[str] | None:
+    """The task names in a cell's `tasks/python.yml`; None when the file is missing."""
+    file = cell_dir / "tasks" / "python.yml"
+    if not file.is_file():
+        return None
+    return set(YamlUtils.load(file.read_text(encoding="utf-8"))["tasks"])
+
+
+def python_parity_cells(cells: dict[str, Path]) -> list[str]:
+    """Differences between each Python cell and `python-tool`, one line each, in cell order.
+
+    Args:
+        cells: Cell directory name to path; must hold `python-tool`.
+
+    Compares the task names of `tasks/python.yml` and the parsed `[tool.ruff]`,
+    `[tool.pyright]`, `[tool.pytest]` and `dependency-groups.dev` tables. Allowed:
+    the `PYTHON_TESTS_GLOBS` spelling, and for `python-lib` the `LIB_ONLY_DEV_GROUP`
+    and `LIB_ONLY_TOOL_KEYS`.
+    """
+    reference = cells[PYTHON_REFERENCE]
+    ref_tasks = _python_tasks(reference)
+    ref_tables = _python_tables(reference, False)
+    lines: list[str] = []
+    for name, cell_dir in cells.items():
+        if name == PYTHON_REFERENCE:
+            continue
+        tasks = _python_tasks(cell_dir)
+        if tasks is None or ref_tasks is None:
+            lines.append(f"{name}: tasks/python.yml missing")
+        else:
+            lines += [f"{name}: task {t} missing" for t in sorted(ref_tasks - tasks)]
+            lines += [f"{name}: task {t} extra" for t in sorted(tasks - ref_tasks)]
+        tables = _python_tables(cell_dir, name == "python-lib")
+        if tables is None or ref_tables is None:
+            lines.append(f"{name}: pyproject.toml missing")
+            continue
+        lines += [f"{name}: {key} differs" for key in tables if tables[key] != ref_tables[key]]
+    return lines
+
+
+def parity(out_root: Path) -> int:
+    """Print the differences between the working `node-lib` and web-app cells, and between the Python cells; 1 on any."""
+    def named(archetype: str) -> str:
+        return next(c.name for c in CELLS if c.archetype == archetype)
+
+    working = out_root / ref_dir("")
+    python = {c.name: working / c.name for c in CELLS if c.archetype.startswith("python-")}
+    lib_dir, web_dir = working / named("node-lib"), working / named("python-web-app")
+    for cell_dir in (lib_dir, *python.values()):
         if not cell_dir.is_dir():
             print(f"missing cell: {cell_dir} (run task self:golden:render)", file=sys.stderr)
             return 1
-    lines = parity_cells(lib_dir, web_dir)
+    lines = [*parity_cells(lib_dir, web_dir), *python_parity_cells(python)]
     print("\n".join(lines))
     return 1 if lines else 0
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 import difflib
 import importlib.util
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -746,11 +747,20 @@ def test_s9_2_10_3_other_package_json_keys_still_compare(
     assert len(matrix.parity_cells(lib_dir, web_dir)) == 1
 
 
-def _matrix_goldens(matrix: ModuleType, root: Path, web_files: dict[str, str]) -> None:
-    lib_name = next(c.name for c in matrix.CELLS if c.archetype == "node-lib")
-    web_name = next(c.name for c in matrix.CELLS if c.archetype == "python-web-app")
-    _write(root / "working" / lib_name, _parity_files())
-    _write(root / "working" / web_name, web_files)
+def _matrix_goldens(
+    matrix: ModuleType,
+    root: Path,
+    web_files: dict[str, str],
+    python: dict[str, str] | None = None,
+) -> None:
+    python = _py_cell() if python is None else python
+    for cell in matrix.CELLS:
+        if cell.archetype == "node-lib":
+            _write(root / "working" / cell.name, _parity_files())
+        elif cell.archetype == "python-web-app":
+            _write(root / "working" / cell.name, {**python, **web_files})
+        else:
+            _write(root / "working" / cell.name, python)
 
 
 def test_s9_2_10_4_main_parity_passes_when_the_cells_match(
@@ -809,3 +819,175 @@ def test_s9_2_10_6_the_policy_names_the_parity_check() -> None:
     )
     policy = page.split("## Template review policy")[1].split("\n## ")[0]
     assert "self:golden:parity" in policy
+
+
+PY_CELLS = NAMES[:5]
+PY_TASKS = (
+    "install lint lint:imports lint:audit lint:licenses format typecheck test"
+    " test:coverage build version"
+).split()
+PY_DEV = '"actionlint-py>=1.7", "pyright>=1.1", "pytest>=9.1", "ruff>=0.16"'
+
+
+def _py_cell(
+    *,
+    tasks: list[str] | None = None,
+    glob: str = "tests/*",
+    pyright: str = "",
+    pytest_extra: str = "",
+    dev: str = PY_DEV,
+) -> dict[str, str]:
+    names = PY_TASKS if tasks is None else tasks
+    task_yml = "version: '3'\ntasks:\n" + "".join(
+        f"  {n}:\n    cmds: [echo]\n" for n in names
+    )
+    pyproject = (
+        '[project]\nname = "x"\n\n'
+        "[tool.pyright]\n"
+        f'typeCheckingMode = "strict"\n{pyright}\n'
+        "[tool.pytest.ini_options]\n"
+        f'addopts = "-ra"\n{pytest_extra}\n'
+        f'[tool.ruff.lint.per-file-ignores]\n"{glob}" = ["ANN", "S101"]\n\n'
+        f"[dependency-groups]\ndev = [{dev}]\n"
+    )
+    return {"tasks/python.yml": task_yml, "pyproject.toml": pyproject}
+
+
+def _py_cells(tmp_path: Path, **per_cell: dict[str, str]) -> dict[str, Path]:
+    cells: dict[str, Path] = {}
+    for name in PY_CELLS:
+        _write(tmp_path / name, per_cell.get(name, _py_cell()))
+        cells[name] = tmp_path / name
+    return cells
+
+
+LIB_EXTRAS = {
+    "pyright": 'include = ["packages"]\n',
+    "pytest_extra": 'testpaths = ["packages"]\n',
+    "glob": "**/tests/*",
+    "dev": '{ include-group = "workspace" }, "coverage[toml]>=7.9", ' + PY_DEV,
+}
+
+
+def test_s16_7_7_1_identical_cells_report_nothing(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    assert matrix.python_parity_cells(_py_cells(tmp_path)) == []
+
+
+def test_s16_7_7_2_a_pyright_value_difference_names_cell_and_key(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    cells = _py_cells(
+        tmp_path, **{"python-app": _py_cell(pyright="reportFoo = true\n")}
+    )
+    assert matrix.python_parity_cells(cells) == ["python-app: tool.pyright differs"]
+
+
+def test_s16_7_7_3_a_missing_or_extra_task_names_cell_and_task(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    short = [t for t in PY_TASKS if t != "lint:audit"]
+    cells = _py_cells(
+        tmp_path,
+        **{
+            "python-app": _py_cell(tasks=short),
+            "python-lib": _py_cell(tasks=[*PY_TASKS, "deploy"]),
+        },
+    )
+    assert matrix.python_parity_cells(cells) == [
+        "python-app: task lint:audit missing",
+        "python-lib: task deploy extra",
+    ]
+
+
+def test_s16_7_7_4_python_lib_extras_are_allowed_only_there(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    extras = {**LIB_EXTRAS, "glob": "tests/*"}
+    assert (
+        matrix.python_parity_cells(
+            _py_cells(tmp_path / "a", **{"python-lib": _py_cell(**LIB_EXTRAS)})
+        )
+        == []
+    )
+    other = _py_cells(tmp_path / "b", **{"python-app": _py_cell(**extras)})
+    assert matrix.python_parity_cells(other) == [
+        "python-app: tool.pyright differs",
+        "python-app: tool.pytest differs",
+        "python-app: dependency-groups.dev differs",
+    ]
+    # A lib with another extra dev entry is still reported.
+    odd = {**LIB_EXTRAS, "dev": LIB_EXTRAS["dev"] + ', "mypy"'}
+    cells = _py_cells(tmp_path / "c", **{"python-lib": _py_cell(**odd)})
+    assert matrix.python_parity_cells(cells) == [
+        "python-lib: dependency-groups.dev differs"
+    ]
+
+
+def test_s16_7_7_5_only_the_tests_glob_spelling_may_differ_in_ruff(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    cells = _py_cells(tmp_path / "a", **{"python-app": _py_cell(glob="**/tests/*")})
+    assert matrix.python_parity_cells(cells) == []
+    cells = _py_cells(tmp_path / "b", **{"python-app": _py_cell(glob="src/*")})
+    assert matrix.python_parity_cells(cells) == ["python-app: tool.ruff differs"]
+
+
+def test_s16_7_7_6_a_missing_file_or_table_is_a_line(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    cells = _py_cells(tmp_path)
+    (cells["python-app"] / "tasks" / "python.yml").unlink()
+    (cells["python-lib"] / "pyproject.toml").write_text("[project]\nname='x'\n")
+    lines = matrix.python_parity_cells(cells)
+    assert "python-app: tasks/python.yml missing" in lines
+    assert "python-lib: tool.ruff differs" in lines
+    assert "python-lib: dependency-groups.dev differs" in lines
+
+
+def test_s16_7_7_6_main_parity_runs_both_checks(
+    matrix: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(matrix, "GOLDENS", tmp_path)
+    _matrix_goldens(matrix, tmp_path, _parity_files())
+    assert matrix.main(["parity"]) == 0
+    # A Python difference alone fails.
+    app = next(c.name for c in matrix.CELLS if c.archetype == "python-app")
+    _write(tmp_path / "working" / app, _py_cell(pyright="reportFoo = true\n"))
+    assert matrix.main(["parity"]) == 1
+    assert f"{app}: tool.pyright differs" in capsys.readouterr().out
+    # A Node difference alone fails.
+    _matrix_goldens(matrix, tmp_path, {**_parity_files(), ".nvmrc": "22\n"})
+    assert matrix.main(["parity"]) == 1
+    assert ".nvmrc" in capsys.readouterr().out
+
+
+def test_s16_7_7_6_main_parity_errors_when_a_python_cell_is_missing(
+    matrix: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(matrix, "GOLDENS", tmp_path)
+    _matrix_goldens(matrix, tmp_path, _parity_files())
+    tool = next(c.name for c in matrix.CELLS if c.archetype == "python-tool")
+    shutil.rmtree(tmp_path / "working" / tool)
+    capsys.readouterr()
+    assert matrix.main(["parity"]) == 1
+    assert (
+        f"missing cell: {tmp_path / 'working' / tool} (run task self:golden:render)"
+        in capsys.readouterr().err
+    )
+
+
+def test_s16_7_7_7_the_policy_names_the_python_check() -> None:
+    page = (ROOT / "docs/specs/epics/E4-generator/F4.4-render-matrix.md").read_text(
+        encoding="utf-8"
+    )
+    policy = page.split("## Template review policy")[1].split("\n## ")[0]
+    assert "python-tool" in policy
+    assert "tasks/python.yml" in policy

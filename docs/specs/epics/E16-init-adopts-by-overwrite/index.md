@@ -15,7 +15,7 @@
 | [F16.4 — Generated-file hygiene](F16.4-generated-file-hygiene.md) | Closed | release-1 | 7 Closed |
 | [F16.5 — Rebuild an existing repository on kiln, and port it](F16.5-rebuild-and-port.md) | New | — | 3 New |
 | [F16.6 — What the cutover rehearsals found](F16.6-cutover-rehearsal-findings.md) | Closed | release-1 | 13 Closed |
-| [F16.7 — What the cutover found](F16.7-cutover-findings.md) | Closed | release-1 | 5 Closed · 1 Removed |
+| [F16.7 — What the cutover found](F16.7-cutover-findings.md) | Closed | release-1 | 6 Closed · 1 Removed |
 
 <!-- END derived features -->
 
