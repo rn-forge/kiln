@@ -355,7 +355,7 @@ def test_s6_1_3_3_generate_package_without_a_module_is_unchanged(
     generated: Path,
 ) -> None:
     config = _toml(generated / ".rn-forge/kiln/config.toml")
-    assert "modules" not in config["archetype"]["python-lib"]
+    assert config["archetype"]["python-lib"].get("modules", {}) == {}
     assert (generated / "packages/golden-alpha/src/golden_alpha/py.typed").is_file()
 
 

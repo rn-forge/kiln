@@ -10,6 +10,7 @@ from __future__ import annotations
 import inspect
 import json
 import subprocess
+import sys
 import tomllib
 from collections.abc import Callable
 from pathlib import Path
@@ -24,6 +25,7 @@ from rn_forge.kiln import archetypes, checks, commands
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs.checks import derived
 from rn_forge.kiln.modules.core import cycle
+from rn_forge.kiln.modules.core.config import catalog
 from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK
 from rn_forge.kiln.modules.registry import builtin
 
@@ -770,6 +772,69 @@ def test_s16_7_10_3_same_result_as_generate_package(
         "mkdocs.yml",
     ):
         assert (listed / name).read_bytes() == (stepwise / name).read_bytes(), name
+
+
+def _commented_form(root: Path) -> tuple[str, str]:
+    """The committed `config.toml` and what `catalog.render` makes of its parse."""
+    return (
+        (root / ".rn-forge/kiln/config.toml").read_text(encoding="utf-8"),
+        catalog.render(KilnConfig.load(root), header=commands._CONFIG_HEADER),
+    )
+
+
+def test_s16_9_2_1_generate_package_writes_the_commented_form(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "lib"
+    commands.new(
+        root, archetype="python-lib", docs="mkdocs", owner="rn-forge", yes=True
+    )
+    commands.generate_package("alpha", path=root)
+    commands.generate_package("beta", path=root, module="rn_forge.beta")
+
+    written, rendered = _commented_form(root)
+    assert written == rendered
+
+
+def test_s16_9_2_2_new_with_packages_writes_the_commented_form(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "lib"
+    _new_lib(root, _lib_layer(tmp_path, TWO_PACKAGES + MODULES))
+
+    written, rendered = _commented_form(root)
+    assert written == rendered
+
+
+@pytest.mark.parametrize("archetype", ["python-app", "python-lib"])
+def test_s16_9_2_3_new_output_toml_is_taplo_clean(
+    tmp_path: Path, archetype: str
+) -> None:
+    root = tmp_path / "out"
+    if archetype == "python-lib":
+        _new_lib(root, _lib_layer(tmp_path, TWO_PACKAGES + MODULES))
+    else:
+        commands.new(
+            root, archetype=archetype, docs="mkdocs", owner="rn-forge", yes=True
+        )
+    taplo = Path(sys.executable).parent / "taplo"
+    files = [
+        ".rn-forge/kiln/config.toml",
+        "pyproject.toml",
+        *sorted(
+            str(p.relative_to(root)) for p in root.glob("packages/*/pyproject.toml")
+        ),
+    ]
+
+    run = subprocess.run(
+        [str(taplo), "fmt", "--check", "--diff", *files],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert run.returncode == 0, run.stdout + run.stderr
 
 
 def test_s16_7_10_4_a_failing_second_package_leaves_no_directory(

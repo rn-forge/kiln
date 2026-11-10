@@ -474,6 +474,7 @@ def _add_package(root: Path, name: str, module: str | None) -> ApplyResult:
         section["modules"] = {relative: module}
     DocumentUtils.update(root / CONFIG_PATH, {"archetype": {"python-lib": section}})
     config = ConfigManager().load(root)
+    _write_config(root, config)
     python_add_package(root, config, name, remote)
     docs_add_package(root, config, name)
     result = cycle.apply(root)
