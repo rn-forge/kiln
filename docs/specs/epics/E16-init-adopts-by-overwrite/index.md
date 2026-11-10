@@ -17,7 +17,7 @@
 | [F16.6 — What the cutover rehearsals found](F16.6-cutover-rehearsal-findings.md) | Closed | release-1 | 13 Closed |
 | [F16.7 — What the cutover found](F16.7-cutover-findings.md) | Closed | release-1 | 9 Closed · 1 Removed |
 | [F16.8 — Retire `kiln init`](F16.8-retire-kiln-init.md) | Active | release-1 | 2 Closed |
-| [F16.9 — What the overlay cutovers found](F16.9-overlay-cutover-findings.md) | New | release-1 | 9 New · 2 Removed |
+| [F16.9 — What the overlay cutovers found](F16.9-overlay-cutover-findings.md) | Active | release-1 | 8 New · 1 Closed · 2 Removed |
 
 <!-- END derived features -->
 

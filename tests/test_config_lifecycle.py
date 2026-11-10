@@ -2,7 +2,7 @@
 
 Two repo shapes:
 
-- `resolved_repo` — built from a local `--config` source, applied once (`kiln
+- `resolved_repo` — built from a local layer with a hand-written `[source]`, applied once (`kiln
   new`'s own flow, per `commands.new`), so it has a real `[source]` to
   re-resolve and `state.json` carries real recorded `config_provenance`. It is
   not a full scaffold (no `uv init`), so `--apply`'s post-apply checks are not
@@ -72,9 +72,11 @@ def resolved_repo(tmp_path: Path, layer: Path, monkeypatch: pytest.MonkeyPatch) 
     resolution = ConfigManager().resolve(
         flags=FLAGS, source=Source(str(layer)), base=root
     )
+    document = resolution.config.to_document()
+    document["source"] = {"location": str(layer)}
     (root / CONFIG_PATH).parent.mkdir(parents=True, exist_ok=True)
     (root / CONFIG_PATH).write_text(
-        DocumentUtils.dumps(resolution.config.to_document(), ConfigFormat.TOML),
+        DocumentUtils.dumps(document, ConfigFormat.TOML),
         encoding="utf-8",
     )
     cycle.apply(root, provenance=resolution.provenance_metadata())

@@ -250,9 +250,7 @@ def test_s4_5_1_yes_json_artifacts_actions_only_create_insert_or_skip(
     )
 
 
-def test_s4_5_1_config_layer_merges_beneath_flags_and_records_source(
-    tmp_path: Path,
-) -> None:
+def test_s4_5_1_config_layer_merges_beneath_flags(tmp_path: Path) -> None:
     layer_dir = tmp_path / "layer"
     layer_dir.mkdir()
     (layer_dir / "config.toml").write_text("[ci]\nsonar = false\n", encoding="utf-8")
@@ -270,7 +268,27 @@ def test_s4_5_1_config_layer_merges_beneath_flags_and_records_source(
         (directory / ".rn-forge" / "kiln" / "config.toml").read_text(encoding="utf-8")
     )
     assert written["ci"]["sonar"] is False
-    assert written["source"]["location"] == str(layer_dir)
+
+
+def test_s16_9_1_2_new_with_a_local_config_records_no_source(tmp_path: Path) -> None:
+    layer_dir = tmp_path / "layer"
+    layer_dir.mkdir()
+    (layer_dir / "config.toml").write_text("[ci]\nsonar = false\n", encoding="utf-8")
+
+    directory = tmp_path / "demo-local-layer"
+    commands.new(
+        directory,
+        archetype="python-tool",
+        docs="none",
+        config=str(layer_dir),
+        yes=True,
+    )
+
+    text = (directory / ".rn-forge" / "kiln" / "config.toml").read_text(
+        encoding="utf-8"
+    )
+    assert "source" not in tomllib.loads(text)
+    assert str(tmp_path) not in text
 
 
 def test_s7_4_1_5_new_pins_kiln(tmp_path: Path) -> None:

@@ -52,7 +52,8 @@ class Fetched:
     """A fetched source layer, and the `[source]` record it resolves to."""
 
     document: dict[str, Any]
-    record: SourceConfig
+    record: SourceConfig | None
+    """`None` for a local path, which is not recorded."""
 
 
 def fetch(source: Source, base: Path) -> Fetched:
@@ -63,7 +64,7 @@ def fetch(source: Source, base: Path) -> Fetched:
     """
     if not source.is_git:
         path = base / source.location
-        return Fetched(_read_layer(path), SourceConfig(location=source.location))
+        return Fetched(_read_layer(path), None)
 
     with tempfile.TemporaryDirectory(prefix="kiln-source-") as scratch:
         checkout = Path(scratch)

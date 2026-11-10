@@ -33,11 +33,15 @@ def write_layer(path: Path, document: dict[str, object]) -> Path:
     return path
 
 
-def commit(root: Path, resolution) -> None:
-    """Commit a resolution the way `kiln new` does: config.toml and state provenance."""
-    write_config(
-        root, DocumentUtils.dumps(resolution.config.to_document(), ConfigFormat.TOML)
-    )
+def commit(root: Path, resolution, source: str | None = None) -> None:
+    """Commit a resolution the way `kiln new` does: config.toml and state provenance.
+
+    *source* adds the hand-written `[source]` a local layer is not recorded as.
+    """
+    document = resolution.config.to_document()
+    if source is not None:
+        document["source"] = {"location": source}
+    write_config(root, DocumentUtils.dumps(document, ConfigFormat.TOML))
     state = root / ".rn-forge" / "kiln" / "state.json"
     state.write_text(
         json.dumps(
@@ -144,14 +148,16 @@ def test_s4_2_2_a_section_for_a_module_the_archetype_does_not_enable_is_rejected
         )
 
 
-def test_s4_2_2_a_path_source_resolves_and_is_recorded(tmp_path: Path) -> None:
+def test_s16_9_1_1_a_path_source_resolves_and_is_not_recorded(
+    tmp_path: Path,
+) -> None:
     write_layer(tmp_path / "profile" / "config.toml", {"ci": {"sonar": False}})
     resolution = ConfigManager().resolve(
         flags=FLAGS, source=Source.parse("profile"), base=tmp_path
     )
     document = resolution.config.to_document()
     assert document["ci"]["sonar"] is False
-    assert document["source"] == {"location": "profile"}
+    assert "source" not in document
 
 
 def test_s4_2_2_a_git_source_records_location_ref_and_resolved_commit(
@@ -212,7 +218,9 @@ def test_s4_2_2_re_resolution_keeps_and_lists_a_repo_override(tmp_path: Path) ->
     )
     repo = tmp_path / "repo"
     commit(
-        repo, ConfigManager().resolve(flags=FLAGS, source=Source(str(layer)), base=repo)
+        repo,
+        ConfigManager().resolve(flags=FLAGS, source=Source(str(layer)), base=repo),
+        source=str(layer),
     )
 
     config = repo / ".rn-forge" / "kiln" / "config.toml"

@@ -91,7 +91,9 @@ class RootConfig(ConfigModel):
     """The config schema this file was written for. `kiln config-upgrade`
     raises it; do not edit it by hand."""
     source: SourceConfig | None = None
-    """Where this config was resolved from. Absent for a hand-written config."""
+    """Where this config was resolved from: a `git+` source. Absent for a
+    hand-written config and for a local `--config` file, whose path is
+    machine-local."""
     repository: RepositoryConfig
     kiln: KilnPin | None = None
     """The kiln this repository pins. Absent until the first kiln release."""

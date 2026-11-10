@@ -646,9 +646,9 @@ such as Java require new archetypes; they are outside E5's scope.
 Configuration is resolved once and committed.
 `kiln new --config <path|git-url[@ref]>` deep-merges kiln defaults → each source
 layer → flags, and writes the merged result with a `[source]` table recording
-the location, the ref and the resolved commit. **Lists replace**: a layer that
-sets a list owns the whole list, so removing an inherited entry needs no second
-syntax.
+the location, the ref and the resolved commit of a `git+` source; a local file
+is read and not recorded. **Lists replace**: a layer that sets a list owns the
+whole list, so removing an inherited entry needs no second syntax.
 
 | Command | Reads | Writes |
 | -- | -- | -- |

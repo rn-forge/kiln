@@ -282,7 +282,8 @@ in its metadata, and it never contains an entry for itself.
 Kiln owns only its `.rn-forge/kiln/` namespace and ignores sibling directories.
 Configuration is resolved once: `kiln new --config <path|git-url[@ref]>`
 deep-merges kiln defaults, each source layer and flags — lists replace — and
-records the source in a `[source]` table. `kiln apply` and `kiln doctor` read
+records a `git+` source in a `[source]` table; a local file is read and not
+recorded. `kiln apply` and `kiln doctor` read
 only the committed file. `kiln config update` re-resolves the source with the
 running kiln, `kiln config upgrade` with a newer one; each changes nothing
 without `--apply`, and keeps a key edited here as a repo override.{% if lifecycle %}

@@ -302,7 +302,7 @@ class ConfigManager:
             (DEFAULTS_LAYER, self._defaults(layers)), *layers
         )
         document = merged.config
-        if fetched:
+        if fetched and fetched.record is not None:
             document["source"] = fetched.record.model_dump(exclude_none=True)
         config = self.validate(document, source="the resolved config")
         provenance = {

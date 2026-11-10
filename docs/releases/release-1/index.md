@@ -97,7 +97,7 @@ are [release-2](../release-2/index.md).
 | [F16.6 — What the cutover rehearsals found](../../specs/epics/E16-init-adopts-by-overwrite/F16.6-cutover-rehearsal-findings.md) | E16 | Closed |
 | [F16.7 — What the cutover found](../../specs/epics/E16-init-adopts-by-overwrite/F16.7-cutover-findings.md) | E16 | Closed |
 | [F16.8 — Retire `kiln init`](../../specs/epics/E16-init-adopts-by-overwrite/F16.8-retire-kiln-init.md) | E16 | Active |
-| [F16.9 — What the overlay cutovers found](../../specs/epics/E16-init-adopts-by-overwrite/F16.9-overlay-cutover-findings.md) | E16 | New |
+| [F16.9 — What the overlay cutovers found](../../specs/epics/E16-init-adopts-by-overwrite/F16.9-overlay-cutover-findings.md) | E16 | Active |
 | [F17.1 — The task surface says what it is](../../specs/epics/E17-task-standard/F17.1-task-surface.md) | E17 | Closed |
 | [F17.2 — One grammar for the CI surface, and one home for check policy](../../specs/epics/E17-task-standard/F17.2-ci-task-grammar.md) | E17 | Closed |
 | [F18.1 — Tests named by behaviour](../../specs/epics/E18-v1-spec-rewrite/F18.1-tests-named-by-behaviour.md) | E18 | New |
