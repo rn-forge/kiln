@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import json
 import shutil
 import subprocess
@@ -349,16 +350,13 @@ def test_s4_7_3_2_own_contract_below_the_block_survives(root: Path, home: Path) 
     assert actions(root, home)[IMPORTLINTER_KEY] is Action.UNCHANGED
 
 
-@pytest.mark.parametrize("adopt", [False, True])
-def test_s4_7_3_3_unfenced_importlinter_is_refused(
-    root: Path, home: Path, adopt: bool
-) -> None:
+def test_s4_7_3_3_unfenced_importlinter_is_refused(root: Path, home: Path) -> None:
     path = root / ".importlinter"
     path.write_text("[importlinter]\nroot_package = demo\n", encoding="utf-8")
     before = snapshot(root)
 
     with pytest.raises(CycleRefused) as refused:
-        cycle.plan(root, home=home, adopt=adopt)
+        cycle.plan(root, home=home)
     (finding,) = refused.value.findings
     assert finding.code == "core.block-unfenced"
     assert finding.path == ".importlinter"
@@ -412,3 +410,10 @@ def test_s4_7_3_5_fenced_file_with_old_state_converts_under_force(
     cycle.apply(root, home=home, force=[".importlinter"])
     text = (root / ".importlinter").read_text(encoding="utf-8")
     assert text.startswith("# BEGIN rn-forge kiln")
+
+
+def test_s16_8_1_2_cycle_has_no_adoption_api() -> None:
+    for name in ("adoption_plan", "fence", "unfenced", "_adopted"):
+        assert not hasattr(cycle, name)
+    for function in (cycle.plan, cycle.apply, cycle._prepare):
+        assert "adopt" not in inspect.signature(function).parameters

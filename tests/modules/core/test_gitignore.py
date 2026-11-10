@@ -12,7 +12,6 @@ from pathlib import Path
 
 import pytest
 
-from rn_forge.kiln.commands import _dedupe_gitignore
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle, gitignore
 from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK, render
@@ -288,21 +287,6 @@ def test_s16_4_1_3_no_docs(root: Path) -> None:
     assert "# Docs build output" not in body
     assert ".docs-site/" not in body
     assert "# Python tool caches" in body
-
-
-def test_s16_4_1_4_dedupe_ignores_comments(root: Path) -> None:
-    path = root / ".gitignore"
-    path.write_text(
-        GITIGNORE_BLOCK.render("", S16_4_1_BLOCK)
-        + "\n# macOS\n.DS_Store\n\n# mine\nsecrets.env\n",
-        encoding="utf-8",
-    )
-    dropped = _dedupe_gitignore(root)
-    assert dropped == [".DS_Store"]
-    text = path.read_text(encoding="utf-8")
-    assert "secrets.env" in text
-    assert "# mine" in text
-    assert text.count(".DS_Store") == 1
 
 
 def _s16_7_1_lines(root: Path, docs: str, site_dir: str | None) -> list[str]:

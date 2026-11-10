@@ -123,8 +123,8 @@ def rendered(tmp_path_factory: pytest.TempPathFactory) -> Callable[[str], Path]:
                 )
             for package in ("lib-alpha", "lib-beta"):
                 commands.generate_package(package, path=root)
-            # generate_package writes a bare skeleton (S16.6.11); the init
-            # tests adopt a library whose packages carry their starter.
+            # generate_package writes a bare skeleton (S16.6.11), so the library's
+            # packages carry their starter.
             cycle.apply(root, starters="packages/")
         cache[archetype] = root
         return root
@@ -136,7 +136,7 @@ def rendered(tmp_path_factory: pytest.TempPathFactory) -> Callable[[str], Path]:
 def _default_owner(
     request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Give `kiln new` and `kiln init` `owner="rn-forge"` unless the test says not to.
+    """Give `kiln new` `owner="rn-forge"` unless the test says not to.
 
     S16.6.8 made the owner required; a test about the owner itself asks for the
     `ownerless` fixture and passes its own.
@@ -147,7 +147,7 @@ def _default_owner(
 
     from rn_forge.kiln import commands
 
-    for name in ("new", "init"):
+    for name in ("new",):
         original = getattr(commands, name)
 
         @functools.wraps(original)

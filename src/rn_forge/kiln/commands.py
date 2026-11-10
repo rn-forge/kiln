@@ -15,10 +15,7 @@ from __future__ import annotations
 import dataclasses
 import re
 import shutil
-import subprocess
-import tempfile
-from collections.abc import Callable, Sequence
-from datetime import UTC, datetime
+from collections.abc import Sequence
 from importlib import metadata
 from importlib.resources import files
 from pathlib import Path
@@ -27,7 +24,7 @@ from rn_forge.cli import CliApp
 from rn_forge.commons import generation
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding, Severity
-from rn_forge.commons.fs.documents import ConfigFormat, DocumentError, DocumentUtils
+from rn_forge.commons.fs.documents import ConfigFormat, DocumentUtils
 from rn_forge.commons.fs.state import StateStore
 from rn_forge.commons.generation import ApplyResult, StateEntry
 from rn_forge.commons.lang.collections import DictUtils
@@ -38,18 +35,10 @@ from rn_forge.kiln import archetypes, checks
 from rn_forge.kiln import doctor as doctor_module
 from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
 from rn_forge.kiln.modules.core import cycle, umbrella
-from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK
 from rn_forge.kiln.modules.core.config import catalog
 from rn_forge.kiln.modules.core.config.manager import ConfigManager, Resolution
 from rn_forge.kiln.modules.core.config.sources import Source, fetch
-from rn_forge.kiln.modules.core.remote import (
-    github_owner,
-    origin_url,
-    repository_name,
-)
-from rn_forge.kiln.modules.core.versions import PYTHON_VERSION
 from rn_forge.kiln.modules.docs import generate
-from rn_forge.kiln.modules.docs.artifacts import SEEDS
 from rn_forge.kiln.modules.docs.scaffold import add_package as docs_add_package
 from rn_forge.kiln.modules.instructions.scaffold import (
     scaffold as instructions_scaffold,
@@ -65,11 +54,9 @@ from rn_forge.kiln.modules.python.scaffold import (
     add_package as python_add_package,
 )
 from rn_forge.kiln.modules.python.scaffold import (
-    add_task_tools,
     reconcile_backend,
     scaffold_backend,
 )
-from rn_forge.kiln.modules.python.scaffold import scaffold as python_scaffold
 from rn_forge.kiln.modules.registry import builtin
 
 __all__ = [
@@ -81,7 +68,6 @@ __all__ = [
     "doctor",
     "generate_app",
     "generate_package",
-    "init",
     "new",
     "prompt",
     "version",
@@ -93,9 +79,6 @@ _CONFIG_HEADER = (
     "The one hand-authored input kiln reads (kiln ADR-0004). Edit this, then run\n"
     "`kiln apply`. Everything else under .rn-forge/kiln/ is kiln's."
 )
-
-_INIT_FILES = ("pyproject.toml",)
-"""What `init` needs already there; a `node-lib` creates its `pyproject.toml`."""
 
 _PACKAGE_NAME = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
 
@@ -332,441 +315,6 @@ def new(
     _report(directory, resolved, rows)
 
 
-def init(
-    archetype: str = "",
-    docs: str = "mkdocs",
-    backend: str | None = None,
-    frontend: str | None = None,
-    module: str | None = None,
-    config: str | None = None,
-    owner: str | None = None,
-    dry_run: bool = False,
-    yes: bool = False,
-    json: bool = False,
-) -> None:
-    """Bring the existing standard repository in the current directory under kiln.
-
-    The repository's name is `--config`'s `[repository] name`, else the
-    `origin` remote's repository name, else the root `pyproject.toml`'s
-    `[project].name`, else the directory's. The owner is `--owner`, else
-    `--config`'s `[repository] owner`, else the owner of a GitHub `origin`;
-    with none of them `init` stops (`init.owner-required`).
-
-    `new`'s configuration and first-apply flow, run in place and never
-    scaffolding. `--module` sets the dotted import module of a `python-app` or
-    `python-tool` repository in place of the one derived from the name.
-    Requires a `.git` entry and a `pyproject.toml`, which a `node-lib` is
-    given, and seeds a missing `.python-version` (`3.14`); kiln renders every
-    managed path that is missing, and writes a missing `mkdocs.yml` under `--docs mkdocs` as `new` does. Without `--yes` (or with `--dry-run`)
-    prints the resolved config and the artifact plan, and writes nothing. With
-    `--yes`, the Git
-    working tree must be clean (`init.dirty-tree`); it then writes
-    `config.toml`, then applies, recording byte-identical managed files in the
-    baseline without rewriting them, then runs `task setup`, `task format` and
-    (under `--docs mkdocs`) `task docs:generate`, then `kiln doctor`'s
-    ownership checks.
-
-    A `python-lib` workspace is adopted with its members: unlike `new`, the
-    `--config` layer may list `packages`, each an existing directory with a
-    `pyproject.toml` (S6.1.5).
-
-    Every managed file that differs from its render, a prior `config.toml`, and
-    each docs seed that holds no content of its own (`docs/_areas.yml` always,
-    `docs/specs/epics/index.md` unless it lists an epic, any other docs seed
-    that differs from its render in whitespace only) is overwritten, after a
-    copy of it is written under `.rn-forge/kiln/backups/` (S16.1.2). A page with
-    content, `README.md`, source and tests are never touched; `pyproject.toml`
-    and `.gitignore` keep what is outside kiln's own table and block.
-
-    An unfenced `.importlinter` is archived (`-unfenced`) and fenced first
-    (S6.1.7): kiln's `[importlinter]` section is dropped and the rest kept
-    below the markers.
-
-    Raises:
-        AppException: `--archetype` is missing, the current directory fails the
-            preflight (each failed condition is named), a listed package has
-            no `pyproject.toml` (`init.package-missing`), `state.json` already
-            exists, a conflict exists, the working tree is dirty
-            (`init.dirty-tree`), or the config, apply, task or check step fails.
-    """
-    if json:
-        console.set_mode(OutputMode.JSON)
-    if not archetype:
-        raise AppException("--archetype is required")
-    root = Path.cwd()
-    _init_preflight(root, archetype)
-    if yes and not dry_run:
-        _require_clean(root)
-
-    state_path = root / umbrella.STATE_PATH
-    if state_path.exists():
-        raise AppException(
-            "{} already exists; this repository is under kiln; use `kiln apply`",
-            state_path,
-        )
-
-    name, source = _init_name(root)
-    if source != "directory":
-        console.info("repository name {} from {}", name, source)
-    _, resolution = _resolve_config(
-        name,
-        archetype=archetype,
-        docs=docs,
-        backend=backend,
-        frontend=frontend,
-        module=module,
-        config=config,
-        owner=owner,
-        fallback_owner=_origin_owner(root),
-        owner_error="init.owner-required: no GitHub origin to take the owner "
-        "from; pass --owner <owner> or set repository.owner in --config",
-        allow_untested=False,
-    )
-    resolved = resolution.config
-    _require_packages(root, resolved.packages)
-    archived: list[str] = []
-    if yes and not dry_run:
-        unfenced = cycle.unfenced(root, resolved)
-        if unfenced:
-            archived = [str(finding.path) for finding in unfenced]
-            _archive(root, archived, tag="-unfenced")
-            cycle.fence(root, resolved)
-    planned = cycle.adoption_plan(root, resolved)
-    seeds = _missing_seeds(root, resolved)
-    replaced = _replaced_seeds(root, planned)
-    # The nav is built from the docs tree, so overwriting a seed can change it.
-    dependents = (
-        ["mkdocs.yml"] if replaced and resolved.docs_profile == "mkdocs" else []
-    )
-
-    if not yes or dry_run:
-        rows = _change_rows(planned.changes)
-        for row in rows:
-            if row["path"] in replaced:
-                row["action"] = "overwrite"
-        _report(root, resolved, [*_seed_rows(seeds), *rows])
-        return
-
-    conflicting = {
-        change.key: change.path
-        for change in planned.changes
-        if change.action is generation.Action.CONFLICT
-    }
-    overwritten = {*conflicting.values(), *replaced, *dependents}
-    if (root / CONFIG_PATH).exists():
-        overwritten.add(CONFIG_PATH.as_posix())
-    backup = _archive(root, sorted(overwritten - set(archived)))
-    if backup is not None:
-        console.info("backed up {} file(s) to {}", len(backup[1]), backup[0])
-    for relative, content in replaced.items():
-        (root / relative).write_text(content, encoding="utf-8")
-
-    _write_config(root, resolved)
-    _seed(root, resolved, seeds)
-    result = cycle.apply(
-        root,
-        force=[*conflicting, *conflicting.values(), *dependents],
-        provenance=resolution.provenance_metadata(),
-        adopt=True,
-    )
-    removed = _dedupe_gitignore(root)
-    if removed:
-        console.info(
-            "removed {} line(s) from .gitignore that kiln's block holds", len(removed)
-        )
-    if resolved.docs_profile == "mkdocs" and (root / "mkdocs.yml").is_file():
-        packages = resolved.packages if resolved.archetype == "python-lib" else ()
-        generate.generate(root, packages)
-    if "python" in archetypes.for_config(resolved).modules:
-        added = add_task_tools(root, resolved)
-        if added:
-            console.info(
-                "added {} to pyproject.toml's dependency groups", ", ".join(added)
-            )
-    for step in _final_steps(resolved):
-        _run_task(root, step)
-    _fail_on_errors(root)
-    _report(root, resolved, _change_rows(result.changes))
-
-
-def _final_steps(config: KilnConfig) -> list[str]:
-    """The tasks `init` ends with, in order."""
-    steps = ["setup", "format"]
-    if config.docs_profile == "mkdocs":
-        steps.append("docs:generate")
-    return steps
-
-
-def _run_task(root: Path, name: str) -> None:
-    """Run `task <name>` in *root*, raising `AppException` naming the step on failure."""
-    try:
-        subprocess.run(["task", name], cwd=root, check=True)
-    except (subprocess.CalledProcessError, FileNotFoundError) as error:
-        raise AppException("`task {}` failed in {}: {}", name, root, error) from error
-
-
-def _missing_seeds(root: Path, config: KilnConfig) -> list[str]:
-    """The files `init` creates once, as `new` does: a `node-lib`'s `pyproject.toml`, and every archetype's `.python-version`."""
-    wanted = [
-        ("pyproject.toml", config.archetype == "node-lib"),
-        (".python-version", True),
-    ]
-    return [name for name, applies in wanted if applies and not (root / name).exists()]
-
-
-_ALWAYS_REPLACED = frozenset({"docs/_areas.yml"})
-_EPICS_INDEX = "docs/specs/epics/index.md"
-_EPIC_ROW = re.compile(r"^\| \[E\d+", re.MULTILINE)
-
-
-def _has_content(path: Path, seed: str) -> bool:
-    """Whether *path* differs from the *seed* render in more than whitespace."""
-    return "".join(path.read_text(encoding="utf-8").split()) != "".join(seed.split())
-
-
-def _replaced_seeds(root: Path, planned: generation.Plan) -> dict[str, str]:
-    """The existing docs seeds `init` overwrites, each with its render: those holding nothing of the repository's own."""
-    replaced: dict[str, str] = {}
-    for change in planned.changes:
-        artifact, path = change.artifact, root / change.path
-        if (
-            change.kind is not generation.ArtifactKind.SEEDED
-            or change.action is not generation.Action.SKIP
-            or artifact is None
-            or change.path not in SEEDS
-        ):
-            continue
-        if change.path in _ALWAYS_REPLACED:
-            replaced[change.path] = artifact.content
-        elif change.path == _EPICS_INDEX:
-            if not _EPIC_ROW.search(path.read_text(encoding="utf-8")):
-                replaced[change.path] = artifact.content
-        elif change.path.endswith("index.md") and not _has_content(
-            path, artifact.content
-        ):
-            replaced[change.path] = artifact.content
-    return replaced
-
-
-def _seed_rows(seeds: Sequence[str]) -> list[dict[str, str]]:
-    return [
-        {"key": name, "path": name, "kind": "seeded", "action": "create"}
-        for name in seeds
-    ]
-
-
-def _seed(root: Path, config: KilnConfig, seeds: Sequence[str]) -> None:
-    """Write each of *seeds* by `new`'s own scaffold; a file `init` found is never in them."""
-    if "pyproject.toml" in seeds:
-        with tempfile.TemporaryDirectory() as scratch:
-            python_scaffold(Path(scratch), config)
-            shutil.copy2(Path(scratch) / "pyproject.toml", root / "pyproject.toml")
-    if ".python-version" in seeds:
-        (root / ".python-version").write_text(f"{PYTHON_VERSION}\n", encoding="utf-8")
-
-
-def _dedupe_gitignore(root: Path) -> list[str]:
-    """Drop the lines outside kiln's `.gitignore` block that the block already holds.
-
-    A pattern is a stripped line that is not blank and not a comment; its key
-    is the pattern without one trailing `/`. Any `!` pattern, inside or outside
-    the block, makes order matter, so the file is left alone.
-
-    Returns:
-        The dropped lines, without their line endings; empty when nothing was
-        removed.
-    """
-    path = root / ".gitignore"
-    if not path.is_file():
-        return []
-    text = path.read_text(encoding="utf-8")
-    body = GITIGNORE_BLOCK.extract(text)
-    if body is None:
-        return []
-
-    def pattern(line: str) -> str | None:
-        stripped = line.strip()
-        return stripped if stripped and not stripped.startswith("#") else None
-
-    outside = GITIGNORE_BLOCK.remove(text)
-    patterns = [p for line in (body + outside).splitlines() if (p := pattern(line))]
-    if any(p.startswith("!") for p in patterns):
-        return []
-    held = {p.removesuffix("/") for line in body.splitlines() if (p := pattern(line))}
-    dropped: list[str] = []
-    groups: list[list[str]] = [[]]
-    for line in outside.splitlines(keepends=True):
-        if not line.strip():
-            groups.append([])
-            continue
-        found = pattern(line)
-        if found is not None and found.removesuffix("/") in held:
-            dropped.append(line.rstrip("\r\n"))
-            groups[-1].append("")
-        else:
-            groups[-1].append(line)
-    if not dropped:
-        return []
-    kept = [
-        "".join(lines)
-        for group in groups
-        if (lines := _surviving_group(group, pattern))
-    ]
-    path.write_text(GITIGNORE_BLOCK.render("\n".join(kept), body), encoding="utf-8")
-    return dropped
-
-
-def _surviving_group(
-    group: list[str], pattern: Callable[[str], str | None]
-) -> list[str]:
-    """The lines of a `.gitignore` *group* to keep; `""` marks a dropped pattern.
-
-    A group that lost a pattern and has none left loses its comments too.
-    """
-    lines = [line for line in group if line]
-    lost = len(lines) < len(group)
-    if lost and not any(pattern(line) for line in lines):
-        return []
-    return lines
-
-
-def _require_packages(root: Path, packages: tuple[str, ...]) -> None:
-    """Refuse a listed package that is not an existing member of *root*.
-
-    Raises:
-        AppException: Naming every package directory without a `pyproject.toml`.
-    """
-    missing = [p for p in packages if not (root / p / "pyproject.toml").is_file()]
-    if missing:
-        raise AppException(
-            "init.package-missing: no pyproject.toml in {}", ", ".join(missing)
-        )
-
-
-def _require_clean(root: Path) -> None:
-    """Refuse *root* unless its Git working tree has no changes.
-
-    Raises:
-        AppException: `init.not-a-repository` if git fails; `init.dirty-tree`
-            naming every changed or untracked path.
-    """
-    status = subprocess.run(
-        ["git", "status", "--porcelain"],
-        cwd=root,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if status.returncode != 0:
-        raise AppException("init.not-a-repository: {}", status.stderr.strip())
-    paths = [line[3:] for line in status.stdout.splitlines() if line]
-    if paths:
-        raise AppException(
-            "init.dirty-tree: commit or stash first (git stash -u), so the "
-            "review is kiln's change alone: {}",
-            ", ".join(paths),
-        )
-
-
-def _git_remote_name(root: Path) -> str | None:
-    """The repository name in *root*'s `origin` remote URL, or `None` if it has none."""
-    url = origin_url(root)
-    return repository_name(url) or None if url else None
-
-
-def _origin_owner(root: Path) -> str | None:
-    """The owner in *root*'s GitHub `origin` remote, or `None`."""
-    url = origin_url(root)
-    return github_owner(url) if url else None
-
-
-def _init_name(root: Path) -> tuple[str, str]:
-    """The name `init` gives *root* and where it came from, before `--config`.
-
-    The `origin` remote's repository name, else the root `pyproject.toml`'s
-    `[project].name`, else the directory's.
-
-    Returns:
-        The name, and its source: `the origin remote`, `pyproject.toml` or
-        `directory`.
-    """
-    remote = _git_remote_name(root)
-    if remote:
-        return remote, "the origin remote"
-    project = _project_name(root / "pyproject.toml")
-    if project:
-        return project, "pyproject.toml"
-    return root.name, "directory"
-
-
-def _init_preflight(root: Path, archetype: str) -> None:
-    """Refuse *root* unless it is a standard repository's Git worktree root.
-
-    A `node-lib` need not have a `pyproject.toml`: `init` creates it.
-
-    Raises:
-        AppException: Naming every failed condition at once.
-    """
-    failed: list[str] = []
-    if not (root / ".git").exists():
-        failed.append("not a Git worktree root (no .git entry here)")
-    if _project_name(root / "pyproject.toml") == _canonical(_own_name()):
-        failed.append("kiln's own source checkout")
-    required = () if archetype == "node-lib" else _INIT_FILES
-    failed.extend(f"missing {name}" for name in required if not (root / name).is_file())
-    if failed:
-        raise AppException("kiln init cannot run in {}: {}", root, "; ".join(failed))
-
-
-def _own_name() -> str:
-    """kiln's distribution name, as its `pyproject.toml` declared it at build."""
-    return metadata.metadata(_DISTRIBUTION)["Name"]
-
-
-def _canonical(name: str) -> str:
-    return re.sub(r"[-_.]+", "-", name).lower()
-
-
-def _project_name(pyproject: Path) -> str | None:
-    """`[project].name` of *pyproject*, canonicalised; `None` if absent or unreadable."""
-    if not pyproject.is_file():
-        return None
-    try:
-        document = DocumentUtils.read(pyproject)
-    except DocumentError:
-        return None
-    name = document.get("project", {}).get("name")
-    return _canonical(name) if isinstance(name, str) else None
-
-
-def _archive(
-    root: Path, paths: Sequence[str], tag: str = ""
-) -> tuple[Path, list[str]] | None:
-    """Copy each existing repo-relative *paths* under a fresh timestamped backup directory.
-
-    *tag* is appended to the directory name, so a copy that `generation.apply`'s
-    own backup (named by the bare timestamp) must not overwrite stays apart.
-
-    Returns:
-        The backup directory and the paths copied, or `None` if none existed.
-    """
-    existing = [relative for relative in paths if (root / relative).is_file()]
-    if not existing:
-        return None
-    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    base = root / umbrella.BACKUPS
-    archive = base / f"{stamp}{tag}"
-    suffix = 0
-    while archive.exists():
-        suffix += 1
-        archive = base / f"{stamp}{tag}-{suffix}"
-    for relative in existing:
-        destination = archive / relative
-        destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(root / relative, destination)
-    return archive, existing
-
-
 def _resolve_config(
     name: str,
     *,
@@ -779,12 +327,11 @@ def _resolve_config(
     owner: str | None,
     owner_error: str,
     allow_untested: bool,
-    fallback_owner: str | None = None,
 ) -> tuple[ConfigManager, Resolution]:
     """Merge defaults, the `--config` layer and the flags for a repository called *name*.
 
-    The owner is *owner* (`--owner`), else the `--config` layer's, else
-    *fallback_owner*; with none, *owner_error* is raised.
+    The owner is *owner* (`--owner`), else the `--config` layer's; with neither,
+    *owner_error* is raised.
 
     Raises:
         AppException: The archetype is unknown, a flag names an untested value,
@@ -815,7 +362,7 @@ def _resolve_config(
         frontend=frontend,
     )
     DictUtils.set(flags, "repository.name", name)
-    chosen = owner or (None if layer_owner else fallback_owner)
+    chosen = owner
     if not chosen and not layer_owner:
         raise AppException(owner_error)
     if chosen:

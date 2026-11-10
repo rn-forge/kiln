@@ -33,7 +33,7 @@ class Check:
     """One render-free check, and the module that owns it.
 
     An `ownership` check reads only kiln-owned files and blocks;
-    `kiln new`, `kiln init`, `kiln apply` and `kiln config` fail on these
+    `kiln new`, `kiln apply` and `kiln config` fail on these
     alone. A `quality` check reads repository-owned content against a rule the
     standard defines; `kiln doctor` runs it with the rest.
     """

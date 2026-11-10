@@ -51,7 +51,7 @@ class RepositoryConfig(ConfigModel):
     """The GitHub owner (user or organisation) that holds the repository. It
     forms the absolute URLs kiln writes: each package's `[project.urls]` and
     the docs site's `site_url` and `repo_url`. There is no default. `kiln new`
-    takes it from `--owner`, `kiln init` from the GitHub `origin` or `--owner`."""
+    takes it from `--owner`."""
     archetype: str
     """The repository's shape, which sets its modules, files and dependencies.
     Changing it re-renders most generated files, and `kiln apply` does not

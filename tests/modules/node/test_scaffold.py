@@ -34,7 +34,7 @@ from rn_forge.kiln.modules.node.scaffold import (
     reconcile_node,
     scaffold_node,
 )
-from rn_forge.kiln.modules.python.scaffold import add_task_tools, scaffold
+from rn_forge.kiln.modules.python.scaffold import scaffold
 
 FIXTURE = Path(__file__).parents[2] / "fixtures" / "scaffold" / "nx-angular"
 UV_FIXTURE = Path(__file__).parents[2] / "fixtures" / "scaffold" / "uv" / ".gitignore"
@@ -459,7 +459,6 @@ def test_s9_1_8_4_root_pyproject_is_bare_with_docs_tooling(tmp_path: Path) -> No
     assert not (root / "tests").exists()
     assert not (root / ".importlinter").exists()
     assert "mkdocs-material>=9.6" in document["dependency-groups"]["docs"]
-    assert add_task_tools(root, config) == []
     assert "mdformat" in " ".join(document["dependency-groups"]["docs"])
 
 

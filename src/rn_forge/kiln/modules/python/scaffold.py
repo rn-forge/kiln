@@ -31,9 +31,7 @@ __all__ = [
     "SAMPLE_TEST",
     "TASK_TOOLS",
     "add_package",
-    "add_task_tools",
     "docs_group",
-    "missing_task_tools",
     "reconcile_backend",
     "sample_test",
     "scaffold",
@@ -237,54 +235,6 @@ def _join_workspace(pyproject: Path, relative: str, name: str) -> None:
         },
     )
     _multiline_lists(pyproject)
-
-
-def missing_task_tools(root: Path, config: KilnConfig) -> list[str]:
-    """The task tools no dependency group of *root*'s `pyproject.toml` names.
-
-    In `TASK_TOOLS` order, then each `docs_group` entry's distribution name when
-    the docs profile is not `none`. A missing `[dependency-groups]` table means every tool is missing.
-    """
-    document = DocumentUtils.read_document(root / "pyproject.toml")
-    groups = DictUtils.as_mapping(document.get("dependency-groups"))
-    present = {
-        distribution(entry)
-        for group in groups.values()
-        for entry in cast("list[object]", group)
-        if isinstance(entry, str)
-    }
-    docs = [distribution(entry) for entry in docs_group(config)]
-    wanted = [*TASK_TOOLS, *(docs if config.docs_profile != "none" else ())]
-    return [tool for tool in wanted if tool not in present]
-
-
-def add_task_tools(root: Path, config: KilnConfig) -> list[str]:
-    """Append each task tool *root* lacks to its dependency groups; return the names.
-
-    A `dev` tool is added bare, as `_DEV_GROUP` writes it; a `docs` tool is added
-    as `docs_group` writes it, with its version floor. A missing group is created.
-    Comments survive, and nothing is written when no tool is missing.
-    """
-    added = missing_task_tools(root, config)
-    if not added:
-        return added
-    path = root / "pyproject.toml"
-    document = DocumentUtils.read_document(path)
-    if "dependency-groups" not in document:
-        document["dependency-groups"] = {}
-    groups = document["dependency-groups"]
-    docs = {distribution(entry): entry for entry in docs_group(config)}
-    for tool in added:
-        name, entry = ("docs", docs[tool]) if tool in docs else ("dev", tool)
-        if name not in groups:
-            groups[name] = []
-        groups[name].append(entry)
-    for group in ("dev", "docs"):
-        if group in groups:
-            _sort_group(groups[group])
-    DocumentUtils.write_document(path, document)
-    _multiline_lists(path)
-    return added
 
 
 def _sort_group(array: Any) -> None:

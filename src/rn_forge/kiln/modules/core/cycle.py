@@ -6,7 +6,6 @@ engine then stages, backs up and swaps them in, and writes `state.json` last.
 
 from __future__ import annotations
 
-import dataclasses
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 
@@ -16,7 +15,6 @@ from rn_forge.commons.findings import Finding, Severity
 from rn_forge.commons.fs.hashing import ContentHash
 from rn_forge.commons.fs.state import StateStore
 from rn_forge.commons.generation import (
-    Action,
     ApplyResult,
     ArtifactKind,
     Plan,
@@ -33,12 +31,9 @@ from rn_forge.kiln.modules.core.config.manager import PROVENANCE_KEY, ConfigMana
 
 __all__ = [
     "CycleRefused",
-    "adoption_plan",
     "apply",
     "classify",
-    "fence",
     "plan",
-    "unfenced",
 ]
 
 STATE_SCHEMA_VERSION = "1"
@@ -70,7 +65,6 @@ def plan(
     registry: ModuleRegistry | None = None,
     home: Path | None = None,
     provenance: Mapping[str, JsonValue] | None = None,
-    adopt: bool = False,
 ) -> Plan:
     """Render every enabled module's artifacts and classify them, writing nothing.
 
@@ -85,28 +79,12 @@ def plan(
             shape — `kiln new` and `kiln config-update`/`config-upgrade` pass their
             fresh `Resolution`'s, overriding any value carried forward from a
             previous `state.json`.
-        adopt: Plan as the first apply of an existing repository (`kiln init`):
-            any recorded state is ignored, and a managed file already equal to
-            its render is `unchanged` instead of a conflict.
 
     Raises:
         CycleRefused: A legacy kiln tree is present.
         AppException: The config is invalid.
     """
-    return _prepare(root, force, registry, home, provenance, adopt)[1]
-
-
-def adoption_plan(
-    root: Path, config: KilnConfig, *, registry: ModuleRegistry | None = None
-) -> Plan:
-    """The first-apply plan for an existing repository under *config*, writing nothing.
-
-    Unlike :func:`plan` this needs no `config.toml` on disk, and ignores any
-    `state.json`: a byte-identical whole file is `unchanged`, and every other
-    existing artifact is a `conflict`.
-    """
-    artifacts = _artifacts(ConfigManager(registry), config, root)
-    return _adopted(root, classify(root, artifacts, {}))
+    return _prepare(root, force, registry, home, provenance)[1]
 
 
 def apply(
@@ -118,7 +96,6 @@ def apply(
     home: Path | None = None,
     verify: Callable[[], None] | None = None,
     provenance: Mapping[str, JsonValue] | None = None,
-    adopt: bool = False,
     starters: str | None = None,
 ) -> ApplyResult:
     """Plan, then apply transactionally; see :func:`plan` for the arguments.
@@ -136,7 +113,7 @@ def apply(
             conflict, drift or missing artifact, or a write failed (after the
             tree and `state.json` were restored).
     """
-    store, planned = _prepare(root, force, registry, home, provenance, adopt, starters)
+    store, planned = _prepare(root, force, registry, home, provenance, starters)
     return generation.apply(
         root,
         planned,
@@ -154,7 +131,6 @@ def _prepare(
     registry: ModuleRegistry | None,
     home: Path | None,
     provenance: Mapping[str, JsonValue] | None = None,
-    adopt: bool = False,
     starters: str | None = None,
 ) -> tuple[StateStore[StateEntry], Plan]:
     refused = umbrella.legacy(root / umbrella.UMBRELLA, (home or rnf_home()) / "kiln")
@@ -189,9 +165,9 @@ def _prepare(
         schema_version=STATE_SCHEMA_VERSION,
         metadata=metadata,
     )
-    entries = {} if adopt else _without_converted(store.load(), artifacts)
+    entries = _without_converted(store.load(), artifacts)
     planned = classify(root, artifacts, entries, force=force)
-    return store, _adopted(root, planned) if adopt else planned
+    return store, planned
 
 
 def classify(
@@ -256,39 +232,6 @@ def _unfenced(root: Path, artifacts: Sequence[generation.Artifact]) -> list[Find
     ]
 
 
-def unfenced(root: Path, config: KilnConfig) -> list[Finding]:
-    """The `core.block-unfenced` findings for *config* in *root*, as `plan` would raise them."""
-    return _unfenced(root, _artifacts(ConfigManager(), config, root))
-
-
-def fence(root: Path, config: KilnConfig) -> list[str]:
-    """Fence each unfenced file `_unfenced` would report; return the paths rewritten.
-
-    The file becomes kiln's empty block, a blank line, then the file without
-    its `[importlinter]` section: that line and every line after it up to,
-    not including, the next line that starts with `[`.
-    """
-    artifacts = {a.path: a for a in _artifacts(ConfigManager(), config, root)}
-    rewritten = sorted(str(finding.path) for finding in unfenced(root, config))
-    for path in rewritten:
-        block = artifacts[path].block
-        assert block is not None
-        kept: list[str] = []
-        skipping = False
-        for line in _text(root / path).splitlines(keepends=True):
-            if line.rstrip("\r\n") == "[importlinter]":
-                skipping = True
-            elif skipping and line.startswith("["):
-                skipping = False
-            if not skipping:
-                kept.append(line)
-        (root / path).write_text(
-            block.begin.strip() + "\n" + block.end.strip() + "\n\n" + "".join(kept),
-            encoding="utf-8",
-        )
-    return rewritten
-
-
 def _text(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
@@ -307,21 +250,3 @@ def _without_converted(
         for key, entry in entries.items()
         if entry.kind is ArtifactKind.BLOCK or entry.path not in converted
     }
-
-
-def _adopted(root: Path, planned: Plan) -> Plan:
-    """*planned* with each byte-identical whole-file conflict settled as unchanged."""
-    changes = tuple(
-        dataclasses.replace(change, action=Action.UNCHANGED)
-        if change.action is Action.CONFLICT
-        and change.kind is ArtifactKind.MANAGED
-        and change.artifact is not None
-        and _bytes(root / change.path) == change.artifact.content.encode("utf-8")
-        else change
-        for change in planned.changes
-    )
-    return Plan(changes)
-
-
-def _bytes(path: Path) -> bytes | None:
-    return path.read_bytes() if path.is_file() else None

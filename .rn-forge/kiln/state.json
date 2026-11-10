@@ -345,7 +345,7 @@
     }
   },
   "metadata": {
-    "config_hash": "6b706407c762acd3e74df62f2d6e53b940301ddbcec543aec32b2839ebc450f0",
+    "config_hash": "5fa79d6d3f51e7cf5763ca89bac507b572ae0849a3f239faf494d1fb9bef47e9",
     "config_provenance": {
       "archetype.python-app.module": {
         "layer": "repo",

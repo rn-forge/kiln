@@ -54,7 +54,7 @@ RN_FORGE_TAGS = {
 ([ADR-0018](https://github.com/rn-forge/kiln/blob/main/docs/adr/ADR-0018.md))."""
 KILN_GIT = "git+https://github.com/rn-forge/kiln"
 KILN_REF = "feature/v1"
-"""The ref `kiln new` and `kiln init` pin. F7.2's release-1 cut makes it `v<version>`."""
+"""The ref `kiln new` pins. F7.2's release-1 cut makes it `v<version>`."""
 
 
 def kiln_command(ref: str, script: str = "kiln") -> str:
