@@ -1,7 +1,8 @@
 # Adding a package
 
-A `python-lib` repository starts with no packages, and each one is added with
-`kiln generate package`. The command writes the package's published URLs from
+A `python-lib` repository starts with the packages its `kiln new` config
+listed, if any, and `kiln generate package` adds the rest one at a time. The
+command writes the package's published URLs from
 `[repository] owner` and `name` in `.rn-forge/kiln/config.toml`, so it needs no
 git remote.
 

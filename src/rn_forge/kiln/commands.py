@@ -12,6 +12,7 @@ which `CliApp` maps to exit code 1.
 
 from __future__ import annotations
 
+import dataclasses
 import re
 import shutil
 import subprocess
@@ -28,7 +29,7 @@ from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding, Severity
 from rn_forge.commons.fs.documents import ConfigFormat, DocumentError, DocumentUtils
 from rn_forge.commons.fs.state import StateStore
-from rn_forge.commons.generation import StateEntry
+from rn_forge.commons.generation import ApplyResult, StateEntry
 from rn_forge.commons.lang.collections import DictUtils
 from rn_forge.commons.runtime.console import OutputMode, console
 from rn_forge.commons.runtime.subprocess import Process
@@ -59,7 +60,7 @@ from rn_forge.kiln.modules.node.scaffold import (
     scaffold_node,
 )
 from rn_forge.kiln.modules.python.artifacts import root_package
-from rn_forge.kiln.modules.python.config import MODULE_PATTERN
+from rn_forge.kiln.modules.python.config import MODULE_PATTERN, ArchetypeConfig
 from rn_forge.kiln.modules.python.scaffold import (
     add_package as python_add_package,
 )
@@ -246,7 +247,9 @@ def new(
 
     Without `--yes`, prints the resolved config and the artifacts it would
     produce, and writes nothing. With `--yes`, writes `config.toml`, scaffolds
-    the tree and applies it (kiln ADR-0004).
+    the tree and applies it (kiln ADR-0004). A `python-lib` config's `packages`
+    are then generated in order, as `kiln generate package` would; if any
+    fails, DIRECTORY is not created.
 
     `--backend` and `--frontend` are omitted (left `None`) unless given, so a
     config-selected value or the archetype's own default survives; passing
@@ -258,9 +261,9 @@ def new(
     Raises:
         AppException: `--archetype` is missing or unknown, no owner is given
             (`new.owner-required`), a flag names an
-            untested value without `--allow-untested`, a `python-lib` config
-            lists packages (`config.packages-at-new`), DIRECTORY is non-empty,
-            or the config, scaffold, apply or check step fails.
+            untested value without `--allow-untested`, DIRECTORY is non-empty,
+            or the config, scaffold, apply or check step fails, including a
+            `generate.*` error from one of a `python-lib` config's packages.
     """
     if json:
         console.set_mode(OutputMode.JSON)
@@ -279,9 +282,11 @@ def new(
         owner_error="new.owner-required: pass --owner <owner> or set "
         "repository.owner in --config",
         allow_untested=allow_untested,
-        allow_packages=False,
     )
     resolved = resolution.config
+    members = resolved.packages if resolved.archetype == "python-lib" else ()
+    declared = _declared_modules(resolved)
+    bare = _without_members(resolved)
 
     if not yes or dry_run:
         rows = _preview_rows(directory, resolved, manager)
@@ -292,22 +297,28 @@ def new(
         raise AppException("{} is not empty", directory)
 
     workspace = _stage(directory.name)
-    _write_config(workspace, resolved)
+    _write_config(workspace, bare)
 
     raw_backend = workspace.parent / "backend"
     raw_frontend = workspace.parent / "frontend"
-    scaffold_backend(raw_backend, resolved)
-    frontend_workspace = scaffold_node(raw_frontend, resolved)
-    reconcile_backend(raw_backend, workspace, resolved)
+    scaffold_backend(raw_backend, bare)
+    frontend_workspace = scaffold_node(raw_frontend, bare)
+    reconcile_backend(raw_backend, workspace, bare)
     if frontend_workspace is not None:
-        reconcile_node(workspace, frontend_workspace, resolved)
-    instructions_scaffold(workspace, resolved)
+        reconcile_node(workspace, frontend_workspace, bare)
+    instructions_scaffold(workspace, bare)
 
     result = cycle.apply(
         workspace, provenance=resolution.provenance_metadata(), starters=""
     )
+    for member in members:
+        _add_package(workspace, Path(member).name, declared.get(member))
     if resolved.docs_profile == "mkdocs":
-        packages = resolved.packages if resolved.archetype == "python-lib" else ()
+        packages = (
+            KilnConfig.load(workspace).packages
+            if resolved.archetype == "python-lib"
+            else ()
+        )
         generate.generate(workspace, packages)
     if frontend_workspace is not None:
         format_node(workspace)
@@ -410,7 +421,6 @@ def init(
         owner_error="init.owner-required: no GitHub origin to take the owner "
         "from; pass --owner <owner> or set repository.owner in --config",
         allow_untested=False,
-        allow_packages=True,
     )
     resolved = resolution.config
     _require_packages(root, resolved.packages)
@@ -769,7 +779,6 @@ def _resolve_config(
     owner: str | None,
     owner_error: str,
     allow_untested: bool,
-    allow_packages: bool,
     fallback_owner: str | None = None,
 ) -> tuple[ConfigManager, Resolution]:
     """Merge defaults, the `--config` layer and the flags for a repository called *name*.
@@ -777,13 +786,9 @@ def _resolve_config(
     The owner is *owner* (`--owner`), else the `--config` layer's, else
     *fallback_owner*; with none, *owner_error* is raised.
 
-    `new` starts a `python-lib` repository empty; `init` adopts one with its
-    members, so only it passes *allow_packages*.
-
     Raises:
         AppException: The archetype is unknown, a flag names an untested value,
-            the config is invalid, or a `python-lib` config lists packages
-            without *allow_packages*.
+            or the config is invalid.
     """
     layer_pins_kiln = False
     layer_owner: object = None
@@ -835,15 +840,7 @@ def _resolve_config(
 
     manager = ConfigManager()
     source = Source.parse(config) if config else None
-    resolution = manager.resolve(flags=flags, source=source)
-    resolved = resolution.config
-    if resolved.archetype == "python-lib" and resolved.packages and not allow_packages:
-        raise AppException(
-            "config.packages-at-new: a python-lib repository starts with no "
-            "packages; add each with 'kiln generate package <name>'"
-        )
-
-    return manager, resolution
+    return manager, manager.resolve(flags=flags, source=source)
 
 
 def apply(
@@ -900,19 +897,8 @@ def generate_package(
     if json:
         console.set_mode(OutputMode.JSON)
     root = umbrella.find_root(path.resolve())
-    config = ConfigManager().load(root)
-    remote = _package_preflight(root, config, name, module)
+    result = _add_package(root, name, module)
     relative = f"packages/{name}"
-
-    section: dict[str, object] = {"packages": [*config.packages, relative]}
-    if module is not None and module != root_package(name):
-        section["modules"] = {relative: module}
-    DocumentUtils.update(root / CONFIG_PATH, {"archetype": {"python-lib": section}})
-    config = ConfigManager().load(root)
-    python_add_package(root, config, name, remote)
-    docs_add_package(root, config, name)
-    result = cycle.apply(root)
-    generate.generate(root, config.packages)
 
     written = sorted(
         file.relative_to(root).as_posix()
@@ -928,6 +914,43 @@ def generate_package(
         },
         rows,
     )
+
+
+def _add_package(root: Path, name: str, module: str | None) -> ApplyResult:
+    """Add the package NAME to the `python-lib` repository at *root*; see `generate_package`."""
+    config = ConfigManager().load(root)
+    remote = _package_preflight(root, config, name, module)
+    relative = f"packages/{name}"
+
+    section: dict[str, object] = {"packages": [*config.packages, relative]}
+    if module is not None and module != root_package(name):
+        section["modules"] = {relative: module}
+    DocumentUtils.update(root / CONFIG_PATH, {"archetype": {"python-lib": section}})
+    config = ConfigManager().load(root)
+    python_add_package(root, config, name, remote)
+    docs_add_package(root, config, name)
+    result = cycle.apply(root)
+    generate.generate(root, config.packages)
+    return result
+
+
+def _declared_modules(config: KilnConfig) -> dict[str, str]:
+    """A `python-lib` config's `modules` table; empty for any other archetype."""
+    section = getattr(config.document, "archetype", None)
+    lib = section.python_lib if isinstance(section, ArchetypeConfig) else None
+    return dict(lib.modules) if config.archetype == "python-lib" and lib else {}
+
+
+def _without_members(config: KilnConfig) -> KilnConfig:
+    """*config* with a `python-lib`'s `packages` and `modules` emptied."""
+    section = getattr(config.document, "archetype", None)
+    if not isinstance(section, ArchetypeConfig) or section.python_lib is None:
+        return config
+    lib = section.python_lib.model_copy(update={"packages": [], "modules": {}})
+    bare = config.document.model_copy(
+        update={"archetype": section.model_copy(update={"python_lib": lib})}
+    )
+    return dataclasses.replace(config, document=bare)
 
 
 def _package_preflight(

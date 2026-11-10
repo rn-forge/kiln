@@ -103,10 +103,12 @@ Every path kiln writes or reads has exactly one of these kinds:
 - **Seeded** and **scaffolded** differ only in who writes them. A seeded file is
   an apply artifact, so a later `kiln apply` recreates it if it is absent and
   never touches it if present. Starter source is the exception: only
-  `kiln new` and `kiln generate package` write it, and a later `kiln apply`
-  does not recreate it. A scaffolded file (`pyproject.toml`, `README.md`, the
-  bodies of `CLAUDE.md`, `AGENTS.md` and `mkdocs.yml`, the first `src/` and
-  `tests/`) is written by `kiln new` before its first apply, and never again.
+  `kiln new` and `kiln generate package` write it (`kiln new` generates the
+  packages its config lists, and `kiln generate package` adds the rest one at
+  a time; *Revised 2026-11-09 (S16.7.10)*), and a later `kiln apply` does not
+  recreate it. A scaffolded file (`pyproject.toml`, `README.md`, the bodies of
+  `CLAUDE.md`, `AGENTS.md` and `mkdocs.yml`, the first `src/` and `tests/`) is
+  written by `kiln new` before its first apply, and never again.
 - "Nothing, including presence" for **seeded** is the target set by
   [ADR-0003](../adr/ADR-0003.md). The `generated` check skips a seeded state
   entry.
@@ -211,8 +213,9 @@ area's `nav` is `children`, `index-only`, `include` or `work`, and `work` lists
 the epic list and the epics in ranges of ten. The root `docs/` holds only
 cross-package material. Every other Python archetype has one root site: its
 internal workspace packages have no docs of their own, and their reference
-renders in the root site. A `python-lib` repository starts with no packages;
-`kiln generate package` adds them one at a time.
+renders in the root site. `kiln new` generates the packages a `python-lib`
+config lists, and `kiln generate package` adds the rest one at a time. *Revised
+2026-11-09 (S16.7.10).*
 
 ## 3. The dependency set
 

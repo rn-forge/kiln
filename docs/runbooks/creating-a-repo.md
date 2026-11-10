@@ -81,6 +81,10 @@ repo with `uv run --project ../kiln kiln <command>`.
 This is a development aid, not evidence that the repo bootstraps. It comes out
 before the repo is shared.
 
+A `python-lib` `--config` layer may list `packages` (and `modules`). `new`
+generates each member in order, as `kiln generate package` does, and fails as a
+whole, leaving no directory, if any member does not generate.
+
 What it does, in order, is the apply sequence in
 [the workspace architecture](../architecture/workspace.md#apply-sequence). Step
 2 shells out to `uv init` (and `pnpm create` / `nx g` for the `-ng` archetypes)
