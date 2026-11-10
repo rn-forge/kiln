@@ -145,7 +145,7 @@ def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
     is set to `<web_dir>/proxy.conf.json` and Nx's `nx-welcome.ts` is deleted.
 
     Every node repository gets `.nvmrc`, root `package.json`'s
-    `packageManager`, and coverage switched on for both unit-test executors in
+    `packageManager` and `name` (`@<repository name>/source`), and coverage switched on for both unit-test executors in
     `nx.json`, set after the copy, and its `release` block with the `pack` and
     `verify-dist` target defaults, each kept if `nx.json` already holds one.
     For a `node-lib` the workspace has no app: the fold stops there, after
@@ -185,6 +185,7 @@ def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
 
     (root / _NVMRC).write_text(f"{NODE_MAJOR}\n", encoding="utf-8")
     _pin_package_manager(root / "package.json")
+    _name_package(root / "package.json", config.name)
     _enable_coverage(root)
     _declare_release(root)
     if lib:
@@ -226,6 +227,12 @@ def format_node(workspace: Path) -> None:
 def _pin_package_manager(package_path: Path) -> None:
     package = DocumentUtils.read(package_path)
     package["packageManager"] = f"pnpm@{PNPM_VERSION}"
+    DocumentUtils.write(package_path, package)
+
+
+def _name_package(package_path: Path, repository: str) -> None:
+    package = DocumentUtils.read(package_path)
+    package["name"] = f"@{repository}/source"
     DocumentUtils.write(package_path, package)
 
 

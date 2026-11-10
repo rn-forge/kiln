@@ -991,3 +991,36 @@ def test_s16_7_7_7_the_policy_names_the_python_check() -> None:
     policy = page.split("## Template review policy")[1].split("\n## ")[0]
     assert "python-tool" in policy
     assert "tasks/python.yml" in policy
+
+
+def _named(name: str) -> str:
+    return json.dumps(
+        {"name": name, "dependencies": {"rxjs": "1"}, "devDependencies": {"nx": "1"}}
+    )
+
+
+def test_s16_7_8_5_parity_ignores_the_root_name_but_checks_it(
+    matrix: ModuleType, tmp_path: Path
+) -> None:
+    lib = _parity_files(**{"package.json": _named("@lib/source")})
+    web = _parity_files(**{"package.json": _named("@web/source")})
+    lib_dir, web_dir = _cells(tmp_path / "ok", lib, web)
+    assert matrix.parity_cells(lib_dir, web_dir) == []
+
+    bad_lib = _parity_files(**{"package.json": _named("@workspace/source")})
+    lib_dir, web_dir = _cells(tmp_path / "bad_lib", bad_lib, web)
+    assert matrix.parity_cells(lib_dir, web_dir) == ["differs: package.json name (lib)"]
+
+    bad_web = _parity_files(**{"package.json": _named("@workspace/source")})
+    lib_dir, web_dir = _cells(tmp_path / "bad_web", lib, bad_web)
+    assert matrix.parity_cells(lib_dir, web_dir) == ["differs: package.json name (web)"]
+
+    # `=` in a cell directory name is read as `-`.
+    root = tmp_path / "eq"
+    _write(root / "a=b", _parity_files(**{"package.json": _named("@a-b/source")}))
+    _write(root / "web", web)
+    assert matrix.parity_cells(root / "a=b", root / "web") == []
+
+    # No name at all is not reported for it.
+    lib_dir, web_dir = _cells(tmp_path / "none", _parity_files(), _parity_files())
+    assert matrix.parity_cells(lib_dir, web_dir) == []

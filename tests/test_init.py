@@ -1455,3 +1455,14 @@ def test_s16_7_4_4_node_lib_gets_both_seeds(node_repo: Path) -> None:
 
     assert (node_repo / "pyproject.toml").is_file()
     assert (node_repo / ".python-version").read_bytes() == b"3.14\n"
+
+
+def test_s16_7_8_4_init_leaves_an_existing_package_name(node_repo: Path) -> None:
+    package = node_repo / "package.json"
+    package.write_text('{"name": "@acme/other"}\n', encoding="utf-8")
+    _commit(node_repo)
+    before = package.read_bytes()
+
+    commands.init(**NODE_SELECTORS, yes=True)
+
+    assert package.read_bytes() == before

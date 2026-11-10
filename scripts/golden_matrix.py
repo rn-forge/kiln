@@ -431,6 +431,8 @@ def _parity_value(path: Path, relative: str, web: bool) -> object:
             if web and relative == "package.json":
                 # The one allowance: the web side's dependencies entry, nothing else.
                 value["dependencies"].pop(WEB_ONLY_DEPENDENCY, None)
+            if relative == "package.json":
+                value.pop("name", None)
             return value
         if relative.endswith((".yaml", ".yml")):
             value = YamlUtils.load(data.decode("utf-8"))
@@ -445,17 +447,33 @@ def _parity_value(path: Path, relative: str, web: bool) -> object:
     return data
 
 
+def _package_name_ok(path: Path) -> bool:
+    """False when *path* is a `package.json` whose `name` is not `@<directory name>/source`."""
+    try:
+        name = json.loads(path.read_bytes()).get("name")
+    except (OSError, ValueError, AttributeError):
+        return True
+    if name is None:
+        return True
+    return name == f"@{path.parent.name.replace('=', '-')}/source"
+
+
 def parity_cells(lib_dir: Path, web_dir: Path) -> list[str]:
     """Differences between the `PARITY_FILES` of two cells, one line each, in file order.
 
     `.json`, `.yaml` and `.yml` files compare parsed, the rest as bytes. The web
     side's `package.json` may carry `@rn-forge/ng` under `dependencies`, and its
     `.gitignore` the `WEB_ONLY_GITIGNORE_GROUPS`; the lib side's `tasks/node.yml`
-    may carry the `LIB_ONLY_TASKS`.
+    may carry the `LIB_ONLY_TASKS`. A `package.json` `name` is left out of the
+    comparison but must be `@<directory name>/source`, with `=` read as `-`.
     """
     lines: list[str] = []
     for relative in PARITY_FILES:
         lib, web = lib_dir / relative, web_dir / relative
+        if relative == "package.json":
+            for side, path in (("lib", lib), ("web", web)):
+                if not _package_name_ok(path):
+                    lines.append(f"differs: package.json name ({side})")
         if not lib.is_file():
             lines.append(f"missing in lib: {relative}")
         if not web.is_file():

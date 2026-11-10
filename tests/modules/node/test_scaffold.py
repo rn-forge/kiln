@@ -371,7 +371,7 @@ def test_s9_2_3_2_reconcile_node_pins_pnpm_in_package_json(
 
     package = DocumentUtils.read(root / "package.json")
     assert package["packageManager"] == "pnpm@12.15.0"
-    assert package["name"] == "@workspace/source"
+    assert package["name"] == "@demo/source"
 
 
 @pytest.mark.parametrize("lib", [True, False])
@@ -651,3 +651,37 @@ def test_s15_2_5_2_fixture_matches_the_pin() -> None:
 def test_s15_2_5_3_command_md_names_the_pin() -> None:
     text = (FIXTURE / "COMMAND.md").read_text(encoding="utf-8")
     assert angular.NX_VERSION in text.split("\n\n")[1]
+
+
+@pytest.mark.parametrize("lib", [True, False])
+def test_s16_7_8_1_reconcile_names_the_package_after_the_repository(
+    tmp_path: Path, lib: bool
+) -> None:
+    root, _ = _reconciled(tmp_path, lib=lib)
+
+    assert DocumentUtils.read(root / "package.json")["name"] == "@demo/source"
+
+
+@pytest.mark.parametrize("lib", [True, False])
+def test_s16_7_8_2_the_rest_of_package_json_is_unchanged(
+    tmp_path: Path, lib: bool
+) -> None:
+    root, _ = _reconciled(tmp_path, lib=lib)
+
+    expected = json.loads((FIXTURE / "package.json").read_text(encoding="utf-8"))
+    expected["name"] = "@demo/source"
+    expected["packageManager"] = "pnpm@12.15.0"
+    assert DocumentUtils.read(root / "package.json") == expected
+
+
+def test_s16_7_8_3_scaffold_command_is_unchanged(tmp_path: Path) -> None:
+    root = _lib_root(tmp_path)
+    raw = tmp_path / "frontend"
+    raw.mkdir()
+
+    workspace, calls = _scaffold_calls(root, raw)
+
+    create = next(c for c in calls if c.args[0] == "nx-workspace")
+    assert create.args[4] == "workspace"
+    assert create.args[3].startswith("create-nx-workspace@")
+    assert workspace == raw / "workspace"
