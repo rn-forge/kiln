@@ -21,7 +21,7 @@ Ask what the repo *ships*, not what it contains.
 | several independently versioned packages | `python-lib` |
 | an API service with no separate frontend package | `python-web-api` |
 | an API service plus an Nx frontend app | `python-web-app` |
-| several independently versioned UI libraries | `node-lib` *(deferred)* |
+| several independently versioned UI libraries | `node-lib` |
 | a standalone Nx frontend against remote APIs | `node-web-app` *(deferred)* |
 
 Then choose the flags: `--backend django|fastapi` for the web archetypes,
@@ -90,6 +90,26 @@ What it does, in order, is the apply sequence in
 2 shells out to `uv init` (and `pnpm create` / `nx g` for the `-ng` archetypes)
 and then reconciles the result; kiln never templates another tool's scaffold
 output.
+
+### A node-lib's libraries
+
+A `node-lib` starts with no library. Each one is made by the repository's own Nx
+generator step (F9.2), not by kiln:
+
+```bash
+pnpm exec nx g @nx/angular:library libs/<n> --name=<n> --prefix=<prefix> \
+  --publishable --importPath=@<scope>/<n> \
+  --unitTestRunner=vitest-angular --linter=eslint --interactive=false
+```
+
+The stock library template declares an `@angular/common` peer the new library
+does not use, so `task validate` fails at `node:lint` with
+`The "@angular/common" package is not used by "<n>" project (@nx/dependency-checks)`.
+Run `pnpm exec nx lint <n> --fix`: it removes that one line from
+`libs/<n>/package.json`, and `task validate` then passes. Do not add
+`ignoredDependencies` or switch the rule off, since either hides a real unused
+dependency. If the library later imports `@angular/common`, the same rule
+reports it missing; `--fix` adds it back.
 
 ## 3. Wire in what is genuinely this repo's
 

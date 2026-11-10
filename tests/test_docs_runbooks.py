@@ -207,3 +207,25 @@ def test_s16_7_3_10_docs() -> None:
     ):
         text = " ".join((ROOT / page).read_text(encoding="utf-8").split())
         assert "Revised 2026-11-09 (S16.7.3)" in text, page
+
+
+def _folded(page: str) -> str:
+    return " ".join((ROOT / page).read_text(encoding="utf-8").split())
+
+
+def test_s16_7_9_1_runbook_documents_the_library_step() -> None:
+    text = _folded("docs/runbooks/creating-a-repo.md")
+    for needle in (
+        "nx g @nx/angular:library",
+        "--publishable",
+        "pnpm exec nx lint <n> --fix",
+        "@angular/common",
+        "@nx/dependency-checks",
+    ):
+        assert needle in text, needle
+    assert not re.search(r"node-lib` \*\(deferred\)\*", text)
+
+
+def test_s16_7_9_2_f9_2_records_the_supersession() -> None:
+    text = _folded("docs/specs/epics/E9-node-archetypes/F9.2-one-node-scaffold.md")
+    assert text.count("Revised 2026-11-09 (S16.7.9)") == 1
