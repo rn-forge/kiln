@@ -31,9 +31,13 @@ and links here. A repository with no pre-kiln lineage is rebuilt with `kiln new`
    reference's, markers included, leaving the repository's text outside; add
    each `seeded` file the repository lacks and keep the repository's version
    of one it has; keep every `scaffolded` file the repository has; copy
-   `.rn-forge/kiln/config.toml` and `state.json` last. Source, tests and docs
-   content are never copied. Every repository-owned or seeded difference the
-   repository keeps is a step in its cutover story, not a rule here.
+   `.rn-forge/kiln/config.toml` and `state.json` last. `mkdocs.yml` is copied
+   whole like any managed file; its `nav` is a derived region, so run
+   `task docs:generate` after the copy and the repository's own pages fill it
+   (about 150 lines of the first diff are this, and no verdict row). Source,
+   tests and docs content are never copied. Every repository-owned or seeded
+   difference the repository keeps is a step in its cutover story, not a rule
+   here.
 
 1. **Read the diff file by file.** `git diff` and `git status`; every file
    deleted or replaced is a row. Delete the old workflows now

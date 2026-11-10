@@ -59,7 +59,10 @@ Use kiln from a checkout when it is not released:
 
 In the reference, `.rn-forge/kiln/state.json` lists every file's kind:
 
-- **`managed`**: the whole file is kiln's, taken byte-for-byte.
+- **`managed`**: the whole file is kiln's, taken byte-for-byte. `mkdocs.yml` is
+  copied whole like any managed file; its `nav` is a derived region, so run
+  `task docs:generate` after the copy and the repository's own pages fill it
+  (about 150 lines of the first diff are this, and no verdict row).
 - **`block`** (`.gitignore`, `.importlinter`, `CLAUDE.md`): only the fenced
   region is taken, markers included; the repository's text stays outside it.
 - **`seeded`**: the repository's version wins; a seed the repository lacks is

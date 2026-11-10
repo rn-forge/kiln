@@ -103,3 +103,14 @@ def test_s16_7_9_1_runbook_documents_the_library_step() -> None:
 def test_s16_7_9_2_f9_2_records_the_supersession() -> None:
     text = _folded("docs/specs/epics/E9-node-archetypes/F9.2-one-node-scaffold.md")
     assert text.count("Revised 2026-11-09 (S16.7.9)") == 1
+
+
+def test_s16_9_3_1_runbook_regenerates_the_nav() -> None:
+    flat = _flat()
+    start = flat.index("**Bring the files over.**")
+    end = flat.index("**Read the diff file by file.**")
+    step = flat[start:end]
+
+    assert "mkdocs.yml" in step
+    assert "task docs:generate" in step
+    assert "`nav` is a derived region" in step
