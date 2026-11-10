@@ -66,7 +66,14 @@ only: each of its commands is a `task:` call into a `tasks/*.yml` namespace.
 `kiln doctor`'s `task-layout` check enforces both halves of that, and fails if
 any gate stops being reachable from `validate`.
 
-## 2. One owner per file, or per block
+{% if node_lib %}**Nx's AI configuration.** Do not run Nx's AI-config generator
+(`nx configure-ai-agents`, or an `nx init`/`nx migrate` step that offers it). It
+writes a block between `<!-- nx configuration start -->` and
+`<!-- nx configuration end -->` into `CLAUDE.md` and `AGENTS.md` that tells
+readers to run `pnpm nx …`, which this section forbids. If the block is
+present, delete the block, markers included.
+
+{% endif %}## 2. One owner per file, or per block
 
 Every path kiln writes or reads has exactly one of these kinds:
 

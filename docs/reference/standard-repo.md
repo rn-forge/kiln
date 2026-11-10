@@ -44,6 +44,13 @@ call into a `tasks/*.yml` namespace. Every task carries a non-empty `desc:`.
 In a workspace archetype, `build` and `version` take a package name after `--`
 (`task version -- rn-forge-commons`); given none, they act on every member.
 
+In a `node-lib` repository, do not run Nx's AI-config generator
+(`nx configure-ai-agents`, or an `nx init`/`nx migrate` step that offers it). It
+writes a block between `<!-- nx configuration start -->` and
+`<!-- nx configuration end -->` into `CLAUDE.md` and `AGENTS.md` that tells
+readers to run `pnpm nx …`, which this section forbids. If the block is present,
+delete the block, markers included.
+
 **`required_validate`**, per archetype — the tasks that must stay reachable from
 `validate`, enforced by `kiln doctor`'s `task-layout` check and by
 `kiln doctor`'s `gate.shrunk`:

@@ -689,6 +689,15 @@ def test_s9_3_6_4_release_none_drops_the_release_app_rows(tmp_path: Path) -> Non
     assert "SONAR_TOKEN" in off
 
 
+def test_s16_9_10_1_node_standard_forbids_nxs_ai_block(tmp_path: Path) -> None:
+    node = _section(_rendered(_root(tmp_path / "node", "node-lib"))[STANDARD], 1)
+    assert "<!-- nx configuration start -->" in node
+    assert "<!-- nx configuration end -->" in node
+    assert "delete the block" in node
+    lib = _rendered(_root(tmp_path / "lib", "python-lib"))[STANDARD]
+    assert "nx configuration" not in lib
+
+
 @pytest.mark.parametrize(
     "archetype",
     ("python-app", "python-tool", "python-lib", "python-web-api", "python-web-app"),
