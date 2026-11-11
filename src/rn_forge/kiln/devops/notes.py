@@ -1,4 +1,4 @@
-"""Release notes: a section of a Keep a Changelog file."""
+"""Release notes: a section of a Keep a Changelog or `nx release` file."""
 
 from __future__ import annotations
 
@@ -6,10 +6,11 @@ import re
 
 
 def changelog_section(changelog: str, version: str) -> str:
-    """Return the body under `## [<version>]` up to the next `## [` heading.
+    """Return the body under the version's heading up to the next `## ` heading.
 
-    The heading is `## [<version>]` followed by the end of the line or
-    ` - <date>`; the version must match exactly.
+    The heading is `## [<version>]` (Keep a Changelog) or `## <version>`
+    (`nx release`), followed by the end of the line or ` - <date>` / ` (<date>)`
+    respectively; the version must match exactly.
 
     Args:
         changelog: The text of a Keep a Changelog file.
@@ -22,14 +23,16 @@ def changelog_section(changelog: str, version: str) -> str:
         ValueError: The version has no heading, or its body is empty.
     """
     heading = re.compile(
-        rf"^## \[{re.escape(version)}\](?: - .*)?[ \t]*$", re.MULTILINE
+        rf"^## (?:\[{re.escape(version)}\](?: - .*)?|{re.escape(version)}(?: \(.*\))?)"
+        r"[ \t]*$",
+        re.MULTILINE,
     )
     match = heading.search(changelog)
     if match is None:
-        raise ValueError(f"no `## [{version}]` heading in the changelog")
+        raise ValueError(f"no heading for version {version} in the changelog")
     rest = changelog[match.end() :]
-    following = re.search(r"^## \[", rest, re.MULTILINE)
+    following = re.search(r"^## ", rest, re.MULTILINE)
     body = (rest[: following.start()] if following else rest).strip()
     if not body:
-        raise ValueError(f"the `## [{version}]` section is empty")
+        raise ValueError(f"the section for version {version} is empty")
     return body

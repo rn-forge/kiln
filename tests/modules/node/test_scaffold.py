@@ -31,6 +31,7 @@ from rn_forge.kiln.modules.node.angular import (
 from rn_forge.kiln.modules.registry import builtin
 from rn_forge.kiln.modules.python.artifacts import render
 from rn_forge.kiln.modules.node.scaffold import (
+    _RELEASE_TARGET_DEFAULTS,
     reconcile_node,
     scaffold_node,
 )
@@ -547,7 +548,7 @@ PACK_DEFAULTS = {
         "dependsOn": ["build"],
         "options": {
             "cwd": "{workspaceRoot}",
-            "command": "node tools/ci/resolve-dist-workspace-deps.mjs dist/{projectRoot}/package.json && mkdir -p dist/tarballs && npm pack ./dist/{projectRoot} --pack-destination dist/tarballs",
+            "command": "task ci:dist:resolve -- dist/{projectRoot} && mkdir -p dist/tarballs && npm pack ./dist/{projectRoot} --pack-destination dist/tarballs",
         },
     },
     "verify-dist": {
@@ -556,7 +557,16 @@ PACK_DEFAULTS = {
         "cache": False,
         "options": {
             "cwd": "{workspaceRoot}",
-            "command": "node tools/ci/verify-dist-manifest.mjs dist/{projectRoot}",
+            "command": "task ci:dist:verify -- dist/{projectRoot}",
+        },
+    },
+    "verify-consumer": {
+        "executor": "nx:run-commands",
+        "dependsOn": ["pack"],
+        "cache": False,
+        "options": {
+            "cwd": "{workspaceRoot}",
+            "command": "task ci:consumer -- {projectRoot}",
         },
     },
 }
@@ -595,6 +605,7 @@ def test_s9_3_5_3_reconcile_node_keeps_a_release_nx_json_already_holds(
     nx["release"] = mine
     nx["targetDefaults"]["pack"] = {"cache": False}
     nx["targetDefaults"]["verify-dist"] = {"cache": True}
+    nx["targetDefaults"]["verify-consumer"] = {"cache": True}
     DocumentUtils.write(workspace / "nx.json", nx)
 
     reconcile_node(root, workspace, KilnConfig.load(root))
@@ -603,9 +614,11 @@ def test_s9_3_5_3_reconcile_node_keeps_a_release_nx_json_already_holds(
     assert written["release"] == mine
     assert written["targetDefaults"]["pack"] == {"cache": False}
     assert written["targetDefaults"]["verify-dist"] == {"cache": True}
+    assert written["targetDefaults"]["verify-consumer"] == {"cache": True}  # S9.4.5.10
 
 
 def test_s9_3_5_4_release_values_are_ngkits() -> None:
+    pytest.skip("ngkit's nx.json changes in its cutover (F9.4)")
     ngkit = Path(__file__).resolve().parents[3].parent / "ngkit"
     if not (ngkit / ".git").exists():
         pytest.skip("no ngkit checkout beside this repository")
@@ -619,6 +632,17 @@ def test_s9_3_5_4_release_values_are_ngkits() -> None:
     assert RELEASE == theirs["release"]
     assert PACK_DEFAULTS["pack"] == theirs["targetDefaults"]["pack"]
     assert PACK_DEFAULTS["verify-dist"] == theirs["targetDefaults"]["verify-dist"]
+
+
+def test_s9_4_4_3_pack_and_verify_call_the_ci_dist_tasks() -> None:
+    assert PACK_DEFAULTS["pack"]["options"]["command"] == (
+        "task ci:dist:resolve -- dist/{projectRoot} && mkdir -p dist/tarballs"
+        " && npm pack ./dist/{projectRoot} --pack-destination dist/tarballs"
+    )
+    assert PACK_DEFAULTS["verify-dist"]["options"]["command"] == (
+        "task ci:dist:verify -- dist/{projectRoot}"
+    )
+    assert _RELEASE_TARGET_DEFAULTS == PACK_DEFAULTS
 
 
 def test_s9_2_6_2_nx_json_is_identical_in_both_cells(tmp_path: Path) -> None:
@@ -684,3 +708,20 @@ def test_s16_7_8_3_scaffold_command_is_unchanged(tmp_path: Path) -> None:
     assert create.args[4] == "workspace"
     assert create.args[3].startswith("create-nx-workspace@")
     assert workspace == raw / "workspace"
+
+
+@pytest.mark.parametrize("lib", [True, False])
+def test_s9_4_5_10_verify_consumer_default_is_written(
+    tmp_path: Path, lib: bool
+) -> None:
+    root, _ = _reconciled(tmp_path, lib=lib)
+    written = DocumentUtils.read(root / "nx.json")
+    assert written["targetDefaults"]["verify-consumer"] == {
+        "executor": "nx:run-commands",
+        "dependsOn": ["pack"],
+        "cache": False,
+        "options": {
+            "cwd": "{workspaceRoot}",
+            "command": "task ci:consumer -- {projectRoot}",
+        },
+    }

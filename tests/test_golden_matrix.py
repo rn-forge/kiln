@@ -356,7 +356,7 @@ def _git(cwd: Path, *args: str) -> None:
 
 
 def test_s9_1_12_1_ngkit_files_skip_check_template(matrix: ModuleType) -> None:
-    assert len(matrix.NGKIT_FILES) == 10
+    assert len(matrix.NGKIT_FILES) == 6
     assert not any("check-template" in name for name in matrix.NGKIT_FILES)
     assert matrix.NGKIT_REF == "0c2cd2a"
 

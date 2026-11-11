@@ -225,7 +225,7 @@ tasks:
       - git push origin "refs/tags/$TAG"
 
   release:github:
-    desc: "CI only: Create the GitHub Release for TAG as a draft, from the tarballs and release-notes.mjs."
+    desc: "CI only: Create the GitHub Release for TAG as a draft, from the tarballs and kiln-devops notes."
     cmds:
       - |
         tag="$TAG"
@@ -233,7 +233,7 @@ tasks:
         if gh release view "$tag" --json isDraft --jq .isDraft >/dev/null 2>&1; then
           gh release delete "$tag" --yes
         fi
-        node tools/ci/release-notes.mjs "${tag#v}" > "$RUNNER_TEMP/notes.md"
+        {{.DEVOPS}} notes CHANGELOG.md "${tag#v}" > "$RUNNER_TEMP/notes.md"
         gh release create "$tag" dist/tarballs/*.tgz --verify-tag --title "$tag" --notes-file "$RUNNER_TEMP/notes.md" --draft
 
   release:publish:
@@ -282,8 +282,23 @@ tasks:
     desc: "CI only: Build Compodoc and Storybook and assemble them under the MkDocs site in [[ site_dir ]]."
     cmds:
       - pnpm exec nx run-many -t compodoc build-storybook
-      - node tools/ci/assemble-site.mjs [[ site_dir ]]
-{% endif %}{% endif %}{% if not node_lib %}
+      - "{{.DEVOPS}} site-assemble [[ site_dir ]]"
+{% endif %}{% endif %}{% if node %}
+  dist:resolve:
+    desc: "CI only: Resolve the workspace: ranges in a built package's package.json (-- <dist-dir>)."
+    cmds:
+      - "{{.DEVOPS}} dist-resolve {{.CLI_ARGS}}"
+
+  dist:verify:
+    desc: "CI only: Check a built package's package.json: no workspace: ranges; name, version, entry point and types present (-- <dist-dir>)."
+    cmds:
+      - "{{.DEVOPS}} dist-verify {{.CLI_ARGS}}"
+
+  consumer:
+    desc: "CI only: Install a packed library per peer cell and smoke-test it (-- <project-root>)."
+    cmds:
+      - "{{.DEVOPS}} consumer {{.CLI_ARGS}}"
+{% endif %}{% if not node_lib %}
   plan:
     desc: "CI only: Print the plan's outputs for $GITHUB_OUTPUT."
     silent: true

@@ -927,3 +927,16 @@ def test_s16_9_5_3_the_standard_names_the_scratch_root(
     standard = _rendered(_root(tmp_path, archetype))[STANDARD]
     assert ".tmp/" in standard
     assert "scratch root" in standard
+
+
+def test_s9_4_5_12_the_section_says_how_a_library_declares_its_matrix(
+    tmp_path: Path,
+) -> None:
+    section = _squash(_declares(_node_lib(tmp_path)))
+    for phrase in (
+        '"verify-consumer": {}',
+        "workspace-ci.consumer",
+        "package.json",
+        "s945-kiln-devops-consumer",
+    ):
+        assert phrase in section, phrase

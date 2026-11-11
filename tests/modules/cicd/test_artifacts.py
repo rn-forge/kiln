@@ -6,6 +6,7 @@ Also proves the five properties every F4.3 story owes its module
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import os
@@ -2342,9 +2343,11 @@ def test_s9_1_1_3_node_lib_dependabot_adds_npm_beside_uv(
     assert list(npm["groups"]) == ["npm"]
 
 
-# S9.1.10 — the `tools/ci/` helpers are generated.
+# S9.1.10 — retired by S9.4.4: `kiln-devops` runs the helpers.
 
-NODE_HELPERS = tuple(
+NGKIT = Path(__file__).resolve().parents[4] / "ngkit"
+NGKIT_REF = "0c2cd2a"
+RETIRED_HELPERS = tuple(
     f"tools/ci/{name}.mjs"
     for name in (
         "resolve-dist-workspace-deps",
@@ -2353,13 +2356,60 @@ NODE_HELPERS = tuple(
         "release-notes",
     )
 )
-NGKIT = Path(__file__).resolve().parents[4] / "ngkit"
-NGKIT_REF = "0c2cd2a"
 
 
-def test_s9_1_10_1_node_lib_renders_the_helpers_and_no_others(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("archetype", "extra"),
+    [
+        ("python-tool", ""),
+        ("python-lib", ""),
+        ("node-lib", ""),
+        ("python-web-app", 'frontend = "angular"'),
+    ],
+)
+def test_s9_4_4_4_no_rendered_file_names_tools_ci(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _cell_root(tmp_path, archetype, extra)
+    cycle.apply(root, home=tmp_path / "home")
+    leaks = [
+        path.relative_to(root).as_posix()
+        for path in sorted(root.rglob("*"))
+        if path.is_file()
+        and ".git/" not in path.as_posix()
+        and b"tools/ci" in path.read_bytes()
+    ]
+    assert leaks == []
+
+
+def test_s9_4_4_5_apply_deletes_the_retired_helpers(tmp_path: Path) -> None:
+    root = _root(tmp_path, "node-lib")
+    cycle.apply(root, home=tmp_path / "home")
+    state_path = root / ".rn-forge" / "kiln" / "state.json"
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    for path in RETIRED_HELPERS:
+        body = "// retired\n"
+        target = root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(body, encoding="utf-8")
+        state["entries"][path] = {
+            "begin_marker": None,
+            "content_hash": hashlib.sha256(body.encode()).hexdigest(),
+            "end_marker": None,
+            "kind": "managed",
+            "path": path,
+        }
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+    cycle.apply(root, home=tmp_path / "home")
+    assert not any((root / path).exists() for path in RETIRED_HELPERS)
+    after = json.loads(state_path.read_text(encoding="utf-8"))["entries"]
+    assert not set(RETIRED_HELPERS) & set(after)
+    assert [f.code for f in checks.run(root) if f.code.startswith("artifact")] == []
+
+
+def test_s9_4_4_4_node_lib_renders_nothing_under_tools(tmp_path: Path) -> None:
     rendered = _rendered(_root(tmp_path, "node-lib"))
-    assert {p for p in rendered if p.startswith("tools/")} == set(NODE_HELPERS)
+    assert not any(p.startswith("tools/") for p in rendered)
     assert not any("check-template" in p for p in rendered)
 
 
@@ -2378,83 +2428,6 @@ def test_s9_1_10_1_other_archetypes_render_none(
 ) -> None:
     rendered = _rendered(_cell_root(tmp_path, archetype, extra))
     assert not any(p.startswith("tools/") for p in rendered)
-
-
-def _without_t7(body: str) -> str:
-    """Undo S9.1.11's two `assemble-site.mjs` changes, so the rest can be compared with ngkit's."""
-    for new, old in T7_HUNKS:
-        assert new in body, new
-        body = body.replace(new, old)
-    return body
-
-
-T7_HUNKS = (
-    (
-        " * Assembles the docs site into the directory given as the first argument\n"
-        " * (`dist/site/` when none is given) from every project that declares\n",
-        " * Assembles the docs site into `dist/site/` from every project that declares\n",
-    ),
-    (
-        " * plus a generated `index.html` (unless the site already has one) and\n"
-        " * `.nojekyll`.\n"
-        " * Existing content of the site directory is kept.\n",
-        " * plus a generated `index.html` and `.nojekyll`.\n",
-    ),
-    (
-        " * Usage: node assemble-site.mjs [site-dir]   (run from the workspace root)",
-        " * Usage: node assemble-site.mjs   (run from the workspace root)",
-    ),
-    ("  readFileSync,\n", "  readFileSync,\n  rmSync,\n"),
-    (
-        "import { basename, join, resolve } from 'node:path';",
-        "import { basename, join } from 'node:path';",
-    ),
-    (
-        "const site = process.argv[2]\n  ? resolve(root, process.argv[2])\n  : join(root, 'dist', 'site');",
-        "const site = join(root, 'dist', 'site');",
-    ),
-    (
-        "mkdirSync(site, { recursive: true });",
-        "rmSync(site, { recursive: true, force: true });\nmkdirSync(site, { recursive: true });",
-    ),
-    (
-        "if (!existsSync(join(site, 'index.html'))) {\n"
-        "  writeFileSync(\n    join(site, 'index.html'),\n    `<!doctype html>",
-        "writeFileSync(\n  join(site, 'index.html'),\n  `<!doctype html>",
-    ),
-    ("</html>\n`,\n  );\n}\n", "</html>\n`,\n);\n"),
-)
-
-
-@pytest.mark.parametrize("path", NODE_HELPERS)
-def test_s9_1_10_2_body_is_ngkits_under_t1(tmp_path: Path, path: str) -> None:
-    lines = _rendered(_root(tmp_path, "node-lib"))[path].splitlines()
-    assert lines[0] == "#!/usr/bin/env node"
-    assert lines[1].startswith("// Generated by kiln ")
-    assert "ci-template" not in "\n".join(lines)
-    if not (NGKIT / ".git").exists():
-        pytest.skip("no ngkit checkout beside this repository")
-    golden = subprocess.run(
-        ["git", "-C", str(NGKIT), "show", f"{NGKIT_REF}:{path}"],
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.splitlines()
-    assert golden[0] == lines[0]
-    assert golden[1].startswith("// ci-template:")
-    body = "\n".join(lines[2:])
-    if path.endswith("assemble-site.mjs"):
-        body = _without_t7(body)
-    assert golden[2:] == body.splitlines()
-
-
-def test_s9_1_10_3_a_hand_edit_is_drift(tmp_path: Path) -> None:
-    root = _root(tmp_path, "node-lib")
-    cycle.apply(root, home=tmp_path / "home")
-    helper = root / NODE_HELPERS[0]
-    helper.write_text(helper.read_text() + "// edit\n", encoding="utf-8")
-    codes = [f.code for f in checks.run(root)]
-    assert "artifact.drift" in codes
 
 
 # S9.1.2 — affected CI.
@@ -2969,71 +2942,6 @@ def test_s9_1_11_2_actionlint_passes(tmp_path: Path) -> None:
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
-
-
-def _assemble(tmp_path: Path, *args: str, existing: bool) -> Path:
-    if shutil.which("node") is None:
-        pytest.skip("node is not on PATH")
-    root = _root(tmp_path / "cell", "node-lib")
-    cycle.apply(root, home=tmp_path / "home")
-    stub = tmp_path / "bin"
-    stub.mkdir()
-    pnpm = stub / "pnpm"
-    pnpm.write_text("#!/bin/sh\necho '[]'\n")
-    pnpm.chmod(0o755)
-    if existing:
-        (root / ".docs-site").mkdir()
-        (root / ".docs-site" / "index.html").write_text("mkdocs")
-        (root / ".docs-site" / "guide.html").write_text("guide")
-    subprocess.run(
-        ["node", "tools/ci/assemble-site.mjs", *args],
-        cwd=root,
-        check=True,
-        env={**os.environ, "PATH": f"{stub}:{os.environ['PATH']}"},
-    )
-    return root
-
-
-def test_s9_1_11_4_site_dir_is_the_first_argument(tmp_path: Path) -> None:
-    root = _assemble(tmp_path, ".docs-site", existing=False)
-    assert (root / ".docs-site" / "index.html").is_file()
-    assert not (root / "dist" / "site").exists()
-
-
-def test_s9_1_11_4_the_default_site_dir_is_dist_site(tmp_path: Path) -> None:
-    root = _assemble(tmp_path, existing=False)
-    assert (root / "dist" / "site" / "index.html").is_file()
-
-
-def test_s9_1_11_4_existing_content_and_index_are_kept(tmp_path: Path) -> None:
-    root = _assemble(tmp_path, ".docs-site", existing=True)
-    site = root / ".docs-site"
-    assert (site / "index.html").read_text() == "mkdocs"
-    assert (site / "guide.html").read_text() == "guide"
-    assert (site / ".nojekyll").is_file()
-
-
-def test_s9_3_1_4_no_doc_target_keeps_index_and_makes_no_subsites(
-    tmp_path: Path,
-) -> None:
-    root = _assemble(tmp_path, ".docs-site", existing=True)
-    site = root / ".docs-site"
-    assert (site / "index.html").read_text() == "mkdocs"
-    assert (site / ".nojekyll").is_file()
-    assert not (site / "api").exists()
-    assert not (site / "storybook").exists()
-
-
-def test_s9_3_1_5_assemble_site_is_braced_and_its_comment_is_short(
-    tmp_path: Path,
-) -> None:
-    text = _rendered(_root(tmp_path, "node-lib"))["tools/ci/assemble-site.mjs"]
-    lines = text.splitlines()
-    guard = [ln for ln in lines if ln.startswith("if (!existsSync(")]
-    assert guard == ["if (!existsSync(join(site, 'index.html'))) {"]
-    start = next(i for i, ln in enumerate(lines) if ln == "/**")
-    end = next(i for i, ln in enumerate(lines) if ln == " */")
-    assert all(len(ln) <= 80 for ln in lines[start : end + 1])
 
 
 def test_s9_1_11_6_the_idea_row_is_gone() -> None:
@@ -3791,13 +3699,6 @@ def test_s15_5_3_2_node_lib_on(tmp_path: Path) -> None:
     release_steps = str(jobs["release"]["steps"])
     assert "steps.state.outputs.mode == 'released'" in release_steps
     assert "verify-release" not in job["needs"]  # type: ignore[operator]
-
-
-def test_s16_7_1_5_assemble_header(tmp_path: Path) -> None:
-    text = _rendered(_root(tmp_path, "node-lib"))["tools/ci/assemble-site.mjs"]
-    header = text[: text.index("*/")].replace("\n * ", " ")
-    assert "(`dist/site/` when none is given)" in header
-    assert len(re.findall(r"dist/site/(?![\w<])", header)) == 1
 
 
 def test_s16_7_4_5_the_setup_action_follows_the_constant(

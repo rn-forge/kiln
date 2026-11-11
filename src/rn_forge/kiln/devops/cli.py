@@ -6,17 +6,23 @@ import argparse
 import json
 import os
 import re
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from typing import Any
 
 from rn_forge.kiln.devops import (
     ci,
+    consumer,
+    dist,
     github,
     integration,
     licenses,
     notes,
+    nx,
     requirements,
+    site,
     umbrella,
     uv,
     verify_release,
@@ -89,6 +95,23 @@ def _parser() -> argparse.ArgumentParser:
     )
     changelog.add_argument("changelog", metavar="CHANGELOG")
     changelog.add_argument("version", metavar="VERSION")
+    resolve = commands.add_parser(
+        "dist-resolve", help="rewrite `workspace:` ranges in a dist package.json"
+    )
+    resolve.add_argument("dist_dir", metavar="DIST_DIR")
+    check = commands.add_parser(
+        "dist-verify", help="fail when a dist package.json is not publishable"
+    )
+    check.add_argument("dist_dir", metavar="DIST_DIR")
+    assemble = commands.add_parser(
+        "site-assemble", help="assemble the docs site from compodoc and storybook"
+    )
+    assemble.add_argument("site_dir", nargs="?", default=None, metavar="SITE_DIR")
+    smoke_consumer = commands.add_parser(
+        "consumer", help="install a packed library per peer cell and smoke-test it"
+    )
+    smoke_consumer.add_argument("project_root", metavar="PROJECT_ROOT")
+    smoke_consumer.add_argument("--cell", default=None)
     policy = commands.add_parser(
         "licenses", help="fail when a dependency's licence matches the deny list"
     )
@@ -203,6 +226,75 @@ def _notes(args: argparse.Namespace) -> int:
         print(error, file=sys.stderr)
         return 1
     return 0
+
+
+def _read_manifest(dist_dir: str) -> tuple[Path, dict[str, Any]] | None:
+    path = Path.cwd() / dist_dir / "package.json"
+    try:
+        manifest: dict[str, Any] = json.loads(path.read_text(encoding="utf-8"))
+        return path, manifest
+    except (OSError, ValueError) as error:
+        print(f"Could not read/parse {path} ({error})", file=sys.stderr)
+        return None
+
+
+def _dist_resolve(args: argparse.Namespace) -> int:
+    read = _read_manifest(args.dist_dir)
+    if read is None:
+        return 1
+    path, manifest = read
+    root = Path.cwd()
+    shown = f"{args.dist_dir}/package.json"
+    try:
+        resolved, changed = dist.resolve(manifest, lambda: nx.local_versions(root))
+    except (ValueError, OSError, subprocess.CalledProcessError) as error:
+        print(error, file=sys.stderr)
+        return 1
+    if changed:
+        path.write_text(json.dumps(resolved, indent=2) + "\n", encoding="utf-8")
+        print(f"Resolved workspace: protocol dependencies in {shown}")
+    else:
+        print(f"No workspace: protocol dependencies found in {shown}")
+    return 0
+
+
+def _dist_verify(args: argparse.Namespace) -> int:
+    read = _read_manifest(args.dist_dir)
+    if read is None:
+        return 1
+    found = dist.problems(read[1])
+    if found:
+        print(
+            f"Dist manifest verification failed for {args.dist_dir}:\n", file=sys.stderr
+        )
+        for problem in found:
+            print(f"  - {problem}", file=sys.stderr)
+        return 1
+    print(f"Dist manifest verification passed for {args.dist_dir}")
+    return 0
+
+
+def _site_assemble(args: argparse.Namespace) -> int:
+    root = Path.cwd()
+    target = Path(args.site_dir) if args.site_dir else Path("dist/site")
+    repository = os.environ.get("GITHUB_REPOSITORY", "").partition("/")[2]
+    try:
+        projects = {
+            target_name: [
+                (project, nx.project_root(root, project))
+                for project in nx.projects(root, target_name)
+            ]
+            for target_name in ("compodoc", "build-storybook")
+        }
+        site.assemble(root, root / target, projects, repository or None)
+    except (OSError, subprocess.CalledProcessError) as error:
+        print(error, file=sys.stderr)
+        return 1
+    return 0
+
+
+def _consumer(args: argparse.Namespace) -> int:
+    return consumer.run(Path.cwd(), args.project_root, args.cell)
 
 
 def _licenses(args: argparse.Namespace) -> int:
@@ -328,6 +420,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "notes":
         return _notes(args)
+    if args.command == "dist-resolve":
+        return _dist_resolve(args)
+    if args.command == "dist-verify":
+        return _dist_verify(args)
+    if args.command == "site-assemble":
+        return _site_assemble(args)
+    if args.command == "consumer":
+        return _consumer(args)
     if args.command == "licenses":
         return _licenses(args)
     if args.command == "umbrella":

@@ -66,7 +66,7 @@ _RELEASE_TARGET_DEFAULTS = {
         "dependsOn": ["build"],
         "options": {
             "cwd": "{workspaceRoot}",
-            "command": "node tools/ci/resolve-dist-workspace-deps.mjs dist/{projectRoot}/package.json && mkdir -p dist/tarballs && npm pack ./dist/{projectRoot} --pack-destination dist/tarballs",
+            "command": "task ci:dist:resolve -- dist/{projectRoot} && mkdir -p dist/tarballs && npm pack ./dist/{projectRoot} --pack-destination dist/tarballs",
         },
     },
     "verify-dist": {
@@ -75,11 +75,20 @@ _RELEASE_TARGET_DEFAULTS = {
         "cache": False,
         "options": {
             "cwd": "{workspaceRoot}",
-            "command": "node tools/ci/verify-dist-manifest.mjs dist/{projectRoot}",
+            "command": "task ci:dist:verify -- dist/{projectRoot}",
+        },
+    },
+    "verify-consumer": {
+        "executor": "nx:run-commands",
+        "dependsOn": ["pack"],
+        "cache": False,
+        "options": {
+            "cwd": "{workspaceRoot}",
+            "command": "task ci:consumer -- {projectRoot}",
         },
     },
 }
-"""`nx.json` `targetDefaults` for the `pack` and `verify-dist` targets."""
+"""`nx.json` `targetDefaults` for the `pack`, `verify-dist` and `verify-consumer` targets."""
 
 _EXCLUDED_TOP_LEVEL = {".git", "node_modules", ".nx"}
 

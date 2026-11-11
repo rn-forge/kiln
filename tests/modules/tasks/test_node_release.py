@@ -97,7 +97,7 @@ def repo(cell: Path, tmp_path: Path) -> Path:
 
 @pytest.fixture
 def run(repo: Path, tmp_path: Path) -> Run:
-    """Run `task <name>` in `repo`, with fake gh, pnpm and node first on PATH.
+    """Run `task <name>` in `repo`, with fake gh, pnpm, uv and uvx first on PATH.
 
     `view` is what `gh release view <tag> --json isDraft` reports: `none` (no
     release), `draft` or `published`. Every fake appends its arguments to the log.
@@ -123,13 +123,8 @@ def run(repo: Path, tmp_path: Path) -> Run:
         make = "mkdir -p dist/tarballs; : > dist/tarballs/x.tgz" if tarball else ":"
         _stub(bin_dir, "pnpm", f'echo "pnpm $*" >> "{log}"\n{make}')
         _stub(bin_dir, "uv", f'echo "uv $*" >> "{log}"\ncat > /dev/null')
-        # `-e` is `task version` reading package.json files; the release-notes script is faked.
-        real = shutil.which("node")
-        _stub(
-            bin_dir,
-            "node",
-            f'if [ "$1" = -e ]; then exec "{real}" "$@"; fi\necho "node $*" >> "{log}"; echo notes',
-        )
+        # `uvx` is `{{.DEVOPS}}`: the notes command is faked.
+        _stub(bin_dir, "uvx", f'echo "uvx $*" >> "{log}"; echo notes')
         return subprocess.run(
             ["task", *args],
             cwd=repo,
@@ -338,32 +333,15 @@ def test_s16_7_2_4_no_argument_has_no_side_effects(run: Run, tmp_path: Path) -> 
     assert _calls(tmp_path) == []
 
 
-def test_s16_7_2_5_the_heading_shape_survives_formatting(
-    cell: Path, tmp_path: Path
+def test_s9_4_4_2_notes_come_from_kiln_devops(
+    run: Run, repo: Path, tmp_path: Path
 ) -> None:
-    (tmp_path / "CHANGELOG.md").write_text(
-        "## 1.3.0 (2026-11-09)\n\n"
-        "### Features\n\n"
-        "- **core:** a long bullet that wraps over more than one line so that the\n"
-        "  formatter's shape is the one Nx writes ([abc1234](https://example.invalid))\n\n"
-        "## 1.2.0 (2026-10-25)\n\n- older\n",
-        encoding="utf-8",
-    )
-    script = cell / "tools" / "ci" / "release-notes.mjs"
-
-    def notes(version: str) -> subprocess.CompletedProcess[str]:
-        return subprocess.run(
-            ["node", str(script), version],
-            cwd=tmp_path,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-
-    found = notes("1.3.0")
-    assert found.returncode == 0, found.stdout + found.stderr
-    assert found.stdout.startswith("## 1.3.0 (2026-11-09)")
-    assert notes("1.30.0").returncode != 0
+    (repo / "dist" / "tarballs").mkdir(parents=True)
+    (repo / "dist" / "tarballs" / "x.tgz").write_text("")
+    assert run("ci:release:github", env={"TAG": "v1.2.3"}).returncode == 0
+    notes = [c for c in _calls(tmp_path) if c.startswith("uvx ")]
+    assert len(notes) == 1
+    assert notes[0].endswith(" kiln-devops notes CHANGELOG.md 1.2.3")
 
 
 def test_s16_7_2_6_descriptions(cell: Path) -> None:

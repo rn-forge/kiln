@@ -165,7 +165,7 @@ The assignment is normative:
 | `packages/<pkg>/mkdocs.yml` | `python-lib` only; repo, seeded once by `kiln generate package`; no managed block ([ADR-0008](../adr/ADR-0008.md)) | **seeded** |
 | `packages/<pkg>/docs/**` | `python-lib` only; repo, seeded once by `kiln generate package` | **seeded** |
 | `packages/<pkg>/CHANGELOG.md`, `packages/<pkg>/README.md` | `python-lib` only; repo, seeded once by `kiln generate package` | **seeded** |
-| `.github/workflows/ci.yml`; `.github/dependabot.yml`; `.github/actions/setup`; `sonar-project.properties`; `tools/ci/*.mjs` for `node-lib` | kiln (`cicd`) | managed |
+| `.github/workflows/ci.yml`; `.github/dependabot.yml`; `.github/actions/setup`; `sonar-project.properties` | kiln (`cicd`) | managed |
 | `AGENTS.md` | body written once by `kiln new`, then repo; the `<!-- BEGIN rn-forge kiln -->` block → kiln; a later agent tool may add its own block, and never owns the file | block |
 | `CLAUDE.md` | written once by `kiln new` as `@AGENTS.md` and a Claude-only section, then repo | scaffolded — carries no block |
 | `.claude/**`, `.codex/**`, installed skills | not kiln's | — |

@@ -74,7 +74,6 @@ PATTERNS = [
     "Taskfile.yml",
     "tasks/",
     "mkdocs.yml",
-    "tools/ci/",
 ]
 
 

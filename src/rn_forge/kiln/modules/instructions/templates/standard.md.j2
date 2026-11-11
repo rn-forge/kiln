@@ -359,6 +359,15 @@ for `x.y.z`, the prerelease identifier for `x.y.z-<id>.<n>`), and publishes the
 GitHub Release last. CI never commits. A version whose GitHub Release is
 published is skipped.
 
+**For a publishable library's consumer check.** Add `"verify-consumer": {}` to
+its `project.json`, which takes its command from `targetDefaults`, and declare
+the peer matrix under `workspace-ci.consumer` in its `package.json`: the
+`dependencies` and `preload` every cell shares, the `cells` (each with its own),
+and an optional `hook`. `task ci:consumer` installs the packed tarball into one
+fixture per cell and imports every entry point. `dist-resolve` keeps the matrix
+out of the published manifest. The [example](https://github.com/rn-forge/kiln/blob/main/docs/specs/epics/E9-node-archetypes/F9.4-node-helpers-in-kiln-devops.md#s945-kiln-devops-consumer-smoke-tests-a-packed-library-across-its-peer-matrix)
+shows the shape.
+
 **Targets CI runs.** `lint`, `test` (writing lcov under `coverage/`), `build`
 and `e2e` (`e2e-ci` on Nx Cloud), on the affected projects. Optional,
 declared per project: `verify-consumer` (a check that runs against the packed

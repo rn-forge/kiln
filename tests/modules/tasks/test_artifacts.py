@@ -1648,7 +1648,12 @@ def test_s4_12_2_3_only_python_lib_has_the_pipeline_tasks(
         assert others == CI_PIPELINE_TASKS
         assert not any("internal" in document["tasks"][k] for k in others)
     else:
-        assert others == SINGLE_PIPELINE_TASKS
+        dist = (
+            {"dist:resolve", "dist:verify", "consumer"}
+            if archetype == "python-web-app"
+            else set()
+        )
+        assert others == SINGLE_PIPELINE_TASKS | dist
     assert "DEVOPS" in document["vars"]
 
 
@@ -2744,7 +2749,7 @@ def test_s9_3_1_1_docs_site_runs_both_commands_with_no_environment(
     assert "internal" not in site
     assert site["cmds"] == [
         "pnpm exec nx run-many -t compodoc build-storybook",
-        "node tools/ci/assemble-site.mjs .docs-site",
+        "{{.DEVOPS}} site-assemble .docs-site",
     ]
     if shutil.which("task") is None:
         pytest.skip("task is not on PATH")
@@ -2752,7 +2757,7 @@ def test_s9_3_1_1_docs_site_runs_both_commands_with_no_environment(
     cycle.apply(root, home=tmp_path / "home")
     stub = tmp_path / "bin"
     stub.mkdir()
-    for tool in ("pnpm", "node"):
+    for tool in ("pnpm", "uvx"):
         script = stub / tool
         script.write_text(f'#!/bin/sh\necho "{tool} $*"\n')
         script.chmod(0o755)
@@ -2766,7 +2771,7 @@ def test_s9_3_1_1_docs_site_runs_both_commands_with_no_environment(
         env={**os.environ, "PATH": f"{stub}:{os.environ['PATH']}"},
     )
     assert "pnpm exec nx run-many -t compodoc build-storybook" in done.stdout
-    assert "node tools/ci/assemble-site.mjs .docs-site" in done.stdout
+    assert "kiln-devops site-assemble .docs-site" in done.stdout
 
 
 def test_s9_3_1_2_node_lib_has_no_docs_affected_task(tmp_path: Path) -> None:
@@ -3594,6 +3599,8 @@ CI_FIRST_LEVELS = (
     "release",
     "verify-release",
     "docs",
+    "dist",
+    "consumer",
     "secret-scan",
     "internal-ranges",
     "adapters",
@@ -3814,7 +3821,7 @@ def test_s16_7_1_1_no_default_literal_with_a_custom_site_dir(
     assert "out/site/" in _load(root, "tasks/docs.yml")["tasks"]["build"]["desc"]
     if archetype == "node-lib":
         site = _load(root, "tasks/ci.yml")["tasks"]["docs:site"]
-        assert "node tools/ci/assemble-site.mjs out/site" in site["cmds"]
+        assert "{{.DEVOPS}} site-assemble out/site" in site["cmds"]
         assert "out/site" in site["desc"]
         text = (root / ".github/workflows/_docs.yml").read_text(encoding="utf-8")
         assert "path: out/site\n" in text
@@ -3827,7 +3834,7 @@ def test_s16_7_1_3_empty_site_dir_means_mkdocs_default(tmp_path: Path) -> None:
     root = _s16_7_1_root(tmp_path, "node-lib", "")
     cycle.apply(root, home=tmp_path / "home")
     assert (
-        "node tools/ci/assemble-site.mjs site"
+        "{{.DEVOPS}} site-assemble site"
         in _load(root, "tasks/ci.yml")["tasks"]["docs:site"]["cmds"]
     )
     assert "path: site\n" in (root / ".github/workflows/_docs.yml").read_text(
@@ -3851,3 +3858,64 @@ def test_s16_9_5_2_clean_removes_the_scratch_root(tmp_path: Path) -> None:
     cycle.apply(custom, home=tmp_path / "home")
     cmds = _load(custom, "tasks/workspace.yml")["tasks"]["clean"]["cmds"]
     assert cmds == ["echo hi"]
+
+
+# S9.4.4 — the generated tasks call `kiln-devops`.
+
+
+@pytest.mark.parametrize(
+    ("archetype", "extra", "has"),
+    [
+        ("node-lib", "", True),
+        ("python-web-app", 'frontend = "angular"', True),
+        ("python-lib", "", False),
+        ("python-tool", "", False),
+    ],
+)
+def test_s9_4_4_1_dist_tasks_render_for_node_cells_only(
+    tmp_path: Path, archetype: str, extra: str, has: bool
+) -> None:
+    if archetype == "python-web-app":
+        root = _web_root(tmp_path, archetype, "fastapi", extra=extra)
+    else:
+        root = _root(tmp_path, archetype)
+    tasks = _ci_tasks(root)["tasks"]
+    names = {"dist:resolve": "dist-resolve", "dist:verify": "dist-verify"}
+    for name, verb in names.items():
+        if has:
+            assert tasks[name]["cmds"] == [f"{{{{.DEVOPS}}}} {verb} {{{{.CLI_ARGS}}}}"]  # type: ignore[index]
+            assert tasks[name]["desc"]  # type: ignore[index]
+        else:
+            assert name not in tasks  # type: ignore[operator]
+
+
+def test_s9_4_4_2_release_github_writes_notes_with_kiln_devops(
+    tmp_path: Path,
+) -> None:
+    task = _ci_tasks(_node_lib_root(tmp_path))["tasks"]["release:github"]  # type: ignore[index]
+    script = task["cmds"][0]
+    assert (
+        '{{.DEVOPS}} notes CHANGELOG.md "${tag#v}" > "$RUNNER_TEMP/notes.md"' in script
+    )
+    assert "kiln-devops notes" in task["desc"]
+    assert "release-notes.mjs" not in task["desc"]
+
+
+@pytest.mark.parametrize(
+    ("archetype", "has"),
+    [("node-lib", True), ("python-web-app", True), ("python-lib", False)],
+)
+def test_s9_4_5_11_consumer_task_renders_for_node_cells_only(
+    tmp_path: Path, archetype: str, has: bool
+) -> None:
+    root = (
+        _web_root(tmp_path, archetype, "fastapi")
+        if archetype == "python-web-app"
+        else _root(tmp_path, archetype)
+    )
+    tasks = _ci_tasks(root)["tasks"]
+    if has:
+        assert tasks["consumer"]["cmds"] == ["{{.DEVOPS}} consumer {{.CLI_ARGS}}"]  # type: ignore[index]
+        assert tasks["consumer"]["desc"]  # type: ignore[index]
+    else:
+        assert "consumer" not in tasks  # type: ignore[operator]

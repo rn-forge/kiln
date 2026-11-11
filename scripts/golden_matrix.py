@@ -41,10 +41,6 @@ NGKIT_FILES = (
     ".github/workflows/release.yml",
     ".github/dependabot.yml",
     ".nx/workflows/agents.yaml",
-    "tools/ci/resolve-dist-workspace-deps.mjs",
-    "tools/ci/verify-dist-manifest.mjs",
-    "tools/ci/assemble-site.mjs",
-    "tools/ci/release-notes.mjs",
     "sonar-project.properties",
 )
 PARITY_FILES = (

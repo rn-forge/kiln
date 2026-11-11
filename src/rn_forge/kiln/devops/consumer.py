@@ -1,0 +1,248 @@
+"""Smoke-test a packed library across its peer matrix, as a consumer installs it.
+
+The matrix is the library's own, under `workspace-ci.consumer` in its source
+`package.json`. `run` is the only function here that starts a process.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+import shutil
+import subprocess
+import sys
+from collections.abc import Mapping
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, cast
+
+_CELL_NAME = re.compile(r"[A-Za-z0-9._-]+")
+_FIELDS = ("dependencies", "peerDependencies", "optionalDependencies")
+
+
+@dataclass(frozen=True)
+class Cell:
+    """One install of the packed library: its dependencies and imports to preload."""
+
+    name: str
+    dependencies: dict[str, str]
+    preload: tuple[str, ...]
+
+
+def _dict(value: object) -> dict[str, Any] | None:
+    return cast("dict[str, Any]", value) if isinstance(value, dict) else None
+
+
+def _dependencies(value: Any, where: str) -> dict[str, str]:
+    if value is None:
+        return {}
+    found = _dict(value)
+    if found is None or not all(isinstance(v, str) for v in found.values()):
+        raise ValueError(f"{where}.dependencies must map names to strings")
+    return cast("dict[str, str]", found)
+
+
+def _preload(value: Any, where: str) -> list[str]:
+    if value is None:
+        return []
+    items = cast("list[Any]", value) if isinstance(value, list) else None
+    if items is None or not all(isinstance(v, str) for v in items):
+        raise ValueError(f"{where}.preload must be a list of strings")
+    return cast("list[str]", items)
+
+
+def load(manifest: Mapping[str, Any]) -> tuple[list[Cell], str | None]:
+    """Read the consumer matrix from a source `package.json`.
+
+    Returns:
+        The cells in declaration order, each merged with the top-level
+        `dependencies` and `preload`, and the hook path (or `None`).
+
+    Raises:
+        ValueError: Naming the package and the key, when the table is missing or
+            malformed.
+    """
+    package = manifest.get("name", "<unnamed>")
+    prefix = f"{package}: workspace-ci.consumer"
+    ws = _dict(manifest.get("workspace-ci"))
+    table = _dict(ws.get("consumer")) if ws else None
+    if table is None:
+        raise ValueError(f"{package}: no workspace-ci.consumer table in package.json")
+    cells = _dict(table.get("cells"))
+    if not cells:
+        raise ValueError(f"{prefix}.cells must declare at least one cell")
+    top_deps = _dependencies(table.get("dependencies"), prefix)
+    top_preload = _preload(table.get("preload"), prefix)
+    result: list[Cell] = []
+    for name, cell in cells.items():
+        where = f"{prefix}.cells.{name}"
+        if not _CELL_NAME.fullmatch(name):
+            raise ValueError(
+                f"{prefix}.cells: cell name {name!r} is not [A-Za-z0-9._-]+"
+            )
+        body = _dict(cell)
+        if body is None:
+            raise ValueError(f"{where} must be a table")
+        result.append(
+            Cell(
+                name,
+                {**top_deps, **_dependencies(body.get("dependencies"), where)},
+                tuple(top_preload + _preload(body.get("preload"), where)),
+            )
+        )
+    hook: object = table.get("hook")
+    if hook is not None and not isinstance(hook, str):
+        raise ValueError(f"{prefix}.hook must be a string")
+    return result, hook
+
+
+def tarball_name(name: str, version: str) -> str:
+    """Return the file name `npm pack` gives a package."""
+    return f"{name.removeprefix('@').replace('/', '-')}-{version}.tgz"
+
+
+def _is_js(target: Any) -> bool:
+    if isinstance(target, str):
+        return target.endswith((".js", ".mjs"))
+    found = _dict(target)
+    return found is not None and any(
+        _is_js(found.get(k)) for k in ("import", "default")
+    )
+
+
+def entry_points(exports: Any, name: str) -> list[str]:
+    """Return the import specifiers of the JavaScript subpaths in *exports*, sorted."""
+    table = _dict(exports)
+    if isinstance(exports, str) or (
+        table and not any(k.startswith(".") for k in table)
+    ):
+        table = {".": exports}
+    if table is None:
+        return []
+    found: list[str] = []
+    for subpath, target in table.items():
+        if subpath == "./package.json" or "*" in subpath or not _is_js(target):
+            continue
+        found.append(name if subpath == "." else f"{name}/{subpath.removeprefix('./')}")
+    return sorted(found)
+
+
+def smoke_script(name: str, specifiers: list[str], preload: tuple[str, ...]) -> str:
+    """Return an ES module that imports *preload*, then every entry point.
+
+    Static imports run in source order, and all of them before the module body,
+    so the preloads are `import "<p>";` lines above the `import * as` lines: an
+    `await import(...)` would run after the entry points had loaded.
+    """
+    lines = [f"// Smoke test for {name}: generated by kiln-devops consumer."]
+    lines += [f"import {json.dumps(p)};" for p in preload]
+    lines += [
+        f"import * as entry{i} from {json.dumps(s)};" for i, s in enumerate(specifiers)
+    ]
+    names = ", ".join(f"[{json.dumps(s)}, entry{i}]" for i, s in enumerate(specifiers))
+    lines += [
+        f"for (const [specifier, mod] of [{names}]) {{",
+        "  if (Object.keys(mod).length === 0) {",
+        '    throw new Error(`Entry point "${specifier}" resolved but exported nothing`);',
+        "  }",
+        "}",
+        f"console.log({json.dumps(f'OK ({name})')});",
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def _fail(message: str, code: int = 1) -> int:
+    print(message, file=sys.stderr)
+    return code
+
+
+def _check_installed(fixture: Path, name: str) -> dict[str, Any]:
+    installed: dict[str, Any] = json.loads(
+        (fixture / "node_modules" / name / "package.json").read_text(encoding="utf-8")
+    )
+    for field in _FIELDS:
+        for dep, range_ in (_dict(installed.get(field)) or {}).items():
+            if isinstance(range_, str) and range_.startswith("workspace:"):
+                raise ValueError(
+                    f'installed {name} {field}["{dep}"] still uses workspace: protocol ({range_})'
+                )
+    return installed
+
+
+def _run_cell(
+    root: Path, cell: Cell, name: str, tarball: Path, hook: str | None, fixture: Path
+) -> None:
+    if fixture.exists():
+        shutil.rmtree(fixture)
+    fixture.mkdir(parents=True)
+    manifest = {
+        "name": f"consumer-{cell.name}",
+        "private": True,
+        "type": "module",
+        "dependencies": {**cell.dependencies, name: f"file:{tarball}"},
+    }
+    (fixture / "package.json").write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+    )
+    subprocess.run(
+        ["npm", "install", "--no-audit", "--no-fund"], cwd=fixture, check=True
+    )
+    installed = _check_installed(fixture, name)
+    specifiers = entry_points(installed.get("exports"), name)
+    (fixture / "smoke.mjs").write_text(
+        smoke_script(name, specifiers, cell.preload), encoding="utf-8"
+    )
+    subprocess.run(["node", "smoke.mjs"], cwd=fixture, check=True)
+    if hook:
+        subprocess.run(
+            ["node", str(root / hook), str(fixture), cell.name], cwd=fixture, check=True
+        )
+
+
+def run(root: Path, project_root: str, only: str | None) -> int:
+    """Install the packed tarball into a fixture per cell and smoke-test each.
+
+    Returns:
+        The exit code: 0 when every cell passed, 1 when one failed or the
+        tarball or matrix is missing, 2 for an unknown `--cell`.
+    """
+    try:
+        source: dict[str, Any] = json.loads(
+            (root / project_root / "package.json").read_text(encoding="utf-8")
+        )
+        cells, hook = load(source)
+    except (OSError, ValueError) as error:
+        return _fail(str(error))
+    if only is not None:
+        cells = [c for c in cells if c.name == only]
+        if not cells:
+            declared = ", ".join(c.name for c in load(source)[0])
+            return _fail(f"Unknown cell {only!r}; declared cells: {declared}", 2)
+    name, version = source["name"], source["version"]
+    tarballs = root / "dist" / "tarballs"
+    tarball = tarballs / tarball_name(name, version)
+    if not tarball.exists():
+        found = (
+            ", ".join(sorted(p.name for p in tarballs.iterdir()))
+            if tarballs.is_dir()
+            else "(missing dir)"
+        )
+        return _fail(
+            f'Expected packed tarball at {tarball} (found: {found}). Run "nx run {Path(project_root).name}:pack" first.'
+        )
+    base = root / "dist" / "consumer-fixtures" / tarball.stem
+    failed: list[str] = []
+    for cell in cells:
+        print(f"\n=== {cell.name} ===")
+        try:
+            _run_cell(root, cell, name, tarball, hook, base / cell.name)
+        except (OSError, ValueError, subprocess.CalledProcessError) as error:
+            print(f"{cell.name}: {error}", file=sys.stderr)
+            failed.append(cell.name)
+    if failed:
+        print(
+            f"consumer: {len(failed)} of {len(cells)} cells failed: {', '.join(failed)}"
+        )
+        return 1
+    print(f"consumer: {len(cells)} cells passed")
+    return 0

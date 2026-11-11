@@ -141,6 +141,7 @@ nav:
               - F9.1 — `node-lib` renders ngkit's CI: specs/epics/E9-node-archetypes/F9.1-node-lib-hosts-ngkit-ci.md
               - F9.2 — One node scaffold: specs/epics/E9-node-archetypes/F9.2-one-node-scaffold.md
               - F9.3 — Node CI holds for ngkit and for every `node-lib`: specs/epics/E9-node-archetypes/F9.3-node-ci-holds-for-every-node-lib.md
+              - F9.4 — The node CI helpers run from `kiln-devops`: specs/epics/E9-node-archetypes/F9.4-node-helpers-in-kiln-devops.md
           - E10 — kiln generators:
               - specs/epics/E10-kiln-generators/index.md
       - E11–E20:

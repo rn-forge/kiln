@@ -1,4 +1,4 @@
-"""The artifacts `cicd` renders: the workflows, the setup action, Sonar's properties and `node-lib`'s `tools/ci/` helpers."""
+"""The artifacts `cicd` renders: the workflows, the setup action, Sonar's properties and `node-lib`'s Nx Cloud agents."""
 
 from __future__ import annotations
 
@@ -30,13 +30,6 @@ _NX_CLOUD_IMAGE = "ubuntu22.04-node24.14-v1"
 # The scaffold's `--name`. Angular writes coverage under it, and moving the app
 # to another `web_dir` does not rename the project.
 _WEB_PROJECT = "web"
-
-_NODE_HELPERS = (
-    "resolve-dist-workspace-deps",
-    "verify-dist-manifest",
-    "assemble-site",
-    "release-notes",
-)
 
 _NODE_LIB_EXCLUSIONS = (
     "**/node_modules/**",
@@ -90,7 +83,7 @@ def _ci_config(config: KilnConfig) -> CiConfig:
 
 
 def render(config: KilnConfig) -> list[Artifact]:
-    """Render the setup action, `ci.yml` and its reusable stage workflows `_<stage>.yml`, `dependabot.yml`, `scorecard.yml` (when `ci.checks.scorecard` is on), `sonar-project.properties` and, for `node-lib`, `.nx/workflows/agents.yaml`, `tools/ci/*.mjs`.
+    """Render the setup action, `ci.yml` and its reusable stage workflows `_<stage>.yml`, `dependabot.yml`, `scorecard.yml` (when `ci.checks.scorecard` is on), `sonar-project.properties` and, for `node-lib`, `.nx/workflows/agents.yaml`.
 
     Raises:
         AppException: `ci.provider` is `ado`, which is reserved, or `ci.hooks.docs` is set without a docs site.
@@ -182,10 +175,6 @@ def render(config: KilnConfig) -> list[Artifact]:
         ),
         (".nx/workflows/agents.yaml", "agents.yaml.j2", node_lib),
         ("sonar-project.properties", "sonar-project.properties.j2", ci.sonar),
-        *(
-            (f"tools/ci/{name}.mjs", f"tools/ci/{name}.mjs.j2", node_lib)
-            for name in _NODE_HELPERS
-        ),
     ]
     return render_artifacts(
         engine,
