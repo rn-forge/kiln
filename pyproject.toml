@@ -58,8 +58,9 @@ venv = ".venv"
 
 [tool.pytest.ini_options]
 # importlib mode keeps same-named test modules in different directories from
-# colliding, and needs no __init__.py in tests/.
-addopts = "-ra --import-mode=importlib"
+# colliding, and needs no __init__.py in tests/. `-n auto` runs one worker per
+# core, and a fixture with `scope="session"` is built once per worker.
+addopts = "-ra --import-mode=importlib -n auto"
 testpaths = ["tests"]
 # Same reason: a golden repo's tests are run by that repo's own `task test`.
 norecursedirs = ["fixtures"]
@@ -79,6 +80,7 @@ dev = [
     "pyright>=1.1.411",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
+    "pytest-xdist>=3.8.0",
     "ruff>=0.15.21",
     "taplo>=0.9.3",
     "zizmor>=1.31.1",
