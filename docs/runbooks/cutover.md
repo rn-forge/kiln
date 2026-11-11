@@ -74,9 +74,11 @@ and links here. A repository with no pre-kiln lineage is rebuilt with `kiln new`
    the absorbed behaviour. A difference a repository needs inside a managed
    file or block is an absorb or extend row, never an edit of the copy.
 
-1. **Reconcile and gate.** Hand `kiln prompt --name adopt` to an agent; then
-   `task validate` and `KILN_DOCTOR_FULL=1 task validate` exit 0, and
-   `task kiln:apply` changes nothing.
+1. **Reconcile and gate.** Do what the repository's cutover story lists for the
+   files kiln has a block in (reconcile `CLAUDE.md`'s and `AGENTS.md`'s blocks
+   with the repository's text, rewrite the commands in its docs to `task`
+   verbs); then `task validate` and `KILN_DOCTOR_FULL=1 task validate` exit 0,
+   and `task kiln:apply` changes nothing.
 
     For a `node-lib` only, also run `pnpm exec nx migrate <NX_VERSION>` (the
     version in `src/rn_forge/kiln/modules/node/angular.py`) and its migrations,

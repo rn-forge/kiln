@@ -130,3 +130,29 @@ def test_s17_3_6_1_the_board_says_acceptance_is_tests() -> None:
         "The owner has accepted F16.8 to F16.10",
     ):
         assert needle in flat
+
+
+def test_s16_8_3_4_docs_name_no_adopt_prompt() -> None:
+    docs = ROOT / "docs"
+    skipped = {docs / d for d in ("specs", "plans", "adr", "releases")}
+    for page in docs.rglob("*.md"):
+        if any(parent in skipped for parent in page.parents):
+            continue
+        text = page.read_text(encoding="utf-8")
+        assert "--name adopt" not in text, page
+        assert "adopt prompt" not in text, page
+    assert not (docs / "runbooks/adopting-a-repo.md").exists()
+    for name in ("docs/runbooks/index.md", "mkdocs.yml"):
+        assert "adopting-a-repo" not in (ROOT / name).read_text(encoding="utf-8")
+
+
+def test_s16_8_3_5_cutover_step_8_keeps_its_gate() -> None:
+    flat = _flat()
+    for present in (
+        "Reconcile and gate",
+        "task validate",
+        "KILN_DOCTOR_FULL=1 task validate",
+        "task kiln:apply",
+    ):
+        assert present in flat, present
+    assert "--name adopt" not in flat

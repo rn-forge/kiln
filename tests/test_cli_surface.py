@@ -10,6 +10,7 @@ them. F4.8 makes one render the other, and this test goes away with the copy.
 from __future__ import annotations
 
 import importlib.util
+import re
 import shutil
 import tomllib
 from collections.abc import Callable
@@ -98,12 +99,24 @@ def test_s16_8_1_3_adoption_helpers_are_gone() -> None:
 
 def test_s16_8_1_4_no_source_mentions_init() -> None:
     source = ROOT / "src" / "rn_forge" / "kiln"
-    adopt = source / "prompts" / "adopt.md"
     hits = [
         str(path.relative_to(ROOT))
         for pattern in ("*.py", "*.j2", "*.toml")
         for path in source.rglob(pattern)
-        if path != adopt and "kiln init" in path.read_text(encoding="utf-8")
+        if "kiln init" in path.read_text(encoding="utf-8")
+    ]
+    assert hits == []
+
+
+def test_s16_8_3_3_no_source_names_the_adopt_prompt() -> None:
+    pattern = re.compile(r"kiln prompt (--name )?adopt|prompts/adopt")
+    source = ROOT / "src" / "rn_forge" / "kiln"
+    hits = [
+        str(path.relative_to(ROOT))
+        for path in source.rglob("*")
+        if path.is_file()
+        and "__pycache__" not in path.parts
+        and pattern.search(path.read_text(encoding="utf-8", errors="ignore"))
     ]
     assert hits == []
 
