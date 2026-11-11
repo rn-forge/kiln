@@ -5,9 +5,12 @@
 # ngkit's own cutover is ngkit's (its kiln-adoption epic).
 # The generated Taskfile runs `kiln doctor` with `uvx` from the GitHub-pinned
 # `[kiln] ref`. The script snapshots this checkout (uncommitted work too) as that ref
-# in a local bare repository and writes <scratch dir>/../kiln-local.env; source it
-# before the shaped repository's `task` commands so `uvx` fetches the snapshot instead.
+# in a local bare repository, <scratch dir>-kiln-snapshot.git, and writes
+# <scratch dir>-kiln-snapshot.env; source it before the shaped repository's `task`
+# commands so `uvx` fetches the snapshot instead.
 # Usage: tests/e2e/ngkit_shape.sh <scratch dir> <kiln checkout>
+# Put the scratch dir under ../kiln-wt/, named for the story it serves (AGENTS.md):
+#   tests/e2e/ngkit_shape.sh ../kiln-wt/S9.1.6-ngkit-shape "$PWD"
 set -euo pipefail
 dir=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
 kiln_root=$(cd "$2" && pwd)
@@ -47,17 +50,17 @@ fs.writeFileSync(path, JSON.stringify(project, null, 2) + "\n");
 
 # Snapshot this checkout as the pinned ref, without touching its index or refs.
 ref=$(sed -n 's/^ref = "\(.*\)"$/\1/p' "$dir/.rn-forge/kiln/config.toml")
-snapshot=$(dirname "$dir")/kiln-local.git
+snapshot=$dir-kiln-snapshot.git
 git init -q --bare "$snapshot"
 index=$(mktemp -u)
 tree=$(GIT_INDEX_FILE=$index git -C "$kiln_root" add -A && GIT_INDEX_FILE=$index git -C "$kiln_root" write-tree)
 rm -f "$index"
 commit=$(git -C "$kiln_root" commit-tree "$tree" -p HEAD -m "kiln checkout snapshot")
 git -C "$kiln_root" push -q --force "$snapshot" "$commit:refs/heads/$ref"
-cat >"$(dirname "$dir")/kiln-local.env" <<ENV
+cat >"$dir-kiln-snapshot.env" <<ENV
 export UV_NO_GITHUB_FAST_PATH=1
 export GIT_CONFIG_COUNT=1
 export GIT_CONFIG_KEY_0=url.file://$snapshot.insteadOf
 export GIT_CONFIG_VALUE_0=https://github.com/rn-forge/kiln
 ENV
-echo "source $(dirname "$dir")/kiln-local.env before running task in $dir"
+echo "source $dir-kiln-snapshot.env before running task in $dir"

@@ -26,6 +26,10 @@ text.
   retired that.
 - Other sessions may commit in this checkout. Commit by explicit path, never
   with `git add -A` or `git add .`, and re-check `HEAD` before you commit.
+- **Every worktree, scratch checkout and local snapshot repository goes under
+  `../kiln-wt/`**, named for the story or branch it serves:
+  `kiln-wt/S9.1.6-ngkit-shape`, `kiln-wt/F16.6-cutover`, never `exp` or
+  `kiln-local.git`. Remove it with `git worktree remove` once its work lands.
 
 ## Do and don't
 
