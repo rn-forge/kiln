@@ -9,7 +9,7 @@
 
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
-| [F19.1 — YAML has a formatter, and kiln's own files pass it](F19.1-yaml-formatter.md) | Active | release-1 | 1 New · 3 Closed |
+| [F19.1 — YAML has a formatter, and kiln's own files pass it](F19.1-yaml-formatter.md) | Active | release-1 | 4 Closed |
 
 <!-- END derived features -->
 

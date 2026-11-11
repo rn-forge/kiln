@@ -1,4 +1,4 @@
-"""S19.1.2: a fresh render of every archetype is formatter-clean."""
+"""S19.1.2, S19.1.4: formatters leave renders and this repository clean."""
 
 import os
 import subprocess
@@ -8,6 +8,8 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+
+from rn_forge.commons.fs.documents import YamlUtils
 
 ROOT = Path(__file__).resolve().parents[1]
 FEATURE = ROOT / "docs/specs/epics/E19-formatting-standard/F19.1-yaml-formatter.md"
@@ -137,3 +139,40 @@ def test_s19_1_2_5_the_tools_are_locked() -> None:
     locked = {p["name"]: p["version"] for p in lock["package"]}
     floor = entries[0].split(">=")[1]
     assert _version_key(floor) <= _version_key(locked[YAML_PACKAGE])
+
+
+def test_s19_1_4_1_this_repository_runs_the_yaml_check() -> None:
+    quality = YamlUtils.load((ROOT / "tasks/quality.yml").read_text(encoding="utf-8"))
+    assert {"lint:yaml", "format:yaml"} <= set(quality["tasks"])
+    root = YamlUtils.load((ROOT / "Taskfile.yml").read_text(encoding="utf-8"))["tasks"]
+    assert {"task": "quality:lint:yaml"} in root["lint"]["cmds"]
+    assert {"task": "quality:format:yaml"} in root["format"]["cmds"]
+    assert (ROOT / ".yamlfmt.yaml").is_file()
+
+
+def test_s19_1_4_2_this_repositorys_yaml_is_clean() -> None:
+    config = YamlUtils.load((ROOT / ".yamlfmt.yaml").read_text(encoding="utf-8"))
+    excluded = {Path(p).name for p in config["exclude"]}
+    listed = _run(ROOT, ["git", "ls-files", "*.yml", "*.yaml"]).stdout.split()
+    files = [
+        f
+        for f in listed
+        if not f.startswith("tests/fixtures/")
+        and Path(f).name not in excluded
+        and (ROOT / f).is_file()
+    ]
+    assert files
+    done = _run(ROOT, [str(BIN / YAML_EXECUTABLE), *YAML_CHECK, *files])
+    assert done.returncode == 0, done.stdout + done.stderr
+
+
+def test_s19_1_4_3_the_formatter_runs_on_a_dirty_file(tmp_path: Path) -> None:
+    (tmp_path / ".yamlfmt.yaml").write_text(
+        (ROOT / ".yamlfmt.yaml").read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    (tmp_path / "bad.yml").write_text("a:\n      - b\n", encoding="utf-8")
+    exe = str(BIN / YAML_EXECUTABLE)
+    assert _run(tmp_path, [exe, *YAML_CHECK, "bad.yml"]).returncode != 0
+    assert _run(tmp_path, [exe, "bad.yml"]).returncode == 0
+    done = _run(tmp_path, [exe, *YAML_CHECK, "bad.yml"])
+    assert done.returncode == 0, done.stdout + done.stderr
