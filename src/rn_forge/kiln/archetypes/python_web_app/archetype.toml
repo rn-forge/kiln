@@ -32,6 +32,7 @@ required_validate = [
     "python:lint:audit",
     "quality:lint:markdown",
     "quality:lint:toml",
+    "quality:lint:yaml",
     "python:typecheck",
     "python:test",
     "node:lint",

@@ -320,3 +320,9 @@ def test_s17_1_3_2_node_lib_gate(tmp_path) -> None:
 
 def test_s17_1_3_3_web_app_typecheck(tmp_path) -> None:
     assert "node:typecheck" in _gate(tmp_path, "python-web-app")
+
+
+@pytest.mark.parametrize("name", archetypes.shipped())
+def test_s19_1_3_5_required_validate_holds_the_yaml_check(name: str) -> None:
+    required = archetypes.load(name).required_validate
+    assert required[required.index("quality:lint:toml") + 1] == "quality:lint:yaml"

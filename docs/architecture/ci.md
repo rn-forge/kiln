@@ -182,7 +182,7 @@ cut to the repository's archetype, is under "CI checks" in
 | ruff check and format | `task lint` | yes | yes | yes | yes | yes |  | S |
 | pyright strict | `task typecheck` | test | yes | yes | yes | yes |  | S |
 | `lint-imports` | `task lint` | yes | yes | yes | yes | yes |  | S |
-| Markdown and TOML formatting | `task lint` | yes | yes | yes | yes | yes | yes | S |
+| Markdown, TOML and YAML formatting | `task lint` | yes | yes | yes | yes | yes | yes | S |
 | `kiln doctor` | `task lint` | yes | yes | yes | yes | yes | yes | S; `--full` per `[ci] doctor_full`, default `default-branch` |
 | zizmor, actionlint | `task lint` | yes | yes | yes | yes | yes | yes | S |
 | `pip-audit` | `task lint` | yes | yes | yes | yes | yes |  | S; ignore list `[ci.checks] pip-audit` |

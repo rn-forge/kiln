@@ -46,6 +46,7 @@ RUFF_TEST_IGNORES = {"S101", "D", "ANN", "PLR2004"}
 
 _DEV_GROUP = [
     "actionlint-py>=1.7",
+    "google-yamlfmt>=0.21.0",
     "import-linter>=2.15",
     "pip-audit>=2.10",
     "pip-licenses>=5",
@@ -77,6 +78,7 @@ includes each package's site."""
 
 TASK_TOOLS = (
     "actionlint-py",
+    "google-yamlfmt",
     "import-linter",
     "pip-audit",
     "pip-licenses",

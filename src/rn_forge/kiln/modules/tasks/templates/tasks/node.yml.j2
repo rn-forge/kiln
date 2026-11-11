@@ -30,7 +30,7 @@ tasks:
 {% else %}      - pnpm exec prettier --check .
 {% endif %}
   format:
-    desc: Format the frontend workspace's TypeScript, HTML, SCSS, JSON and YAML with Prettier.
+    desc: Format the frontend workspace's TypeScript, HTML, SCSS and JSON with Prettier.
     internal: true
     cmds:
 {% if overrides.get("node:format") %}      - [[ overrides["node:format"] ]]

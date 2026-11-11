@@ -61,7 +61,7 @@ python-lib, python-tool, python-app, python-web-api:
   python:lint:imports    ci:lint:workflows
   python:lint:audit      quality:lint:markdown
   quality:lint:toml      python:typecheck
-  python:test
+  python:test            quality:lint:yaml
 
 python-web-app: the Python list, plus
   node:lint  node:typecheck  node:test
@@ -69,6 +69,7 @@ python-web-app: the Python list, plus
 node-lib:
   kiln:doctor            ci:lint:workflows
   quality:lint:markdown  quality:lint:toml
+  quality:lint:yaml
   node:lint              node:lint:audit
   node:typecheck         node:test
 ```
@@ -347,14 +348,16 @@ installed kiln, no `$RNF_HOME`, no bootstrap script — proves all of this:
 - the task layout is intact and no gate has been removed from `validate`;
 - no workflow step invokes a wrapped tool;
 - every TOML file outside `.taplo.toml`'s `exclude` is taplo-formatted;
+- every YAML file outside the formatter's exclude is formatted by
+  google-yamlfmt;
 - the docs tree matches the repo's `docs/_areas.yml`, the derived nav is
   current, every tracked Markdown file is mdformat-clean, and no link or
   anchor is broken (`mkdocs` profile). mdformat formats every Markdown file; a
-  repository that uses Prettier lists `*.md` in `.prettierignore`
-  ([ADR-0012](../adr/ADR-0012.md)). Revised 2026-11-09 (S16.7.3): kiln renders
-  `.prettierrc` and a fenced `.prettierignore` block for node-lib and
-  python-web-app; the block lists `*.md`, so Prettier and mdformat still never
-  format the same file;
+  repository that uses Prettier lists `*.md`, `*.toml`, `*.yml` and `*.yaml`
+  there ([ADR-0012](../adr/ADR-0012.md)). Revised 2026-11-09 (S16.7.3): kiln
+  renders `.prettierrc` and a fenced `.prettierignore` block for node-lib and
+  python-web-app; the block lists `*.md`, `*.toml`, `*.yml` and `*.yaml`, so
+  Prettier and mdformat still never format the same file;
 - **every managed file and every managed block still hashes to the value
   committed in `.rn-forge/kiln/state.json`**;
 - pyright is clean in strict mode ([ADR-0002](../adr/ADR-0002.md));

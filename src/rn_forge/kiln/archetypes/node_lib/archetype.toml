@@ -9,6 +9,7 @@ required_validate = [
     "ci:lint:workflows",
     "quality:lint:markdown",
     "quality:lint:toml",
+    "quality:lint:yaml",
     "node:lint",
     "node:lint:audit",
     "node:typecheck",

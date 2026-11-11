@@ -93,7 +93,7 @@
     },
     ".rn-forge/kiln/standard.md": {
       "begin_marker": null,
-      "content_hash": "b9ecd0181a5048a317e07b7de87c03ad541ce15a8e3cc47afc1c87d09bcc15e5",
+      "content_hash": "0f3d3e41ca41305655826141d3e9336f1b685ba3833b66c3df4d6a980258fae6",
       "end_marker": null,
       "kind": "managed",
       "path": ".rn-forge/kiln/standard.md"
@@ -105,6 +105,13 @@
       "kind": "seeded",
       "path": ".taplo.toml"
     },
+    ".yamlfmt.yaml": {
+      "begin_marker": null,
+      "content_hash": null,
+      "end_marker": null,
+      "kind": "seeded",
+      "path": ".yamlfmt.yaml"
+    },
     "AGENTS.md#rn-forge kiln": {
       "begin_marker": "<!-- BEGIN rn-forge kiln -->",
       "content_hash": "de55685da2d6e07c244ffbad071e1cf16b14f4b96e0ea5bff8a21a1c3ecfb963",
@@ -114,7 +121,7 @@
     },
     "Taskfile.yml": {
       "begin_marker": null,
-      "content_hash": "a64304607c9bc8dc9e6118f8fd22f2dbb2a6d9d2e74314296e0e72676784a69d",
+      "content_hash": "1ad43bc69c4c58b54603f92ee0de88760914b4a6a036894f7b05c39536321484",
       "end_marker": null,
       "kind": "managed",
       "path": "Taskfile.yml"
@@ -324,7 +331,7 @@
     },
     "tasks/quality.yml": {
       "begin_marker": null,
-      "content_hash": "a87a1e4f3fabf91546c196775f2c83522eef5553ebf321cefdb8af756a34f6a3",
+      "content_hash": "e88793e3da1c0c3abbc0089b3fd311a0c10c171063273c1d3441c270dbab5343",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/quality.yml"

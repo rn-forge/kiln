@@ -85,10 +85,11 @@ tasks:
       - "set -o pipefail; pnpm ls -r --depth -1 --json | {{.DEVOPS}} requirements --stack node"
 
   validate:
-    desc: "CI only: Run the checks that do not run Nx — Markdown and TOML formatting, kiln's checks, workflow security{% if docs %}, the docs build{% endif %}; test-cloud or test-local run the Nx projects."
+    desc: "CI only: Run the checks that do not run Nx — Markdown, TOML and YAML formatting, kiln's checks, workflow security{% if docs %}, the docs build{% endif %}; test-cloud or test-local run the Nx projects."
     cmds:
       - task: :quality:lint:markdown
       - task: :quality:lint:toml
+      - task: :quality:lint:yaml
       - task: :kiln:doctor
       - task: lint:workflows
       - task: internal-ranges

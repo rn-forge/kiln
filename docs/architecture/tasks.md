@@ -41,7 +41,7 @@ file under its own name.
 | -- | -- | -- | -- | -- |
 | `Taskfile.yml` | none | The ten root verbs, as wrappers | all ten | every archetype |
 | `tasks/python.yml` | `python` | install, lint, `lint:imports`, `lint:audit`, `lint:licenses`, format, typecheck, test, `test:coverage`, build, version | none | every archetype; `node-lib` keeps it for the docs tooling |
-| `tasks/quality.yml` | `quality` | Markdown and TOML formatting checks and formatters | none | every archetype |
+| `tasks/quality.yml` | `quality` | Markdown, TOML and YAML formatting checks and formatters | none | every archetype |
 | `tasks/kiln.yml` | `kiln` | `doctor` (one internal task), `diff`, `apply` | `kiln:diff`, `kiln:apply` | every archetype |
 | `tasks/workspace.yml` | `workspace` | `banner` (internal; the separator `validate` prints before each step), `clean` | none | every archetype |
 | `tasks/ci.yml` | `ci` | `lint:workflows` and `secrets:install` (internal); the CI surface | the CI surface | every archetype; the body differs |
@@ -107,9 +107,9 @@ removes from it.
 
 | Archetype | `required_validate` |
 | -- | -- |
-| Python (`python-lib`, `python-tool`, `python-app`, `python-web-api`) | `python:lint`, `kiln:doctor`, `python:lint:imports`, `ci:lint:workflows`, `python:lint:audit`, `quality:lint:markdown`, `quality:lint:toml`, `python:typecheck`, `python:test` |
+| Python (`python-lib`, `python-tool`, `python-app`, `python-web-api`) | `python:lint`, `kiln:doctor`, `python:lint:imports`, `ci:lint:workflows`, `python:lint:audit`, `quality:lint:markdown`, `quality:lint:toml`, `quality:lint:yaml`, `python:typecheck`, `python:test` |
 | `python-web-app` | the Python list, plus `node:lint`, `node:typecheck`, `node:test` |
-| `node-lib` | `kiln:doctor`, `ci:lint:workflows`, `quality:lint:markdown`, `quality:lint:toml`, `node:lint`, `node:lint:audit`, `node:typecheck`, `node:test` |
+| `node-lib` | `kiln:doctor`, `ci:lint:workflows`, `quality:lint:markdown`, `quality:lint:toml`, `quality:lint:yaml`, `node:lint`, `node:lint:audit`, `node:typecheck`, `node:test` |
 
 `archetypes.for_config` then adds `docs:build` under the `mkdocs` profile, and
 the licences task (`python:lint:licenses`, or `node:lint:licenses` for

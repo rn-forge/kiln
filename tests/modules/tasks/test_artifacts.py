@@ -232,6 +232,52 @@ def test_s17_3_4_3_an_override_still_replaces_the_batch(tmp_path: Path) -> None:
     assert "-n 20 -P 4" in tasks["format:markdown"]["cmds"][0]
 
 
+YAML_LINT = "{{.FILES}} '*.yml' '*.yaml' | xargs -0 -r uv run yamlfmt -lint"
+YAML_FORMAT = "{{.FILES}} '*.yml' '*.yaml' | xargs -0 -r uv run yamlfmt"
+
+
+def test_s19_1_3_1_lint_and_format_run_the_yaml_formatter(tmp_path: Path) -> None:
+    for root in _s17_3_4_roots(tmp_path):
+        cycle.apply(root, home=tmp_path / "home")
+        tasks = _load(root, "tasks/quality.yml")["tasks"]
+        assert tasks["lint:yaml"]["cmds"] == [YAML_LINT]
+        assert tasks["format:yaml"]["cmds"] == [YAML_FORMAT]
+        for name in ("lint:yaml", "format:yaml"):
+            assert tasks[name]["internal"] is True
+            assert tasks[name]["desc"]
+
+
+def test_s19_1_3_2_the_root_verbs_call_the_pair(tmp_path: Path) -> None:
+    for root in _s17_3_4_roots(tmp_path):
+        cycle.apply(root, home=tmp_path / "home")
+        tasks = _load(root, "Taskfile.yml")["tasks"]
+        for verb, kind in (("lint", "lint"), ("format", "format")):
+            cmds = tasks[verb]["cmds"]
+            toml = cmds.index({"task": f"quality:{kind}:toml"})
+            assert cmds[toml + 1] == {"task": f"quality:{kind}:yaml"}
+        assert "YAML" in tasks["lint"]["desc"]
+
+
+def test_s19_1_3_3_an_override_replaces_one_task(tmp_path: Path) -> None:
+    for kept, replaced in (("format", "lint"), ("lint", "format")):
+        root = _root(
+            tmp_path / replaced,
+            extra=f'\n[tasks]\n[tasks.command_overrides]\n"quality:{replaced}:yaml" = "echo hi"\n',
+        )
+        cycle.apply(root, home=tmp_path / "home")
+        tasks = _load(root, "tasks/quality.yml")["tasks"]
+        assert tasks[f"{replaced}:yaml"]["cmds"] == ["echo hi"]
+        assert tasks[f"{kept}:yaml"]["cmds"] == [
+            YAML_LINT if kept == "lint" else YAML_FORMAT
+        ]
+
+
+def test_s19_1_3_4_the_node_lib_ci_validate_runs_it(tmp_path: Path) -> None:
+    cmds = _ci_tasks(_node_lib_root(tmp_path))["tasks"]["validate"]["cmds"]  # type: ignore[index]
+    toml = cmds.index({"task": ":quality:lint:toml"})
+    assert cmds[toml + 1] == {"task": ":quality:lint:yaml"}
+
+
 BANNER = "workspace:banner"
 
 
@@ -1937,8 +1983,10 @@ PYTHON_TASKS = (
 QUALITY_STAYS = {
     "lint:markdown",
     "lint:toml",
+    "lint:yaml",
     "format:markdown",
     "format:toml",
+    "format:yaml",
 }
 PYTHON_OLD_KEYS = {
     "quality:lint:python": "python:lint",
@@ -2110,6 +2158,7 @@ LINT_ORDER = [
     "python:lint:imports",
     "quality:lint:markdown",
     "quality:lint:toml",
+    "quality:lint:yaml",
     "kiln:doctor",
     "ci:lint:workflows",
     "python:lint:audit",
@@ -2850,11 +2899,11 @@ def test_s9_1_5_4_latest_downloads_tarballs_only_when_none_are_local(
 PYTHON_DESCS = {
     "setup": "Install the project and its dev + docs dependency groups.",
     "lint": (
-        "Every lint — Python, imports, Markdown and TOML formatting, kiln's checks "
+        "Every lint — Python, imports, Markdown, TOML and YAML formatting, kiln's checks "
         "(generated files, task layout, CI, dependencies, docs), workflow security, "
         "dependency vulnerabilities, dependency licences."
     ),
-    "format": "Format Python code, TOML and Markdown prose in place.",
+    "format": "Format Python code, TOML, YAML and Markdown prose in place.",
     "typecheck": "Static type-check the package in pyright strict mode.",
     "test": "Run the pytest suite.",
     "test:coverage": (
@@ -2866,10 +2915,10 @@ PYTHON_DESCS = {
 NODE_LIB_DESCS = {
     "setup": "Install the pnpm workspace and the docs tooling.",
     "lint": (
-        "Every lint — Nx projects, Prettier formatting, Markdown and TOML "
+        "Every lint — Nx projects, Prettier formatting, Markdown, TOML and YAML "
         "formatting, kiln's checks, workflow security, dependency vulnerabilities, dependency licences."
     ),
-    "format": "Format Prettier-formatted files, TOML and Markdown prose in place.",
+    "format": "Format Prettier-formatted files, TOML, YAML and Markdown prose in place.",
     "typecheck": "Type-check every project through its Angular build.",
     "test": "Run every project's tests with Nx.",
     "test:coverage": "Run every project's tests, writing lcov reports to coverage/.",
@@ -2883,12 +2932,12 @@ WEB_APP_DESCS = {
     **PYTHON_DESCS,
     "lint": (
         "Every lint — Python, imports, the frontend's Nx lint, Prettier formatting, "
-        "Markdown and TOML formatting, kiln's checks (generated files, task layout, "
+        "Markdown, TOML and YAML formatting, kiln's checks (generated files, task layout, "
         "CI, dependencies, docs), workflow security, dependency vulnerabilities, "
         "dependency licences."
     ),
     "format": (
-        "Format Python code, Prettier-formatted files, TOML and Markdown prose in "
+        "Format Python code, Prettier-formatted files, TOML, YAML and Markdown prose in "
         "place."
     ),
     "typecheck": (
@@ -2956,6 +3005,7 @@ def test_s9_2_9_5_python_lib_keeps_its_descs(tmp_path: Path) -> None:
 CI_VALIDATE_HEAD = [
     {"task": ":quality:lint:markdown"},
     {"task": ":quality:lint:toml"},
+    {"task": ":quality:lint:yaml"},
     {"task": ":kiln:doctor"},
     {"task": "lint:workflows"},
     {"task": "internal-ranges"},
@@ -3422,16 +3472,16 @@ def test_s17_1_3_4_unreachable_licences_is_a_finding(tmp_path: Path) -> None:
 
 LINT_TAIL = "workflow security, dependency vulnerabilities"
 LINT_PYTHON = (
-    "Every lint — Python, imports, Markdown and TOML formatting, kiln's checks "
+    "Every lint — Python, imports, Markdown, TOML and YAML formatting, kiln's checks "
     "(generated files, task layout, CI, dependencies, docs), " + LINT_TAIL
 )
 LINT_WEB_APP = (
     "Every lint — Python, imports, the frontend's Nx lint, Prettier formatting, "
-    "Markdown and TOML formatting, kiln's checks (generated files, task layout, "
+    "Markdown, TOML and YAML formatting, kiln's checks (generated files, task layout, "
     "CI, dependencies, docs), " + LINT_TAIL
 )
 LINT_NODE_LIB = (
-    "Every lint — Nx projects, Prettier formatting, Markdown and TOML "
+    "Every lint — Nx projects, Prettier formatting, Markdown, TOML and YAML "
     "formatting, kiln's checks, " + LINT_TAIL
 )
 LINT_CELLS = (

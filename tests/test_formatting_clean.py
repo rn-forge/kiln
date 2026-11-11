@@ -1,7 +1,6 @@
 """S19.1.2: a fresh render of every archetype is formatter-clean."""
 
 import os
-import shutil
 import subprocess
 import sys
 import tomllib
@@ -54,14 +53,10 @@ def _settled() -> tuple[dict[str, str], str]:
     return rows, block.partition("```")[0]
 
 
-_ROWS, YAML_CONFIG = _settled()
+_ROWS, _ = _settled()
 YAML_PACKAGE = _ROWS["Package"].strip("`")
 YAML_EXECUTABLE = _ROWS["Executable"].strip("`")
 YAML_CHECK = tuple(_ROWS["Check command"].strip("`").split()[1:])
-YAML_CONFIG_FILE = _ROWS["Config file"].strip("`")
-PACKAGE_MANAGER_FILES = {
-    Path(p.strip().strip("`")).name for p in _ROWS["Excluded files"].split(",")
-}
 
 
 def _files(root: Path, *suffixes: str) -> list[str]:
@@ -103,20 +98,14 @@ def test_s19_1_2_2_rendered_toml_is_taplo_clean(
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s19_1_2_3_rendered_yaml_is_clean(
-    archetype: str, rendered: Callable[[str], Path], tmp_path: Path
+def test_s19_1_3_10_rendered_yaml_is_clean_under_its_own_config(
+    archetype: str, rendered: Callable[[str], Path]
 ) -> None:
     root = rendered(archetype)
-    (tmp_path / YAML_CONFIG_FILE).write_text(YAML_CONFIG, encoding="utf-8")
-    names = [
-        n
-        for n in _files(root, ".yml", ".yaml")
-        if Path(n).name not in PACKAGE_MANAGER_FILES
-    ]
-    for name in names:
-        (tmp_path / name).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(root / name, tmp_path / name)
-    done = _run(tmp_path, [str(BIN / YAML_EXECUTABLE), *YAML_CHECK, *names])
+    done = _run(
+        root,
+        [str(BIN / YAML_EXECUTABLE), *YAML_CHECK, *_files(root, ".yml", ".yaml")],
+    )
     assert done.returncode == 0, done.stdout + done.stderr
 
 

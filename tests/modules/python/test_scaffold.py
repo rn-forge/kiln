@@ -700,6 +700,14 @@ def test_s15_2_2_4_pip_licenses_is_a_task_tool() -> None:
     assert any(e.startswith("pip-licenses") for e in python_scaffold._DEV_GROUP)
 
 
+def test_s19_1_3_6_the_formatter_is_a_dev_dependency_and_a_task_tool() -> None:
+    assert "google-yamlfmt" in TASK_TOOLS
+    assert (
+        len([e for e in python_scaffold._DEV_GROUP if e.startswith("google-yamlfmt>=")])
+        == 1
+    )
+
+
 COMMONS_LIB_CONFIG = """
 schema_version = 1
 

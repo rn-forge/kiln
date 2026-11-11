@@ -17,7 +17,7 @@ GITIGNORE_BLOCK = ManagedBlock("rn-forge kiln")
 
 
 def render(config: KilnConfig) -> list[Artifact]:
-    """Render `.editorconfig`, `.mdformat.toml`, `.taplo.toml`, the workspace file and the `.gitignore` block."""
+    """Render `.editorconfig`, `.mdformat.toml`, `.taplo.toml`, `.yamlfmt.yaml`, the workspace file and the `.gitignore` block."""
     engine = TemplateEngine.cached(package="rn_forge.kiln.modules.core")
     context = {
         "kiln_version": __version__,
@@ -35,6 +35,9 @@ def render(config: KilnConfig) -> list[Artifact]:
             ),
             TemplateArtifact(
                 ".taplo.toml", ArtifactKind.SEEDED, template="taplo.toml.j2"
+            ),
+            TemplateArtifact(
+                ".yamlfmt.yaml", ArtifactKind.SEEDED, template="yamlfmt.yaml.j2"
             ),
             TemplateArtifact(
                 f"{config.name}.code-workspace",

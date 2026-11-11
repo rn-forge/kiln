@@ -50,23 +50,25 @@ tasks:
       - task: docs:build
 
   lint:
-    desc: Every lint — Python, imports, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs), workflow security, dependency vulnerabilities, dependency licences.
+    desc: Every lint — Python, imports, Markdown, TOML and YAML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs), workflow security, dependency vulnerabilities, dependency licences.
     cmds:
       - task: python:lint
       - task: python:lint:imports
       - task: quality:lint:markdown
       - task: quality:lint:toml
+      - task: quality:lint:yaml
       - task: kiln:doctor
       - task: ci:lint:workflows
       - task: python:lint:audit
       - task: python:lint:licenses
 
   format:
-    desc: Format Python code, TOML and Markdown prose in place.
+    desc: Format Python code, TOML, YAML and Markdown prose in place.
     cmds:
       - task: python:format
       - task: quality:format:markdown
       - task: quality:format:toml
+      - task: quality:format:yaml
 
   typecheck:
     desc: Static type-check the package in pyright strict mode.

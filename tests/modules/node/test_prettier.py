@@ -56,6 +56,8 @@ RC = {
 PATTERNS = [
     "*.md",
     "*.toml",
+    "*.yml",
+    "*.yaml",
     "*.py",
     "*.pyi",
     "pnpm-lock.yaml",
@@ -216,6 +218,14 @@ def test_s16_7_3_5_tasks(tmp_path: Path, archetype: str) -> None:
         assert fmt.index({"task": "python:format"}) + 1 == fmt.index(
             {"task": "node:format"}
         )
+
+
+@pytest.mark.parametrize("archetype", NODE_ARCHETYPES)
+def test_s19_1_3_9_prettier_leaves_yaml_to_the_other_formatter(
+    tmp_path: Path, archetype: str
+) -> None:
+    tasks = _node_tasks(_root(tmp_path, archetype))
+    assert "YAML" not in tasks["node"]["format"]["desc"]
 
 
 def test_s16_7_3_5_python_archetypes_are_unchanged(tmp_path: Path) -> None:

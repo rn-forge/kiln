@@ -30,6 +30,10 @@ tasks:
     desc: Check TOML
     cmds: [taplo fmt --check]
     internal: true
+  lint:yaml:
+    desc: Check YAML
+    cmds: [yamlfmt -lint]
+    internal: true
 """
 
 QUALITY = QUALITY_HEAD
@@ -92,6 +96,7 @@ GATE_REFS = "\n".join(
         "python:lint:licenses",
         "quality:lint:markdown",
         "quality:lint:toml",
+        "quality:lint:yaml",
         "python:typecheck",
         "python:test",
     )

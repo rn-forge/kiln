@@ -25,8 +25,10 @@ _WORKSPACE_TASKS = ("workspace:clean",)
 _QUALITY_TASKS = (
     "quality:lint:markdown",
     "quality:lint:toml",
+    "quality:lint:yaml",
     "quality:format:markdown",
     "quality:format:toml",
+    "quality:format:yaml",
 )
 _PYTHON_TASKS = (
     "python:install",

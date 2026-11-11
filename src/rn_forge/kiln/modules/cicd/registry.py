@@ -99,7 +99,7 @@ CHECKS: tuple[CiCheck, ...] = (
     _std("ruff check and format", "lint", _PY),
     _std("pyright strict", "typecheck", _PY, lib="test"),
     _std("lint-imports", "lint", _PY),
-    _std("Markdown and TOML formatting", "lint", _ALL),
+    _std("Markdown, TOML and YAML formatting", "lint", _ALL),
     _std(
         "kiln doctor",
         "lint",

@@ -65,6 +65,7 @@ def test_s4_2_3_applying_core_into_an_empty_directory_only_creates_and_inserts(
         ".editorconfig": Action.CREATE,
         ".mdformat.toml": Action.CREATE,
         ".taplo.toml": Action.CREATE,
+        ".yamlfmt.yaml": Action.CREATE,
         "demo.code-workspace": Action.CREATE,
         ".gitignore#rn-forge kiln": Action.INSERT,
         ".importlinter#rn-forge kiln": Action.INSERT,
@@ -91,6 +92,7 @@ def test_s4_2_3_applying_core_into_an_empty_directory_only_creates_and_inserts(
         ".editorconfig",
         ".mdformat.toml",
         ".taplo.toml",
+        ".yamlfmt.yaml",
         "demo.code-workspace",
         ".gitignore",
         ".importlinter",
@@ -166,6 +168,41 @@ def test_s4_10_1_6_seeded_toml_is_taplo_clean(root: Path, home: Path) -> None:
             check=False,
         )
         assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_s19_1_3_7_the_yaml_config_is_seeded_once(tmp_path: Path, home: Path) -> None:
+    root = tmp_path / "absent"
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(CONFIG, encoding="utf-8")
+    cycle.apply(root, home=home)
+    seeded = root / ".yamlfmt.yaml"
+    assert seeded.is_file()
+    assert "**/pnpm-lock.yaml" in seeded.read_text(encoding="utf-8")
+
+    existing = tmp_path / "present"
+    config = existing / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True)
+    config.write_text(CONFIG, encoding="utf-8")
+    expected = "formatter:\n  type: basic\n"
+    existing_file = existing / ".yamlfmt.yaml"
+    existing_file.write_text(expected, encoding="utf-8")
+    cycle.apply(existing, home=home)
+    assert existing_file.read_text(encoding="utf-8") == expected
+
+
+def test_s19_1_3_8_the_seeded_config_is_a_clean_yaml_file(
+    root: Path, home: Path
+) -> None:
+    cycle.apply(root, home=home)
+    result = subprocess.run(
+        [str(Path(sys.executable).parent / "yamlfmt"), "-lint", ".yamlfmt.yaml"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_s5_3_6_5_workspace_file_is_one_relative_folder(

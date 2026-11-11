@@ -29,10 +29,10 @@ The developer surface for this repo is exactly:
 | `task docs:build` | Build the MkDocs site into .docs-site/ (or $1 when given). |
 | `task docs:generate` | Regenerate the docs' derived regions. |
 | `task docs:serve` | Serve the docs site locally with live reload on http://127.0.0.1:8080. |
-| `task format` | Format Python code, TOML and Markdown prose in place. |
+| `task format` | Format Python code, TOML, YAML and Markdown prose in place. |
 | `task kiln:apply` | Re-render the generated files from .rn-forge/kiln/config.toml. Pass --dry-run, or --force \<path> to overwrite a drifted file, after `--`. |
 | `task kiln:diff` | Show every generated file that differs from a fresh render, writing nothing. Pass --artifact \<key or path> after `--` to limit it to one. |
-| `task lint` | Every lint — Python, imports, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs), workflow security, dependency vulnerabilities, dependency licences. |
+| `task lint` | Every lint — Python, imports, Markdown, TOML and YAML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs), workflow security, dependency vulnerabilities, dependency licences. |
 | `task setup` | Install the project and its dev + docs dependency groups. |
 | `task test` | Run the pytest suite. |
 | `task test:coverage` | Run the pytest suite with an XML coverage report (used by CI/Sonar). |
@@ -249,7 +249,7 @@ model.
 | ruff check and format | `task lint` | S |
 | pyright strict | `task typecheck` | S |
 | `lint-imports` | `task lint` | S |
-| Markdown and TOML formatting | `task lint` | S |
+| Markdown, TOML and YAML formatting | `task lint` | S |
 | `kiln doctor` | `task lint` | S; `--full` per `[ci] doctor_full`, default `default-branch` |
 | zizmor, actionlint | `task lint` | S |
 | `pip-audit` | `task lint` | S; ignore list `[ci.checks] pip-audit` |
