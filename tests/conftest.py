@@ -7,7 +7,10 @@ looks at.
 
 from __future__ import annotations
 
+import fcntl
 import json
+import os
+import shutil
 import subprocess
 from collections.abc import Callable, Iterator
 from pathlib import Path
@@ -87,45 +90,90 @@ FLAGS: dict[str, dict[str, str]] = {
 }
 
 
+# The archetypes whose `kiln new` runs a slow Nx workspace build; one copy is
+# built per test run and shared by every xdist worker.
+SHARED_ARCHETYPES = ("node-lib", "python-web-app")
+
+
 @pytest.fixture(scope="session")
-def rendered(tmp_path_factory: pytest.TempPathFactory) -> Callable[[str], Path]:
+def shared_build(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> Callable[[str, Callable[[Path], None]], Path]:
+    """Return `(name, build) -> Path`: builds `name` once per test run, across
+    xdist workers, and returns its directory; the result is read-only.
+    """
+
+    def run(name: str, build: Callable[[Path], None]) -> Path:
+        base = tmp_path_factory.getbasetemp()
+        if os.environ.get("PYTEST_XDIST_WORKER"):
+            base = base.parent
+        shared = base / "shared"
+        shared.mkdir(parents=True, exist_ok=True)
+        target = shared / name
+        marker = shared / f"{name}.done"
+        with (shared / f"{name}.lock").open("w") as handle:
+            fcntl.flock(handle, fcntl.LOCK_EX)
+            if not marker.exists():
+                shutil.rmtree(target, ignore_errors=True)
+                target.mkdir()
+                build(target)
+                marker.touch()
+        return target
+
+    return run
+
+
+def _render(parent: Path, archetype: str) -> Path:
+    """Run `kiln new` for `archetype` in `parent` and return the new root."""
+    from rn_forge.kiln import commands
+    from rn_forge.kiln.modules.core import cycle
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.chdir(parent)
+        commands.new(
+            Path(archetype),
+            archetype=archetype,
+            docs="mkdocs",
+            owner="rn-forge",
+            yes=True,
+            **FLAGS.get(archetype, {}),
+        )
+    root = parent / archetype
+    if archetype == "python-lib":
+        for args in (
+            ("init", "-q"),
+            ("remote", "add", "origin", "https://github.com/rn-forge/python-lib"),
+        ):
+            subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
+        for package in ("lib-alpha", "lib-beta"):
+            commands.generate_package(package, path=root)
+        # generate_package writes a bare skeleton (S16.6.11), so the library's
+        # packages carry their starter.
+        cycle.apply(root, starters="packages/")
+    return root
+
+
+@pytest.fixture(scope="session")
+def rendered(
+    tmp_path_factory: pytest.TempPathFactory,
+    shared_build: Callable[[str, Callable[[Path], None]], Path],
+) -> Callable[[str], Path]:
     """Return `(archetype) -> Path` to a repository `kiln new` rendered once.
 
     The result is read-only; a test that changes it copies it first.
     """
-    from rn_forge.kiln import commands
-    from rn_forge.kiln.modules.core import cycle
-
     cache: dict[str, Path] = {}
 
     def build(archetype: str) -> Path:
         if archetype in cache:
             return cache[archetype]
-        parent = tmp_path_factory.mktemp(archetype)
-        with pytest.MonkeyPatch.context() as patch:
-            patch.chdir(parent)
-            commands.new(
-                Path(archetype),
-                archetype=archetype,
-                docs="mkdocs",
-                owner="rn-forge",
-                yes=True,
-                **FLAGS.get(archetype, {}),
+        if archetype in SHARED_ARCHETYPES:
+            root = (
+                shared_build(archetype, lambda parent: _render(parent, archetype))
+                / archetype
             )
-        root = parent / archetype
-        if archetype == "python-lib":
-            for args in (
-                ("init", "-q"),
-                ("remote", "add", "origin", "https://github.com/rn-forge/python-lib"),
-            ):
-                subprocess.run(
-                    ["git", *args], cwd=root, check=True, capture_output=True
-                )
-            for package in ("lib-alpha", "lib-beta"):
-                commands.generate_package(package, path=root)
-            # generate_package writes a bare skeleton (S16.6.11), so the library's
-            # packages carry their starter.
-            cycle.apply(root, starters="packages/")
+        else:
+            root = _render(tmp_path_factory.mktemp(archetype), archetype)
         cache[archetype] = root
         return root
 
