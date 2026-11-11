@@ -103,10 +103,15 @@ are [release-2](../release-2/index.md).
 | [F17.1 — The task surface says what it is](../../specs/epics/E17-task-standard/F17.1-task-surface.md) | E17 | Closed |
 | [F17.2 — One grammar for the CI surface, and one home for check policy](../../specs/epics/E17-task-standard/F17.2-ci-task-grammar.md) | E17 | Closed |
 | [F17.3 — A faster gate](../../specs/epics/E17-task-standard/F17.3-a-faster-gate.md) | E17 | Active |
-| [F18.1 — Tests named by behaviour](../../specs/epics/E18-v1-spec-rewrite/F18.1-tests-named-by-behaviour.md) | E18 | New |
-| [F18.2 — Spec IDs out of the code and the docs outside the specs](../../specs/epics/E18-v1-spec-rewrite/F18.2-ids-out-of-code-and-docs.md) | E18 | New |
-| [F18.3 — One epic per area](../../specs/epics/E18-v1-spec-rewrite/F18.3-area-epics.md) | E18 | New |
-| [F18.4 — `feature/v1` lands on `main` as one commit](../../specs/epics/E18-v1-spec-rewrite/F18.4-one-commit-on-main.md) | E18 | New |
+| [F18.1 — Tests named by behaviour](../../specs/epics/E18-kiln-simplification/F18.1-tests-named-by-behaviour.md) | E18 | New |
+| [F18.2 — Spec IDs out of the code and the docs outside the specs](../../specs/epics/E18-kiln-simplification/F18.2-ids-out-of-code-and-docs.md) | E18 | New |
+| [F18.3 — One epic per area](../../specs/epics/E18-kiln-simplification/F18.3-area-epics.md) | E18 | New |
+| [F18.4 — `feature/v1` lands on `main` as one commit](../../specs/epics/E18-kiln-simplification/F18.4-one-commit-on-main.md) | E18 | New |
+| [F18.5 — Tests that survive a refactor](../../specs/epics/E18-kiln-simplification/F18.5-tests-survive-a-refactor.md) | E18 | New |
+| [F18.6 — `commands` is a package, one module per command](../../specs/epics/E18-kiln-simplification/F18.6-commands-package.md) | E18 | New |
+| [F18.7 — One owner per concept](../../specs/epics/E18-kiln-simplification/F18.7-one-owner-per-concept.md) | E18 | New |
+| [F18.8 — Modules meet only through composition](../../specs/epics/E18-kiln-simplification/F18.8-modules-meet-through-composition.md) | E18 | New |
+| [F18.9 — Large files split by job](../../specs/epics/E18-kiln-simplification/F18.9-large-files-split.md) | E18 | New |
 | [F19.1 — YAML has a formatter, and kiln's own files pass it](../../specs/epics/E19-formatting-standard/F19.1-yaml-formatter.md) | E19 | Closed |
 | [F19.2 — The nav block is a plain `ManagedBlock`](../../specs/epics/E19-formatting-standard/F19.2-nav-block-end-indent.md) | E19 | New |
 

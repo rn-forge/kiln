@@ -1,4 +1,4 @@
-# E18 — The v1 spec rewrite and one commit on main
+# E18 — kiln simplification
 
 |  |  |
 | -- | -- |
@@ -12,8 +12,38 @@
 | [F18.2 — Spec IDs out of the code and the docs outside the specs](F18.2-ids-out-of-code-and-docs.md) | New | release-1 | 4 New |
 | [F18.3 — One epic per area](F18.3-area-epics.md) | New | release-1 | 10 New |
 | [F18.4 — `feature/v1` lands on `main` as one commit](F18.4-one-commit-on-main.md) | New | release-1 | 2 New |
+| [F18.5 — Tests that survive a refactor](F18.5-tests-survive-a-refactor.md) | New | release-1 | 4 New |
+| [F18.6 — `commands` is a package, one module per command](F18.6-commands-package.md) | New | release-1 | 3 New |
+| [F18.7 — One owner per concept](F18.7-one-owner-per-concept.md) | New | release-1 | 4 New |
+| [F18.8 — Modules meet only through composition](F18.8-modules-meet-through-composition.md) | New | release-1 | 2 New |
+| [F18.9 — Large files split by job](F18.9-large-files-split.md) | New | release-1 | 4 New |
+| [F18.10 — The defects the reviews confirmed](F18.10-review-defects.md) | New | release-2 | 15 New |
+| [F18.11 — Checks police the repository, not kiln's output](F18.11-checks-police-repository-content.md) | New | release-2 | 2 New |
 
 <!-- END derived features -->
+
+Simplifies kiln's code, tests and specs before v1, then lands `feature/v1` on
+`main` as a single commit. It acts on
+[the kiln-simplification idea](../../ideas/kiln-simplification.md). The epic was
+renamed from "The v1 spec rewrite and one commit on main" on 2026-11-10, when
+the code review of that date added F18.5 to F18.11.
+
+### The order
+
+```text
+F18.5 tests survive a refactor ─→ F18.6 commands package ─→ F18.7 one owner per concept
+  ─→ F18.8 composition only ─→ F18.9 large files split
+  ─→ F18.1 test renames ─→ F18.2 IDs out ─→ F18.3 area epics ─→ F18.4 one commit on main
+release 2: F18.10 review defects · F18.11 checks police the repository
+```
+
+F18.5 to F18.9 change no behaviour. They come before the spec rewrite, so that
+F18.3's area epics describe the simplified code, and before F18.1, so that the
+renames land in test files already organised by subject. F18.10 and F18.11
+change what kiln renders or reports, so they wait for the tag. That split was
+proposed on 2026-11-10 and waits on the owner's confirmation.
+
+### The spec rewrite (F18.1 to F18.4)
 
 Rewrites the specs to describe kiln as it is at v1, one epic per area of the
 product, and lands `feature/v1` on `main` as a single commit. The spec format
@@ -22,7 +52,7 @@ prose inside them is cut. Build lists, verbatim code and step-by-step briefs
 were needed while smaller models built the stories. Now that the code exists,
 they are redundant and only drift.
 
-It is the last work in release 1, before the tag
+The rewrite is the last work in release 1, before the tag
 ([F7.2](../E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md)),
 and it starts once every other release-1 story has closed. Starting earlier
 would mean merging the rewrite against every story still closing in the shared

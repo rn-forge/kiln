@@ -6,7 +6,7 @@ An impartial review of kiln on 2026-10-20 asked whether kiln is
 over-complicated. It is, but mostly in its process and in the standard it
 enforces, not in the generator code. This page records the findings so they can
 be refined into work later. Nothing here is agreed, except the v1 spec rewrite,
-which is now [E18](../epics/E18-v1-spec-rewrite/index.md).
+which is now [E18](../epics/E18-kiln-simplification/index.md).
 
 ## The evidence
 
@@ -268,9 +268,23 @@ is release correctness, P2 a functional defect, and P3 a standards gap.
 
 ## The v1 spec rewrite
 
-Promoted on 2026-11-07 to [E18](../epics/E18-v1-spec-rewrite/index.md), with the
-owner's decisions of 2026-11-06. It acts on findings 2 and 8 for the specs, and
-leaves the work-item model of finding 1 as it is.
+Promoted on 2026-11-07 to [E18](../epics/E18-kiln-simplification/index.md), with
+the owner's decisions of 2026-11-06. It acts on findings 2 and 8 for the specs,
+and leaves the work-item model of finding 1 as it is.
+
+## The 2026-11-10 code review
+
+A second review, of `6b3549b`, re-checked findings 5, 7, 9 and 10 and the
+defects above, and turned them into work in
+[E18](../epics/E18-kiln-simplification/index.md):
+
+- F18.5 to F18.9 are the behaviour-preserving half.
+- F18.10 and F18.11 change behaviour.
+
+Defects 1 and 9 are already fixed. Every other row still holds. The review also
+found that `kiln-pin` is never run by doctor, and that `ci.yml` renders
+`test-cloud`, `test-local` and `umbrella` jobs which `GENERATED_JOBS` does not
+reserve.
 
 ## What to keep
 
@@ -290,7 +304,7 @@ leaves the work-item model of finding 1 as it is.
 1. Limit archetypes and flags to what real repositories use today (finding 3).
 1. Promote each major design into an architecture page (finding 8), then archive
    plans and history and trim closed stories and ADRs (finding 2). For v1, the
-   specs and plans part is [E18](../epics/E18-v1-spec-rewrite/index.md).
+   specs and plans part is [E18](../epics/E18-kiln-simplification/index.md).
 
 ## Open questions for refinement
 
