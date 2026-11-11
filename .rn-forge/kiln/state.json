@@ -72,7 +72,7 @@
     },
     ".gitignore#rn-forge kiln": {
       "begin_marker": "# BEGIN rn-forge kiln",
-      "content_hash": "4117a940396b84a9e60476825b352dce0c658657ecc575ee27c6fddb93ccb651",
+      "content_hash": "1d96c90030c07d0e898b19e501f3dd28e45cb3acb90668e2f7d639b92ab53095",
       "end_marker": "# END rn-forge kiln",
       "kind": "block",
       "path": ".gitignore"
@@ -93,7 +93,7 @@
     },
     ".rn-forge/kiln/standard.md": {
       "begin_marker": null,
-      "content_hash": "0f3d3e41ca41305655826141d3e9336f1b685ba3833b66c3df4d6a980258fae6",
+      "content_hash": "74fdbe4c38c0fa599536a2166b385382406190a54fa973e4f17437db5c7dc96b",
       "end_marker": null,
       "kind": "managed",
       "path": ".rn-forge/kiln/standard.md"
@@ -345,7 +345,7 @@
     },
     "tasks/workspace.yml": {
       "begin_marker": null,
-      "content_hash": "1275ec328041241208aefcfb22c3853dd0a51759d3235efcfbf01bd04f329d4f",
+      "content_hash": "101ab257318d8767b658625917c2d135e39a3a2adaa109093141a3e4f106fed6",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/workspace.yml"

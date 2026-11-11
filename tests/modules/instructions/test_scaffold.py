@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import tomllib
 from collections.abc import Callable
 from pathlib import Path
 
@@ -268,3 +269,72 @@ def test_s16_10_2_3_readme_carries_no_agent_directive(
     assert "CLAUDE.md" not in text
     assert "AGENTS.md" not in text
     assert "agent" not in text.lower()
+
+
+STANDARD_ARCHETYPES = (
+    "python-app",
+    "python-tool",
+    "python-lib",
+    "python-web-api",
+    "python-web-app",
+    "node-lib",
+)
+
+
+FLAGS = {
+    "python-web-api": {"backend": "fastapi"},
+    "python-web-app": {"backend": "fastapi", "frontend": "angular"},
+}
+
+
+def _cell(
+    archetype: str, profile: str, tmp_path: Path, rendered: Callable[[str], Path]
+) -> Path:
+    if profile == "mkdocs":
+        return rendered(archetype)
+    from rn_forge.kiln import commands
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.chdir(tmp_path)
+        commands.new(
+            Path(archetype),
+            archetype=archetype,
+            docs="none",
+            owner="rn-forge",
+            yes=True,
+            **FLAGS.get(archetype, {}),
+        )
+    return tmp_path / archetype
+
+
+@pytest.mark.parametrize("profile", ["mkdocs", "none"])
+@pytest.mark.parametrize("archetype", STANDARD_ARCHETYPES)
+def test_s16_9_12_1_standard_is_mdformat_clean(
+    archetype: str,
+    profile: str,
+    tmp_path: Path,
+    rendered: Callable[[str], Path],
+) -> None:
+    cell = _cell(archetype, profile, tmp_path, rendered)
+    root = tmp_path / "check"
+    (root / ".rn-forge" / "kiln").mkdir(parents=True)
+    (root / ".mdformat.toml").write_bytes((cell / ".mdformat.toml").read_bytes())
+    (root / ".rn-forge" / "kiln" / "standard.md").write_bytes(
+        (cell / ".rn-forge" / "kiln" / "standard.md").read_bytes()
+    )
+    result = subprocess.run(
+        [sys.executable, "-m", "mdformat", "--check", ".rn-forge/kiln/standard.md"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_s16_9_12_2_seeded_mdformat_config_has_no_exclude(
+    rendered: Callable[[str], Path],
+) -> None:
+    text = (rendered("python-tool") / ".mdformat.toml").read_text(encoding="utf-8")
+    assert "standard.md" not in text
+    assert set(tomllib.loads(text)) == {"wrap", "plugin"}

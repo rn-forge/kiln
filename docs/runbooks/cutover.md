@@ -31,8 +31,10 @@ and links here. A repository with no pre-kiln lineage is rebuilt with `kiln new`
    reference's, markers included, leaving the repository's text outside;
    `AGENTS.md` takes the reference's block, and a fenced kiln region left in
    `CLAUDE.md` is deleted; add each `seeded` file the repository lacks and
-   keep the repository's version of one it has; keep every `scaffolded` file
-   the repository has; copy `.rn-forge/kiln/config.toml` and `state.json` last.
+   keep the repository's version of one it has (a repository's own
+   `.mdformat.toml` keeps its version; delete its `exclude` line for
+   `.rn-forge/kiln/standard.md` by hand); keep every `scaffolded` file the
+   repository has; copy `.rn-forge/kiln/config.toml` and `state.json` last.
    `mkdocs.yml` is copied whole like any managed file; its `nav` is a derived
    region, so run `task docs:generate` after the copy and the repository's own
    pages fill it (about 150 lines of the first diff are this, and no verdict

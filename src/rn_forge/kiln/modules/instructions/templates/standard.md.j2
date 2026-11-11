@@ -99,6 +99,9 @@ Every path kiln writes or reads has exactly one of these kinds:
   `README.md`, `CLAUDE.md`, the bodies of `AGENTS.md` and `mkdocs.yml`, the
   first {% if node_lib %}`libs/` and `apps/`{% else %}`src/` and `tests/`{% endif %}) is written by `kiln new` before its first apply,
   and never again.
+- `.tmp/` is the repo's scratch root: disposable, gitignored, removed by
+  `task clean`. Tests and tools write their output under it, and nothing kiln
+  or the repo keeps lives there.
 - Paths kiln neither writes nor reads (`.claude/**`, `.codex/**`, installed
   skills) are not kiln's and have no kind.
 - The instruction files are **split by audience.** `README.md` is for

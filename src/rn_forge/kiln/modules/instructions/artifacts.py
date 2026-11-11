@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import re
 from pathlib import Path
 
@@ -73,6 +74,43 @@ def _paragraph(text: str) -> str:
             line = f"{line} {token}" if line else token
     lines.append(line)
     return "\n".join(lines)
+
+
+def _refill(markdown: str) -> str:
+    """*markdown* with its paragraphs and top-level bullets wrapped as mdformat wraps them.
+
+    `standard.md` interpolates values and switches whole sentences on and off, so
+    no hand-wrapping in the template is right for every cell. Headings, tables,
+    comments and code fences pass through; runs of blank lines collapse to one.
+    """
+    lines = markdown.split("\n")
+    out: list[str] = []
+    fenced = False
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        i += 1
+        if fenced or line.startswith("```"):
+            fenced = fenced != line.startswith("```")
+            out.append(line)
+        elif not line.strip():
+            if out and out[-1]:
+                out.append("")
+        elif line.startswith(("#", "|", "<!--")):
+            out.append(line)
+        else:
+            bullet = line.startswith("- ")
+            words = [line[2:] if bullet else line]
+            while (
+                i < len(lines)
+                and lines[i].strip()
+                and not lines[i].startswith(("- ", "#", "|", "<!--", "```"))
+            ):
+                words.append(lines[i])
+                i += 1
+            text = " ".join(words)
+            out.append(_bullet(text) if bullet else _paragraph(text))
+    return "\n".join(out).rstrip("\n") + "\n"
 
 
 _CELL_ESCAPE = re.compile(r"(`[^`]*`)|([<*])")
@@ -198,7 +236,7 @@ def render(config: KilnConfig) -> list[Artifact]:
     engine = TemplateEngine.cached(package=_PACKAGE)
     engine.environment.filters["md_cell"] = md_cell
     values = context(config)
-    return render_artifacts(
+    artifacts = render_artifacts(
         engine,
         values,
         [
@@ -211,3 +249,9 @@ def render(config: KilnConfig) -> list[Artifact]:
             TemplateArtifact(".rn-forge/kiln/standard.md", template="standard.md.j2"),
         ],
     )
+    return [
+        dataclasses.replace(artifact, content=_refill(artifact.content))
+        if artifact.path == ".rn-forge/kiln/standard.md"
+        else artifact
+        for artifact in artifacts
+    ]

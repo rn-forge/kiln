@@ -156,3 +156,13 @@ def test_s16_8_3_5_cutover_step_8_keeps_its_gate() -> None:
     ):
         assert present in flat, present
     assert "--name adopt" not in flat
+
+
+def test_s16_9_12_4_runbook_drops_the_standard_exclude() -> None:
+    flat = _flat()
+    start = flat.index("**Bring the files over.**")
+    end = flat.index("**Read the diff file by file.**")
+    step = flat[start:end]
+
+    assert ".mdformat.toml" in step
+    assert "exclude" in step

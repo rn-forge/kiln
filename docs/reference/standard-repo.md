@@ -117,6 +117,9 @@ Every path kiln writes or reads has exactly one of these kinds:
   recreate it. A scaffolded file (`pyproject.toml`, `README.md`, `CLAUDE.md`,
   the bodies of `AGENTS.md` and `mkdocs.yml`, the first `src/` and `tests/`)
   is written by `kiln new` before its first apply, and never again.
+- `.tmp/` is the repo's scratch root: disposable, gitignored, removed by
+  `task clean`. Tests and tools write their output under it, and nothing kiln
+  or the repo keeps lives there.
 - "Nothing, including presence" for **seeded** is the target set by
   [ADR-0003](../adr/ADR-0003.md). The `generated` check skips a seeded state
   entry.

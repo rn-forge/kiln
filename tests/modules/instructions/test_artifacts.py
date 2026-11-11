@@ -918,3 +918,12 @@ def test_s16_10_6_2_standard_states_the_split_by_audience(tmp_path: Path) -> Non
     text = _squash(_rendered(_root(tmp_path))[STANDARD])
     for phrase in ("split by audience", "`@AGENTS.md`", "does not own the file"):
         assert phrase in text, phrase
+
+
+@pytest.mark.parametrize("archetype", ["python-tool", "node-lib"])
+def test_s16_9_5_3_the_standard_names_the_scratch_root(
+    tmp_path: Path, archetype: str
+) -> None:
+    standard = _rendered(_root(tmp_path, archetype))[STANDARD]
+    assert ".tmp/" in standard
+    assert "scratch root" in standard

@@ -3836,3 +3836,18 @@ def test_s16_7_1_3_empty_site_dir_means_mkdocs_default(tmp_path: Path) -> None:
     assert "site/" in _load(root, "tasks/docs.yml")["tasks"]["build"]["desc"]
     assert ".docs-site" not in _load(root, "tasks/docs.yml")["tasks"]["build"]["desc"]
     assert "site_dir" not in (root / "mkdocs.yml").read_text(encoding="utf-8")
+
+
+def test_s16_9_5_2_clean_removes_the_scratch_root(tmp_path: Path) -> None:
+    root = _root(tmp_path / "default")
+    cycle.apply(root, home=tmp_path / "home")
+    cmds = _load(root, "tasks/workspace.yml")["tasks"]["clean"]["cmds"]
+    assert any(c.startswith("rm -rf ") and ".tmp" in c.split() for c in cmds)
+
+    custom = _root(
+        tmp_path / "custom",
+        extra='\n[tasks]\n[tasks.command_overrides]\n"workspace:clean" = "echo hi"\n',
+    )
+    cycle.apply(custom, home=tmp_path / "home")
+    cmds = _load(custom, "tasks/workspace.yml")["tasks"]["clean"]["cmds"]
+    assert cmds == ["echo hi"]

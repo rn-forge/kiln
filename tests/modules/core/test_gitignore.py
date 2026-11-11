@@ -242,6 +242,9 @@ S16_4_1_BLOCK = """\
 # macOS
 .DS_Store
 
+# Scratch root (tests and tools write here; task clean removes it)
+.tmp/
+
 # Python tool caches
 .pytest_cache/
 .ruff_cache/
@@ -317,3 +320,25 @@ def test_s16_7_1_2_gitignore_has_one_build_line(root: Path) -> None:
     lines = _s16_7_1_lines(root, "none", "out/site")
     assert not {"out/site/", ".docs-site/", "site/"} & set(lines)
     assert not [line for line in lines if line.startswith("# Docs build output")]
+
+
+@pytest.mark.parametrize(
+    "archetype",
+    [
+        "python-app",
+        "python-tool",
+        "python-lib",
+        "python-web-api",
+        "python-web-app",
+        "node-lib",
+    ],
+)
+def test_s16_9_5_1_the_block_lists_the_scratch_root(root: Path, archetype: str) -> None:
+    body = _block(root, archetype, "mkdocs")
+    assert ".tmp/" in body.splitlines()
+    cycle.apply(root, home=root.parent / "home")
+    subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+    result = subprocess.run(
+        ["git", "check-ignore", "-q", "--no-index", ".tmp/x"], cwd=root, check=False
+    )
+    assert result.returncode == 0

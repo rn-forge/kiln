@@ -28,5 +28,5 @@ tasks:
     desc: Remove build outputs, tool caches, and the rendered docs site.
     internal: true
     cmds:
-      - rm -rf dist build .docs-site .pytest_cache .ruff_cache .uv-cache .import_linter_cache coverage.xml
+      - rm -rf dist build .docs-site .tmp .pytest_cache .ruff_cache .uv-cache .import_linter_cache coverage.xml
       - find . -type d -name __pycache__ -not -path './.venv/*' -exec rm -rf {} +

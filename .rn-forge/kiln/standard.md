@@ -8,11 +8,11 @@ text for anyone — human or agent — working here. The reasoning behind each r
 is a kiln ADR; this file states the rule.
 
 - **Archetype:** `python-tool` — `python-app` with `lifecycle = true`: one uv
-  package, `src/` layout, pytest, ruff and pyright at the root, GitHub Actions,
-  a command line declared in `.rn-forge/kiln/config.toml` rather than assembled
-  by hand, and the lifecycle verbs declared in `[lifecycle]`.
-- **Docs profile:** `mkdocs` — the full area model, a derived nav, and a
-  strict site build inside `task validate`.
+  package, `src/` layout, pytest, ruff and pyright at the root, GitHub
+  Actions, a command line declared in `.rn-forge/kiln/config.toml` rather than
+  assembled by hand, and the lifecycle verbs declared in `[lifecycle]`.
+- **Docs profile:** `mkdocs` — the full area model, a derived nav, and a strict
+  site build inside `task validate`.
 - **CI:** GitHub Actions, Sonar on, release by tag-exists check.
 
 ## 1. One entrypoint
@@ -40,9 +40,9 @@ The developer surface for this repo is exactly:
 | `task validate` | The aggregate gate — lint, typecheck, test, docs build. Any failure fails. |
 | `task version` | Print the package version from pyproject.toml. |
 
-The CI surface, `ci:*`, is public only because a workflow step runs it from
-the command line, which go-task refuses for an internal task. It is CI's;
-a developer has no reason to call it:
+The CI surface, `ci:*`, is public only because a workflow step runs it from the
+command line, which go-task refuses for an internal task. It is CI's; a
+developer has no reason to call it:
 
 | Task | What it does |
 | -- | -- |
@@ -89,18 +89,21 @@ Every path kiln writes or reads has exactly one of these kinds:
   `README.md`, `CLAUDE.md`, the bodies of `AGENTS.md` and `mkdocs.yml`, the
   first `src/` and `tests/`) is written by `kiln new` before its first apply,
   and never again.
+- `.tmp/` is the repo's scratch root: disposable, gitignored, removed by
+  `task clean`. Tests and tools write their output under it, and nothing kiln
+  or the repo keeps lives there.
 - Paths kiln neither writes nor reads (`.claude/**`, `.codex/**`, installed
   skills) are not kiln's and have no kind.
-- The instruction files are **split by audience.** `README.md` is for
-  people and carries no agent directive. `AGENTS.md` is the agent
-  instructions: its body is repo-owned and kiln's block is in it, and a tool
-  that adds its own block does not own the file. `CLAUDE.md` is `@AGENTS.md`
-  plus what only Claude should read, and carries no block.
+- The instruction files are **split by audience.** `README.md` is for people and
+  carries no agent directive. `AGENTS.md` is the agent instructions: its body
+  is repo-owned and kiln's block is in it, and a tool that adds its own block
+  does not own the file. `CLAUDE.md` is `@AGENTS.md` plus what only Claude
+  should read, and carries no block.
 
 Managed here: `Taskfile.yml`, `tasks/*.yml`, `.editorconfig`,
 `.github/workflows/*.yml`, `.github/actions/setup`, `sonar-project.properties`
-and this file. `.rn-forge/kiln/state.json` is generated and committed, and
-never hashes itself.
+and this file. `.rn-forge/kiln/state.json` is generated and committed, and never
+hashes itself.
 
 Blocks here: the `# BEGIN rn-forge kiln` region in `.gitignore` and
 `.importlinter`, and the `<!-- BEGIN rn-forge kiln -->` region in `AGENTS.md`.
@@ -158,16 +161,15 @@ allowed and pinned-or-ranged, accepts a branch or path source with a warning,
 and refuses one in a publish job. A breaking pykit release is
 `kiln config upgrade --apply`, not a template change.
 
-Every root outside `python-lib` sets `[tool.uv] no-sources = true`. pykit's
-tags sit on different commits, and pykit's own workspace sources would
-otherwise make uv resolve a shared dependency once per tag. A repository
-scaffolded before kiln did this adds the line by hand.
-
+Every root outside `python-lib` sets `[tool.uv] no-sources = true`. pykit's tags
+sit on different commits, and pykit's own workspace sources would otherwise make
+uv resolve a shared dependency once per tag. A repository scaffolded before kiln
+did this adds the line by hand.
 
 kiln is not a dependency. `[kiln] ref` in `config.toml` pins it, and `task` runs
-it with `uvx` in its own environment (kiln ADR-0006). A
-repository's lock holds none of kiln's dependencies, and kiln's pykit pins never
-constrain the repository's.
+it with `uvx` in its own environment (kiln ADR-0006). A repository's lock holds
+none of kiln's dependencies, and kiln's pykit pins never constrain the
+repository's.
 
 ## 4. The import boundary
 
@@ -184,27 +186,27 @@ included — is a subprocess or nothing.
 
 ## 5. What CI checks, and what it does not
 
-CI runs the pinned kiln read-only: it never runs `kiln apply`
-and never writes a generated file. `task validate` runs `kiln doctor` on every
-run; `kiln doctor --full` runs where the workflow asks, through `lint` with
-the `KILN_DOCTOR_FULL` task variable set. `[ci] doctor_full` chooses
-where: pushes to the default branch and dispatch by default, or every run.
-Branch protection requires `ci-ok` and nothing else.
+CI runs the pinned kiln read-only: it never runs `kiln apply` and never writes a
+generated file. `task validate` runs `kiln doctor` on every run;
+`kiln doctor --full` runs where the workflow asks, through `lint` with the
+`KILN_DOCTOR_FULL` task variable set. `[ci] doctor_full` chooses where: pushes
+to the default branch and dispatch by default, or every run. Branch protection
+requires `ci-ok` and nothing else.
 
-`task validate` proves: ruff is clean and formatted; the archetype's
-dependency set is present, allowed and pinned; the import contracts hold; the
-task layout and validate gate are intact; no workflow step invokes a wrapped
-tool; the docs tree matches `docs/_areas.yml`; the derived nav is current; no link
-or anchor is broken; **every managed file and block still hashes to the value
-committed in `.rn-forge/kiln/state.json`**; pyright is clean; the tests pass;
-and the docs site builds `--strict`.
+`task validate` proves: ruff is clean and formatted; the archetype's dependency
+set is present, allowed and pinned; the import contracts hold; the task layout
+and validate gate are intact; no workflow step invokes a wrapped tool; the docs
+tree matches `docs/_areas.yml`; the derived nav is current; no link or anchor is
+broken; **every managed file and block still hashes to the value committed in
+`.rn-forge/kiln/state.json`**; pyright is clean; the tests pass; and the docs
+site builds `--strict`.
 
 ## 6. What `kiln doctor --full` adds
 
-Exactly one question `kiln doctor` cannot ask without `--full`: whether a newer kiln, or an edited
-config, would now render something different from what is committed. kiln is
-modules under one contract — each owns its config section, its
-`artifacts()` and its `checks()` — and `kiln doctor` collects every module's
+Exactly one question `kiln doctor` cannot ask without `--full`: whether a newer
+kiln, or an edited config, would now render something different from what is
+committed. kiln is modules under one contract — each owns its config section,
+its `artifacts()` and its `checks()` — and `kiln doctor` collects every module's
 findings into one report. Full verification checks managed artifacts against a
 fresh render; it does not compare repository-owned files with scaffold defaults.
 
@@ -213,31 +215,31 @@ fresh render; it does not compare repository-owned files with scaffold defaults.
 `.rn-forge/kiln/state.json` is generated and committed. It holds, per artifact,
 the repo-relative path, the kind, and a SHA-256 — of the whole file for managed
 artifacts, of the body for blocks — plus the exact fence markers for blocks, and
-a creation record for seeded files, whose presence is not enforced. It records `kiln_version` and `config_hash`
-in its metadata, and it never contains an entry for itself. `scaffolded` lists
-the paths `kiln new` wrote that no artifact owns; nothing checks them.
+a creation record for seeded files, whose presence is not enforced. It records
+`kiln_version` and `config_hash` in its metadata, and it never contains an entry
+for itself. `scaffolded` lists the paths `kiln new` wrote that no artifact owns;
+nothing checks them.
 
 `kiln doctor`'s `generated` check reads it without rendering anything.
 
 ## 8. Configuration
 
-`.rn-forge/kiln/config.toml` is the one committed input.
-Kiln owns only its `.rn-forge/kiln/` namespace and ignores sibling directories.
-Configuration is resolved once: `kiln new --config <path|git-url[@ref]>`
-deep-merges kiln defaults, each source layer and flags — lists replace — and
-records a `git+` source in a `[source]` table; a local file is read and not
-recorded. `kiln apply` and `kiln doctor` read
-only the committed file. `kiln config update` re-resolves the source with the
-running kiln, `kiln config upgrade` with a newer one; each changes nothing
-without `--apply`, and keeps a key edited here as a repo override.
+`.rn-forge/kiln/config.toml` is the one committed input. Kiln owns only its
+`.rn-forge/kiln/` namespace and ignores sibling directories. Configuration is
+resolved once: `kiln new --config <path|git-url[@ref]>` deep-merges kiln
+defaults, each source layer and flags — lists replace — and records a `git+`
+source in a `[source]` table; a local file is read and not recorded.
+`kiln apply` and `kiln doctor` read only the committed file.
+`kiln config update` re-resolves the source with the running kiln,
+`kiln config upgrade` with a newer one; each changes nothing without `--apply`,
+and keeps a key edited here as a repo override.
 
 `lifecycle = true` — which is what the `python-tool` alias means — adds a
-`[lifecycle]` table beside `[cli]` and builds the app with
-`rn-forge-tooling`'s `build_tool_app`, which mounts the
-`install`/`upgrade`/`uninstall`/`cleanup`/`status`/`doctor` verbs at the
-root, or under `namespace` when one is set; the product supplies
-`artifacts()`, `checks()` and `migrate()` through `rn-forge-tooling`'s
-`ToolProduct` adapter.
+`[lifecycle]` table beside `[cli]` and builds the app with `rn-forge-tooling`'s
+`build_tool_app`, which mounts the
+`install`/`upgrade`/`uninstall`/`cleanup`/`status`/`doctor` verbs at the root,
+or under `namespace` when one is set; the product supplies `artifacts()`,
+`checks()` and `migrate()` through `rn-forge-tooling`'s `ToolProduct` adapter.
 
 ## CI checks
 

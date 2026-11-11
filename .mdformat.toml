@@ -8,13 +8,8 @@
 # `.gitignore` ignores — so tool caches, build output, virtualenvs and the
 # rendered goldens are never seen. `exclude` is for files git does list but this
 # repo does not format.
-# `.rn-forge/kiln/standard.md` is not a style exemption: it is a file kiln owns
-# whole, and a formatter rewriting it would be a second owner writing the same
-# bytes (kiln ADR-0003). Files kiln owns only a *block* of are formatted
-# normally; kiln renders those block bodies already mdformat-clean.
 wrap = 80
 exclude = [
-    ".rn-forge/kiln/standard.md",
     # tests/fixtures/**: each fixture is held to its own gate (README.md), not
     # this repo's — a captured frontend scaffold's README is its own prose.
     "tests/fixtures/**",

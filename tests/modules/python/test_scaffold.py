@@ -13,6 +13,7 @@ import re
 import subprocess
 import sys
 import tomllib
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 from unittest import mock
@@ -783,3 +784,44 @@ def test_s16_6_11_2_kiln_new_packages_keep_their_starter(tmp_path: Path) -> None
 
 def test_s16_7_4_5_requires_python_follows_the_pin() -> None:
     assert python_scaffold.REQUIRES_PYTHON == ">=3.14"
+
+
+def _pyprojects(root: Path) -> list[Path]:
+    return [root / "pyproject.toml", *sorted(root.glob("packages/*/pyproject.toml"))]
+
+
+@pytest.mark.parametrize("archetype", ["python-tool", "python-lib"])
+def test_s16_9_13_1_every_table_follows_a_blank_line(
+    archetype: str, rendered: Callable[[str], Path]
+) -> None:
+    for path in _pyprojects(rendered(archetype)):
+        lines = path.read_text(encoding="utf-8").splitlines()
+        for number, line in enumerate(lines):
+            if number and line.startswith("["):
+                assert lines[number - 1] == "", f"{path}:{number + 1}"
+            if number:
+                assert lines[number - 1] or line, f"{path}:{number + 1}"
+
+
+@pytest.mark.parametrize("archetype", ["python-tool", "python-lib"])
+def test_s16_9_13_2_pyright_keys_are_sorted(
+    archetype: str, rendered: Callable[[str], Path]
+) -> None:
+    text = (rendered(archetype) / "pyproject.toml").read_text(encoding="utf-8")
+    keys = list(tomllib.loads(text)["tool"]["pyright"])
+    assert keys == sorted(keys)
+    expected = ["reportMissingTypeStubs", "typeCheckingMode", "venv", "venvPath"]
+    if archetype == "python-lib":
+        expected = ["include", *expected]
+    assert keys == expected
+
+
+def test_s16_9_13_3_tidy_is_idempotent(
+    tmp_path: Path, rendered: Callable[[str], Path]
+) -> None:
+    source = (rendered("python-tool") / "pyproject.toml").read_bytes()
+    copy = tmp_path / "pyproject.toml"
+    copy.write_bytes(source)
+    python_scaffold._tidy(copy)
+    python_scaffold._tidy(copy)
+    assert copy.read_bytes() == source

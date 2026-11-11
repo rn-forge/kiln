@@ -9,6 +9,7 @@ sections check 8a verifies, using the same expected values that check reads.
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import tempfile
 from collections.abc import Mapping
@@ -209,6 +210,7 @@ def add_package(root: Path, config: KilnConfig, name: str, remote: str) -> None:
             }
         },
     )
+    _tidy(member / "pyproject.toml")
 
 
 def _join_workspace(pyproject: Path, relative: str, name: str) -> None:
@@ -237,6 +239,7 @@ def _join_workspace(pyproject: Path, relative: str, name: str) -> None:
         },
     )
     _multiline_lists(pyproject)
+    _tidy(pyproject)
 
 
 def _sort_group(array: Any) -> None:
@@ -386,6 +389,7 @@ def _reconcile_pyproject(root: Path, config: KilnConfig, relative: Path) -> None
             path,
             {"project": {"scripts": {config.name: f"{config.module}.main:app"}}},
         )
+        _tidy(path)
 
 
 def _member_name(
@@ -502,6 +506,25 @@ def _reconcile(
             _sort_group(group)
         DocumentUtils.write_document(path, document)
     _multiline_lists(path)
+    _tidy(path)
+
+
+_TABLE_HEADER = re.compile(r"^\[\[?[A-Za-z0-9_.\"'-]+\]\]?$")
+
+
+def _tidy(path: Path) -> None:
+    """Sort `[tool.pyright]`'s keys and put a blank line before every table."""
+    document = DocumentUtils.read_document(path)
+    pyright = document["tool"]["pyright"]
+    for key in sorted(pyright):
+        pyright[key] = pyright.pop(key)
+    DocumentUtils.write_document(path, document)
+    lines: list[str] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if lines and lines[-1] and _TABLE_HEADER.match(line):
+            lines.append("")
+        lines.append(line)
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def _multiline_lists(path: Path) -> None:
