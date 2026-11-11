@@ -43,7 +43,7 @@ file under its own name.
 | `tasks/python.yml` | `python` | install, lint, `lint:imports`, `lint:audit`, `lint:licenses`, format, typecheck, test, `test:coverage`, build, version | none | every archetype; `node-lib` keeps it for the docs tooling |
 | `tasks/quality.yml` | `quality` | Markdown and TOML formatting checks and formatters | none | every archetype |
 | `tasks/kiln.yml` | `kiln` | `doctor` (one internal task), `diff`, `apply` | `kiln:diff`, `kiln:apply` | every archetype |
-| `tasks/workspace.yml` | `workspace` | `clean` | none | every archetype |
+| `tasks/workspace.yml` | `workspace` | `banner` (internal; the separator `validate` prints before each step), `clean` | none | every archetype |
 | `tasks/ci.yml` | `ci` | `lint:workflows` and `secrets:install` (internal); the CI surface | the CI surface | every archetype; the body differs |
 | `tasks/docs.yml` | `docs` | `build`, `serve`, `generate` | all three | `[docs] profile = "mkdocs"` |
 | `tasks/node.yml` | `node` | install, lint, `lint:audit` (`node-lib`), `lint:licenses` (`node-lib`), test, build, typecheck, e2e, `version` (`node-lib`; the internal primitive behind the root `version`) | none | `python-web-app`, `node-lib` |

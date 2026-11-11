@@ -41,11 +41,21 @@ tasks:
   validate:
     desc: The aggregate gate — lint, typecheck, test, docs build. Any failure fails.
     cmds:
+      - task: workspace:banner
+        vars: { STEP: lint }
       - task: lint
+      - task: workspace:banner
+        vars: { STEP: typecheck }
       - task: typecheck
+      - task: workspace:banner
+        vars: { STEP: test }
       - task: test
-{% if docs %}      - task: docs:build
-{% endif %}{% for ref in extra_refs.get("validate", []) %}      - task: [[ ref ]]
+{% if docs %}      - task: workspace:banner
+        vars: { STEP: "docs:build" }
+      - task: docs:build
+{% endif %}{% for ref in extra_refs.get("validate", []) %}      - task: workspace:banner
+        vars: { STEP: "[[ ref ]]" }
+      - task: [[ ref ]]
 {% endfor %}
   lint:
     desc: Every lint — {% if node_lib %}Nx projects, Prettier formatting, Markdown and TOML formatting, kiln's checks{% elif web_app %}Python, imports, the frontend's Nx lint, Prettier formatting, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs){% else %}Python, imports, Markdown and TOML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs){% endif %}, workflow security, dependency vulnerabilities{% if "licenses" in checks %}, dependency licences{% endif %}.

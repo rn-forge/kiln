@@ -232,6 +232,62 @@ def test_s17_3_4_3_an_override_still_replaces_the_batch(tmp_path: Path) -> None:
     assert "-n 20 -P 4" in tasks["format:markdown"]["cmds"][0]
 
 
+BANNER = "workspace:banner"
+
+
+def test_s17_3_5_1_validate_prints_a_banner_before_each_step(tmp_path: Path) -> None:
+    for root in _s17_3_4_roots(tmp_path):
+        cycle.apply(root, home=tmp_path / "home")
+        cmds = _load(root, "Taskfile.yml")["tasks"]["validate"]["cmds"]
+        steps = [c["task"] for c in cmds if c["task"] != BANNER]
+        assert cmds == [
+            entry
+            for step in steps
+            for entry in ({"task": BANNER, "vars": {"STEP": step}}, {"task": step})
+        ]
+        assert steps[:3] == ["lint", "typecheck", "test"]
+
+
+def test_s17_3_5_2_the_banner_task(tmp_path: Path) -> None:
+    for root in _s17_3_4_roots(tmp_path):
+        cycle.apply(root, home=tmp_path / "home")
+        assert _load(root, "tasks/workspace.yml")["tasks"]["banner"] == {
+            "desc": "Print a separator line naming the step that follows (STEP).",
+            "internal": True,
+            "silent": True,
+            "requires": {"vars": ["STEP"]},
+            "cmds": ["printf '\\n==== %s ====\\n' '{{.STEP}}'"],
+        }
+
+
+def test_s17_3_5_3_extra_steps_get_a_banner(tmp_path: Path) -> None:
+    root = _root(
+        tmp_path,
+        extra='\n[tasks]\n[tasks.extra_refs]\nvalidate = ["workspace:clean"]\n',
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    cmds = _load(root, "Taskfile.yml")["tasks"]["validate"]["cmds"]
+    assert cmds[-2:] == [
+        {"task": BANNER, "vars": {"STEP": "workspace:clean"}},
+        {"task": "workspace:clean"},
+    ]
+
+
+def test_s17_3_5_4_the_gate_still_passes_the_layout_check(tmp_path: Path) -> None:
+    for root in _s17_3_4_roots(tmp_path):
+        cycle.apply(root, home=tmp_path / "home")
+        assert _codes(root) == []
+        graph, namespaces = layout.load_graph(root)
+        assert BANNER in layout.reachable_from("validate", graph, namespaces)
+
+
+def test_s17_3_5_5_ci_validate_is_unchanged(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    validate = _ci_tasks(root)["tasks"]["validate"]
+    assert all(entry.get("task") != BANNER for entry in validate["cmds"])
+
+
 @pytest.mark.parametrize("name", archetypes.shipped())
 def test_s4_10_1_3_lint_toml_is_a_required_gate(name: str) -> None:
     assert "quality:lint:toml" in archetypes.load(name).required_validate
@@ -1943,7 +1999,7 @@ def test_s4_12_4_4_workspace_is_clean_only(
     root = _s4_12_1_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     workspace = _load(root, "tasks/workspace.yml")
-    assert set(workspace["tasks"]) == {"clean"}
+    assert set(workspace["tasks"]) == {"banner", "clean"}
     assert "vars" not in workspace
 
 
@@ -1987,7 +2043,9 @@ def test_s4_12_4_6_the_wrappers_call_python_in_place(
         r
         for verb in tasks
         for r in refs(verb)
-        if r in PYTHON_OLD_KEYS or r.startswith("workspace:") and r != "workspace:clean"
+        if r in PYTHON_OLD_KEYS
+        or r.startswith("workspace:")
+        and r not in ("workspace:clean", "workspace:banner")
     ]
 
 
@@ -2956,7 +3014,11 @@ def test_s9_3_4_4_dry_run_prints_doctor_with_full_only_when_asked(
 
 def test_s9_3_4_5_root_validate_still_runs_the_nx_verbs(tmp_path: Path) -> None:
     root = _node_lib_root(tmp_path)
-    cmds = _load_from_render(root)["tasks"]["validate"]["cmds"]
+    cmds = [
+        c
+        for c in _load_from_render(root)["tasks"]["validate"]["cmds"]
+        if c["task"] != "workspace:banner"
+    ]
     assert cmds == [
         {"task": "lint"},
         {"task": "typecheck"},

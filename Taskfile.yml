@@ -36,9 +36,17 @@ tasks:
   validate:
     desc: The aggregate gate — lint, typecheck, test, docs build. Any failure fails.
     cmds:
+      - task: workspace:banner
+        vars: { STEP: lint }
       - task: lint
+      - task: workspace:banner
+        vars: { STEP: typecheck }
       - task: typecheck
+      - task: workspace:banner
+        vars: { STEP: test }
       - task: test
+      - task: workspace:banner
+        vars: { STEP: "docs:build" }
       - task: docs:build
 
   lint:
