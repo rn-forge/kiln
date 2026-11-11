@@ -300,10 +300,11 @@ CHANGELOG = (
 
 def _bump_calls(tmp_path: Path, spec: str, tail: str) -> None:
     calls = _calls(tmp_path)
-    assert len(calls) == 3, calls
+    assert len(calls) >= 3, calls
     assert calls[0] == BUMP.format(spec)
     assert calls[1] == CHANGELOG + tail
-    assert calls[2].startswith("uv run --group docs mdformat")
+    # The Markdown format task runs mdformat in batches (S17.3.4): one call or several.
+    assert all(c.startswith("uv run --group docs mdformat") for c in calls[2:])
 
 
 def test_s16_7_2_1_a_bump_writes_the_changelog_then_formats(

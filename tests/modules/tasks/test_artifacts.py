@@ -195,6 +195,43 @@ def test_s4_10_1_2_lint_and_format_run_taplo(tmp_path: Path, archetype: str) -> 
     assert {"task": "quality:format:toml"} in tasks["format"]["cmds"]
 
 
+def _s17_3_4_roots(tmp_path: Path) -> list[Path]:
+    roots = [_root(tmp_path / a, a) for a in ARCHETYPES]
+    return [*roots, _node_lib_root(tmp_path / "node-lib")]
+
+
+def test_s17_3_4_1_markdown_tasks_run_in_batches(tmp_path: Path) -> None:
+    batch = "{{.FILES}} '*.md' | xargs -0 -r -n 20 -P 4 uv run --group docs mdformat"
+    for root in _s17_3_4_roots(tmp_path):
+        cycle.apply(root, home=tmp_path / "home")
+        tasks = _load(root, "tasks/quality.yml")["tasks"]
+        assert tasks["lint:markdown"]["cmds"] == [f"{batch} --check"]
+        assert tasks["format:markdown"]["cmds"] == [batch]
+
+
+def test_s17_3_4_2_toml_tasks_stay_serial(tmp_path: Path) -> None:
+    for root in _s17_3_4_roots(tmp_path):
+        cycle.apply(root, home=tmp_path / "home")
+        tasks = _load(root, "tasks/quality.yml")["tasks"]
+        assert tasks["lint:toml"]["cmds"] == [
+            "{{.FILES}} '*.toml' | xargs -0 -r uv run taplo fmt --check"
+        ]
+        assert tasks["format:toml"]["cmds"] == [
+            "{{.FILES}} '*.toml' | xargs -0 -r uv run taplo fmt"
+        ]
+
+
+def test_s17_3_4_3_an_override_still_replaces_the_batch(tmp_path: Path) -> None:
+    root = _root(
+        tmp_path,
+        extra='\n[tasks]\n[tasks.command_overrides]\n"quality:lint:markdown" = "echo hi"\n',
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    tasks = _load(root, "tasks/quality.yml")["tasks"]
+    assert tasks["lint:markdown"]["cmds"] == ["echo hi"]
+    assert "-n 20 -P 4" in tasks["format:markdown"]["cmds"][0]
+
+
 @pytest.mark.parametrize("name", archetypes.shipped())
 def test_s4_10_1_3_lint_toml_is_a_required_gate(name: str) -> None:
     assert "quality:lint:toml" in archetypes.load(name).required_validate

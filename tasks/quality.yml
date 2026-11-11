@@ -14,11 +14,12 @@ vars:
     git grep --untracked -lz -e '' --
 
 tasks:
+  # Markdown is batched, twenty files to each of four processes; the formatters see disjoint files.
   lint:markdown:
     desc: Check that every Markdown file in the repo is mdformat-clean.
     internal: true
     cmds:
-      - "{{.FILES}} '*.md' | xargs -0 -r uv run --group docs mdformat --check"
+      - "{{.FILES}} '*.md' | xargs -0 -r -n 20 -P 4 uv run --group docs mdformat --check"
 
   lint:toml:
     desc: Check that every TOML file in the repo is taplo-formatted.
@@ -30,7 +31,7 @@ tasks:
     desc: Format every Markdown file in the repo with mdformat.
     internal: true
     cmds:
-      - "{{.FILES}} '*.md' | xargs -0 -r uv run --group docs mdformat"
+      - "{{.FILES}} '*.md' | xargs -0 -r -n 20 -P 4 uv run --group docs mdformat"
 
   format:toml:
     desc: Format every TOML file in the repo with taplo.
