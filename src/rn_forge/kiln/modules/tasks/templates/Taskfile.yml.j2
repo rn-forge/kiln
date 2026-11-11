@@ -41,39 +41,16 @@ tasks:
   validate:
     desc: The aggregate gate — lint, typecheck, test, docs build. Any failure fails.
     cmds:
-      - task: workspace:banner
-        vars: {STEP: lint}
-      - task: lint
-      - task: workspace:banner
-        vars: {STEP: typecheck}
-      - task: typecheck
-      - task: workspace:banner
-        vars: {STEP: test}
-      - task: test
-{% if docs %}      - task: workspace:banner
-        vars: {STEP: "docs:build"}
-      - task: docs:build
-{% endif %}{% for ref in extra_refs.get("validate", []) %}      - task: workspace:banner
-        vars: {STEP: "[[ ref ]]"}
-      - task: [[ ref ]]
+{% set steps = ["lint", "typecheck", "test"] + (["docs:build"] if docs else []) + extra_refs.get("validate", []) %}{% for step in steps %}      - task: workspace:banner
+        vars: {STEP: "[[ step ]]", N: [[ loop.index ]], OF: [[ steps | length ]]}
+      - task: [[ step ]]
 {% endfor %}
   lint:
     desc: Every lint — {% if node_lib %}Nx projects, Prettier formatting, Markdown, TOML and YAML formatting, kiln's checks{% elif web_app %}Python, imports, the frontend's Nx lint, Prettier formatting, Markdown, TOML and YAML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs){% else %}Python, imports, Markdown, TOML and YAML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs){% endif %}, workflow security, dependency vulnerabilities{% if "licenses" in checks %}, dependency licences{% endif %}.
     cmds:
-{% if not node_lib %}      - task: python:lint
-      - task: python:lint:imports
-{% endif %}{% if node %}      - task: node:lint
-      - task: node:lint:format
-{% endif %}      - task: quality:lint:markdown
-      - task: quality:lint:toml
-      - task: quality:lint:yaml
-      - task: kiln:doctor
-      - task: ci:lint:workflows
-{% if not node_lib %}      - task: python:lint:audit
-{% endif %}{% if node %}      - task: node:lint:audit
-{% endif %}{% if "licenses" in checks and not node_lib %}      - task: python:lint:licenses
-{% endif %}{% if "licenses" in checks and node %}      - task: node:lint:licenses
-{% endif %}{% for ref in extra_refs.get("lint", []) %}      - task: [[ ref ]]
+{% set steps = (["python:lint", "python:lint:imports"] if not node_lib else []) + (["node:lint", "node:lint:format"] if node else []) + ["quality:lint:markdown", "quality:lint:toml", "quality:lint:yaml", "kiln:doctor", "ci:lint:workflows"] + (["python:lint:audit"] if not node_lib else []) + (["node:lint:audit"] if node else []) + (["python:lint:licenses"] if "licenses" in checks and not node_lib else []) + (["node:lint:licenses"] if "licenses" in checks and node else []) + extra_refs.get("lint", []) %}{% for step in steps %}      - task: workspace:step
+        vars: {STEP: "[[ step ]]", N: [[ loop.index ]], OF: [[ steps | length ]]}
+      - task: [[ step ]]
 {% endfor %}
   format:
     desc: {% if node_lib %}Format Prettier-formatted files, TOML, YAML and Markdown prose in place.{% elif web_app %}Format Python code, Prettier-formatted files, TOML, YAML and Markdown prose in place.{% else %}Format Python code, TOML, YAML and Markdown prose in place.{% endif %}

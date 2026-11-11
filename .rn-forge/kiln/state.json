@@ -121,7 +121,7 @@
     },
     "Taskfile.yml": {
       "begin_marker": null,
-      "content_hash": "1ad43bc69c4c58b54603f92ee0de88760914b4a6a036894f7b05c39536321484",
+      "content_hash": "edd5cf59edb60fc8be624d06cf9b20760bdb23a5c583e320c3e07ec62f4e8777",
       "end_marker": null,
       "kind": "managed",
       "path": "Taskfile.yml"
@@ -345,7 +345,7 @@
     },
     "tasks/workspace.yml": {
       "begin_marker": null,
-      "content_hash": "3a87a06bf96f41789ff5180642d512ca436d9125c901ebd2546e2209ecd5359b",
+      "content_hash": "1275ec328041241208aefcfb22c3853dd0a51759d3235efcfbf01bd04f329d4f",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/workspace.yml"

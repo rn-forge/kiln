@@ -206,7 +206,7 @@ def test_s16_7_3_5_tasks(tmp_path: Path, archetype: str) -> None:
     assert tasks["node"]["format"]["cmds"] == ["pnpm exec prettier --write ."]
     assert tasks["node"]["lint:format"]["internal"] is True
     assert tasks["node"]["lint:format"]["cmds"] == ["pnpm exec prettier --check ."]
-    lint = tasks["root"]["lint"]["cmds"]
+    lint = [c for c in tasks["root"]["lint"]["cmds"] if c["task"] != "workspace:step"]
     assert lint[lint.index({"task": "node:lint"}) + 1] == {"task": "node:lint:format"}
     fmt = tasks["root"]["format"]["cmds"]
     assert fmt.index({"task": "node:format"}) + 1 == fmt.index(

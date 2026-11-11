@@ -252,7 +252,7 @@ def test_s19_1_3_2_the_root_verbs_call_the_pair(tmp_path: Path) -> None:
         cycle.apply(root, home=tmp_path / "home")
         tasks = _load(root, "Taskfile.yml")["tasks"]
         for verb, kind in (("lint", "lint"), ("format", "format")):
-            cmds = tasks[verb]["cmds"]
+            cmds = _unmarked(tasks[verb]["cmds"])
             toml = cmds.index({"task": f"quality:{kind}:toml"})
             assert cmds[toml + 1] == {"task": f"quality:{kind}:yaml"}
         assert "YAML" in tasks["lint"]["desc"]
@@ -279,6 +279,14 @@ def test_s19_1_3_4_the_node_lib_ci_validate_runs_it(tmp_path: Path) -> None:
 
 
 BANNER = "workspace:banner"
+STEP = "workspace:step"
+
+
+def _unmarked(cmds: list[dict]) -> list[dict]:
+    return [c for c in cmds if c["task"] != STEP]
+
+
+RULE = "=" * 72
 
 
 def test_s17_3_5_1_validate_prints_a_banner_before_each_step(tmp_path: Path) -> None:
@@ -288,8 +296,11 @@ def test_s17_3_5_1_validate_prints_a_banner_before_each_step(tmp_path: Path) -> 
         steps = [c["task"] for c in cmds if c["task"] != BANNER]
         assert cmds == [
             entry
-            for step in steps
-            for entry in ({"task": BANNER, "vars": {"STEP": step}}, {"task": step})
+            for n, step in enumerate(steps, 1)
+            for entry in (
+                {"task": BANNER, "vars": {"STEP": step, "N": n, "OF": len(steps)}},
+                {"task": step},
+            )
         ]
         assert steps[:3] == ["lint", "typecheck", "test"]
 
@@ -298,12 +309,42 @@ def test_s17_3_5_2_the_banner_task(tmp_path: Path) -> None:
     for root in _s17_3_4_roots(tmp_path):
         cycle.apply(root, home=tmp_path / "home")
         assert _load(root, "tasks/workspace.yml")["tasks"]["banner"] == {
-            "desc": "Print a separator line naming the step that follows (STEP).",
+            "desc": "Print a banner naming the step that follows (STEP), numbered N of OF.",
             "internal": True,
             "silent": True,
-            "requires": {"vars": ["STEP"]},
-            "cmds": ["printf '\\n==== %s ====\\n' '{{.STEP}}'"],
+            "requires": {"vars": ["STEP", "N", "OF"]},
+            "cmds": [
+                f"printf '\\n{RULE}\\n### [%s/%s] %s\\n{RULE}\\n'"
+                " '{{.N}}' '{{.OF}}' '{{.STEP}}'"
+            ],
         }
+
+
+def test_s17_3_5_6_the_step_task(tmp_path: Path) -> None:
+    for root in _s17_3_4_roots(tmp_path):
+        cycle.apply(root, home=tmp_path / "home")
+        assert _load(root, "tasks/workspace.yml")["tasks"]["step"] == {
+            "desc": "Print a one-line marker naming the sub-step that follows (STEP), numbered N of OF.",
+            "internal": True,
+            "silent": True,
+            "requires": {"vars": ["STEP", "N", "OF"]},
+            "cmds": ["printf '\\n--- [%s/%s] %s\\n' '{{.N}}' '{{.OF}}' '{{.STEP}}'"],
+        }
+
+
+def test_s17_3_5_7_lint_prints_a_marker_before_each_step(tmp_path: Path) -> None:
+    for root in _s17_3_4_roots(tmp_path):
+        cycle.apply(root, home=tmp_path / "home")
+        cmds = _load(root, "Taskfile.yml")["tasks"]["lint"]["cmds"]
+        steps = [c["task"] for c in cmds if c["task"] != STEP]
+        assert cmds == [
+            entry
+            for n, step in enumerate(steps, 1)
+            for entry in (
+                {"task": STEP, "vars": {"STEP": step, "N": n, "OF": len(steps)}},
+                {"task": step},
+            )
+        ]
 
 
 def test_s17_3_5_3_extra_steps_get_a_banner(tmp_path: Path) -> None:
@@ -314,7 +355,7 @@ def test_s17_3_5_3_extra_steps_get_a_banner(tmp_path: Path) -> None:
     cycle.apply(root, home=tmp_path / "home")
     cmds = _load(root, "Taskfile.yml")["tasks"]["validate"]["cmds"]
     assert cmds[-2:] == [
-        {"task": BANNER, "vars": {"STEP": "workspace:clean"}},
+        {"task": BANNER, "vars": {"STEP": "workspace:clean", "N": 5, "OF": 5}},
         {"task": "workspace:clean"},
     ]
 
@@ -1079,7 +1120,7 @@ KILN_REF = {"task": "kiln:doctor"}
 
 def _assert_workflows_lint(root: Path) -> None:
     root_tasks, _ = _rendered_yaml(root)
-    cmds = root_tasks["lint"]["cmds"]
+    cmds = _unmarked(root_tasks["lint"]["cmds"])
     at = cmds.index(KILN_REF)
     assert cmds[at : at + 2] == [KILN_REF, WORKFLOWS_REF]
     task = _ci_rendered(root)["lint:workflows"]
@@ -1196,7 +1237,7 @@ def test_s4_11_5_1_lint_runs_audit_after_workflows(
     root = _audit_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     root_tasks, python = _rendered_yaml(root)
-    cmds = root_tasks["lint"]["cmds"]
+    cmds = _unmarked(root_tasks["lint"]["cmds"])
     at = cmds.index(WORKFLOWS_REF)
     assert cmds[at : at + 2] == [WORKFLOWS_REF, AUDIT_REF]
     task = python["lint:audit"]
@@ -1491,7 +1532,7 @@ def test_s4_12_1_3_quality_yml_has_no_docs_task(tmp_path: Path) -> None:
 def test_s4_12_1_4_without_mkdocs_lint_has_no_docs_ref(tmp_path: Path) -> None:
     root = _root(tmp_path, profile="none")
     cycle.apply(root, home=tmp_path / "home")
-    cmds = _load(root, "Taskfile.yml")["tasks"]["lint"]["cmds"]
+    cmds = _unmarked(_load(root, "Taskfile.yml")["tasks"]["lint"]["cmds"])
     assert not any(c["task"].startswith("docs:") for c in cmds)
     assert not (root / "tasks" / "docs.yml").exists()
 
@@ -1732,7 +1773,7 @@ def test_s4_12_3_3_the_wrappers_call_node(tmp_path: Path) -> None:
     tasks = _load(root, "Taskfile.yml")["tasks"]
     setup = tasks["setup"]["cmds"]
     assert setup == [{"task": "python:install"}, {"task": "node:install"}]
-    lint = tasks["lint"]["cmds"]
+    lint = _unmarked(tasks["lint"]["cmds"])
     assert lint[lint.index({"task": "python:lint:imports"}) + 1] == {
         "task": "node:lint"
     }
@@ -2047,7 +2088,7 @@ def test_s4_12_4_4_workspace_is_clean_only(
     root = _s4_12_1_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     workspace = _load(root, "tasks/workspace.yml")
-    assert set(workspace["tasks"]) == {"banner", "clean"}
+    assert set(workspace["tasks"]) == {"banner", "step", "clean"}
     assert "vars" not in workspace
 
 
@@ -2070,7 +2111,7 @@ def test_s4_12_4_6_the_wrappers_call_python_in_place(
     tasks = _load(root, "Taskfile.yml")["tasks"]
 
     def refs(verb: str) -> list[str]:
-        return [cmd["task"] for cmd in tasks[verb]["cmds"]]
+        return [cmd["task"] for cmd in tasks[verb]["cmds"] if cmd["task"] != STEP]
 
     assert refs("setup")[0] == "python:install"
     if archetype == "python-web-app":
@@ -2093,7 +2134,7 @@ def test_s4_12_4_6_the_wrappers_call_python_in_place(
         for r in refs(verb)
         if r in PYTHON_OLD_KEYS
         or r.startswith("workspace:")
-        and r not in ("workspace:clean", "workspace:banner")
+        and r not in ("workspace:clean", "workspace:banner", STEP)
     ]
 
 
@@ -2217,7 +2258,7 @@ def test_s4_12_6_2_root_lint_runs_in_the_exact_order(
             encoding="utf-8",
         )
         cycle.apply(root, home=tmp_path / "home")
-        cmds = _load(root, "Taskfile.yml")["tasks"]["lint"]["cmds"]
+        cmds = _unmarked(_load(root, "Taskfile.yml")["tasks"]["lint"]["cmds"])
         assert cmds == [{"task": name} for name in expected]
 
 
@@ -2355,7 +2396,7 @@ def test_s4_12_6_11_without_mkdocs_kiln_yml_still_renders(tmp_path: Path) -> Non
     root = _root(tmp_path, profile="none")
     cycle.apply(root, home=tmp_path / "home")
     assert (root / "tasks/kiln.yml").is_file()
-    cmds = _load(root, "Taskfile.yml")["tasks"]["lint"]["cmds"]
+    cmds = _unmarked(_load(root, "Taskfile.yml")["tasks"]["lint"]["cmds"])
     assert {"task": "kiln:doctor"} in cmds
     assert not (root / "tasks/docs.yml").exists()
     assert _codes(root) == []
@@ -3147,7 +3188,7 @@ def test_s15_2_2_1_python_lint_licenses_task(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-lib")
     cycle.apply(root, home=tmp_path / "home")
     root_tasks, python = _rendered_yaml(root)
-    cmds = root_tasks["lint"]["cmds"]
+    cmds = _unmarked(root_tasks["lint"]["cmds"])
     assert cmds[cmds.index(AUDIT_REF) + 1] == LICENSES_REF
     task = python["lint:licenses"]
     assert task["internal"] is True
@@ -3275,7 +3316,7 @@ def test_s16_7_6_1_web_app_audits_its_frontend(tmp_path: Path) -> None:
     ]
     assert set(app_vars) == {"DEVOPS"}
     assert app_vars == lib_vars
-    cmds = root_tasks["lint"]["cmds"]
+    cmds = _unmarked(root_tasks["lint"]["cmds"])
     assert cmds[-len(WEB_LINT_TAIL) :] == WEB_LINT_TAIL
 
 
@@ -3288,7 +3329,7 @@ def test_s16_7_6_2_licences_off_drops_only_the_licences_task(tmp_path: Path) -> 
     assert "vars" not in YamlUtils.load(
         (app / "tasks/node.yml").read_text(encoding="utf-8")
     )
-    cmds = root_tasks["lint"]["cmds"]
+    cmds = _unmarked(root_tasks["lint"]["cmds"])
     assert {"task": "node:lint:audit"} in cmds
     assert {"task": "python:lint:licenses"} not in cmds
     assert NODE_LICENSES_REF not in cmds

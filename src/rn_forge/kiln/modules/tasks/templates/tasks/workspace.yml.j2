@@ -2,17 +2,27 @@
 version: "3"
 
 # Cleanup of every toolchain's outputs and caches, reached through `task clean`,
-# and the banner that `validate` prints between its steps.
+# the banner that `validate` prints between its steps, and the lighter
+# marker that `lint` prints before each of its.
 
 tasks:
   banner:
-    desc: Print a separator line naming the step that follows (STEP).
+    desc: Print a banner naming the step that follows (STEP), numbered N of OF.
     internal: true
     silent: true
     requires:
-      vars: [STEP]
+      vars: [STEP, N, OF]
     cmds:
-      - printf '\n==== %s ====\n' '{{.STEP}}'
+      - printf '\n========================================================================\n### [%s/%s] %s\n========================================================================\n' '{{.N}}' '{{.OF}}' '{{.STEP}}'
+
+  step:
+    desc: Print a one-line marker naming the sub-step that follows (STEP), numbered N of OF.
+    internal: true
+    silent: true
+    requires:
+      vars: [STEP, N, OF]
+    cmds:
+      - printf '\n--- [%s/%s] %s\n' '{{.N}}' '{{.OF}}' '{{.STEP}}'
 
   clean:
     desc: Remove build outputs, tool caches, and the rendered docs site.

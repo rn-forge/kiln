@@ -37,29 +37,47 @@ tasks:
     desc: The aggregate gate — lint, typecheck, test, docs build. Any failure fails.
     cmds:
       - task: workspace:banner
-        vars: {STEP: lint}
+        vars: {STEP: "lint", N: 1, OF: 4}
       - task: lint
       - task: workspace:banner
-        vars: {STEP: typecheck}
+        vars: {STEP: "typecheck", N: 2, OF: 4}
       - task: typecheck
       - task: workspace:banner
-        vars: {STEP: test}
+        vars: {STEP: "test", N: 3, OF: 4}
       - task: test
       - task: workspace:banner
-        vars: {STEP: "docs:build"}
+        vars: {STEP: "docs:build", N: 4, OF: 4}
       - task: docs:build
 
   lint:
     desc: Every lint — Python, imports, Markdown, TOML and YAML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs), workflow security, dependency vulnerabilities, dependency licences.
     cmds:
+      - task: workspace:step
+        vars: {STEP: "python:lint", N: 1, OF: 9}
       - task: python:lint
+      - task: workspace:step
+        vars: {STEP: "python:lint:imports", N: 2, OF: 9}
       - task: python:lint:imports
+      - task: workspace:step
+        vars: {STEP: "quality:lint:markdown", N: 3, OF: 9}
       - task: quality:lint:markdown
+      - task: workspace:step
+        vars: {STEP: "quality:lint:toml", N: 4, OF: 9}
       - task: quality:lint:toml
+      - task: workspace:step
+        vars: {STEP: "quality:lint:yaml", N: 5, OF: 9}
       - task: quality:lint:yaml
+      - task: workspace:step
+        vars: {STEP: "kiln:doctor", N: 6, OF: 9}
       - task: kiln:doctor
+      - task: workspace:step
+        vars: {STEP: "ci:lint:workflows", N: 7, OF: 9}
       - task: ci:lint:workflows
+      - task: workspace:step
+        vars: {STEP: "python:lint:audit", N: 8, OF: 9}
       - task: python:lint:audit
+      - task: workspace:step
+        vars: {STEP: "python:lint:licenses", N: 9, OF: 9}
       - task: python:lint:licenses
 
   format:
