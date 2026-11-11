@@ -106,7 +106,7 @@ are [release-2](../release-2/index.md).
 | [F18.2 — Spec IDs out of the code and the docs outside the specs](../../specs/epics/E18-v1-spec-rewrite/F18.2-ids-out-of-code-and-docs.md) | E18 | New |
 | [F18.3 — One epic per area](../../specs/epics/E18-v1-spec-rewrite/F18.3-area-epics.md) | E18 | New |
 | [F18.4 — `feature/v1` lands on `main` as one commit](../../specs/epics/E18-v1-spec-rewrite/F18.4-one-commit-on-main.md) | E18 | New |
-| [F19.1 — YAML has a formatter, and kiln's own files pass it](../../specs/epics/E19-formatting-standard/F19.1-yaml-formatter.md) | E19 | Active |
+| [F19.1 — YAML has a formatter, and kiln's own files pass it](../../specs/epics/E19-formatting-standard/F19.1-yaml-formatter.md) | E19 | Closed |
 
 <!-- END derived scope -->
 
