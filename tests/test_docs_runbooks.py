@@ -114,3 +114,19 @@ def test_s16_9_3_1_runbook_regenerates_the_nav() -> None:
     assert "mkdocs.yml" in step
     assert "task docs:generate" in step
     assert "`nav` is a derived region" in step
+
+
+def test_s17_3_6_1_the_board_says_acceptance_is_tests() -> None:
+    flat = " ".join((ROOT / "docs/specs/index.md").read_text(encoding="utf-8").split())
+
+    for needle in (
+        "Every acceptance item a script can check is a test named after the "
+        "story, so `task validate` is the whole scripted check",
+        "Paste the tail of `task validate` into the story's *What the build "
+        "settled* block",
+        "holds only what needs the owner's judgement",
+        "never holds a shell script",
+        "no column-aligned comments",
+        "The owner has accepted F16.8 to F16.10",
+    ):
+        assert needle in flat
