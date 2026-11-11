@@ -13,7 +13,7 @@ Backlog sections below are derived from the epic, feature and release pages by
 | Release | Status | Features |
 | -- | -- | -- |
 | [Release 2 — the architecture baseline and taskkit retired](../releases/release-2/index.md) | planned | 3 New |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 4 Active · 4 New · 61 Closed |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 4 Active · 5 New · 61 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -78,7 +78,7 @@ now:   ADRs accepted ─→ S13.1.1 derived nav ─→ F13.2 board/scope ─→ 
        F6.9 adopted repositories left alone (pykit's 2026-11-01 trial) ─→ F7.2 the cut
        E15 CI standard (F15.1 ─→ F15.2–F15.7 · F15.8 owner decision) ─┐
        E16 init adopts by overwrite (F16.2 · F16.1 ─→ F16.3 · F16.4 ─→ F16.8 retire init ─→ F16.9 ─→ F16.10 agent instructions) ─┤
-       E17 task standard (F17.1 now · F17.2 after E15) ─────────────────┴─→ S7.2.4 cutover SOP on pykit, then ngkit ─→ S7.2.2 the tag
+       E17 task standard (F17.1 · F17.2 · F17.3 a faster gate) ─────────┴─→ S7.2.4 cutover SOP on pykit, then ngkit ─→ S7.2.2 the tag
 triggered: E7 pykit tags · E8 ADO · backlog: E10 generators
 ```
 
@@ -107,8 +107,9 @@ whoever builds the story — a person, or an agent of any size.
 1. Write the tests first, in the file the story names, named
    `test_<story id with underscores>_<what>` — `test_s4_3_3_property1_…` for
    the shared properties, `test_s4_3_3_2_…` for the story's second acceptance
-   bullet. Every acceptance bullet has at least one test, or is listed as not
-   scriptable.
+   bullet. Every acceptance item a script can check is a test named after the
+   story, so `task validate` is the whole scripted check. An item no script
+   can check is listed as not scriptable, with who judges it.
 1. Build exactly what the **Build** list says. Where it names a file, a
    function, a constant, a code, a template or a context key, use that name
    verbatim. Where it is silent, do the simplest thing that makes the tests
@@ -119,11 +120,12 @@ whoever builds the story — a person, or an agent of any size.
    story does not list; skip a test the story does not allow to skip.
 1. Run `task validate`. It passes, with no failure and no skip the story did not
    allow. If a golden had to change, re-seed its `state.json` as `README.md`
-   says.
+   says. Paste the tail of `task validate` into the story's *What the build
+   settled* block.
 1. Record under the story, as *What the build settled that the story did not
    say*, every choice from step 3 and every place the build had to depart from
    the list — and flip its **State** to `Closed (<date>)`. Leave the feature's
-   `## Acceptance` block for the owner.
+   `## Acceptance` block for the owner, who judges only what a script cannot.
 1. Commit nothing. The owner reviews the diff and the tests, runs the acceptance
    block, and commits.
 
@@ -144,8 +146,14 @@ whoever builds the story — a person, or an agent of any size.
   `**Acceptance:**` list of observable results, and the tests that prove it
   belong in that list.
 - **A feature states its predecessors and its acceptance**: a `Predecessors`
-  row, and, when it has several stories, a `## Acceptance` block that
-  exercises every story and fails loudly.
+  row, and, when it has several stories, a `## Acceptance` block. The block
+  holds only what needs the owner's judgement, such as reading rendered prose;
+  it never holds a shell script, because every scripted check is a story's
+  test and `task validate` runs them. Fenced command blocks anywhere in the
+  specs carry no column-aligned comments: a comment goes on its own line above
+  the command, where `task format` cannot leave it misaligned. The acceptance
+  blocks of closed features keep their text. The owner has accepted F16.8 to
+  F16.10 as they stand.
 - **Ideas are a parking lot.** An idea not yet agreed as work is a row in
   `ideas/index.md`, with no ID and no state, and a page beside it when the row
   is not enough. Agreed work that is not ready is tagged `deferred`, with
