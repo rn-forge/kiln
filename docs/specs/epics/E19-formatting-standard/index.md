@@ -2,13 +2,14 @@
 
 |  |  |
 | -- | -- |
-| **State** | New |
+| **State** | Active |
+| **Start Date** | 2026-11-10 |
 
 <!-- BEGIN derived features -->
 
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
-| [F19.1 — YAML has a formatter, and kiln's own files pass it](F19.1-yaml-formatter.md) | New | release-1 | 4 New |
+| [F19.1 — YAML has a formatter, and kiln's own files pass it](F19.1-yaml-formatter.md) | Active | release-1 | 3 New · 1 Closed |
 
 <!-- END derived features -->
 
