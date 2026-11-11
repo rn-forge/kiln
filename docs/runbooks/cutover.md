@@ -134,8 +134,18 @@ is rebuilt with `kiln new` ([creating a repository](creating-a-repo.md)).
     fails while `nx` is behind.
 
     Also make sure `prettier` is a dev dependency
-    (`pnpm add -D prettier@~3.9.10`), then run `task format`; commit the
-    formatting separately.
+    (`pnpm add -D prettier@~3.9.10`), then run `task format`.
+
+1. **Commit in groups, docs first.** Record the branch's commit before step 4
+   (`git rev-parse HEAD`) and diff against it, never against `HEAD~N`. Commit
+   by explicit path, never `git add -A`, in this order, so each diff reviews
+   alone: docs (Markdown under `docs/`, `mkdocs.yml`, the docs config kiln
+   brings, and the wrapping `task format` gave them), the biggest mechanical
+   difference; kiln's managed files and config; deletions; manifests,
+   lockfiles and source; formatting of other files last. The repository's
+   cutover story lists the paths of each group. Only the last commit has to
+   pass `task validate`; the others are for review. A rerun stops before this
+   step.
 
 1. **Merge** when no absorb row is open. The cutover pull request deletes the
    old CI workflow (step 5 did) in the same change that adds `ci.yml`: both
