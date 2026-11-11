@@ -329,6 +329,24 @@ wheels = [
 ]
 
 [[package]]
+name = "google-yamlfmt"
+version = "0.21.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/58/83/eea1f15f19d615b505d35788083d130db006565772630f7edd31f8166f60/google_yamlfmt-0.21.0.tar.gz", hash = "sha256:07726cc4d86a593b0e3f82d0f1951b008124fd810c0c6a414deadc968ec74535", size = 14485, upload-time = "2026-01-09T18:08:44.214Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ad/7e/fe8a1c6f55806340734d2a688fb8718f6ca3f03bf9e766ff0636212c3a7c/google_yamlfmt-0.21.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:8cd3a1a8a09ce2770c5f934ec4a775fedb8aa55063a74fcd5884f8f5d9958ff9", size = 1947096, upload-time = "2026-01-09T18:08:42.816Z" },
+    { url = "https://files.pythonhosted.org/packages/6f/6e/eaa065e8f14f830748c96dec7d77868eb4f378d460c0614805cec0f4c320/google_yamlfmt-0.21.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:7fc14a8e26415169e7c36a9441115aac0442c9d55d870b5e3c7a3e71e58f204c", size = 1804051, upload-time = "2026-01-09T18:08:52.063Z" },
+    { url = "https://files.pythonhosted.org/packages/25/91/d67c3f1b53bbd89730d5c8b50892d49aa375ecaf761c47de29a37c3ade2e/google_yamlfmt-0.21.0-py3-none-manylinux_2_17_aarch64.whl", hash = "sha256:2bbf535d69fcf8466d1001b79f23e6b73eacfc45ef50b91fa62976ddd5541690", size = 1738264, upload-time = "2026-01-09T18:08:50.636Z" },
+    { url = "https://files.pythonhosted.org/packages/df/fa/7d608eaf5ef0eead10665a079584176260eae15be0b0ac2df8bbc769968f/google_yamlfmt-0.21.0-py3-none-manylinux_2_17_x86_64.whl", hash = "sha256:b713c553f9f99851260b5e08d042775367c75c48ea20f7480ddb1450801df758", size = 1917785, upload-time = "2026-01-09T18:08:53.474Z" },
+    { url = "https://files.pythonhosted.org/packages/ca/2f/92128cd99429ed2b83a66022201bde9fbfa928d29f161ee4eb50a54fd9b9/google_yamlfmt-0.21.0-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:ad651703c1173d107b1cf6f898b00b8be304a77aa95cc76239f0fc412e686e71", size = 1738263, upload-time = "2026-01-09T18:08:55.588Z" },
+    { url = "https://files.pythonhosted.org/packages/18/43/5cd9526c96466fae38f0229ba9f3564399bb14abd2331a13fa062af7d158/google_yamlfmt-0.21.0-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:5ed153b0478dfd223c0d1cb8263eaacf509fa54148ce40f4ec0900ddf0258789", size = 1773882, upload-time = "2026-01-09T18:08:47.002Z" },
+    { url = "https://files.pythonhosted.org/packages/4c/32/f93840344d923f09d10ec655d7a26e7fdc3c0546596a765d42d9fe7ce25f/google_yamlfmt-0.21.0-py3-none-musllinux_1_2_i686.whl", hash = "sha256:8d39fb576cfc9d060beeda104786a8532736038a9f6d9ee899964b5febde3592", size = 1810471, upload-time = "2026-01-09T18:08:45.63Z" },
+    { url = "https://files.pythonhosted.org/packages/38/5c/cae41043309cda6cae5cb5643281669fcbab3e5e0ca595c5bf0ca9cb88e9/google_yamlfmt-0.21.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:f26829840efbb4bd15cc4918d84ac2317d2cf460b4e153328dff3c07121a8e9d", size = 1917784, upload-time = "2026-01-09T18:08:48.009Z" },
+    { url = "https://files.pythonhosted.org/packages/57/37/beb7a76e944e7274888ea510f17579c3144b6c102448ac4e04bbf5459b19/google_yamlfmt-0.21.0-py3-none-win_amd64.whl", hash = "sha256:8415a65a2dd76d8f8a0462f6d5dc752903a98679236bfd6e02939af6f2d3673f", size = 2020302, upload-time = "2026-01-09T18:08:49.504Z" },
+    { url = "https://files.pythonhosted.org/packages/28/51/2f8d347885470f0596f41e6c054567ad6dfc179eb93264f25690b75c0993/google_yamlfmt-0.21.0-py3-none-win_arm64.whl", hash = "sha256:a7a281db02b5bdc8fdacd579e289e9e900158bf26ac4e325ac7e372b78675ca2", size = 1818804, upload-time = "2026-01-09T18:08:57.166Z" },
+]
+
+[[package]]
 name = "griffelib"
 version = "2.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1196,6 +1214,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "actionlint-py" },
+    { name = "google-yamlfmt" },
     { name = "import-linter" },
     { name = "pip-audit" },
     { name = "pip-licenses" },
@@ -1228,6 +1247,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "actionlint-py", specifier = ">=1.7.12.25" },
+    { name = "google-yamlfmt", specifier = ">=0.21.0" },
     { name = "import-linter", specifier = ">=2.3" },
     { name = "pip-audit", specifier = ">=2.10.1" },
     { name = "pip-licenses", specifier = ">=5.5.5" },

@@ -92,9 +92,6 @@ NavEntry = dict[str, "str | list[str | NavEntry]"]
 PACKAGES_AREA = Area(key="packages", title="Packages", nav="include")
 """The area kiln derives for a `python-lib`'s packages when `_areas.yml` has none."""
 
-BLOCK_INDENT = "  "
-"""What every serialized nav line is indented by, to sit under ``nav:``."""
-
 
 _EPIC_DIR_RE = re.compile(r"^E(\d+)-")
 _FEATURE_FILE_RE = re.compile(r"^F(\d+)\.(\d+)-.*\.md$")
@@ -205,10 +202,16 @@ def build_nav(docs_root: str | Path, packages: Sequence[str] = ()) -> str:
         for area in _with_packages(load_areas(docs_root))
         if (entry := _area_entry(docs_root, area, packages)) is not None
     )
-    serialized = YamlUtils.serialize(nav, width=sys.maxsize)
-    return "".join(
-        f"{BLOCK_INDENT}{line}\n" if line else "\n" for line in serialized.splitlines()
+    # Dashes two in under ``nav:``, nested lists four in from their parent's:
+    # the layout the YAML formatter gives.
+    serialized = YamlUtils.serialize(
+        nav,
+        width=sys.maxsize,
+        map_indent=2,
+        sequence_indent=4,
+        sequence_dash_offset=2,
     )
+    return "".join(f"{line}\n" if line else "\n" for line in serialized.splitlines())
 
 
 def update_nav(

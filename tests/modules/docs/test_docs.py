@@ -427,7 +427,7 @@ class TestNav:
         write(repo / "docs/guides/a.md", "# A\n")
         body = build_nav(repo / "docs")
         assert "Overview:" not in body
-        assert "  - Guides:\n    - guides/index.md\n" in body
+        assert "  - Guides:\n      - guides/index.md\n" in body
         assert body.index("guides/index.md") < body.index("A: guides/a.md")
 
     @staticmethod
@@ -454,28 +454,28 @@ class TestNav:
         body = build_nav(repo / "docs")
         e = "specs/epics"
         assert body.split("  - Specs:\n", 1)[1] == (
-            "    - specs/index.md\n"
-            "    - Epics: specs/epics/index.md\n"
-            "    - E1\u2013E10:\n"
-            "      - E1 \u2014 One:\n"
-            f"        - {e}/E1-one/index.md\n"
-            "      - E3 \u2014 Three:\n"
-            f"        - {e}/E3-three/index.md\n"
-            f"        - F3.1 \u2014 A: {e}/E3-three/F3.1-a.md\n"
-            f"        - F3.2 \u2014 C: {e}/E3-three/F3.2-c.md\n"
-            f"        - F3.10 \u2014 B: {e}/E3-three/F3.10-b.md\n"
-            f"        - Design: {e}/E3-three/design.md\n"
-            "    - E11\u2013E20:\n"
-            "      - E12 \u2014 Twelve:\n"
-            f"        - {e}/E12-twelve/index.md\n"
-            "    - Ideas:\n      - specs/ideas/index.md\n"
+            "      - specs/index.md\n"
+            "      - Epics: specs/epics/index.md\n"
+            "      - E1\u2013E10:\n"
+            "          - E1 \u2014 One:\n"
+            f"              - {e}/E1-one/index.md\n"
+            "          - E3 \u2014 Three:\n"
+            f"              - {e}/E3-three/index.md\n"
+            f"              - F3.1 \u2014 A: {e}/E3-three/F3.1-a.md\n"
+            f"              - F3.2 \u2014 C: {e}/E3-three/F3.2-c.md\n"
+            f"              - F3.10 \u2014 B: {e}/E3-three/F3.10-b.md\n"
+            f"              - Design: {e}/E3-three/design.md\n"
+            "      - E11\u2013E20:\n"
+            "          - E12 \u2014 Twelve:\n"
+            f"              - {e}/E12-twelve/index.md\n"
+            "      - Ideas:\n          - specs/ideas/index.md\n"
         )
 
     def test_s14_1_3_2_a_work_area_without_epics_lists_index_and_root_pages(self, repo):
         self._specs(repo, epics=False)
         body = build_nav(repo / "docs")
         assert body.split("  - Specs:\n", 1)[1] == (
-            "    - specs/index.md\n    - Ideas:\n      - specs/ideas/index.md\n"
+            "      - specs/index.md\n      - Ideas:\n          - specs/ideas/index.md\n"
         )
 
     def test_s13_4_1_1_ideas_folder_is_a_nav_section(self, repo):
@@ -485,10 +485,10 @@ class TestNav:
         write(repo / "docs/specs/ideas/_draft.md", "# D\n")
         body = build_nav(repo / "docs")
         assert body.endswith(
-            "    - Ideas:\n"
-            "      - specs/ideas/index.md\n"
-            "      - Alpha: specs/ideas/alpha.md\n"
-            "      - Beta: specs/ideas/beta.md\n"
+            "      - Ideas:\n"
+            "          - specs/ideas/index.md\n"
+            "          - Alpha: specs/ideas/alpha.md\n"
+            "          - Beta: specs/ideas/beta.md\n"
         )
         assert "_draft.md" not in body
 
@@ -498,7 +498,7 @@ class TestNav:
         (repo / "docs/specs/ideas").rmdir()
         write(repo / "docs/specs/ideas.md", "# Ideas\n")
         body = build_nav(repo / "docs")
-        assert body.endswith("    - Ideas: specs/ideas.md\n")
+        assert body.endswith("      - Ideas: specs/ideas.md\n")
         assert "ideas/" not in body
 
     def test_update_nav_reports_staleness_without_writing(self, repo):

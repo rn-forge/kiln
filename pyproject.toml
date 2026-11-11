@@ -74,6 +74,7 @@ extend-exclude = ["tests/fixtures"]
 [dependency-groups]
 dev = [
     "actionlint-py>=1.7.12.25",
+    "google-yamlfmt>=0.21.0",
     "import-linter>=2.3",
     "pip-audit>=2.10.1",
     "pip-licenses>=5.5.5",

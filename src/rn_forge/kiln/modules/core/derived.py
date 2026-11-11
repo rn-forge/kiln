@@ -16,7 +16,18 @@ from rn_forge.commons.fs.hashing import ContentHash
 
 __all__ = ["DERIVED", "NAV_BLOCK", "managed_digest"]
 
-NAV_BLOCK = ManagedBlock("derived nav", indent="  ")
+
+class _NavBlock(ManagedBlock):
+    """The nav's block: the closing marker sits at the margin, where the YAML
+    formatter puts a comment that ends the file."""
+
+    def _marker(self, keyword: str) -> str:
+        if keyword == "END":
+            return f"# END {self.name}"
+        return super()._marker(keyword)
+
+
+NAV_BLOCK = _NavBlock("derived nav", indent="  ")
 """The fenced block inside `mkdocs.yml`'s ``nav:`` that `kiln docs-generate` owns."""
 
 DERIVED: Mapping[str, tuple[ManagedBlock, ...]] = {"mkdocs.yml": (NAV_BLOCK,)}

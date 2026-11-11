@@ -42,19 +42,19 @@ tasks:
     desc: The aggregate gate — lint, typecheck, test, docs build. Any failure fails.
     cmds:
       - task: workspace:banner
-        vars: { STEP: lint }
+        vars: {STEP: lint}
       - task: lint
       - task: workspace:banner
-        vars: { STEP: typecheck }
+        vars: {STEP: typecheck}
       - task: typecheck
       - task: workspace:banner
-        vars: { STEP: test }
+        vars: {STEP: test}
       - task: test
 {% if docs %}      - task: workspace:banner
-        vars: { STEP: "docs:build" }
+        vars: {STEP: "docs:build"}
       - task: docs:build
 {% endif %}{% for ref in extra_refs.get("validate", []) %}      - task: workspace:banner
-        vars: { STEP: "[[ ref ]]" }
+        vars: {STEP: "[[ ref ]]"}
       - task: [[ ref ]]
 {% endfor %}
   lint:

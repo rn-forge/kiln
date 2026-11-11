@@ -75,8 +75,8 @@ tasks:
     cmds:
 {% if overrides.get("node:typecheck") %}      - [[ overrides["node:typecheck"] ]]
 {% else %}      - pnpm nx run-many -t build
-{% endif %}
-{% if node_lib %}  version:
+{% endif %}{% if node_lib %}
+  version:
     desc: Print the publishable projects' version, or bump it, write its CHANGELOG.md section and format it (pass -- patch|minor|major|x.y.z); the root version task runs it.
     internal: true
     silent: true

@@ -130,8 +130,8 @@ def test_s11_3_1_1_root_mkdocs_package_nav_is_pinned(generated: Path) -> None:
     assert _is_subsequence(
         [
             "  - Packages:",
-            "    - golden-alpha: '!include packages/golden-alpha/mkdocs.yml'",
-            "    - golden-beta: '!include packages/golden-beta/mkdocs.yml'",
+            "      - golden-alpha: '!include packages/golden-alpha/mkdocs.yml'",
+            "      - golden-beta: '!include packages/golden-beta/mkdocs.yml'",
         ],
         nav.splitlines(),
     )

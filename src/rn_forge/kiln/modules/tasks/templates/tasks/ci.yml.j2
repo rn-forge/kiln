@@ -429,7 +429,6 @@ tasks:
           {{.DEVOPS}} notes "$dir/CHANGELOG.md" "$version" > "$notes"
           {{.DEVOPS}} release-publish "$tag" --title "$name v$version" --target "$GITHUB_SHA" --notes-file "$notes" {% if release == "pypi" %}--upload "$upload" {% endif %}dist/"$name"/*
         done
-
 {% if docs %}
   docs:publish:
     desc: "CI only: Deploy each released package's versioned site, then build the root site (SITE_DIR) with packages/ merged in."
