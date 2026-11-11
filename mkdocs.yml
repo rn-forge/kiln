@@ -202,7 +202,6 @@ nav:
     - Ideas:
       - specs/ideas/index.md
       - kiln simplification: specs/ideas/kiln-simplification.md
-      - pykit cutover findings: specs/ideas/pykit-cutover-findings.md
   - Decisions: adr/index.md
   - Plans:
     - plans/index.md

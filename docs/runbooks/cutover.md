@@ -99,5 +99,5 @@ and links here. A repository with no pre-kiln lineage is rebuilt with `kiln new`
 
 - kiln's own table, for its `mkdocs.yml`:
   [S16.2.1](../specs/epics/E16-init-adopts-by-overwrite/F16.2-kiln-owns-mkdocs.md#s1621-inventory-what-the-three-mkdocsyml-files-carry).
-- pykit's rehearsal, items 1–15:
-  [the cutover findings](../specs/ideas/pykit-cutover-findings.md#items).
+- pykit's and ngkit's rehearsal verdict tables:
+  [S7.2.4](../specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md#rehearsal-2026-11-07).

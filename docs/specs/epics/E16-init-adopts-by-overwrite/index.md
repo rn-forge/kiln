@@ -39,8 +39,9 @@ kiln-shaped files, and never touches content. pykit and ngkit are the only
 repositories with a pre-kiln lineage, and each cuts over once, by hand,
 following one runbook ([F16.3](F16.3-cutover-sop.md)) that records what the
 repository loses and what kiln absorbs. Decided by the owner on 2026-11-04
-(findings R1–R4); release 1 carries all of it. The decision record is
-[the cutover findings](../../ideas/pykit-cutover-findings.md).
+(2026-11-03 rehearsal findings R1–R4); release 1 carries all of it. The decision
+record is [ADR-0019's background](../../../adr/ADR-0019.md#background), with the
+CI decisions in [ADR-0016](../../../adr/ADR-0016.md).
 
 The line `init` draws:
 
