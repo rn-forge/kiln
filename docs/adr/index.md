@@ -33,3 +33,4 @@ it generates.
 | [0018](ADR-0018.md) | rn-forge dependencies are version ranges from PyPI | the rn-forge requirements kiln renders, and `rn-forge-deps` everywhere |
 | [0019](ADR-0019.md) | Cutovers overlay a `kiln new` reference; `kiln init` is retired | the cutover of a repository with a pre-kiln lineage, and kiln's command set |
 | [0020](ADR-0020.md) | Agent instructions live in AGENTS.md | the instruction files of every generated repository, and kiln's |
+| [0021](ADR-0021.md) | Each file type has one formatter, run through quality tasks (proposed) | the formatting of every generated repository, and kiln's |

@@ -7,3 +7,6 @@
 - [Tasks](tasks.md) — the generated task surface of every archetype: the files
   and namespaces, the developer and CI surfaces, the gate, how a repository
   extends it, and what `task-layout` checks.
+- [Formatting](formatting.md) — the formatter that owns each file type in every
+  archetype, the quality tasks, the file list, the ignore files, and how
+  kiln's own files are proven clean.
