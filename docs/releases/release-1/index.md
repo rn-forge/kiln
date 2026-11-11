@@ -107,6 +107,7 @@ are [release-2](../release-2/index.md).
 | [F18.3 — One epic per area](../../specs/epics/E18-v1-spec-rewrite/F18.3-area-epics.md) | E18 | New |
 | [F18.4 — `feature/v1` lands on `main` as one commit](../../specs/epics/E18-v1-spec-rewrite/F18.4-one-commit-on-main.md) | E18 | New |
 | [F19.1 — YAML has a formatter, and kiln's own files pass it](../../specs/epics/E19-formatting-standard/F19.1-yaml-formatter.md) | E19 | Closed |
+| [F19.2 — The nav block is a plain `ManagedBlock`](../../specs/epics/E19-formatting-standard/F19.2-nav-block-end-indent.md) | E19 | New |
 
 <!-- END derived scope -->
 

@@ -203,6 +203,7 @@ nav:
           - E19 — One formatter for each file type, in every archetype:
               - specs/epics/E19-formatting-standard/index.md
               - F19.1 — YAML has a formatter, and kiln's own files pass it: specs/epics/E19-formatting-standard/F19.1-yaml-formatter.md
+              - F19.2 — The nav block is a plain `ManagedBlock`: specs/epics/E19-formatting-standard/F19.2-nav-block-end-indent.md
       - Ideas:
           - specs/ideas/index.md
           - kiln simplification: specs/ideas/kiln-simplification.md

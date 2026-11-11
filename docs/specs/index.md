@@ -13,7 +13,7 @@ Backlog sections below are derived from the epic, feature and release pages by
 | Release | Status | Features |
 | -- | -- | -- |
 | [Release 2 — the architecture baseline and taskkit retired](../releases/release-2/index.md) | planned | 3 New |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 5 Active · 4 New · 62 Closed |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 5 Active · 5 New · 62 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -55,6 +55,7 @@ theirs.
 | pykit tags `rn-forge-commons` 0.7.0 and `rn-forge-tooling` 0.3.0, with every package that depends on them re-tagged on those pins, so they resolve together | [F7.3](epics/E7-pykit-release-pin-flip/F7.3-adopt-pykit-extraction.md): every story | yes (2026-10-25): pykit's Release 6, from pykit `main` `9557668`: `rn-forge-commons-v0.7.0` and `rn-forge-tooling-v0.3.0`, with `cli-v0.1.1`, `data-v0.1.1`, `web-v0.2.1`, `django-v0.5.1`, `fastapi-v0.3.2`, `sqlalchemy-v0.2.1` re-tagged on commons 0.7. `rn-forge-devops-v0.3.0` came in the same release; it does not depend on commons |
 | pykit's `main.yml` uploads to PyPI by trusted publishing, with a TestPyPI dry run and changelog release notes (pykit F21.3) | [F7.6](epics/E7-pykit-release-pin-flip/F7.6-release-to-pypi.md): the behaviour kiln renders | yes (2026-10-30): pykit's Release 7, `main.yml` at pykit `a038a0d`. It also signs PEP 740 attestations (pykit S21.3.5), which [F6.8](epics/E6-rebuild-the-repos/F6.8-pykit-release-7-ci.md) takes |
 | Every `rn-forge-*` package kiln renders is on pypi.org (pykit S21.3.3) | [F7.5](epics/E7-pykit-release-pin-flip/F7.5-pykit-from-pypi.md): every story | yes (2026-10-30): ten packages, pykit's Release 7. Each package's Release 7 version is its first on pypi.org, so kiln's floors move with it (S7.5.6) |
+| pykit tags `rn-forge-commons` 0.9.0, with `ManagedBlock.end_indent` (pykit S18.6.1) and the release prepared by pykit S18.6.2, and it is on pypi.org | [F19.2](epics/E19-formatting-standard/F19.2-nav-block-end-indent.md): S19.2.1 | no |
 
 ## Order
 
