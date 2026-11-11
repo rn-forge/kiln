@@ -17,6 +17,7 @@ from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.commons.text.markdown import MarkdownUtils
 
 from rn_forge.kiln.modules.core.derived import NAV_BLOCK
+from rn_forge.kiln.modules.docs import parsed
 from rn_forge.kiln.modules.docs.areas import Area, load_areas
 from rn_forge.kiln.modules.docs.work import epic_range, range_label, title_markup
 
@@ -54,7 +55,7 @@ def _linked_order(index_path: Path) -> list[str]:
         return []
     return [
         link.partition("#")[0]
-        for link in MarkdownUtils.links(index_path.read_text(encoding="utf-8"))
+        for link in parsed.links(index_path.read_text(encoding="utf-8"))
         if not MarkdownUtils.is_external(link)
         and link.partition("#")[0].endswith(".md")
     ]

@@ -13,6 +13,7 @@ from rn_forge.commons.fs.documents import DocumentError, DocumentUtils
 from rn_forge.commons.text.markdown import MarkdownUtils
 
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.docs import parsed
 from rn_forge.kiln.modules.docs.policy import KEBAB_NAME
 
 __all__ = [
@@ -209,7 +210,7 @@ def _check_readme(root: Path, package: str) -> list[Finding]:
         return []
     return [
         _error("package-readme-relative-link", path, f"{link} is a relative link")
-        for link in MarkdownUtils.links(path.read_text(encoding="utf-8"))
+        for link in parsed.links(path.read_text(encoding="utf-8"))
         if not MarkdownUtils.is_external(link)
     ]
 

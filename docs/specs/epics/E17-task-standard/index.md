@@ -11,7 +11,7 @@
 | -- | -- | -- | -- |
 | [F17.1 — The task surface says what it is](F17.1-task-surface.md) | Closed | release-1 | 6 Closed |
 | [F17.2 — One grammar for the CI surface, and one home for check policy](F17.2-ci-task-grammar.md) | Closed | release-1 | 5 Closed |
-| [F17.3 — A faster gate](F17.3-a-faster-gate.md) | New | release-1 | 6 New |
+| [F17.3 — A faster gate](F17.3-a-faster-gate.md) | Active | release-1 | 5 New · 1 Closed |
 
 <!-- END derived features -->
 

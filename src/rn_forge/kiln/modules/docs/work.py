@@ -12,6 +12,8 @@ from rn_forge.commons.findings import Finding, Severity
 from rn_forge.commons.fs.blocks import HTML_COMMENT, ManagedBlock
 from rn_forge.commons.text.markdown import MarkdownUtils
 
+from rn_forge.kiln.modules.docs import parsed
+
 __all__ = [
     "BOARD_BLOCK",
     "EPICS_BLOCK",
@@ -162,7 +164,7 @@ class Work:
 def _metadata(lines: list[str]) -> tuple[list[tuple[str, str]], int] | None:
     """The metadata pairs and the index of the first line after the table."""
     text = "\n".join(lines)
-    title = next((h for h in MarkdownUtils.headings(text) if h.level == 1), None)
+    title = next((h for h in parsed.headings(text) if h.level == 1), None)
     if title is None:
         return None
     first = next(
@@ -203,7 +205,7 @@ def metadata_end(lines: list[str]) -> int | None:
 
 def title_markup(text: str) -> str | None:
     """The source text of the first level-1 heading, markup kept, or `None`."""
-    heading = next((h for h in MarkdownUtils.headings(text) if h.level == 1), None)
+    heading = next((h for h in parsed.headings(text) if h.level == 1), None)
     if heading is None:
         return None
     line = text.splitlines()[heading.line].strip()
@@ -254,7 +256,7 @@ def _feature_rows(lines: list[str]) -> tuple[tuple[FeatureRow, ...], bool]:
             found = _FEATURE_ID_RE.search(row[0])
             if found is None:
                 continue
-            targets = MarkdownUtils.links(row[0])
+            targets = parsed.links(row[0])
             target = targets[0].partition("#")[0].rsplit("/", 1)[-1] if targets else ""
             rows.append(
                 FeatureRow(

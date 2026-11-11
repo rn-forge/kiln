@@ -101,7 +101,7 @@ are [release-2](../release-2/index.md).
 | [F16.10 — Agent instructions live in AGENTS.md](../../specs/epics/E16-init-adopts-by-overwrite/F16.10-agent-instructions-in-agents-md.md) | E16 | Active |
 | [F17.1 — The task surface says what it is](../../specs/epics/E17-task-standard/F17.1-task-surface.md) | E17 | Closed |
 | [F17.2 — One grammar for the CI surface, and one home for check policy](../../specs/epics/E17-task-standard/F17.2-ci-task-grammar.md) | E17 | Closed |
-| [F17.3 — A faster gate](../../specs/epics/E17-task-standard/F17.3-a-faster-gate.md) | E17 | New |
+| [F17.3 — A faster gate](../../specs/epics/E17-task-standard/F17.3-a-faster-gate.md) | E17 | Active |
 | [F18.1 — Tests named by behaviour](../../specs/epics/E18-v1-spec-rewrite/F18.1-tests-named-by-behaviour.md) | E18 | New |
 | [F18.2 — Spec IDs out of the code and the docs outside the specs](../../specs/epics/E18-v1-spec-rewrite/F18.2-ids-out-of-code-and-docs.md) | E18 | New |
 | [F18.3 — One epic per area](../../specs/epics/E18-v1-spec-rewrite/F18.3-area-epics.md) | E18 | New |
