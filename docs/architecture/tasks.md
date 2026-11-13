@@ -14,10 +14,10 @@ model is [ADR-0007](../adr/ADR-0007.md); the rules it must meet are in
   `kiln`) holds all of its primitives; a concern (`docs`, `ci`) holds the
   checks that are not kiln's; a service (`api`, `web`) holds how to run it.
 - **Two public surfaces.** The developer surface is the ten root verbs, the
-  `docs:` verbs, `kiln:diff`, `kiln:apply`, `api:*` and `web:dev`. The CI
-  surface is every public `ci:` task. They are public only because a workflow
-  step runs them from the command line, and go-task refuses to run an internal
-  task that way. Each `desc:` starts `CI only:`. Every other task is
+  `docs:` verbs, `kiln:diff`, `kiln:apply`, `kiln:pin`, `api:*` and `web:dev`.
+  The CI surface is every public `ci:` task. They are public only because a
+  workflow step runs them from the command line, and go-task refuses to run an
+  internal task that way. Each `desc:` starts `CI only:`. Every other task is
   `internal: true`.
 - **A supply-chain check, or a check the registry switches, has no
   `command_overrides` key.** That is the dependency audits, the licences
@@ -42,7 +42,7 @@ file under its own name.
 | `Taskfile.yml` | none | The ten root verbs, as wrappers | all ten | every archetype |
 | `tasks/python.yml` | `python` | install, lint, `lint:imports`, `lint:audit`, `lint:licenses`, format, typecheck, test, `test:coverage`, build, version | none | every archetype; `node-lib` keeps it for the docs tooling |
 | `tasks/quality.yml` | `quality` | Markdown, TOML and YAML formatting checks and formatters | none | every archetype |
-| `tasks/kiln.yml` | `kiln` | `doctor` (one internal task), `diff`, `apply` | `kiln:diff`, `kiln:apply` | every archetype |
+| `tasks/kiln.yml` | `kiln` | `doctor` (one internal task), `diff`, `apply`, `pin` | `kiln:diff`, `kiln:apply`, `kiln:pin` | every archetype |
 | `tasks/workspace.yml` | `workspace` | `banner` (internal; the numbered banner `validate` prints before each step), `step` (internal; the numbered marker `lint` prints before each step), `clean` | none | every archetype |
 | `tasks/ci.yml` | `ci` | `lint:workflows` and `secrets:install` (internal); the CI surface | the CI surface | every archetype; the body differs |
 | `tasks/docs.yml` | `docs` | `build`, `serve`, `generate` | all three | `[docs] profile = "mkdocs"` |
@@ -61,6 +61,7 @@ never again.
 | `setup`, `validate`, `lint`, `format`, `typecheck`, `test`, `test:coverage`, `build`, `clean`, `version` | The ten root verbs | all |
 | `docs:build`, `docs:serve`, `docs:generate` | Build, serve and regenerate the MkDocs site | all with the `mkdocs` profile |
 | `kiln:diff`, `kiln:apply` | Show or apply the difference from a fresh render | all |
+| `kiln:pin -- <ref>` | Move `[kiln] ref` to another ref (tag, branch or SHA) and re-render with the kiln at that ref: `kiln version` at the ref, `kiln pin`, then `kiln apply` at the ref. Not rendered in kiln's own repository | all but kiln |
 | `api:dev` (`api:migrate` for Django) | Run the API service | `python-web-api`, `python-web-app` |
 | `web:dev` | Run the frontend dev server | `python-web-app` |
 
@@ -149,7 +150,7 @@ is otherwise left alone.
 | `taskgraph.surface` | A root task is not one of the ten verbs, or a verb is missing |
 | `taskgraph.not-a-wrapper` | A root task has a `cmds:` entry that is not a `task:` call |
 | `taskgraph.no-desc` | A task has no non-empty `desc:` |
-| `taskgraph.not-internal` | A task in `python`, `node`, `quality`, `workspace` or `kiln` is public (only `kiln:diff` and `kiln:apply` may be) |
+| `taskgraph.not-internal` | A task in `python`, `node`, `quality`, `workspace` or `kiln` is public (only `kiln:diff`, `kiln:apply` and `kiln:pin` may be) |
 | `taskgraph.missing-include` | An include names a file that does not exist |
 | `taskgraph.reserved-namespace` | A `[tasks] includes` namespace collides with one kiln owns |
 | `taskgraph.unresolved` | A task calls a task that does not exist |

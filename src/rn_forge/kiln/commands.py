@@ -38,6 +38,7 @@ from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
 from rn_forge.kiln.modules.core import cycle, umbrella
 from rn_forge.kiln.modules.core.config import catalog
 from rn_forge.kiln.modules.core.config.manager import ConfigManager, Resolution
+from rn_forge.kiln.modules.core.config.schema import KilnPin
 from rn_forge.kiln.modules.core.config.sources import Source, fetch
 from rn_forge.kiln.modules.core.inventory import KINDS, inventory
 from rn_forge.kiln.modules.docs import generate
@@ -71,6 +72,7 @@ __all__ = [
     "generate_app",
     "generate_package",
     "new",
+    "pin",
     "prompt",
     "version",
 ]
@@ -834,6 +836,25 @@ def _write_config(directory: Path, config: KilnConfig) -> None:
     config_path.write_text(
         catalog.render(config, header=_CONFIG_HEADER), encoding="utf-8"
     )
+
+
+def pin(ref: str) -> None:
+    """Set the current repository's `[kiln] ref` to REF, and write nothing else.
+
+    Does not apply and does not check that REF exists; `task kiln:pin` does both.
+
+    Raises:
+        AppException: REF is empty or only whitespace.
+    """
+    ref = ref.strip()
+    if not ref:
+        raise AppException("a kiln ref is required")
+    root = umbrella.find_root(Path.cwd())
+    config = ConfigManager().load(root)
+    old = config.document.kiln.ref if config.document.kiln else archetypes.KILN_REF
+    document = config.document.model_copy(update={"kiln": KilnPin(ref=ref)})
+    _write_config(root, dataclasses.replace(config, document=document))
+    console.info("kiln ref {} \u2192 {}", old, ref)
 
 
 def _config_reresolve(

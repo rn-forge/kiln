@@ -11,7 +11,7 @@ from rn_forge.commons.generation.templated import TemplateArtifact, render_artif
 from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
-from rn_forge.kiln.archetypes import KILN_REF, kiln_command
+from rn_forge.kiln.archetypes import KILN_GIT, KILN_REF, kiln_command
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd import registry
 from rn_forge.kiln.modules.cicd.artifacts import load_pins
@@ -114,6 +114,8 @@ def render(config: KilnConfig) -> list[Artifact]:
     context: dict[str, object] = {
         "devops": devops,
         "kiln": kiln,
+        "kiln_git": KILN_GIT,
+        "kiln_own": config.module == "rn_forge.kiln",
         "kiln_version": __version__,
         "name": config.name,
         "package": config.module,

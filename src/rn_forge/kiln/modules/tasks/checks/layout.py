@@ -40,7 +40,7 @@ STATE_PATH = Path(".rn-forge/kiln/state.json")
 RESERVED_NAMESPACES = frozenset({"quality", "workspace", "node", "python", "kiln"})
 """Namespaces whose tasks are inner implementation and must be `internal`."""
 
-PUBLIC_KILN_TASKS = frozenset({"diff", "apply"})
+PUBLIC_KILN_TASKS = frozenset({"diff", "apply", "pin"})
 """The `kiln:` tasks that are public: the rest of the namespace stays internal."""
 
 _TASK_CALL = re.compile(r"(?:^|[;&|(]\s*|\s)task\s+([A-Za-z][\w:-]*)")

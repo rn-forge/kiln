@@ -2236,7 +2236,7 @@ def test_s4_12_6_1_kiln_yml_holds_one_internal_doctor_task(
     root = _s4_12_1_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     document = _load(root, "tasks/kiln.yml")
-    assert set(document["tasks"]) == {"doctor", "diff", "apply"}
+    assert set(document["tasks"]) == {"doctor", "diff", "apply", "pin"}
     assert not [n for n in ("diff", "apply") if "internal" in document["tasks"][n]]
     doctor = document["tasks"]["doctor"]
     assert doctor["internal"] is True
@@ -2299,6 +2299,41 @@ def test_s7_4_1_2_kiln_itself_runs_its_working_tree(tmp_path: Path) -> None:
     )
     cycle.apply(root, home=tmp_path / "home")
     assert _load(root, "tasks/kiln.yml")["vars"]["KILN"] == "uv run kiln"
+
+
+PIN_PREFIX = (
+    'uvx --from "rn-forge-kiln @ git+https://github.com/rn-forge/kiln@{{.CLI_ARGS}}"'
+)
+
+
+def test_s7_2_5_3_task_order(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    pin = _load(root, "tasks/kiln.yml")["tasks"]["pin"]
+    assert "internal" not in pin
+    assert pin["desc"].strip()
+    assert pin["cmds"] == [
+        f"{PIN_PREFIX} kiln version",
+        "{{.KILN}} pin {{.CLI_ARGS}}",
+        f"{PIN_PREFIX} kiln apply",
+    ]
+
+
+def test_s7_2_5_4_precondition(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    pin = _load(root, "tasks/kiln.yml")["tasks"]["pin"]
+    assert pin["preconditions"] == [
+        {"sh": '[ -n "{{.CLI_ARGS}}" ]', "msg": "pass a kiln ref after --"}
+    ]
+
+
+def test_s7_2_5_5_not_in_kiln(tmp_path: Path) -> None:
+    root = _root(
+        tmp_path, extra='\n[archetype."python-tool"]\nmodule = "rn_forge.kiln"\n'
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    assert "pin" not in _load(root, "tasks/kiln.yml")["tasks"]
 
 
 def test_s7_4_1_3_an_unpinned_config_runs_kilns_own_ref(tmp_path: Path) -> None:
@@ -3172,7 +3207,11 @@ def test_s16_4_5_3_ten_root_verbs(tmp_path: Path, archetype: str) -> None:
     result = _run_task(root, "--list", "--json")
     assert result.returncode == 0, result.stderr
     names = {entry["name"] for entry in json.loads(result.stdout)["tasks"]}
-    assert {n for n in names if n.startswith("kiln:")} == {"kiln:diff", "kiln:apply"}
+    assert {n for n in names if n.startswith("kiln:")} == {
+        "kiln:diff",
+        "kiln:apply",
+        "kiln:pin",
+    }
     assert {n for n in names if not n.startswith(("ci:", "kiln:"))} == set(ROOT_VERBS)
     assert not [
         f

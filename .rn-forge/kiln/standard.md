@@ -171,6 +171,11 @@ it with `uvx` in its own environment (kiln ADR-0006). A repository's lock holds
 none of kiln's dependencies, and kiln's pykit pins never constrain the
 repository's.
 
+To move the pin to another ref (a tag, a branch or a SHA, higher or lower), run
+`task kiln:pin -- <ref>`. It checks that the ref resolves, sets `[kiln] ref`,
+and re-renders with the kiln at that ref, so the move is one reviewable diff. Do
+not edit the ref by hand: `task kiln:apply` would then run the old kiln.
+
 ## 4. The import boundary
 
 The rn-forge peer rule is enforced at the dependency declaration, above:
