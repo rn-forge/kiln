@@ -147,13 +147,16 @@ are read-only to the repository.
 | `_integration.yml` | `integration` | a matrix leg with containers; Python archetypes |
 | `_smoke.yml` | `smoke` | a matrix leg; Python archetypes |
 | `_sonar.yml` | `sonar` | one body, one guard, every archetype |
-| `_release.yml` | `release` | the largest stage; one body per release mode |
+| `_release.yml` | `release` | the largest stage; one body per release mode; `node-lib` and single-package archetypes |
 | `_verify-release.yml` | `verify-release` | every archetype |
 | `_docs.yml` | `docs` | every archetype; Pages permissions in one place |
 
 `validate`, `plan`, `test`, `suites`, `dependency-review`, `secret-scan`,
 `checks-ok` and `ci-ok` stay in `ci.yml`: each is short or needs `ci.yml`'s
-outputs.
+outputs. For a library workspace `release` stays there too: PyPI matches the
+trusted publisher on the called workflow and checks the attestation against the
+caller, so the upload must run in the top-level workflow
+([F6.11](../specs/epics/E6-rebuild-the-repos/F6.11-pypi-release-in-ci-yml.md)).
 
 - The caller job in `ci.yml` grants the permissions; a called workflow can only
   narrow them. Secrets are passed by name, never `secrets: inherit`.

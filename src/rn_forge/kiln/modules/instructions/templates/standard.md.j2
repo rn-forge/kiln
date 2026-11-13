@@ -256,7 +256,7 @@ PyPI. A dispatch with `testpypi` set uploads every
 package to TestPyPI instead and creates no tag or release. Once per repository,
 the owner creates the GitHub environments `pypi` (deployment branch `main`) and
 `testpypi`, and adds a trusted publisher per package on pypi.org and on
-test.pypi.org, naming workflow `ci.yml` and the environment.
+test.pypi.org, naming workflow `ci.yml` and the environment (not `_release.yml`; PyPI rejects an upload from a called workflow).
 
 {% endif %}{% if docs %}`task validate` proves: {% if not node_lib %}ruff is clean and formatted{% if workspace %} in every package{% endif %}; {% endif %}the archetype's
 dependency set is present, allowed and pinned; {% if not node_lib %}the import contracts hold; {% endif %}the

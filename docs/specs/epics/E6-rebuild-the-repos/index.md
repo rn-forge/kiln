@@ -18,7 +18,7 @@
 | [F6.8 — The generated CI takes pykit's Release 7](F6.8-pykit-release-7-ci.md) | Closed | release-1 | 3 Closed |
 | [F6.9 — `init` and `config-update` leave an adopted repository alone](F6.9-init-leaves-adopted-repo-alone.md) | Closed | release-1 | 2 Closed |
 | [F6.10 — A task verb scans the checked-out branch on SonarCloud](F6.10-local-sonar-scan.md) | Active | release-1 | 1 New · 2 Closed |
-| [F6.11 — The library-workspace release job runs in `ci.yml`](F6.11-pypi-release-in-ci-yml.md) | New | release-1 | 2 New |
+| [F6.11 — The library-workspace release job runs in `ci.yml`](F6.11-pypi-release-in-ci-yml.md) | Active | release-1 | 2 Closed |
 
 <!-- END derived features -->
 

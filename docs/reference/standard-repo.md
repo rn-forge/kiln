@@ -536,8 +536,9 @@ The rules:
   installs `name==version` from PyPI, retrying up to ten times. Once per
   repository, the owner creates the GitHub environments `pypi` (deployment
   branch `main`) and `testpypi`, and adds a trusted publisher per package on
-  pypi.org and test.pypi.org, naming workflow `ci.yml` and the environment;
-  kiln does not automate either.
+  pypi.org and test.pypi.org, naming workflow `ci.yml` and the environment
+  (not `_release.yml`; PyPI rejects an upload from a called workflow); kiln
+  does not automate either.
 - Release is idempotent: the **release**, not the tag, is the record of what
   shipped, and the tag is created by the publish step itself. A failed publish
   is therefore resumable; a tag-first design made it permanent.
