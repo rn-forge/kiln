@@ -23,6 +23,7 @@ from rn_forge.kiln.devops import (
     nx,
     requirements,
     site,
+    sonar,
     umbrella,
     uv,
     verify_release,
@@ -73,6 +74,12 @@ def _parser() -> argparse.ArgumentParser:
         "sonar-target",
         help="print the `$GITHUB_OUTPUT` line with the Sonar branch argument",
     )
+    local = commands.add_parser(
+        "sonar-local",
+        help="run the coverage tests and scan the checked-out branch on SonarCloud",
+    )
+    local.add_argument("--dry-run", action="store_true")
+    local.add_argument("--branch", default=None, metavar="NAME")
     state = commands.add_parser(
         "release-state", help="print the release's state as `$GITHUB_OUTPUT` lines"
     )
@@ -418,6 +425,8 @@ def main(argv: list[str] | None = None) -> int:
         except ValueError as error:
             sys.exit(str(error))
         return 0
+    if args.command == "sonar-local":
+        return sonar.run(args.branch, args.dry_run)
     if args.command == "notes":
         return _notes(args)
     if args.command == "dist-resolve":
