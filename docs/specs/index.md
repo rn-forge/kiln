@@ -13,7 +13,7 @@ Backlog sections below are derived from the epic, feature and release pages by
 | Release | Status | Features |
 | -- | -- | -- |
 | [Release 2 — the architecture baseline and taskkit retired](../releases/release-2/index.md) | planned | 5 New |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 6 Active · 10 New · 62 Closed |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 7 Active · 11 New · 62 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -24,7 +24,6 @@ Features with no Iteration, by State and epic.
 
 | Epic | Features |
 | -- | -- |
-| [E6 — Rebuild the repos, retire the old](epics/E6-rebuild-the-repos/index.md) | [F6.10](epics/E6-rebuild-the-repos/F6.10-local-sonar-scan.md) |
 | [E16 — `init` adopts by overwrite](epics/E16-init-adopts-by-overwrite/index.md) | [F16.5](epics/E16-init-adopts-by-overwrite/F16.5-rebuild-and-port.md) |
 
 ### Deferred
