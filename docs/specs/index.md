@@ -24,6 +24,7 @@ Features with no Iteration, by State and epic.
 
 | Epic | Features |
 | -- | -- |
+| [E6 — Rebuild the repos, retire the old](epics/E6-rebuild-the-repos/index.md) | [F6.10](epics/E6-rebuild-the-repos/F6.10-local-sonar-scan.md) |
 | [E16 — `init` adopts by overwrite](epics/E16-init-adopts-by-overwrite/index.md) | [F16.5](epics/E16-init-adopts-by-overwrite/F16.5-rebuild-and-port.md) |
 
 ### Deferred
