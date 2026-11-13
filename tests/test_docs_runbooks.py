@@ -8,14 +8,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 RUNBOOK = ROOT / "docs/runbooks/cutover.md"
 STEPS = (
-    "Branch",
     "Build the reference",
+    "Format first",
+    "Branch",
     "Bring the files over",
     "Read the diff file by file",
     "Record a verdict",
     "Land the absorb stories",
     "Rebuild the reference and re-run the overlay",
     "Reconcile and gate",
+    "Commit in groups, docs first",
     "Merge",
 )
 
@@ -164,5 +166,7 @@ def test_s16_9_12_4_runbook_drops_the_standard_exclude() -> None:
     end = flat.index("**Read the diff file by file.**")
     step = flat[start:end]
 
+    # Since S7.2.4 the file starts from the reference's copy, which has no
+    # `exclude` (S16.9.12), so the step names the file, not the key.
     assert ".mdformat.toml" in step
-    assert "exclude" in step
+    assert "starts from the reference's copy" in step
