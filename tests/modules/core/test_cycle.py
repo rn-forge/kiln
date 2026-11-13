@@ -75,6 +75,7 @@ def test_s4_2_3_applying_core_into_an_empty_directory_only_creates_and_inserts(
         "tasks/python.yml": Action.CREATE,
         "tasks/kiln.yml": Action.CREATE,
         "tasks/ci.yml": Action.CREATE,
+        "tasks/sonar.yml": Action.CREATE,
         ".github/actions/setup/action.yml": Action.CREATE,
         ".github/workflows/ci.yml": Action.CREATE,
         ".github/workflows/_integration.yml": Action.CREATE,

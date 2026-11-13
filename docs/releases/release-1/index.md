@@ -62,7 +62,7 @@ are [release-2](../release-2/index.md).
 | [F6.7 — kiln ships the CI planner as `kiln-devops`](../../specs/epics/E6-rebuild-the-repos/F6.7-kiln-devops.md) | E6 | Closed |
 | [F6.8 — The generated CI takes pykit's Release 7](../../specs/epics/E6-rebuild-the-repos/F6.8-pykit-release-7-ci.md) | E6 | Closed |
 | [F6.9 — `init` and `config-update` leave an adopted repository alone](../../specs/epics/E6-rebuild-the-repos/F6.9-init-leaves-adopted-repo-alone.md) | E6 | Closed |
-| [F6.10 — A task verb scans the checked-out branch on SonarCloud](../../specs/epics/E6-rebuild-the-repos/F6.10-local-sonar-scan.md) | E6 | Active |
+| [F6.10 — A task verb scans the checked-out branch on SonarCloud](../../specs/epics/E6-rebuild-the-repos/F6.10-local-sonar-scan.md) | E6 | Closed |
 | [F6.11 — The library-workspace release job runs in `ci.yml`](../../specs/epics/E6-rebuild-the-repos/F6.11-pypi-release-in-ci-yml.md) | E6 | Active |
 | [F7.1 — kiln renders and takes pykit by release tag](../../specs/epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md) | E7 | Closed |
 | [F7.2 — A tagged kiln release, taken by each repository](../../specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md) | E7 | Active |

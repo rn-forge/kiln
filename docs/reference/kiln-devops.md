@@ -115,18 +115,8 @@ every workspace member, whatever the change.
 | `smoke` | List of rows `{name, extra, marker}`, one per smoke check. `extra` is empty for the run with no extra. `marker` is the file name a passing check leaves for `releasable`. | Selected |
 | `suites` | List of rows `{name, args}`, one per `[tool.workspace-ci.suites]` key. `args` is a shell-quoted string. | Every suite |
 | `pytest-args` | Shell-quoted string of the root `pytest-args`; empty if none. | Workspace |
-| `cov-args` | Shell-quoted string of one `--cov=<module>` per package. | Every |
-| `test-paths` | Shell-quoted string of the package directories. | Every |
-| `sonar-sources` | Comma-separated `<dir>/src` paths. | Every |
-| `sonar-tests` | Comma-separated `<dir>/tests` paths, for packages that have a `tests` directory. | Every |
-| `sonar` | `true` if `sonar-project.properties` exists at the root, else `false`. | Workspace |
 | `docs` | `true` if `mkdocs.yml` exists at the root, else `false`. | Workspace |
 
 <!-- plan-outputs:end -->
 
-`sonar` and `docs` report only that the file exists; neither is scoped to the
-change.
-
-The current kiln workflow no longer reads `sonar-sources`, `sonar-tests`,
-`cov-args` and `test-paths`; kiln takes Sonar sources from
-`sonar-project.properties`. They are still emitted.
+`docs` reports only that the file exists; it is not scoped to the change.

@@ -707,11 +707,6 @@ PLAN_KEYS = (
     "smoke",
     "suites",
     "pytest-args",
-    "cov-args",
-    "test-paths",
-    "sonar-sources",
-    "sonar-tests",
-    "sonar",
     "docs",
 )
 

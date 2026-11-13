@@ -280,7 +280,6 @@ def test_s15_8_3_2_plan_of_one(tmp_path: Path) -> None:
             "marker": "my-tool.integration",
         }
     ]
-    assert outputs["sonar-sources"] == "src"
 
 
 def test_s16_6_5_1_load(tmp_path: Path) -> None:

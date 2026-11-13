@@ -45,6 +45,7 @@ file under its own name.
 | `tasks/kiln.yml` | `kiln` | `doctor` (one internal task), `diff`, `apply`, `pin` | `kiln:diff`, `kiln:apply`, `kiln:pin` | every archetype |
 | `tasks/workspace.yml` | `workspace` | `banner` (internal; the numbered banner `validate` prints before each step), `step` (internal; the numbered marker `lint` prints before each step), `clean` | none | every archetype |
 | `tasks/ci.yml` | `ci` | `lint:workflows` and `secrets:install` (internal); the CI surface | the CI surface | every archetype; the body differs |
+| `tasks/sonar.yml` | `sonar` | `local`, the developer's SonarCloud scan, calling `kiln-devops sonar-local` | `sonar:local` | `[ci] sonar` on |
 | `tasks/docs.yml` | `docs` | `build`, `serve`, `generate` | all three | `[docs] profile = "mkdocs"` |
 | `tasks/node.yml` | `node` | install, lint, `lint:audit` (`node-lib`), `lint:licenses` (`node-lib`), test, build, typecheck, e2e, `version` (`node-lib`; the internal primitive behind the root `version`) | none | `python-web-app`, `node-lib` |
 | `tasks/api.yml` | `api` | `dev`, and `migrate` for Django | `api:dev`, `api:migrate` | `python-web-api`, `python-web-app` |
@@ -62,6 +63,7 @@ never again.
 | `docs:build`, `docs:serve`, `docs:generate` | Build, serve and regenerate the MkDocs site | all with the `mkdocs` profile |
 | `kiln:diff`, `kiln:apply` | Show or apply the difference from a fresh render | all |
 | `kiln:pin -- <ref>` | Move `[kiln] ref` to another ref (tag, branch or SHA) and re-render with the kiln at that ref: `kiln version` at the ref, `kiln pin`, then `kiln apply` at the ref. Not rendered in kiln's own repository | all but kiln |
+| `sonar:local` | Run the coverage tests and scan the checked-out branch on SonarCloud, awaiting the quality gate | all with `[ci] sonar` on |
 | `api:dev` (`api:migrate` for Django) | Run the API service | `python-web-api`, `python-web-app` |
 | `web:dev` | Run the frontend dev server | `python-web-app` |
 

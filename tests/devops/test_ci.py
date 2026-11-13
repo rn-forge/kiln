@@ -72,7 +72,6 @@ def test_s6_7_2_plan_lists_smoke_checks_per_extra(tmp_path: Path) -> None:
         {"name": "app", "extra": "", "marker": "app.smoke"},
         {"name": "app", "extra": "x", "marker": "app.smoke-x"},
     ]
-    assert outputs["sonar"] is False
 
 
 def test_s6_7_2_plan_lists_one_empty_extra_smoke_entry_without_a_declaration(
@@ -244,3 +243,9 @@ def test_s6_7_2_plan_outputs_match_documented_keys(tmp_path: Path) -> None:
     documented = set(re.findall(r"^\| `([^`]+)` \|", table, flags=re.MULTILINE))
     workspace = Workspace(tmp_path, _packages())
     assert documented == set(plan(workspace, ""))
+
+
+def test_s6_10_3_3_plan_has_none_of_the_retired_sonar_outputs(tmp_path: Path) -> None:
+    outputs = plan(Workspace(root=tmp_path, packages=_packages()), "")
+    for key in ("cov-args", "test-paths", "sonar-sources", "sonar-tests", "sonar"):
+        assert key not in outputs

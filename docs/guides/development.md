@@ -11,6 +11,27 @@ task format      # ruff format + fix, in place
 task docs:serve  # live docs on http://127.0.0.1:8080
 ```
 
+## Scanning a branch on SonarCloud
+
+`task sonar:local` runs `task test:coverage`, then scans the checked-out branch
+on SonarCloud and waits for the quality gate. It exists only where `[ci] sonar`
+is on.
+
+```bash
+task sonar:local -- --dry-run   # print the target and both commands, run nothing
+SONAR_TOKEN=... task sonar:local
+```
+
+- It needs `SONAR_TOKEN` in the environment and `sonar-scanner` on `PATH`. kiln
+  adds no dependency for the scanner; install it yourself.
+- It refuses `main`, and takes sources, tests and the coverage report from
+  `sonar-project.properties`, as the CI scan does.
+- SonarCloud's plan may refuse to read a non-`main` branch's data, so awaiting
+  the gate can fail even when the upload succeeds. The verb passes the
+  scanner's failure through.
+- The scan uploads the working tree, which may differ from every commit. It is
+  not CI evidence; only the pull request's run is.
+
 ## This repo's own skeleton
 
 kiln generates its own skeleton from `.rn-forge/kiln/config.toml` (the

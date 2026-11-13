@@ -65,7 +65,7 @@
     },
     ".github/workflows/ci.yml": {
       "begin_marker": null,
-      "content_hash": "a009cd90b2639f8170ed18fb9322b47a02dd6f5b1113dc555ad06269ee99ac4b",
+      "content_hash": "86963b45f4833035cd34d6523aa5541c6c07235308b36884573076730cc042b7",
       "end_marker": null,
       "kind": "managed",
       "path": ".github/workflows/ci.yml"
@@ -93,7 +93,7 @@
     },
     ".rn-forge/kiln/standard.md": {
       "begin_marker": null,
-      "content_hash": "331a1b01414064f9f2cfa95ec763d4abd927446c45074edde4e54622788da870",
+      "content_hash": "435bee6863bb2e60d7d4d2961f269f395fd632182e66262d3b57d74a1f90b687",
       "end_marker": null,
       "kind": "managed",
       "path": ".rn-forge/kiln/standard.md"
@@ -121,7 +121,7 @@
     },
     "Taskfile.yml": {
       "begin_marker": null,
-      "content_hash": "edd5cf59edb60fc8be624d06cf9b20760bdb23a5c583e320c3e07ec62f4e8777",
+      "content_hash": "982b88a886aa403deddac82aea62dae58a3e736877fd4d1e47dbd4a6c4e37a68",
       "end_marker": null,
       "kind": "managed",
       "path": "Taskfile.yml"
@@ -342,6 +342,13 @@
       "end_marker": null,
       "kind": "seeded",
       "path": "tasks/self.yml"
+    },
+    "tasks/sonar.yml": {
+      "begin_marker": null,
+      "content_hash": "5319add21f0f063f2ce92e327b3bc925166ee4f873076db6949517d97e9f34b7",
+      "end_marker": null,
+      "kind": "managed",
+      "path": "tasks/sonar.yml"
     },
     "tasks/workspace.yml": {
       "begin_marker": null,

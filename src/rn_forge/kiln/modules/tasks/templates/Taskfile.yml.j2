@@ -25,7 +25,8 @@ includes:
 {% if docs %}  docs: tasks/docs.yml
 {% endif %}  workspace: tasks/workspace.yml
   ci: tasks/ci.yml
-{% if web %}  api: tasks/api.yml
+{% if sonar %}  sonar: tasks/sonar.yml
+{% endif %}{% if web %}  api: tasks/api.yml
 {% endif %}{% if web_app %}  web: tasks/web.yml
 {% endif %}{% if node %}  node: tasks/node.yml
 {% endif %}{% for include in includes %}  [[ include.namespace ]]: [[ include.taskfile ]]

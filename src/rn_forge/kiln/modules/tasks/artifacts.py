@@ -145,6 +145,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         ],
         "licenses_ignore_node": list(policy.ignore),
         "audit_ignore": [entry.id for entry in ci.audit_policy().ignore],
+        "sonar": ci.sonar,
         "web": web,
         "web_app": web_app,
         "node": node,
@@ -175,6 +176,7 @@ def render(config: KilnConfig) -> list[Artifact]:
             TemplateArtifact("tasks/web.yml", enabled=web_app),
             TemplateArtifact("tasks/node.yml", enabled=node),
             TemplateArtifact("tasks/ci.yml"),
+            TemplateArtifact("tasks/sonar.yml", enabled=ci.sonar),
             *(
                 TemplateArtifact(
                     include.taskfile,

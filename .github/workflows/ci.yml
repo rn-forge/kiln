@@ -128,11 +128,6 @@ jobs:
       smoke: ${{ steps.plan.outputs.smoke }}
       suites: ${{ steps.plan.outputs.suites }}
       pytest-args: ${{ steps.plan.outputs.pytest-args }}
-      cov-args: ${{ steps.plan.outputs.cov-args }}
-      test-paths: ${{ steps.plan.outputs.test-paths }}
-      sonar-sources: ${{ steps.plan.outputs.sonar-sources }}
-      sonar-tests: ${{ steps.plan.outputs.sonar-tests }}
-      sonar: ${{ steps.plan.outputs.sonar }}
       docs: ${{ steps.plan.outputs.docs }}
     steps:
       - name: Checkout

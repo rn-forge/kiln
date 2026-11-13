@@ -40,6 +40,7 @@ TASK_KEYS = (
     "tasks/docs.yml",
 )
 CI_KEY = "tasks/ci.yml"
+SONAR_KEY = "tasks/sonar.yml"
 
 CONFIG = """
 schema_version = 1
@@ -106,20 +107,25 @@ def test_s4_3_3_property1_renders_exactly_the_module_s_template_inventory_rows(
     root = _root(tmp_path, archetype)
     artifacts = TASKS.artifacts(KilnConfig.load(root), root)
     assert [(a.path, a.kind) for a in artifacts] == [
-        (path, ArtifactKind.MANAGED) for path in (*TASK_KEYS, CI_KEY)
+        (path, ArtifactKind.MANAGED) for path in (*TASK_KEYS, CI_KEY, SONAR_KEY)
     ]
 
 
 def test_s4_3_3_property1_without_mkdocs_omits_docs_yml(tmp_path: Path) -> None:
     root = _root(tmp_path, profile="none")
     artifacts = TASKS.artifacts(KilnConfig.load(root), root)
-    assert [a.path for a in artifacts] == [*TASK_KEYS[:-1], CI_KEY]
+    assert [a.path for a in artifacts] == [*TASK_KEYS[:-1], CI_KEY, SONAR_KEY]
 
 
 def test_s4_3_3_property1_one_seeded_artifact_per_include(tmp_path: Path) -> None:
     root = _root(tmp_path, extra=INCLUDE_EXTRA)
     artifacts = TASKS.artifacts(KilnConfig.load(root), root)
-    assert [a.path for a in artifacts] == [*TASK_KEYS, CI_KEY, "tasks/extra.yml"]
+    assert [a.path for a in artifacts] == [
+        *TASK_KEYS,
+        CI_KEY,
+        SONAR_KEY,
+        "tasks/extra.yml",
+    ]
     assert artifacts[-1].kind is ArtifactKind.SEEDED
 
 
@@ -128,7 +134,7 @@ def test_s4_3_3_property2_into_an_empty_directory_only_creates(
     tmp_path: Path, archetype: str
 ) -> None:
     actions = _actions(_root(tmp_path, archetype), tmp_path)
-    tasks_actions = {key: actions[key] for key in (*TASK_KEYS, CI_KEY)}
+    tasks_actions = {key: actions[key] for key in (*TASK_KEYS, CI_KEY, SONAR_KEY)}
     assert set(tasks_actions.values()) == {Action.CREATE}
 
 
@@ -139,7 +145,9 @@ def test_s4_3_3_property3_a_second_apply_is_unchanged(
     root = _root(tmp_path, archetype)
     cycle.apply(root, home=tmp_path / "home")
     actions = _actions(root, tmp_path)
-    assert all(actions[key] is Action.UNCHANGED for key in (*TASK_KEYS, CI_KEY))
+    assert all(
+        actions[key] is Action.UNCHANGED for key in (*TASK_KEYS, CI_KEY, SONAR_KEY)
+    )
 
 
 def test_s4_3_3_property3_an_include_reports_skip_once_present(tmp_path: Path) -> None:
@@ -391,7 +399,7 @@ def test_s4_3_3_1_task_list_json_lists_exactly_the_ten_root_verbs(
     names = {
         entry["name"]
         for entry in json.loads(result.stdout)["tasks"]
-        if not entry["name"].startswith(("ci:", "kiln:"))
+        if not entry["name"].startswith(("ci:", "kiln:", "sonar:"))
     }
     assert names == {
         "setup",
@@ -3212,7 +3220,9 @@ def test_s16_4_5_3_ten_root_verbs(tmp_path: Path, archetype: str) -> None:
         "kiln:apply",
         "kiln:pin",
     }
-    assert {n for n in names if not n.startswith(("ci:", "kiln:"))} == set(ROOT_VERBS)
+    assert {n for n in names if not n.startswith(("ci:", "kiln:", "sonar:"))} == set(
+        ROOT_VERBS
+    )
     assert not [
         f
         for f in TASKS.checks(KilnConfig.load(root), root)
@@ -3958,3 +3968,37 @@ def test_s9_4_5_11_consumer_task_renders_for_node_cells_only(
         assert tasks["consumer"]["desc"]  # type: ignore[index]
     else:
         assert "consumer" not in tasks  # type: ignore[operator]
+
+
+SONAR_DESC = (
+    "Run the coverage tests and scan the checked-out branch on SonarCloud, "
+    "awaiting the quality gate. Needs SONAR_TOKEN and sonar-scanner on PATH; "
+    "pass --dry-run after -- to print the commands."
+)
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s6_10_3_1_sonar_on_renders_the_verb_and_its_include(
+    tmp_path: Path, archetype: str
+) -> None:
+    root = _root(tmp_path, archetype)
+    cycle.apply(root, home=tmp_path / "home")
+    task = YamlUtils.load((root / "tasks/sonar.yml").read_text(encoding="utf-8"))[
+        "tasks"
+    ]["local"]
+    assert task["desc"] == SONAR_DESC
+    assert task["cmds"] == ["{{.DEVOPS}} sonar-local {{.CLI_ARGS}}"]
+    assert task.get("internal") is not True
+    taskfile = YamlUtils.load((root / "Taskfile.yml").read_text(encoding="utf-8"))
+    assert taskfile["includes"]["sonar"] == "tasks/sonar.yml"
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s6_10_3_2_sonar_off_renders_neither_file_nor_include(
+    tmp_path: Path, archetype: str
+) -> None:
+    root = _root(tmp_path, archetype, extra="\n[ci]\nsonar = false\n")
+    cycle.apply(root, home=tmp_path / "home")
+    assert not (root / "tasks/sonar.yml").exists()
+    taskfile = YamlUtils.load((root / "Taskfile.yml").read_text(encoding="utf-8"))
+    assert "sonar" not in taskfile["includes"]

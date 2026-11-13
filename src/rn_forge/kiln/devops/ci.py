@@ -236,22 +236,15 @@ def select(workspace: Workspace, base: str) -> set[str]:
     return selected
 
 
-def _under(directory: str, child: str) -> str:
-    """Return `child` under `directory`, without a leading `./` for the root."""
-    return child if directory == "." else f"{directory}/{child}"
-
-
 def plan(workspace: Workspace, base: str) -> dict[str, object]:
     """Return every job's matrix and package list for a run against `base`.
 
     Command-line values are shell-quoted strings. The keys are `release-order`,
-    `packages`, `integration`, `smoke`, `suites`, `pytest-args`, `cov-args`,
-    `test-paths`, `sonar-sources`, `sonar-tests`, `sonar` and `docs`.
+    `packages`, `integration`, `smoke`, `suites`, `pytest-args` and `docs`.
     """
     packages, root = workspace.packages, workspace.root
     order = release_order(packages, select(workspace, base))
     chosen = [packages[n] for n in order]
-    everything = [packages[n] for n in release_order(packages, set(packages))]
     return {
         "release-order": order,
         "packages": [{"name": p.name, "dir": p.dir} for p in chosen],
@@ -276,15 +269,6 @@ def plan(workspace: Workspace, base: str) -> dict[str, object]:
             for name, args in workspace.suites.items()
         ],
         "pytest-args": shlex.join(workspace.pytest_args),
-        "cov-args": shlex.join(f"--cov={p.module}" for p in everything),
-        "test-paths": shlex.join(p.dir for p in everything),
-        "sonar-sources": ",".join(_under(p.dir, "src") for p in everything),
-        "sonar-tests": ",".join(
-            _under(p.dir, "tests")
-            for p in everything
-            if (root / p.dir / "tests").is_dir()
-        ),
-        "sonar": (root / "sonar-project.properties").is_file(),
         "docs": (root / "mkdocs.yml").is_file(),
     }
 
