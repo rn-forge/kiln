@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import posixpath
 import re
 from collections import Counter
 from collections.abc import Callable
@@ -656,6 +657,25 @@ def _backlog(work: Work) -> dict[str, dict[int, list[str]]]:
     return cells
 
 
+_INLINE_LINK = re.compile(r"(\]\()([^)\s]*)(\))")
+_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+
+
+def _rebase_links(cell: str, epic_dir: str) -> str:
+    """Rewrite inline link targets from the epic page's frame to the board's."""
+
+    def rebase(match: re.Match[str]) -> str:
+        target = match.group(2)
+        if _SCHEME.match(target) or target.startswith("/"):
+            return match.group(0)
+        path, hash_, anchor = target.partition("#")
+        base = f"epics/{epic_dir}/"
+        path = posixpath.normpath(base + path) if path else base + "index.md"
+        return f"{match.group(1)}{path}{hash_}{anchor}{match.group(3)}"
+
+    return _INLINE_LINK.sub(rebase, cell)
+
+
 def render_board(work: Work) -> str:
     """The body of the board region: releases, then the unscheduled backlog."""
     epics = {epic.number: epic for epic in work.epics}
@@ -692,7 +712,8 @@ def render_board(work: Work) -> str:
             epic = epics[number]
             row = f"| [{epic.page.title}](epics/{epic.dir}/index.md) | {', '.join(backlog[name][number])} |"
             if deferred:
-                row += f" {epic.page.get('Entry criteria') or _PER_FEATURE} |"
+                criteria = epic.page.get("Entry criteria")
+                row += f" {_rebase_links(criteria, epic.dir) if criteria else _PER_FEATURE} |"
             lines.append(row)
     lines.append("")
     return "\n".join(lines) + "\n"

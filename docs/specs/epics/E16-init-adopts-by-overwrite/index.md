@@ -17,7 +17,7 @@
 | [F16.6 — What the cutover rehearsals found](F16.6-cutover-rehearsal-findings.md) | Closed | release-1 | 13 Closed |
 | [F16.7 — What the cutover found](F16.7-cutover-findings.md) | Closed | release-1 | 9 Closed · 1 Removed |
 | [F16.8 — Retire `kiln init`](F16.8-retire-kiln-init.md) | Active | release-1 | 3 Closed |
-| [F16.9 — What the overlay cutovers found](F16.9-overlay-cutover-findings.md) | Active | release-1 | 1 New · 11 Closed · 2 Removed |
+| [F16.9 — What the overlay cutovers found](F16.9-overlay-cutover-findings.md) | Active | release-1 | 12 Closed · 2 Removed |
 | [F16.10 — Agent instructions live in AGENTS.md](F16.10-agent-instructions-in-agents-md.md) | Active | release-1 | 7 Closed |
 
 <!-- END derived features -->

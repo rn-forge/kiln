@@ -682,3 +682,60 @@ def test_s6_1_14_4_a_hand_written_row_counts_as_a_feature(tmp_path: Path) -> Non
         "| F1.2 | B | New |\n"
     )
     assert codes(tmp_path, {E: epic, R: RELEASE}) == ["docs.state-contradicts-work"]
+
+
+_DEFERRED_EPIC = (
+    "# E9 — Nine\n\n"
+    + TABLE
+    + "| **State** | New |\n\n"
+    + "| ID | Feature | State | Tags |\n| -- | -- | -- | -- |\n"
+    + "| F9.1 | A | New | deferred |\n"
+)
+
+
+def _board_with_criteria(tmp_path: Path, criteria: str) -> str:
+    epic = _DEFERRED_EPIC.replace(
+        "| **State** | New |\n",
+        f"| **State** | New |\n| **Entry criteria** | {criteria} |\n",
+        1,
+    )
+    return render_board(_tree(tmp_path, {"specs/epics/E9-x/index.md": epic}))
+
+
+def test_s16_9_14_1_relative_link_is_rebased(tmp_path: Path) -> None:
+    board = _board_with_criteria(tmp_path, "[E8](../E8-y/index.md) is done")
+    assert "| [E8](epics/E8-y/index.md) is done |\n" in board
+
+
+def test_s16_9_14_2_anchor_and_absolute_are_kept_or_rebased(tmp_path: Path) -> None:
+    board = _board_with_criteria(
+        tmp_path, "[a](#s) [b](https://x.io/p) [c](/x) [d](mailto:a@b.c)"
+    )
+    assert (
+        "| [a](epics/E9-x/index.md#s) [b](https://x.io/p) [c](/x) [d](mailto:a@b.c) |\n"
+        in board
+    )
+
+
+def test_s16_9_14_3_rebased_board_passes_doctor(tmp_path: Path) -> None:
+    from rn_forge.kiln.modules.docs.site import check_site
+
+    files = {
+        "specs/epics/E8-y/index.md": "# E8 — Eight\n",
+        "specs/epics/E9-x/index.md": _DEFERRED_EPIC.replace(
+            "| **State** | New |\n",
+            "| **State** | New |\n| **Entry criteria** | [E8](../E8-y/index.md) is done |\n",
+            1,
+        ),
+    }
+    work = _tree(tmp_path, files)
+    (tmp_path / "mkdocs.yml").write_text("site_name: demo\n", encoding="utf-8")
+    index = tmp_path / "docs/specs/index.md"
+    body = render_board(work)
+    index.write_text(
+        f"# Specs\n\n{BOARD_BLOCK.begin}\n{body}{BOARD_BLOCK.end}\n", encoding="utf-8"
+    )
+    findings = [
+        f for f in check_site(tmp_path) if f.path == str(index) and "link" in f.code
+    ]
+    assert findings == []
