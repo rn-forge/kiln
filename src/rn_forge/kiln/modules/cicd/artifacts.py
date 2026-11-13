@@ -152,11 +152,13 @@ def render(config: KilnConfig) -> list[Artifact]:
     engine = TemplateEngine.cached(
         package=_PACKAGE, variable_start_string="[[", variable_end_string="]]"
     )
+    # A library workspace's `release` job is inline in `ci.yml` (S6.11.1): PyPI matches the
+    # trusted publisher on the callee of a reusable workflow and the attestation on the caller.
     stages = {
         "integration": not node_lib,
         "smoke": True,
         "sonar": ci.sonar,
-        "release": release != "none",
+        "release": release != "none" and not workspace,
         "verify-release": release != "none",
         "docs": docs,
     }

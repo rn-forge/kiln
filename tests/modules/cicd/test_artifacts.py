@@ -60,7 +60,9 @@ WORKFLOWS = (".github/workflows/ci.yml",)
 
 
 def _keys(archetype: str, keys: tuple[str, ...] = CI_KEYS) -> tuple[str, ...]:
-    """The rows `archetype` renders: the same for every archetype since S15.8.6."""
+    """The rows `archetype` renders: the same for every archetype since S15.8.6, but a library workspace runs `release` inline in `ci.yml` (S6.11.1)."""
+    if archetype == "python-lib":
+        return tuple(k for k in keys if not k.endswith("/_release.yml"))
     return keys
 
 
