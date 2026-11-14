@@ -369,7 +369,9 @@ its `project.json`, which takes its command from `targetDefaults`, and declare
 the peer matrix under `workspace-ci.consumer` in its `package.json`: the
 `dependencies` and `preload` every cell shares, the `cells` (each with its own),
 and an optional `hook`. `task ci:consumer` installs the packed tarball into one
-fixture per cell and imports every entry point. `dist-resolve` keeps the matrix
+fixture per cell and imports every entry point. A hook is one `.mjs` file that
+runs inside the fixture, so its bare imports resolve to the installed tarball and
+the cell's dependencies; it imports no sibling file. `dist-resolve` keeps the matrix
 out of the published manifest. The [example](https://github.com/rn-forge/kiln/blob/main/docs/specs/epics/E9-node-archetypes/F9.4-node-helpers-in-kiln-devops.md#s945-kiln-devops-consumer-smoke-tests-a-packed-library-across-its-peer-matrix)
 shows the shape.
 

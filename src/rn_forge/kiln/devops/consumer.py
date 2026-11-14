@@ -93,6 +93,8 @@ def load(manifest: Mapping[str, Any]) -> tuple[list[Cell], str | None]:
     hook: object = table.get("hook")
     if hook is not None and not isinstance(hook, str):
         raise ValueError(f"{prefix}.hook must be a string")
+    if hook is not None and not hook.endswith(".mjs"):
+        raise ValueError(f"{prefix}.hook must be a .mjs file")
     return result, hook
 
 
@@ -194,8 +196,9 @@ def _run_cell(
     )
     subprocess.run(["node", "smoke.mjs"], cwd=fixture, check=True)
     if hook:
+        shutil.copyfile(root / hook, fixture / "hook.mjs")
         subprocess.run(
-            ["node", str(root / hook), str(fixture), cell.name], cwd=fixture, check=True
+            ["node", "hook.mjs", str(fixture), cell.name], cwd=fixture, check=True
         )
 
 
@@ -218,6 +221,10 @@ def run(root: Path, project_root: str, only: str | None) -> int:
         if not cells:
             declared = ", ".join(c.name for c in load(source)[0])
             return _fail(f"Unknown cell {only!r}; declared cells: {declared}", 2)
+    if hook and not (root / hook).is_file():
+        return _fail(
+            f"{source['name']}: workspace-ci.consumer.hook {hook} does not exist"
+        )
     name, version = source["name"], source["version"]
     tarballs = root / "dist" / "tarballs"
     tarball = tarballs / tarball_name(name, version)

@@ -1,9 +1,11 @@
-"""Tests for `kiln-devops consumer` (S9.4.5)."""
+"""Tests for `kiln-devops consumer` (S9.4.5, S9.4.6)."""
 
 from __future__ import annotations
 
 import json
+import shutil
 import stat
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -137,7 +139,12 @@ def _workspace(
 ) -> None:
     lib = tmp_path / "libs/ng"
     lib.mkdir(parents=True)
-    (lib / "package.json").write_text(json.dumps(manifest or _library()))
+    manifest = manifest or _library()
+    (lib / "package.json").write_text(json.dumps(manifest))
+    hook = manifest["workspace-ci"]["consumer"].get("hook")
+    if hook and hook.endswith(".mjs"):
+        (tmp_path / hook).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / hook).write_text("// hook\n")
     tarballs = tmp_path / "dist/tarballs"
     tarballs.mkdir(parents=True)
     if tarball:
@@ -167,14 +174,13 @@ def test_s9_4_5_5_each_cell_gets_a_fixture_install_smoke_and_hook(
         },
     }
     assert 'import "zone.js";' in (base / "a-zone/smoke.mjs").read_text()
-    hook = f"{tmp_path}/tools/consumer/ng-smoke.mjs {base}"
     assert log.read_text().splitlines() == [
         "npm a-zone install --no-audit --no-fund",
         "node a-zone smoke.mjs",
-        f"node a-zone {hook}/a-zone a-zone",
+        f"node a-zone hook.mjs {base}/a-zone a-zone",
         "npm b-zoneless install --no-audit --no-fund",
         "node b-zoneless smoke.mjs",
-        f"node b-zoneless {hook}/b-zoneless b-zoneless",
+        f"node b-zoneless hook.mjs {base}/b-zoneless b-zoneless",
     ]
 
 
@@ -237,6 +243,8 @@ def test_s9_4_5_6_a_missing_tarball_directory_is_named(
     _stubs(tmp_path, monkeypatch)
     (tmp_path / "libs/ng").mkdir(parents=True)
     (tmp_path / "libs/ng/package.json").write_text(json.dumps(_library()))
+    (tmp_path / "tools/consumer").mkdir(parents=True)
+    (tmp_path / "tools/consumer/ng-smoke.mjs").write_text("")
     monkeypatch.chdir(tmp_path)
     assert cli.main(["consumer", "libs/ng"]) == 1
     assert "(found: (missing dir))" in capsys.readouterr().err
@@ -271,3 +279,61 @@ def test_s9_4_5_8_cell_runs_one_and_an_unknown_name_exits_2(
     assert cli.main(["consumer", "libs/ng", "--cell", "nope"]) == 2
     assert "a-zone, b-zoneless" in capsys.readouterr().err
     assert not log.exists()
+
+
+def test_s9_4_6_1_the_hook_is_copied_into_each_fixture(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _stubs(tmp_path, monkeypatch)
+    _workspace(tmp_path)
+    monkeypatch.chdir(tmp_path)
+    assert cli.main(["consumer", "libs/ng"]) == 0
+    base = tmp_path / "dist/consumer-fixtures/rn-forge-ng-0.3.0"
+    for cell in ("a-zone", "b-zoneless"):
+        assert (base / cell / "hook.mjs").read_text() == "// hook\n"
+
+
+def test_s9_4_6_2_a_hook_that_is_not_mjs_raises() -> None:
+    with pytest.raises(ValueError, match=r"@rn-forge/ng.*workspace-ci\.consumer\.hook"):
+        consumer.load(_library(hook="tools/consumer/ng-smoke.js"))
+
+
+def test_s9_4_6_2_a_missing_hook_file_exits_1_before_npm(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    log = _stubs(tmp_path, monkeypatch)
+    _workspace(tmp_path)
+    (tmp_path / "tools/consumer/ng-smoke.mjs").unlink()
+    monkeypatch.chdir(tmp_path)
+    assert cli.main(["consumer", "libs/ng"]) == 1
+    err = capsys.readouterr().err
+    assert "@rn-forge/ng" in err
+    assert "workspace-ci.consumer.hook" in err
+    assert not log.exists()
+
+
+@pytest.mark.skipif(shutil.which("node") is None, reason="node is not on PATH")
+def test_s9_4_6_3_a_real_hook_resolves_bare_imports_in_the_fixture(
+    tmp_path: Path,
+) -> None:
+    for where, value in ((tmp_path, "workspace"), (tmp_path / "fixture", "fixture")):
+        dep = where / "node_modules/dep"
+        dep.mkdir(parents=True)
+        (dep / "package.json").write_text(
+            '{"name":"dep","type":"module","main":"index.js"}'
+        )
+        (dep / "index.js").write_text(f"export const x = '{value}';\n")
+    hook = tmp_path / "hook.mjs"
+    hook.write_text("import { x } from 'dep';\nconsole.log(x);\n")
+    fixture = tmp_path / "fixture"
+    shutil.copyfile(hook, fixture / "hook.mjs")
+    result = subprocess.run(
+        ["node", "hook.mjs", str(fixture), "cell"],
+        cwd=fixture,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert result.stdout.strip() == "fixture"
