@@ -166,7 +166,7 @@ def _validate(args: argparse.Namespace) -> None:
         ValueError: With the message to print when an argument is not allowed.
     """
     cwd = os.getcwd()
-    if hasattr(args, "tag"):
+    if getattr(args, "tag", None) is not None:
         args.tag = _checked(r"[A-Za-z0-9][A-Za-z0-9._+-]*", "tag", args.tag)
     if hasattr(args, "target"):
         args.target = _checked(r"[0-9a-f]{7,40}", "target", args.target)

@@ -48,6 +48,21 @@ def test_s6_7_2_cli_exits_with_message_for_tag(
     assert capsys.readouterr().out == ""
 
 
+def test_verify_release_without_a_tag_passes_validation() -> None:
+    args = cli._parser().parse_args(["verify-release", "--source", "pypi"])
+    assert args.tag is None
+    cli._validate(args)
+    assert args.tag is None
+
+
+def test_verify_release_rejects_a_malformed_tag() -> None:
+    args = cli._parser().parse_args(
+        ["verify-release", "--source", "pypi", "--", "-bad"]
+    )
+    with pytest.raises(ValueError, match="invalid tag"):
+        cli._validate(args)
+
+
 def _adapter_workspace(root: Path, extras: str) -> None:
     (root / "pkgs/data/src/data").mkdir(parents=True)
     (root / "pkgs/data/src/data/pandas.py").write_text("")
