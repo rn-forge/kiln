@@ -2277,7 +2277,7 @@ def test_s9_1_1_1_node_lib_action_inputs_and_steps(tmp_path: Path) -> None:
 
     assert [s.get("uses", s.get("run")) for s in steps] == [
         uses("pnpm-setup"),
-        "pnpm dlx nx start-ci-run $START_CI_RUN",
+        "printf '%s\\n' \"$START_CI_RUN\" | xargs pnpm dlx nx start-ci-run",
         uses("setup-node"),
         "pnpm install --frozen-lockfile",
         uses("setup-uv"),
@@ -3037,8 +3037,8 @@ runs:
     - if: ${{ inputs.start-ci-run != '' }}
       env:
         START_CI_RUN: ${{ inputs.start-ci-run }}
-      # Unquoted on purpose: the input holds several arguments.
-      run: pnpm dlx nx start-ci-run $START_CI_RUN
+      # xargs splits the input into arguments and honours its quotes.
+      run: printf '%s\\n' "$START_CI_RUN" | xargs pnpm dlx nx start-ci-run
       shell: bash
 
     - uses: actions/setup-node@PIN

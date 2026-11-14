@@ -38,8 +38,8 @@ runs:
     - if: ${{ inputs.start-ci-run != '' }}
       env:
         START_CI_RUN: ${{ inputs.start-ci-run }}
-      # Unquoted on purpose: the input holds several arguments.
-      run: pnpm dlx nx start-ci-run $START_CI_RUN
+      # xargs splits the input into arguments and honours its quotes.
+      run: printf '%s\n' "$START_CI_RUN" | xargs pnpm dlx nx start-ci-run
       shell: bash
 
     [[ node_step() ]]
