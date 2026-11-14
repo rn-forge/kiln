@@ -38,7 +38,7 @@ def test_s17_3_1_3_the_test_task_is_unchanged() -> None:
     tasks = YamlUtils.load((ROOT / "tasks" / "python.yml").read_text(encoding="utf-8"))[
         "tasks"
     ]
-    assert tasks["test"]["cmds"] == ["uv run pytest -q"]
+    assert tasks["test"]["cmds"] == ["uv run pytest -q {{.CLI_ARGS}}"]
     assert tasks["test:coverage"]["cmds"] == [
         "uv run pytest -q --cov=rn_forge.kiln --cov-report=xml:coverage.xml"
     ]

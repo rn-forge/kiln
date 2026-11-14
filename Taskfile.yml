@@ -95,7 +95,7 @@ tasks:
       - task: python:typecheck
 
   test:
-    desc: Run the pytest suite.
+    desc: Run the pytest suite, or pass pytest arguments after --.
     cmds:
       - task: python:test
 

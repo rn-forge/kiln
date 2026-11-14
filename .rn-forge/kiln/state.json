@@ -93,7 +93,7 @@
     },
     ".rn-forge/kiln/standard.md": {
       "begin_marker": null,
-      "content_hash": "435bee6863bb2e60d7d4d2961f269f395fd632182e66262d3b57d74a1f90b687",
+      "content_hash": "babfbb215aaccbdb441af69baa5533ae9325a9a9e3cd74bb91a6b1f402dff2ad",
       "end_marker": null,
       "kind": "managed",
       "path": ".rn-forge/kiln/standard.md"
@@ -121,7 +121,7 @@
     },
     "Taskfile.yml": {
       "begin_marker": null,
-      "content_hash": "982b88a886aa403deddac82aea62dae58a3e736877fd4d1e47dbd4a6c4e37a68",
+      "content_hash": "2e2541e88c2ad3945f919023ac7e04eda9b2812a23b7695c0a473c12624cd3eb",
       "end_marker": null,
       "kind": "managed",
       "path": "Taskfile.yml"
@@ -254,7 +254,7 @@
     },
     "docs/specs/_structure.md": {
       "begin_marker": null,
-      "content_hash": "f6cb20b4390265fb9da9e6687d7d175bd8c2d33dc069cf13933ab9b4643d2630",
+      "content_hash": "563d7f53ba0028f002bcdd7f46bbaaea959827ac8fcc074f852f978bf3f42036",
       "end_marker": null,
       "kind": "managed",
       "path": "docs/specs/_structure.md"
@@ -324,7 +324,7 @@
     },
     "tasks/python.yml": {
       "begin_marker": null,
-      "content_hash": "d8d0605e64d9e39d1a292b1016bb36868c8728eb8949ab2dac9ed31b1c822124",
+      "content_hash": "df481bb5e78bdbc28d7b5d31606dd024b4bdf6784dd4d0e5d76794e8acb1ea98",
       "end_marker": null,
       "kind": "managed",
       "path": "tasks/python.yml"

@@ -79,7 +79,7 @@ tasks:
     desc: Run the pytest suite quietly.
     internal: true
     cmds:
-      - uv run pytest -q
+      - uv run pytest -q {{.CLI_ARGS}}
 
   test:coverage:
     desc: Run the pytest suite with an XML coverage report for Sonar.

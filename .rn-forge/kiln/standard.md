@@ -35,7 +35,7 @@ The developer surface for this repo is exactly:
 | `task lint` | Every lint — Python, imports, Markdown, TOML and YAML formatting, kiln's checks (generated files, task layout, CI, dependencies, docs), workflow security, dependency vulnerabilities, dependency licences. |
 | `task setup` | Install the project and its dev + docs dependency groups. |
 | `task sonar:local` | Run the coverage tests and scan the checked-out branch on SonarCloud, awaiting the quality gate. Needs SONAR_TOKEN and sonar-scanner on PATH; pass --dry-run after -- to print the commands. |
-| `task test` | Run the pytest suite. |
+| `task test` | Run the pytest suite, or pass pytest arguments after --. |
 | `task test:coverage` | Run the pytest suite with an XML coverage report (used by CI/Sonar). |
 | `task typecheck` | Static type-check the package in pyright strict mode. |
 | `task validate` | The aggregate gate — lint, typecheck, test, docs build. Any failure fails. |

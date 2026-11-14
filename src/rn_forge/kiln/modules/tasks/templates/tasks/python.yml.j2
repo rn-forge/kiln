@@ -128,10 +128,27 @@ tasks:
     cmds:
 {% if overrides.get("python:test") %}      - [[ overrides["python:test"] ]]
 {% elif workspace and not packages %}      - echo "no packages to check; add one with 'kiln generate package <name>'"
-{% elif workspace %}      - for: {var: PACKAGE_DIRS, split: " "}
-        cmd: uv run --directory {{.ITEM}} --package {{base .ITEM}} pytest -q || [ $? -eq 5 ]
-{% elif web %}      - uv run --directory [[ api_dir ]] --package [[ api_package ]] pytest -q
-{% else %}      - uv run pytest -q
+{% elif workspace %}      - |
+        set -euo pipefail
+        set -- {{.CLI_ARGS}}
+        if [ $# -eq 0 ]; then
+          for dir in {{.PACKAGE_DIRS}}; do
+            uv run --directory "$dir" --package "${dir##*/}" pytest -q || [ $? -eq 5 ]
+          done
+          exit 0
+        fi
+        package="$1"
+        shift
+        for dir in {{.PACKAGE_DIRS}}; do
+          if [ "${dir##*/}" = "$package" ]; then
+            uv run --directory "$dir" --package "$package" pytest -q "$@"
+            exit $?
+          fi
+        done
+        echo "task test: unknown package '$package'; one of: {{.PACKAGES}}" >&2
+        exit 1
+{% elif web %}      - uv run --directory [[ api_dir ]] --package [[ api_package ]] pytest -q {{.CLI_ARGS}}
+{% else %}      - uv run pytest -q {{.CLI_ARGS}}
 {% endif %}
   test:coverage:
 {% if workspace %}    desc: Run each package's tests with coverage, then combine into one XML report.

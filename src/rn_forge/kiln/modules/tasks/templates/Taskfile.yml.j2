@@ -71,7 +71,7 @@ tasks:
 {% endif %}{% for ref in extra_refs.get("typecheck", []) %}      - task: [[ ref ]]
 {% endfor %}
   test:
-    desc: {% if node_lib %}Run every project's tests with Nx.{% elif web_app %}Run the API's pytest suite and the frontend's tests.{% elif workspace %}Run each package's pytest suite.{% else %}Run the pytest suite.{% endif %}
+    desc: {% if node_lib %}Run every project's tests with Nx.{% elif web_app %}Run the API's pytest suite and the frontend's tests; pytest arguments after -- go to the API suite.{% elif workspace %}Run each package's pytest suite, or one package's with pytest arguments (pass -- <package> [args]).{% else %}Run the pytest suite, or pass pytest arguments after --.{% endif %}
     cmds:
 {% if not node_lib %}      - task: python:test
 {% endif %}{% if node %}      - task: node:test

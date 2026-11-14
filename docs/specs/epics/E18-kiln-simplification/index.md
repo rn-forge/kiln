@@ -2,7 +2,8 @@
 
 |  |  |
 | -- | -- |
-| **State** | New |
+| **State** | Active |
+| **Start Date** | 2026-11-14 |
 
 <!-- BEGIN derived features -->
 
@@ -20,7 +21,7 @@
 | [F18.10 — The defects the reviews confirmed](F18.10-review-defects.md) | New | release-2 | 12 New · 3 Removed |
 | [F18.11 — Checks police the repository, not kiln's output](F18.11-checks-police-repository-content.md) | New | release-2 | 2 New |
 | [F18.12 — The review defects release 1 takes](F18.12-release-1-review-defects.md) | New | release-1 | 3 New |
-| [F18.13 — Build briefs outside the record](F18.13-build-briefs-outside-the-record.md) | New | release-1 | 4 New |
+| [F18.13 — Build briefs outside the record](F18.13-build-briefs-outside-the-record.md) | Active | release-1 | 2 New · 2 Closed |
 | [F18.14 — A kiln pin is a commit](F18.14-a-pin-is-a-commit.md) | New | release-1 | 3 New |
 
 <!-- END derived features -->

@@ -421,6 +421,22 @@ def test_s16_10_4_5_structure_names_the_instruction_files_by_audience(
     assert "`CLAUDE.md` links to the specs board" not in text
 
 
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s18_13_1_1_specs_structure_defines_briefs(
+    tmp_path: Path, archetype: str
+) -> None:
+    root = _config_root(tmp_path, archetype)
+    rendered = {a.key: a.content for a in DOCS.artifacts(KilnConfig.load(root), root)}
+    text = " ".join(rendered["docs/specs/_structure.md"].split())
+    assert "_briefs/S<n>.<m>.<k>.md" in text
+    for heading in ("## Settled", "## Tests first", "## Review re-run", "## Result"):
+        assert heading in text
+    assert "only once the story's decisions are settled" in text
+    assert "the reviewer re-runs only the brief's targeted tests" in text
+    assert "the full gate runs again once per feature" in text
+    assert "deletes the brief" in text
+
+
 def test_s11_2_2_5_python_lib_seeds_no_reference_area_and_the_others_keep_it(
     tmp_path: Path,
 ) -> None:

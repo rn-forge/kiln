@@ -1017,7 +1017,10 @@ def test_s6_4_6_3_quality_loops_use_the_configured_paths(tmp_path: Path) -> None
         cmds = python["tasks"][name]["cmds"]
         text = "\n".join(c["cmd"] if isinstance(c, dict) else c for c in cmds)
         assert "packages/" not in text, name
-        assert "--directory {{.ITEM}} --package {{base .ITEM}}" in text, name
+        if name == "test":
+            assert 'uv run --directory "$dir" --package "${dir##*/}"' in text, name
+        else:
+            assert "--directory {{.ITEM}} --package {{base .ITEM}}" in text, name
 
 
 def test_s6_4_6_4_the_libs_fixture_renders_and_validates(tmp_path: Path) -> None:
@@ -2079,7 +2082,7 @@ def test_s4_12_4_2_the_bodies_moved_unchanged(tmp_path: Path) -> None:
         "uv run ruff format --check src $(test -d tests && echo tests)",
     ]
     assert tasks["typecheck"]["cmds"] == ["uv run pyright src"]
-    assert tasks["test"]["cmds"] == ["uv run pytest -q"]
+    assert tasks["test"]["cmds"] == ["uv run pytest -q {{.CLI_ARGS}}"]
     assert tasks["build"]["env"] == {"UV_CACHE_DIR": "/tmp/demo-uv-cache"}
 
 
@@ -2994,7 +2997,7 @@ PYTHON_DESCS = {
     ),
     "format": "Format Python code, TOML, YAML and Markdown prose in place.",
     "typecheck": "Static type-check the package in pyright strict mode.",
-    "test": "Run the pytest suite.",
+    "test": "Run the pytest suite, or pass pytest arguments after --.",
     "test:coverage": (
         "Run the pytest suite with an XML coverage report (used by CI/Sonar)."
     ),
@@ -3033,7 +3036,10 @@ WEB_APP_DESCS = {
         "Type-check the API in pyright strict mode and the frontend through its "
         "Angular build."
     ),
-    "test": "Run the API's pytest suite and the frontend's tests.",
+    "test": (
+        "Run the API's pytest suite and the frontend's tests; pytest arguments "
+        "after -- go to the API suite."
+    ),
     "test:coverage": ("Run both test suites with coverage reports (used by CI/Sonar)."),
     "build": "Build the API's wheel and sdist, and the frontend.",
 }
@@ -3080,7 +3086,10 @@ def test_s9_2_9_5_python_lib_keeps_its_descs(tmp_path: Path) -> None:
         ),
         "version": "Print one package's version (pass -- <package>), or every package's.",
         "typecheck": "Type-check each package in pyright strict mode.",
-        "test": "Run each package's pytest suite.",
+        "test": (
+            "Run each package's pytest suite, or one package's with pytest "
+            "arguments (pass -- <package> [args])."
+        ),
         "test:coverage": (
             "Run each package's tests with coverage, combined into one XML report "
             "(used by CI/Sonar)."
@@ -3628,7 +3637,10 @@ def test_s17_1_4_3_workspace_verbs(tmp_path: Path) -> None:
     assert (
         tasks["typecheck"]["desc"] == "Type-check each package in pyright strict mode."
     )
-    assert tasks["test"]["desc"] == "Run each package's pytest suite."
+    assert tasks["test"]["desc"] == (
+        "Run each package's pytest suite, or one package's with pytest "
+        "arguments (pass -- <package> [args])."
+    )
     assert tasks["test:coverage"]["desc"] == (
         "Run each package's tests with coverage, combined into one XML report "
         "(used by CI/Sonar)."
@@ -4002,3 +4014,57 @@ def test_s6_10_3_2_sonar_off_renders_neither_file_nor_include(
     assert not (root / "tasks/sonar.yml").exists()
     taskfile = YamlUtils.load((root / "Taskfile.yml").read_text(encoding="utf-8"))
     assert "sonar" not in taskfile["includes"]
+
+
+def _python_test_cmds(root: Path) -> list[object]:
+    cycle.apply(root, home=root / "home")
+    return _load(root, "tasks/python.yml")["tasks"]["test"]["cmds"]
+
+
+def test_s18_13_4_1_workspace_test_takes_a_package_and_pytest_args(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path, "python-lib")
+    cmd = "\n".join(str(c) for c in _python_test_cmds(root))
+    assert "set -- {{.CLI_ARGS}}" in cmd
+    assert "task test: unknown package '$package'; one of: {{.PACKAGES}}" in cmd
+    assert 'pytest -q "$@"' in cmd
+    desc = _load(root, "Taskfile.yml")["tasks"]["test"]["desc"]
+    assert "pass -- <package>" in desc
+
+
+def test_s18_13_4_2_single_package_test_passes_args_to_pytest(tmp_path: Path) -> None:
+    tool = _root(tmp_path / "tool", "python-tool")
+    assert _python_test_cmds(tool) == ["uv run pytest -q {{.CLI_ARGS}}"]
+    web = _web_root(
+        tmp_path / "web", "python-web-app", "fastapi", extra='frontend = "angular"'
+    )
+    config = KilnConfig.load(web)
+    assert _python_test_cmds(web) == [
+        f"uv run --directory {config.api_dir} --package {config.name}-api "
+        "pytest -q {{.CLI_ARGS}}"
+    ]
+
+
+def test_s18_13_4_3_no_args_form_is_unchanged(tmp_path: Path) -> None:
+    cmd = "\n".join(
+        str(c) for c in _python_test_cmds(_root(tmp_path / "a", "python-lib"))
+    )
+    assert "|| [ $? -eq 5 ]" in cmd
+    overridden = _root(
+        tmp_path / "b",
+        extra='\n[tasks]\n[tasks.command_overrides]\n"python:test" = "echo hi"\n',
+    )
+    assert _python_test_cmds(overridden) == ["echo hi"]
+
+
+def test_s18_13_4_4_unknown_package_fails_naming_it(tmp_path: Path) -> None:
+    _needs_task()
+    root = _root(tmp_path, "python-lib")
+    cycle.apply(root, home=tmp_path / "home")
+    result = _run_task(root, "test", "--", "nope")
+    # Task reports a failed command as its own 201, not the command's status.
+    assert result.returncode != 0
+    assert "unknown package 'nope'" in result.stderr
+    assert "alpha" in result.stderr
+    assert "beta" in result.stderr
