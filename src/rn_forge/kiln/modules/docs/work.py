@@ -123,6 +123,7 @@ class Epic:
     dir: str
     rows: tuple[FeatureRow, ...]
     has_state_column: bool
+    briefs: tuple[Path, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -321,7 +322,14 @@ def load_work(docs_root: Path) -> Work:
         page, lines, end = _page(index)
         rows, has_state = _feature_rows(lines[end:])
         epics.append(
-            Epic(page, _number(index.parent.name), index.parent.name, rows, has_state)
+            Epic(
+                page,
+                _number(index.parent.name),
+                index.parent.name,
+                rows,
+                has_state,
+                tuple(sorted((index.parent / "_briefs").glob("*.md"))),
+            )
         )
         for path in sorted(
             index.parent.glob("F*.md"),
@@ -483,6 +491,35 @@ def validate(work: Work, repo_root: Path) -> list[Finding]:
 
     _identities(work, rel, err)
     out.extend(_contradictions(work, rel))
+    out.extend(_briefs(work, repo_root))
+    return out
+
+
+def _briefs(work: Work, repo_root: Path) -> list[Finding]:
+    """A brief left behind for a closed or removed story, or for no story."""
+    out: list[Finding] = []
+    for epic in work.epics:
+        stories = {
+            story.id: story
+            for feature in work.features
+            if feature.epic_dir == epic.dir
+            for story in feature.stories
+        }
+        for brief in epic.briefs:
+            path = brief.relative_to(repo_root).as_posix()
+            story = stories.get(brief.stem)
+            state = story.state.split(" ")[0] if story else ""
+            if story is None:
+                message = (
+                    f"is a brief for {brief.stem}, which is not a story in {epic.dir}"
+                )
+                code = "docs.work-brief-unknown"
+            elif state in ("Closed", "Removed"):
+                message = f"is a brief for {story.id}, which is {state}; delete it"
+                code = "docs.work-brief-closed"
+            else:
+                continue
+            out.append(Finding(code, Severity.ERROR, message, path=path))
     return out
 
 

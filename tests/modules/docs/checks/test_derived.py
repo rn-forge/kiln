@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs import generate
@@ -308,3 +310,67 @@ def test_s14_2_2_half_a_features_fence_is_reported_and_left_alone(repo) -> None:
     marker = next(f for f in findings if f.code == "docs.features-markers")
     assert marker.message == "has an incomplete derived features fence"
     assert _epic_page(root).read_text("utf-8") == body
+
+
+ACTIVE_EPIC = (
+    EPIC.replace("| New |", "| Active |") + "| **Start Date** | 2026-01-01 |\n"
+)
+ACTIVE_FEATURE = FEATURE.replace("| New |", "| Active |").replace(
+    "| **Predecessors**", "| **Start Date** | 2026-01-01 |\n| **Predecessors**"
+)
+
+
+def _briefed(repo, state: str):
+    story = f"\n## S1.1.1 \u2014 One\n\n**State:** {state}\n"
+    root = _specs(
+        repo,
+        **{
+            "docs__specs__epics__E1-x__index.md": ACTIVE_EPIC,
+            "docs__specs__epics__E1-x__F1.1-a.md": ACTIVE_FEATURE + story,
+        },
+    )
+    generate.generate(root)
+    return root
+
+
+def _brief(root: Path, *names: str) -> None:
+    briefs = root / "docs" / "specs" / "epics" / "E1-x" / "_briefs"
+    briefs.mkdir()
+    for name in names:
+        (briefs / name).write_text("# Brief\n", encoding="utf-8")
+
+
+def _docs(root: Path) -> dict[Path, bytes]:
+    return {
+        p.relative_to(root): p.read_bytes()
+        for p in (root / "docs").rglob("*")
+        if p.is_file() and "_briefs" not in p.parts
+    }
+
+
+@pytest.mark.parametrize("state", ["Closed", "Removed"])
+def test_s18_13_2_1_a_brief_for_a_closed_story_is_an_error(repo, state) -> None:
+    root = _briefed(repo, f"{state} (2026-11-14)")
+    _brief(root, "S1.1.1.md")
+    findings = derived.check(KilnConfig.load(root), root)
+    assert [f.code for f in findings] == ["docs.work-brief-closed"]
+    assert findings[0].path.endswith("_briefs/S1.1.1.md")
+    assert "S1.1.1" in findings[0].message
+    assert state in findings[0].message
+
+
+def test_s18_13_2_2_a_brief_for_no_story_of_its_epic_is_an_error(repo) -> None:
+    root = _briefed(repo, "Active")
+    _brief(root, "S1.1.9.md", "notes.md")
+    findings = derived.check(KilnConfig.load(root), root)
+    assert [f.code for f in findings] == ["docs.work-brief-unknown"] * 2
+
+
+@pytest.mark.parametrize("state", ["New", "Active"])
+def test_s18_13_2_3_a_brief_for_an_open_story_passes(repo, state) -> None:
+    root = _briefed(repo, state)
+    before = _docs(root)
+    _brief(root, "S1.1.1.md")
+    assert derived.check(KilnConfig.load(root), root) == []
+    generate.generate(root)
+    assert _docs(root) == before
