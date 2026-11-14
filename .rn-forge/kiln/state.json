@@ -114,7 +114,7 @@
     },
     "AGENTS.md#rn-forge kiln": {
       "begin_marker": "<!-- BEGIN rn-forge kiln -->",
-      "content_hash": "de55685da2d6e07c244ffbad071e1cf16b14f4b96e0ea5bff8a21a1c3ecfb963",
+      "content_hash": "d3a52f314976c81027e3e6ae1eb523973b6c63063a425254e87cacf6ddf55412",
       "end_marker": "<!-- END rn-forge kiln -->",
       "kind": "block",
       "path": "AGENTS.md"

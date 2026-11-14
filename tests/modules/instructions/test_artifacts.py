@@ -253,6 +253,25 @@ def test_s4_3_5_4_none_renders_no_docs_bullet(tmp_path: Path) -> None:
     assert "docs:build" not in block
 
 
+def test_s18_13_3_1_mkdocs_block_points_at_briefs(tmp_path: Path) -> None:
+    block = _rendered(_root(tmp_path))[BLOCK_KEY]
+    assert "- **Briefs:** a story ready to build gets a brief" in block
+    assert "docs/specs/_structure.md#briefs" in block
+
+
+@pytest.mark.parametrize("profile", ["external", "none"])
+def test_s18_13_3_2_a_profile_without_specs_has_no_briefs_line(
+    tmp_path: Path, profile: str
+) -> None:
+    extra = (
+        'external_url = "https://docs.example.com/demo"\n'
+        if profile == "external"
+        else ""
+    )
+    root = _root(tmp_path, profile=profile, docs_extra=extra)
+    assert "**Briefs:**" not in _rendered(root)[BLOCK_KEY]
+
+
 @pytest.mark.parametrize("archetype", ARCHETYPES)
 def test_s4_3_5_5_docs_structure_passes_with_no_hand_written_claude_md(
     tmp_path: Path, archetype: str
