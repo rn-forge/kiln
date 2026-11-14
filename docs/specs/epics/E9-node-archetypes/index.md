@@ -13,6 +13,7 @@
 | [F9.2 — One node scaffold](F9.2-one-node-scaffold.md) | Closed | release-1 | 10 Closed |
 | [F9.3 — Node CI holds for ngkit and for every `node-lib`](F9.3-node-ci-holds-for-every-node-lib.md) | Closed | release-1 | 8 Closed |
 | [F9.4 — The node CI helpers run from `kiln-devops`](F9.4-node-helpers-in-kiln-devops.md) | Closed | release-1 | 6 Closed |
+| [F9.5 — What ngkit's cutover found about node-lib releases](F9.5-node-lib-release-findings.md) | New | — | 5 New |
 
 <!-- END derived features -->
 

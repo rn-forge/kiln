@@ -17,10 +17,10 @@ Jump to: [E1–E10](#e1e10) · [E11–E20](#e11e20)
 | [E3 — Realign the goldens and the canon with pykit](E3-realign-goldens-and-canon/index.md) | Closed | 4 Closed | release-1 |
 | [E4 — The generator](E4-generator/index.md) | Closed | 12 Closed | release-1 |
 | [E5 — The web archetypes](E5-web-archetypes/index.md) | Active | 1 New · 3 Closed | release-1 |
-| [E6 — Rebuild the repos, retire the old](E6-rebuild-the-repos/index.md) | Active | 1 New · 9 Closed | release-1, release-2 |
+| [E6 — Rebuild the repos, retire the old](E6-rebuild-the-repos/index.md) | Active | 2 New · 9 Closed | release-1, release-2 |
 | [E7 — pykit releases, and the pin flip](E7-pykit-release-pin-flip/index.md) | Active | 1 Active · 5 Closed | release-1 |
 | [E8 — The Azure DevOps CI provider](E8-ado-provider/index.md) | New (deferred) | — | — |
-| [E9 — The node archetypes](E9-node-archetypes/index.md) | Active | 4 Closed | release-1 |
+| [E9 — The node archetypes](E9-node-archetypes/index.md) | Active | 1 New · 4 Closed | release-1 |
 | [E10 — kiln generators](E10-kiln-generators/index.md) | New (deferred) | — | — |
 
 ## E11–E20
@@ -34,7 +34,7 @@ Jump to: [E1–E10](#e1e10) · [E11–E20](#e11e20)
 | [E15 — One CI standard for every archetype](E15-ci-standard/index.md) | Closed | 8 Closed | release-1 |
 | [E16 — `init` adopts by overwrite](E16-init-adopts-by-overwrite/index.md) | Active | 1 New · 9 Closed | release-1 |
 | [E17 — One task standard for every archetype](E17-task-standard/index.md) | Active | 1 Active · 2 Closed | release-1 |
-| [E18 — kiln simplification](E18-kiln-simplification/index.md) | New | 12 New | release-1, release-2 |
+| [E18 — kiln simplification](E18-kiln-simplification/index.md) | New | 14 New | release-1, release-2 |
 | [E19 — One formatter for each file type, in every archetype](E19-formatting-standard/index.md) | Active | 1 New · 1 Closed | release-1 |
 
 <!-- END derived epics -->

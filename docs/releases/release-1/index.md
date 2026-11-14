@@ -64,6 +64,7 @@ are [release-2](../release-2/index.md).
 | [F6.9 — `init` and `config-update` leave an adopted repository alone](../../specs/epics/E6-rebuild-the-repos/F6.9-init-leaves-adopted-repo-alone.md) | E6 | Closed |
 | [F6.10 — A task verb scans the checked-out branch on SonarCloud](../../specs/epics/E6-rebuild-the-repos/F6.10-local-sonar-scan.md) | E6 | Closed |
 | [F6.11 — The library-workspace release job runs in `ci.yml`](../../specs/epics/E6-rebuild-the-repos/F6.11-pypi-release-in-ci-yml.md) | E6 | Closed |
+| [F6.12 — `umbrella` releases only the newest shipped release](../../specs/epics/E6-rebuild-the-repos/F6.12-umbrella-releases-only-the-newest.md) | E6 | New |
 | [F7.1 — kiln renders and takes pykit by release tag](../../specs/epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md) | E7 | Closed |
 | [F7.2 — A tagged kiln release, taken by each repository](../../specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md) | E7 | Active |
 | [F7.3 — kiln takes pykit's document, template and Markdown helpers](../../specs/epics/E7-pykit-release-pin-flip/F7.3-adopt-pykit-extraction.md) | E7 | Closed |
@@ -115,6 +116,8 @@ are [release-2](../release-2/index.md).
 | [F18.8 — Modules meet only through composition](../../specs/epics/E18-kiln-simplification/F18.8-modules-meet-through-composition.md) | E18 | New |
 | [F18.9 — Large files split by job](../../specs/epics/E18-kiln-simplification/F18.9-large-files-split.md) | E18 | New |
 | [F18.12 — The review defects release 1 takes](../../specs/epics/E18-kiln-simplification/F18.12-release-1-review-defects.md) | E18 | New |
+| [F18.13 — Build briefs outside the record](../../specs/epics/E18-kiln-simplification/F18.13-build-briefs-outside-the-record.md) | E18 | New |
+| [F18.14 — A kiln pin is a commit](../../specs/epics/E18-kiln-simplification/F18.14-a-pin-is-a-commit.md) | E18 | New |
 | [F19.1 — YAML has a formatter, and kiln's own files pass it](../../specs/epics/E19-formatting-standard/F19.1-yaml-formatter.md) | E19 | Closed |
 | [F19.2 — The nav block is a plain `ManagedBlock`](../../specs/epics/E19-formatting-standard/F19.2-nav-block-end-indent.md) | E19 | New |
 

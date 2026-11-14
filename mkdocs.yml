@@ -128,6 +128,7 @@ nav:
               - F6.9 — `init` and `config-update` leave an adopted repository alone: specs/epics/E6-rebuild-the-repos/F6.9-init-leaves-adopted-repo-alone.md
               - F6.10 — A task verb scans the checked-out branch on SonarCloud: specs/epics/E6-rebuild-the-repos/F6.10-local-sonar-scan.md
               - F6.11 — The library-workspace release job runs in `ci.yml`: specs/epics/E6-rebuild-the-repos/F6.11-pypi-release-in-ci-yml.md
+              - F6.12 — `umbrella` releases only the newest shipped release: specs/epics/E6-rebuild-the-repos/F6.12-umbrella-releases-only-the-newest.md
           - E7 — pykit releases, and the pin flip:
               - specs/epics/E7-pykit-release-pin-flip/index.md
               - F7.1 — kiln renders and takes pykit by release tag: specs/epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md
@@ -144,6 +145,7 @@ nav:
               - F9.2 — One node scaffold: specs/epics/E9-node-archetypes/F9.2-one-node-scaffold.md
               - F9.3 — Node CI holds for ngkit and for every `node-lib`: specs/epics/E9-node-archetypes/F9.3-node-ci-holds-for-every-node-lib.md
               - F9.4 — The node CI helpers run from `kiln-devops`: specs/epics/E9-node-archetypes/F9.4-node-helpers-in-kiln-devops.md
+              - F9.5 — What ngkit's cutover found about node-lib releases: specs/epics/E9-node-archetypes/F9.5-node-lib-release-findings.md
           - E10 — kiln generators:
               - specs/epics/E10-kiln-generators/index.md
       - E11–E20:
@@ -211,6 +213,8 @@ nav:
               - F18.10 — The defects the reviews confirmed: specs/epics/E18-kiln-simplification/F18.10-review-defects.md
               - F18.11 — Checks police the repository, not kiln's output: specs/epics/E18-kiln-simplification/F18.11-checks-police-repository-content.md
               - F18.12 — The review defects release 1 takes: specs/epics/E18-kiln-simplification/F18.12-release-1-review-defects.md
+              - F18.13 — Build briefs outside the record: specs/epics/E18-kiln-simplification/F18.13-build-briefs-outside-the-record.md
+              - F18.14 — A kiln pin is a commit: specs/epics/E18-kiln-simplification/F18.14-a-pin-is-a-commit.md
           - E19 — One formatter for each file type, in every archetype:
               - specs/epics/E19-formatting-standard/index.md
               - F19.1 — YAML has a formatter, and kiln's own files pass it: specs/epics/E19-formatting-standard/F19.1-yaml-formatter.md

@@ -13,7 +13,7 @@ Backlog sections below are derived from the epic, feature and release pages by
 | Release | Status | Features |
 | -- | -- | -- |
 | [Release 2 — the architecture baseline and taskkit retired](../releases/release-2/index.md) | planned | 5 New |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 2 Active · 11 New · 68 Closed |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 2 Active · 14 New · 68 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -24,6 +24,7 @@ Features with no Iteration, by State and epic.
 
 | Epic | Features |
 | -- | -- |
+| [E9 — The node archetypes](epics/E9-node-archetypes/index.md) | [F9.5](epics/E9-node-archetypes/F9.5-node-lib-release-findings.md) |
 | [E16 — `init` adopts by overwrite](epics/E16-init-adopts-by-overwrite/index.md) | [F16.5](epics/E16-init-adopts-by-overwrite/F16.5-rebuild-and-port.md) |
 
 ### Deferred
