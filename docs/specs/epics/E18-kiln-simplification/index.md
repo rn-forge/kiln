@@ -17,8 +17,9 @@
 | [F18.7 — One owner per concept](F18.7-one-owner-per-concept.md) | New | release-1 | 4 New |
 | [F18.8 — Modules meet only through composition](F18.8-modules-meet-through-composition.md) | New | release-1 | 2 New |
 | [F18.9 — Large files split by job](F18.9-large-files-split.md) | New | release-1 | 4 New |
-| [F18.10 — The defects the reviews confirmed](F18.10-review-defects.md) | New | release-2 | 15 New |
+| [F18.10 — The defects the reviews confirmed](F18.10-review-defects.md) | New | release-2 | 12 New · 3 Removed |
 | [F18.11 — Checks police the repository, not kiln's output](F18.11-checks-police-repository-content.md) | New | release-2 | 2 New |
+| [F18.12 — The review defects release 1 takes](F18.12-release-1-review-defects.md) | New | release-1 | 3 New |
 
 <!-- END derived features -->
 
@@ -33,6 +34,7 @@ the code review of that date added F18.5 to F18.11.
 ```text
 F18.5 tests survive a refactor ─→ F18.6 commands package ─→ F18.7 one owner per concept
   ─→ F18.8 composition only ─→ F18.9 large files split
+  ─→ F18.12 release-1 review defects
   ─→ F18.1 test renames ─→ F18.2 IDs out ─→ F18.3 area epics ─→ F18.4 one commit on main
 release 2: F18.10 review defects · F18.11 checks police the repository
 ```
@@ -40,8 +42,9 @@ release 2: F18.10 review defects · F18.11 checks police the repository
 F18.5 to F18.9 change no behaviour. They come before the spec rewrite, so that
 F18.3's area epics describe the simplified code, and before F18.1, so that the
 renames land in test files already organised by subject. F18.10 and F18.11
-change what kiln renders or reports, so they wait for the tag. That split was
-proposed on 2026-11-10 and waits on the owner's confirmation.
+change what kiln renders or reports, so they wait for the tag. The owner
+confirmed that split on 2026-11-13, and moved three of F18.10's defects to
+release 1 as F18.12, built after F18.9.
 
 ### The spec rewrite (F18.1 to F18.4)
 

@@ -63,7 +63,7 @@ are [release-2](../release-2/index.md).
 | [F6.8 — The generated CI takes pykit's Release 7](../../specs/epics/E6-rebuild-the-repos/F6.8-pykit-release-7-ci.md) | E6 | Closed |
 | [F6.9 — `init` and `config-update` leave an adopted repository alone](../../specs/epics/E6-rebuild-the-repos/F6.9-init-leaves-adopted-repo-alone.md) | E6 | Closed |
 | [F6.10 — A task verb scans the checked-out branch on SonarCloud](../../specs/epics/E6-rebuild-the-repos/F6.10-local-sonar-scan.md) | E6 | Closed |
-| [F6.11 — The library-workspace release job runs in `ci.yml`](../../specs/epics/E6-rebuild-the-repos/F6.11-pypi-release-in-ci-yml.md) | E6 | Active |
+| [F6.11 — The library-workspace release job runs in `ci.yml`](../../specs/epics/E6-rebuild-the-repos/F6.11-pypi-release-in-ci-yml.md) | E6 | Closed |
 | [F7.1 — kiln renders and takes pykit by release tag](../../specs/epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md) | E7 | Closed |
 | [F7.2 — A tagged kiln release, taken by each repository](../../specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md) | E7 | Active |
 | [F7.3 — kiln takes pykit's document, template and Markdown helpers](../../specs/epics/E7-pykit-release-pin-flip/F7.3-adopt-pykit-extraction.md) | E7 | Closed |
@@ -73,7 +73,7 @@ are [release-2](../release-2/index.md).
 | [F9.1 — `node-lib` renders ngkit's CI](../../specs/epics/E9-node-archetypes/F9.1-node-lib-hosts-ngkit-ci.md) | E9 | Closed |
 | [F9.2 — One node scaffold](../../specs/epics/E9-node-archetypes/F9.2-one-node-scaffold.md) | E9 | Closed |
 | [F9.3 — Node CI holds for ngkit and for every `node-lib`](../../specs/epics/E9-node-archetypes/F9.3-node-ci-holds-for-every-node-lib.md) | E9 | Closed |
-| [F9.4 — The node CI helpers run from `kiln-devops`](../../specs/epics/E9-node-archetypes/F9.4-node-helpers-in-kiln-devops.md) | E9 | Active |
+| [F9.4 — The node CI helpers run from `kiln-devops`](../../specs/epics/E9-node-archetypes/F9.4-node-helpers-in-kiln-devops.md) | E9 | Closed |
 | [F11.1 — The docs checks learn package sites](../../specs/epics/E11-package-docs/F11.1-checks-learn-package-sites.md) | E11 | Closed |
 | [F11.2 — `python-lib` repositories carry package docs sites](../../specs/epics/E11-package-docs/F11.2-python-lib-package-sites.md) | E11 | Closed |
 | [F11.3 — `kiln generate package`](../../specs/epics/E11-package-docs/F11.3-generate-package.md) | E11 | Closed |
@@ -99,9 +99,9 @@ are [release-2](../release-2/index.md).
 | [F16.4 — Generated-file hygiene](../../specs/epics/E16-init-adopts-by-overwrite/F16.4-generated-file-hygiene.md) | E16 | Closed |
 | [F16.6 — What the cutover rehearsals found](../../specs/epics/E16-init-adopts-by-overwrite/F16.6-cutover-rehearsal-findings.md) | E16 | Closed |
 | [F16.7 — What the cutover found](../../specs/epics/E16-init-adopts-by-overwrite/F16.7-cutover-findings.md) | E16 | Closed |
-| [F16.8 — Retire `kiln init`](../../specs/epics/E16-init-adopts-by-overwrite/F16.8-retire-kiln-init.md) | E16 | Active |
-| [F16.9 — What the overlay cutovers found](../../specs/epics/E16-init-adopts-by-overwrite/F16.9-overlay-cutover-findings.md) | E16 | Active |
-| [F16.10 — Agent instructions live in AGENTS.md](../../specs/epics/E16-init-adopts-by-overwrite/F16.10-agent-instructions-in-agents-md.md) | E16 | Active |
+| [F16.8 — Retire `kiln init`](../../specs/epics/E16-init-adopts-by-overwrite/F16.8-retire-kiln-init.md) | E16 | Closed |
+| [F16.9 — What the overlay cutovers found](../../specs/epics/E16-init-adopts-by-overwrite/F16.9-overlay-cutover-findings.md) | E16 | Closed |
+| [F16.10 — Agent instructions live in AGENTS.md](../../specs/epics/E16-init-adopts-by-overwrite/F16.10-agent-instructions-in-agents-md.md) | E16 | Closed |
 | [F17.1 — The task surface says what it is](../../specs/epics/E17-task-standard/F17.1-task-surface.md) | E17 | Closed |
 | [F17.2 — One grammar for the CI surface, and one home for check policy](../../specs/epics/E17-task-standard/F17.2-ci-task-grammar.md) | E17 | Closed |
 | [F17.3 — A faster gate](../../specs/epics/E17-task-standard/F17.3-a-faster-gate.md) | E17 | Active |
@@ -114,6 +114,7 @@ are [release-2](../release-2/index.md).
 | [F18.7 — One owner per concept](../../specs/epics/E18-kiln-simplification/F18.7-one-owner-per-concept.md) | E18 | New |
 | [F18.8 — Modules meet only through composition](../../specs/epics/E18-kiln-simplification/F18.8-modules-meet-through-composition.md) | E18 | New |
 | [F18.9 — Large files split by job](../../specs/epics/E18-kiln-simplification/F18.9-large-files-split.md) | E18 | New |
+| [F18.12 — The review defects release 1 takes](../../specs/epics/E18-kiln-simplification/F18.12-release-1-review-defects.md) | E18 | New |
 | [F19.1 — YAML has a formatter, and kiln's own files pass it](../../specs/epics/E19-formatting-standard/F19.1-yaml-formatter.md) | E19 | Closed |
 | [F19.2 — The nav block is a plain `ManagedBlock`](../../specs/epics/E19-formatting-standard/F19.2-nav-block-end-indent.md) | E19 | New |
 

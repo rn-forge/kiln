@@ -210,6 +210,7 @@ nav:
               - F18.9 — Large files split by job: specs/epics/E18-kiln-simplification/F18.9-large-files-split.md
               - F18.10 — The defects the reviews confirmed: specs/epics/E18-kiln-simplification/F18.10-review-defects.md
               - F18.11 — Checks police the repository, not kiln's output: specs/epics/E18-kiln-simplification/F18.11-checks-police-repository-content.md
+              - F18.12 — The review defects release 1 takes: specs/epics/E18-kiln-simplification/F18.12-release-1-review-defects.md
           - E19 — One formatter for each file type, in every archetype:
               - specs/epics/E19-formatting-standard/index.md
               - F19.1 — YAML has a formatter, and kiln's own files pass it: specs/epics/E19-formatting-standard/F19.1-yaml-formatter.md
