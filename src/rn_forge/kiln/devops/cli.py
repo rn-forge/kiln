@@ -136,7 +136,7 @@ def _parser() -> argparse.ArgumentParser:
         help="node reads `pnpm ls -r --depth -1 --json` from stdin",
     )
     release_all = commands.add_parser(
-        "umbrella", help="create a GitHub release per shipped release page"
+        "umbrella", help="create a GitHub release for the newest shipped release page"
     )
     release_all.add_argument("--releases", default="docs/releases", metavar="DIR")
     release_all.add_argument("--sha", required=True, metavar="SHA")

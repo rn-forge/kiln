@@ -1,4 +1,4 @@
-"""The umbrella release: one GitHub release per shipped release page."""
+"""The umbrella release: a GitHub release for the newest shipped release page."""
 
 from __future__ import annotations
 
@@ -73,30 +73,40 @@ def create_command(release: Release, notes_file: str, sha: str) -> list[str]:
         "--title", release.title,
         "--notes-file", notes_file,
         "--target", sha,
+        "--latest",
     ]  # fmt: skip
 
 
 def run(releases: Path, sha: str, dry_run: bool) -> int:
-    """Create each shipped release that does not exist; with `dry_run`, print the commands.
+    """Create the newest shipped release if it has none; with `dry_run`, print the command.
+
+    Lower shipped releases without a GitHub release are named on stderr and not created.
 
     Raises:
         FileNotFoundError: When `releases` is not a directory.
     """
     if not releases.is_dir():
         raise FileNotFoundError(f"no release pages at '{releases}'")
-    pending = shipped(releases)
-    if not dry_run:
-        pending = [r for r in pending if not github.release_exists(r.tag)]
-    if not pending:
+    found = shipped(releases)
+    if not found:
         print("No shipped release is missing its GitHub release.", file=sys.stderr)
         return 0
-    notes_dir = Path(tempfile.mkdtemp(prefix="kiln-umbrella-"))
-    for release in pending:
-        notes = notes_dir / f"{release.tag}.md"
-        notes.write_text(release.notes, encoding="utf-8")
-        command = create_command(release, str(notes), sha)
-        if dry_run:
-            print(shlex.join(command))
-        else:
-            github.run(command)
+    *lower, newest = found
+    for release in lower:
+        if dry_run or not github.release_exists(release.tag):
+            print(
+                f"kiln-devops: skipped {release.tag}: no GitHub release, and only the "
+                "newest shipped release is created; create it by hand to backfill",
+                file=sys.stderr,
+            )
+    if not dry_run and github.release_exists(newest.tag):
+        print("No shipped release is missing its GitHub release.", file=sys.stderr)
+        return 0
+    notes = Path(tempfile.mkdtemp(prefix="kiln-umbrella-")) / f"{newest.tag}.md"
+    notes.write_text(newest.notes, encoding="utf-8")
+    command = create_command(newest, str(notes), sha)
+    if dry_run:
+        print(shlex.join(command))
+    else:
+        github.run(command)
     return 0
