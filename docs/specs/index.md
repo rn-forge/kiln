@@ -13,7 +13,7 @@ Backlog sections below are derived from the epic, feature and release pages by
 | Release | Status | Features |
 | -- | -- | -- |
 | [Release 2 — the architecture baseline and taskkit retired](../releases/release-2/index.md) | planned | 5 New |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 2 Active · 12 New · 70 Closed |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 2 Active · 13 New · 70 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -57,6 +57,8 @@ theirs.
 | pykit's `main.yml` uploads to PyPI by trusted publishing, with a TestPyPI dry run and changelog release notes (pykit F21.3) | [F7.6](epics/E7-pykit-release-pin-flip/F7.6-release-to-pypi.md): the behaviour kiln renders | yes (2026-10-30): pykit's Release 7, `main.yml` at pykit `a038a0d`. It also signs PEP 740 attestations (pykit S21.3.5), which [F6.8](epics/E6-rebuild-the-repos/F6.8-pykit-release-7-ci.md) takes |
 | Every `rn-forge-*` package kiln renders is on pypi.org (pykit S21.3.3) | [F7.5](epics/E7-pykit-release-pin-flip/F7.5-pykit-from-pypi.md): every story | yes (2026-10-30): ten packages, pykit's Release 7. Each package's Release 7 version is its first on pypi.org, so kiln's floors move with it (S7.5.6) |
 | pykit tags `rn-forge-commons` 0.9.0, with `ManagedBlock.end_indent` (pykit S18.6.1) and the release prepared by pykit S18.6.2, and it is on pypi.org | [F19.2](epics/E19-formatting-standard/F19.2-nav-block-end-indent.md): S19.2.1 | no |
+| pykit's `install` takes `--ref` (a branch, tag or commit, no GitHub release), records `ref` and `commit` in `state.json`, and ships a Python-tool product whose build puts a runnable `bin/<tool>` in the version directory (pykit F23.2), released to pypi.org in `rn-forge-tooling` | [F7.7](epics/E7-pykit-release-pin-flip/F7.7-kiln-installs-as-a-tool.md): S7.7.1 | no |
+| pykit's `--help` shows `[...]` literally and no docstring `Args:`/`Raises:` sections, and a CLI starts with no logger notice and one millisecond field (pykit F23.1), released to pypi.org | [F7.7](epics/E7-pykit-release-pin-flip/F7.7-kiln-installs-as-a-tool.md): S7.7.4 | no |
 
 ## Order
 
