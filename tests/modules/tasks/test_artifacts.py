@@ -9,13 +9,13 @@ from __future__ import annotations
 import json
 import os
 import re
-import shutil
 import subprocess
 import sys
 from pathlib import Path
 from typing import cast
 
 import pytest
+from tests.conftest import requires
 from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.generation import Action, ArtifactKind
@@ -860,11 +860,10 @@ FULL_CELLS = (
 
 
 @pytest.mark.parametrize(("archetype", "extra"), FULL_CELLS)
+@requires("task")
 def test_s4_6_4_1_lint_runs_full_only_when_asked(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
-    if shutil.which("task") is None:
-        pytest.skip("task is not on PATH")
     if archetype.startswith("python-web"):
         root = _web_root(tmp_path, archetype, "fastapi", extra=extra)
     else:
@@ -1023,6 +1022,7 @@ def test_s6_4_6_3_quality_loops_use_the_configured_paths(tmp_path: Path) -> None
             assert "--directory {{.ITEM}} --package {{base .ITEM}}" in text, name
 
 
+@requires("task")
 def test_s6_4_6_4_the_libs_fixture_renders_and_validates(tmp_path: Path) -> None:
     root = _libs_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
@@ -1030,8 +1030,6 @@ def test_s6_4_6_4_the_libs_fixture_renders_and_validates(tmp_path: Path) -> None
     assert _ruff_commands(root, "typecheck", "libs/alpha") == [
         "uv run --directory libs/alpha --package alpha pyright src"
     ]
-    if shutil.which("task") is None:
-        pytest.skip("task is not on PATH")
     result = _run_task(root, "--dry", "validate")
     assert result.returncode == 0, result.stderr
 
@@ -2279,9 +2277,8 @@ def test_s4_12_6_2_root_lint_runs_in_the_exact_order(
 
 
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
+@requires("task")
 def test_s4_12_6_3_doctor_runs_once(tmp_path: Path, archetype: str, extra: str) -> None:
-    if shutil.which("task") is None:
-        pytest.skip("task is not on PATH")
     root = _s4_12_1_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     without = _run_task(root, "--dry", "lint")
@@ -2552,7 +2549,7 @@ def _outside(tmp_path: Path, *changed: str) -> list[str]:
     return done.stdout.split()
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git is not on PATH")
+@requires("git")
 @pytest.mark.parametrize(
     ("changed", "outside"),
     [
@@ -2572,9 +2569,8 @@ def test_s9_1_2_5_changed_file_rule(
     assert _outside(tmp_path, *changed) == outside
 
 
+@requires("task", "jq")
 def test_s9_1_2_5_affected_selects_run_many_or_affected(tmp_path: Path) -> None:
-    if shutil.which("task") is None or shutil.which("jq") is None:
-        pytest.skip("task or jq is not on PATH")
     root = _node_lib_root(tmp_path / "cell")
     cycle.apply(root, home=tmp_path / "home")
     stub = tmp_path / "bin"
@@ -2691,9 +2687,8 @@ def _reports_run(
     )
 
 
+@requires("task")
 def test_s9_1_3_2_reports_runs_tests_and_prints_the_reports(tmp_path: Path) -> None:
-    if shutil.which("task") is None:
-        pytest.skip("task is not on PATH")
     done = _reports_run(
         tmp_path, ("coverage/b/lcov.info", "coverage/a/lcov.info", "coverage/a/x.txt")
     )
@@ -2701,9 +2696,8 @@ def test_s9_1_3_2_reports_runs_tests_and_prints_the_reports(tmp_path: Path) -> N
     assert done.stdout == "reports=coverage/a/lcov.info,coverage/b/lcov.info\n"
 
 
+@requires("task")
 def test_s9_1_3_2_reports_fails_without_an_lcov_report(tmp_path: Path) -> None:
-    if shutil.which("task") is None:
-        pytest.skip("task is not on PATH")
     done = _reports_run(tmp_path, ())
     assert done.returncode != 0
     assert "::error::No lcov.info found under coverage/" in done.stdout + done.stderr
@@ -2742,19 +2736,17 @@ def _reports_run_with_projects(
     )
 
 
+@requires("task")
 def test_s9_2_7_2_reports_passes_a_workspace_with_no_projects(
     tmp_path: Path,
 ) -> None:
-    if shutil.which("task") is None:
-        pytest.skip("task is not on PATH")
     done = _reports_run_with_projects(tmp_path, "[]", ())
     assert done.returncode == 0, done.stderr
     assert done.stdout == "reports=\n"
 
 
+@requires("task")
 def test_s9_2_7_3_reports_fails_a_project_with_no_report(tmp_path: Path) -> None:
-    if shutil.which("task") is None:
-        pytest.skip("task is not on PATH")
     done = _reports_run_with_projects(tmp_path, '["foo"]', ())
     # task reports a failed command as 201 and names the command's own status.
     assert done.returncode != 0
@@ -2762,9 +2754,8 @@ def test_s9_2_7_3_reports_fails_a_project_with_no_report(tmp_path: Path) -> None
     assert "::error::No lcov.info found under coverage/" in done.stdout + done.stderr
 
 
+@requires("task")
 def test_s9_2_7_4_reports_prints_the_report_path(tmp_path: Path) -> None:
-    if shutil.which("task") is None:
-        pytest.skip("task is not on PATH")
     done = _reports_run_with_projects(tmp_path, '["foo"]', ("coverage/foo/lcov.info",))
     assert done.returncode == 0, done.stderr
     assert done.stdout == "reports=coverage/foo/lcov.info\n"
@@ -2786,6 +2777,7 @@ def test_s9_1_4_2_package_packs_and_verifies(tmp_path: Path) -> None:
 # S9.1.11 — one Pages site.
 
 
+@requires("task")
 def test_s9_3_1_1_docs_site_runs_both_commands_with_no_environment(
     tmp_path: Path,
 ) -> None:
@@ -2797,8 +2789,6 @@ def test_s9_3_1_1_docs_site_runs_both_commands_with_no_environment(
         "pnpm exec nx run-many -t compodoc build-storybook",
         "{{.DEVOPS}} site-assemble .docs-site",
     ]
-    if shutil.which("task") is None:
-        pytest.skip("task is not on PATH")
     root = _node_lib_root(tmp_path / "cell")
     cycle.apply(root, home=tmp_path / "home")
     stub = tmp_path / "bin"
@@ -2883,11 +2873,6 @@ def _release_run(
     )
 
 
-def _needs_task() -> None:
-    if shutil.which("task") is None:
-        pytest.skip("task is not on PATH")
-
-
 def test_s9_1_5_4_release_tasks_are_described_and_public(tmp_path: Path) -> None:
     tasks = _ci_tasks(_node_lib_root(tmp_path))["tasks"]
     for name in RELEASE_TASKS:
@@ -2909,10 +2894,10 @@ PNPM_ECHO_TARBALL = PNPM_ECHO + "; mkdir -p dist/tarballs; : > dist/tarballs/x.t
 
 
 @pytest.mark.parametrize("env", [{}])
+@requires("task")
 def test_s9_3_5_5_verify_fails_when_no_tarball_was_written(
     tmp_path: Path, env: dict[str, str]
 ) -> None:
-    _needs_task()
     done = _release_run(tmp_path, "release:verify", env, {"pnpm": "exit 0"})
 
     assert done.returncode != 0
@@ -2922,18 +2907,18 @@ def test_s9_3_5_5_verify_fails_when_no_tarball_was_written(
 
 
 @pytest.mark.parametrize("env", [{}])
+@requires("task")
 def test_s9_3_5_6_verify_passes_when_a_tarball_was_written(
     tmp_path: Path, env: dict[str, str]
 ) -> None:
-    _needs_task()
     stub = "mkdir -p dist/tarballs; : > dist/tarballs/x.tgz"
     done = _release_run(tmp_path, "release:verify", env, {"pnpm": stub})
 
     assert done.returncode == 0, done.stderr
 
 
+@requires("task")
 def test_s9_3_5_7_package_is_unguarded(tmp_path: Path) -> None:
-    _needs_task()
     tasks = _ci_tasks(_node_lib_root(tmp_path))["tasks"]
     assert tasks["smoke"]["cmds"] == [  # type: ignore[index]
         "pnpm exec nx run-many -t pack verify-dist verify-consumer"
@@ -2946,10 +2931,10 @@ def test_s9_3_5_7_package_is_unguarded(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("local", [True, False])
+@requires("task")
 def test_s9_1_5_4_latest_downloads_tarballs_only_when_none_are_local(
     tmp_path: Path, local: bool
 ) -> None:
-    _needs_task()
     log = tmp_path / "calls"
     stubs = {
         "gh": f'echo "gh $*" >> {log}\ncase "$*" in *"view latest"*) echo old ;; *"view v1"*) echo new ;; esac',
@@ -3128,11 +3113,10 @@ def test_s9_3_4_2_only_node_lib_and_single_packages_have_a_ci_validate_task(
         assert ("validate" in tasks) == (archetype != "python-lib"), archetype  # type: ignore[operator]
 
 
+@requires("task")
 def test_s9_3_4_4_dry_run_prints_doctor_with_full_only_when_asked(
     tmp_path: Path,
 ) -> None:
-    if shutil.which("task") is None:
-        pytest.skip("task is not on PATH")
     root = _node_lib_root(tmp_path / "cell")
     cycle.apply(root, home=tmp_path / "home")
     env = {k: v for k, v in os.environ.items() if k != "KILN_DOCTOR_FULL"}
@@ -4058,8 +4042,8 @@ def test_s18_13_4_3_no_args_form_is_unchanged(tmp_path: Path) -> None:
     assert _python_test_cmds(overridden) == ["echo hi"]
 
 
+@requires("task")
 def test_s18_13_4_4_unknown_package_fails_naming_it(tmp_path: Path) -> None:
-    _needs_task()
     root = _root(tmp_path, "python-lib")
     cycle.apply(root, home=tmp_path / "home")
     result = _run_task(root, "test", "--", "nope")

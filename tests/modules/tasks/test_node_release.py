@@ -16,6 +16,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+from tests.conftest import requires
 from rn_forge.commons.fs.documents import YamlUtils
 
 from rn_forge.kiln.config import KilnConfig
@@ -34,10 +35,7 @@ archetype = "node-lib"
 profile = "mkdocs"
 """
 
-pytestmark = pytest.mark.skipif(
-    any(shutil.which(tool) is None for tool in ("task", "git", "bash", "node")),
-    reason="task, git, bash and node are needed",
-)
+pytestmark = requires("task", "git", "bash", "node")
 
 Run = Callable[..., subprocess.CompletedProcess[str]]
 

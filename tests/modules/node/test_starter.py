@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import json
-import os
 import shutil
 from pathlib import Path
 from unittest import mock
 
 import pytest
+from tests.conftest import requires
 from rn_forge.commons.generation import Artifact, ArtifactKind
 
 from rn_forge.kiln.config import KilnConfig
@@ -222,10 +222,7 @@ def test_s4_9_3_3_add_ngkit_adds_the_ngkit_dependency(tmp_path: Path) -> None:
     assert calls == [("ngkit-core", ("pnpm", "add", NGKIT_URL), str(tmp_path))]
 
 
-@pytest.mark.skipif(
-    shutil.which("pnpm") is None and not os.environ.get("CI"),
-    reason="pnpm is not on PATH",
-)
+@requires("pnpm")
 def test_s4_9_3_4_new_records_seeded(rendered) -> None:
     directory = rendered("python-web-app")
     entries = json.loads(

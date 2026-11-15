@@ -9,6 +9,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from tests.conftest import requires
 
 from rn_forge.kiln.devops import cli, consumer
 
@@ -314,7 +315,7 @@ def test_s9_4_6_2_a_missing_hook_file_exits_1_before_npm(
     assert not log.exists()
 
 
-@pytest.mark.skipif(shutil.which("node") is None, reason="node is not on PATH")
+@requires("node")
 def test_s9_4_6_3_a_real_hook_resolves_bare_imports_in_the_fixture(
     tmp_path: Path,
 ) -> None:

@@ -6,11 +6,10 @@ file, a `desc:` on every task, and the validate gate not shrinking.
 
 from __future__ import annotations
 
-import os
-import shutil
 from pathlib import Path
 
 import pytest
+from tests.conftest import requires
 
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
@@ -476,10 +475,7 @@ def test_s4_6_2_2_unresolved_ref_in_a_managed_block(repo, write_state) -> None:
         "python-web-api",
         pytest.param(
             "python-web-app",
-            marks=pytest.mark.skipif(
-                shutil.which("pnpm") is None and not os.environ.get("CI"),
-                reason="pnpm is not on PATH",
-            ),
+            marks=requires("pnpm"),
         ),
         "python-lib",
     ],

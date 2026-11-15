@@ -10,6 +10,7 @@ import uuid
 from pathlib import Path
 
 import pytest
+from tests.conftest import requires
 
 
 def test_s16_1_5_1_uv_locked_is_not_inherited() -> None:
@@ -68,10 +69,35 @@ def test_s17_3_2_3_only_the_nx_archetypes_are_shared(rendered) -> None:
     assert "shared" not in rendered("python-lib").parts
 
 
-@pytest.mark.skipif(
-    shutil.which("pnpm") is None and not os.environ.get("CI"),
-    reason="pnpm is not on PATH",
-)
+@requires("pnpm")
 def test_s17_3_2_4_nx_archetypes_use_the_shared_build(rendered) -> None:
     assert "shared" in rendered("node-lib").parts
     assert "shared" in rendered("python-web-app").parts
+
+
+def test_s18_5_3_1_no_unmarked_which_skip() -> None:
+    needle = "shutil." + "which("
+    tests = Path(__file__).parent
+    offenders = [
+        str(path.relative_to(tests))
+        for path in sorted(tests.rglob("*.py"))
+        if "fixtures" not in path.relative_to(tests).parts
+        and path.name != "conftest.py"
+        and needle in path.read_text(encoding="utf-8")
+    ]
+    assert offenders == []
+
+
+def test_s18_5_3_2_requires_marks_and_skips(monkeypatch) -> None:
+    missing = requires("kiln-no-such-tool")
+    names = [mark.name for mark in missing]
+    assert "requires_tool" in names
+    skip = next(mark for mark in missing if mark.name == "skipif")
+    assert skip.args[0] is True
+
+    monkeypatch.setenv("CI", "1")
+    monkeypatch.setattr(shutil, "which", lambda _tool: None)
+    pnpm = requires("pnpm")
+    assert "requires_pnpm" in [mark.name for mark in pnpm]
+    skip = next(mark for mark in pnpm if mark.name == "skipif")
+    assert skip.args[0] is False

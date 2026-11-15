@@ -64,6 +64,11 @@ addopts = "-ra --import-mode=importlib -n auto"
 testpaths = ["tests"]
 # Same reason: a golden repo's tests are run by that repo's own `task test`.
 norecursedirs = ["fixtures"]
+markers = [
+    "requires_task: needs `task` on PATH",
+    "requires_pnpm: needs `pnpm` on PATH (a missing pnpm fails in CI)",
+    "requires_tool: needs another binary on PATH (actionlint, zizmor, jq, node, git, bash, taplo, uv)",
+]
 
 [tool.ruff]
 extend-exclude = ["tests/fixtures"]

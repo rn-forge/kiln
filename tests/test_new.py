@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from tests.conftest import requires
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.runtime.console import OutputMode, console
@@ -235,6 +236,7 @@ def test_s5_3_1_django_remains_untested_for_both_web_archetypes(
     assert not (tmp_path / "demo").exists()
 
 
+@requires("uv")
 def test_s4_5_1_yes_creates_and_passes_every_check(tmp_path: Path) -> None:
     """The slow path: `uv init` through the python scaffold, then a full apply."""
     directory = tmp_path / "demo"
@@ -830,6 +832,7 @@ def test_s16_9_2_2_new_with_packages_writes_the_commented_form(
     assert written == rendered
 
 
+@requires("taplo")
 @pytest.mark.parametrize("archetype", ["python-app", "python-lib"])
 def test_s16_9_2_3_new_output_toml_is_taplo_clean(
     tmp_path: Path, archetype: str

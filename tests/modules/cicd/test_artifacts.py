@@ -9,9 +9,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
-import os
 import re
-import shutil
 import subprocess
 import sys
 import tomllib
@@ -19,6 +17,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+from tests.conftest import requires
 from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.lang.models import ModelValidationError
@@ -197,11 +196,10 @@ def test_s4_3_4_property5_entrypoint_fails_on_a_direct_uv_call(tmp_path: Path) -
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
 @pytest.mark.parametrize("sonar", [True, False])
+@requires("actionlint")
 def test_s4_3_4_1_actionlint_passes_on_every_rendered_workflow(
     tmp_path: Path, archetype: str, sonar: bool
 ) -> None:
-    if shutil.which("actionlint") is None:
-        pytest.skip("actionlint is not on PATH")
     root = _root(tmp_path, archetype, sonar=sonar)
     cycle.apply(root, home=tmp_path / "home")
     result = subprocess.run(
@@ -359,11 +357,10 @@ def test_s5_1_2_ci_pins_passes_on_the_web_app_setup_action(tmp_path: Path) -> No
 
 
 @pytest.mark.parametrize("sonar", [True, False])
+@requires("actionlint")
 def test_s5_1_2_actionlint_passes_on_web_app_workflows(
     tmp_path: Path, sonar: bool
 ) -> None:
-    if shutil.which("actionlint") is None:
-        pytest.skip("actionlint is not on PATH")
     root = _web_root(tmp_path, "python-web-app", extra='frontend = "angular"')
     text = root.joinpath(".rn-forge/kiln/config.toml").read_text(encoding="utf-8")
     text = text.replace(
@@ -1030,9 +1027,8 @@ def test_s6_4_6_1_test_passes_the_matrix_dir_through_env(
         assert step["env"]["PACKAGE_DIR"] == "${{ matrix.dir }}"
 
 
+@requires("actionlint")
 def test_s6_4_6_4_actionlint_passes_on_the_libs_fixture(tmp_path: Path) -> None:
-    if shutil.which("actionlint") is None:
-        pytest.skip("actionlint is not on PATH")
     root = _root(tmp_path, "python-lib")
     config = root / ".rn-forge" / "kiln" / "config.toml"
     config.write_text(
@@ -1112,9 +1108,8 @@ def test_s11_5_1_4_other_archetypes_deploy_docs_from_ci(
         assert "docs" in workflows.jobs(rendered), archetype
 
 
+@requires("actionlint")
 def test_s11_5_1_2_actionlint_passes_on_the_docs_job(tmp_path: Path) -> None:
-    if shutil.which("actionlint") is None:
-        pytest.skip("actionlint is not on PATH")
     root = _root(tmp_path, "python-lib")
     cycle.apply(root, home=tmp_path / "home")
     result = subprocess.run(
@@ -1209,11 +1204,10 @@ def test_s6_4_7_6_ci_ok_needs_every_job_and_tolerates_a_skipped_release(
 
 
 @pytest.mark.parametrize("release", ["tag-exists", "pypi"])
+@requires("actionlint")
 def test_s6_4_7_7_actionlint_passes_on_the_python_lib_workflows(
     tmp_path: Path, release: str
 ) -> None:
-    if shutil.which("actionlint") is None:
-        pytest.skip("actionlint is not on PATH")
     for name, kwargs in (("on", {}), ("off", {"sonar": False})):
         root = _root(tmp_path / name, "python-lib", release=release, **kwargs)  # type: ignore[arg-type]
         cycle.apply(root, home=tmp_path / name / "home")
@@ -1438,9 +1432,8 @@ def test_s4_11_1_7_duplicate_declared_names_are_refused(tmp_path: Path) -> None:
         KilnConfig.load(root)
 
 
+@requires("actionlint")
 def test_s4_11_1_8_actionlint_passes_on_a_declared_call(tmp_path: Path) -> None:
-    if shutil.which("actionlint") is None:
-        pytest.skip("actionlint is not on PATH")
     root = _with_ci(_root(tmp_path, "python-tool"), HOOKS + GOLDEN_RENDER)
     cycle.apply(root, home=tmp_path / "home")
     for name in ("a", "b"):
@@ -1625,11 +1618,10 @@ def test_s4_11_3_4_local_setup_uses_carry_a_reasoned_ignore(tmp_path: Path) -> N
 
 
 @pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
+@requires("zizmor", "actionlint")
 def test_s4_11_3_5_zizmor_and_actionlint_pass_on_every_cell(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
-    if shutil.which("zizmor") is None or shutil.which("actionlint") is None:
-        pytest.skip("zizmor or actionlint is not on PATH")
     root = _cell_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     zizmor = subprocess.run(
@@ -2083,9 +2075,8 @@ def test_s4_11_7_6_dependabot_covers_docs_hooks(tmp_path: Path) -> None:
     ]
 
 
+@requires("actionlint")
 def test_s4_11_7_7_actionlint_passes_on_a_docs_hook(tmp_path: Path) -> None:
-    if shutil.which("actionlint") is None:
-        pytest.skip("actionlint is not on PATH")
     root = _with_ci(
         _root(tmp_path, "python-lib"),
         '\n[ci.hooks]\ndocs = ["./.github/actions/a"]\n',
@@ -2146,9 +2137,8 @@ def test_s4_11_8_3_bad_value_is_refused(tmp_path: Path) -> None:
         KilnConfig.load(root)
 
 
+@requires("actionlint")
 def test_s4_11_8_4_actionlint_passes_on_every_run(tmp_path: Path) -> None:
-    if shutil.which("actionlint") is None:
-        pytest.skip("actionlint is not on PATH")
     root = _with_ci(_root(tmp_path, "python-app"), 'doctor_full = "every-run"\n')
     cycle.apply(root, home=tmp_path / "home")
     result = subprocess.run(
@@ -2920,9 +2910,8 @@ def test_s9_1_11_2_docs_hooks_run_on_the_assembled_site(tmp_path: Path) -> None:
     ]
 
 
+@requires("actionlint")
 def test_s9_1_11_2_actionlint_passes(tmp_path: Path) -> None:
-    if shutil.which("actionlint") is None:
-        pytest.skip("actionlint is not on PATH")
     root = _root(tmp_path, "node-lib")
     cycle.apply(root, home=tmp_path / "home")
     result = subprocess.run(

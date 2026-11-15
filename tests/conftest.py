@@ -203,3 +203,28 @@ def _no_uv_locked() -> Iterator[None]:
     with pytest.MonkeyPatch.context() as patch:
         patch.delenv("UV_LOCKED", raising=False)
         yield
+
+
+class _Requires(list):
+    """The marks for `requires`, usable as a decorator, `marks=` or `pytestmark`."""
+
+    def __call__(self, func):
+        for mark in self:
+            func = mark(func)
+        return func
+
+
+def requires(*tools: str) -> _Requires:
+    """Mark a test as needing live tools, and skip it where one is absent.
+
+    `pnpm` is the exception: a missing `pnpm` skips only when `CI` is unset.
+    """
+    marks = _Requires()
+    for tool in tools:
+        marker = tool if tool in ("task", "pnpm") else "tool"
+        marks.append(getattr(pytest.mark, f"requires_{marker}"))
+        absent = shutil.which(tool) is None
+        if tool == "pnpm":
+            absent = absent and not os.environ.get("CI")
+        marks.append(pytest.mark.skipif(absent, reason=f"{tool} is not on PATH"))
+    return marks
