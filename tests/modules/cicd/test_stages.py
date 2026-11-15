@@ -137,7 +137,7 @@ def test_s15_8_2_8_task(tmp_path: Path) -> None:
     assert not {"postgres", "redis"} & set(tasks)
 
 
-# S15.8.3 — single-package Python archetypes get a plan of one.
+# Single-package Python archetypes get a plan of one.
 
 SINGLE = ("python-tool", "python-app", "python-web-api", "python-web-app")
 STAGES = ("plan", "test", "integration", "smoke", "suites")
@@ -223,7 +223,7 @@ def test_s15_8_3_6_suites_are_declared(tmp_path: Path, archetype: str) -> None:
     assert "needs.plan.outputs.suites != '[]'" in suites["if"]
 
 
-# S15.8.4 — `verify-release` for every Python archetype.
+# `verify-release` for every Python archetype.
 
 
 def _lib_files(tmp_path: Path, release: str) -> dict[str, str]:
@@ -290,7 +290,7 @@ def test_s15_8_4_6_none(tmp_path: Path) -> None:
     assert "verify-release" not in jobs["ci-ok"]["needs"]
 
 
-# S15.8.5 — `node-lib` releases from `ci.yml`.
+# `node-lib` releases from `ci.yml`.
 
 RELEASE_TASKS = (
     "state",
@@ -427,7 +427,7 @@ def test_s15_8_5_10_no_dispatch_inputs(tmp_path: Path) -> None:
     assert "github.event_name == 'push'" in jobs["release"]["if"]
 
 
-# S15.8.6 — `docs` is a stage of `ci.yml`.
+# `docs` is a stage of `ci.yml`.
 
 DOCS_IF = (
     "${{ !cancelled() && needs.checks-ok.result == 'success' "

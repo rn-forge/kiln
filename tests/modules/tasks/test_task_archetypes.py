@@ -1,0 +1,686 @@
+"""Task files across archetypes: web, package directories, `ci.yml`, workflow lint."""
+
+from __future__ import annotations
+import json
+import os
+import pytest
+import subprocess
+import sys
+from pathlib import Path
+from rn_forge.commons.exceptions import AppException
+from rn_forge.commons.fs.documents import YamlUtils
+from rn_forge.kiln import archetypes
+from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.core import cycle
+from rn_forge.kiln.modules.tasks import TASKS
+from tests.conftest import requires
+from tests.modules.tasks.support import (
+    ARCHETYPES,
+    WEB_CELLS,
+    WORKFLOWS_REF,
+    _ci_rendered,
+    _ci_tasks,
+    _codes,
+    _rendered_yaml,
+    _root,
+    _run_task,
+    _unmarked,
+    _web_root,
+)
+
+
+def test_s5_1_2_python_web_api_renders_api_yml_and_no_web_yml(tmp_path: Path) -> None:
+    root = _web_root(tmp_path, "python-web-api", "fastapi")
+    artifacts = TASKS.artifacts(KilnConfig.load(root), root)
+    paths = [a.path for a in artifacts]
+    assert "tasks/api.yml" in paths
+    assert "tasks/web.yml" not in paths
+
+
+def test_s5_1_2_python_web_app_renders_api_yml_and_web_yml(tmp_path: Path) -> None:
+    root = _web_root(
+        tmp_path, "python-web-app", "fastapi", extra='frontend = "angular"'
+    )
+    artifacts = TASKS.artifacts(KilnConfig.load(root), root)
+    paths = [a.path for a in artifacts]
+    assert "tasks/api.yml" in paths
+    assert "tasks/web.yml" in paths
+
+
+# `uv run [--directory D --package P] X` becomes "run X in D"; `test -d` and the
+# command substitution around it run first, at the repo root, as `task` runs them.
+_UV_SHIM = 'uv() { shift; if [ "$1" = --directory ]; then d=$2; shift 2; fi; if [ "$1" = --package ]; then shift 2; fi; (cd "${d:-.}" && "$@"); }'
+
+
+def _ruff_commands(root: Path, task: str, item: str = "packages/alpha") -> list[str]:
+    """The rendered `python:<task>` commands, workspace loops expanded for *item*."""
+    rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
+    cmds = YamlUtils.load(rendered["tasks/python.yml"])["tasks"][task]["cmds"]
+    return [
+        (c["cmd"] if isinstance(c, dict) else c)
+        .replace("{{base .ITEM}}", Path(item).name)
+        .replace("{{.ITEM}}", item)
+        for c in cmds
+    ]
+
+
+def _run_commands(root: Path, commands: list[str]) -> int:
+    bin_dir = str(Path(sys.executable).parent)
+    env = {**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"}
+    script = "\n".join([_UV_SHIM, "set -e", *commands])
+    return subprocess.run(
+        ["sh", "-c", script], cwd=root, env=env, capture_output=True, check=False
+    ).returncode
+
+
+def _quality_root(tmp_path: Path, archetype: str) -> tuple[Path, Path]:
+    """A rendered-config root, and the package directory ruff's inputs live in."""
+    if archetype == "python-tool":
+        root, pkg = _root(tmp_path, "python-tool", "none"), tmp_path
+    elif archetype == "python-lib":
+        root, pkg = _root(tmp_path, "python-lib", "none"), tmp_path / "packages/alpha"
+    else:
+        extra = 'frontend = "angular"' if archetype == "python-web-app" else ""
+        root = _web_root(tmp_path, archetype, "fastapi", extra=extra)
+        pkg = tmp_path / KilnConfig.load(root).api_dir
+    (pkg / "src").mkdir(parents=True)
+    (pkg / "src" / "ok.py").write_text("x = 1\n", encoding="utf-8")
+    return root, pkg
+
+
+QUALITY_ARCHETYPES = ("python-tool", "python-lib", "python-web-api", "python-web-app")
+
+
+@pytest.mark.parametrize("archetype", QUALITY_ARCHETYPES)
+@pytest.mark.parametrize("task", ["lint", "format"])
+def test_s5_3_5_1_ruff_succeeds_without_tests_and_covers_them_when_present(
+    tmp_path: Path, archetype: str, task: str
+) -> None:
+    root, pkg = _quality_root(tmp_path, archetype)
+    commands = _ruff_commands(root, task)
+
+    assert _run_commands(root, commands) == 0
+
+    tests = pkg / "tests"
+    tests.mkdir()
+    (tests / "test_bad.py").write_text("import os\n", encoding="utf-8")
+    lint = _ruff_commands(root, "lint")
+    assert _run_commands(root, lint) != 0
+
+
+@pytest.mark.parametrize("archetype", QUALITY_ARCHETYPES)
+def test_s5_3_5_2_a_member_local_cache_is_outside_ruff_s_inputs(
+    tmp_path: Path, archetype: str
+) -> None:
+    root, pkg = _quality_root(tmp_path, archetype)
+    (pkg / ".uv-cache").mkdir()
+    (pkg / ".uv-cache" / "bad.py").write_text("def (:\n", encoding="utf-8")
+
+    assert _run_commands(root, _ruff_commands(root, "lint")) == 0
+
+
+def test_s5_1_2_task_list_json_shows_api_and_web_verbs(tmp_path: Path) -> None:
+    root = _web_root(
+        tmp_path, "python-web-app", "fastapi", extra='frontend = "angular"'
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    result = _run_task(root, "--list", "--json")
+    assert result.returncode == 0, result.stderr
+    names = {entry["name"] for entry in json.loads(result.stdout)["tasks"]}
+    assert {"api:dev", "web:dev"} <= names
+    assert {n for n in names if n.startswith("web:")} == {"web:dev"}
+    assert "api:migrate" not in names  # fastapi, not django
+
+
+def test_s5_1_2_django_backend_also_lists_api_migrate(tmp_path: Path) -> None:
+    root = _web_root(tmp_path, "python-web-app", "django", extra='frontend = "angular"')
+    cycle.apply(root, home=tmp_path / "home")
+    result = _run_task(root, "--list", "--json")
+    assert result.returncode == 0, result.stderr
+    names = {entry["name"] for entry in json.loads(result.stdout)["tasks"]}
+    assert "api:migrate" in names
+
+
+def test_s5_1_2_task_layout_passes_on_both_web_archetypes(tmp_path: Path) -> None:
+    for archetype, extra in (
+        ("python-web-api", ""),
+        ("python-web-app", 'frontend = "angular"'),
+    ):
+        root = _web_root(tmp_path / archetype, archetype, "fastapi", extra=extra)
+        cycle.apply(root, home=tmp_path / "home")
+        assert _codes(root) == [], archetype
+
+
+def test_s5_1_2_gate_shrunk_fires_when_node_lint_drops_out_of_lint(
+    tmp_path: Path,
+) -> None:
+    root = _web_root(
+        tmp_path, "python-web-app", "fastapi", extra='frontend = "angular"'
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    taskfile = root / "Taskfile.yml"
+    taskfile.write_text(
+        taskfile.read_text(encoding="utf-8").replace("      - task: node:lint\n", ""),
+        encoding="utf-8",
+    )
+    assert "gate.shrunk" in _codes(root)
+
+
+def test_s5_1_2_a_workflow_calling_pnpm_directly_fails_ci_entrypoint(
+    tmp_path: Path,
+) -> None:
+    from rn_forge.kiln.modules.cicd.checks import entrypoint
+
+    root = _web_root(
+        tmp_path, "python-web-app", "fastapi", extra='frontend = "angular"'
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    workflow = root / ".github" / "workflows" / "ci.yml"
+    text = workflow.read_text(encoding="utf-8")
+    text = text.replace(
+        "      - name: Validate\n        run: task ci:validate\n",
+        "      - name: Validate\n        run: task ci:validate\n"
+        "      - name: Bad\n        run: pnpm install\n",
+    )
+    workflow.write_text(text, encoding="utf-8")
+    findings = entrypoint.check(KilnConfig.load(root), root)
+    assert any(f.code == entrypoint.CODE for f in findings)
+
+
+def test_s5_1_3_backend_flag_changes_only_api_yml_and_not_the_task_graph(
+    tmp_path: Path,
+) -> None:
+    django_root = _web_root(
+        tmp_path / "django", "python-web-app", "django", extra='frontend = "angular"'
+    )
+    fastapi_root = _web_root(
+        tmp_path / "fastapi",
+        "python-web-app",
+        "fastapi",
+        extra='frontend = "angular"',
+    )
+    django_artifacts = {
+        a.path: a.content
+        for a in TASKS.artifacts(KilnConfig.load(django_root), django_root)
+    }
+    fastapi_artifacts = {
+        a.path: a.content
+        for a in TASKS.artifacts(KilnConfig.load(fastapi_root), fastapi_root)
+    }
+    assert set(django_artifacts) == set(fastapi_artifacts)
+    differing = {
+        path
+        for path in django_artifacts
+        if django_artifacts[path] != fastapi_artifacts[path]
+    }
+    assert differing == {"tasks/api.yml"}
+
+
+def test_s4_3_3_5_without_mkdocs_the_rendered_files_carry_no_docs_reference(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path, profile="none")
+    cycle.apply(root, home=tmp_path / "home")
+    taskfile = (root / "Taskfile.yml").read_text(encoding="utf-8")
+    quality = (root / "tasks" / "quality.yml").read_text(encoding="utf-8")
+    assert "docs:build" not in taskfile
+    assert "docs:" not in taskfile.split("tasks:", 1)[1]
+    assert "quality:lint:docs" not in taskfile
+    assert "docs:lint" not in taskfile
+    assert "lint:docs" not in quality
+    assert not (root / "tasks" / "docs.yml").exists()
+    assert _codes(root) == []
+
+
+@pytest.mark.parametrize(
+    ("extra", "app_path"),
+    [
+        ("", "apps/api/src/demo_api/app.py"),
+        ('api_dir = "services/backend"', "services/backend/src/demo_api/app.py"),
+    ],
+)
+def test_s5_3_6_6_api_dev_names_the_missing_app_file_and_export(
+    tmp_path: Path, extra: str, app_path: str
+) -> None:
+    root = _web_root(tmp_path, "python-web-api", "fastapi", extra=extra)
+    cycle.apply(root, home=tmp_path / "home")
+
+    result = _run_task(root, "api:dev")
+    assert result.returncode != 0
+    output = result.stdout + result.stderr
+    assert app_path in output
+    assert "`app`" in output
+
+    app = root / app_path
+    app.parent.mkdir(parents=True)
+    app.write_text(ASGI_APP, encoding="utf-8")
+    dry = _run_task(root, "--dry", "api:dev")
+    assert dry.returncode == 0, dry.stderr
+    assert "uvicorn demo_api.app:app" in dry.stdout + dry.stderr
+
+
+def test_s5_3_6_6_kiln_writes_nothing_under_src_or_tests(tmp_path: Path) -> None:
+    root = _web_root(tmp_path, "python-web-api", "fastapi")
+    cycle.apply(root, home=tmp_path / "home")
+    written = [p.relative_to(root).parts for p in root.rglob("*") if p.is_file()]
+    assert [p for p in written if "src" in p or "tests" in p] == []
+
+
+ASGI_APP = '''async def app(scope, receive, send):
+    """The minimal repo-owned ASGI application the acceptance fixture supplies."""
+    await send({"type": "http.response.start", "status": 200, "headers": []})
+    await send({"type": "http.response.body", "body": b"ok"})
+'''
+
+
+def _docs_build_cmds(tmp_path: Path, archetype: str, packages: list[str]) -> list[str]:
+    root = _root(tmp_path, archetype, extra="")
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    text = config.read_text(encoding="utf-8").split("[archetype")[0]
+    if packages:
+        quoted = ", ".join(f'"packages/{p}"' for p in packages)
+        text += f'\n[archetype."{archetype}"]\npackages = [{quoted}]\n'
+    config.write_text(text, encoding="utf-8")
+    rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
+    return YamlUtils.load(rendered["tasks/docs.yml"])["tasks"]["build"]["cmds"]
+
+
+def test_s11_2_2_6_python_lib_builds_one_standalone_site_per_package(
+    tmp_path: Path,
+) -> None:
+    cmds = _docs_build_cmds(tmp_path, "python-lib", ["alpha", "beta"])
+    assert len(cmds) == 3
+    assert cmds[1] == (
+        "site=$(mktemp -d) && uv run --group docs mkdocs build --strict"
+        ' -f packages/alpha/mkdocs.yml --site-dir "$site"; rc=$?;'
+        ' rm -rf "$site"; exit $rc\n'
+    )
+    assert "packages/beta/mkdocs.yml" in cmds[2]
+
+
+@pytest.mark.parametrize(
+    ("archetype", "packages"),
+    [("python-lib", []), ("python-app", ["core"]), ("python-tool", [])],
+)
+def test_s11_2_2_6_other_cases_build_only_the_root_site(
+    tmp_path: Path, archetype: str, packages: list[str]
+) -> None:
+    assert len(_docs_build_cmds(tmp_path, archetype, packages)) == 1
+
+
+QUALITY_PER_PACKAGE = (
+    "lint",
+    "format",
+    "typecheck",
+    "test",
+    "test:coverage",
+    "lint:imports",
+)
+
+
+def _quality_tasks(tmp_path: Path, packages: bool) -> dict[str, list[object]]:
+    root = _root(tmp_path, "python-lib")
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    text = config.read_text(encoding="utf-8")
+    if not packages:
+        config.write_text(text.split("[archetype")[0], encoding="utf-8")
+    rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
+    tasks = YamlUtils.load(rendered["tasks/python.yml"])["tasks"]
+    return {name: tasks[name]["cmds"] for name in QUALITY_PER_PACKAGE}
+
+
+def test_s11_2_2_7_a_python_lib_with_no_packages_renders_commands_that_say_so(
+    tmp_path: Path,
+) -> None:
+    for name, cmds in _quality_tasks(tmp_path, packages=False).items():
+        assert len(cmds) == 1, name
+        assert isinstance(cmds[0], str)
+        assert cmds[0].startswith('echo "no packages to check'), name
+
+
+def test_s11_2_2_7_a_python_lib_with_packages_renders_no_such_command(
+    tmp_path: Path,
+) -> None:
+    for name, cmds in _quality_tasks(tmp_path, packages=True).items():
+        assert not any("no packages" in str(cmd) for cmd in cmds), name
+
+
+FULL_CELLS = (
+    ("python-app", ""),
+    ("python-tool", ""),
+    ("python-lib", ""),
+    ("python-web-api", ""),
+    ("python-web-app", 'frontend = "angular"'),
+)
+
+
+@pytest.mark.parametrize(("archetype", "extra"), FULL_CELLS)
+@requires("task")
+def test_s4_6_4_1_lint_runs_full_only_when_asked(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    if archetype.startswith("python-web"):
+        root = _web_root(tmp_path, archetype, "fastapi", extra=extra)
+    else:
+        root = _root(tmp_path, archetype)
+    cycle.apply(root, home=tmp_path / "home")
+    without = _run_task(root, "--dry", "lint")
+    assert without.returncode == 0, without.stderr
+    assert "kiln doctor . --full" not in without.stdout + without.stderr
+    asked = _run_task(root, "--dry", "lint", "KILN_DOCTOR_FULL=1")
+    assert asked.returncode == 0, asked.stderr
+    assert "kiln doctor . --full" in asked.stdout + asked.stderr
+
+
+def test_s6_4_2_1_ci_yml_is_rendered_for_every_archetype(tmp_path: Path) -> None:
+    for archetype in ARCHETYPES:
+        root = _root(tmp_path / archetype, archetype)
+        rendered = {
+            a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)
+        }
+        taskfile = YamlUtils.load(rendered["Taskfile.yml"])
+        assert "tasks/ci.yml" in rendered, archetype
+        assert taskfile["includes"]["ci"] == "tasks/ci.yml", archetype
+
+
+def test_s6_4_2_2_ci_tasks_are_described_and_not_internal(tmp_path: Path) -> None:
+    tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
+    for name in ("plan", "adapters", "test"):
+        assert tasks[name]["desc"], name  # type: ignore[index]
+        assert "internal" not in tasks[name], name  # type: ignore[operator]
+
+
+def test_s6_7_3_1_devops_is_kiln_devops(tmp_path: Path) -> None:
+    expected = archetypes.kiln_command(archetypes.KILN_REF).replace(
+        " kiln", " kiln-devops"
+    )
+    assert expected.endswith("@" + archetypes.KILN_REF + '" kiln-devops')
+    for archetype in ARCHETYPES:
+        root = _root(tmp_path / archetype, archetype)
+        assert _ci_tasks(root)["vars"]["DEVOPS"] == expected, archetype  # type: ignore[index]
+    pinned = _root(tmp_path / "pinned", extra='\n[kiln]\nref = "v9.9.9"\n')
+    assert _ci_tasks(pinned)["vars"]["DEVOPS"] == (  # type: ignore[index]
+        'uvx --from "rn-forge-kiln @ git+https://github.com/rn-forge/kiln@v9.9.9" '
+        "kiln-devops"
+    )
+    own = _root(
+        tmp_path / "own",
+        extra='\n[archetype."python-tool"]\nmodule = "rn_forge.kiln"\n',
+    )
+    assert _ci_tasks(own)["vars"]["DEVOPS"] == "uv run kiln-devops"  # type: ignore[index]
+    member = _root(tmp_path / "member", "python-lib")
+    config = member / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(
+        config.read_text(encoding="utf-8").replace(
+            '["packages/alpha", "packages/beta"]',
+            '["packages/alpha", "packages/rn-forge-devops"]',
+        ),
+        encoding="utf-8",
+    )
+    assert _ci_tasks(member)["vars"]["DEVOPS"] == expected  # type: ignore[index]
+
+
+def test_s6_7_4_2_sonar_target_is_a_public_task_everywhere(tmp_path: Path) -> None:
+    for archetype in ARCHETYPES:
+        task = _ci_tasks(_root(tmp_path / archetype, archetype))["tasks"][  # type: ignore[index]
+            "sonar:target"
+        ]
+        assert task["cmds"] == ["{{.DEVOPS}} sonar-target"], archetype
+        assert "internal" not in task, archetype
+
+
+def test_s6_4_2_2_ci_tasks_pass_task_layout_and_list(tmp_path: Path) -> None:
+    root = _root(tmp_path, "python-lib")
+    cycle.apply(root, home=tmp_path / "home")
+    assert _codes(root) == []
+    listed = _run_task(root, "--list-all", "--json")
+    assert listed.returncode == 0, listed.stderr
+    names = {t["name"] for t in json.loads(listed.stdout)["tasks"]}
+    assert {"ci:plan", "ci:adapters", "ci:test"} <= names
+
+
+def test_s6_4_3_1_integration_smoke_and_suite_are_described_and_not_internal(
+    tmp_path: Path,
+) -> None:
+    tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
+    for name in ("integration", "smoke", "suites"):
+        assert tasks[name]["desc"], name  # type: ignore[index]
+        assert "internal" not in tasks[name], name  # type: ignore[operator]
+
+
+def test_s6_4_3_2_commands_follow_the_story(tmp_path: Path) -> None:
+    tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
+    assert tasks["smoke"]["cmds"] == ['{{.DEVOPS}} smoke {{.CLI_ARGS}} "${EXTRA:-}"']  # type: ignore[index]
+    assert tasks["suites"]["cmds"] == ["uv run pytest $SUITE_ARGS"]  # type: ignore[index]
+
+
+def test_s6_8_3_2_release_sign_task(tmp_path: Path) -> None:
+    pypi = _root(tmp_path / "pypi", "python-lib", extra='\n[ci]\nrelease = "pypi"\n')
+    task = _ci_tasks(pypi)["tasks"]["release:sign"]  # type: ignore[index]
+    script = "\n".join(task["cmds"])
+    assert task["desc"]
+    assert 'uvx pypi-attestations==0.0.30 sign "$file"' in script
+    assert "dist/*/*.whl" in script
+    assert "dist/*/*.tar.gz" in script
+    assert "seq 1 5" in script
+    assert "sleep 20" in script
+    assert "-eq 5" in script
+    assert "exit 1" in script
+    assert "::warning::Signing $file failed on attempt $attempt." in script
+    plain = _ci_tasks(_root(tmp_path / "plain", "python-lib"))["tasks"]
+    assert "release:sign" not in plain  # type: ignore[operator]
+
+
+def _libs_root(tmp_path: Path) -> Path:
+    root = _root(tmp_path, "python-lib")
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(
+        config.read_text(encoding="utf-8").replace(
+            '["packages/alpha", "packages/beta"]', '["libs/alpha"]'
+        ),
+        encoding="utf-8",
+    )
+    return root
+
+
+def test_s6_4_6_2_ci_tasks_take_the_directory_from_package_dir(
+    tmp_path: Path,
+) -> None:
+    tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
+    for name in ("test",):
+        text = "\n".join(tasks[name]["cmds"])  # type: ignore[index]
+        assert "packages/{{.CLI_ARGS}}" not in text, name
+        assert '--directory "$PACKAGE_DIR"' in text, name
+        assert "--package {{.CLI_ARGS}}" in text, name
+    assert 'test -d "$PACKAGE_DIR/tests"' in tasks["test"]["cmds"][0]  # type: ignore[index]
+
+
+def test_s6_4_6_3_quality_loops_use_the_configured_paths(tmp_path: Path) -> None:
+    rendered = {
+        a.path: a.content
+        for a in TASKS.artifacts(KilnConfig.load(_libs_root(tmp_path)), tmp_path)
+    }
+    python = YamlUtils.load(rendered["tasks/python.yml"])
+    assert python["vars"]["PACKAGE_DIRS"] == "libs/alpha"
+    for name in QUALITY_PER_PACKAGE[:5]:
+        cmds = python["tasks"][name]["cmds"]
+        text = "\n".join(c["cmd"] if isinstance(c, dict) else c for c in cmds)
+        assert "packages/" not in text, name
+        if name == "test":
+            assert 'uv run --directory "$dir" --package "${dir##*/}"' in text, name
+        else:
+            assert "--directory {{.ITEM}} --package {{base .ITEM}}" in text, name
+
+
+@requires("task")
+def test_s6_4_6_4_the_libs_fixture_renders_and_validates(tmp_path: Path) -> None:
+    root = _libs_root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    assert _codes(root) == []
+    assert _ruff_commands(root, "typecheck", "libs/alpha") == [
+        "uv run --directory libs/alpha --package alpha pyright src"
+    ]
+    result = _run_task(root, "--dry", "validate")
+    assert result.returncode == 0, result.stderr
+
+
+def test_s6_4_6_5_packages_dir_layout_renders_as_before(tmp_path: Path) -> None:
+    root = _root(tmp_path, "python-lib")
+    cmds = YamlUtils.load(
+        {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}[
+            "tasks/python.yml"
+        ]
+    )["tasks"]["typecheck"]["cmds"]
+    assert cmds == [
+        {
+            "for": {"var": "PACKAGE_DIRS", "split": " "},
+            "cmd": "uv run --directory {{.ITEM}} --package {{base .ITEM}} pyright src",
+        }
+    ]
+
+
+def test_s11_5_1_1_docs_publish_runs_mike_builds_and_merges(tmp_path: Path) -> None:
+    task = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]["docs:publish"]  # type: ignore[index]
+    assert task["desc"]
+    assert "internal" not in task
+    script = "\n".join(task["cmds"])
+    assert "{{.DEVOPS}} released" in script
+    assert '"${version%.*}" latest' in script
+    for text in (
+        '--deploy-prefix "$dir"',
+        '-F "$config"',
+        "--alias-type copy --update-aliases --push",
+        "mike set-default",
+        "{{.TASK_EXE}} docs:build",
+        "git archive FETCH_HEAD packages",
+    ):
+        assert text in script, text
+    assert script.index("mike deploy") < script.index("docs:build")
+    assert script.index("docs:build") < script.index("git archive")
+    assert "packages/{{" not in script
+
+
+def test_s11_5_1_1_docs_publish_is_absent_without_docs(tmp_path: Path) -> None:
+    root = _root(tmp_path, "python-lib", profile="none")
+    assert "docs:publish" not in _ci_tasks(root)["tasks"]  # type: ignore[operator]
+
+
+def test_s6_4_7_4_release_task_always_publishes(tmp_path: Path) -> None:
+    tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
+    for name in ("release:build", "release:publish"):
+        assert "PUBLISH" not in "\n".join(tasks[name]["cmds"])  # type: ignore[index]
+    publish = "\n".join(tasks["release:publish"]["cmds"])  # type: ignore[index]
+    assert publish.count("continue") == 1  # only the published skip remains
+
+
+def test_s4_11_2_2_an_unknown_override_key_is_still_refused(tmp_path: Path) -> None:
+    root = _root(
+        tmp_path,
+        extra='\n[tasks]\n[tasks.command_overrides]\nbogus = "echo hi"\n',
+    )
+    with pytest.raises(AppException, match="bogus"):
+        TASKS.artifacts(KilnConfig.load(root), root)
+
+
+@pytest.mark.parametrize(
+    ("archetype", "extra"),
+    [(a, "") for a in ARCHETYPES] + list(WEB_CELLS),
+)
+def test_s4_11_2_4_task_layout_accepts_the_rendered_files(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    if archetype in ARCHETYPES:
+        root = _root(tmp_path, archetype)
+    else:
+        root = _web_root(tmp_path, archetype, "fastapi", extra=extra)
+    cycle.apply(root, home=tmp_path / "home")
+    assert _codes(root) == []
+
+
+KILN_REF = {"task": "kiln:doctor"}
+
+
+def _assert_workflows_lint(root: Path) -> None:
+    root_tasks, _ = _rendered_yaml(root)
+    cmds = _unmarked(root_tasks["lint"]["cmds"])
+    at = cmds.index(KILN_REF)
+    assert cmds[at : at + 2] == [KILN_REF, WORKFLOWS_REF]
+    task = _ci_rendered(root)["lint:workflows"]
+    assert task["internal"] is True
+    assert task["desc"].strip()
+    assert task["cmds"] == ["uv run zizmor --offline .github", "uv run actionlint"]
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_s4_11_3_6_lint_runs_workflows_after_kiln_doctor(
+    tmp_path: Path, archetype: str
+) -> None:
+    root = _root(tmp_path, archetype)
+    cycle.apply(root, home=tmp_path / "home")
+    _assert_workflows_lint(root)
+
+
+@pytest.mark.parametrize(("archetype", "extra"), WEB_CELLS)
+def test_s4_11_3_6_web_archetypes_run_it_too(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _web_root(tmp_path, archetype, "fastapi", extra=extra)
+    cycle.apply(root, home=tmp_path / "home")
+    _assert_workflows_lint(root)
+
+
+def test_s4_11_3_6_the_workspace_variant_runs_it_once_at_the_root(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path, "python-lib")
+    cycle.apply(root, home=tmp_path / "home")
+    task_text = YamlUtils.serialize(_ci_rendered(root)["lint:workflows"])
+    assert "for:" not in task_text
+    assert "PACKAGE_DIRS" not in task_text
+
+
+def test_s4_11_3_7_command_override_is_accepted(tmp_path: Path) -> None:
+    root = _root(
+        tmp_path,
+        extra=(
+            '\n[tasks]\n[tasks.command_overrides]\n"ci:lint:workflows" = "echo hi"\n'
+        ),
+    )
+    cycle.apply(root, home=tmp_path / "home")
+    assert _ci_rendered(root)["lint:workflows"]["cmds"] == ["echo hi"]
+
+
+@pytest.mark.parametrize("name", archetypes.shipped())
+def test_s4_11_3_8_required_validate_gains_it(name: str) -> None:
+    assert "ci:lint:workflows" in archetypes.load(name).required_validate
+
+
+@pytest.mark.parametrize(
+    ("archetype", "extra"),
+    [(a, "") for a in ARCHETYPES] + list(WEB_CELLS),
+)
+def test_s4_11_3_8_task_layout_accepts_the_rendered_files(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    if archetype in ARCHETYPES:
+        root = _root(tmp_path, archetype)
+    else:
+        root = _web_root(tmp_path, archetype, "fastapi", extra=extra)
+    cycle.apply(root, home=tmp_path / "home")
+    assert _codes(root) == []
+
+
+def test_s4_11_3_8_gate_shrunk_fires_when_lint_drops_workflows(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    taskfile = root / "Taskfile.yml"
+    line = "      - task: ci:lint:workflows\n"
+    text = taskfile.read_text(encoding="utf-8")
+    assert line in text
+    taskfile.write_text(text.replace(line, ""), encoding="utf-8")
+    findings = [f for f in TASKS.checks(KilnConfig.load(root), root)]
+    assert any(
+        f.code == "gate.shrunk" and "ci:lint:workflows" in str(f) for f in findings
+    )

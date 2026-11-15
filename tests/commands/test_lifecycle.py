@@ -1,7 +1,7 @@
 """S4.5.5 — Lifecycle wiring.
 
 `[lifecycle]` in kiln's own declaration (`src/rn_forge/kiln/cli.toml`, held
-equal to `.rn-forge/kiln/config.toml` by `tests/test_cli_surface.py`) names
+equal to `.rn-forge/kiln/config.toml` by `tests/commands/test_cli_surface.py`) names
 `PRODUCT`; `rn-forge-tooling`'s `build_tool_app` mounts all six verbs under
 `kiln self`, so `kiln self doctor` checks the install and `kiln doctor` stays
 the repository check.
@@ -25,7 +25,7 @@ from rn_forge.kiln import commands
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.core.config.schema import RootConfig
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.fixture(autouse=True)

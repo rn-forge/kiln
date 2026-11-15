@@ -21,7 +21,7 @@ from rn_forge.commons.fs.documents import YamlUtils
 
 from rn_forge.kiln import archetypes
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts" / "golden_matrix.py"
 
 NAMES = [

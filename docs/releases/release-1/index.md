@@ -111,7 +111,7 @@ are [release-2](../release-2/index.md).
 | [F18.2 — Spec IDs out of the code and the docs outside the specs](../../specs/epics/E18-kiln-simplification/F18.2-ids-out-of-code-and-docs.md) | E18 | New |
 | [F18.3 — One epic per area](../../specs/epics/E18-kiln-simplification/F18.3-area-epics.md) | E18 | New |
 | [F18.4 — `feature/v1` lands on `main` as one commit](../../specs/epics/E18-kiln-simplification/F18.4-one-commit-on-main.md) | E18 | New |
-| [F18.5 — Tests that survive a refactor](../../specs/epics/E18-kiln-simplification/F18.5-tests-survive-a-refactor.md) | E18 | Active |
+| [F18.5 — Tests that survive a refactor](../../specs/epics/E18-kiln-simplification/F18.5-tests-survive-a-refactor.md) | E18 | Closed |
 | [F18.6 — `commands` is a package, one module per command](../../specs/epics/E18-kiln-simplification/F18.6-commands-package.md) | E18 | New |
 | [F18.7 — One owner per concept](../../specs/epics/E18-kiln-simplification/F18.7-one-owner-per-concept.md) | E18 | New |
 | [F18.8 — Modules meet only through composition](../../specs/epics/E18-kiln-simplification/F18.8-modules-meet-through-composition.md) | E18 | New |

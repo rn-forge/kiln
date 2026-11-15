@@ -78,7 +78,7 @@ def test_s17_3_2_4_nx_archetypes_use_the_shared_build(rendered) -> None:
 
 def test_s18_5_3_1_no_unmarked_which_skip() -> None:
     needle = "shutil." + "which("
-    tests = Path(__file__).parent
+    tests = Path(__file__).parents[1]
     offenders = [
         str(path.relative_to(tests))
         for path in sorted(tests.rglob("*.py"))
@@ -105,7 +105,7 @@ def test_s18_5_3_2_requires_marks_and_skips(monkeypatch) -> None:
 
 
 def _tests_py_files() -> list[Path]:
-    tests = Path(__file__).parent
+    tests = Path(__file__).parents[1]
     return [
         path
         for path in sorted(tests.rglob("*.py"))
@@ -115,7 +115,7 @@ def _tests_py_files() -> list[Path]:
 
 def test_s18_5_2_1_no_test_loads_another_by_path() -> None:
     needle = "spec_from_file_" + "location"
-    tests = Path(__file__).parent
+    tests = Path(__file__).parents[1]
     offenders = [
         str(path.relative_to(tests))
         for path in _tests_py_files()
@@ -127,10 +127,31 @@ def test_s18_5_2_1_no_test_loads_another_by_path() -> None:
 
 def test_s18_5_2_2_check_tests_use_the_registry() -> None:
     call = re.compile(r"\b\w+\.check\(")
-    tests = Path(__file__).parent
+    tests = Path(__file__).parents[1]
     offenders = [
         str(path.relative_to(tests))
         for path in sorted((tests / "modules").glob("*/checks/*.py"))
         if path.name != "test_pin.py" and call.search(path.read_text(encoding="utf-8"))
+    ]
+    assert offenders == []
+
+
+def test_s18_5_4_1_no_test_file_over_1200_lines() -> None:
+    tests = Path(__file__).parents[1]
+    offenders = [
+        str(path.relative_to(tests))
+        for path in _tests_py_files()
+        if len(path.read_text(encoding="utf-8").splitlines()) > 1200
+    ]
+    assert offenders == []
+
+
+def test_s18_5_4_2_no_story_banners() -> None:
+    banner = re.compile(r"^# S\d", re.MULTILINE)
+    tests = Path(__file__).parents[1]
+    offenders = [
+        str(path.relative_to(tests))
+        for path in _tests_py_files()
+        if banner.search(path.read_text(encoding="utf-8"))
     ]
     assert offenders == []

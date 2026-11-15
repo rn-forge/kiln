@@ -15,7 +15,7 @@ from rn_forge.commons.runtime.console import OutputMode, console
 
 from rn_forge.kiln import commands
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 @pytest.fixture(autouse=True)

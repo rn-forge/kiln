@@ -424,7 +424,7 @@ def test_s4_12_6_12_the_instructions_name_three_docs_verbs(tmp_path: Path) -> No
         assert "docs:structure" not in text
 
 
-# S9.2.9 — node-lib's documents describe a Node repository.
+# Node-lib's documents describe a Node repository.
 
 NODE_LIB_BULLET = (
     "- **Archetype:** `node-lib` — a pnpm-managed Nx workspace of Angular "
@@ -782,7 +782,7 @@ def test_s15_7_2_1_standard_states_repository_workflows(
     assert sentence in " ".join(node.split())
 
 
-# S17.1.5 — the standard's task tables are generated from the task files.
+# The standard's task tables are generated from the task files.
 
 SURFACE_CELLS = (
     ("python-app", ""),

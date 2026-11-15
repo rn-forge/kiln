@@ -7,7 +7,7 @@ Two repo shapes:
   re-resolve and `state.json` carries real recorded `config_provenance`. It is
   not a full scaffold (no `uv init`), so `--apply`'s post-apply checks are not
   exercised on it.
-- `repo` — a copy of the rendered `python-tool` repo `tests/test_apply.py` builds on,
+- `repo` — a copy of the rendered `python-tool` repo `tests/commands/test_apply.py` builds on,
   which passes every check. Its recorded provenance is replaced here with
   what a flags-only `kiln new` leaves — every committed key attributed to the flags
   layer — to exercise `--apply` and the schema-upgrade path against a repo

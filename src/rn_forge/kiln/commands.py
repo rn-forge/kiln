@@ -87,7 +87,7 @@ _CONFIG_HEADER = (
 _PACKAGE_NAME = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
 
 # `new`'s config-setting flags: every one of them must be backed by a
-# registered module's `Option`, verified by `tests/test_new.py`.
+# registered module's `Option`, verified by `tests/commands/test_new_flags.py`.
 _FLAG_NAMES = ("archetype", "docs", "backend", "frontend")
 
 

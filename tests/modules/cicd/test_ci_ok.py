@@ -103,7 +103,7 @@ def test_s15_1_3_4_default_render_is_unchanged(tmp_path: Path, archetype: str) -
     assert "secret-scan" not in off
 
 
-# S15.4.2 — the `plan` job runs `task ci:internal-ranges`.
+# The `plan` job runs `task ci:internal-ranges`.
 
 
 def _plan_steps(root: Path) -> list[str]:
@@ -135,7 +135,7 @@ def test_s15_4_2_2_plan_job_step(tmp_path: Path) -> None:
         assert "task ci:internal-ranges" not in _ci(root)
 
 
-# S15.8.7 — one `ci-ok` logic, and the pre-release barrier.
+# One `ci-ok` logic, and the pre-release barrier.
 
 STEP_IF = "contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')"
 
@@ -212,7 +212,7 @@ def test_s15_8_7_5_skipped_passes(tmp_path: Path, archetype: str) -> None:
             assert "skipped" not in f"{step.get('if', '')}{step.get('run', '')}"
 
 
-# S15.3.3 — the `secret-scan` job gates `release` and `ci-ok`.
+# The `secret-scan` job gates `release` and `ci-ok`.
 
 FORK_GUARD = (
     "${{ github.event_name != 'pull_request' || "

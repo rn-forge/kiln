@@ -523,7 +523,7 @@ def test_s13_4_1_5_seeded_ideas_index_is_the_template(tmp_path: Path) -> None:
     assert rendered["docs/specs/ideas/index.md"] == IDEAS_INDEX
 
 
-# S16.2.2 — `mkdocs.yml` is a managed artifact rendered from the config.
+# `mkdocs.yml` is a managed artifact rendered from the config.
 
 STATE = Path(".rn-forge/kiln/state.json")
 
@@ -706,7 +706,7 @@ def test_s16_2_2_7_add_page_cycle(tmp_path: Path, archetype: str) -> None:
         assert (root / "mkdocs.yml").read_bytes() == mkdocs
 
 
-# S16.6.7 — the rendered `mkdocs.yml` carries what pykit's hand-written one needed.
+# The rendered `mkdocs.yml` carries what pykit's hand-written one needed.
 
 GITHUB = "https://github.com/rn-forge/pykit.git"
 
@@ -719,8 +719,7 @@ def _mkdocs_origin(tmp_path: Path, origin: str, archetype: str = "python-tool") 
     return _mkdocs_text(root)
 
 
-# S16.6.8 revised S16.6.7: the URLs come from `[repository] owner` and `name`,
-# never from git.
+# The URLs come from `[repository] owner` and `name`, never from git.
 
 
 @pytest.mark.parametrize(

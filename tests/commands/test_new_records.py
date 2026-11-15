@@ -1,0 +1,90 @@
+"""`kiln new`: formatting after apply and the scaffolded-file record."""
+
+from __future__ import annotations
+import json
+import pytest
+from collections.abc import Callable
+from pathlib import Path
+from rn_forge.commons.runtime.console import OutputMode, console
+from rn_forge.kiln import commands
+from tests.conftest import new_repo
+from typing import Any
+
+
+@pytest.fixture(autouse=True)
+def _in_tmp_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """`kiln new` stages beneath the current directory; keep that out of the repo."""
+    monkeypatch.chdir(tmp_path)
+
+
+@pytest.fixture(autouse=True)
+def _reset_console_mode() -> Any:
+    yield
+    console.set_mode(OutputMode.PLAIN)
+
+
+@pytest.mark.parametrize("archetype", ["node-lib", "python-tool"])
+def test_s16_7_3_8_new_formats_after_apply(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, archetype: str
+) -> None:
+    calls: list[tuple[Path, bool]] = []
+    frontend = tmp_path / "prepared"
+    frontend.mkdir()
+
+    monkeypatch.setattr(commands, "scaffold_backend", lambda *_: None)
+    monkeypatch.setattr(commands, "reconcile_backend", lambda *_: None)
+    monkeypatch.setattr(
+        commands,
+        "scaffold_node",
+        lambda _raw, config: frontend if config.archetype == "node-lib" else None,
+    )
+    monkeypatch.setattr(commands, "reconcile_node", lambda *_: None)
+    monkeypatch.setattr(
+        commands,
+        "format_node",
+        lambda workspace: calls.append(
+            (workspace, (workspace / ".prettierrc").is_file())
+        ),
+    )
+
+    new_repo(tmp_path / "demo", archetype=archetype, docs="none", yes=True)
+
+    if archetype == "node-lib":
+        assert len(calls) == 1
+        assert calls[0][1] is True
+    else:
+        assert calls == []
+
+
+@pytest.mark.parametrize(
+    ("archetype", "expected"),
+    [
+        ("python-lib", {"pyproject.toml"}),
+        ("node-lib", {"package.json", "nx.json"}),
+    ],
+)
+def test_s16_9_6_1_new_records_the_scaffolded_files(
+    rendered: Callable[[str], Path], archetype: str, expected: set[str]
+) -> None:
+    root = rendered(archetype)
+    state = json.loads((root / ".rn-forge/kiln/state.json").read_text("utf-8"))
+    scaffolded = state["metadata"]["scaffolded"]
+    assert scaffolded == sorted(scaffolded)
+    assert {"README.md", "CLAUDE.md"} | expected <= set(scaffolded)
+    assert "AGENTS.md" not in scaffolded
+    assert not set(scaffolded) & {e["path"] for e in state["entries"].values()}
+    forbidden = (".rn-forge/", ".git/", "node_modules/", ".venv/")
+    assert not [p for p in scaffolded if p.startswith(forbidden)]
+
+
+@pytest.mark.parametrize("archetype", ["python-lib", "node-lib"])
+def test_s16_10_5_1_claude_md_is_recorded_and_agents_md_is_not(
+    rendered: Callable[[str], Path], archetype: str
+) -> None:
+    root = rendered(archetype)
+    state = json.loads((root / ".rn-forge/kiln/state.json").read_text("utf-8"))
+    paths = {e["path"] for e in state["entries"].values()}
+    assert "CLAUDE.md" in state["metadata"]["scaffolded"]
+    assert "AGENTS.md" not in state["metadata"]["scaffolded"]
+    assert "AGENTS.md" in paths
+    assert "CLAUDE.md" not in paths

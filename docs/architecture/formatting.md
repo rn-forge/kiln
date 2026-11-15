@@ -93,7 +93,8 @@ do.
 Two guards cover the seeded and written config: the seeded `.mdformat.toml` and
 `.taplo.toml` are taplo-clean, and `kiln new`'s `config.toml` and
 `pyproject.toml` are taplo-clean (`tests/modules/core/test_cycle.py`,
-`tests/test_new.py`). Instruction blocks are rendered already mdformat-clean.
+`tests/commands/test_new_packages.py`). Instruction blocks are rendered already
+mdformat-clean.
 
 A third test renders every archetype and runs mdformat, taplo and the YAML
 formatter in check mode over everything that is rendered

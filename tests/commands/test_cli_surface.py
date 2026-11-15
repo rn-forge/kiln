@@ -20,7 +20,7 @@ import pytest
 from rn_forge.kiln import commands
 from rn_forge.kiln.modules.python import scaffold as python_scaffold
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def _table(path: Path, key: str) -> dict[str, object]:

@@ -6,7 +6,7 @@ import ast
 import re
 from pathlib import Path
 
-TESTS = Path(__file__).resolve().parent
+TESTS = Path(__file__).resolve().parents[1]
 THIS = Path(__file__).resolve()
 
 # The patterns are built from pieces so that this file does not match itself.
@@ -21,16 +21,16 @@ ALLOWED = frozenset[str](
     {
         "tests/modules/core/test_catalog.py::_written",
         "tests/test_doctor.py::test_s4_12_5_3_apply_does_not_fail_on_them",
-        "tests/test_new.py::_commented_form",
-        "tests/test_new.py::test_s16_7_3_8_new_formats_after_apply",
-        "tests/test_new.py::test_s16_7_10_5_a_failing_member_step_leaves_no_directory",
-        "tests/test_new.py::test_s4_5_11_3_failure_or_refusal_creates_no_git",
-        "tests/test_new.py::test_s4_5_1_flags_match_module_union",
-        "tests/test_new.py::test_s4_5_1_untested_flag_value_is_refused_without_allow_untested",
-        "tests/test_new.py::test_s4_5_9_4_failure_retains_staging_and_writes_no_target",
-        "tests/test_new.py::test_s4_5_9_6_no_retention_or_cleanup_flag_and_no_rnf_home",
-        "tests/test_new.py::test_s5_3_1_explicit_selectors_override_web_defaults",
-        "tests/test_new.py::test_s5_3_1_web_defaults_select_fastapi",
+        "tests/commands/test_new_packages.py::_commented_form",
+        "tests/commands/test_new_records.py::test_s16_7_3_8_new_formats_after_apply",
+        "tests/commands/test_new_packages.py::test_s16_7_10_5_a_failing_member_step_leaves_no_directory",
+        "tests/commands/test_new_staging.py::test_s4_5_11_3_failure_or_refusal_creates_no_git",
+        "tests/commands/test_new_flags.py::test_s4_5_1_flags_match_module_union",
+        "tests/commands/test_new_flags.py::test_s4_5_1_untested_flag_value_is_refused_without_allow_untested",
+        "tests/commands/test_new_staging.py::test_s4_5_9_4_failure_retains_staging_and_writes_no_target",
+        "tests/commands/test_new_staging.py::test_s4_5_9_6_no_retention_or_cleanup_flag_and_no_rnf_home",
+        "tests/commands/test_new_flags.py::test_s5_3_1_explicit_selectors_override_web_defaults",
+        "tests/commands/test_new_flags.py::test_s5_3_1_web_defaults_select_fastapi",
     }
 )
 
