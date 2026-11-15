@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from tests.conftest import run_check
 
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
@@ -35,14 +36,14 @@ def _site(repo, **extra: str):
 
 def test_s13_1_1_1_a_stale_nav_is_a_finding(repo) -> None:
     root = _site(repo)
-    findings = derived.check(KilnConfig.load(root), root)
+    findings = run_check(derived.NAME, root)
     assert [f.code for f in findings] == ["docs.nav-stale"]
     assert "task docs:generate" in findings[0].message
 
 
 def test_s13_1_1_1_a_repo_without_an_mkdocs_site_is_not_checked(repo) -> None:
     root = repo(docs="none")
-    assert derived.check(KilnConfig.load(root), root) == []
+    assert run_check(derived.NAME, root) == []
 
 
 TABLE = "|  |  |\n| -- | -- |\n"
@@ -160,9 +161,7 @@ def test_s13_2_2_metadata_findings_are_reported_alongside_stale_regions(repo) ->
 
 def test_s13_2_2_the_check_reports_the_regions(repo) -> None:
     root = _specs(repo)
-    assert [f.code for f in derived.check(KilnConfig.load(root), root)][:1] == [
-        "docs.board-stale"
-    ]
+    assert [f.code for f in run_check(derived.NAME, root)][:1] == ["docs.board-stale"]
 
 
 def _lib(repo, archetype: str, table: str):
@@ -190,13 +189,13 @@ def test_s11_1_1_2_the_nav_check_passes_python_lib_packages(repo) -> None:
     )
     assert generate.generate(root, ("packages/a",))[0] == [root / "mkdocs.yml"]
     assert "!include packages/a/mkdocs.yml" in (root / "mkdocs.yml").read_text()
-    assert derived.check(KilnConfig.load(root), root) == []
+    assert run_check(derived.NAME, root) == []
 
 
 def test_s11_1_1_4_a_web_archetypes_api_dir_is_not_a_package_site(repo) -> None:
     root = _lib(repo, "python-web-api", "")
     generate.generate(root)
-    assert derived.check(KilnConfig.load(root), root) == []
+    assert run_check(derived.NAME, root) == []
     assert "!include" not in (root / "mkdocs.yml").read_text()
 
 
@@ -352,7 +351,7 @@ def _docs(root: Path) -> dict[Path, bytes]:
 def test_s18_13_2_1_a_brief_for_a_closed_story_is_an_error(repo, state) -> None:
     root = _briefed(repo, f"{state} (2026-11-14)")
     _brief(root, "S1.1.1.md")
-    findings = derived.check(KilnConfig.load(root), root)
+    findings = run_check(derived.NAME, root)
     assert [f.code for f in findings] == ["docs.work-brief-closed"]
     assert findings[0].path.endswith("_briefs/S1.1.1.md")
     assert "S1.1.1" in findings[0].message
@@ -362,7 +361,7 @@ def test_s18_13_2_1_a_brief_for_a_closed_story_is_an_error(repo, state) -> None:
 def test_s18_13_2_2_a_brief_for_no_story_of_its_epic_is_an_error(repo) -> None:
     root = _briefed(repo, "Active")
     _brief(root, "S1.1.9.md", "notes.md")
-    findings = derived.check(KilnConfig.load(root), root)
+    findings = run_check(derived.NAME, root)
     assert [f.code for f in findings] == ["docs.work-brief-unknown"] * 2
 
 
@@ -371,6 +370,6 @@ def test_s18_13_2_3_a_brief_for_an_open_story_passes(repo, state) -> None:
     root = _briefed(repo, state)
     before = _docs(root)
     _brief(root, "S1.1.1.md")
-    assert derived.check(KilnConfig.load(root), root) == []
+    assert run_check(derived.NAME, root) == []
     generate.generate(root)
     assert _docs(root) == before

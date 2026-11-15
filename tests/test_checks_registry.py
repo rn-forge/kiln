@@ -6,17 +6,12 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+from tests.conftest import run_check
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
-
-
-def _run_one(root: Path, name: str) -> list[Finding]:
-    return next(c for c in checks.CHECKS if c.name == name).run(
-        KilnConfig.load(root), root
-    )
 
 
 def test_every_check_is_named_by_its_module() -> None:
@@ -68,7 +63,7 @@ def test_every_rendered_archetype_passes_every_check(
 
 def test_running_one_check_is_a_subset_of_running_all(repo) -> None:
     root = repo(**{"pyproject.toml": "[project]\nname = 'x'\n"})
-    only = [str(f) for f in _run_one(root, "generated")]
+    only = [str(f) for f in run_check("generated", root)]
     every = [str(f) for f in checks.run(root)]
     assert only
     assert set(only).issubset(set(every))
@@ -83,7 +78,7 @@ def test_quality_checks_run_by_default(repo) -> None:
         "docs-structure",
         "docs-site",
     ]
-    assert _run_one(root, "rn-forge-deps")
+    assert run_check("rn-forge-deps", root)
     assert [f for f in checks.run(root) if f.code.startswith("deps.")]
     assert not [
         f for f in checks.run(root, scope="ownership") if f.code.startswith("deps.")

@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from tests.conftest import run_check
+
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs.checks import structure
@@ -18,12 +20,12 @@ ROOT = Path(__file__).resolve().parents[4]
 
 
 def test_kiln_docs_pass_the_policy() -> None:
-    assert [str(f) for f in structure.check(KilnConfig.load(ROOT), ROOT)] == []
+    assert [str(f) for f in run_check(structure.NAME, ROOT)] == []
 
 
 def test_a_repo_without_an_mkdocs_site_is_not_checked(repo) -> None:
     root = repo(docs="none")
-    assert structure.check(KilnConfig.load(root), root) == []
+    assert run_check(structure.NAME, root) == []
 
 
 def test_s11_1_1_3_an_include_area_needs_no_directory(tmp_path: Path) -> None:
@@ -62,7 +64,7 @@ def _packages_repo(repo, link: str) -> Path:
 def _link_codes(root: Path) -> list[str]:
     return [
         f.code
-        for f in structure.check(KilnConfig.load(root), root)
+        for f in run_check(structure.NAME, root)
         if f.code in {"docs.broken-link", "docs.broken-anchor"}
     ]
 
@@ -105,7 +107,7 @@ def _excluding_repo(repo, old: str = "", new: str = "", underscore: str = "") ->
 def _structure_codes(root: Path) -> list[str]:
     return [
         f.code
-        for f in structure.check(KilnConfig.load(root), root)
+        for f in run_check(structure.NAME, root)
         if f.code.startswith("docs.broken") or f.code == "docs.underscore-referenced"
     ]
 

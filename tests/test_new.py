@@ -138,46 +138,46 @@ def test_s4_5_1_missing_archetype_is_refused(tmp_path: Path, value: str | None) 
         new_repo(tmp_path / "repo", **kwargs)
 
 
-def test_s5_1_1_4_backend_is_rejected_for_a_non_web_archetype(tmp_path: Path) -> None:
-    directory = tmp_path / "repo"
-    with pytest.raises(AppException, match="backend"):
-        new_repo(directory, archetype="python-app", docs="none", backend="fastapi")
-    assert not directory.exists() or not any(directory.iterdir())
-
-
-def test_s5_1_1_4_frontend_is_rejected_for_python_web_api(tmp_path: Path) -> None:
-    directory = tmp_path / "repo"
-    with pytest.raises(AppException, match="frontend"):
-        new_repo(
-            directory,
-            archetype="python-web-api",
-            docs="none",
-            backend="fastapi",
-            frontend="angular",
-            allow_untested=True,
-        )
-    assert not directory.exists() or not any(directory.iterdir())
-
-
-def test_s5_1_1_4_frontend_is_rejected_for_a_non_web_archetype(tmp_path: Path) -> None:
-    directory = tmp_path / "repo"
-    with pytest.raises(AppException, match="frontend"):
-        new_repo(directory, archetype="python-app", docs="none", frontend="angular")
-    assert not directory.exists() or not any(directory.iterdir())
-
-
-def test_s5_1_1_5_an_unsupported_backend_is_rejected_before_writing(
-    tmp_path: Path,
+@pytest.mark.parametrize(
+    ("match", "kwargs"),
+    [
+        pytest.param(
+            "backend",
+            {"archetype": "python-app", "backend": "fastapi"},
+            id="backend-on-a-non-web-archetype",
+        ),
+        pytest.param(
+            "frontend",
+            {
+                "archetype": "python-web-api",
+                "backend": "fastapi",
+                "frontend": "angular",
+                "allow_untested": True,
+            },
+            id="frontend-on-python-web-api",
+        ),
+        pytest.param(
+            "frontend",
+            {"archetype": "python-app", "frontend": "angular"},
+            id="frontend-on-a-non-web-archetype",
+        ),
+        pytest.param(
+            "backend",
+            {
+                "archetype": "python-web-api",
+                "backend": "spring-boot",
+                "allow_untested": True,
+            },
+            id="unsupported-backend",
+        ),
+    ],
+)
+def test_s5_1_1_4_a_refused_selector_is_rejected_before_writing(
+    tmp_path: Path, match: str, kwargs: dict[str, Any]
 ) -> None:
     directory = tmp_path / "repo"
-    with pytest.raises(AppException, match="backend"):
-        new_repo(
-            directory,
-            archetype="python-web-api",
-            docs="none",
-            backend="spring-boot",
-            allow_untested=True,
-        )
+    with pytest.raises(AppException, match=match):
+        new_repo(directory, docs="none", **kwargs)
     assert not directory.exists() or not any(directory.iterdir())
 
 
@@ -1111,49 +1111,32 @@ def test_s16_6_8_1_new_without_owner_exits_non_zero(tmp_path: Path) -> None:
     assert code != 0
 
 
-def test_s16_6_8_2_new_with_owner_writes_it(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("layer_owner", "flag_owner", "written"),
+    [
+        pytest.param(None, "acme", "acme", id="flag"),
+        pytest.param("from-config", None, "from-config", id="config"),
+        pytest.param("from-config", "flag", "flag", id="flag-beats-config"),
+    ],
+)
+def test_s16_6_8_2_the_strongest_layer_sets_the_owner(
+    tmp_path: Path, layer_owner: str | None, flag_owner: str | None, written: str
+) -> None:
+    kwargs: dict[str, Any] = {}
+    if layer_owner is not None:
+        layer = tmp_path / "layer"
+        layer.mkdir()
+        (layer / "config.toml").write_text(
+            f'[repository]\nowner = "{layer_owner}"\n', encoding="utf-8"
+        )
+        kwargs["config"] = str(layer)
+    if flag_owner is not None:
+        kwargs["owner"] = flag_owner
     directory = tmp_path / "demo"
 
-    commands.new(
-        directory, archetype="python-tool", docs="none", owner="acme", yes=True
-    )
+    commands.new(directory, archetype="python-tool", docs="none", yes=True, **kwargs)
 
-    assert _owner_written(directory) == "acme"
-
-
-def test_s16_6_8_2_new_takes_owner_from_config(tmp_path: Path) -> None:
-    layer = tmp_path / "layer"
-    layer.mkdir()
-    (layer / "config.toml").write_text(
-        '[repository]\nowner = "from-config"\n', encoding="utf-8"
-    )
-    directory = tmp_path / "demo"
-
-    commands.new(
-        directory, archetype="python-tool", docs="none", config=str(layer), yes=True
-    )
-
-    assert _owner_written(directory) == "from-config"
-
-
-def test_s16_6_8_2_the_flag_beats_config(tmp_path: Path) -> None:
-    layer = tmp_path / "layer"
-    layer.mkdir()
-    (layer / "config.toml").write_text(
-        '[repository]\nowner = "from-config"\n', encoding="utf-8"
-    )
-    directory = tmp_path / "demo"
-
-    commands.new(
-        directory,
-        archetype="python-tool",
-        docs="none",
-        config=str(layer),
-        owner="flag",
-        yes=True,
-    )
-
-    assert _owner_written(directory) == "flag"
+    assert _owner_written(directory) == written
 
 
 @pytest.mark.parametrize("archetype", ["node-lib", "python-tool"])

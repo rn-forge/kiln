@@ -17,47 +17,132 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from rn_forge.commons.findings import Finding
+from rn_forge.commons.generation import Action
 
 CONFIG = """
 schema_version = 1
 
 [repository]
-name = "example"
+name = "{name}"
 owner = "rn-forge"
 archetype = "{archetype}"
 lifecycle = {lifecycle}
 
 [docs]
 profile = "{docs}"
+{docs_extra}{ci}"""
 
-[ci]
-provider = "github"
+LIB_PACKAGES = ["packages/alpha", "packages/beta"]
+"""The member packages a `python-lib` test config lists."""
+
+MISSING_REQUIRED = """
+[project]
+name = "example"
+version = "0.1.0"
+dependencies = []
 """
+"""A `pyproject.toml` that lacks the dependency `rn-forge-commons`."""
+
+
+def write_config(
+    root: Path,
+    archetype: str = "python-app",
+    *,
+    lifecycle: bool = False,
+    docs: str = "none",
+    docs_extra: str = "",
+    name: str = "example",
+    provider: str | None = None,
+    release: str | None = None,
+    sonar: bool | None = None,
+    frontend: str | None = None,
+    backend: str | None = None,
+    packages: list[str] | None = None,
+    tail: str = "",
+) -> Path:
+    """Write a kiln config under *root* and return *root*.
+
+    `docs_extra` goes inside `[docs]`; `tail` goes after every table.
+    """
+    ci = ""
+    if provider is not None:
+        ci += f'provider = "{provider}"\n'
+    if sonar is not None:
+        ci += f"sonar = {str(sonar).lower()}\n"
+    if release is not None:
+        ci += f'release = "{release}"\n'
+    if ci:
+        ci = "\n[ci]\n" + ci
+    text = CONFIG.format(
+        name=name,
+        archetype=archetype,
+        lifecycle=str(lifecycle).lower(),
+        docs=docs,
+        docs_extra=f"{docs_extra}\n" if docs_extra else "",
+        ci=ci,
+    )
+    fields = {
+        "backend": backend and json.dumps(backend),
+        "frontend": frontend and json.dumps(frontend),
+        "packages": None if packages is None else json.dumps(packages),
+    }
+    lines = [f"{key} = {value}" for key, value in fields.items() if value is not None]
+    if lines:
+        text += f'\n[archetype."{archetype}"]\n' + "\n".join(lines) + "\n"
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.parent.mkdir(parents=True, exist_ok=True)
+    config.write_text(text + tail, encoding="utf-8")
+    return root
 
 
 @pytest.fixture
 def repo(tmp_path: Path):
-    """Build a repo root with a kiln config, and return its path."""
+    """Build a repo root with a kiln config, and return its path.
+
+    `at` puts the repo in a subdirectory of the test's temporary directory;
+    every keyword that `write_config` does not take is a file to write
+    (`__` stands for `/`).
+    """
 
     def build(
         archetype: str = "python-app",
         lifecycle: bool = False,
         docs: str = "none",
+        *,
+        at: str = "",
+        release: str | None = None,
+        sonar: bool | None = None,
+        frontend: str | None = None,
+        backend: str | None = None,
+        packages: list[str] | None = None,
+        tail: str = "",
+        docs_extra: str = "",
+        name: str = "example",
+        provider: str | None = None,
         **files: str,
     ) -> Path:
-        config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
-        config.parent.mkdir(parents=True, exist_ok=True)
-        config.write_text(
-            CONFIG.format(
-                archetype=archetype, lifecycle=str(lifecycle).lower(), docs=docs
-            ),
-            encoding="utf-8",
+        root = tmp_path / at if at else tmp_path
+        write_config(
+            root,
+            archetype,
+            lifecycle=lifecycle,
+            docs=docs,
+            docs_extra=docs_extra,
+            name=name,
+            provider=provider,
+            release=release,
+            sonar=sonar,
+            frontend=frontend,
+            backend=backend,
+            packages=packages,
+            tail=tail,
         )
         for relative, content in files.items():
-            path = tmp_path / relative.replace("__", "/")
+            path = root / relative.replace("__", "/")
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(content, encoding="utf-8")
-        return tmp_path
+        return root
 
     return build
 
@@ -228,3 +313,72 @@ def requires(*tools: str) -> _Requires:
             absent = absent and not os.environ.get("CI")
         marks.append(pytest.mark.skipif(absent, reason=f"{tool} is not on PATH"))
     return marks
+
+
+IGNORE = shutil.ignore_patterns(
+    ".venv",
+    ".uv-cache",
+    ".ruff_cache",
+    ".import_linter_cache",
+    ".pytest_cache",
+    ".docs-site",
+    ".git",
+    "__pycache__",
+)
+"""What a copy of a rendered golden leaves behind."""
+
+
+@pytest.fixture
+def rendered_copy(
+    tmp_path: Path, rendered: Callable[[str], Path]
+) -> Callable[..., Path]:
+    """Return `(archetype, name="repo") -> Path`: a writable copy of the
+    rendered *archetype* at `tmp_path / name`.
+    """
+
+    def copy(archetype: str, name: str = "repo") -> Path:
+        root = tmp_path / name
+        shutil.copytree(rendered(archetype), root, ignore=IGNORE)
+        return root
+
+    return copy
+
+
+def git(cwd: Path, *args: str) -> str:
+    """Run `git` in *cwd* as a throwaway committer; return its stripped stdout."""
+    return subprocess.run(
+        ["git", "-c", "user.name=t", "-c", "user.email=t@t", *args],
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+
+
+def snapshot(*roots: Path) -> dict[str, bytes]:
+    """Every file under *roots*, by absolute path, with its bytes."""
+    return {
+        str(path): path.read_bytes()
+        for root in roots
+        for path in sorted(root.rglob("*"))
+        if path.is_file()
+    }
+
+
+def actions(root: Path, tmp_path: Path) -> dict[str, Action]:
+    """The action `cycle.plan` takes for each key of *root*."""
+    from rn_forge.kiln.modules.core import cycle
+
+    return {
+        change.key: change.action
+        for change in cycle.plan(root, home=tmp_path / "home").changes
+    }
+
+
+def run_check(name: str, root: Path) -> list[Finding]:
+    """Run the registered check *name* over *root*; an unregistered one raises."""
+    from rn_forge.kiln import checks
+    from rn_forge.kiln.config import KilnConfig
+
+    registered = {check.name: check for check in checks.CHECKS}
+    return registered[name].run(KilnConfig.load(root), root)

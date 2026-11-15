@@ -21,33 +21,20 @@ from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.generation import Action
 from rn_forge.commons.runtime.console import OutputMode, console
 
-from tests.conftest import new_repo
+from tests.conftest import new_repo, snapshot
 
 from rn_forge.kiln import commands
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.instructions.artifacts import KILN_BLOCK
 
-_IGNORE = shutil.ignore_patterns(
-    ".venv",
-    ".uv-cache",
-    ".ruff_cache",
-    ".import_linter_cache",
-    ".pytest_cache",
-    ".docs-site",
-    ".git",
-    "__pycache__",
-)
-
 
 @pytest.fixture
 def repo(
-    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    rendered: Callable[[str], Path],
+    rendered_copy: Callable[..., Path],
 ) -> Path:
     """A copy of the rendered `python-tool` repo, applied once more."""
-    root = tmp_path / "repo"
-    shutil.copytree(rendered("python-tool"), root, ignore=_IGNORE)
+    root = rendered_copy("python-tool")
     cycle.apply(root)
     monkeypatch.chdir(root)
     yield root
@@ -75,22 +62,22 @@ def test_s4_5_2_clean_repo_dry_run_json_lists_unchanged(
 
 def test_s4_5_2_dry_run_writes_nothing(repo: Path) -> None:
     """A full tree snapshot before/after — covers every file, `backups/` included."""
-    before = _snapshot(repo)
+    before = snapshot(repo)
     commands.apply(dry_run=True)
-    assert _snapshot(repo) == before
+    assert snapshot(repo) == before
 
 
 def test_s4_5_2_config_edit_then_dry_run_lists_update_and_writes_nothing(
     repo: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _flip_sonar(repo)
-    before = _snapshot(repo)
+    before = snapshot(repo)
 
     commands.apply(dry_run=True, json=True)
     payload = _last_json(capsys)
     actions = {row["action"] for row in payload["artifacts"]}
     assert "update" in actions
-    assert _snapshot(repo) == before
+    assert snapshot(repo) == before
 
 
 def test_s4_5_2_apply_writes_the_update_then_next_dry_run_is_clean(
@@ -109,11 +96,11 @@ def test_s4_5_2_unforced_drift_is_refused_and_writes_nothing(repo: Path) -> None
     target.write_text(
         target.read_text(encoding="utf-8") + "\n# edit\n", encoding="utf-8"
     )
-    before = _snapshot(repo)
+    before = snapshot(repo)
 
     with pytest.raises(AppException, match="Taskfile.yml"):
         commands.apply()
-    assert _snapshot(repo) == before
+    assert snapshot(repo) == before
 
 
 def test_s4_5_2_force_rewrites_only_the_named_path(repo: Path) -> None:
@@ -142,23 +129,6 @@ def _flip_sonar(repo: Path) -> None:
     config_path.write_text(
         text.replace("sonar = true", "sonar = false"), encoding="utf-8"
     )
-
-
-def _snapshot(repo: Path) -> dict[str, str]:
-    """Every tracked file's text, keyed by relative path — cheap drift detection."""
-    skip = {".rn-forge/kiln/backups", ".rn-forge/kiln/rendered"}
-    result: dict[str, str] = {}
-    for path in repo.rglob("*"):
-        if not path.is_file():
-            continue
-        relative = path.relative_to(repo).as_posix()
-        if any(relative.startswith(prefix) for prefix in skip):
-            continue
-        try:
-            result[relative] = path.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
-            result[relative] = "<binary>"
-    return result
 
 
 def test_s6_9_1_2_apply_does_not_recreate_a_deleted_starter(

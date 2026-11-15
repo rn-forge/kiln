@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from tests.conftest import snapshot
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.runtime.console import OutputMode, console
@@ -24,26 +25,13 @@ from rn_forge.commons.runtime.console import OutputMode, console
 from rn_forge.kiln import commands
 from rn_forge.kiln.modules.core import cycle
 
-_IGNORE = shutil.ignore_patterns(
-    ".venv",
-    ".uv-cache",
-    ".ruff_cache",
-    ".import_linter_cache",
-    ".pytest_cache",
-    ".docs-site",
-    ".git",
-    "__pycache__",
-)
-
 
 @pytest.fixture
 def repo(
-    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    rendered: Callable[[str], Path],
+    rendered_copy: Callable[..., Path],
 ) -> Path:
-    root = tmp_path / "repo"
-    shutil.copytree(rendered("python-tool"), root, ignore=_IGNORE)
+    root = rendered_copy("python-tool")
     cycle.apply(root)
     monkeypatch.chdir(root)
     yield root
@@ -111,12 +99,10 @@ def test_s4_5_3_2_version_json_matches_the_installed_distribution(
 
 @pytest.fixture
 def reference(
-    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    rendered: Callable[[str], Path],
+    rendered_copy: Callable[..., Path],
 ) -> Path:
-    root = tmp_path / "reference"
-    shutil.copytree(rendered("python-lib"), root, ignore=_IGNORE)
+    root = rendered_copy("python-lib", "reference")
     monkeypatch.chdir(root)
     yield root
     console.set_mode(OutputMode.PLAIN)
@@ -135,15 +121,6 @@ def old(tmp_path: Path, reference: Path) -> Path:
     (root / "legacy.yml").write_text("x: 1\n", encoding="utf-8")
     subprocess.run(["git", "add", "-A"], cwd=root, check=True)
     return root
-
-
-def _snapshot(*roots: Path) -> dict[str, bytes]:
-    return {
-        str(path): path.read_bytes()
-        for root in roots
-        for path in sorted(root.rglob("*"))
-        if path.is_file()
-    }
 
 
 def test_s16_9_11_1_every_class_is_reported_once(
@@ -180,9 +157,9 @@ def test_s16_9_11_2_old_only_rows_come_last_in_plain_output(
 
 
 def test_s16_9_11_3_writes_nothing(reference: Path, old: Path) -> None:
-    before = _snapshot(reference, old)
+    before = snapshot(reference, old)
     commands.diff(old=str(old))
-    assert _snapshot(reference, old) == before
+    assert snapshot(reference, old) == before
 
 
 def test_s16_9_11_4_exits_zero_with_differences(reference: Path, old: Path) -> None:

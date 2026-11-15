@@ -7,7 +7,6 @@ Also proves the five properties every F4.3 story owes its module
 from __future__ import annotations
 
 import hashlib
-import importlib.util
 import json
 import re
 import subprocess
@@ -17,7 +16,8 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
-from tests.conftest import requires
+from tests.conftest import LIB_PACKAGES, actions as _actions, requires, write_config
+from tests.modules.cicd import workflows
 from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.lang.models import ModelValidationError
@@ -34,12 +34,6 @@ from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.docs import generate
 from rn_forge.kiln.modules.tasks import TASKS
 
-_spec = importlib.util.spec_from_file_location(
-    "cicd_workflows", Path(__file__).with_name("workflows.py")
-)
-assert _spec is not None and _spec.loader is not None
-workflows = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(workflows)
 
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
 
@@ -65,29 +59,6 @@ def _keys(archetype: str, keys: tuple[str, ...] = CI_KEYS) -> tuple[str, ...]:
     return keys
 
 
-CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo"
-owner = "rn-forge"
-archetype = "{archetype}"
-
-[docs]
-profile = "{profile}"
-
-[ci]
-provider = "{provider}"
-sonar = {sonar}
-release = "{release}"
-"""
-
-PACKAGES = """
-[archetype."python-lib"]
-packages = ["packages/alpha", "packages/beta"]
-"""
-
-
 def _root(
     tmp_path: Path,
     archetype: str = "python-tool",
@@ -96,30 +67,20 @@ def _root(
     release: str | None = None,
     provider: str = "github",
 ) -> Path:
-    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True)
-    text = CONFIG.format(
-        archetype=archetype,
-        profile=profile,
-        sonar=str(sonar).lower(),
+    return write_config(
+        tmp_path,
+        archetype,
+        name="demo",
+        docs=profile,
+        sonar=sonar,
         release=release or ("nx-dispatch" if archetype == "node-lib" else "tag-exists"),
         provider=provider,
+        packages=LIB_PACKAGES if archetype == "python-lib" else None,
     )
-    if archetype == "python-lib":
-        text += PACKAGES
-    config.write_text(text, encoding="utf-8")
-    return tmp_path
 
 
 def _rendered(root: Path) -> dict[str, str]:
     return {a.path: a.content for a in CICD.artifacts(KilnConfig.load(root), root)}
-
-
-def _actions(root: Path, tmp_path: Path) -> dict[str, Action]:
-    return {
-        change.key: change.action
-        for change in cycle.plan(root, home=tmp_path / "home").changes
-    }
 
 
 def _codes(root: Path) -> list[str]:

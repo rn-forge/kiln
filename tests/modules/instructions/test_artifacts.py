@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from tests.conftest import LIB_PACKAGES, actions as _actions, write_config
 from rn_forge.commons.generation import Action, ArtifactKind
 
 from rn_forge.kiln.config import KilnConfig
@@ -27,26 +28,6 @@ ARCHETYPES = ("python-app", "python-tool", "python-lib")
 BLOCK_KEY = "AGENTS.md#rn-forge kiln"
 STANDARD = ".rn-forge/kiln/standard.md"
 
-CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo"
-owner = "rn-forge"
-archetype = "{archetype}"
-
-[docs]
-profile = "{profile}"
-{docs_extra}
-[ci]
-sonar = {sonar}
-"""
-
-PACKAGES = """
-[archetype."python-lib"]
-packages = ["packages/alpha", "packages/beta"]
-"""
-
 
 def _write_config(
     root: Path,
@@ -55,17 +36,15 @@ def _write_config(
     sonar: bool = True,
     docs_extra: str = "",
 ) -> None:
-    config = root / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True, exist_ok=True)
-    text = CONFIG.format(
-        archetype=archetype,
-        profile=profile,
-        sonar=str(sonar).lower(),
+    write_config(
+        root,
+        archetype,
+        name="demo",
+        docs=profile,
         docs_extra=docs_extra,
+        sonar=sonar,
+        packages=LIB_PACKAGES if archetype == "python-lib" else None,
     )
-    if archetype == "python-lib":
-        text += PACKAGES
-    config.write_text(text, encoding="utf-8")
 
 
 def _root(tmp_path: Path, archetype: str = "python-tool", **kwargs: object) -> Path:
@@ -86,23 +65,6 @@ def _new(tmp_path: Path, archetype: str = "python-tool", **kwargs: object) -> Pa
 def _rendered(root: Path) -> dict[str, str]:
     return {
         a.key: a.content for a in INSTRUCTIONS.artifacts(KilnConfig.load(root), root)
-    }
-
-
-def _actions(root: Path, tmp_path: Path) -> dict[str, Action]:
-    return {
-        change.key: change.action
-        for change in cycle.plan(root, home=tmp_path / "home").changes
-    }
-
-
-def _snapshot(root: Path) -> dict[str, bytes]:
-    return {
-        str(path.relative_to(root)): path.read_bytes()
-        for path in sorted(root.rglob("*"))
-        if path.is_file()
-        and ".rn-forge/kiln/backups" not in path.as_posix()
-        and ".rn-forge/kiln/rendered" not in path.as_posix()
     }
 
 

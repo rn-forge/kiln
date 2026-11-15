@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -101,3 +102,35 @@ def test_s18_5_3_2_requires_marks_and_skips(monkeypatch) -> None:
     assert "requires_pnpm" in [mark.name for mark in pnpm]
     skip = next(mark for mark in pnpm if mark.name == "skipif")
     assert skip.args[0] is False
+
+
+def _tests_py_files() -> list[Path]:
+    tests = Path(__file__).parent
+    return [
+        path
+        for path in sorted(tests.rglob("*.py"))
+        if "fixtures" not in path.relative_to(tests).parts
+    ]
+
+
+def test_s18_5_2_1_no_test_loads_another_by_path() -> None:
+    needle = "spec_from_file_" + "location"
+    tests = Path(__file__).parent
+    offenders = [
+        str(path.relative_to(tests))
+        for path in _tests_py_files()
+        if path.name not in ("test_conftest.py", "test_golden_matrix.py")
+        and needle in path.read_text(encoding="utf-8")
+    ]
+    assert offenders == []
+
+
+def test_s18_5_2_2_check_tests_use_the_registry() -> None:
+    call = re.compile(r"\b\w+\.check\(")
+    tests = Path(__file__).parent
+    offenders = [
+        str(path.relative_to(tests))
+        for path in sorted((tests / "modules").glob("*/checks/*.py"))
+        if path.name != "test_pin.py" and call.search(path.read_text(encoding="utf-8"))
+    ]
+    assert offenders == []

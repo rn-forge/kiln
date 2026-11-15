@@ -9,13 +9,12 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+from tests.conftest import write_config
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.instructions.scaffold import scaffold
 
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
-
-CONFIG = 'schema_version = 1\n\n[repository]\nname = "demo"\nowner = "rn-forge"\narchetype = "python-app"\n'
 
 README = """# demo
 
@@ -79,10 +78,7 @@ BULLETS = (
 
 
 def _root(tmp_path: Path) -> Path:
-    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True)
-    config.write_text(CONFIG, encoding="utf-8")
-    return tmp_path
+    return write_config(tmp_path, "python-app", name="demo")
 
 
 def test_s4_3_5_scaffold_writes_the_three_bodies(tmp_path: Path) -> None:

@@ -14,27 +14,15 @@ from rn_forge.commons.runtime.console import OutputMode, console
 from rn_forge.kiln import commands
 from rn_forge.kiln.modules.core import cycle
 
-_IGNORE = shutil.ignore_patterns(
-    ".venv",
-    ".uv-cache",
-    ".ruff_cache",
-    ".import_linter_cache",
-    ".pytest_cache",
-    ".docs-site",
-    ".git",
-    "__pycache__",
-)
 CONFIG = Path(".rn-forge/kiln/config.toml")
 
 
 @pytest.fixture
 def repo(
-    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    rendered: Callable[[str], Path],
+    rendered_copy: Callable[..., Path],
 ) -> Path:
-    root = tmp_path / "repo"
-    shutil.copytree(rendered("python-tool"), root, ignore=_IGNORE)
+    root = rendered_copy("python-tool")
     cycle.apply(root)
     monkeypatch.chdir(root)
     yield root

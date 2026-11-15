@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from tests.conftest import git
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.runtime.console import OutputMode, console
 
@@ -42,18 +43,11 @@ def _new(parent: Path, name: str, archetype: str = "python-lib") -> Path:
     return parent / name
 
 
-def _git(root: Path, *args: str) -> str:
-    done = subprocess.run(
-        ["git", *args], cwd=root, check=True, capture_output=True, text=True
-    )
-    return done.stdout
-
-
 def _lib(parent: Path, remote: str | None, name: str = "golden-lib") -> Path:
     root = _new(parent, name)
-    _git(root, "init", "-q")
+    git(root, "init", "-q")
     if remote is not None:
-        _git(root, "remote", "add", "origin", remote)
+        git(root, "remote", "add", "origin", remote)
     return root
 
 

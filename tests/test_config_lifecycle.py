@@ -39,17 +39,6 @@ FLAGS = {"repository": {"name": "demo", "owner": "rn-forge", "archetype": "pytho
 CONFIG_PATH = Path(".rn-forge") / "kiln" / "config.toml"
 STATE_PATH = Path(".rn-forge") / "kiln" / "state.json"
 
-_IGNORE = shutil.ignore_patterns(
-    ".venv",
-    ".uv-cache",
-    ".ruff_cache",
-    ".import_linter_cache",
-    ".pytest_cache",
-    ".docs-site",
-    ".git",
-    "__pycache__",
-)
-
 
 def _write_layer(path: Path, document: dict[str, object]) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -87,12 +76,10 @@ def resolved_repo(tmp_path: Path, layer: Path, monkeypatch: pytest.MonkeyPatch) 
 
 @pytest.fixture
 def repo(
-    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    rendered: Callable[[str], Path],
+    rendered_copy: Callable[..., Path],
 ) -> Path:
-    root = tmp_path / "repo"
-    shutil.copytree(rendered("python-tool"), root, ignore=_IGNORE)
+    root = rendered_copy("python-tool")
     cycle.apply(root)
     _seed_flags_provenance(root)
     monkeypatch.chdir(root)

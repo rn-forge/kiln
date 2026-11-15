@@ -19,6 +19,7 @@ from typing import Any
 from unittest import mock
 
 import pytest
+from tests.conftest import write_config
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import DocumentUtils
 
@@ -39,43 +40,18 @@ from rn_forge.kiln.modules.python.scaffold import (
     uv_gitignore,
 )
 
-CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo-tool"
-owner = "rn-forge"
-archetype = "{archetype}"
-
-[docs]
-profile = "{docs_profile}"
-"""
-
 TAPLO = Path(sys.executable).parent / "taplo"
-
-LIB_CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo-lib"
-owner = "rn-forge"
-archetype = "python-lib"
-
-[archetype."python-lib"]
-packages = ["packages/demo-alpha", "packages/demo-beta"]
-
-[docs]
-profile = "{docs_profile}"
-"""
 
 
 def _root(tmp_path: Path, archetype: str, *, docs_profile: str = "mkdocs") -> Path:
-    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True)
-    template = LIB_CONFIG if archetype == "python-lib" else CONFIG
-    text = template.format(archetype=archetype, docs_profile=docs_profile)
-    config.write_text(text, encoding="utf-8")
-    return tmp_path
+    is_lib = archetype == "python-lib"
+    return write_config(
+        tmp_path,
+        archetype,
+        name="demo-lib" if is_lib else "demo-tool",
+        docs=docs_profile,
+        packages=["packages/demo-alpha", "packages/demo-beta"] if is_lib else None,
+    )
 
 
 def _mismatches(config: KilnConfig, root: Path) -> list[str]:
@@ -420,13 +396,7 @@ def test_s4_4_4_1_sample_test_fits_at_a_long_name() -> None:
 
 
 def _bare_lib(tmp_path: Path, *, docs_profile: str = "mkdocs") -> Path:
-    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True)
-    config.write_text(
-        LIB_CONFIG.split("[archetype")[0] + f'[docs]\nprofile = "{docs_profile}"\n',
-        encoding="utf-8",
-    )
-    return tmp_path
+    return write_config(tmp_path, "python-lib", name="demo-lib", docs=docs_profile)
 
 
 def test_s11_2_2_1_a_python_lib_with_no_packages_is_a_bare_workspace(
@@ -632,13 +602,8 @@ def _uv(path: Path) -> dict[str, Any]:
 
 
 def _scaffolded_app_with_lifecycle(tmp_path: Path) -> Path:
-    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True)
-    config.write_text(
-        CONFIG.format(archetype="python-app", docs_profile="mkdocs").replace(
-            'archetype = "python-app"', 'archetype = "python-app"\nlifecycle = true'
-        ),
-        encoding="utf-8",
+    write_config(
+        tmp_path, "python-app", name="demo-tool", docs="mkdocs", lifecycle=True
     )
     scaffold(tmp_path, KilnConfig.load(tmp_path))
     return tmp_path
@@ -709,27 +674,14 @@ def test_s19_1_3_6_the_formatter_is_a_dev_dependency_and_a_task_tool() -> None:
     )
 
 
-COMMONS_LIB_CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo-lib"
-owner = "rn-forge"
-archetype = "python-lib"
-
-[archetype."python-lib"]
-packages = {packages}
-
-[docs]
-profile = "mkdocs"
-"""
-
-
 def _commons_lib(tmp_path: Path, packages: list[str]) -> tuple[Path, KilnConfig]:
-    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True)
-    listed = "[" + ", ".join(f'"packages/{p}"' for p in packages) + "]"
-    config.write_text(COMMONS_LIB_CONFIG.format(packages=listed), encoding="utf-8")
+    write_config(
+        tmp_path,
+        "python-lib",
+        name="demo-lib",
+        docs="mkdocs",
+        packages=[f"packages/{p}" for p in packages],
+    )
     loaded = KilnConfig.load(tmp_path)
     scaffold(tmp_path, loaded)
     return tmp_path, loaded

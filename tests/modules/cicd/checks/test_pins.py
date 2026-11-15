@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from tests.conftest import run_check
+
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd.checks import pins
@@ -12,7 +14,7 @@ PINNED = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1"
 
 
 def _codes(root: Path) -> list[str]:
-    return sorted(f.code for f in pins.check(KilnConfig.load(root), root))
+    return sorted(f.code for f in run_check(pins.NAME, root))
 
 
 def test_s4_3_4_a_pinned_workflow_with_permissions_passes(repo) -> None:

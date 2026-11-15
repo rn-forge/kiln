@@ -7,38 +7,18 @@ import subprocess
 import sys
 import tomllib
 from pathlib import Path
+from typing import Any
 
 import pytest
 from rn_forge.commons.generation import Artifact, ArtifactKind
 
-from tests.conftest import new_repo
+from tests.conftest import new_repo, write_config
 
 from rn_forge.kiln import commands
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.base import StarterModule
 from rn_forge.kiln.modules.python import PYTHON, starter
 from rn_forge.kiln.modules.python.artifacts import root_package
-
-CONFIG = """
-schema_version = 1
-
-[repository]
-name = "{name}"
-owner = "rn-forge"
-archetype = "{archetype}"
-"""
-
-LIB_CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo-lib"
-owner = "rn-forge"
-archetype = "python-lib"
-
-[archetype."python-lib"]
-packages = {packages}
-"""
 
 TOOL_PATHS = {
     "src/python_tool/main.py",
@@ -49,11 +29,9 @@ TOOL_PATHS = {
 }
 
 
-def _config(root: Path, text: str) -> KilnConfig:
-    path = root / ".rn-forge" / "kiln" / "config.toml"
-    path.parent.mkdir(parents=True)
-    path.write_text(text, encoding="utf-8")
-    return KilnConfig.load(root)
+def _config(root: Path, archetype: str, **kwargs: Any) -> KilnConfig:
+    kwargs.setdefault("name", "demo")
+    return KilnConfig.load(write_config(root, archetype, **kwargs))
 
 
 def _fresh(root: Path, package: str, *names: str) -> None:
@@ -64,7 +42,7 @@ def _fresh(root: Path, package: str, *names: str) -> None:
 
 
 def _tool(root: Path, archetype: str = "python-tool") -> KilnConfig:
-    return _config(root, CONFIG.format(name="python-tool", archetype=archetype))
+    return _config(root, archetype, name="python-tool")
 
 
 def test_s4_9_1_1_tool_starter_artifacts(tmp_path: Path) -> None:
@@ -96,7 +74,7 @@ def test_s4_9_1_2_app_starter_has_no_product(tmp_path: Path) -> None:
 
 
 def test_s4_9_1_3_lib_starter_is_per_package(tmp_path: Path) -> None:
-    config = _config(tmp_path, LIB_CONFIG.format(packages='["packages/alpha-lib"]'))
+    config = _lib(tmp_path, ["packages/alpha-lib"])
     member = tmp_path / "packages" / "alpha-lib" / "src" / "alpha_lib"
     member.mkdir(parents=True)
     (member / "__init__.py").write_text("", encoding="utf-8")
@@ -111,7 +89,7 @@ def test_s4_9_1_3_lib_starter_is_per_package(tmp_path: Path) -> None:
 
     empty = tmp_path / "empty"
     empty.mkdir()
-    assert starter.render(_config(empty, LIB_CONFIG.format(packages="[]")), empty) == []
+    assert starter.render(_lib(empty, []), empty) == []
 
 
 def test_s4_9_1_4_gate(tmp_path: Path) -> None:
@@ -134,25 +112,15 @@ def test_s4_9_1_4_gate(tmp_path: Path) -> None:
     assert not starter.seedable(tmp_path / "missing", [])
 
 
-WEB_CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo"
-owner = "rn-forge"
-archetype = "{archetype}"
-
-[archetype."{archetype}"]
-backend = "{backend}"
-{extra}
-"""
+def _lib(root: Path, packages: list[str], **kwargs: Any) -> KilnConfig:
+    kwargs.setdefault("name", "demo-lib")
+    return _config(root, "python-lib", packages=packages, **kwargs)
 
 
 def _web(
     root: Path, archetype: str, backend: str = "fastapi", extra: str = ""
 ) -> KilnConfig:
-    text = WEB_CONFIG.format(archetype=archetype, backend=backend, extra=extra)
-    return _config(root, text)
+    return _config(root, archetype, backend=backend, tail=extra)
 
 
 def _fresh_api(root: Path, api_dir: str, *names: str, module: str = "demo_api") -> None:
@@ -279,13 +247,10 @@ def test_s4_9_5_1_starter_is_formatter_stable_at_any_name(
     tmp_path: Path, name: str, archetype: str
 ) -> None:
     if archetype == "python-lib":
-        text = LIB_CONFIG.format(packages=f'["packages/{name}"]').replace(
-            "demo-lib", name
-        )
-        config = _config(tmp_path, text)
+        config = _lib(tmp_path, [f"packages/{name}"], name=name)
         _fresh(tmp_path / "packages" / name, root_package(name))
     else:
-        config = _config(tmp_path, CONFIG.format(name=name, archetype=archetype))
+        config = _config(tmp_path, archetype, name=name)
         _fresh(tmp_path, root_package(name))
     artifacts = starter.render(config, tmp_path)
     assert artifacts
@@ -296,8 +261,7 @@ def test_s4_9_5_1_starter_is_formatter_stable_at_any_name(
 def test_s4_9_5_2_web_api_starter_is_formatter_stable(
     tmp_path: Path, name: str
 ) -> None:
-    text = WEB_CONFIG.format(archetype="python-web-api", backend="fastapi", extra="")
-    config = _config(tmp_path, text.replace('"demo"', f'"{name}"', 1))
+    config = _config(tmp_path, "python-web-api", name=name, backend="fastapi")
     _fresh_api(tmp_path, "apps/api", module=root_package(f"{name}-api"))
     artifacts = starter.render(config, tmp_path)
     assert artifacts

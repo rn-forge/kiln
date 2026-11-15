@@ -11,6 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from tests.conftest import MISSING_REQUIRED, run_check
 
 from rn_forge.commons.findings import Severity
 
@@ -47,13 +48,6 @@ COMPLIANT = f"""
 name = "example"
 version = "0.1.0"
 dependencies = [{REQUIRED_BLOCK}]
-"""
-
-MISSING_REQUIRED = """
-[project]
-name = "example"
-version = "0.1.0"
-dependencies = []
 """
 
 FORBIDDEN_KIT = f"""
@@ -112,7 +106,7 @@ rn-forge-kiln = {{ path = "../kiln", editable = true }}
 
 
 def run(root: Path) -> list[str]:
-    return [str(f) for f in rn_forge_deps.check(KilnConfig.load(root), root)]
+    return [str(f) for f in run_check(rn_forge_deps.NAME, root)]
 
 
 WEB_REQUIRED_URLS = [
@@ -196,10 +190,7 @@ def test_s5_1_1_2_a_compliant_web_member_passes(tmp_path: Path) -> None:
 def test_s7_5_6_3_a_web_root_may_declare_auth(tmp_path: Path) -> None:
     pyproject = WEB_COMPLIANT.rstrip("\n")[:-1] + ', "rn-forge-auth>=0.1.0,<0.2"]\n'
     codes = [
-        f.code
-        for f in rn_forge_deps.check(
-            KilnConfig.load(_web_root(tmp_path, pyproject)), tmp_path
-        )
+        f.code for f in run_check(rn_forge_deps.NAME, _web_root(tmp_path, pyproject))
     ]
     assert f"{rn_forge_deps.CODE}.not-allowed" not in codes
 
@@ -276,9 +267,7 @@ def test_an_app_may_not_take_the_tooling_layer(repo) -> None:
 def test_s7_4_2_2_kiln_in_a_group_is_an_error(repo) -> None:
     root = repo(lifecycle=True, **{"pyproject.toml": KILN_FROM_PATH})
     found = [
-        f
-        for f in rn_forge_deps.check(KilnConfig.load(root), root)
-        if f.code == "deps.kiln-in-lock"
+        f for f in run_check(rn_forge_deps.NAME, root) if f.code == "deps.kiln-in-lock"
     ]
     assert [f.severity for f in found] == [Severity.ERROR]
     assert "dependency-groups.dev" in found[0].message
@@ -286,7 +275,7 @@ def test_s7_4_2_2_kiln_in_a_group_is_an_error(repo) -> None:
 
 def test_s7_4_2_3_kilns_own_project_is_not_a_dependency() -> None:
     root = Path(__file__).resolve().parents[4]
-    findings = rn_forge_deps.check(KilnConfig.load(root), root)
+    findings = run_check(rn_forge_deps.NAME, root)
     assert [f for f in findings if f.code == "deps.kiln-in-lock"] == []
 
 
@@ -427,10 +416,7 @@ def _ranged(commons: str = "rn-forge-commons>=0.7.0,<0.8", index: bool = False) 
 
 
 def _findings(root: Path) -> list[tuple[str, str, str | None]]:
-    return [
-        (f.code, f.message, f.path)
-        for f in rn_forge_deps.check(KilnConfig.load(root), root)
-    ]
+    return [(f.code, f.message, f.path) for f in run_check(rn_forge_deps.NAME, root)]
 
 
 def test_s7_3_7_1_a_range_with_a_ceiling_passes(repo) -> None:
@@ -470,7 +456,7 @@ def test_s7_5_3_1_a_range_with_no_index_passes(repo) -> None:
 
 def test_s7_5_3_2_the_pykit_index_is_refused(repo) -> None:
     root = repo(lifecycle=True, **{"pyproject.toml": _ranged(index=True)})
-    found = rn_forge_deps.check(KilnConfig.load(root), root)
+    found = run_check(rn_forge_deps.NAME, root)
     assert [(f.code, f.severity, f.path) for f in found] == [
         ("deps.pykit-index", Severity.ERROR, "pyproject.toml")
     ]

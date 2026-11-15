@@ -6,21 +6,13 @@ import json
 from pathlib import Path
 
 import pytest
+from tests.conftest import run_check, write_config
 
 from rn_forge.commons.findings import Finding
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.node.angular import NX_VERSION
 from rn_forge.kiln.modules.node.checks import nx_version
-
-CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo"
-owner = "rn-forge"
-archetype = "{archetype}"
-"""
 
 
 def _repo(
@@ -29,16 +21,14 @@ def _repo(
     archetype: str = "node-lib",
     section: str = "devDependencies",
 ) -> Path:
-    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True)
-    config.write_text(CONFIG.format(archetype=archetype), encoding="utf-8")
+    write_config(tmp_path, archetype, name="demo")
     package = {"name": "demo", section: {} if nx is None else {"nx": nx}}
     (tmp_path / "package.json").write_text(json.dumps(package), encoding="utf-8")
     return tmp_path
 
 
 def _findings(root: Path) -> list[Finding]:
-    return nx_version.check(KilnConfig.load(root), root)
+    return run_check(nx_version.NAME, root)
 
 
 def test_s16_6_13_1_behind_is_an_error(tmp_path: Path) -> None:

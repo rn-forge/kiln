@@ -7,6 +7,7 @@ from pathlib import Path
 from unittest import mock
 
 import pytest
+from tests.conftest import write_config
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.commons.generation import Artifact, ArtifactKind
@@ -25,27 +26,6 @@ from rn_forge.kiln.modules.tasks import TASKS
 
 NODE_ARCHETYPES = ("node-lib", "python-web-app")
 PYTHON_ARCHETYPES = ("python-tool", "python-app", "python-lib", "python-web-api")
-
-CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo"
-owner = "rn-forge"
-archetype = "{archetype}"
-
-[docs]
-profile = "{profile}"
-{docs_extra}
-{section}
-"""
-
-SECTIONS = {
-    "python-lib": '[archetype."python-lib"]\npackages = ["packages/alpha"]\n',
-    "python-web-app": '[archetype."python-web-app"]\n'
-    'backend = "fastapi"\nfrontend = "angular"\n',
-    "python-web-api": '[archetype."python-web-api"]\nbackend = "fastapi"\n',
-}
 
 RC = {
     "singleQuote": True,
@@ -84,19 +64,17 @@ def _root(
     profile: str = "mkdocs",
     site_dir: str | None = None,
 ) -> Path:
-    path = tmp_path / ".rn-forge" / "kiln" / "config.toml"
-    path.parent.mkdir(parents=True)
-    docs_extra = "" if site_dir is None else f'site_dir = "{site_dir}"'
-    path.write_text(
-        CONFIG.format(
-            archetype=archetype,
-            profile=profile,
-            docs_extra=docs_extra,
-            section=SECTIONS.get(archetype, ""),
-        ),
-        encoding="utf-8",
+    web = archetype.startswith("python-web")
+    return write_config(
+        tmp_path,
+        archetype,
+        name="demo",
+        docs=profile,
+        docs_extra="" if site_dir is None else f'site_dir = "{site_dir}"',
+        packages=["packages/alpha"] if archetype == "python-lib" else None,
+        backend="fastapi" if web else None,
+        frontend="angular" if archetype == "python-web-app" else None,
     )
-    return tmp_path
 
 
 def _artifacts(root: Path) -> dict[str, Artifact]:

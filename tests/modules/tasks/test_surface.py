@@ -8,6 +8,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from tests.conftest import LIB_PACKAGES, write_config
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
@@ -18,36 +19,22 @@ CELLS = (
     ("python-tool", ""),
     ("python-lib", ""),
     ("python-web-api", ""),
-    ("python-web-app", 'frontend = "angular"'),
+    ("python-web-app", "angular"),
     ("node-lib", ""),
 )
 
-CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo"
-owner = "rn-forge"
-archetype = "{archetype}"
-
-[docs]
-profile = "mkdocs"
-{section}
-"""
-
 
 def _root(tmp_path: Path, archetype: str, frontend: str) -> Path:
-    section = ""
-    if archetype == "python-lib":
-        section = '\n[archetype."python-lib"]\npackages = ["packages/alpha", "packages/beta"]\n'
-    elif archetype.startswith("python-web"):
-        section = f'\n[archetype."{archetype}"]\nbackend = "fastapi"\n{frontend}\n'
-    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True)
-    config.write_text(
-        CONFIG.format(archetype=archetype, section=section), encoding="utf-8"
+    web = archetype.startswith("python-web")
+    return write_config(
+        tmp_path,
+        archetype,
+        name="demo",
+        docs="mkdocs",
+        packages=LIB_PACKAGES if archetype == "python-lib" else None,
+        backend="fastapi" if web else None,
+        frontend=frontend or None,
     )
-    return tmp_path
 
 
 def _run_task(root: Path, *args: str) -> subprocess.CompletedProcess[str]:

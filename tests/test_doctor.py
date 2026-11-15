@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import re
 import shutil
@@ -10,10 +9,10 @@ import subprocess
 import sys
 from collections.abc import Callable
 from pathlib import Path
-from types import ModuleType
 from typing import Any
 
 import pytest
+from tests.conftest import IGNORE, MISSING_REQUIRED, run_check
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding, Severity
 from rn_forge.commons.runtime.console import OutputMode, console
@@ -23,46 +22,11 @@ from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.core.checks.generated import digest
 
-TESTS = Path(__file__).parent
-_IGNORE = shutil.ignore_patterns(
-    ".venv",
-    ".uv-cache",
-    ".ruff_cache",
-    ".import_linter_cache",
-    ".pytest_cache",
-    ".docs-site",
-    ".git",
-    "__pycache__",
-)
-
-
-def _load(relative: str) -> ModuleType:
-    """Import a sibling test file by path (the suite has no test packages)."""
-    path = TESTS / relative
-    name = "_doctor_helper_" + path.stem
-    if name in sys.modules:
-        return sys.modules[name]
-    spec = importlib.util.spec_from_file_location(name, path)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module
-    spec.loader.exec_module(module)
-    return module
-
-
-def _run_one(root: Path, name: str) -> list[Finding]:
-    return next(c for c in checks.CHECKS if c.name == name).run(
-        KilnConfig.load(root), root
-    )
-
 
 @pytest.fixture
-def copy(
-    tmp_path: Path, rendered: Callable[[str], Path], monkeypatch: pytest.MonkeyPatch
-) -> Path:
+def copy(rendered_copy: Callable[..., Path], monkeypatch: pytest.MonkeyPatch) -> Path:
     """A writable copy of the rendered `python-app` repo."""
-    root = tmp_path / "copy"
-    shutil.copytree(rendered("python-app"), root, ignore=_IGNORE)
+    root = rendered_copy("python-app", "copy")
     monkeypatch.chdir(root)
     yield root
     console.set_mode(OutputMode.PLAIN)
@@ -93,10 +57,7 @@ def _break_generated(root: Path) -> None:
 
 
 def _break_deps(root: Path) -> None:
-    (root / "pyproject.toml").write_text(
-        _load("modules/python/checks/test_rn_forge_deps.py").MISSING_REQUIRED,
-        encoding="utf-8",
-    )
+    (root / "pyproject.toml").write_text(MISSING_REQUIRED, encoding="utf-8")
 
 
 def _break_layout(root: Path) -> None:
@@ -191,7 +152,7 @@ def test_s4_6_1_1_each_check_reports_only_its_own_code(copy: Path, name: str) ->
     assert checks.run(copy) == []
     breaker(copy)
 
-    own = _run_one(copy, name)
+    own = run_check(name, copy)
     assert any(f.is_error and f.code.startswith(prefix) for f in own), [
         str(f) for f in own
     ]
@@ -202,7 +163,7 @@ def test_s4_6_1_1_each_check_reports_only_its_own_code(copy: Path, name: str) ->
 
     for other in checks.names():
         if other != name and not (name in DOCS and other in DOCS):
-            errors = [f for f in _run_one(copy, other) if f.is_error]
+            errors = [f for f in run_check(other, copy) if f.is_error]
             assert errors == [], (other, [str(f) for f in errors])
 
 
@@ -299,8 +260,8 @@ def test_s4_6_5_3_quality_checks_run_by_default(copy: Path) -> None:
     assert {"docs.broken-link", "deps.required-missing"} <= {
         f.code for f in checks.run(copy)
     }
-    assert _run_one(copy, "docs-site")
-    assert _run_one(copy, "rn-forge-deps")
+    assert run_check("docs-site", copy)
+    assert run_check("rn-forge-deps", copy)
 
 
 def test_s4_6_5_4_a_sibling_under_rn_forge_is_ignored(copy: Path) -> None:
@@ -336,7 +297,7 @@ def fleet(copy: Path, tmp_path: Path) -> Path:
     base = tmp_path / "fleet"
     base.mkdir()
     for name in ("clean", "warned", "broken"):
-        shutil.copytree(copy, base / name, ignore=_IGNORE)
+        shutil.copytree(copy, base / name, ignore=IGNORE)
     _break_generated(base / "broken")
     (base / "plain").mkdir()
     return base

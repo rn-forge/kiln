@@ -26,16 +26,6 @@ from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.core.config.schema import RootConfig
 
 ROOT = Path(__file__).resolve().parents[1]
-_IGNORE = shutil.ignore_patterns(
-    ".venv",
-    ".uv-cache",
-    ".ruff_cache",
-    ".import_linter_cache",
-    ".pytest_cache",
-    ".docs-site",
-    ".git",
-    "__pycache__",
-)
 
 
 @pytest.fixture(autouse=True)
@@ -53,12 +43,10 @@ def kiln_cli() -> CliApp:
 
 @pytest.fixture
 def repo(
-    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
-    rendered: Callable[[str], Path],
+    rendered_copy: Callable[..., Path],
 ) -> Path:
-    root = tmp_path / "repo"
-    shutil.copytree(rendered("python-tool"), root, ignore=_IGNORE)
+    root = rendered_copy("python-tool")
     cycle.apply(root)
     monkeypatch.chdir(root)
     yield root

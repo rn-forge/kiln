@@ -16,24 +16,12 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
-from tests.conftest import requires
+from tests.conftest import git, requires, write_config
 from rn_forge.commons.fs.documents import YamlUtils
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.tasks import TASKS
-
-CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo"
-owner = "rn-forge"
-archetype = "node-lib"
-
-[docs]
-profile = "mkdocs"
-"""
 
 pytestmark = requires("task", "git", "bash", "node")
 
@@ -43,22 +31,10 @@ Run = Callable[..., subprocess.CompletedProcess[str]]
 @pytest.fixture(scope="module")
 def cell(tmp_path_factory: pytest.TempPathFactory) -> Path:
     root = tmp_path_factory.mktemp("cell")
-    config = root / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True)
-    config.write_text(CONFIG, encoding="utf-8")
+    write_config(root, "node-lib", name="demo", docs="mkdocs")
     cycle.apply(root, home=root / "home")
     shutil.rmtree(root / "home", ignore_errors=True)
     return root
-
-
-def _git(repo: Path, *args: str) -> str:
-    return subprocess.run(
-        ["git", "-c", "user.name=t", "-c", "user.email=t@t", *args],
-        cwd=repo,
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.strip()
 
 
 def _project(repo: Path, name: str, version: str, tags: str = "publishable") -> None:
@@ -82,14 +58,14 @@ def _stub(bin_dir: Path, name: str, body: str) -> None:
 def repo(cell: Path, tmp_path: Path) -> Path:
     work = tmp_path / "work"
     shutil.copytree(cell, work)
-    _git(work, "init", "-q", "-b", "main")
+    git(work, "init", "-q", "-b", "main")
     _project(work, "a", "1.2.3")
     _project(work, "b", "1.2.3")
-    _git(work, "add", "-A")
-    _git(work, "commit", "-qm", "c")
+    git(work, "add", "-A")
+    git(work, "commit", "-qm", "c")
     remote = tmp_path / "origin.git"
-    _git(tmp_path, "init", "-q", "--bare", str(remote))
-    _git(work, "remote", "add", "origin", str(remote))
+    git(tmp_path, "init", "-q", "--bare", str(remote))
+    git(work, "remote", "add", "origin", str(remote))
     return work
 
 
@@ -160,8 +136,8 @@ def _tasks(cell: Path) -> dict[str, dict[str, object]]:
 def _retag(repo: Path, version: str) -> None:
     for name in ("a", "b"):
         _project(repo, name, version)
-    _git(repo, "add", "-A")
-    _git(repo, "commit", "-q", "--allow-empty", "-m", f"bump {version}")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "--allow-empty", "-m", f"bump {version}")
 
 
 def test_s15_8_5_3_state_new(run: Run, tmp_path: Path) -> None:
@@ -191,7 +167,7 @@ def test_s15_8_5_3_state_dist_tag(
 def test_s15_8_5_3_state_first_release_means_no_other_v_tag(
     run: Run, repo: Path, tmp_path: Path
 ) -> None:
-    _git(repo, "tag", "v1.0.0")
+    git(repo, "tag", "v1.0.0")
     assert run("ci:release:state").returncode == 0
     assert _outputs(tmp_path)["first-release"] == "false"
     assert _outputs(tmp_path)["mode"] == "new"
@@ -204,7 +180,7 @@ def test_s15_8_5_3_state_first_release_means_no_other_v_tag(
 def test_s15_8_5_3_state_of_a_tagged_version(
     run: Run, repo: Path, tmp_path: Path, view: str, mode: str
 ) -> None:
-    _git(repo, "tag", "v1.2.3")
+    git(repo, "tag", "v1.2.3")
     assert run("ci:release:state", view=view).returncode == 0
     outputs = _outputs(tmp_path)
     assert outputs["mode"] == mode
@@ -230,8 +206,8 @@ def test_s15_8_5_3_state_ignores_untagged_projects(run: Run, repo: Path) -> None
 def test_s15_8_5_3_state_refuses_a_tag_that_is_not_at_head(
     run: Run, repo: Path
 ) -> None:
-    _git(repo, "tag", "v1.2.3")
-    _git(repo, "commit", "-q", "--allow-empty", "-m", "later")
+    git(repo, "tag", "v1.2.3")
+    git(repo, "commit", "-q", "--allow-empty", "-m", "later")
     done = run("ci:release:state", view="draft")
     assert done.returncode != 0
     assert "is not at HEAD" in done.stdout + done.stderr
@@ -241,11 +217,11 @@ def test_s15_8_5_4_new_mode_tags_head_and_pushes_the_tag_only(
     run: Run, repo: Path
 ) -> None:
     assert run("ci:release:tag", env={"TAG": "v1.2.3"}).returncode == 0
-    assert _git(repo, "rev-parse", "v1.2.3^{commit}") == _git(repo, "rev-parse", "HEAD")
+    assert git(repo, "rev-parse", "v1.2.3^{commit}") == git(repo, "rev-parse", "HEAD")
     done = run("ci:release:push", env={"TAG": "v1.2.3"})
     assert done.returncode == 0, done.stdout + done.stderr
-    assert "refs/tags/v1.2.3" in _git(repo, "ls-remote", "origin")
-    assert _git(repo, "ls-remote", "--heads", "origin") == ""
+    assert "refs/tags/v1.2.3" in git(repo, "ls-remote", "origin")
+    assert git(repo, "ls-remote", "--heads", "origin") == ""
 
 
 def test_s15_8_5_5_verify_rebuilds_dist_from_the_tagged_source(
@@ -312,7 +288,7 @@ def test_s16_7_2_1_a_bump_writes_the_changelog_then_formats(
 def test_s16_7_2_2_no_first_release_flag_once_a_tag_exists(
     run: Run, tmp_path: Path, repo: Path
 ) -> None:
-    _git(repo, "tag", "v1.0.0")
+    git(repo, "tag", "v1.0.0")
     done = run("version", "--", "minor")
     assert done.returncode == 0, done.stdout + done.stderr
     _bump_calls(tmp_path, "minor", "")
@@ -377,7 +353,7 @@ def test_s15_8_5_11_only_three_tasks_create_or_edit_a_release(cell: Path) -> Non
 def test_s15_8_5_12_resume_after_a_partial_publish(
     run: Run, repo: Path, tmp_path: Path
 ) -> None:
-    _git(repo, "tag", "v1.2.3")
+    git(repo, "tag", "v1.2.3")
     (repo / "dist" / "tarballs").mkdir(parents=True)
     (repo / "dist" / "tarballs" / "x.tgz").write_text("")
     assert run("ci:release:state", view="draft").returncode == 0

@@ -15,7 +15,13 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-from tests.conftest import requires
+from tests.conftest import (
+    actions as _actions,
+    git,
+    LIB_PACKAGES,
+    requires,
+    write_config,
+)
 from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.generation import Action, ArtifactKind
@@ -42,24 +48,6 @@ TASK_KEYS = (
 CI_KEY = "tasks/ci.yml"
 SONAR_KEY = "tasks/sonar.yml"
 
-CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo"
-owner = "rn-forge"
-archetype = "{archetype}"
-
-[docs]
-profile = "{profile}"
-{extra}
-"""
-
-PACKAGES = """
-[archetype."python-lib"]
-packages = ["packages/alpha", "packages/beta"]
-"""
-
 INCLUDE_EXTRA = (
     '\n[tasks]\nincludes = [{ namespace = "extra", taskfile = "tasks/extra.yml" }]\n'
 )
@@ -71,20 +59,14 @@ def _root(
     profile: str = "mkdocs",
     extra: str = "",
 ) -> Path:
-    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True)
-    text = CONFIG.format(archetype=archetype, profile=profile, extra=extra)
-    if archetype == "python-lib":
-        text += PACKAGES
-    config.write_text(text, encoding="utf-8")
-    return tmp_path
-
-
-def _actions(root: Path, tmp_path: Path) -> dict[str, Action]:
-    return {
-        change.key: change.action
-        for change in cycle.plan(root, home=tmp_path / "home").changes
-    }
+    return write_config(
+        tmp_path,
+        archetype,
+        name="demo",
+        docs=profile,
+        packages=LIB_PACKAGES if archetype == "python-lib" else None,
+        docs_extra=extra,
+    )
 
 
 def _codes(root: Path) -> list[str]:
@@ -2509,31 +2491,21 @@ def _affected_rule(tmp_path: Path) -> str:
     return match.group(0)
 
 
-def _git(repo: Path, *args: str) -> str:
-    return subprocess.run(
-        ["git", "-c", "user.name=t", "-c", "user.email=t@t", *args],
-        cwd=repo,
-        capture_output=True,
-        text=True,
-        check=True,
-    ).stdout.strip()
-
-
 def _commit(repo: Path, *files: str) -> str:
     for name in files:
         path = repo / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(path.read_text() + "x\n" if path.exists() else "x\n")
-    _git(repo, "add", "-A")
-    _git(repo, "commit", "-m", "c")
-    return _git(repo, "rev-parse", "HEAD")
+    git(repo, "add", "-A")
+    git(repo, "commit", "-m", "c")
+    return git(repo, "rev-parse", "HEAD")
 
 
 def _outside(tmp_path: Path, *changed: str) -> list[str]:
     """What the rule reports for `changed`, in a repository of two projects."""
     repo = tmp_path / "repo"
     repo.mkdir()
-    _git(repo, "init", "-q")
+    git(repo, "init", "-q")
     base = _commit(
         repo, "libs/a/src/a.ts", "libs/b/src/b.ts", "docs/guide.md", "README.md"
     )
@@ -2588,7 +2560,7 @@ def test_s9_1_2_5_affected_selects_run_many_or_affected(tmp_path: Path) -> None:
     pnpm.chmod(0o755)
     repo = tmp_path / "work"
     repo.mkdir()
-    _git(repo, "init", "-q")
+    git(repo, "init", "-q")
     base = _commit(repo, "libs/a/a.ts", "libs/b/b.ts")
     inside = _commit(repo, "libs/a/a.ts")
     outside = _commit(repo, "package.json")
@@ -2853,11 +2825,11 @@ def _release_run(
         stub.chmod(0o755)
     repo = tmp_path / "work"
     repo.mkdir()
-    _git(repo, "init", "-q", "-b", "main")
+    git(repo, "init", "-q", "-b", "main")
     _commit(repo, "a.txt")
     if tag:
         _commit(repo, "b.txt")
-        _git(repo, "tag", tag)
+        git(repo, "tag", tag)
     output = tmp_path / "output"
     return subprocess.run(
         ["task", "-t", str(root / "Taskfile.yml"), "--dir", str(repo), f"ci:{task}"],

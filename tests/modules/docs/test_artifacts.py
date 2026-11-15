@@ -12,6 +12,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from tests.conftest import LIB_PACKAGES, actions as _actions, write_config
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.commons.fs.hashing import ContentHash
@@ -30,23 +31,6 @@ from rn_forge.kiln.modules.instructions.scaffold import (
 )
 
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
-
-CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo"
-owner = "rn-forge"
-archetype = "{archetype}"
-
-[docs]
-profile = "{profile}"
-"""
-
-PACKAGES = """
-[archetype."python-lib"]
-packages = ["packages/alpha", "packages/beta"]
-"""
 
 GROWN = {
     "docs/index.md",
@@ -76,13 +60,13 @@ def _kind(path: str) -> ArtifactKind:
 def _root(
     tmp_path: Path, archetype: str = "python-tool", profile: str = "mkdocs"
 ) -> Path:
-    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True)
-    text = CONFIG.format(archetype=archetype, profile=profile)
-    if archetype == "python-lib":
-        text += PACKAGES
-    config.write_text(text, encoding="utf-8")
-    return tmp_path
+    return write_config(
+        tmp_path,
+        archetype,
+        name="demo",
+        docs=profile,
+        packages=LIB_PACKAGES if archetype == "python-lib" else None,
+    )
 
 
 def _origin(root: Path, url: str) -> None:
@@ -101,13 +85,6 @@ def _new(tmp_path: Path, archetype: str = "python-tool", origin: str = "") -> Pa
     cycle.apply(root, home=tmp_path / "home")
     generate.generate(root, config.packages if archetype == "python-lib" else ())
     return root
-
-
-def _actions(root: Path, tmp_path: Path) -> dict[str, Action]:
-    return {
-        change.key: change.action
-        for change in cycle.plan(root, home=tmp_path / "home").changes
-    }
 
 
 def _codes(root: Path) -> list[str]:
@@ -349,12 +326,12 @@ def test_s11_4_2_an_edited_structure_file_is_drift_and_an_edited_index_is_not(
     assert actions["docs/specs/index.md"] is Action.SKIP
 
 
-def _config_root(tmp_path: Path, archetype: str, extra: str = "") -> Path:
-    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True)
-    text = CONFIG.format(archetype=archetype, profile="mkdocs") + extra
-    config.write_text(text, encoding="utf-8")
-    return tmp_path
+def _config_root(
+    tmp_path: Path, archetype: str, extra: str = "", **kwargs: Any
+) -> Path:
+    return write_config(
+        tmp_path, archetype, name="demo", docs="mkdocs", tail=extra, **kwargs
+    )
 
 
 def _rendered_mkdocs(root: Path) -> str:
@@ -481,15 +458,7 @@ def test_s4_4_7_1_app_and_tool_seed_the_three_pages(
 
 
 def test_s4_4_7_1_the_module_is_the_name_with_underscores(tmp_path: Path) -> None:
-    root = tmp_path
-    config = root / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True)
-    config.write_text(
-        CONFIG.format(archetype="python-tool", profile="mkdocs").replace(
-            "demo", "my-demo-tool"
-        ),
-        encoding="utf-8",
-    )
+    root = write_config(tmp_path, "python-tool", name="my-demo-tool", docs="mkdocs")
     artifacts = {a.key: a for a in DOCS.artifacts(KilnConfig.load(root), root)}
     assert artifacts[PY_API].content == "# Python API\n\n::: my_demo_tool\n"
 
@@ -681,7 +650,7 @@ def test_s16_2_2_4_unknown_key(tmp_path: Path) -> None:
 
 
 def test_s16_2_2_5_site_dir_only_when_given(tmp_path: Path) -> None:
-    root = _config_root(tmp_path, "python-lib", PACKAGES)
+    root = _config_root(tmp_path, "python-lib", packages=LIB_PACKAGES)
     rendered = {a.key: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
     docs = rendered["tasks/docs.yml"]
 

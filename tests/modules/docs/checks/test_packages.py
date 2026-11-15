@@ -6,6 +6,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+from tests.conftest import run_check
 
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
@@ -85,7 +86,7 @@ def test_s11_2_3_1_each_code_has_a_fixture_reporting_only_it(repo, code: str) ->
 
 def test_s11_2_3_1_docs_structure_runs_the_package_checks(repo) -> None:
     root = _lib(repo, **CASES["docs.package-missing-index"])
-    found = [f.code for f in structure.check(KilnConfig.load(root), root)]
+    found = [f.code for f in run_check(structure.NAME, root)]
     assert "docs.package-missing-index" in found
 
 
@@ -171,7 +172,7 @@ def test_s6_1_10_2_docs_site_runs_on_a_tagged_mkdocs(repo) -> None:
             "docs/index.md": "# Root\n",
         },
     )
-    site.check(KilnConfig.load(root), root)
+    run_check(site.NAME, root)
 
 
 def test_s6_1_10_3_a_tagged_scalar_in_the_nav_is_not_a_page(tmp_path: Path) -> None:

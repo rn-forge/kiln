@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from tests.conftest import requires
+from tests.conftest import requires, run_check
 
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
@@ -129,7 +129,7 @@ TASKFILE = taskfile()
 
 
 def run(root: Path) -> list[str]:
-    return [str(f) for f in layout.check(KilnConfig.load(root), root)]
+    return [str(f) for f in run_check(layout.NAME, root)]
 
 
 def compliant(repo, **overrides: str) -> Path:
@@ -264,11 +264,11 @@ OWNED = "version: '3'\ntasks:\n  go:\n    cmds: [echo hi]\n"
 
 
 def codes(root: Path) -> list[str]:
-    return [f.code for f in layout.check(KilnConfig.load(root), root)]
+    return [f.code for f in run_check(layout.NAME, root)]
 
 
 def findings(root: Path, code: str):
-    return [f for f in layout.check(KilnConfig.load(root), root) if f.code == code]
+    return [f for f in run_check(layout.NAME, root) if f.code == code]
 
 
 def declare(root: Path, namespace: str, taskfile_path: str) -> None:
@@ -482,4 +482,4 @@ def test_s4_6_2_2_unresolved_ref_in_a_managed_block(repo, write_state) -> None:
 )
 def test_s4_6_2_3_every_rendered_cell_passes(cell: str, rendered) -> None:
     root = rendered(cell)
-    assert layout.check(KilnConfig.load(root), root) == []
+    assert run_check(layout.NAME, root) == []

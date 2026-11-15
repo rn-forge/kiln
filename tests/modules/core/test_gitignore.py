@@ -11,6 +11,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+from tests.conftest import write_config
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle, gitignore
@@ -20,8 +21,6 @@ SCAFFOLD = Path(__file__).resolve().parents[2] / "fixtures" / "scaffold"
 UV_BODY = (SCAFFOLD / "uv" / ".gitignore").read_text(encoding="utf-8")
 NX_BODY = (SCAFFOLD / "nx-angular" / ".gitignore").read_text(encoding="utf-8")
 
-CONFIG = 'schema_version = 1\n\n[repository]\nname = "demo"\nowner = "rn-forge"\narchetype = "python-app"\n\n[docs]\nprofile = "mkdocs"\n'
-
 
 def _kiln_body(root: Path) -> str:
     (artifact,) = [a for a in render(KilnConfig.load(root)) if a.path == ".gitignore"]
@@ -30,11 +29,7 @@ def _kiln_body(root: Path) -> str:
 
 @pytest.fixture
 def root(tmp_path: Path) -> Path:
-    repo = tmp_path / "repo"
-    config = repo / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True)
-    config.write_text(CONFIG, encoding="utf-8")
-    return repo
+    return write_config(tmp_path / "repo", "python-app", name="demo", docs="mkdocs")
 
 
 def _compose(root: Path, *bodies: str) -> None:

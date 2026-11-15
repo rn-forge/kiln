@@ -16,6 +16,7 @@ from pathlib import Path
 from types import ModuleType
 
 import pytest
+from tests.conftest import git
 from rn_forge.commons.fs.documents import YamlUtils
 
 from rn_forge.kiln import archetypes
@@ -346,15 +347,6 @@ def test_s4_4_9_2_main_requires_a_base(matrix: ModuleType) -> None:
     assert matrix.main(["compare"]) == 2
 
 
-def _git(cwd: Path, *args: str) -> None:
-    subprocess.run(
-        ["git", "-c", "user.name=t", "-c", "user.email=t@t", *args],
-        cwd=cwd,
-        check=True,
-        capture_output=True,
-    )
-
-
 def test_s9_1_12_1_ngkit_files_skip_check_template(matrix: ModuleType) -> None:
     assert len(matrix.NGKIT_FILES) == 6
     assert not any("check-template" in name for name in matrix.NGKIT_FILES)
@@ -367,9 +359,9 @@ def test_s9_1_12_2_ngkit_diff_compares_the_ref_with_the_cell(
     checkout, cell = tmp_path / "ngkit", tmp_path / "cell"
     files = {name: f"{name}\n" for name in matrix.NGKIT_FILES}
     _write(checkout, files)
-    _git(checkout, "init", "-q")
-    _git(checkout, "add", ".")
-    _git(checkout, "commit", "-qm", "x")
+    git(checkout, "init", "-q")
+    git(checkout, "add", ".")
+    git(checkout, "commit", "-qm", "x")
     _write(cell, {**files, "sonar-project.properties": "changed\n"})
     lines = matrix.ngkit_diff(checkout, cell, "HEAD")
     assert [line for line in lines if line.startswith("@@")] == ["@@ -1 +1 @@"]
@@ -382,9 +374,9 @@ def _ngkit_repo(matrix: ModuleType, tmp_path: Path) -> tuple[Path, Path]:
     checkout, cell = tmp_path / "ngkit", tmp_path / "cell"
     files = {name: f"{name}\nsame\n" for name in matrix.NGKIT_FILES}
     _write(checkout, files)
-    _git(checkout, "init", "-q")
-    _git(checkout, "add", ".")
-    _git(checkout, "commit", "-qm", "x")
+    git(checkout, "init", "-q")
+    git(checkout, "add", ".")
+    git(checkout, "commit", "-qm", "x")
     _write(cell, {**files, "sonar-project.properties": "changed\n"})
     (cell / matrix.NGKIT_FILES[0]).unlink()
     return checkout, cell
@@ -438,7 +430,7 @@ def test_s9_3_8_4_ngkit_leaves_the_review_folders(
     matrix: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     checkout, cell = _ngkit_repo(matrix, tmp_path)
-    _git(checkout, "tag", matrix.NGKIT_REF)
+    git(checkout, "tag", matrix.NGKIT_REF)
 
     def render(_cell: object, dest: Path, _cmd: list[str]) -> None:
         _write(dest, {p.name: p.read_text() for p in cell.iterdir() if p.is_file()})

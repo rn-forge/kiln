@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from tests.conftest import run_check, write_config
 
 from rn_forge.commons.findings import Finding
 
@@ -13,24 +14,14 @@ from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.devops import uv
 from rn_forge.kiln.modules.python.checks import workspace_ci
 
-CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo"
-owner = "rn-forge"
-archetype = "{archetype}"
-{extra}
-"""
-
-LIB_EXTRA = '\n[archetype."python-lib"]\npackages = ["packages/auth"]\n'
-
 
 def _repo(tmp_path: Path, table: str, archetype: str = "python-lib") -> Path:
-    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True)
-    extra = LIB_EXTRA if archetype == "python-lib" else ""
-    config.write_text(CONFIG.format(archetype=archetype, extra=extra), encoding="utf-8")
+    write_config(
+        tmp_path,
+        archetype,
+        name="demo",
+        packages=["packages/auth"] if archetype == "python-lib" else None,
+    )
     (tmp_path / "pyproject.toml").write_text(
         '[project]\nname = "demo"\nversion = "1"\n\n'
         '[tool.uv.workspace]\nmembers = ["packages/*"]\n',
@@ -45,7 +36,7 @@ def _repo(tmp_path: Path, table: str, archetype: str = "python-lib") -> Path:
 
 
 def _findings(root: Path) -> list[Finding]:
-    return workspace_ci.check(KilnConfig.load(root), root)
+    return run_check(workspace_ci.NAME, root)
 
 
 def test_s16_6_12_1_legacy_table_is_an_error(tmp_path: Path) -> None:

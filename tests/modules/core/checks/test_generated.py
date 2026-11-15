@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from tests.conftest import run_check
+
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core.checks import generated
@@ -18,7 +20,7 @@ END = "<!-- END rn-forge kiln -->"
 
 
 def run(root: Path) -> list[str]:
-    return [str(f) for f in generated.check(KilnConfig.load(root), root)]
+    return [str(f) for f in run_check(generated.NAME, root)]
 
 
 def managed_entry(path: str, content: str) -> dict[str, object]:

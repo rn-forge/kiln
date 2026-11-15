@@ -11,6 +11,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
+from tests.conftest import LIB_PACKAGES, write_config
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.generation import Action, Artifact, ArtifactKind
 
@@ -20,27 +21,6 @@ from rn_forge.kiln.modules.python import PYTHON
 
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
 
-CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo"
-owner = "rn-forge"
-archetype = "{archetype}"
-"""
-
-LIB_CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo"
-owner = "rn-forge"
-archetype = "python-lib"
-
-[archetype."python-lib"]
-packages = ["packages/alpha", "packages/beta"]
-"""
-
 
 def _importlinter(config: KilnConfig, root: Path) -> list[Artifact]:
     """The module's `.importlinter` alone; the seeded starter files are S4.9.1's."""
@@ -48,13 +28,12 @@ def _importlinter(config: KilnConfig, root: Path) -> list[Artifact]:
 
 
 def _root(tmp_path: Path, archetype: str) -> Path:
-    config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True)
-    text = (
-        LIB_CONFIG if archetype == "python-lib" else CONFIG.format(archetype=archetype)
+    return write_config(
+        tmp_path,
+        archetype,
+        name="demo",
+        packages=LIB_PACKAGES if archetype == "python-lib" else None,
     )
-    config.write_text(text, encoding="utf-8")
-    return tmp_path
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
@@ -208,11 +187,14 @@ def test_s5_1_3_backend_flag_only_changes_the_importlinter_forbidden_list(
     assert diffs == [("    fastapi", "    django")]
 
 
-MODULE_CONFIG = (
-    LIB_CONFIG
-    + """modules = { "packages/alpha" = "rn_forge.alpha" }
-"""
-)
+MODULE_TAIL = 'modules = { "packages/alpha" = "rn_forge.alpha" }\n'
+
+
+def _lib(
+    tmp_path: Path, tail: str = "", packages: list[str] = LIB_PACKAGES
+) -> KilnConfig:
+    write_config(tmp_path, "python-lib", name="demo", packages=packages, tail=tail)
+    return KilnConfig.load(tmp_path)
 
 
 def test_s6_1_3_1_module_defaults_from_the_path(tmp_path: Path) -> None:
@@ -222,14 +204,11 @@ def test_s6_1_3_1_module_defaults_from_the_path(tmp_path: Path) -> None:
 
 
 def test_s6_1_3_1_module_is_read_from_config(tmp_path: Path) -> None:
-    (tmp_path / ".rn-forge" / "kiln").mkdir(parents=True)
-    (tmp_path / ".rn-forge" / "kiln" / "config.toml").write_text(
-        MODULE_CONFIG.replace("packages/alpha", "packages/rn-forge-cli", 2).replace(
-            "rn_forge.alpha", "rn_forge.cli"
-        ),
-        encoding="utf-8",
+    config = _lib(
+        tmp_path,
+        'modules = { "packages/rn-forge-cli" = "rn_forge.cli" }\n',
+        ["packages/rn-forge-cli", "packages/beta"],
     )
-    config = KilnConfig.load(tmp_path)
     assert config.module_for("packages/rn-forge-cli") == "rn_forge.cli"
     assert config.module_for("packages/beta") == "beta"
 
@@ -237,46 +216,35 @@ def test_s6_1_3_1_module_is_read_from_config(tmp_path: Path) -> None:
 def test_s6_1_3_1_a_modules_key_outside_packages_is_a_config_error(
     tmp_path: Path,
 ) -> None:
-    (tmp_path / ".rn-forge" / "kiln").mkdir(parents=True)
-    (tmp_path / ".rn-forge" / "kiln" / "config.toml").write_text(
-        LIB_CONFIG + 'modules = { "packages/gamma" = "gamma" }\n', encoding="utf-8"
-    )
     with pytest.raises(AppException, match="packages/gamma"):
-        KilnConfig.load(tmp_path)
+        _lib(tmp_path, 'modules = { "packages/gamma" = "gamma" }\n')
 
 
 def test_s6_1_3_1_an_invalid_module_value_is_a_config_error(tmp_path: Path) -> None:
-    (tmp_path / ".rn-forge" / "kiln").mkdir(parents=True)
-    (tmp_path / ".rn-forge" / "kiln" / "config.toml").write_text(
-        LIB_CONFIG + 'modules = { "packages/alpha" = "Rn-Forge" }\n', encoding="utf-8"
-    )
     with pytest.raises(AppException):
-        KilnConfig.load(tmp_path)
+        _lib(tmp_path, 'modules = { "packages/alpha" = "Rn-Forge" }\n')
 
 
 def test_s6_1_3_2_importlinter_names_the_declared_module(tmp_path: Path) -> None:
-    (tmp_path / ".rn-forge" / "kiln").mkdir(parents=True)
-    (tmp_path / ".rn-forge" / "kiln" / "config.toml").write_text(
-        MODULE_CONFIG, encoding="utf-8"
-    )
-    [artifact] = _importlinter(KilnConfig.load(tmp_path), tmp_path)
+    [artifact] = _importlinter(_lib(tmp_path, MODULE_TAIL), tmp_path)
     roots = [line.strip() for line in artifact.content.splitlines()]
     assert "rn_forge.alpha" in roots
     assert "beta" in roots
     assert "alpha" not in roots
 
 
-OWN_CONFIG = LIB_CONFIG + 'import_contracts = "own"\n'
+OWN_TAIL = 'import_contracts = "own"\n'
 
 
 def _load(tmp_path: Path, text: str) -> KilnConfig:
+    """Load a config whose `[repository]` table `_single` extends by hand."""
     (tmp_path / ".rn-forge" / "kiln").mkdir(parents=True)
     (tmp_path / ".rn-forge" / "kiln" / "config.toml").write_text(text, encoding="utf-8")
     return KilnConfig.load(tmp_path)
 
 
 def test_s6_1_4_1_default_keeps_kiln_contracts(tmp_path: Path) -> None:
-    config = _load(tmp_path, LIB_CONFIG)
+    config = _lib(tmp_path)
     assert config.import_contracts == "kiln"
     [artifact] = _importlinter(config, tmp_path)
     assert "[importlinter:contract:frameworks-come-from-rn-forge]" in artifact.content
@@ -285,7 +253,7 @@ def test_s6_1_4_1_default_keeps_kiln_contracts(tmp_path: Path) -> None:
 
 
 def test_s6_1_4_2_own_renders_only_the_root(tmp_path: Path) -> None:
-    config = _load(tmp_path, OWN_CONFIG)
+    config = _lib(tmp_path, OWN_TAIL)
     assert config.import_contracts == "own"
     [artifact] = _importlinter(config, tmp_path)
     content = artifact.content
@@ -306,16 +274,18 @@ def test_s6_1_4_2_own_renders_only_the_root(tmp_path: Path) -> None:
 @pytest.mark.parametrize("archetype", ["python-app", "python-tool"])
 def test_s6_1_4_3_own_is_python_lib_only(tmp_path: Path, archetype: str) -> None:
     with pytest.raises(AppException):
-        _load(
+        write_config(
             tmp_path,
-            CONFIG.format(archetype=archetype)
-            + f'\n[archetype."{archetype}"]\nimport_contracts = "own"\n',
+            archetype,
+            name="demo",
+            tail=f'\n[archetype."{archetype}"]\nimport_contracts = "own"\n',
         )
+        KilnConfig.load(tmp_path)
 
 
 def test_s6_1_4_4_an_unknown_value_is_refused(tmp_path: Path) -> None:
     with pytest.raises(AppException):
-        _load(tmp_path, LIB_CONFIG + 'import_contracts = "none"\n')
+        _lib(tmp_path, 'import_contracts = "none"\n')
 
 
 def _single(

@@ -6,31 +6,12 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from tests.conftest import LIB_PACKAGES, write_config
 from rn_forge.commons.fs.documents import YamlUtils
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd import CICD
 
-CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo"
-owner = "rn-forge"
-archetype = "{archetype}"
-
-[docs]
-profile = "mkdocs"
-
-[ci]
-provider = "github"
-sonar = true
-release = "{release}"
-"""
-PACKAGES = """
-[archetype."python-lib"]
-packages = ["packages/alpha", "packages/beta"]
-"""
 DEFAULT_RELEASE = {"python-lib": "pypi", "node-lib": "nx-dispatch"}
 ARCHETYPES = (
     "python-tool",
@@ -56,16 +37,16 @@ def _render(
 ) -> dict[str, str]:
     release = release or DEFAULT_RELEASE.get(archetype, "tag-exists")
     root = tmp_path / f"{archetype}-{release}"
-    config = root / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True, exist_ok=True)
-    text = CONFIG.format(archetype=archetype, release=release)
-    if archetype == "python-lib":
-        text += PACKAGES
-    elif archetype in {"python-web-api", "python-web-app"}:
-        text += f'\n[archetype."{archetype}"]\n'
-        if archetype == "python-web-app":
-            text += 'frontend = "angular"\n'
-    config.write_text(text, encoding="utf-8")
+    write_config(
+        root,
+        archetype,
+        name="demo",
+        docs="mkdocs",
+        sonar=True,
+        release=release,
+        packages=LIB_PACKAGES if archetype == "python-lib" else None,
+        frontend="angular" if archetype == "python-web-app" else None,
+    )
     loaded = KilnConfig.load(root)
     return {a.path: a.content for a in CICD.artifacts(loaded, root)}
 

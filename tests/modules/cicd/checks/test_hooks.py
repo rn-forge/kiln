@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from tests.conftest import run_check
 
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
@@ -15,7 +16,7 @@ CALL = "./.github/workflows/x.yml"
 
 
 def _codes(root: Path) -> list[str]:
-    return sorted(f.code for f in hooks.check(KilnConfig.load(root), root))
+    return sorted(f.code for f in run_check(hooks.NAME, root))
 
 
 def _append(root: Path, text: str) -> None:

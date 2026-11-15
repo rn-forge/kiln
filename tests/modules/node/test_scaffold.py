@@ -16,6 +16,7 @@ from unittest import mock
 from pathlib import Path
 
 import pytest
+from tests.conftest import write_config
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import DocumentUtils
@@ -40,28 +41,17 @@ from rn_forge.kiln.modules.python.scaffold import scaffold
 FIXTURE = Path(__file__).parents[2] / "fixtures" / "scaffold" / "nx-angular"
 UV_FIXTURE = Path(__file__).parents[2] / "fixtures" / "scaffold" / "uv" / ".gitignore"
 
-WEB_CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo"
-owner = "rn-forge"
-archetype = "python-web-app"
-
-[archetype."python-web-app"]
-backend = "fastapi"
-frontend = "{frontend}"
-{extra}
-"""
-
 
 def _root(tmp_path: Path, *, extra: str = "", frontend: str = "angular") -> Path:
     """A root with the `python`/uv side of a `python-web-app` scaffold done."""
     root = tmp_path / "root"
-    config = root / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True)
-    config.write_text(
-        WEB_CONFIG.format(extra=extra, frontend=frontend), encoding="utf-8"
+    write_config(
+        root,
+        "python-web-app",
+        name="demo",
+        backend="fastapi",
+        frontend=frontend,
+        tail=f"{extra}\n" if extra else "",
     )
     scaffold(root, KilnConfig.load(root))
     return root

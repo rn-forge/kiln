@@ -2,58 +2,40 @@
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import re
 from pathlib import Path
 from typing import Any
 
 import pytest
+from tests.conftest import LIB_PACKAGES, write_config
+from tests.modules.cicd import workflows
 
 from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd import CICD
 from rn_forge.kiln.modules.tasks import TASKS
 
-_spec = importlib.util.spec_from_file_location(
-    "cicd_workflows", Path(__file__).with_name("workflows.py")
-)
-assert _spec is not None and _spec.loader is not None
-workflows = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(workflows)
 
-CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo"
-owner = "rn-forge"
-archetype = "{archetype}"
-
-[docs]
-profile = "mkdocs"
-
-[ci]
-provider = "github"
-sonar = true
-release = "{release}"
-"""
-
-PACKAGES = """
-[archetype."python-lib"]
-packages = ["packages/alpha", "packages/beta"]
-"""
+def _config(root: Path, archetype: str, release: str, **kwargs: Any) -> Path:
+    kwargs.setdefault("docs", "mkdocs")
+    kwargs.setdefault("sonar", True)
+    frontend = "angular" if archetype == "python-web-app" else None
+    return write_config(
+        root,
+        archetype,
+        name="demo",
+        release=release,
+        packages=LIB_PACKAGES if archetype == "python-lib" else None,
+        frontend=frontend,
+        **kwargs,
+    )
 
 
 def _render(tmp_path: Path, archetype: str) -> dict[str, str]:
     root = tmp_path / archetype
-    config = root / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True, exist_ok=True)
     release = "nx-dispatch" if archetype == "node-lib" else "tag-exists"
-    text = CONFIG.format(archetype=archetype, release=release)
-    if archetype == "python-lib":
-        text += PACKAGES
-    config.write_text(text, encoding="utf-8")
+    _config(root, archetype, release)
     loaded = KilnConfig.load(root)
     files = {a.path: a.content for a in CICD.artifacts(loaded, root)}
     files.update({a.path: a.content for a in TASKS.artifacts(loaded, root)})
@@ -163,14 +145,7 @@ STAGES = ("plan", "test", "integration", "smoke", "suites")
 
 def _render_single(tmp_path: Path, archetype: str, extra: str = "") -> dict[str, str]:
     root = tmp_path / archetype
-    config = root / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True, exist_ok=True)
-    text = CONFIG.format(archetype=archetype, release="tag-exists")
-    if archetype in {"python-web-api", "python-web-app"}:
-        text += f'\n[archetype."{archetype}"]\n'
-        if archetype == "python-web-app":
-            text += 'frontend = "angular"\n'
-    config.write_text(text + extra, encoding="utf-8")
+    _config(root, archetype, "tag-exists", tail=extra)
     loaded = KilnConfig.load(root)
     files = {a.path: a.content for a in CICD.artifacts(loaded, root)}
     files.update({a.path: a.content for a in TASKS.artifacts(loaded, root)})
@@ -253,12 +228,7 @@ def test_s15_8_3_6_suites_are_declared(tmp_path: Path, archetype: str) -> None:
 
 def _lib_files(tmp_path: Path, release: str) -> dict[str, str]:
     root = tmp_path / f"lib-{release}"
-    config = root / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True, exist_ok=True)
-    config.write_text(
-        CONFIG.format(archetype="python-lib", release=release) + PACKAGES,
-        encoding="utf-8",
-    )
+    _config(root, "python-lib", release)
     loaded = KilnConfig.load(root)
     files = {a.path: a.content for a in CICD.artifacts(loaded, root)}
     files.update({a.path: a.content for a in TASKS.artifacts(loaded, root)})
@@ -312,11 +282,7 @@ def test_s15_8_4_5_single_package_job(tmp_path: Path, archetype: str) -> None:
 def test_s15_8_4_6_none(tmp_path: Path) -> None:
     assert "verify-release" not in workflows.jobs(_lib_files(tmp_path, "none"))
     root = tmp_path / "single-none"
-    config = root / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True)
-    config.write_text(
-        CONFIG.format(archetype="python-tool", release="none"), encoding="utf-8"
-    )
+    _config(root, "python-tool", "none")
     loaded = KilnConfig.load(root)
     files = {a.path: a.content for a in CICD.artifacts(loaded, root)}
     jobs = workflows.jobs(files)
@@ -341,11 +307,7 @@ RELEASE_TASKS = (
 
 def _node(tmp_path: Path, release: str = "nx-dispatch") -> dict[str, str]:
     root = tmp_path / f"node-{release}"
-    config = root / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True, exist_ok=True)
-    config.write_text(
-        CONFIG.format(archetype="node-lib", release=release), encoding="utf-8"
-    )
+    _config(root, "node-lib", release)
     loaded = KilnConfig.load(root)
     files = {a.path: a.content for a in CICD.artifacts(loaded, root)}
     files.update({a.path: a.content for a in TASKS.artifacts(loaded, root)})
@@ -487,19 +449,14 @@ def _docs_render(
     extra: str = "",
 ) -> dict[str, str]:
     root = tmp_path / f"{archetype}-{release}-{sonar}-{docs}"
-    config = root / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True, exist_ok=True)
-    text = CONFIG.format(archetype=archetype, release=release)
-    text = text.replace("sonar = true", f"sonar = {str(sonar).lower()}")
-    if not docs:
-        text = text.replace('[docs]\nprofile = "mkdocs"', '[docs]\nprofile = "none"')
-    if archetype == "python-lib":
-        text += PACKAGES
-    elif archetype in {"python-web-api", "python-web-app"}:
-        text += f'\n[archetype."{archetype}"]\n'
-        if archetype == "python-web-app":
-            text += 'frontend = "angular"\n'
-    config.write_text(text + extra, encoding="utf-8")
+    _config(
+        root,
+        archetype,
+        release,
+        sonar=sonar,
+        docs="mkdocs" if docs else "none",
+        tail=extra,
+    )
     loaded = KilnConfig.load(root)
     files = {a.path: a.content for a in CICD.artifacts(loaded, root)}
     files.update({a.path: a.content for a in TASKS.artifacts(loaded, root)})

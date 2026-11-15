@@ -2,45 +2,18 @@
 
 from __future__ import annotations
 
-import importlib.util
 from pathlib import Path
 from typing import Any
 
 import pytest
+from tests.conftest import LIB_PACKAGES, write_config
+from tests.modules.cicd import workflows
 
 from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd import CICD
 from rn_forge.kiln.modules.cicd.checks import entrypoint, hooks, pins
 
-_spec = importlib.util.spec_from_file_location(
-    "cicd_workflows", Path(__file__).with_name("workflows.py")
-)
-assert _spec is not None and _spec.loader is not None
-workflows = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(workflows)
-
-CONFIG = """
-schema_version = 1
-
-[repository]
-name = "demo"
-owner = "rn-forge"
-archetype = "{archetype}"
-
-[docs]
-profile = "mkdocs"
-
-[ci]
-provider = "github"
-sonar = true
-release = "{release}"
-"""
-
-PACKAGES = """
-[archetype."python-lib"]
-packages = ["packages/alpha", "packages/beta"]
-"""
 
 ALL_ARCHETYPES = (
     "python-tool",
@@ -76,19 +49,19 @@ SONAR_IF = (
 
 def _render(tmp_path: Path, archetype: str) -> tuple[Path, dict[str, str]]:
     root = tmp_path / archetype
-    config = root / ".rn-forge" / "kiln" / "config.toml"
-    config.parent.mkdir(parents=True, exist_ok=True)
     release = {"python-lib": "pypi", "node-lib": "nx-dispatch"}.get(
         archetype, "tag-exists"
     )
-    text = CONFIG.format(archetype=archetype, release=release)
-    if archetype == "python-lib":
-        text += PACKAGES
-    elif archetype in {"python-web-api", "python-web-app"}:
-        text += f'\n[archetype."{archetype}"]\n'
-        if archetype == "python-web-app":
-            text += 'frontend = "angular"\n'
-    config.write_text(text, encoding="utf-8")
+    write_config(
+        root,
+        archetype,
+        name="demo",
+        docs="mkdocs",
+        sonar=True,
+        release=release,
+        packages=LIB_PACKAGES if archetype == "python-lib" else None,
+        frontend="angular" if archetype == "python-web-app" else None,
+    )
     loaded = KilnConfig.load(root)
     return root, {a.path: a.content for a in CICD.artifacts(loaded, root)}
 

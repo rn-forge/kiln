@@ -9,6 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from tests.conftest import run_check
 
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
@@ -26,7 +27,7 @@ jobs:
 
 
 def run(root: Path) -> list[str]:
-    return [str(f) for f in entrypoint.check(KilnConfig.load(root), root)]
+    return [str(f) for f in run_check(entrypoint.NAME, root)]
 
 
 def workflow(repo, body: str) -> Path:
@@ -64,7 +65,7 @@ def test_a_directly_invoked_tool_is_reported(repo, body: str, tool: str) -> None
 
 def test_a_finding_carries_its_line(repo) -> None:
     root = workflow(repo, "jobs:\n  a:\n    steps:\n      - run: uv sync\n")
-    findings = entrypoint.check(KilnConfig.load(root), root)
+    findings = run_check(entrypoint.NAME, root)
     assert [f.line for f in findings] == [4]
 
 
