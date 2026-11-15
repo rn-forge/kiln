@@ -21,6 +21,8 @@ from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.generation import Action
 from rn_forge.commons.runtime.console import OutputMode, console
 
+from tests.conftest import new_repo
+
 from rn_forge.kiln import commands
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.instructions.artifacts import KILN_BLOCK
@@ -165,7 +167,7 @@ def test_s6_9_1_2_apply_does_not_recreate_a_deleted_starter(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     monkeypatch.chdir(tmp_path)
-    commands.new(Path("tool"), archetype="python-tool", docs="mkdocs", yes=True)
+    new_repo(Path("tool"), archetype="python-tool", docs="mkdocs", yes=True)
     root = tmp_path / "tool"
     monkeypatch.chdir(root)
     product = next(root.glob("src/*/product.py"))

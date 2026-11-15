@@ -14,6 +14,7 @@ import shutil
 import subprocess
 from collections.abc import Callable, Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -130,11 +131,10 @@ def _render(parent: Path, archetype: str) -> Path:
 
     with pytest.MonkeyPatch.context() as patch:
         patch.chdir(parent)
-        commands.new(
+        new_repo(
             Path(archetype),
             archetype=archetype,
             docs="mkdocs",
-            owner="rn-forge",
             yes=True,
             **FLAGS.get(archetype, {}),
         )
@@ -180,35 +180,16 @@ def rendered(
     return build
 
 
-@pytest.fixture(autouse=True)
-def _default_owner(
-    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Give `kiln new` `owner="rn-forge"` unless the test says not to.
+def new_repo(directory: Path, **kwargs: Any) -> None:
+    """`commands.new` with `owner="rn-forge"` unless the call gives one.
 
-    S16.6.8 made the owner required; a test about the owner itself asks for the
-    `ownerless` fixture and passes its own.
+    S16.6.8 made the owner required; a test about the owner itself calls
+    `commands.new` directly.
     """
-    if "ownerless" in request.fixturenames:
-        return
-    import functools
-
     from rn_forge.kiln import commands
 
-    for name in ("new",):
-        original = getattr(commands, name)
-
-        @functools.wraps(original)
-        def with_owner(*args: object, _original=original, **kwargs: object) -> object:
-            kwargs.setdefault("owner", "rn-forge")
-            return _original(*args, **kwargs)
-
-        monkeypatch.setattr(commands, name, with_owner)
-
-
-@pytest.fixture
-def ownerless() -> None:
-    """Opt a test out of `_default_owner`."""
+    kwargs.setdefault("owner", "rn-forge")
+    commands.new(directory, **kwargs)
 
 
 @pytest.fixture(autouse=True, scope="session")

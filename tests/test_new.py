@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import os
 import subprocess
 import sys
 import tomllib
@@ -21,11 +22,14 @@ import pytest
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.runtime.console import OutputMode, console
 
+from tests.conftest import new_repo
+
 from rn_forge.kiln import archetypes, checks, commands
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs.checks import derived
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.core.config import catalog
+from rn_forge.kiln.modules.core.config.manager import ConfigManager
 from rn_forge.kiln.modules.core.artifacts import GITIGNORE_BLOCK
 from rn_forge.kiln.modules.registry import builtin
 
@@ -60,7 +64,7 @@ def test_s4_5_1_flags_match_module_union() -> None:
 
 def test_s4_5_1_preview_without_yes_writes_nothing(tmp_path: Path) -> None:
     directory = tmp_path / "preview"
-    commands.new(directory, archetype="python-app", docs="none")
+    new_repo(directory, archetype="python-app", docs="none")
     assert not (directory / ".rn-forge").exists()
 
 
@@ -68,7 +72,7 @@ def test_s4_5_1_preview_json_lists_artifacts_without_writing(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     directory = tmp_path / "preview"
-    commands.new(directory, archetype="python-app", docs="none", json=True)
+    new_repo(directory, archetype="python-app", docs="none", json=True)
     payload = _last_json(capsys)
     assert payload["root"] == str(directory.resolve())
     assert len(payload["artifacts"]) > 0
@@ -86,7 +90,7 @@ def test_s4_5_1_nonempty_directory_is_refused_and_writes_nothing(
     (directory / "x").write_text("x", encoding="utf-8")
 
     with pytest.raises(AppException, match=str(directory)):
-        commands.new(directory, archetype="python-app", docs="none", yes=True)
+        new_repo(directory, archetype="python-app", docs="none", yes=True)
     assert not (directory / ".rn-forge").exists()
 
 
@@ -130,20 +134,20 @@ def test_s4_5_1_missing_archetype_is_refused(tmp_path: Path, value: str | None) 
     if value is not None:
         kwargs["archetype"] = value
     with pytest.raises(AppException, match="--archetype"):
-        commands.new(tmp_path / "repo", **kwargs)
+        new_repo(tmp_path / "repo", **kwargs)
 
 
 def test_s5_1_1_4_backend_is_rejected_for_a_non_web_archetype(tmp_path: Path) -> None:
     directory = tmp_path / "repo"
     with pytest.raises(AppException, match="backend"):
-        commands.new(directory, archetype="python-app", docs="none", backend="fastapi")
+        new_repo(directory, archetype="python-app", docs="none", backend="fastapi")
     assert not directory.exists() or not any(directory.iterdir())
 
 
 def test_s5_1_1_4_frontend_is_rejected_for_python_web_api(tmp_path: Path) -> None:
     directory = tmp_path / "repo"
     with pytest.raises(AppException, match="frontend"):
-        commands.new(
+        new_repo(
             directory,
             archetype="python-web-api",
             docs="none",
@@ -157,7 +161,7 @@ def test_s5_1_1_4_frontend_is_rejected_for_python_web_api(tmp_path: Path) -> Non
 def test_s5_1_1_4_frontend_is_rejected_for_a_non_web_archetype(tmp_path: Path) -> None:
     directory = tmp_path / "repo"
     with pytest.raises(AppException, match="frontend"):
-        commands.new(directory, archetype="python-app", docs="none", frontend="angular")
+        new_repo(directory, archetype="python-app", docs="none", frontend="angular")
     assert not directory.exists() or not any(directory.iterdir())
 
 
@@ -166,7 +170,7 @@ def test_s5_1_1_5_an_unsupported_backend_is_rejected_before_writing(
 ) -> None:
     directory = tmp_path / "repo"
     with pytest.raises(AppException, match="backend"):
-        commands.new(
+        new_repo(
             directory,
             archetype="python-web-api",
             docs="none",
@@ -187,7 +191,7 @@ def test_s5_3_1_web_defaults_select_fastapi(archetype: str) -> None:
     )
     flags["repository"]["name"] = "demo"
     flags["repository"]["owner"] = "rn-forge"
-    resolved = commands.ConfigManager().resolve(flags=flags).config
+    resolved = ConfigManager().resolve(flags=flags).config
     assert resolved.backend == "fastapi"
     assert resolved.frontend == ("angular" if archetype == "python-web-app" else None)
 
@@ -212,27 +216,29 @@ def test_s5_3_1_explicit_selectors_override_web_defaults(
     )
     flags["repository"]["name"] = "demo"
     flags["repository"]["owner"] = "rn-forge"
-    resolved = commands.ConfigManager().resolve(flags=flags).config
+    resolved = ConfigManager().resolve(flags=flags).config
     assert getattr(resolved, selector) == value
 
 
 @pytest.mark.parametrize("archetype", ["python-web-api", "python-web-app"])
-def test_s5_3_1_django_remains_untested_for_both_web_archetypes(archetype: str) -> None:
-    manifest = archetypes.load(archetype)
+def test_s5_3_1_django_remains_untested_for_both_web_archetypes(
+    tmp_path: Path, archetype: str
+) -> None:
     with pytest.raises(AppException, match="django"):
-        commands._flag_layer(
+        new_repo(
+            tmp_path / "demo",
             archetype=archetype,
             docs="none",
             backend="django",
-            manifest=manifest,
-            allow_untested=False,
+            yes=True,
         )
+    assert not (tmp_path / "demo").exists()
 
 
 def test_s4_5_1_yes_creates_and_passes_every_check(tmp_path: Path) -> None:
     """The slow path: `uv init` through the python scaffold, then a full apply."""
     directory = tmp_path / "demo"
-    commands.new(directory, archetype="python-tool", docs="none", yes=True)
+    new_repo(directory, archetype="python-tool", docs="none", yes=True)
 
     assert (directory / ".rn-forge" / "kiln" / "config.toml").is_file()
     assert (directory / "pyproject.toml").is_file()
@@ -243,7 +249,7 @@ def test_s4_5_1_yes_json_artifacts_actions_only_create_insert_or_skip(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     directory = tmp_path / "demo-json"
-    commands.new(directory, archetype="python-tool", docs="none", yes=True, json=True)
+    new_repo(directory, archetype="python-tool", docs="none", yes=True, json=True)
     payload = _last_json(capsys)
     assert payload["root"] == str(directory.resolve())
     assert len(payload["artifacts"]) > 0
@@ -258,7 +264,7 @@ def test_s4_5_1_config_layer_merges_beneath_flags(tmp_path: Path) -> None:
     (layer_dir / "config.toml").write_text("[ci]\nsonar = false\n", encoding="utf-8")
 
     directory = tmp_path / "demo-layered"
-    commands.new(
+    new_repo(
         directory,
         archetype="python-tool",
         docs="none",
@@ -278,7 +284,7 @@ def test_s16_9_1_2_new_with_a_local_config_records_no_source(tmp_path: Path) -> 
     (layer_dir / "config.toml").write_text("[ci]\nsonar = false\n", encoding="utf-8")
 
     directory = tmp_path / "demo-local-layer"
-    commands.new(
+    new_repo(
         directory,
         archetype="python-tool",
         docs="none",
@@ -295,7 +301,7 @@ def test_s16_9_1_2_new_with_a_local_config_records_no_source(tmp_path: Path) -> 
 
 def test_s7_4_1_5_new_pins_kiln(tmp_path: Path) -> None:
     directory = tmp_path / "demo-pinned"
-    commands.new(directory, archetype="python-tool", docs="none", yes=True)
+    new_repo(directory, archetype="python-tool", docs="none", yes=True)
     written = tomllib.loads(
         (directory / ".rn-forge" / "kiln" / "config.toml").read_text(encoding="utf-8")
     )
@@ -307,7 +313,7 @@ def test_s7_4_1_6_a_config_layer_pin_wins(tmp_path: Path) -> None:
     layer_dir.mkdir()
     (layer_dir / "config.toml").write_text('[kiln]\nref = "v1.2.3"\n', encoding="utf-8")
     directory = tmp_path / "demo-layer-pin"
-    commands.new(
+    new_repo(
         directory,
         archetype="python-tool",
         docs="none",
@@ -328,7 +334,7 @@ def test_s6_1_16_3_new_takes_the_name_from_config(tmp_path: Path) -> None:
     )
 
     directory = tmp_path / "dir-name"
-    commands.new(
+    new_repo(
         directory,
         archetype="python-tool",
         docs="none",
@@ -372,7 +378,7 @@ def test_s4_5_7_1_git_config_merges_beneath_flags_and_records_source(
     )
 
     directory = tmp_path / "demo-git"
-    commands.new(
+    new_repo(
         directory,
         archetype="python-tool",
         docs="none",
@@ -396,7 +402,7 @@ def test_s4_5_7_2_unreachable_url_and_missing_ref_name_the_url(
 ) -> None:
     missing = f"git+file://{tmp_path / 'nope.git'}"
     with pytest.raises(AppException) as unreachable:
-        commands.new(
+        new_repo(
             tmp_path / "a",
             archetype="python-tool",
             docs="none",
@@ -406,7 +412,7 @@ def test_s4_5_7_2_unreachable_url_and_missing_ref_name_the_url(
 
     location, _ = _bare_layer_repo(tmp_path, "[ci]\nsonar = false\n")
     with pytest.raises(AppException) as no_ref:
-        commands.new(
+        new_repo(
             tmp_path / "b",
             archetype="python-tool",
             docs="none",
@@ -429,7 +435,7 @@ def test_s4_5_9_1_success_retains_staging_and_target_equals_workspace(
     tmp_path: Path,
 ) -> None:
     target = tmp_path / "out" / "demo"
-    commands.new(target, archetype="python-tool", docs="none", yes=True)
+    new_repo(target, archetype="python-tool", docs="none", yes=True)
 
     run = tmp_path / ".staging" / "demo"
     assert all((run / part).is_dir() for part in ("backend", "frontend", "workspace"))
@@ -446,7 +452,7 @@ def test_s4_5_9_1_success_retains_staging_and_target_equals_workspace(
 
 
 def test_s4_5_9_2_workspace_holds_only_reconciled_files(tmp_path: Path) -> None:
-    commands.new(tmp_path / "demo", archetype="python-tool", docs="none", yes=True)
+    new_repo(tmp_path / "demo", archetype="python-tool", docs="none", yes=True)
 
     run = tmp_path / ".staging" / "demo"
     raw = (run / "backend" / "pyproject.toml").read_text(encoding="utf-8")
@@ -460,7 +466,7 @@ def test_s4_5_9_2_workspace_holds_only_reconciled_files(tmp_path: Path) -> None:
 
 def test_s4_5_9_3_staging_is_ignored_inside_a_git_worktree(tmp_path: Path) -> None:
     subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
-    commands.new(tmp_path / "demo", archetype="python-tool", docs="none", yes=True)
+    new_repo(tmp_path / "demo", archetype="python-tool", docs="none", yes=True)
 
     check = subprocess.run(
         ["git", "check-ignore", ".staging/demo/workspace"], cwd=tmp_path, check=False
@@ -482,7 +488,7 @@ def test_s4_5_9_4_failure_retains_staging_and_writes_no_target(
         target.mkdir()
 
     with pytest.raises(AppException, match="boom"):
-        commands.new(target, archetype="python-tool", docs="none", yes=True)
+        new_repo(target, archetype="python-tool", docs="none", yes=True)
 
     assert (tmp_path / ".staging" / "demo" / "backend" / "pyproject.toml").is_file()
     assert target.exists() is target_exists
@@ -495,7 +501,7 @@ def test_s4_5_9_5_existing_staging_is_refused_untouched(tmp_path: Path) -> None:
     (run / "keep").write_text("review state", encoding="utf-8")
 
     with pytest.raises(AppException, match="already exists"):
-        commands.new(tmp_path / "demo", archetype="python-tool", docs="none", yes=True)
+        new_repo(tmp_path / "demo", archetype="python-tool", docs="none", yes=True)
 
     assert [p.name for p in run.iterdir()] == ["keep"]
     assert not (tmp_path / "demo").exists()
@@ -505,7 +511,7 @@ def test_s4_5_11_1_success_leaves_a_git_repository_without_commits(
     tmp_path: Path,
 ) -> None:
     target = tmp_path / "demo"
-    commands.new(target, archetype="python-tool", docs="none", yes=True)
+    new_repo(target, archetype="python-tool", docs="none", yes=True)
 
     top = subprocess.run(
         ["git", "-C", str(target), "rev-parse", "--show-toplevel"],
@@ -528,7 +534,7 @@ def test_s4_5_11_1_success_leaves_a_git_repository_without_commits(
 
 def test_s4_5_11_2_dry_run_writes_no_git(tmp_path: Path) -> None:
     target = tmp_path / "preview"
-    commands.new(target, archetype="python-tool", docs="none", yes=True, dry_run=True)
+    new_repo(target, archetype="python-tool", docs="none", yes=True, dry_run=True)
     assert not target.exists()
 
 
@@ -539,7 +545,7 @@ def test_s4_5_11_3_failure_or_refusal_creates_no_git(
     full.mkdir()
     (full / "x").write_text("x", encoding="utf-8")
     with pytest.raises(AppException):
-        commands.new(full, archetype="python-tool", docs="none", yes=True)
+        new_repo(full, archetype="python-tool", docs="none", yes=True)
     assert not (full / ".git").exists()
 
     def boom(*_args: object) -> None:
@@ -548,14 +554,14 @@ def test_s4_5_11_3_failure_or_refusal_creates_no_git(
     monkeypatch.setattr(commands, "instructions_scaffold", boom)
     failed = tmp_path / "failed"
     with pytest.raises(AppException, match="boom"):
-        commands.new(failed, archetype="python-tool", docs="none", yes=True)
+        new_repo(failed, archetype="python-tool", docs="none", yes=True)
     assert not (failed / ".git").exists()
 
 
 def test_s4_5_11_4_json_plan_does_not_list_git(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    commands.new(
+    new_repo(
         tmp_path / "demo", archetype="python-tool", docs="none", yes=True, json=True
     )
     payload = _last_json(capsys)
@@ -564,11 +570,13 @@ def test_s4_5_11_4_json_plan_does_not_list_git(
 
 @pytest.mark.parametrize("archetype", ["python-lib", "python-app"])
 def test_s4_5_11_5_other_archetypes_get_git(tmp_path: Path, archetype: str) -> None:
-    commands.new(tmp_path / "demo", archetype=archetype, docs="none", yes=True)
+    new_repo(tmp_path / "demo", archetype=archetype, docs="none", yes=True)
     assert (tmp_path / "demo" / ".git").is_dir()
 
 
-def test_s4_5_9_6_no_retention_or_cleanup_flag_and_no_rnf_home() -> None:
+def test_s4_5_9_6_no_retention_or_cleanup_flag_and_no_rnf_home(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     assert set(inspect.signature(commands.new).parameters) == {
         "directory",
         "archetype",
@@ -583,7 +591,18 @@ def test_s4_5_9_6_no_retention_or_cleanup_flag_and_no_rnf_home() -> None:
         "yes",
         "json",
     }
-    assert "RNF_HOME" not in inspect.getsource(commands._stage)
+
+    seen: list[bool] = []
+
+    def stop(*_args: object) -> None:
+        seen.append("RNF_HOME" in os.environ)
+        raise AppException("stop")
+
+    monkeypatch.delenv("RNF_HOME", raising=False)
+    monkeypatch.setattr(commands, "instructions_scaffold", stop)
+    with pytest.raises(AppException, match="stop"):
+        new_repo(tmp_path / "demo", archetype="python-tool", docs="none", yes=True)
+    assert seen == [False]
 
 
 UV_FIXTURE = (
@@ -600,7 +619,7 @@ def test_s5_3_6_1_fresh_scaffolds_have_identical_composed_gitignores(
         cwd.mkdir()
         monkeypatch.chdir(cwd)
         target = cwd / "demo"
-        commands.new(target, archetype="python-web-api", docs="none", yes=True)
+        new_repo(target, archetype="python-web-api", docs="none", yes=True)
         assert (target / ".git").is_dir()
         texts.append((target / ".gitignore").read_bytes())
 
@@ -615,7 +634,7 @@ def test_s5_3_6_1_fresh_scaffolds_have_identical_composed_gitignores(
 
 def test_s5_3_6_5_new_seeds_the_workspace_file(tmp_path: Path) -> None:
     target = tmp_path / "demo"
-    commands.new(target, archetype="python-tool", docs="none", yes=True)
+    new_repo(target, archetype="python-tool", docs="none", yes=True)
     workspace = json.loads((target / "demo.code-workspace").read_text("utf-8"))
     assert workspace == {"folders": [{"path": "."}]}
 
@@ -624,7 +643,7 @@ def test_s5_3_6_7_docs_none_omits_the_mkdocs_tree_and_site_tasks(
     tmp_path: Path,
 ) -> None:
     target = tmp_path / "demo"
-    commands.new(target, archetype="python-tool", docs="none", yes=True)
+    new_repo(target, archetype="python-tool", docs="none", yes=True)
 
     assert not (target / "docs").exists()
     assert not (target / "mkdocs.yml").exists()
@@ -647,7 +666,7 @@ def test_s5_3_6_7_docs_none_omits_the_mkdocs_tree_and_site_tasks(
 
 def test_s13_1_1_4_new_writes_a_current_derived_nav(tmp_path: Path) -> None:
     target = tmp_path / "demo"
-    commands.new(target, archetype="python-tool", docs="mkdocs", yes=True)
+    new_repo(target, archetype="python-tool", docs="mkdocs", yes=True)
 
     assert derived.check(KilnConfig.load(target), target) == []
     nav = (target / "mkdocs.yml").read_text(encoding="utf-8")
@@ -659,7 +678,7 @@ def test_s13_1_1_4_new_writes_a_current_derived_nav(tmp_path: Path) -> None:
 
 def test_s14_1_1_2_new_writes_tabbed_navigation_features(tmp_path: Path) -> None:
     target = tmp_path / "demo"
-    commands.new(target, archetype="python-tool", docs="mkdocs", yes=True)
+    new_repo(target, archetype="python-tool", docs="mkdocs", yes=True)
 
     mkdocs = (target / "mkdocs.yml").read_text(encoding="utf-8")
     assert "navigation.tabs" in mkdocs
@@ -670,7 +689,7 @@ def test_s14_1_1_2_new_writes_tabbed_navigation_features(tmp_path: Path) -> None
 
 def test_s14_1_2_5_new_writes_a_current_epic_list(tmp_path: Path) -> None:
     target = tmp_path / "demo"
-    commands.new(target, archetype="python-tool", docs="mkdocs", yes=True)
+    new_repo(target, archetype="python-tool", docs="mkdocs", yes=True)
 
     page = target / "docs" / "specs" / "epics" / "index.md"
     assert "No epics yet." in page.read_text(encoding="utf-8")
@@ -681,9 +700,7 @@ def test_new_inside_a_uv_project_leaves_it_untouched(tmp_path: Path) -> None:
     parent = tmp_path / "pyproject.toml"
     parent.write_text('[project]\nname = "host"\nversion = "0.1.0"\n', encoding="utf-8")
 
-    commands.new(
-        tmp_path / "out" / "demo", archetype="python-tool", docs="none", yes=True
-    )
+    new_repo(tmp_path / "out" / "demo", archetype="python-tool", docs="none", yes=True)
 
     assert parent.read_text(encoding="utf-8") == (
         '[project]\nname = "host"\nversion = "0.1.0"\n'
@@ -783,9 +800,9 @@ def test_s16_7_10_3_same_result_as_generate_package(
 
 def _commented_form(root: Path) -> tuple[str, str]:
     """The committed `config.toml` and what `catalog.render` makes of its parse."""
-    return (
-        (root / ".rn-forge/kiln/config.toml").read_text(encoding="utf-8"),
-        catalog.render(KilnConfig.load(root), header=commands._CONFIG_HEADER),
+    written = (root / ".rn-forge/kiln/config.toml").read_text(encoding="utf-8")
+    return written, catalog.render(
+        KilnConfig.load(root), header=commands._CONFIG_HEADER
     )
 
 
@@ -922,7 +939,7 @@ def test_s11_2_2_4_new_python_lib_writes_no_member_and_passes_every_check(
     tmp_path: Path,
 ) -> None:
     directory = tmp_path / "lib"
-    commands.new(directory, archetype="python-lib", docs="mkdocs", yes=True)
+    new_repo(directory, archetype="python-lib", docs="mkdocs", yes=True)
 
     assert not list((directory / "packages").glob("*"))
     document = tomllib.loads((directory / "pyproject.toml").read_text(encoding="utf-8"))
@@ -943,7 +960,7 @@ STARTER = {
 @pytest.mark.parametrize("archetype", ["python-tool", "python-app"])
 def test_s4_9_1_5_new_wires_cli_and_script(tmp_path: Path, archetype: str) -> None:
     directory = tmp_path / "demo-tool"
-    commands.new(directory, archetype=archetype, docs="none", yes=True)
+    new_repo(directory, archetype=archetype, docs="none", yes=True)
 
     written = tomllib.loads(
         (directory / ".rn-forge" / "kiln" / "config.toml").read_text(encoding="utf-8")
@@ -962,7 +979,7 @@ def test_s4_9_1_5_new_wires_cli_and_script(tmp_path: Path, archetype: str) -> No
 def test_s4_9_1_6_new_records_seeded_and_validates(tmp_path: Path) -> None:
     """Slow like its neighbours: runs `uv init`; marks none, as the module note says."""
     directory = tmp_path / "demo-tool"
-    commands.new(directory, archetype="python-tool", docs="none", yes=True)
+    new_repo(directory, archetype="python-tool", docs="none", yes=True)
 
     paths = {path.format(package="demo_tool") for path in STARTER}
     state_path = directory / ".rn-forge" / "kiln" / "state.json"
@@ -995,7 +1012,7 @@ def test_s4_9_1_6_new_records_seeded_and_validates(tmp_path: Path) -> None:
 
 def test_s4_8_2_3_new_with_a_module(tmp_path: Path) -> None:
     directory = tmp_path / "demo-tool"
-    commands.new(
+    new_repo(
         directory,
         archetype="python-tool",
         docs="mkdocs",
@@ -1042,7 +1059,7 @@ def test_s4_8_2_3_an_invalid_module_is_refused_before_writing(
 ) -> None:
     directory = tmp_path / "demo-tool"
     with pytest.raises(AppException):
-        commands.new(directory, archetype="python-tool", module="Rn-Forge", yes=True)
+        new_repo(directory, archetype="python-tool", module="Rn-Forge", yes=True)
     assert not directory.exists()
     assert not (tmp_path / ".staging").exists()
 
@@ -1050,15 +1067,13 @@ def test_s4_8_2_3_an_invalid_module_is_refused_before_writing(
 def test_s4_8_2_3_module_on_another_archetype_is_refused(tmp_path: Path) -> None:
     directory = tmp_path / "demo-lib"
     with pytest.raises(AppException):
-        commands.new(
-            directory, archetype="python-lib", module="rn_forge.demo", yes=True
-        )
+        new_repo(directory, archetype="python-lib", module="rn_forge.demo", yes=True)
     assert not directory.exists()
     assert not (tmp_path / ".staging").exists()
 
 
 def test_s16_4_7_6_new_writes_the_commented_form(tmp_path: Path) -> None:
-    commands.new(tmp_path / "demo", archetype="python-tool", docs="none", yes=True)
+    new_repo(tmp_path / "demo", archetype="python-tool", docs="none", yes=True)
 
     text = (tmp_path / "demo" / ".rn-forge/kiln/config.toml").read_text(
         encoding="utf-8"
@@ -1074,7 +1089,7 @@ def _owner_written(directory: Path) -> str:
     return tomllib.loads(text)["repository"]["owner"]
 
 
-def test_s16_6_8_1_new_without_owner_fails(ownerless: None, tmp_path: Path) -> None:
+def test_s16_6_8_1_new_without_owner_fails(tmp_path: Path) -> None:
     directory = tmp_path / "demo"
 
     with pytest.raises(AppException) as raised:
@@ -1085,9 +1100,7 @@ def test_s16_6_8_1_new_without_owner_fails(ownerless: None, tmp_path: Path) -> N
     assert not directory.exists()
 
 
-def test_s16_6_8_1_new_without_owner_exits_non_zero(
-    ownerless: None, tmp_path: Path
-) -> None:
+def test_s16_6_8_1_new_without_owner_exits_non_zero(tmp_path: Path) -> None:
     from rn_forge.kiln import main
 
     code = main.app(["new", str(tmp_path / "demo"), "--archetype", "python-tool"])
@@ -1095,7 +1108,7 @@ def test_s16_6_8_1_new_without_owner_exits_non_zero(
     assert code != 0
 
 
-def test_s16_6_8_2_new_with_owner_writes_it(ownerless: None, tmp_path: Path) -> None:
+def test_s16_6_8_2_new_with_owner_writes_it(tmp_path: Path) -> None:
     directory = tmp_path / "demo"
 
     commands.new(
@@ -1105,7 +1118,7 @@ def test_s16_6_8_2_new_with_owner_writes_it(ownerless: None, tmp_path: Path) -> 
     assert _owner_written(directory) == "acme"
 
 
-def test_s16_6_8_2_new_takes_owner_from_config(ownerless: None, tmp_path: Path) -> None:
+def test_s16_6_8_2_new_takes_owner_from_config(tmp_path: Path) -> None:
     layer = tmp_path / "layer"
     layer.mkdir()
     (layer / "config.toml").write_text(
@@ -1120,7 +1133,7 @@ def test_s16_6_8_2_new_takes_owner_from_config(ownerless: None, tmp_path: Path) 
     assert _owner_written(directory) == "from-config"
 
 
-def test_s16_6_8_2_the_flag_beats_config(ownerless: None, tmp_path: Path) -> None:
+def test_s16_6_8_2_the_flag_beats_config(tmp_path: Path) -> None:
     layer = tmp_path / "layer"
     layer.mkdir()
     (layer / "config.toml").write_text(
@@ -1164,7 +1177,7 @@ def test_s16_7_3_8_new_formats_after_apply(
         ),
     )
 
-    commands.new(tmp_path / "demo", archetype=archetype, docs="none", yes=True)
+    new_repo(tmp_path / "demo", archetype=archetype, docs="none", yes=True)
 
     if archetype == "node-lib":
         assert len(calls) == 1

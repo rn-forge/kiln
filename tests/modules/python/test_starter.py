@@ -11,6 +11,8 @@ from pathlib import Path
 import pytest
 from rn_forge.commons.generation import Artifact, ArtifactKind
 
+from tests.conftest import new_repo
+
 from rn_forge.kiln import commands
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.base import StarterModule
@@ -229,7 +231,7 @@ def test_s4_9_2_4_new_records_seeded(
 ) -> None:
     monkeypatch.chdir(tmp_path)
     directory = tmp_path / "demo"
-    commands.new(
+    new_repo(
         directory, archetype="python-web-api", docs="none", backend="fastapi", yes=True
     )
     entries = json.loads(

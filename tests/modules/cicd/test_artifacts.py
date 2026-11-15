@@ -2687,22 +2687,16 @@ def test_s9_2_8_5_exactly_one_of_ci_cloud_and_ci_local_runs(
     assert (ran_cloud, ran_local) == (cloud, not cloud)
 
 
-def test_s9_2_8_4_web_app_config_has_no_nx_cloud(tmp_path: Path) -> None:
+def test_s9_2_8_4_web_app_config_has_no_nx_cloud(
+    tmp_path: Path, rendered: Callable[[str], Path]
+) -> None:
     root = _web_root(tmp_path, "python-web-app", extra="nx_cloud = false")
     with pytest.raises(ModelValidationError) as caught:
         KilnConfig.load(root)
     kinds = {error.path: error.kind for error in caught.value.errors}
     assert kinds["archetype.python-web-app.nx_cloud"] == "extra_forbidden"
 
-    flags = commands._flag_layer(
-        archetype="python-web-app",
-        docs="none",
-        manifest=archetypes.load("python-web-app"),
-        allow_untested=False,
-    )
-    flags["repository"]["name"] = "demo"
-    flags["repository"]["owner"] = "rn-forge"
-    document = commands.ConfigManager().resolve(flags=flags).config.to_document()
+    document = KilnConfig.load(rendered("python-web-app")).to_document()
     assert "nx_cloud" not in document["archetype"]["python-web-app"]
 
 
