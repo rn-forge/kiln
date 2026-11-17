@@ -384,6 +384,11 @@ def _reconcile_pyproject(root: Path, config: KilnConfig, relative: Path) -> None
         lib=workspace,
         extra_dev=extra_dev,
     )
+    if web and is_member:
+        document = DocumentUtils.read_document(path)
+        document["project"].pop("scripts", None)
+        DocumentUtils.write_document(path, document)
+        _tidy(path)
     if config.archetype in {"python-tool", "python-app"} and is_root:
         DocumentUtils.update(
             path,

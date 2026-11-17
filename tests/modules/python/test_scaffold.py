@@ -777,3 +777,40 @@ def test_s16_9_13_3_tidy_is_idempotent(
     python_scaffold._tidy(copy)
     python_scaffold._tidy(copy)
     assert copy.read_bytes() == source
+
+
+@pytest.mark.parametrize(
+    ("archetype", "backend", "extra"),
+    [
+        ("python-web-api", "fastapi", ""),
+        ("python-web-api", "django", ""),
+        ("python-web-app", "fastapi", 'frontend = "angular"'),
+    ],
+)
+def test_s16_5_6_1_web_api_member_has_no_console_script(
+    tmp_path: Path, archetype: str, backend: str, extra: str
+) -> None:
+    config_path = tmp_path / ".rn-forge" / "kiln" / "config.toml"
+    config_path.parent.mkdir(parents=True)
+    config_path.write_text(
+        f"""
+schema_version = 1
+
+[repository]
+name = "demo"
+owner = "rn-forge"
+archetype = "{archetype}"
+
+[archetype."{archetype}"]
+backend = "{backend}"
+{extra}
+""",
+        encoding="utf-8",
+    )
+    config = KilnConfig.load(tmp_path)
+    scaffold(tmp_path, config)
+    member = tmp_path / config.packages[0]
+    document = tomllib.loads((member / "pyproject.toml").read_text(encoding="utf-8"))
+    assert "scripts" not in document["project"]
+    [init] = (member / "src").glob("*/__init__.py")
+    assert init.read_text(encoding="utf-8") == ""
