@@ -17,7 +17,7 @@
 | [F18.6 — `commands` is a package, one module per command](F18.6-commands-package.md) | Closed | release-1 | 3 Closed |
 | [F18.7 — One owner per concept](F18.7-one-owner-per-concept.md) | Closed | release-1 | 4 Closed |
 | [F18.8 — Modules meet only through composition](F18.8-modules-meet-through-composition.md) | Closed | release-1 | 2 Closed |
-| [F18.9 — Large files split by job](F18.9-large-files-split.md) | Active | release-1 | 1 New · 3 Closed |
+| [F18.9 — Large files split by job](F18.9-large-files-split.md) | Closed | release-1 | 4 Closed |
 | [F18.10 — The defects the reviews confirmed](F18.10-review-defects.md) | New | release-2 | 12 New · 3 Removed |
 | [F18.11 — Checks police the repository, not kiln's output](F18.11-checks-police-repository-content.md) | New | release-2 | 2 New |
 | [F18.12 — The review defects release 1 takes](F18.12-release-1-review-defects.md) | New | release-1 | 3 New |

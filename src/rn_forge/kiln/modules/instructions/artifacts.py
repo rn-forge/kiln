@@ -122,100 +122,120 @@ def md_cell(text: str) -> str:
     return escaped.replace("|", "\\|")
 
 
-def context(config: KilnConfig) -> dict[str, object]:
-    """The template context every `instructions` template renders with."""
-    docs = config.docs
-    ci = config.ci
-    lifecycle = config.lifecycle
-    web = config.is_web
-    web_app = config.is_web_app
-    node_lib = config.is_node_lib
-    web_dir = config.web_dir
-    sonar = "on" if ci.sonar else "off"
-    display = (
-        "python-tool"
-        if config.archetype == "python-app" and lifecycle
-        else config.archetype
-    )
-    selectors = f" (backend: `{config.backend}`" if web else ""
-    if web_app:
-        selectors += f", frontend: `{config.frontend}`"
-    selectors += ")" if web else ""
-    api_module = config.api_module
-    api_text = (
-        f"`task api:dev` serves `{config.api_dir}/src/{api_module}/app.py`, "
-        "which must define the ASGI application as `app`. The application "
-        "and its tests are repo-owned: kiln renders nothing under `src/` or "
-        "`tests/`, so create that module yourself."
-    )
-    if config.backend == "fastapi":
-        api_text = (
-            f"`task api:dev` serves `{config.api_dir}/src/{api_module}/app.py`, "
-            "which defines the ASGI application as `app`. `kiln new` seeded it "
-            "with a small router and a test; the application and its tests are "
-            "repo-owned from then on."
-        )
-    tools = "`uv`, `pytest`, `ruff`, `pyright`"
-    if config.docs_profile == "mkdocs":
-        tools += ", `mkdocs`"
-    if web_app:
-        tools += ", `pnpm`, `npx`, `nx`, `ng`"
-    if node_lib:
+_API_SERVES = "`task api:dev` serves `{api_dir}/src/{api_module}/app.py`, "
+_API_REPO_OWNED = (
+    "which must define the ASGI application as `app`. The application "
+    "and its tests are repo-owned: kiln renders nothing under `src/` or "
+    "`tests/`, so create that module yourself."
+)
+_API_SEEDED = (
+    "which defines the ASGI application as `app`. `kiln new` seeded it "
+    "with a small router and a test; the application and its tests are "
+    "repo-owned from then on."
+)
+
+
+def _display_archetype(config: KilnConfig) -> str:
+    if config.archetype == "python-app" and config.lifecycle:
+        return "python-tool"
+    return config.archetype
+
+
+def _selectors(config: KilnConfig) -> str:
+    if not config.is_web:
+        return ""
+    frontend = f", frontend: `{config.frontend}`" if config.is_web_app else ""
+    return f" (backend: `{config.backend}`{frontend})"
+
+
+def _tools(config: KilnConfig) -> str:
+    if config.is_node_lib:
         # node-lib's `forbidden_tools` less `kiln`, which the bullet adds itself.
         # `mkdocs` stays whatever the docs profile, as the ci-entrypoint check
         # reads the same list.
-        tools = "`uv`, `mkdocs`, `pnpm`, `npx`, `nx`, `ng`"
-    verbs = ""
+        return "`uv`, `mkdocs`, `pnpm`, `npx`, `nx`, `ng`"
+    tools = "`uv`, `pytest`, `ruff`, `pyright`"
     if config.docs_profile == "mkdocs":
-        verbs = f", plus {_DOCS_VERBS}"
-    if web:
-        verbs += (
-            " and `api:dev`" if config.docs_profile == "mkdocs" else ", plus `api:dev`"
-        )
+        tools += ", `mkdocs`"
+    if config.is_web_app:
+        tools += ", `pnpm`, `npx`, `nx`, `ng`"
+    return tools
+
+
+def _verbs(config: KilnConfig) -> str:
+    mkdocs = config.docs_profile == "mkdocs"
+    verbs = f", plus {_DOCS_VERBS}" if mkdocs else ""
+    if config.is_web:
+        verbs += " and `api:dev`" if mkdocs else ", plus `api:dev`"
         verbs += " `api:migrate`" if config.backend == "django" else ""
-    if web_app:
+    if config.is_web_app:
         verbs += f", plus {_WEB_VERBS}"
-    bullets = {
-        "archetype_bullet": _bullet(
-            f"**Archetype:** `{display}`{selectors} · **Docs profile:** "
-            f"`{config.docs_profile}` · **CI:** GitHub Actions, Sonar {sonar}"
-        ),
-        "entrypoint_bullet": _bullet(
-            f"**Entrypoint:** `task`. Never invoke {tools} "
-            f"or `kiln` directly, in a workflow or in a document — the ten root "
-            f"verbs are {_ROOT_VERBS}{verbs}."
-        ),
-        "frontend_bullet": _bullet(
-            f"**Frontend:** `{config.frontend}`, managed by pnpm + Nx at "
-            f"`{web_dir}` (project `{Path(web_dir).name if web_dir else ''}`). "
-            "Every file the frontend scaffold wrote is repo-owned; kiln renders "
-            f"nothing under `{web_dir}`, and seeded a starter page that calls the "
-            "API (`src/app/app.ts`, `app.html`, their specs, `app.config.ts` and "
-            "`proxy.conf.json`) once at `kiln new`."
-        ),
-        "api_paragraph": _paragraph(api_text),
-        "docs_bullet": _bullet(f"**Docs:** external, at [docs]({docs.external_url})."),
-    }
+    return verbs
+
+
+def _archetype_bullet(config: KilnConfig) -> str:
+    sonar = "on" if config.ci.sonar else "off"
+    return _bullet(
+        f"**Archetype:** `{_display_archetype(config)}`{_selectors(config)} · "
+        f"**Docs profile:** `{config.docs_profile}` · "
+        f"**CI:** GitHub Actions, Sonar {sonar}"
+    )
+
+
+def _entrypoint_bullet(config: KilnConfig) -> str:
+    return _bullet(
+        f"**Entrypoint:** `task`. Never invoke {_tools(config)} "
+        f"or `kiln` directly, in a workflow or in a document — the ten root "
+        f"verbs are {_ROOT_VERBS}{_verbs(config)}."
+    )
+
+
+def _frontend_bullet(config: KilnConfig) -> str:
+    web_dir = config.web_dir
+    return _bullet(
+        f"**Frontend:** `{config.frontend}`, managed by pnpm + Nx at "
+        f"`{web_dir}` (project `{Path(web_dir).name if web_dir else ''}`). "
+        "Every file the frontend scaffold wrote is repo-owned; kiln renders "
+        f"nothing under `{web_dir}`, and seeded a starter page that calls the "
+        "API (`src/app/app.ts`, `app.html`, their specs, `app.config.ts` and "
+        "`proxy.conf.json`) once at `kiln new`."
+    )
+
+
+def _api_paragraph(config: KilnConfig) -> str:
+    serves = _API_SERVES.format(api_dir=config.api_dir, api_module=config.api_module)
+    seeded = config.backend == "fastapi"
+    return _paragraph(serves + (_API_SEEDED if seeded else _API_REPO_OWNED))
+
+
+def context(config: KilnConfig) -> dict[str, object]:
+    """The template context every `instructions` template renders with."""
+    docs = config.docs
+    web_dir = config.web_dir
     public = config.public_tasks()
     return {
-        **bullets,
+        "archetype_bullet": _archetype_bullet(config),
+        "entrypoint_bullet": _entrypoint_bullet(config),
+        "frontend_bullet": _frontend_bullet(config),
+        "api_paragraph": _api_paragraph(config),
+        "docs_bullet": _bullet(f"**Docs:** external, at [docs]({docs.external_url})."),
         "developer_tasks": [t for t in public if not t.name.startswith("ci:")],
         "ci_tasks": [t for t in public if t.name.startswith("ci:")],
         "ci_matrix": config.ci_matrix(),
         "kiln_version": __version__,
         "name": config.name,
-        "display_archetype": display,
-        "lifecycle": lifecycle,
+        "display_archetype": _display_archetype(config),
+        "lifecycle": config.lifecycle,
         "workspace": config.is_workspace,
         "packages": [Path(package).name for package in config.packages],
         "docs_profile": config.docs_profile,
         "docs": config.docs_profile == "mkdocs",
         "external_url": docs.external_url,
-        "sonar": ci.sonar,
+        "sonar": config.ci.sonar,
         "release": config.release,
-        "web": web,
-        "web_app": web_app,
-        "node_lib": node_lib,
+        "web": config.is_web,
+        "web_app": config.is_web_app,
+        "node_lib": config.is_node_lib,
         "backend": config.backend,
         "frontend": config.frontend,
         "api_dir": config.api_dir,

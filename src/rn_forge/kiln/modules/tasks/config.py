@@ -22,7 +22,7 @@ ROOT_VERBS = (
     "version",
     "clean",
 )
-"""The root Taskfile's fixed vocabulary (kiln ADR-0007)."""
+"""The root Taskfile's fixed vocabulary."""
 
 
 class TaskInclude(ConfigModel):

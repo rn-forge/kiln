@@ -10,7 +10,7 @@ Three rules:
 3. Every task in the archetype's `required_validate` list is reachable from
    `validate`.
 
-The graph rules (S4.6.2) read the root file's `includes:`. Layout rules apply
+The graph rules read the root file's `includes:`. Layout rules apply
 to the root file and to *managed* includes; an include that
 `config.tasks.includes` declares is repository-owned, sits in the graph so that
 references into it resolve, and is otherwise left alone.

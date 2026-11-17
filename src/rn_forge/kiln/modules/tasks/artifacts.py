@@ -58,32 +58,8 @@ _NODE_TASKS = (
 _DOCS_TASKS = ("docs:build", "docs:serve", "docs:generate")
 
 
-def render(config: KilnConfig) -> list[Artifact]:
-    """Render `Taskfile.yml`, `tasks/*.yml`, and one seeded file per include."""
-    workspace = config.is_workspace
-    web = config.is_web
-    web_app = config.is_web_app
-    node_lib = config.is_node_lib
-    node = web_app or node_lib
-    packages = [Path(package).name for package in config.packages]
-    api_package = config.api_package
-    web_dir = config.web_dir
-    docs = config.docs_profile == "mkdocs"
-    tasks_config = config.tasks
-    ci = config.ci
-    checks = config.ci_checks
-    policy = ci.licenses_policy()
-    gitleaks = cast("dict[str, Any]", load_pins()["gitleaks"])
-
-    known = {
-        *_WORKSPACE_TASKS,
-        *_QUALITY_TASKS,
-        *_PYTHON_TASKS,
-        *_CI_TASKS,
-        *(_DOCS_TASKS if docs else ()),
-        *(_NODE_TASKS if node else ()),
-    }
-    for key in tasks_config.command_overrides:
+def _validate_overrides(config: KilnConfig, known: set[str]) -> None:
+    for key in config.tasks.command_overrides:
         if key not in known:
             raise AppException(
                 "tasks.command_overrides.{}: unknown task — this archetype renders {}",
@@ -91,17 +67,25 @@ def render(config: KilnConfig) -> list[Artifact]:
                 ", ".join(sorted(known)),
             )
 
-    # Kiln's own repository runs its working tree.
+
+def _kiln_commands(config: KilnConfig) -> tuple[str, str]:
+    """The `kiln` and `kiln-devops` command lines the Taskfiles call."""
+    if config.module == "rn_forge.kiln":
+        return "uv run kiln", "uv run kiln-devops"
     pin = config.kiln_pin
     ref = pin.ref if pin is not None else KILN_REF
-    if config.module == "rn_forge.kiln":
-        kiln = "uv run kiln"
-        devops = "uv run kiln-devops"
-    else:
-        kiln = kiln_command(ref)
-        devops = kiln_command(ref, "kiln-devops")
+    return kiln_command(ref), kiln_command(ref, "kiln-devops")
 
-    context: dict[str, object] = {
+
+def _context(config: KilnConfig, *, docs: bool, node: bool) -> dict[str, object]:
+    packages = [Path(package).name for package in config.packages]
+    api_package = config.api_package
+    tasks_config = config.tasks
+    ci = config.ci
+    policy = ci.licenses_policy()
+    gitleaks = cast("dict[str, Any]", load_pins()["gitleaks"])
+    kiln, devops = _kiln_commands(config)
+    return {
         "devops": devops,
         "kiln": kiln,
         "kiln_git": KILN_GIT,
@@ -109,7 +93,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "kiln_version": __version__,
         "name": config.name,
         "package": config.module,
-        "workspace": workspace,
+        "workspace": config.is_workspace,
         "packages": packages,
         "package_dirs": list(config.packages),
         "docs": docs,
@@ -118,7 +102,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "includes": tasks_config.includes,
         "extra_refs": tasks_config.extra_refs,
         "overrides": tasks_config.command_overrides,
-        "checks": checks,
+        "checks": config.ci_checks,
         "gitleaks": [
             {
                 "uname": uname,
@@ -136,17 +120,37 @@ def render(config: KilnConfig) -> list[Artifact]:
         "licenses_ignore_node": list(policy.ignore),
         "audit_ignore": [entry.id for entry in ci.audit_policy().ignore],
         "sonar": ci.sonar,
-        "web": web,
-        "web_app": web_app,
+        "web": config.is_web,
+        "web_app": config.is_web_app,
         "node": node,
-        "node_lib": node_lib,
+        "node_lib": config.is_node_lib,
         "backend": config.backend,
         "api_dir": config.api_dir,
         "api_package": api_package,
         "api_module": config.api_module,
-        "web_dir": web_dir,
+        "web_dir": config.web_dir,
         "web_project": config.web_project,
     }
+
+
+def render(config: KilnConfig) -> list[Artifact]:
+    """Render `Taskfile.yml`, `tasks/*.yml`, and one seeded file per include."""
+    web = config.is_web
+    web_app = config.is_web_app
+    node = web_app or config.is_node_lib
+    docs = config.docs_profile == "mkdocs"
+    tasks_config = config.tasks
+    ci = config.ci
+    known = {
+        *_WORKSPACE_TASKS,
+        *_QUALITY_TASKS,
+        *_PYTHON_TASKS,
+        *_CI_TASKS,
+        *(_DOCS_TASKS if docs else ()),
+        *(_NODE_TASKS if node else ()),
+    }
+    _validate_overrides(config, known)
+    context = _context(config, docs=docs, node=node)
     engine = TemplateEngine.cached(
         package="rn_forge.kiln.modules.tasks",
         variable_start_string="[[",
