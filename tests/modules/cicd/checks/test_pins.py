@@ -1,4 +1,4 @@
-"""S4.3.4 — `ci-pins`: SHA-pinned actions, and a `permissions:` key on every job."""
+"""`ci-pins`: SHA-pinned actions, and a `permissions:` key on every job."""
 
 from __future__ import annotations
 
@@ -17,48 +17,48 @@ def _codes(root: Path) -> list[str]:
     return sorted(f.code for f in run_check(pins.NAME, root))
 
 
-def test_s4_3_4_a_pinned_workflow_with_permissions_passes(repo) -> None:
+def test_a_pinned_workflow_with_permissions_passes(repo) -> None:
     body = f"jobs:\n  a:\n    permissions:\n      contents: read\n    steps:\n      - uses: {PINNED}\n      - uses: ./.github/actions/setup\n"
     assert _codes(repo(**{".github__workflows__ci.yml": body})) == []
 
 
-def test_s4_3_4_a_tag_ref_is_unpinned(repo) -> None:
+def test_a_tag_ref_is_unpinned(repo) -> None:
     body = "jobs:\n  a:\n    permissions: {}\n    steps:\n      - uses: actions/checkout@v4 # v4\n"
     assert _codes(repo(**{".github__workflows__ci.yml": body})) == ["ci.unpinned"]
 
 
-def test_s4_3_4_a_job_without_permissions_is_reported(repo) -> None:
+def test_a_job_without_permissions_is_reported(repo) -> None:
     body = f"jobs:\n  a:\n    steps:\n      - uses: {PINNED}\n"
     assert _codes(repo(**{".github__workflows__ci.yml": body})) == ["ci.permissions"]
 
 
-def test_s4_3_4_an_action_is_checked_for_pins(repo) -> None:
+def test_an_action_is_checked_for_pins(repo) -> None:
     body = "runs:\n  using: composite\n  steps:\n    - uses: astral-sh/setup-uv@main\n"
     assert _codes(repo(**{".github__actions__setup__action.yml": body})) == [
         "ci.unpinned"
     ]
 
 
-def test_s6_3_7_a_yaml_workflow_is_checked_for_pins(repo) -> None:
+def test_a_yaml_workflow_is_checked_for_pins(repo) -> None:
     body = "jobs:\n  a:\n    permissions: {}\n    steps:\n      - uses: actions/checkout@v4 # v4\n"
     assert _codes(repo(**{".github__workflows__release.yaml": body})) == ["ci.unpinned"]
 
 
-def test_s6_3_7_a_yaml_workflow_is_checked_for_permissions(repo) -> None:
+def test_a_yaml_workflow_is_checked_for_permissions(repo) -> None:
     body = f"jobs:\n  a:\n    steps:\n      - uses: {PINNED}\n"
     assert _codes(repo(**{".github__workflows__release.yaml": body})) == [
         "ci.permissions"
     ]
 
 
-def test_s6_3_7_a_yaml_action_is_checked_for_pins(repo) -> None:
+def test_a_yaml_action_is_checked_for_pins(repo) -> None:
     body = "runs:\n  using: composite\n  steps:\n    - uses: astral-sh/setup-uv@main\n"
     assert _codes(repo(**{".github__actions__setup__action.yaml": body})) == [
         "ci.unpinned"
     ]
 
 
-def test_s6_3_7_yml_and_yaml_are_both_read(repo) -> None:
+def test_yml_and_yaml_are_both_read(repo) -> None:
     body = "jobs:\n  a:\n    permissions: {}\n    steps:\n      - uses: actions/checkout@v4 # v4\n"
     files = {
         ".github__workflows__ci.yml": body,

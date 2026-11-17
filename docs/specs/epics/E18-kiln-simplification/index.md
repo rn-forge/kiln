@@ -9,7 +9,7 @@
 
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
-| [F18.1 — Tests named by behaviour](F18.1-tests-named-by-behaviour.md) | New | release-1 | 4 New |
+| [F18.1 — Tests named by behaviour](F18.1-tests-named-by-behaviour.md) | Active | release-1 | 3 New · 1 Closed |
 | [F18.2 — Spec IDs out of the code and the docs outside the specs](F18.2-ids-out-of-code-and-docs.md) | New | release-1 | 4 New |
 | [F18.3 — One epic per area](F18.3-area-epics.md) | New | release-1 | 10 New |
 | [F18.4 — `feature/v1` lands on `main` as one commit](F18.4-one-commit-on-main.md) | New | release-1 | 2 New |

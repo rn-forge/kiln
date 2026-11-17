@@ -19,7 +19,7 @@ from tests.modules.cicd.support import (
 )
 
 
-def test_s9_1_4_1_package_job_matches_ngkit(tmp_path: Path) -> None:
+def test_package_job_matches_ngkit(tmp_path: Path) -> None:
     job = _node_lib_ci(tmp_path)["jobs"]["smoke"]  # type: ignore[index]
     pins = load_pins()
     assert job["needs"] == ["validate", "test-cloud", "test-local"]
@@ -46,7 +46,7 @@ def test_s9_1_4_1_package_job_matches_ngkit(tmp_path: Path) -> None:
     }
 
 
-def test_s9_1_4_3_ci_ok_needs_smoke_even_without_sonar(tmp_path: Path) -> None:
+def test_ci_ok_needs_smoke_even_without_sonar(tmp_path: Path) -> None:
     on = _ci_jobs(_root(tmp_path / "on", "node-lib"))
     assert on["checks-ok"]["needs"][-2:] == ["sonar", "secret-scan"]  # type: ignore[index]
     off = _ci_jobs(_root(tmp_path / "off", "node-lib", sonar=False))
@@ -58,7 +58,7 @@ def test_s9_1_4_3_ci_ok_needs_smoke_even_without_sonar(tmp_path: Path) -> None:
 RELEASE_YML = ".github/workflows/release.yml"
 
 
-def test_s9_1_5_1_nx_dispatch_is_node_libs_default(tmp_path: Path) -> None:
+def test_nx_dispatch_is_node_libs_default(tmp_path: Path) -> None:
     config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
     config.parent.mkdir(parents=True)
     config.write_text(
@@ -71,24 +71,20 @@ def test_s9_1_5_1_nx_dispatch_is_node_libs_default(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s9_1_5_1_nx_dispatch_is_refused_elsewhere(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_nx_dispatch_is_refused_elsewhere(tmp_path: Path, archetype: str) -> None:
     root = _root(tmp_path, archetype, release="nx-dispatch")
     with pytest.raises(ValueError, match=r"ci\.release"):
         _rendered(root)
 
 
 @pytest.mark.parametrize("release", ["tag-exists", "pypi"])
-def test_s9_1_5_1_node_lib_refuses_the_other_modes(
-    tmp_path: Path, release: str
-) -> None:
+def test_node_lib_refuses_the_other_modes(tmp_path: Path, release: str) -> None:
     root = _root(tmp_path, "node-lib", release=release)
     with pytest.raises(ValueError, match=r"ci\.release"):
         _rendered(root)
 
 
-def test_s9_1_5_2_release_none_renders_no_release_yml_and_no_release_tasks(
+def test_release_none_renders_no_release_yml_and_no_release_tasks(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path, "node-lib", release="none")
@@ -103,7 +99,7 @@ def test_s9_1_5_2_release_none_renders_no_release_yml_and_no_release_tasks(
     assert "published-install" not in tasks
 
 
-def test_s9_1_5_3_the_rendered_run_lines_name_no_forbidden_tool(
+def test_the_rendered_run_lines_name_no_forbidden_tool(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path, "node-lib")

@@ -198,7 +198,7 @@ def test_a_shrunk_gate_is_reported(repo) -> None:
     )
 
 
-def test_s4_11_3_8_a_gate_missing_workflows_is_reported(repo) -> None:
+def test_a_gate_missing_workflows_is_reported(repo) -> None:
     root = compliant(
         repo,
         **{
@@ -211,7 +211,7 @@ def test_s4_11_3_8_a_gate_missing_workflows_is_reported(repo) -> None:
     )
 
 
-def test_s4_12_6_13_a_gate_missing_kiln_doctor_is_reported(repo) -> None:
+def test_a_gate_missing_kiln_doctor_is_reported(repo) -> None:
     root = compliant(
         repo,
         **{"Taskfile.yml": TASKFILE.replace("      - task: kiln:doctor\n", "", 1)},
@@ -222,7 +222,7 @@ def test_s4_12_6_13_a_gate_missing_kiln_doctor_is_reported(repo) -> None:
     )
 
 
-def test_s4_11_5_7_a_gate_missing_audit_is_reported(repo) -> None:
+def test_a_gate_missing_audit_is_reported(repo) -> None:
     root = compliant(
         repo,
         **{
@@ -258,7 +258,7 @@ def test_the_docs_profile_adds_its_gate_entries(repo) -> None:
     assert any("docs:build" in line for line in run(root))
 
 
-# --- S4.6.2: the task-graph validator ---------------------------------------
+# --- the task-graph validator ---------------------------------------
 
 OWNED = "version: '3'\ntasks:\n  go:\n    cmds: [echo hi]\n"
 
@@ -282,14 +282,14 @@ def declare(root: Path, namespace: str, taskfile_path: str) -> None:
     )
 
 
-def test_s4_6_2_1_surface_is_exactly_the_root_verbs(repo) -> None:
+def test_surface_is_exactly_the_root_verbs(repo) -> None:
     extra = f"  deploy:\n    desc: Deploy\n    cmds:\n{WRAPPER}\n"
     root = compliant(repo, **{"Taskfile.yml": taskfile(extra=extra)})
     [surface] = findings(root, "taskgraph.surface")
     assert "`deploy`" in surface.message
 
 
-def test_s4_6_2_1_surface_reports_a_missing_verb(repo, tmp_path: Path) -> None:
+def test_surface_reports_a_missing_verb(repo, tmp_path: Path) -> None:
     root = compliant(
         repo,
         **{
@@ -302,7 +302,7 @@ def test_s4_6_2_1_surface_reports_a_missing_verb(repo, tmp_path: Path) -> None:
     assert any("`clean`" in m and "missing" in m for m in messages)
 
 
-def test_s4_6_2_1_reserved_namespace_tasks_are_internal(repo) -> None:
+def test_reserved_namespace_tasks_are_internal(repo) -> None:
     for namespace in ("quality", "workspace"):
         root = compliant(
             repo,
@@ -322,7 +322,7 @@ def test_s4_6_2_1_reserved_namespace_tasks_are_internal(repo) -> None:
         ]
 
 
-def test_s4_6_2_1_a_public_docs_api_or_web_task_is_not_reported(repo) -> None:
+def test_a_public_docs_api_or_web_task_is_not_reported(repo) -> None:
     includes = "".join(
         f"  {ns}: tasks/{ns}.yml\n"
         for ns in ("quality", "python", "kiln", "ci", "docs", "api", "web")
@@ -340,7 +340,7 @@ def test_s4_6_2_1_a_public_docs_api_or_web_task_is_not_reported(repo) -> None:
     assert codes(root) == []
 
 
-def test_s4_6_2_1_an_include_must_exist(repo) -> None:
+def test_an_include_must_exist(repo) -> None:
     root = compliant(
         repo,
         **{
@@ -353,7 +353,7 @@ def test_s4_6_2_1_an_include_must_exist(repo) -> None:
     assert "tasks/docs.yml" in missing.message
 
 
-def test_s4_6_2_1_task_refs_resolve(repo) -> None:
+def test_task_refs_resolve(repo) -> None:
     managed = QUALITY + (
         "  broken:\n    desc: B\n    internal: true\n    cmds:\n"
         "      - task: quality:nope\n      - task: self:go\n"
@@ -374,7 +374,7 @@ def test_s4_6_2_1_task_refs_resolve(repo) -> None:
     assert "self:go" not in unresolved.message
 
 
-def test_s4_6_2_1_no_cycles(repo) -> None:
+def test_no_cycles(repo) -> None:
     quality = QUALITY + (
         "  a:\n    desc: A\n    internal: true\n    cmds:\n      - task: other:b\n"
     )
@@ -396,14 +396,14 @@ def test_s4_6_2_1_no_cycles(repo) -> None:
     assert "other:b -> quality:a -> other:b" in cycle.message
 
 
-def test_s4_6_2_1_reserved_namespace_collision(repo) -> None:
+def test_reserved_namespace_collision(repo) -> None:
     root = compliant(repo, **{"tasks__mine.yml": OWNED})
     declare(root, "quality", "tasks/mine.yml")
     [collision] = findings(root, "taskgraph.reserved-namespace")
     assert "quality" in collision.message
 
 
-def test_s4_6_2_1_repository_owned_files_are_not_held_to_layout(repo) -> None:
+def test_repository_owned_files_are_not_held_to_layout(repo) -> None:
     root = compliant(
         repo,
         **{
@@ -420,7 +420,7 @@ def test_s4_6_2_1_repository_owned_files_are_not_held_to_layout(repo) -> None:
 CI = "jobs:\n  a:\n    steps:\n      - run: task nope\n"
 
 
-def test_s4_6_2_2_unresolved_ref_in_a_workflow(repo, write_state) -> None:
+def test_unresolved_ref_in_a_workflow(repo, write_state) -> None:
     ci = (
         "jobs:\n  a:\n    steps:\n"
         "      - run: task --list\n"
@@ -446,7 +446,7 @@ def test_s4_6_2_2_unresolved_ref_in_a_workflow(repo, write_state) -> None:
     assert "nope" in unresolved.message
 
 
-def test_s4_6_2_2_unresolved_ref_in_a_managed_block(repo, write_state) -> None:
+def test_unresolved_ref_in_a_managed_block(repo, write_state) -> None:
     text = (
         "# Title\n\nrun task nope outside\n\n<!-- BEGIN x -->\n"
         "Run `task validate`.\nthen task nope\n<!-- END x -->\n"
@@ -480,6 +480,6 @@ def test_s4_6_2_2_unresolved_ref_in_a_managed_block(repo, write_state) -> None:
         "python-lib",
     ],
 )
-def test_s4_6_2_3_every_rendered_cell_passes(cell: str, rendered) -> None:
+def test_every_rendered_cell_passes(cell: str, rendered) -> None:
     root = rendered(cell)
     assert run_check(layout.NAME, root) == []

@@ -1,4 +1,4 @@
-"""The library workspace's release job runs inline in `ci.yml` (S6.11.1)."""
+"""The library workspace's release job runs inline in `ci.yml`."""
 
 from __future__ import annotations
 
@@ -56,7 +56,7 @@ def _release_job(files: dict[str, str]) -> dict[str, Any]:
 
 
 @pytest.mark.parametrize("release", ["pypi", "tag-exists"])
-def test_s6_11_1_1_no_reusable_release(tmp_path: Path, release: str) -> None:
+def test_no_reusable_release(tmp_path: Path, release: str) -> None:
     files = _render(tmp_path, "python-lib", release)
     assert RELEASE_YML not in files
     job = _release_job(files)
@@ -65,7 +65,7 @@ def test_s6_11_1_1_no_reusable_release(tmp_path: Path, release: str) -> None:
 
 
 @pytest.mark.parametrize("release", ["pypi", "tag-exists"])
-def test_s6_11_1_2_same_steps(tmp_path: Path, release: str) -> None:
+def test_same_steps(tmp_path: Path, release: str) -> None:
     job = _release_job(_render(tmp_path, "python-lib", release))
     pypi = release == "pypi"
     expected = [
@@ -88,7 +88,7 @@ def test_s6_11_1_2_same_steps(tmp_path: Path, release: str) -> None:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s6_11_1_3_upload_in_top_level(tmp_path: Path, archetype: str) -> None:
+def test_upload_in_top_level(tmp_path: Path, archetype: str) -> None:
     files = _render(tmp_path, archetype)
     if DEFAULT_RELEASE.get(archetype) != "pypi":
         return  # only a `release = "pypi"` upload needs the top-level workflow
@@ -102,7 +102,7 @@ def test_s6_11_1_3_upload_in_top_level(tmp_path: Path, archetype: str) -> None:
     "archetype",
     ["python-tool", "python-app", "python-web-api", "python-web-app", "node-lib"],
 )
-def test_s6_11_1_4_others_unchanged(tmp_path: Path, archetype: str) -> None:
+def test_others_unchanged(tmp_path: Path, archetype: str) -> None:
     files = _render(tmp_path, archetype)
     assert RELEASE_YML in files
     assert _release_job(files)["uses"] == "./.github/workflows/_release.yml"

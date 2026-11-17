@@ -17,7 +17,7 @@ from tests.modules.tasks.support import (
     _codes,
     _load,
     _root,
-    _s4_12_1_root,
+    _ci_root,
     _unmarked,
 )
 
@@ -34,9 +34,7 @@ def _build_text(root: Path) -> str:
 
 
 @pytest.mark.parametrize(("archetype", "extra"), SBOM_CELLS)
-def test_s4_11_6_1_build_writes_an_sbom(
-    tmp_path: Path, archetype: str, extra: str
-) -> None:
+def test_build_writes_an_sbom(tmp_path: Path, archetype: str, extra: str) -> None:
     root = _audit_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     text = _build_text(root)
@@ -56,7 +54,7 @@ def test_s4_11_6_1_build_writes_an_sbom(
         assert "-o dist/demo.cdx.json" in line
 
 
-def test_s4_11_6_1_build_override_is_untouched(tmp_path: Path) -> None:
+def test_build_override_is_untouched(tmp_path: Path) -> None:
     extra = '\n[tasks]\n[tasks.command_overrides]\n"python:build" = "echo hi"\n'
     root = _root(tmp_path, extra=extra)
     cycle.apply(root, home=tmp_path / "home")
@@ -65,7 +63,7 @@ def test_s4_11_6_1_build_override_is_untouched(tmp_path: Path) -> None:
     assert "uv export" not in YamlUtils.serialize(python["tasks"]["build"])
 
 
-def test_s4_11_6_2_lib_release_is_split(tmp_path: Path) -> None:
+def test_lib_release_is_split(tmp_path: Path) -> None:
     tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
     assert "release" not in tasks
     build = "\n".join(tasks["release:build"]["cmds"])  # type: ignore[index]
@@ -83,7 +81,7 @@ def test_s4_11_6_2_lib_release_is_split(tmp_path: Path) -> None:
     assert "uv export" not in publish
 
 
-def test_s6_7_5_5_lib_publish_calls_release_publish(tmp_path: Path) -> None:
+def test_lib_publish_calls_release_publish(tmp_path: Path) -> None:
     tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
     publish = "\n".join(tasks["release:publish"]["cmds"])  # type: ignore[index]
     assert 'if [ ! -d "dist/$name" ]; then' in publish
@@ -97,7 +95,7 @@ def test_s6_7_5_5_lib_publish_calls_release_publish(tmp_path: Path) -> None:
         assert name not in tasks
 
 
-def test_s7_6_3_3_lib_publish_carries_the_changelog(tmp_path: Path) -> None:
+def test_lib_publish_carries_the_changelog(tmp_path: Path) -> None:
     tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
     publish = "\n".join(tasks["release:publish"]["cmds"])  # type: ignore[index]
     assert 'notes="$(mktemp)"' in publish
@@ -112,7 +110,7 @@ def test_s7_6_3_3_lib_publish_carries_the_changelog(tmp_path: Path) -> None:
         assert "--notes-file" not in "\n".join(single["release:publish"]["cmds"])  # type: ignore[index]
 
 
-def test_s6_7_5_4_single_package_release_tasks(tmp_path: Path) -> None:
+def test_single_package_release_tasks(tmp_path: Path) -> None:
     expected = {
         "release:state": ['{{.DEVOPS}} release-state "v$({{.TASK_EXE}} version)"'],
         "release:source": ['{{.DEVOPS}} release-source "$TAG"'],
@@ -129,7 +127,7 @@ def test_s6_7_5_4_single_package_release_tasks(tmp_path: Path) -> None:
             assert "internal" not in tasks[name], (archetype, name)  # type: ignore[operator]
 
 
-def test_s4_11_6_2_lib_build_reports_how_many_it_built(tmp_path: Path) -> None:
+def test_lib_build_reports_how_many_it_built(tmp_path: Path) -> None:
     build = "\n".join(
         _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]["release:build"]["cmds"]  # type: ignore[index]
     )
@@ -137,7 +135,7 @@ def test_s4_11_6_2_lib_build_reports_how_many_it_built(tmp_path: Path) -> None:
     assert "$GITHUB_OUTPUT" in build
 
 
-def test_s4_11_6_2_lib_publish_uploads_the_sbom(tmp_path: Path) -> None:
+def test_lib_publish_uploads_the_sbom(tmp_path: Path) -> None:
     tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
     publish = "\n".join(tasks["release:publish"]["cmds"])  # type: ignore[index]
     assert publish.count('dist/"$name"/*') == 1
@@ -147,14 +145,14 @@ def test_s4_11_6_2_lib_publish_uploads_the_sbom(tmp_path: Path) -> None:
     assert '--out-dir "dist/$name"' in build
 
 
-def test_s4_12_1_3_quality_yml_has_no_docs_task(tmp_path: Path) -> None:
+def test_quality_yml_has_no_docs_task(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     quality = _load(root, "tasks/quality.yml")["tasks"]
     assert not [key for key in quality if key.startswith("lint:docs")]
 
 
-def test_s4_12_1_4_without_mkdocs_lint_has_no_docs_ref(tmp_path: Path) -> None:
+def test_without_mkdocs_lint_has_no_docs_ref(tmp_path: Path) -> None:
     root = _root(tmp_path, profile="none")
     cycle.apply(root, home=tmp_path / "home")
     cmds = _unmarked(_load(root, "Taskfile.yml")["tasks"]["lint"]["cmds"])
@@ -172,7 +170,7 @@ def test_s4_12_1_4_without_mkdocs_lint_has_no_docs_ref(tmp_path: Path) -> None:
         "quality:lint:docs-generate",
     ],
 )
-def test_s4_12_1_5_old_keys_are_refused(tmp_path: Path, key: str) -> None:
+def test_old_keys_are_refused(tmp_path: Path, key: str) -> None:
     root = _root(
         tmp_path,
         extra=f'\n[tasks]\n[tasks.command_overrides]\n"{key}" = "echo hi"\n',
@@ -184,9 +182,9 @@ def test_s4_12_1_5_old_keys_are_refused(tmp_path: Path, key: str) -> None:
 @pytest.mark.parametrize(
     ("archetype", "extra"), [(a, "") for a in ARCHETYPES] + list(WEB_CELLS)
 )
-def test_s4_12_1_7_task_layout_accepts_the_rendered_files(
+def test_task_layout_accepts_the_rendered_files(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
-    root = _s4_12_1_root(tmp_path, archetype, extra)
+    root = _ci_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     assert _codes(root) == []

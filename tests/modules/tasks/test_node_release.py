@@ -1,4 +1,4 @@
-"""S15.8.5 — the `node-lib` release tasks, run in a temporary git repository.
+"""The `node-lib` release tasks, run in a temporary git repository.
 
 The rendered cell is copied into a repository with a local bare `origin`, and
 `gh`, `pnpm`, `uv` and `node` are fakes on `PATH` that log their arguments, so no test
@@ -140,7 +140,7 @@ def _retag(repo: Path, version: str) -> None:
     git(repo, "commit", "-q", "--allow-empty", "-m", f"bump {version}")
 
 
-def test_s15_8_5_3_state_new(run: Run, tmp_path: Path) -> None:
+def test_state_new(run: Run, tmp_path: Path) -> None:
     done = run("ci:release:state")
     assert done.returncode == 0, done.stdout + done.stderr
     assert _outputs(tmp_path) == {
@@ -155,7 +155,7 @@ def test_s15_8_5_3_state_new(run: Run, tmp_path: Path) -> None:
     ("version", "dist"),
     [("1.2.3", "latest"), ("1.3.0-rc.1", "rc"), ("2.0.0-beta.0", "beta")],
 )
-def test_s15_8_5_3_state_dist_tag(
+def test_state_dist_tag(
     run: Run, repo: Path, tmp_path: Path, version: str, dist: str
 ) -> None:
     _retag(repo, version)
@@ -164,7 +164,7 @@ def test_s15_8_5_3_state_dist_tag(
     assert _outputs(tmp_path)["tag"] == f"v{version}"
 
 
-def test_s15_8_5_3_state_first_release_means_no_other_v_tag(
+def test_state_first_release_means_no_other_v_tag(
     run: Run, repo: Path, tmp_path: Path
 ) -> None:
     git(repo, "tag", "v1.0.0")
@@ -177,7 +177,7 @@ def test_s15_8_5_3_state_first_release_means_no_other_v_tag(
     ("view", "mode"),
     [("none", "resume"), ("draft", "resume"), ("published", "released")],
 )
-def test_s15_8_5_3_state_of_a_tagged_version(
+def test_state_of_a_tagged_version(
     run: Run, repo: Path, tmp_path: Path, view: str, mode: str
 ) -> None:
     git(repo, "tag", "v1.2.3")
@@ -188,7 +188,7 @@ def test_s15_8_5_3_state_of_a_tagged_version(
     assert outputs["first-release"] == "true"
 
 
-def test_s15_8_5_3_state_fails_when_the_versions_differ(
+def test_state_fails_when_the_versions_differ(
     run: Run, repo: Path, tmp_path: Path
 ) -> None:
     _project(repo, "b", "1.2.4")
@@ -198,14 +198,12 @@ def test_s15_8_5_3_state_fails_when_the_versions_differ(
     assert not (tmp_path / "output").exists()
 
 
-def test_s15_8_5_3_state_ignores_untagged_projects(run: Run, repo: Path) -> None:
+def test_state_ignores_untagged_projects(run: Run, repo: Path) -> None:
     _project(repo, "app", "9.9.9", tags="scope:app")
     assert run("ci:release:state").returncode == 0
 
 
-def test_s15_8_5_3_state_refuses_a_tag_that_is_not_at_head(
-    run: Run, repo: Path
-) -> None:
+def test_state_refuses_a_tag_that_is_not_at_head(run: Run, repo: Path) -> None:
     git(repo, "tag", "v1.2.3")
     git(repo, "commit", "-q", "--allow-empty", "-m", "later")
     done = run("ci:release:state", view="draft")
@@ -213,9 +211,7 @@ def test_s15_8_5_3_state_refuses_a_tag_that_is_not_at_head(
     assert "is not at HEAD" in done.stdout + done.stderr
 
 
-def test_s15_8_5_4_new_mode_tags_head_and_pushes_the_tag_only(
-    run: Run, repo: Path
-) -> None:
+def test_new_mode_tags_head_and_pushes_the_tag_only(run: Run, repo: Path) -> None:
     assert run("ci:release:tag", env={"TAG": "v1.2.3"}).returncode == 0
     assert git(repo, "rev-parse", "v1.2.3^{commit}") == git(repo, "rev-parse", "HEAD")
     done = run("ci:release:push", env={"TAG": "v1.2.3"})
@@ -224,7 +220,7 @@ def test_s15_8_5_4_new_mode_tags_head_and_pushes_the_tag_only(
     assert git(repo, "ls-remote", "--heads", "origin") == ""
 
 
-def test_s15_8_5_5_verify_rebuilds_dist_from_the_tagged_source(
+def test_verify_rebuilds_dist_from_the_tagged_source(
     run: Run, cell: Path, tmp_path: Path
 ) -> None:
     done = run("ci:release:verify", tarball=True)
@@ -235,7 +231,7 @@ def test_s15_8_5_5_verify_rebuilds_dist_from_the_tagged_source(
     assert "MODE" not in "\n".join(_tasks(cell)["release:verify"]["cmds"])  # type: ignore[arg-type]
 
 
-def test_s15_8_5_5_verify_fails_without_a_tarball(run: Run) -> None:
+def test_verify_fails_without_a_tarball(run: Run) -> None:
     done = run("ci:release:verify")
     assert done.returncode != 0
     assert "::error::No tarball in dist/tarballs" in done.stdout + done.stderr
@@ -244,7 +240,7 @@ def test_s15_8_5_5_verify_fails_without_a_tarball(run: Run) -> None:
 @pytest.mark.parametrize(
     ("flag", "tail"), [("", ""), ("--first-release", " --first-release")]
 )
-def test_s15_8_5_6_publish_takes_its_flags_from_the_state(
+def test_publish_takes_its_flags_from_the_state(
     run: Run, tmp_path: Path, flag: str, tail: str
 ) -> None:
     done = run("ci:release:publish", env={"DIST_TAG": "rc", "FIRST_RELEASE_FLAG": flag})
@@ -254,7 +250,7 @@ def test_s15_8_5_6_publish_takes_its_flags_from_the_state(
     ]
 
 
-def test_s15_8_5_7_version_prints_the_release_version(run: Run) -> None:
+def test_version_prints_the_release_version(run: Run) -> None:
     done = run("version")
     assert done.returncode == 0, done.stderr
     assert done.stdout.strip() == "1.2.3"
@@ -272,20 +268,18 @@ def _bump_calls(tmp_path: Path, spec: str, tail: str) -> None:
     assert len(calls) >= 3, calls
     assert calls[0] == BUMP.format(spec)
     assert calls[1] == CHANGELOG + tail
-    # The Markdown format task runs mdformat in batches (S17.3.4): one call or several.
+    # The Markdown format task runs mdformat in batches: one call or several.
     assert all(c.startswith("uv run --group docs mdformat") for c in calls[2:])
 
 
-def test_s16_7_2_1_a_bump_writes_the_changelog_then_formats(
-    run: Run, tmp_path: Path
-) -> None:
+def test_a_bump_writes_the_changelog_then_formats(run: Run, tmp_path: Path) -> None:
     done = run("version", "--", "minor")
     assert done.returncode == 0, done.stdout + done.stderr
     _bump_calls(tmp_path, "minor", " --first-release")
     assert done.stdout.strip() == ""
 
 
-def test_s16_7_2_2_no_first_release_flag_once_a_tag_exists(
+def test_no_first_release_flag_once_a_tag_exists(
     run: Run, tmp_path: Path, repo: Path
 ) -> None:
     git(repo, "tag", "v1.0.0")
@@ -294,22 +288,20 @@ def test_s16_7_2_2_no_first_release_flag_once_a_tag_exists(
     _bump_calls(tmp_path, "minor", "")
 
 
-def test_s16_7_2_3_an_exact_version_is_passed_through(run: Run, tmp_path: Path) -> None:
+def test_an_exact_version_is_passed_through(run: Run, tmp_path: Path) -> None:
     done = run("version", "--", "1.3.0")
     assert done.returncode == 0, done.stdout + done.stderr
     _bump_calls(tmp_path, "1.3.0", " --first-release")
 
 
-def test_s16_7_2_4_no_argument_has_no_side_effects(run: Run, tmp_path: Path) -> None:
+def test_no_argument_has_no_side_effects(run: Run, tmp_path: Path) -> None:
     done = run("version")
     assert done.returncode == 0, done.stderr
     assert done.stdout.strip() == "1.2.3"
     assert _calls(tmp_path) == []
 
 
-def test_s9_4_4_2_notes_come_from_kiln_devops(
-    run: Run, repo: Path, tmp_path: Path
-) -> None:
+def test_notes_come_from_kiln_devops(run: Run, repo: Path, tmp_path: Path) -> None:
     (repo / "dist" / "tarballs").mkdir(parents=True)
     (repo / "dist" / "tarballs" / "x.tgz").write_text("")
     assert run("ci:release:github", env={"TAG": "v1.2.3"}).returncode == 0
@@ -318,7 +310,7 @@ def test_s9_4_4_2_notes_come_from_kiln_devops(
     assert notes[0].endswith(" kiln-devops notes CHANGELOG.md 1.2.3")
 
 
-def test_s16_7_2_6_descriptions(cell: Path) -> None:
+def test_descriptions(cell: Path) -> None:
     rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(cell), cell)}
     node = YamlUtils.load(rendered["tasks/node.yml"])["tasks"]["version"]["desc"]
     root = YamlUtils.load(rendered["Taskfile.yml"])["tasks"]["version"]["desc"]
@@ -326,7 +318,7 @@ def test_s16_7_2_6_descriptions(cell: Path) -> None:
     assert "CHANGELOG.md" in root
 
 
-def test_s15_8_5_11_draft_until_published(run: Run, tmp_path: Path, repo: Path) -> None:
+def test_draft_until_published(run: Run, tmp_path: Path, repo: Path) -> None:
     (repo / "dist" / "tarballs").mkdir(parents=True)
     (repo / "dist" / "tarballs" / "x.tgz").write_text("")
     assert run("ci:release:github", env={"TAG": "v1.2.3"}).returncode == 0
@@ -339,7 +331,7 @@ def test_s15_8_5_11_draft_until_published(run: Run, tmp_path: Path, repo: Path) 
     assert _calls(tmp_path) == ["gh release edit v1.2.3 --draft=false"]
 
 
-def test_s15_8_5_11_only_three_tasks_create_or_edit_a_release(cell: Path) -> None:
+def test_only_three_tasks_create_or_edit_a_release(cell: Path) -> None:
     for name, task in _tasks(cell).items():
         text = "\n".join(str(c) for c in task.get("cmds", []))  # type: ignore[attr-defined]
         touches = "gh release create" in text or "gh release edit" in text
@@ -350,9 +342,7 @@ def test_s15_8_5_11_only_three_tasks_create_or_edit_a_release(cell: Path) -> Non
             assert "gh release create" not in text or "--draft" in text, name
 
 
-def test_s15_8_5_12_resume_after_a_partial_publish(
-    run: Run, repo: Path, tmp_path: Path
-) -> None:
+def test_resume_after_a_partial_publish(run: Run, repo: Path, tmp_path: Path) -> None:
     git(repo, "tag", "v1.2.3")
     (repo / "dist" / "tarballs").mkdir(parents=True)
     (repo / "dist" / "tarballs" / "x.tgz").write_text("")

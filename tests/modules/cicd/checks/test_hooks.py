@@ -1,4 +1,4 @@
-"""S4.11.1 — `ci-hooks`: each `[ci.hooks]` action and declared job names a file that exists."""
+"""`ci-hooks`: each `[ci.hooks]` action and declared job names a file that exists."""
 
 from __future__ import annotations
 
@@ -38,29 +38,27 @@ def _write(root: Path, relative: str, text: str) -> None:
     path.write_text(text, encoding="utf-8")
 
 
-def test_s4_11_1_9_missing_hook_action_is_reported(repo) -> None:
+def test_missing_hook_action_is_reported(repo) -> None:
     root = repo()
     _hook(root)
     assert _codes(root) == ["ci.hook-missing"]
 
 
-def test_s4_11_1_9_a_yaml_hook_action_is_found(repo) -> None:
+def test_a_yaml_hook_action_is_found(repo) -> None:
     root = repo()
     _hook(root)
     _write(root, ".github/actions/a/action.yaml", "name: a\n")
     assert _codes(root) == []
 
 
-def test_s4_11_1_9_missing_job_workflow_is_reported(repo) -> None:
+def test_missing_job_workflow_is_reported(repo) -> None:
     root = repo()
     _job(root)
     assert _codes(root) == ["ci.hook-missing"]
 
 
 @pytest.mark.parametrize("on", ["on: push", "on: [push]", "on: {pull_request: {}}"])
-def test_s4_11_1_9_job_workflow_without_workflow_call_is_reported(
-    repo, on: str
-) -> None:
+def test_job_workflow_without_workflow_call_is_reported(repo, on: str) -> None:
     root = repo()
     _job(root)
     _write(root, ".github/workflows/x.yml", f"{on}\njobs: {{}}\n")
@@ -71,14 +69,14 @@ def test_s4_11_1_9_job_workflow_without_workflow_call_is_reported(
     "on",
     ["on: workflow_call", "on: [push, workflow_call]", "on: {workflow_call: {}}"],
 )
-def test_s4_11_1_9_workflow_call_in_any_form_passes(repo, on: str) -> None:
+def test_workflow_call_in_any_form_passes(repo, on: str) -> None:
     root = repo()
     _job(root)
     _write(root, ".github/workflows/x.yml", f"{on}\njobs: {{}}\n")
     assert _codes(root) == []
 
 
-def test_s4_11_1_9_all_present_is_clean(repo) -> None:
+def test_all_present_is_clean(repo) -> None:
     root = repo()
     _hook(root)
     _job(root)
@@ -87,11 +85,11 @@ def test_s4_11_1_9_all_present_is_clean(repo) -> None:
     assert _codes(root) == []
 
 
-def test_s4_11_1_9_no_hooks_or_jobs_is_clean(repo) -> None:
+def test_no_hooks_or_jobs_is_clean(repo) -> None:
     assert _codes(repo()) == []
 
 
-def test_s4_11_1_9_the_check_is_registered() -> None:
+def test_the_check_is_registered() -> None:
     assert "ci-hooks" in checks.names()
 
 
@@ -99,20 +97,20 @@ def _docs_hook(root: Path) -> None:
     _append(root, f'\n[ci.hooks]\ndocs = ["{HOOK}"]\n')
 
 
-def test_s4_11_7_8_missing_docs_hook_action_is_reported(repo) -> None:
+def test_missing_docs_hook_action_is_reported(repo) -> None:
     root = repo()
     _docs_hook(root)
     assert _codes(root) == ["ci.hook-missing"]
 
 
-def test_s4_11_7_8_present_docs_hook_is_clean(repo) -> None:
+def test_present_docs_hook_is_clean(repo) -> None:
     root = repo()
     _docs_hook(root)
     _write(root, ".github/actions/a/action.yml", "name: a\n")
     assert _codes(root) == []
 
 
-def test_s7_3_3_2_workflow_on_key_is_a_string(repo) -> None:
+def test_workflow_on_key_is_a_string(repo) -> None:
     root = repo()
     _job(root)
     _write(root, ".github/workflows/x.yml", "on: {workflow_call: {}}\njobs: {}\n")

@@ -79,22 +79,20 @@ def _descs(root: Path) -> dict[str, str]:
     return {name: tasks[name]["desc"] for name in NODE_LIB_DESCS}
 
 
-def test_s9_2_9_4_node_lib_descs_are_the_node_table(tmp_path: Path) -> None:
+def test_node_lib_descs_are_the_node_table(tmp_path: Path) -> None:
     root = _node_lib_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     assert _descs(root) == NODE_LIB_DESCS
 
 
-def test_s9_2_9_4_python_web_app_descs_name_both_halves(tmp_path: Path) -> None:
+def test_python_web_app_descs_name_both_halves(tmp_path: Path) -> None:
     root = _node_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     assert _descs(root) == WEB_APP_DESCS
 
 
 @pytest.mark.parametrize("archetype", ["python-app", "python-tool", "python-web-api"])
-def test_s9_2_9_5_other_python_cells_keep_their_descs(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_other_python_cells_keep_their_descs(tmp_path: Path, archetype: str) -> None:
     root = (
         _root(tmp_path, archetype)
         if archetype != "python-web-api"
@@ -104,7 +102,7 @@ def test_s9_2_9_5_other_python_cells_keep_their_descs(
     assert _descs(root) == PYTHON_DESCS
 
 
-def test_s9_2_9_5_python_lib_keeps_its_descs(tmp_path: Path) -> None:
+def test_python_lib_keeps_its_descs(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-lib")
     cycle.apply(root, home=tmp_path / "home")
     expected = {
@@ -172,7 +170,9 @@ def _lint_root(tmp_path: Path, archetype: str, extra: str = "") -> Path:
 @pytest.mark.parametrize(
     ("archetype", "lead"), LINT_CELLS, ids=[a for a, _ in LINT_CELLS]
 )
-def test_s17_1_4_1_lint(tmp_path: Path, archetype: str, lead: str) -> None:
+def test_lint_description_lists_licences(
+    tmp_path: Path, archetype: str, lead: str
+) -> None:
     root = _lint_root(tmp_path, archetype)
     cycle.apply(root, home=tmp_path / "home")
     assert _load(root, "Taskfile.yml")["tasks"]["lint"]["desc"] == (
@@ -183,15 +183,13 @@ def test_s17_1_4_1_lint(tmp_path: Path, archetype: str, lead: str) -> None:
 @pytest.mark.parametrize(
     ("archetype", "lead"), LINT_CELLS, ids=[a for a, _ in LINT_CELLS]
 )
-def test_s17_1_4_2_lint_without_licences(
-    tmp_path: Path, archetype: str, lead: str
-) -> None:
+def test_lint_without_licences(tmp_path: Path, archetype: str, lead: str) -> None:
     root = _lint_root(tmp_path, archetype, extra="\n[ci.checks]\nlicenses = false\n")
     cycle.apply(root, home=tmp_path / "home")
     assert _load(root, "Taskfile.yml")["tasks"]["lint"]["desc"] == lead + "."
 
 
-def test_s17_1_4_3_workspace_verbs(tmp_path: Path) -> None:
+def test_workspace_verbs(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-lib")
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "Taskfile.yml")["tasks"]

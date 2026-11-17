@@ -68,7 +68,7 @@ def _release_run(
     )
 
 
-def test_s9_1_5_4_release_tasks_are_described_and_public(tmp_path: Path) -> None:
+def test_release_tasks_are_described_and_public(tmp_path: Path) -> None:
     tasks = _ci_tasks(_node_lib_root(tmp_path))["tasks"]
     for name in RELEASE_TASKS:
         assert tasks[name]["desc"].startswith("CI only"), name  # type: ignore[index]
@@ -77,7 +77,7 @@ def test_s9_1_5_4_release_tasks_are_described_and_public(tmp_path: Path) -> None
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s9_1_5_4_other_archetypes_render_no_release_tasks(
+def test_other_archetypes_render_no_release_tasks(
     tmp_path: Path, archetype: str
 ) -> None:
     tasks = _ci_tasks(_root(tmp_path, archetype))["tasks"]
@@ -86,7 +86,7 @@ def test_s9_1_5_4_other_archetypes_render_no_release_tasks(
 
 @pytest.mark.parametrize("env", [{}])
 @requires("task")
-def test_s9_3_5_5_verify_fails_when_no_tarball_was_written(
+def test_verify_fails_when_no_tarball_was_written(
     tmp_path: Path, env: dict[str, str]
 ) -> None:
     done = _release_run(tmp_path, "release:verify", env, {"pnpm": "exit 0"})
@@ -99,7 +99,7 @@ def test_s9_3_5_5_verify_fails_when_no_tarball_was_written(
 
 @pytest.mark.parametrize("env", [{}])
 @requires("task")
-def test_s9_3_5_6_verify_passes_when_a_tarball_was_written(
+def test_verify_passes_when_a_tarball_was_written(
     tmp_path: Path, env: dict[str, str]
 ) -> None:
     stub = "mkdir -p dist/tarballs; : > dist/tarballs/x.tgz"
@@ -109,7 +109,7 @@ def test_s9_3_5_6_verify_passes_when_a_tarball_was_written(
 
 
 @requires("task")
-def test_s9_3_5_7_package_is_unguarded(tmp_path: Path) -> None:
+def test_package_is_unguarded(tmp_path: Path) -> None:
     tasks = _ci_tasks(_node_lib_root(tmp_path))["tasks"]
     assert tasks["smoke"]["cmds"] == [  # type: ignore[index]
         "pnpm exec nx run-many -t pack verify-dist verify-consumer"
@@ -123,7 +123,7 @@ def test_s9_3_5_7_package_is_unguarded(tmp_path: Path) -> None:
 
 @pytest.mark.parametrize("local", [True, False])
 @requires("task")
-def test_s9_1_5_4_latest_downloads_tarballs_only_when_none_are_local(
+def test_latest_downloads_tarballs_only_when_none_are_local(
     tmp_path: Path, local: bool
 ) -> None:
     log = tmp_path / "calls"

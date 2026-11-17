@@ -1,4 +1,4 @@
-"""F15.3 — the pinned gitleaks release in `pins.toml`."""
+"""The pinned gitleaks release in `pins.toml`."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from typing import Any, cast
 from rn_forge.kiln.modules.core.pins import load_pins
 
 
-def test_s15_3_1_1_gitleaks_pin_shape() -> None:
+def test_gitleaks_pin_shape() -> None:
     pin = cast("dict[str, Any]", load_pins()["gitleaks"])
     version = pin["version"]
     assert re.fullmatch(r"\d+\.\d+\.\d+", version)
@@ -18,7 +18,7 @@ def test_s15_3_1_1_gitleaks_pin_shape() -> None:
         assert re.fullmatch(r"[0-9a-f]{64}", entry["sha256"])
 
 
-def test_s15_6_1_4_pins() -> None:
+def test_scorecard_pins_have_full_sha() -> None:
     pins = load_pins()
     for key in ("scorecard", "upload-sarif"):
         pin = pins[key]
@@ -26,7 +26,7 @@ def test_s15_6_1_4_pins() -> None:
         assert pin["uses"] and pin["version"], key
 
 
-def test_s18_8_3_1_no_template_names_the_old_pins_path() -> None:
+def test_no_template_names_the_old_pins_path() -> None:
     from pathlib import Path
 
     modules = (

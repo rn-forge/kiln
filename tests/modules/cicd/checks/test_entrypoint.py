@@ -85,17 +85,17 @@ FIX_CI = (
 )
 
 
-def test_s9_1_2_8_node_lib_exempts_fix_ci(repo) -> None:
+def test_node_lib_exempts_fix_ci(repo) -> None:
     root = repo(archetype="node-lib", **{".github__workflows__ci.yml": FIX_CI})
     assert run(root) == []
 
 
-def test_s9_1_2_8_the_exemption_is_an_exact_match(repo) -> None:
+def test_the_exemption_is_an_exact_match(repo) -> None:
     other = FIX_CI.replace("fix-ci", "fix-ci --verbose")
     root = repo(archetype="node-lib", **{".github__workflows__ci.yml": other})
     assert any("invokes `pnpm` directly" in line for line in run(root))
 
 
-def test_s9_1_2_8_python_web_app_gets_no_exemption(repo) -> None:
+def test_python_web_app_gets_no_exemption(repo) -> None:
     root = repo(archetype="python-web-app", **{".github__workflows__ci.yml": FIX_CI})
     assert any("invokes `pnpm` directly" in line for line in run(root))

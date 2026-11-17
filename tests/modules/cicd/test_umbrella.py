@@ -44,14 +44,14 @@ def _umbrella_files(
 
 
 @pytest.mark.parametrize("archetype", [*UMBRELLA_ARCHETYPES, "node-lib"])
-def test_s15_5_2_1_off_by_default(tmp_path: Path, archetype: str) -> None:
+def test_off_by_default(tmp_path: Path, archetype: str) -> None:
     jobs, tasks = _umbrella_files(_umbrella_root(tmp_path, archetype, False))
     assert "umbrella" not in jobs
     assert "release:umbrella" not in tasks
 
 
 @pytest.mark.parametrize("archetype", UMBRELLA_ARCHETYPES)
-def test_s15_5_2_2_on(tmp_path: Path, archetype: str) -> None:
+def test_umbrella_job_when_enabled(tmp_path: Path, archetype: str) -> None:
     jobs, tasks = _umbrella_files(_umbrella_root(tmp_path, archetype, True))
     job = jobs["umbrella"]
     assert job["needs"] == ["checks-ok", "release"]
@@ -72,7 +72,7 @@ def test_s15_5_2_2_on(tmp_path: Path, archetype: str) -> None:
 
 
 @pytest.mark.parametrize("archetype", UMBRELLA_ARCHETYPES)
-def test_s15_5_2_3_needs_a_release(tmp_path: Path, archetype: str) -> None:
+def test_needs_a_release(tmp_path: Path, archetype: str) -> None:
     root = _umbrella_root(tmp_path, archetype, True)
     config = root / ".rn-forge" / "kiln" / "config.toml"
     text = config.read_text(encoding="utf-8")
@@ -90,7 +90,7 @@ def test_s15_5_2_3_needs_a_release(tmp_path: Path, archetype: str) -> None:
 
 
 @pytest.mark.parametrize("archetype", UMBRELLA_ARCHETYPES)
-def test_s15_5_2_4_docs_only_shipped_transition(tmp_path: Path, archetype: str) -> None:
+def test_docs_only_shipped_transition(tmp_path: Path, archetype: str) -> None:
     jobs = _ci_jobs(_umbrella_root(tmp_path, archetype, True))
     assert jobs["umbrella"]["if"] == UMBRELLA_IF
     assert "release-order" not in str(jobs["umbrella"]["if"])
@@ -99,20 +99,22 @@ def test_s15_5_2_4_docs_only_shipped_transition(tmp_path: Path, archetype: str) 
 
 
 @pytest.mark.parametrize("archetype", UMBRELLA_ARCHETYPES)
-def test_s15_5_2_5_ci_ok(tmp_path: Path, archetype: str) -> None:
+def test_umbrella_is_needed_by_ci_ok_only_when_enabled(
+    tmp_path: Path, archetype: str
+) -> None:
     on = _ci_jobs(_umbrella_root(tmp_path / "on", archetype, True))
     assert "umbrella" in on["ci-ok"]["needs"]  # type: ignore[operator]
     off = _ci_jobs(_umbrella_root(tmp_path / "off", archetype, False))
     assert "umbrella" not in off["ci-ok"]["needs"]  # type: ignore[operator]
 
 
-def test_s15_5_3_1_node_lib_off_by_default(tmp_path: Path) -> None:
+def test_node_lib_off_by_default(tmp_path: Path) -> None:
     jobs, tasks = _umbrella_files(_umbrella_root(tmp_path, "node-lib", False))
     assert "umbrella" not in jobs
     assert "release:umbrella" not in tasks
 
 
-def test_s15_5_3_2_node_lib_on(tmp_path: Path) -> None:
+def test_node_lib_on(tmp_path: Path) -> None:
     jobs, tasks = _umbrella_files(_umbrella_root(tmp_path, "node-lib", True))
     job = jobs["umbrella"]
     assert job["needs"] == ["checks-ok", "release"]
@@ -135,7 +137,7 @@ def test_s15_5_3_2_node_lib_on(tmp_path: Path) -> None:
     assert "verify-release" not in job["needs"]  # type: ignore[operator]
 
 
-def test_s16_7_4_5_the_setup_action_follows_the_constant(
+def test_the_setup_action_follows_the_constant(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root = _root(tmp_path)

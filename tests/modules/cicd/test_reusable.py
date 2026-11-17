@@ -1,4 +1,4 @@
-"""Reusable stage workflows (S15.8.9)."""
+"""Reusable stage workflows."""
 
 from __future__ import annotations
 
@@ -80,7 +80,7 @@ def _expected(archetype: str) -> list[str]:
 
 
 @pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
-def test_s15_8_9_1_files(tmp_path: Path, archetype: str) -> None:
+def test_reusable_workflow_files_are_rendered(tmp_path: Path, archetype: str) -> None:
     _, files = _render(tmp_path, archetype)
     rendered = sorted(
         p.rsplit("/_", 1)[1].removesuffix(".yml")
@@ -95,7 +95,7 @@ def test_s15_8_9_1_files(tmp_path: Path, archetype: str) -> None:
 
 
 @pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
-def test_s15_8_9_2_callers(tmp_path: Path, archetype: str) -> None:
+def test_caller_jobs_use_reusable_workflows(tmp_path: Path, archetype: str) -> None:
     _, files = _render(tmp_path, archetype)
     jobs = _raw_jobs(files)
     for stage in _expected(archetype):
@@ -122,7 +122,7 @@ def test_s15_8_9_2_callers(tmp_path: Path, archetype: str) -> None:
 
 
 @pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
-def test_s15_8_9_3_stay_inline(tmp_path: Path, archetype: str) -> None:
+def test_stay_inline(tmp_path: Path, archetype: str) -> None:
     _, files = _render(tmp_path, archetype)
     jobs = _raw_jobs(files)
     inline = INLINE + (INLINE_PYTHON_LIB if archetype == "python-lib" else ())
@@ -133,7 +133,7 @@ def test_s15_8_9_3_stay_inline(tmp_path: Path, archetype: str) -> None:
 
 
 @pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
-def test_s15_8_9_4_same_jobs(tmp_path: Path, archetype: str) -> None:
+def test_same_jobs(tmp_path: Path, archetype: str) -> None:
     _, files = _render(tmp_path, archetype)
     raw = _raw_jobs(files)
     merged = workflows.jobs(files)
@@ -150,7 +150,7 @@ def test_s15_8_9_4_same_jobs(tmp_path: Path, archetype: str) -> None:
 
 
 @pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
-def test_s15_8_9_5_gates_need_callers(tmp_path: Path, archetype: str) -> None:
+def test_gates_need_callers(tmp_path: Path, archetype: str) -> None:
     _, files = _render(tmp_path, archetype)
     raw = _raw_jobs(files)
     for gate in ("checks-ok", "ci-ok"):
@@ -161,9 +161,7 @@ def test_s15_8_9_5_gates_need_callers(tmp_path: Path, archetype: str) -> None:
 
 
 @pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
-def test_s15_8_9_6_declared_job_cannot_take_the_name(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_declared_job_cannot_take_the_name(tmp_path: Path, archetype: str) -> None:
     root, files = _render(tmp_path, archetype)
     for path, content in files.items():
         if path.startswith(".github/workflows/"):

@@ -40,7 +40,7 @@ PLAN_KEYS = (
 )
 
 
-def test_s6_4_2_4_python_lib_jobs_and_validate_steps(tmp_path: Path) -> None:
+def test_python_lib_jobs_and_validate_steps(tmp_path: Path) -> None:
     jobs = _lib_jobs(tmp_path)
     assert list(jobs) == [
         "validate",
@@ -71,7 +71,7 @@ def test_s6_4_2_4_python_lib_jobs_and_validate_steps(tmp_path: Path) -> None:
     assert "task docs:build" not in [s.get("run") for s in no_docs["validate"]["steps"]]  # type: ignore[attr-defined]
 
 
-def test_s6_4_2_5_plan_job(tmp_path: Path) -> None:
+def test_plan_job(tmp_path: Path) -> None:
     plan = _lib_jobs(tmp_path)["plan"]
     assert plan["permissions"] == {"contents": "read", "actions": "read"}
     assert plan["outputs"] == {
@@ -90,7 +90,7 @@ def test_s6_4_2_5_plan_job(tmp_path: Path) -> None:
     )
 
 
-def test_s6_4_2_6_test_job(tmp_path: Path) -> None:
+def test_test_job(tmp_path: Path) -> None:
     test = _lib_jobs(tmp_path)["test"]
     assert test["needs"] == ["validate", "plan"]
     assert test["if"] == (
@@ -112,7 +112,7 @@ def test_s6_4_2_6_test_job(tmp_path: Path) -> None:
     }
 
 
-def test_s6_4_2_6_sonar_waits_for_test(tmp_path: Path) -> None:
+def test_sonar_waits_for_test(tmp_path: Path) -> None:
     sonar = _lib_jobs(tmp_path)["sonar"]
     assert sonar["needs"] == ["validate", "test", "integration", "smoke", "suites"]
     assert str(sonar["if"]).startswith(
@@ -122,7 +122,7 @@ def test_s6_4_2_6_sonar_waits_for_test(tmp_path: Path) -> None:
     assert "head.repo.full_name == github.repository" in str(sonar["if"])
 
 
-def test_s6_4_2_8_other_archetypes_keep_the_plain_pipeline(tmp_path: Path) -> None:
+def test_other_archetypes_keep_the_plain_pipeline(tmp_path: Path) -> None:
     for archetype in ("python-app", "python-tool"):
         jobs = _ci_jobs(_root(tmp_path / archetype, archetype))
         assert list(jobs) == [
@@ -143,7 +143,7 @@ def test_s6_4_2_8_other_archetypes_keep_the_plain_pipeline(tmp_path: Path) -> No
         ], archetype
 
 
-def test_s6_4_3_2_declared_jobs_follow_test(tmp_path: Path) -> None:
+def test_declared_jobs_follow_test(tmp_path: Path) -> None:
     jobs = _lib_jobs(tmp_path)
     names = list(jobs)
     assert names[names.index("test") + 1 : names.index("test") + 4] == [
@@ -168,7 +168,7 @@ def test_s6_4_3_2_declared_jobs_follow_test(tmp_path: Path) -> None:
         }, name
 
 
-def test_s15_8_2_integration_is_generated(tmp_path: Path) -> None:
+def test_integration_is_generated(tmp_path: Path) -> None:
     assert "integration" in GENERATED_JOBS
     extra = f'\n[[ci.jobs]]\nname = "integration"\nuses = "{CALL}"\n'
     root = _with_ci(_root(tmp_path, "python-lib"), extra)
@@ -176,7 +176,7 @@ def test_s15_8_2_integration_is_generated(tmp_path: Path) -> None:
         KilnConfig.load(root)
 
 
-def test_s6_8_3_1_attest_step(tmp_path: Path) -> None:
+def test_attest_step(tmp_path: Path) -> None:
     steps = _release_steps(_pypi_root(tmp_path / "pypi"))
     names = [step.get("name") for step in steps]
     index = names.index("Attest PyPI publish")
@@ -188,7 +188,7 @@ def test_s6_8_3_1_attest_step(tmp_path: Path) -> None:
     assert "Attest PyPI publish" not in [step.get("name") for step in plain]
 
 
-def test_s6_4_3_4_smoke_job_does_not_sync(tmp_path: Path) -> None:
+def test_smoke_job_does_not_sync(tmp_path: Path) -> None:
     steps = _lib_jobs(tmp_path)["smoke"]["steps"]  # type: ignore[assignment]
     runs = [s.get("run") for s in steps]  # type: ignore[attr-defined]
     assert "task setup" not in runs
@@ -196,7 +196,7 @@ def test_s6_4_3_4_smoke_job_does_not_sync(tmp_path: Path) -> None:
     assert step["env"] == {"EXTRA": "${{ matrix.extra }}"}
 
 
-def test_s6_4_3_5_suites_job(tmp_path: Path) -> None:
+def test_suites_job(tmp_path: Path) -> None:
     job = _lib_jobs(tmp_path)["suites"]
     assert job["name"] == "suite (${{ matrix.name }})"
     steps = job["steps"]  # type: ignore[assignment]
@@ -207,7 +207,7 @@ def test_s6_4_3_5_suites_job(tmp_path: Path) -> None:
     }
 
 
-def test_s6_4_3_6_ci_ok_and_sonar_need_the_declared_jobs(tmp_path: Path) -> None:
+def test_ci_ok_and_sonar_need_the_declared_jobs(tmp_path: Path) -> None:
     jobs = _lib_jobs(tmp_path)
     assert jobs["sonar"]["needs"] == [
         "validate",
@@ -223,7 +223,7 @@ def _marker_steps(job: dict[str, object]) -> list[dict[str, object]]:
     return job["steps"][-2:]  # type: ignore[index,return-value]
 
 
-def test_s6_4_4_1_check_jobs_end_with_marker_steps(tmp_path: Path) -> None:
+def test_check_jobs_end_with_marker_steps(tmp_path: Path) -> None:
     jobs = _lib_jobs(tmp_path)
     markers = {
         "test": "${{ matrix.name }}.test",
@@ -241,7 +241,7 @@ def test_s6_4_4_1_check_jobs_end_with_marker_steps(tmp_path: Path) -> None:
         }, name
 
 
-def test_s6_4_4_2_python_lib_release_job(tmp_path: Path) -> None:
+def test_python_lib_release_job(tmp_path: Path) -> None:
     release = _lib_jobs(tmp_path)["release"]
     assert "strategy" not in release
     assert release["permissions"] == RELEASE_PERMISSIONS
@@ -266,7 +266,7 @@ def test_s6_4_4_2_python_lib_release_job(tmp_path: Path) -> None:
     assert len(steps) == 6  # type: ignore[arg-type]
 
 
-def test_s6_4_4_3_release_task_is_pykit_s_script(tmp_path: Path) -> None:
+def test_release_task_is_pykit_s_script(tmp_path: Path) -> None:
     tasks = _ci_tasks_text(tmp_path)["tasks"]
     script = "\n".join(
         "\n".join(tasks[name]["cmds"])  # type: ignore[index]
@@ -283,7 +283,7 @@ def test_s6_4_4_3_release_task_is_pykit_s_script(tmp_path: Path) -> None:
     assert "uv run rn-forge-devops" not in script
 
 
-def test_s6_4_4_4_verify_release(tmp_path: Path) -> None:
+def test_verify_release(tmp_path: Path) -> None:
     jobs = _lib_jobs(tmp_path)
     job = jobs["verify-release"]
     assert job["needs"] == ["release"]
@@ -312,7 +312,7 @@ def _ci_tasks_text(tmp_path: Path) -> dict[str, object]:
     return _ci_tasks_text_of(_root(tmp_path / "tasks", "python-lib"))
 
 
-def test_s6_4_4_5_artifact_actions_are_pinned() -> None:
+def test_artifact_actions_are_pinned() -> None:
     pins = load_pins()
     assert pins["upload-artifact"] == {
         "uses": "actions/upload-artifact",
@@ -327,7 +327,7 @@ def test_s6_4_4_5_artifact_actions_are_pinned() -> None:
     assert {"upload-artifact", "download-artifact"} <= set(UPSTREAM_PINS)
 
 
-def test_s6_4_4_6_other_archetypes_keep_the_per_package_release_steps(
+def test_other_archetypes_keep_the_per_package_release_steps(
     tmp_path: Path,
 ) -> None:
     for archetype in ("python-app", "python-tool"):
@@ -337,7 +337,7 @@ def test_s6_4_4_6_other_archetypes_keep_the_per_package_release_steps(
         assert "Publish GitHub Release" in names
 
 
-def test_s6_4_6_1_test_passes_the_matrix_dir_through_env(
+def test_test_passes_the_matrix_dir_through_env(
     tmp_path: Path,
 ) -> None:
     jobs = _lib_jobs(tmp_path)
@@ -353,7 +353,7 @@ def test_s6_4_6_1_test_passes_the_matrix_dir_through_env(
 
 
 @requires("actionlint")
-def test_s6_4_6_4_actionlint_passes_on_the_libs_fixture(tmp_path: Path) -> None:
+def test_actionlint_passes_on_the_libs_fixture(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-lib")
     config = root / ".rn-forge" / "kiln" / "config.toml"
     config.write_text(
@@ -373,7 +373,7 @@ def test_s6_4_6_4_actionlint_passes_on_the_libs_fixture(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_s11_5_1_2_python_lib_docs_job(tmp_path: Path) -> None:
+def test_python_lib_docs_job(tmp_path: Path) -> None:
     jobs = _lib_jobs(tmp_path)
     names = list(jobs)
     assert names[names.index("release") :] == [
@@ -418,13 +418,13 @@ def test_s11_5_1_2_python_lib_docs_job(tmp_path: Path) -> None:
     assert "needs.release" not in str(no_release["docs"]["if"])
 
 
-def test_s11_5_1_3_python_lib_renders_no_docs_yml(tmp_path: Path) -> None:
+def test_python_lib_renders_no_docs_yml(tmp_path: Path) -> None:
     rendered = _rendered(_root(tmp_path, "python-lib"))
     assert ".github/workflows/docs.yml" not in rendered
     assert ".github/workflows/ci.yml" in rendered
 
 
-def test_s11_5_1_4_other_archetypes_deploy_docs_from_ci(
+def test_other_archetypes_deploy_docs_from_ci(
     tmp_path: Path,
 ) -> None:
     for archetype in ("python-app", "python-tool"):
@@ -434,7 +434,7 @@ def test_s11_5_1_4_other_archetypes_deploy_docs_from_ci(
 
 
 @requires("actionlint")
-def test_s11_5_1_2_actionlint_passes_on_the_docs_job(tmp_path: Path) -> None:
+def test_actionlint_passes_on_the_docs_job(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-lib")
     cycle.apply(root, home=tmp_path / "home")
     result = subprocess.run(
@@ -454,7 +454,7 @@ RELEASE_IF = (
 )
 
 
-def test_s6_4_7_1_release_needs_every_check_and_sonar(tmp_path: Path) -> None:
+def test_release_needs_every_check_and_sonar(tmp_path: Path) -> None:
     jobs = _lib_jobs(tmp_path)
     assert jobs["release"]["needs"] == ["plan", "checks-ok"]
     assert jobs["checks-ok"]["needs"] == [
@@ -470,14 +470,14 @@ def test_s6_4_7_1_release_needs_every_check_and_sonar(tmp_path: Path) -> None:
     ]
 
 
-def test_s6_4_7_2_release_runs_on_a_default_branch_push_only(tmp_path: Path) -> None:
+def test_release_runs_on_a_default_branch_push_only(tmp_path: Path) -> None:
     release = _lib_jobs(tmp_path)["release"]
     assert release["if"] == RELEASE_IF % ""
     assert "pull_request" not in str(release["if"])
     assert "workflow_dispatch" not in str(release["if"])
 
 
-def test_s6_4_7_3_release_waits_on_sonar_only_where_sonar_renders(
+def test_release_waits_on_sonar_only_where_sonar_renders(
     tmp_path: Path,
 ) -> None:
     jobs = _lib_jobs(tmp_path, sonar=False)
@@ -488,7 +488,7 @@ def test_s6_4_7_3_release_waits_on_sonar_only_where_sonar_renders(
     assert "sonar" not in str(release)
 
 
-def test_s6_4_7_4_release_has_no_publish_switch(tmp_path: Path) -> None:
+def test_release_has_no_publish_switch(tmp_path: Path) -> None:
     text = _rendered(_root(tmp_path, "python-lib"))[".github/workflows/ci.yml"]
     assert "PUBLISH" not in text
     tasks = _ci_tasks_text(tmp_path)["tasks"]
@@ -500,7 +500,7 @@ def test_s6_4_7_4_release_has_no_publish_switch(tmp_path: Path) -> None:
     assert "release-publish" in script
 
 
-def test_s6_4_7_5_smoke_takes_an_empty_extra_row_unchanged(tmp_path: Path) -> None:
+def test_smoke_takes_an_empty_extra_row_unchanged(tmp_path: Path) -> None:
     smoke = _lib_jobs(tmp_path)["smoke"]
     assert smoke["strategy"]["matrix"] == {  # type: ignore[index]
         "include": "${{ fromJSON(needs.plan.outputs.smoke) }}"
@@ -515,7 +515,7 @@ def test_s6_4_7_5_smoke_takes_an_empty_extra_row_unchanged(tmp_path: Path) -> No
     assert used <= set(row)
 
 
-def test_s6_4_7_6_ci_ok_needs_every_job_and_tolerates_a_skipped_release(
+def test_ci_ok_needs_every_job_and_tolerates_a_skipped_release(
     tmp_path: Path,
 ) -> None:
     jobs = _lib_jobs(tmp_path)
@@ -530,7 +530,7 @@ def test_s6_4_7_6_ci_ok_needs_every_job_and_tolerates_a_skipped_release(
 
 @pytest.mark.parametrize("release", ["tag-exists", "pypi"])
 @requires("actionlint")
-def test_s6_4_7_7_actionlint_passes_on_the_python_lib_workflows(
+def test_actionlint_passes_on_the_python_lib_workflows(
     tmp_path: Path, release: str
 ) -> None:
     for name, kwargs in (("on", {}), ("off", {"sonar": False})):

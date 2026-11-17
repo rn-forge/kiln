@@ -1,4 +1,4 @@
-"""S15.1.3 — `checks-ok`'s `needs` come from the registry and each job's `required`."""
+"""`checks-ok`'s `needs` come from the registry and each job's `required`."""
 
 from __future__ import annotations
 
@@ -61,11 +61,11 @@ def _job(name: str, required: str = "") -> str:
     return f'\n[[ci.jobs]]\nname = "{name}"\nuses = "{CALL}"\n{required}'
 
 
-def test_s15_1_3_1_required_defaults_true() -> None:
+def test_required_defaults_true() -> None:
     assert CiJob(name="x", uses=CALL).required is True
 
 
-def test_s15_1_3_2_required_job_gates(tmp_path: Path) -> None:
+def test_required_job_gates(tmp_path: Path) -> None:
     extra = _job("gate", "required = true\n") + _job("advisory", "required = false\n")
     root = _write(tmp_path, extra=extra)
     jobs = _jobs(root)
@@ -76,9 +76,7 @@ def test_s15_1_3_2_required_job_gates(tmp_path: Path) -> None:
     assert jobs["gate"]["needs"] == "validate"
 
 
-def test_s15_1_3_3_registry_jobs_gate(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_registry_jobs_gate(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     root = _write(tmp_path, extra="\n[ci.checks]\nscorecard = true\n")
     jobs = _jobs(root)
     assert "secret-scan" in jobs["checks-ok"]["needs"]  # type: ignore[operator]
@@ -94,7 +92,7 @@ def test_s15_1_3_3_registry_jobs_gate(
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s15_1_3_4_default_render_is_unchanged(tmp_path: Path, archetype: str) -> None:
+def test_default_render_is_unchanged(tmp_path: Path, archetype: str) -> None:
     plain = _needs(_write(tmp_path / "plain", archetype))
     off = _needs(
         _write(tmp_path / "off", archetype, "\n[ci.checks]\nsecret-scan = false\n")
@@ -111,7 +109,7 @@ def _plan_steps(root: Path) -> list[str]:
     return [str(s.get("run", s.get("name"))) for s in steps]  # type: ignore[union-attr]
 
 
-def test_s15_4_2_2_plan_job_step(tmp_path: Path) -> None:
+def test_plan_job_step(tmp_path: Path) -> None:
     two = _plan_steps(_write(tmp_path / "two"))
     assert "task ci:internal-ranges" in two
     assert two.index("task ci:internal-ranges") < two.index(
@@ -141,7 +139,7 @@ STEP_IF = "contains(needs.*.result, 'failure') || contains(needs.*.result, 'canc
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s15_8_7_1_same_steps(tmp_path: Path, archetype: str) -> None:
+def test_same_steps(tmp_path: Path, archetype: str) -> None:
     ci = _ci(_write(tmp_path, archetype))
     assert "jq" not in ci
     jobs = YamlUtils.load(ci)["jobs"]
@@ -162,7 +160,7 @@ def _barrier(archetype: str, sonar: bool) -> list[str]:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s15_8_7_2_barrier_needs(tmp_path: Path, archetype: str) -> None:
+def test_barrier_needs(tmp_path: Path, archetype: str) -> None:
     extra = _job("gate", "required = true\n") + _job("advisory", "required = false\n")
     root = _write(tmp_path / "on", archetype, extra)
     assert _needs(root) == [*_barrier(archetype, True), "gate"]
@@ -180,14 +178,14 @@ def _after(archetype: str) -> list[str]:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s15_8_7_3_ci_ok_needs(tmp_path: Path, archetype: str) -> None:
+def test_ci_ok_needs(tmp_path: Path, archetype: str) -> None:
     extra = _job("gate", "required = true\n")
     jobs = _jobs(_write(tmp_path, archetype, extra))
     assert jobs["ci-ok"]["needs"] == ["checks-ok", *_after(archetype)]
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s15_8_7_4_release_waits_on_the_barrier(tmp_path: Path, archetype: str) -> None:
+def test_release_waits_on_the_barrier(tmp_path: Path, archetype: str) -> None:
     jobs = _jobs(_write(tmp_path, archetype))
     release = jobs["release"]
     # node-lib's inactive test job is always skipped, so its release needs the barrier only.
@@ -205,7 +203,7 @@ def test_s15_8_7_4_release_waits_on_the_barrier(tmp_path: Path, archetype: str) 
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s15_8_7_5_skipped_passes(tmp_path: Path, archetype: str) -> None:
+def test_skipped_passes(tmp_path: Path, archetype: str) -> None:
     jobs = _jobs(_write(tmp_path, archetype))
     for name in ("ci-ok", "checks-ok"):
         for step in jobs[name]["steps"]:  # type: ignore[attr-defined]
@@ -222,7 +220,7 @@ OFF = "\n[ci.checks]\nsecret-scan = false\n"
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s15_3_3_1_job_shape(tmp_path: Path, archetype: str) -> None:
+def test_job_shape(tmp_path: Path, archetype: str) -> None:
     job = _jobs(_write(tmp_path, archetype))["secret-scan"]
     assert job["runs-on"] == "ubuntu-latest"
     assert job["timeout-minutes"] == 10
@@ -235,12 +233,14 @@ def test_s15_3_3_1_job_shape(tmp_path: Path, archetype: str) -> None:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s15_3_3_2_fork_guard(tmp_path: Path, archetype: str) -> None:
+def test_fork_guard(tmp_path: Path, archetype: str) -> None:
     assert _jobs(_write(tmp_path, archetype))["secret-scan"]["if"] == FORK_GUARD
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s15_3_3_3_gates(tmp_path: Path, archetype: str) -> None:
+def test_secret_scan_gates_checks_ok_but_not_ci_ok(
+    tmp_path: Path, archetype: str
+) -> None:
     jobs = _jobs(_write(tmp_path, archetype))
     assert "secret-scan" in jobs["checks-ok"]["needs"]  # type: ignore[operator]
     assert "secret-scan" not in jobs["ci-ok"]["needs"]  # type: ignore[operator]
@@ -250,7 +250,7 @@ def test_s15_3_3_3_gates(tmp_path: Path, archetype: str) -> None:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s15_3_3_3b_failed_scan_blocks_release(tmp_path: Path, archetype: str) -> None:
+def test_failed_scan_blocks_release(tmp_path: Path, archetype: str) -> None:
     jobs = _jobs(_write(tmp_path, archetype))
     needs = jobs["release"]["needs"]
     assert "checks-ok" in (needs if isinstance(needs, list) else [needs])
@@ -260,13 +260,13 @@ def test_s15_3_3_3b_failed_scan_blocks_release(tmp_path: Path, archetype: str) -
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s15_3_3_4_off(tmp_path: Path, archetype: str) -> None:
+def test_secret_scan_off_removes_job_and_needs(tmp_path: Path, archetype: str) -> None:
     root = _write(tmp_path, archetype, OFF)
     assert "secret-scan" not in _jobs(root)
     assert "secret-scan" not in _needs(root)
 
 
-def test_s15_3_3_5_declared_name() -> None:
+def test_declared_name() -> None:
     from rn_forge.kiln.modules.cicd.config import GENERATED_JOBS
 
     assert "secret-scan" in GENERATED_JOBS

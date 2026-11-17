@@ -50,7 +50,7 @@ def _checkouts(root: Path) -> list[tuple[str, str, dict[str, object]]]:
 
 
 @pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
-def test_s4_11_3_1_checkouts_do_not_persist_credentials(
+def test_checkouts_do_not_persist_credentials(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
     checkouts = _checkouts(_cell_root(tmp_path, archetype, extra))
@@ -61,7 +61,7 @@ def test_s4_11_3_1_checkouts_do_not_persist_credentials(
         assert step["with"]["persist-credentials"] is False, f"{path}:{job}"  # type: ignore[index]
 
 
-def test_s4_11_3_1_the_python_lib_docs_job_keeps_credentials(tmp_path: Path) -> None:
+def test_the_python_lib_docs_job_keeps_credentials(tmp_path: Path) -> None:
     persisting = [
         (archetype, job)
         for archetype, extra in SECURITY_CELLS
@@ -76,7 +76,7 @@ def test_s4_11_3_1_the_python_lib_docs_job_keeps_credentials(tmp_path: Path) -> 
 
 
 @pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
-def test_s16_4_6_1_docs_job_comment(tmp_path: Path, archetype: str, extra: str) -> None:
+def test_docs_job_comment(tmp_path: Path, archetype: str, extra: str) -> None:
     """Every persisted checkout in a rendered workflow carries the reason."""
     rendered = _rendered(_cell_root(tmp_path, archetype, extra))
     for path, content in rendered.items():
@@ -95,13 +95,13 @@ def test_s16_4_6_1_docs_job_comment(tmp_path: Path, archetype: str, extra: str) 
         )
 
 
-def test_s4_11_3_1_fetch_depth_is_kept(tmp_path: Path) -> None:
+def test_fetch_depth_is_kept(tmp_path: Path) -> None:
     lib = _checkouts(_root(tmp_path, "python-lib"))
     deep = {job for _, job, step in lib if step["with"].get("fetch-depth") == 0}  # type: ignore[union-attr]
     assert {"plan", "sonar", "verify-release"} <= deep
 
 
-def test_s4_11_3_2_the_release_version_is_read_through_env(tmp_path: Path) -> None:
+def test_the_release_version_is_read_through_env(tmp_path: Path) -> None:
     for root in _release_roots(tmp_path):
         steps = _release_steps(root)
         for step in steps:
@@ -113,7 +113,7 @@ def test_s4_11_3_2_the_release_version_is_read_through_env(tmp_path: Path) -> No
         ]
 
 
-def test_s4_11_3_3_release_publishes_with_gh_release_create(tmp_path: Path) -> None:
+def test_release_publishes_with_gh_release_create(tmp_path: Path) -> None:
     for root in _release_roots(tmp_path):
         steps = _release_steps(root)
         publish = steps[_step_index(steps, "Publish GitHub Release")]
@@ -130,11 +130,11 @@ def test_s4_11_3_3_release_publishes_with_gh_release_create(tmp_path: Path) -> N
             assert "softprops/action-gh-release" not in content
 
 
-def test_s4_11_3_3_gh_release_pin_is_removed() -> None:
+def test_gh_release_pin_is_removed() -> None:
     assert "gh-release" not in load_pins()
 
 
-def test_s4_11_3_4_local_setup_uses_carry_a_reasoned_ignore(tmp_path: Path) -> None:
+def test_local_setup_uses_carry_a_reasoned_ignore(tmp_path: Path) -> None:
     pattern = re.compile(r"# zizmor: ignore\[self-repository\] \S")
     for archetype, extra in SECURITY_CELLS:
         root = _cell_root(tmp_path / archetype, archetype, extra)
@@ -151,7 +151,7 @@ def test_s4_11_3_4_local_setup_uses_carry_a_reasoned_ignore(tmp_path: Path) -> N
 
 @pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
 @requires("zizmor", "actionlint")
-def test_s4_11_3_5_zizmor_and_actionlint_pass_on_every_cell(
+def test_zizmor_and_actionlint_pass_on_every_cell(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
     root = _cell_root(tmp_path, archetype, extra)
@@ -183,7 +183,7 @@ DEPENDABOT_HOOKS = (
 
 
 @pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
-def test_s4_11_4_1_dependabot_is_a_managed_row(
+def test_dependabot_is_a_managed_row(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
     root = _cell_root(tmp_path, archetype, extra)
@@ -193,7 +193,7 @@ def test_s4_11_4_1_dependabot_is_a_managed_row(
 
 
 @pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
-def test_s4_11_4_2_no_hooks_renders_only_the_root_actions_entry_and_uv(
+def test_no_hooks_renders_only_the_root_actions_entry_and_uv(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
     root = _cell_root(tmp_path, archetype, extra)
@@ -211,7 +211,7 @@ def test_s4_11_4_2_no_hooks_renders_only_the_root_actions_entry_and_uv(
     assert updates[1]["schedule"]["interval"] == "weekly"  # type: ignore[index]
 
 
-def test_s4_11_4_3_hooks_render_exactly_their_directories(tmp_path: Path) -> None:
+def test_hooks_render_exactly_their_directories(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "python-tool"), DEPENDABOT_HOOKS)
     updates = _dependabot(root)["updates"]
     assert [u["package-ecosystem"] for u in updates] == [  # type: ignore[index,union-attr]
@@ -233,9 +233,7 @@ def test_s4_11_4_3_hooks_render_exactly_their_directories(tmp_path: Path) -> Non
         '\n[ci.hooks]\nsetup = ["./.github/actions/one"]\n',
     ],
 )
-def test_s4_11_4_3_never_the_root_or_the_setup_action(
-    tmp_path: Path, hooks: str
-) -> None:
+def test_never_the_root_or_the_setup_action(tmp_path: Path, hooks: str) -> None:
     root = _with_ci(_root(tmp_path, "python-tool"), hooks)
     directories = _hook_entry(root)["directories"]
     assert directories
@@ -244,7 +242,7 @@ def test_s4_11_4_3_never_the_root_or_the_setup_action(
         assert not directory.endswith("*")
 
 
-def test_s4_11_4_4_one_group_per_ecosystem_for_minor_and_patch(tmp_path: Path) -> None:
+def test_one_group_per_ecosystem_for_minor_and_patch(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "python-tool"), DEPENDABOT_HOOKS)
     updates = _dependabot(root)["updates"]
     assert len(updates) == 3  # type: ignore[arg-type]
@@ -255,15 +253,13 @@ def test_s4_11_4_4_one_group_per_ecosystem_for_minor_and_patch(tmp_path: Path) -
 
 
 @pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
-def test_s4_11_4_5_uv_directory_is_the_root(
-    tmp_path: Path, archetype: str, extra: str
-) -> None:
+def test_uv_directory_is_the_root(tmp_path: Path, archetype: str, extra: str) -> None:
     root = _cell_root(tmp_path, archetype, extra)
     assert _updates(root)["uv"]["directory"] == "/"
 
 
 @pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
-def test_s4_11_4_6_ci_comment_no_longer_says_kiln_only(
+def test_ci_comment_no_longer_says_kiln_only(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
     ci = _rendered(_cell_root(tmp_path, archetype, extra))[".github/workflows/ci.yml"]
@@ -273,7 +269,7 @@ def test_s4_11_4_6_ci_comment_no_longer_says_kiln_only(
 
 @pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
 @pytest.mark.parametrize("hooks", ["", DEPENDABOT_HOOKS])
-def test_s4_11_4_7_the_file_passes_the_checks(
+def test_the_file_passes_the_checks(
     tmp_path: Path, archetype: str, extra: str, hooks: str
 ) -> None:
     root = _cell_root(tmp_path, archetype, extra)
@@ -293,13 +289,13 @@ def test_s4_11_4_7_the_file_passes_the_checks(
     assert _actions(root, tmp_path)[DEPENDABOT] is Action.UNCHANGED
 
 
-def test_s4_11_4_8_ado_still_renders_nothing(tmp_path: Path) -> None:
+def test_ado_still_renders_nothing(tmp_path: Path) -> None:
     root = _root(tmp_path, provider="ado")
     with pytest.raises(AppException, match="E8"):
         _rendered(root)
 
 
-def test_s4_11_4_9_every_entry_has_a_cooldown(tmp_path: Path) -> None:
+def test_every_entry_has_a_cooldown(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "python-tool"), DEPENDABOT_HOOKS)
     for entry in _dependabot(root)["updates"]:  # type: ignore[attr-defined]
         assert entry["cooldown"]["default-days"] >= 7

@@ -1,7 +1,7 @@
 """The `cicd` module's artifacts: workflows, the setup action, Sonar.
 
-Also proves the five properties every F4.3 story owes its module
-(`docs/specs/epics/E4-generator/F4.3-concern-modules.md`).
+Also proves the properties every concern module owes: its template inventory,
+create-only apply into an empty directory, idempotence, and passing checks.
 """
 
 from __future__ import annotations
@@ -27,14 +27,14 @@ from tests.modules.cicd.support import (
 
 
 def _keys(archetype: str, keys: tuple[str, ...] = CI_KEYS) -> tuple[str, ...]:
-    """The rows `archetype` renders: the same for every archetype since S15.8.6, but a library workspace runs `release` inline in `ci.yml` (S6.11.1)."""
+    """The rows `archetype` renders: the same for every archetype now, but a library workspace runs `release` inline in `ci.yml`."""
     if archetype == "python-lib":
         return tuple(k for k in keys if not k.endswith("/_release.yml"))
     return keys
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_4_property1_renders_exactly_the_module_s_template_inventory_rows(
+def test_renders_exactly_the_module_s_template_inventory_rows(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _root(tmp_path, archetype)
@@ -44,7 +44,7 @@ def test_s4_3_4_property1_renders_exactly_the_module_s_template_inventory_rows(
     ]
 
 
-def test_s4_3_4_property1_without_mkdocs_or_sonar_renders_three_rows(
+def test_without_mkdocs_or_sonar_renders_three_rows(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path, profile="none", sonar=False)
@@ -57,24 +57,20 @@ def test_s4_3_4_property1_without_mkdocs_or_sonar_renders_three_rows(
     ]
 
 
-def test_s4_3_4_property1_ado_is_reserved(tmp_path: Path) -> None:
+def test_ado_is_reserved(tmp_path: Path) -> None:
     root = _root(tmp_path, provider="ado")
     with pytest.raises(AppException, match="E8"):
         _rendered(root)
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_4_property2_into_an_empty_directory_only_creates(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_into_an_empty_directory_only_creates(tmp_path: Path, archetype: str) -> None:
     actions = _actions(_root(tmp_path, archetype), tmp_path)
     assert {actions[key] for key in _keys(archetype)} == {Action.CREATE}
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_4_property3_a_second_apply_is_unchanged(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_a_second_apply_is_unchanged(tmp_path: Path, archetype: str) -> None:
     root = _root(tmp_path, archetype)
     cycle.apply(root, home=tmp_path / "home")
     actions = _actions(root, tmp_path)
@@ -82,15 +78,13 @@ def test_s4_3_4_property3_a_second_apply_is_unchanged(
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_4_property5_checks_pass_on_the_rendered_output(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_checks_pass_on_the_rendered_output(tmp_path: Path, archetype: str) -> None:
     root = _root(tmp_path, archetype)
     cycle.apply(root, home=tmp_path / "home")
     assert _codes(root) == []
 
 
-def test_s4_3_4_property5_entrypoint_fails_on_a_direct_uv_call(tmp_path: Path) -> None:
+def test_entrypoint_fails_on_a_direct_uv_call(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     ci = root / ".github" / "workflows" / "ci.yml"
@@ -104,7 +98,7 @@ def test_s4_3_4_property5_entrypoint_fails_on_a_direct_uv_call(tmp_path: Path) -
 @pytest.mark.parametrize("archetype", ARCHETYPES)
 @pytest.mark.parametrize("sonar", [True, False])
 @requires("actionlint")
-def test_s4_3_4_1_actionlint_passes_on_every_rendered_workflow(
+def test_actionlint_passes_on_every_rendered_workflow(
     tmp_path: Path, archetype: str, sonar: bool
 ) -> None:
     root = _root(tmp_path, archetype, sonar=sonar)
@@ -119,13 +113,13 @@ def test_s4_3_4_1_actionlint_passes_on_every_rendered_workflow(
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_s4_3_4_2_ci_pins_passes_on_the_rendered_output(tmp_path: Path) -> None:
+def test_ci_pins_passes_on_the_rendered_output(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-lib")
     cycle.apply(root, home=tmp_path / "home")
     assert not [c for c in _codes(root) if c.startswith("ci.")]
 
 
-def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
+def test_sonar_off_renders_no_sonar_job_and_release_needs_validate(
     tmp_path: Path,
 ) -> None:
     on = _rendered(_root(tmp_path / "on"))
@@ -159,7 +153,7 @@ def test_s4_3_4_3_sonar_off_renders_no_sonar_job_and_release_needs_validate(
     assert off[".github/workflows/ci.yml"] == expected
 
 
-def test_s4_3_4_3_release_none_renders_no_release_job(tmp_path: Path) -> None:
+def test_release_none_renders_no_release_job(tmp_path: Path) -> None:
     rendered = _rendered(_root(tmp_path, release="none"))
     jobs = workflows.jobs(rendered)
     assert set(jobs) == {
@@ -178,7 +172,7 @@ def test_s4_3_4_3_release_none_renders_no_release_job(tmp_path: Path) -> None:
     }
 
 
-def test_s4_3_4_4_ci_entrypoint_passes_on_the_rendered_workflows(
+def test_ci_entrypoint_passes_on_the_rendered_workflows(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path)
@@ -186,7 +180,7 @@ def test_s4_3_4_4_ci_entrypoint_passes_on_the_rendered_workflows(
     assert "ci.entrypoint" not in _codes(root)
 
 
-def test_s4_3_4_4_ci_entrypoint_fails_on_a_fixture_calling_uv(repo) -> None:
+def test_ci_entrypoint_fails_on_a_fixture_calling_uv(repo) -> None:
     root = repo(
         **{
             ".github__workflows__ci.yml": (
@@ -197,7 +191,7 @@ def test_s4_3_4_4_ci_entrypoint_fails_on_a_fixture_calling_uv(repo) -> None:
     assert _codes(root) == ["ci.entrypoint"]
 
 
-def test_s5_1_2_only_python_web_app_s_setup_action_sets_up_pnpm_and_node(
+def test_only_python_web_app_s_setup_action_sets_up_pnpm_and_node(
     tmp_path: Path,
 ) -> None:
     api = _rendered(_web_root(tmp_path / "api", "python-web-api"))
@@ -213,14 +207,14 @@ def test_s5_1_2_only_python_web_app_s_setup_action_sets_up_pnpm_and_node(
     assert "cache: pnpm" in app_action
 
 
-def test_s5_1_2_sonar_properties_web_api_uses_api_dir(tmp_path: Path) -> None:
+def test_sonar_properties_web_api_uses_api_dir(tmp_path: Path) -> None:
     rendered = _rendered(_web_root(tmp_path, "python-web-api"))
     properties = rendered["sonar-project.properties"]
     assert "sonar.sources=apps/api/src" in properties
     assert "sonar.tests=apps/api/tests" in properties
 
 
-def test_s5_1_2_sonar_properties_web_app_adds_web_dir_to_sources(
+def test_sonar_properties_web_app_adds_web_dir_to_sources(
     tmp_path: Path,
 ) -> None:
     rendered = _rendered(
@@ -231,7 +225,7 @@ def test_s5_1_2_sonar_properties_web_app_adds_web_dir_to_sources(
     assert "sonar.tests=apps/api/tests" in properties
 
 
-def test_s5_1_2_ci_pins_passes_on_the_web_app_setup_action(tmp_path: Path) -> None:
+def test_ci_pins_passes_on_the_web_app_setup_action(tmp_path: Path) -> None:
     root = _web_root(tmp_path, "python-web-app", extra='frontend = "angular"')
     cycle.apply(root, home=tmp_path / "home")
     assert not [c for c in _codes(root) if c.startswith("ci.")]
@@ -239,9 +233,7 @@ def test_s5_1_2_ci_pins_passes_on_the_web_app_setup_action(tmp_path: Path) -> No
 
 @pytest.mark.parametrize("sonar", [True, False])
 @requires("actionlint")
-def test_s5_1_2_actionlint_passes_on_web_app_workflows(
-    tmp_path: Path, sonar: bool
-) -> None:
+def test_actionlint_passes_on_web_app_workflows(tmp_path: Path, sonar: bool) -> None:
     root = _web_root(tmp_path, "python-web-app", extra='frontend = "angular"')
     text = root.joinpath(".rn-forge/kiln/config.toml").read_text(encoding="utf-8")
     text = text.replace(

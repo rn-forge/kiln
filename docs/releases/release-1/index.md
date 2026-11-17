@@ -109,7 +109,7 @@ are [release-2](../release-2/index.md).
 | [F17.1 — The task surface says what it is](../../specs/epics/E17-task-standard/F17.1-task-surface.md) | E17 | Closed |
 | [F17.2 — One grammar for the CI surface, and one home for check policy](../../specs/epics/E17-task-standard/F17.2-ci-task-grammar.md) | E17 | Closed |
 | [F17.3 — A faster gate](../../specs/epics/E17-task-standard/F17.3-a-faster-gate.md) | E17 | Active |
-| [F18.1 — Tests named by behaviour](../../specs/epics/E18-kiln-simplification/F18.1-tests-named-by-behaviour.md) | E18 | New |
+| [F18.1 — Tests named by behaviour](../../specs/epics/E18-kiln-simplification/F18.1-tests-named-by-behaviour.md) | E18 | Active |
 | [F18.2 — Spec IDs out of the code and the docs outside the specs](../../specs/epics/E18-kiln-simplification/F18.2-ids-out-of-code-and-docs.md) | E18 | New |
 | [F18.3 — One epic per area](../../specs/epics/E18-kiln-simplification/F18.3-area-epics.md) | E18 | New |
 | [F18.4 — `feature/v1` lands on `main` as one commit](../../specs/epics/E18-kiln-simplification/F18.4-one-commit-on-main.md) | E18 | New |

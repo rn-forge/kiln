@@ -53,7 +53,7 @@ def _reports_run(
 
 
 @requires("task")
-def test_s9_1_3_2_reports_runs_tests_and_prints_the_reports(tmp_path: Path) -> None:
+def test_reports_runs_tests_and_prints_the_reports(tmp_path: Path) -> None:
     done = _reports_run(
         tmp_path, ("coverage/b/lcov.info", "coverage/a/lcov.info", "coverage/a/x.txt")
     )
@@ -62,7 +62,7 @@ def test_s9_1_3_2_reports_runs_tests_and_prints_the_reports(tmp_path: Path) -> N
 
 
 @requires("task")
-def test_s9_1_3_2_reports_fails_without_an_lcov_report(tmp_path: Path) -> None:
+def test_reports_fails_without_an_lcov_report(tmp_path: Path) -> None:
     done = _reports_run(tmp_path, ())
     assert done.returncode != 0
     assert "::error::No lcov.info found under coverage/" in done.stdout + done.stderr
@@ -102,7 +102,7 @@ def _reports_run_with_projects(
 
 
 @requires("task")
-def test_s9_2_7_2_reports_passes_a_workspace_with_no_projects(
+def test_reports_passes_a_workspace_with_no_projects(
     tmp_path: Path,
 ) -> None:
     done = _reports_run_with_projects(tmp_path, "[]", ())
@@ -111,7 +111,7 @@ def test_s9_2_7_2_reports_passes_a_workspace_with_no_projects(
 
 
 @requires("task")
-def test_s9_2_7_3_reports_fails_a_project_with_no_report(tmp_path: Path) -> None:
+def test_reports_fails_a_project_with_no_report(tmp_path: Path) -> None:
     done = _reports_run_with_projects(tmp_path, '["foo"]', ())
     # task reports a failed command as 201 and names the command's own status.
     assert done.returncode != 0
@@ -120,26 +120,26 @@ def test_s9_2_7_3_reports_fails_a_project_with_no_report(tmp_path: Path) -> None
 
 
 @requires("task")
-def test_s9_2_7_4_reports_prints_the_report_path(tmp_path: Path) -> None:
+def test_reports_prints_the_report_path(tmp_path: Path) -> None:
     done = _reports_run_with_projects(tmp_path, '["foo"]', ("coverage/foo/lcov.info",))
     assert done.returncode == 0, done.stderr
     assert done.stdout == "reports=coverage/foo/lcov.info\n"
 
 
-def test_s9_1_3_2_reports_is_described_and_public(tmp_path: Path) -> None:
+def test_reports_is_described_and_public(tmp_path: Path) -> None:
     task = _ci_tasks(_node_lib_root(tmp_path))["tasks"]["sonar:reports"]  # type: ignore[index]
     assert task["desc"]
     assert "internal" not in task
 
 
-def test_s9_1_4_2_package_packs_and_verifies(tmp_path: Path) -> None:
+def test_package_packs_and_verifies(tmp_path: Path) -> None:
     task = _ci_tasks(_node_lib_root(tmp_path))["tasks"]["smoke"]  # type: ignore[index]
     assert task["desc"]
     assert "internal" not in task
     assert task["cmds"] == ["pnpm exec nx run-many -t pack verify-dist verify-consumer"]
 
 
-def test_s17_2_2_1_sonar_runs_the_root_verb(tmp_path: Path) -> None:
+def test_sonar_runs_the_root_verb(tmp_path: Path) -> None:
     for archetype, root in _ci_cells(tmp_path):
         text = (root / ".github/workflows/_sonar.yml").read_text(encoding="utf-8")
         steps = YamlUtils.load(text)["jobs"]["sonar"]["steps"]
@@ -148,7 +148,7 @@ def test_s17_2_2_1_sonar_runs_the_root_verb(tmp_path: Path) -> None:
         assert "ci:coverage" not in text, archetype
 
 
-def test_s17_2_2_2_node_lib_reports(tmp_path: Path) -> None:
+def test_node_lib_reports(tmp_path: Path) -> None:
     root = _secrets_root(tmp_path, "node-lib")
     tasks = _ci_rendered(root)
     assert "coverage" not in tasks
@@ -164,7 +164,7 @@ def test_s17_2_2_2_node_lib_reports(tmp_path: Path) -> None:
     assert f"steps.{reports['id']}.outputs.reports" in scan["with"]["args"]
 
 
-def test_s17_2_4_2_old_key_refused(tmp_path: Path) -> None:
+def test_old_key_refused(tmp_path: Path) -> None:
     root = _root(tmp_path, extra="\n[tasks.audit]\nignore = []\n")
     with pytest.raises(
         AppException, match=r"tasks.audit moved to \[ci.checks\] pip-audit"
@@ -172,7 +172,7 @@ def test_s17_2_4_2_old_key_refused(tmp_path: Path) -> None:
         KilnConfig.load(root)
 
 
-def test_s17_2_4_3_ignored_ids_render(tmp_path: Path) -> None:
+def test_ignored_ids_render(tmp_path: Path) -> None:
     root = _root(
         tmp_path,
         extra=(
@@ -185,7 +185,7 @@ def test_s17_2_4_3_ignored_ids_render(tmp_path: Path) -> None:
     assert "--ignore-vuln PYSEC-2026-1" in YamlUtils.serialize(python["lint:audit"])
 
 
-def test_s16_6_11_3_workspace_test_tolerates_no_tests(tmp_path: Path) -> None:
+def test_workspace_test_tolerates_no_tests(tmp_path: Path) -> None:
     guard = "|| [ $? -eq 5 ]"
     for archetype, guarded in (("python-lib", True), ("python-app", False)):
         root = _root(tmp_path / archetype, archetype)

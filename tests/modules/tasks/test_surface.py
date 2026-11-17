@@ -1,4 +1,4 @@
-"""S17.1.5 — the public task surface, read from the rendered task files."""
+"""The public task surface, read from the rendered task files."""
 
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ def _run_task(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
 
 
 @pytest.mark.parametrize(("archetype", "frontend"), CELLS, ids=[c[0] for c in CELLS])
-def test_s17_1_5_1_surface_is_what_task_lists(
+def test_surface_is_what_task_lists(
     tmp_path: Path, archetype: str, frontend: str
 ) -> None:
     root = _root(tmp_path, archetype, frontend)

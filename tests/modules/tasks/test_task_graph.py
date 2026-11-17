@@ -1,7 +1,7 @@
 """The `tasks` module's artifacts: `Taskfile.yml`, `tasks/*.yml`, includes.
 
-Also proves the five properties every F4.3 story owes its module
-(`docs/specs/epics/E4-generator/F4.3-concern-modules.md`).
+Also proves the properties every concern module owes: its template inventory,
+create-only apply into an empty directory, idempotence, and passing checks.
 """
 
 from __future__ import annotations
@@ -52,7 +52,7 @@ INCLUDE_EXTRA = (
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_3_property1_renders_exactly_the_module_s_template_inventory_rows(
+def test_renders_exactly_the_module_s_template_inventory_rows(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _root(tmp_path, archetype)
@@ -62,13 +62,13 @@ def test_s4_3_3_property1_renders_exactly_the_module_s_template_inventory_rows(
     ]
 
 
-def test_s4_3_3_property1_without_mkdocs_omits_docs_yml(tmp_path: Path) -> None:
+def test_without_mkdocs_omits_docs_yml(tmp_path: Path) -> None:
     root = _root(tmp_path, profile="none")
     artifacts = TASKS.artifacts(KilnConfig.load(root), root)
     assert [a.path for a in artifacts] == [*TASK_KEYS[:-1], CI_KEY, SONAR_KEY]
 
 
-def test_s4_3_3_property1_one_seeded_artifact_per_include(tmp_path: Path) -> None:
+def test_one_seeded_artifact_per_include(tmp_path: Path) -> None:
     root = _root(tmp_path, extra=INCLUDE_EXTRA)
     artifacts = TASKS.artifacts(KilnConfig.load(root), root)
     assert [a.path for a in artifacts] == [
@@ -81,18 +81,14 @@ def test_s4_3_3_property1_one_seeded_artifact_per_include(tmp_path: Path) -> Non
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_3_property2_into_an_empty_directory_only_creates(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_into_an_empty_directory_only_creates(tmp_path: Path, archetype: str) -> None:
     actions = _actions(_root(tmp_path, archetype), tmp_path)
     tasks_actions = {key: actions[key] for key in (*TASK_KEYS, CI_KEY, SONAR_KEY)}
     assert set(tasks_actions.values()) == {Action.CREATE}
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_3_property3_a_second_apply_is_unchanged(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_a_second_apply_is_unchanged(tmp_path: Path, archetype: str) -> None:
     root = _root(tmp_path, archetype)
     cycle.apply(root, home=tmp_path / "home")
     actions = _actions(root, tmp_path)
@@ -101,14 +97,14 @@ def test_s4_3_3_property3_a_second_apply_is_unchanged(
     )
 
 
-def test_s4_3_3_property3_an_include_reports_skip_once_present(tmp_path: Path) -> None:
+def test_an_include_reports_skip_once_present(tmp_path: Path) -> None:
     root = _root(tmp_path, extra=INCLUDE_EXTRA)
     cycle.apply(root, home=tmp_path / "home")
     assert _actions(root, tmp_path)["tasks/extra.yml"] is Action.SKIP
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_3_property5_task_layout_passes_on_the_rendered_output(
+def test_task_layout_passes_on_the_rendered_output(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _root(tmp_path, archetype)
@@ -116,7 +112,7 @@ def test_s4_3_3_property5_task_layout_passes_on_the_rendered_output(
     assert _codes(root) == []
 
 
-def test_s4_3_3_property5_task_layout_fails_on_a_broken_gate(tmp_path: Path) -> None:
+def test_task_layout_fails_on_a_broken_gate(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     taskfile = root / "Taskfile.yml"
@@ -128,7 +124,7 @@ def test_s4_3_3_property5_task_layout_fails_on_a_broken_gate(tmp_path: Path) -> 
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_10_1_2_lint_and_format_run_taplo(tmp_path: Path, archetype: str) -> None:
+def test_lint_and_format_run_taplo(tmp_path: Path, archetype: str) -> None:
     root = _root(tmp_path, archetype)
     cycle.apply(root, home=tmp_path / "home")
     quality = YamlUtils.load((root / "tasks/quality.yml").read_text(encoding="utf-8"))
@@ -143,22 +139,22 @@ def test_s4_10_1_2_lint_and_format_run_taplo(tmp_path: Path, archetype: str) -> 
     assert {"task": "quality:format:toml"} in tasks["format"]["cmds"]
 
 
-def _s17_3_4_roots(tmp_path: Path) -> list[Path]:
+def _graph_roots(tmp_path: Path) -> list[Path]:
     roots = [_root(tmp_path / a, a) for a in ARCHETYPES]
     return [*roots, _node_lib_root(tmp_path / "node-lib")]
 
 
-def test_s17_3_4_1_markdown_tasks_run_in_batches(tmp_path: Path) -> None:
+def test_markdown_tasks_run_in_batches(tmp_path: Path) -> None:
     batch = "{{.FILES}} '*.md' | xargs -0 -r -n 20 -P 4 uv run --group docs mdformat"
-    for root in _s17_3_4_roots(tmp_path):
+    for root in _graph_roots(tmp_path):
         cycle.apply(root, home=tmp_path / "home")
         tasks = _load(root, "tasks/quality.yml")["tasks"]
         assert tasks["lint:markdown"]["cmds"] == [f"{batch} --check"]
         assert tasks["format:markdown"]["cmds"] == [batch]
 
 
-def test_s17_3_4_2_toml_tasks_stay_serial(tmp_path: Path) -> None:
-    for root in _s17_3_4_roots(tmp_path):
+def test_toml_tasks_stay_serial(tmp_path: Path) -> None:
+    for root in _graph_roots(tmp_path):
         cycle.apply(root, home=tmp_path / "home")
         tasks = _load(root, "tasks/quality.yml")["tasks"]
         assert tasks["lint:toml"]["cmds"] == [
@@ -169,7 +165,7 @@ def test_s17_3_4_2_toml_tasks_stay_serial(tmp_path: Path) -> None:
         ]
 
 
-def test_s17_3_4_3_an_override_still_replaces_the_batch(tmp_path: Path) -> None:
+def test_an_override_still_replaces_the_batch(tmp_path: Path) -> None:
     root = _root(
         tmp_path,
         extra='\n[tasks]\n[tasks.command_overrides]\n"quality:lint:markdown" = "echo hi"\n',
@@ -186,8 +182,8 @@ YAML_LINT = "{{.FILES}} '*.yml' '*.yaml' | xargs -0 -r uv run yamlfmt -lint"
 YAML_FORMAT = "{{.FILES}} '*.yml' '*.yaml' | xargs -0 -r uv run yamlfmt"
 
 
-def test_s19_1_3_1_lint_and_format_run_the_yaml_formatter(tmp_path: Path) -> None:
-    for root in _s17_3_4_roots(tmp_path):
+def test_lint_and_format_run_the_yaml_formatter(tmp_path: Path) -> None:
+    for root in _graph_roots(tmp_path):
         cycle.apply(root, home=tmp_path / "home")
         tasks = _load(root, "tasks/quality.yml")["tasks"]
         assert tasks["lint:yaml"]["cmds"] == [YAML_LINT]
@@ -197,8 +193,8 @@ def test_s19_1_3_1_lint_and_format_run_the_yaml_formatter(tmp_path: Path) -> Non
             assert tasks[name]["desc"]
 
 
-def test_s19_1_3_2_the_root_verbs_call_the_pair(tmp_path: Path) -> None:
-    for root in _s17_3_4_roots(tmp_path):
+def test_the_root_verbs_call_the_pair(tmp_path: Path) -> None:
+    for root in _graph_roots(tmp_path):
         cycle.apply(root, home=tmp_path / "home")
         tasks = _load(root, "Taskfile.yml")["tasks"]
         for verb, kind in (("lint", "lint"), ("format", "format")):
@@ -208,7 +204,7 @@ def test_s19_1_3_2_the_root_verbs_call_the_pair(tmp_path: Path) -> None:
         assert "YAML" in tasks["lint"]["desc"]
 
 
-def test_s19_1_3_3_an_override_replaces_one_task(tmp_path: Path) -> None:
+def test_an_override_replaces_one_task(tmp_path: Path) -> None:
     for kept, replaced in (("format", "lint"), ("lint", "format")):
         root = _root(
             tmp_path / replaced,
@@ -222,7 +218,7 @@ def test_s19_1_3_3_an_override_replaces_one_task(tmp_path: Path) -> None:
         ]
 
 
-def test_s19_1_3_4_the_node_lib_ci_validate_runs_it(tmp_path: Path) -> None:
+def test_the_node_lib_ci_validate_runs_it(tmp_path: Path) -> None:
     cmds = _ci_tasks(_node_lib_root(tmp_path))["tasks"]["validate"]["cmds"]  # type: ignore[index]
     toml = cmds.index({"task": ":quality:lint:toml"})
     assert cmds[toml + 1] == {"task": ":quality:lint:yaml"}
@@ -234,8 +230,8 @@ BANNER = "workspace:banner"
 RULE = "=" * 72
 
 
-def test_s17_3_5_1_validate_prints_a_banner_before_each_step(tmp_path: Path) -> None:
-    for root in _s17_3_4_roots(tmp_path):
+def test_validate_prints_a_banner_before_each_step(tmp_path: Path) -> None:
+    for root in _graph_roots(tmp_path):
         cycle.apply(root, home=tmp_path / "home")
         cmds = _load(root, "Taskfile.yml")["tasks"]["validate"]["cmds"]
         steps = [c["task"] for c in cmds if c["task"] != BANNER]
@@ -250,8 +246,8 @@ def test_s17_3_5_1_validate_prints_a_banner_before_each_step(tmp_path: Path) -> 
         assert steps[:3] == ["lint", "typecheck", "test"]
 
 
-def test_s17_3_5_2_the_banner_task(tmp_path: Path) -> None:
-    for root in _s17_3_4_roots(tmp_path):
+def test_the_banner_task(tmp_path: Path) -> None:
+    for root in _graph_roots(tmp_path):
         cycle.apply(root, home=tmp_path / "home")
         assert _load(root, "tasks/workspace.yml")["tasks"]["banner"] == {
             "desc": "Print a banner naming the step that follows (STEP), numbered N of OF.",
@@ -265,8 +261,8 @@ def test_s17_3_5_2_the_banner_task(tmp_path: Path) -> None:
         }
 
 
-def test_s17_3_5_6_the_step_task(tmp_path: Path) -> None:
-    for root in _s17_3_4_roots(tmp_path):
+def test_the_step_task(tmp_path: Path) -> None:
+    for root in _graph_roots(tmp_path):
         cycle.apply(root, home=tmp_path / "home")
         assert _load(root, "tasks/workspace.yml")["tasks"]["step"] == {
             "desc": "Print a one-line marker naming the sub-step that follows (STEP), numbered N of OF.",
@@ -277,8 +273,8 @@ def test_s17_3_5_6_the_step_task(tmp_path: Path) -> None:
         }
 
 
-def test_s17_3_5_7_lint_prints_a_marker_before_each_step(tmp_path: Path) -> None:
-    for root in _s17_3_4_roots(tmp_path):
+def test_lint_prints_a_marker_before_each_step(tmp_path: Path) -> None:
+    for root in _graph_roots(tmp_path):
         cycle.apply(root, home=tmp_path / "home")
         cmds = _load(root, "Taskfile.yml")["tasks"]["lint"]["cmds"]
         steps = [c["task"] for c in cmds if c["task"] != STEP]
@@ -292,7 +288,7 @@ def test_s17_3_5_7_lint_prints_a_marker_before_each_step(tmp_path: Path) -> None
         ]
 
 
-def test_s17_3_5_3_extra_steps_get_a_banner(tmp_path: Path) -> None:
+def test_extra_steps_get_a_banner(tmp_path: Path) -> None:
     root = _root(
         tmp_path,
         extra='\n[tasks]\n[tasks.extra_refs]\nvalidate = ["workspace:clean"]\n',
@@ -305,15 +301,15 @@ def test_s17_3_5_3_extra_steps_get_a_banner(tmp_path: Path) -> None:
     ]
 
 
-def test_s17_3_5_4_the_gate_still_passes_the_layout_check(tmp_path: Path) -> None:
-    for root in _s17_3_4_roots(tmp_path):
+def test_the_gate_still_passes_the_layout_check(tmp_path: Path) -> None:
+    for root in _graph_roots(tmp_path):
         cycle.apply(root, home=tmp_path / "home")
         assert _codes(root) == []
         graph, namespaces = layout.load_graph(root)
         assert BANNER in layout.reachable_from("validate", graph, namespaces)
 
 
-def test_s17_3_5_5_ci_validate_is_unchanged(tmp_path: Path) -> None:
+def test_ci_validate_is_unchanged(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     validate = _ci_tasks(root)["tasks"]["validate"]
@@ -321,12 +317,12 @@ def test_s17_3_5_5_ci_validate_is_unchanged(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("name", archetypes.shipped())
-def test_s4_10_1_3_lint_toml_is_a_required_gate(name: str) -> None:
+def test_lint_toml_is_a_required_gate(name: str) -> None:
     assert "quality:lint:toml" in archetypes.load(name).required_validate
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_3_1_task_list_json_lists_exactly_the_ten_root_verbs(
+def test_task_list_json_lists_exactly_the_ten_root_verbs(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _root(tmp_path, archetype, profile="none")
@@ -352,7 +348,7 @@ def test_s4_3_3_1_task_list_json_lists_exactly_the_ten_root_verbs(
     }
 
 
-def test_s4_3_3_1_an_mkdocs_repo_also_lists_the_three_docs_verbs(
+def test_an_mkdocs_repo_also_lists_the_three_docs_verbs(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path)
@@ -368,7 +364,7 @@ def test_s4_3_3_1_an_mkdocs_repo_also_lists_the_three_docs_verbs(
     assert "docs:structure" not in names
 
 
-def test_s4_3_3_2_a_repo_owned_include_is_seeded_once_and_list_all_succeeds(
+def test_a_repo_owned_include_is_seeded_once_and_list_all_succeeds(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path, extra=INCLUDE_EXTRA)
@@ -379,7 +375,7 @@ def test_s4_3_3_2_a_repo_owned_include_is_seeded_once_and_list_all_succeeds(
     assert result.returncode == 0, result.stderr
 
 
-def test_s4_3_3_2_an_edit_to_an_include_survives_apply(tmp_path: Path) -> None:
+def test_an_edit_to_an_include_survives_apply(tmp_path: Path) -> None:
     root = _root(tmp_path, extra=INCLUDE_EXTRA)
     cycle.apply(root, home=tmp_path / "home")
     include = root / "tasks" / "extra.yml"
@@ -390,7 +386,7 @@ def test_s4_3_3_2_an_edit_to_an_include_survives_apply(tmp_path: Path) -> None:
     assert include.read_text(encoding="utf-8") == edited
 
 
-def test_s4_3_3_3_an_extra_ref_is_reachable_from_validate(tmp_path: Path) -> None:
+def test_an_extra_ref_is_reachable_from_validate(tmp_path: Path) -> None:
     root = _root(
         tmp_path,
         extra='\n[tasks]\n[tasks.extra_refs]\nvalidate = ["workspace:clean"]\n',
@@ -401,7 +397,7 @@ def test_s4_3_3_3_an_extra_ref_is_reachable_from_validate(tmp_path: Path) -> Non
     assert _codes(root) == []
 
 
-def test_s4_3_3_3_an_unknown_extra_ref_key_fails_config_load(tmp_path: Path) -> None:
+def test_an_unknown_extra_ref_key_fails_config_load(tmp_path: Path) -> None:
     root = _root(
         tmp_path,
         extra='\n[tasks]\n[tasks.extra_refs]\nbogus = ["workspace:clean"]\n',
@@ -411,7 +407,7 @@ def test_s4_3_3_3_an_unknown_extra_ref_key_fails_config_load(tmp_path: Path) -> 
     assert "tasks.extra_refs.bogus" in str(excinfo.value)
 
 
-def test_s4_3_3_4_a_command_override_replaces_only_that_task_s_cmds(
+def test_a_command_override_replaces_only_that_task_s_cmds(
     tmp_path: Path,
 ) -> None:
     plain = _root(tmp_path / "plain")
@@ -434,7 +430,7 @@ def test_s4_3_3_4_a_command_override_replaces_only_that_task_s_cmds(
         assert after[path] == before[path]
 
 
-def test_s4_3_3_4_an_unknown_override_key_raises_naming_it(tmp_path: Path) -> None:
+def test_an_unknown_override_key_raises_naming_it(tmp_path: Path) -> None:
     root = _root(
         tmp_path,
         extra='\n[tasks]\n[tasks.command_overrides]\nbogus = "echo hi"\n',

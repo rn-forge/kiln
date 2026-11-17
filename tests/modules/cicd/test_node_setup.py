@@ -33,7 +33,7 @@ def _node_lib_action(tmp_path: Path, hooks: str = "") -> dict[str, object]:
     return YamlUtils.load(_rendered(root)[SETUP_ACTION])
 
 
-def test_s9_1_1_1_node_lib_action_inputs_and_steps(tmp_path: Path) -> None:
+def test_node_lib_action_inputs_and_steps(tmp_path: Path) -> None:
     action = _node_lib_action(tmp_path)
     inputs = action["inputs"]
     assert list(inputs) == ["start-ci-run", "registry-url", "github-token"]  # type: ignore[arg-type]
@@ -67,7 +67,7 @@ def test_s9_1_1_1_node_lib_action_inputs_and_steps(tmp_path: Path) -> None:
     assert steps[5]["with"]["repo-token"] == "${{ inputs.github-token }}"
 
 
-def test_s9_1_1_1_hooks_follow_the_setup_task_step(tmp_path: Path) -> None:
+def test_hooks_follow_the_setup_task_step(tmp_path: Path) -> None:
     steps = _node_lib_action(tmp_path, HOOKS)["runs"]["steps"]  # type: ignore[index]
     assert [s["name"] for s in steps[-2:]] == [
         "Run ./.github/actions/a",
@@ -86,7 +86,7 @@ def test_s9_1_1_1_hooks_follow_the_setup_task_step(tmp_path: Path) -> None:
         ("python-web-app", 'frontend = "angular"'),
     ],
 )
-def test_s9_1_1_2_other_archetypes_render_no_node_lib_action(
+def test_other_archetypes_render_no_node_lib_action(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
     rendered = _rendered(_cell_root(tmp_path, archetype, extra))
@@ -96,7 +96,7 @@ def test_s9_1_1_2_other_archetypes_render_no_node_lib_action(
         assert "npm" not in _updates_of(rendered[".github/dependabot.yml"])
 
 
-def test_s9_1_1_3_node_lib_dependabot_adds_npm_beside_uv(
+def test_node_lib_dependabot_adds_npm_beside_uv(
     tmp_path: Path,
 ) -> None:
     updates = YamlUtils.load(
@@ -110,7 +110,7 @@ def test_s9_1_1_3_node_lib_dependabot_adds_npm_beside_uv(
     assert list(npm["groups"]) == ["npm"]
 
 
-# node-lib's action.yml before S9.2.4, minus the header line, with each pin
+# node-lib's action.yml as first rendered, minus the header line, with each pin
 # replaced by PIN.
 NODE_LIB_ACTION_BEFORE = """name: Setup
 description: Install pnpm and Node, uv when the repository commits a uv.lock, optionally start an Nx Cloud CI run, and install dependencies. Run after actions/checkout.
@@ -176,7 +176,7 @@ def _step(action: dict[str, object], needle: str) -> dict[str, object]:
     return next(s for s in steps if needle in s.get("uses", ""))
 
 
-def test_s9_2_4_1_pnpm_setup_does_not_install(tmp_path: Path) -> None:
+def test_pnpm_setup_does_not_install(tmp_path: Path) -> None:
     for action in (
         _node_lib_action(tmp_path / "lib"),
         _web_app_action(tmp_path / "app"),
@@ -184,7 +184,7 @@ def test_s9_2_4_1_pnpm_setup_does_not_install(tmp_path: Path) -> None:
         assert _step(action, "pnpm/action-setup")["with"] == {"run_install": False}
 
 
-def test_s9_2_4_2_setup_node_reads_nvmrc_and_caches_pnpm(tmp_path: Path) -> None:
+def test_setup_node_reads_nvmrc_and_caches_pnpm(tmp_path: Path) -> None:
     lib = _step(_node_lib_action(tmp_path / "lib"), "actions/setup-node")["with"]
     app = _step(_web_app_action(tmp_path / "app"), "actions/setup-node")["with"]
     assert lib == {
@@ -198,7 +198,7 @@ def test_s9_2_4_2_setup_node_reads_nvmrc_and_caches_pnpm(tmp_path: Path) -> None
 @pytest.mark.parametrize(
     "archetype", ["python-app", "python-tool", "python-lib", "python-web-api"]
 )
-def test_s9_2_4_3_other_python_archetypes_render_no_pnpm_step(
+def test_other_python_archetypes_render_no_pnpm_step(
     tmp_path: Path, archetype: str
 ) -> None:
     action = _rendered(_cell_root(tmp_path, archetype, ""))[SETUP_ACTION]
@@ -206,13 +206,13 @@ def test_s9_2_4_3_other_python_archetypes_render_no_pnpm_step(
     assert "setup-node" not in action
 
 
-def test_s9_2_4_4_node_lib_action_is_byte_identical_to_before(tmp_path: Path) -> None:
+def test_node_lib_action_is_byte_identical_to_before(tmp_path: Path) -> None:
     text = _rendered(_root(tmp_path, "node-lib"))[SETUP_ACTION].split("\n", 1)[1]
     pinned = re.sub(r"(uses: [\w./-]+)@[0-9a-f]{40} # \S+", r"\1@PIN", text)
     assert pinned == NODE_LIB_ACTION_BEFORE
 
 
-def test_s9_2_4_5_each_step_is_written_once() -> None:
+def test_each_step_is_written_once() -> None:
     template = (
         Path(__file__).resolve().parents[3]
         / "src/rn_forge/kiln/modules/cicd/templates/action.yml.j2"
@@ -222,7 +222,7 @@ def test_s9_2_4_5_each_step_is_written_once() -> None:
     assert text.count('pins["setup-node"].uses') == 1
 
 
-def test_s9_2_5_5_both_node_cells_carry_the_same_npm_block(tmp_path: Path) -> None:
+def test_both_node_cells_carry_the_same_npm_block(tmp_path: Path) -> None:
     def updates(root: Path) -> dict[str, object]:
         parsed = YamlUtils.load(_rendered(root)[".github/dependabot.yml"])
         return {u["package-ecosystem"]: u for u in parsed["updates"]}
@@ -236,13 +236,11 @@ def test_s9_2_5_5_both_node_cells_carry_the_same_npm_block(tmp_path: Path) -> No
 
 
 @pytest.mark.parametrize("archetype", ["python-app", "python-tool", "python-lib"])
-def test_s9_2_5_5_python_cells_have_no_npm_block(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_python_cells_have_no_npm_block(tmp_path: Path, archetype: str) -> None:
     assert "npm" not in _updates_of(_rendered(_root(tmp_path, archetype))[DEPENDABOT])
 
 
-def test_s9_2_6_4_web_app_sonar_reads_the_web_lcov_report(tmp_path: Path) -> None:
+def test_web_app_sonar_reads_the_web_lcov_report(tmp_path: Path) -> None:
     properties = _rendered(
         _web_root(tmp_path, "python-web-app", extra='frontend = "angular"')
     )["sonar-project.properties"].splitlines()
@@ -250,7 +248,7 @@ def test_s9_2_6_4_web_app_sonar_reads_the_web_lcov_report(tmp_path: Path) -> Non
     assert "sonar.exclusions=**/node_modules/**,**/dist/**,**/*.spec.ts" in properties
 
 
-def test_s9_2_6_4_sonar_report_path_keeps_the_project_name(tmp_path: Path) -> None:
+def test_sonar_report_path_keeps_the_project_name(tmp_path: Path) -> None:
     properties = _rendered(
         _web_root(
             tmp_path,
@@ -262,9 +260,7 @@ def test_s9_2_6_4_sonar_report_path_keeps_the_project_name(tmp_path: Path) -> No
 
 
 @pytest.mark.parametrize("archetype", ["python-web-api", "python-tool", "node-lib"])
-def test_s9_2_6_4_other_archetypes_name_no_web_report(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_other_archetypes_name_no_web_report(tmp_path: Path, archetype: str) -> None:
     root = (
         _web_root(tmp_path, archetype)
         if archetype == "python-web-api"
@@ -275,7 +271,7 @@ def test_s9_2_6_4_other_archetypes_name_no_web_report(
     assert "**/dist/**,**/*.spec.ts" not in properties
 
 
-def test_s9_3_7_2_gate_comment_is_one_text_for_every_archetype(
+def test_gate_comment_is_one_text_for_every_archetype(
     tmp_path: Path,
 ) -> None:
     for archetype in ("node-lib", "python-app", "python-lib"):
@@ -285,7 +281,7 @@ def test_s9_3_7_2_gate_comment_is_one_text_for_every_archetype(
         assert "a\n  # release or deploy on a pull request" in ci, archetype
 
 
-def test_s9_3_7_3_setup_uv_pin_is_v10_3_0(tmp_path: Path) -> None:
+def test_setup_uv_pin_is_v10_3_0(tmp_path: Path) -> None:
     sha = "1c37ad07a6a961277cf70c0d37d6f313000f5884"
     assert UPSTREAM_PINS["setup-uv"] == (sha, "v10.3.0")
     uses = f"astral-sh/setup-uv@{sha} # v10.3.0"
@@ -302,7 +298,7 @@ def test_s9_3_7_3_setup_uv_pin_is_v10_3_0(tmp_path: Path) -> None:
         assert uses in action, archetype
 
 
-def test_s15_3_4_1_setup_uv_ignores_nothing_to_cache(tmp_path: Path) -> None:
+def test_setup_uv_ignores_nothing_to_cache(tmp_path: Path) -> None:
     cases = [(a, _root(tmp_path / a, a)) for a in (*ARCHETYPES, "node-lib")]
     cases += [
         ("python-web-api", _web_root(tmp_path / "api", "python-web-api")),
@@ -325,7 +321,7 @@ def test_s15_3_4_1_setup_uv_ignores_nothing_to_cache(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s15_1_2_7_umbrella_needs_a_release(tmp_path: Path, archetype: str) -> None:
+def test_umbrella_needs_a_release(tmp_path: Path, archetype: str) -> None:
     root = _root(tmp_path, archetype, release="none")
     config = root / ".rn-forge" / "kiln" / "config.toml"
     config.write_text(

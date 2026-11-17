@@ -12,7 +12,7 @@ from tests.modules.tasks.support import _ci_tasks, _node_lib_root
 
 
 @requires("task")
-def test_s9_3_1_1_docs_site_runs_both_commands_with_no_environment(
+def test_docs_site_runs_both_commands_with_no_environment(
     tmp_path: Path,
 ) -> None:
     tasks = _ci_tasks(_node_lib_root(tmp_path / "root"))["tasks"]
@@ -44,7 +44,7 @@ def test_s9_3_1_1_docs_site_runs_both_commands_with_no_environment(
     assert "kiln-devops site-assemble .docs-site" in done.stdout
 
 
-def test_s9_3_1_2_node_lib_has_no_docs_affected_task(tmp_path: Path) -> None:
+def test_node_lib_has_no_docs_affected_task(tmp_path: Path) -> None:
     root = _node_lib_root(tmp_path)
     assert "docs:affected" not in _ci_tasks(root)["tasks"]  # type: ignore[operator]
     rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}

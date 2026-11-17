@@ -24,7 +24,7 @@ from tests.modules.tasks.support import (
     _node_lib_root,
     _node_root,
     _root,
-    _s4_12_1_root,
+    _ci_root,
     _secrets_root,
     _unmarked,
 )
@@ -70,20 +70,20 @@ OLD_CI_KEYS = [
 
 
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
-def test_s4_12_2_1_every_archetype_renders_ci_yml(
+def test_every_archetype_renders_ci_yml(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
-    root = _s4_12_1_root(tmp_path, archetype, extra)
+    root = _ci_root(tmp_path, archetype, extra)
     rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
     assert "tasks/ci.yml" in rendered
     assert YamlUtils.load(rendered["Taskfile.yml"])["includes"]["ci"] == "tasks/ci.yml"
 
 
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
-def test_s4_12_2_2_ci_yml_holds_the_workflows_check(
+def test_ci_yml_holds_the_workflows_check(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
-    root = _s4_12_1_root(tmp_path, archetype, extra)
+    root = _ci_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "tasks/ci.yml")["tasks"]
     for name, cmds in CI_LINT_CHECKS.items():
@@ -93,10 +93,10 @@ def test_s4_12_2_2_ci_yml_holds_the_workflows_check(
 
 
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
-def test_s4_12_2_3_only_python_lib_has_the_pipeline_tasks(
+def test_only_python_lib_has_the_pipeline_tasks(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
-    root = _s4_12_1_root(tmp_path, archetype, extra)
+    root = _ci_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     document = _load(root, "tasks/ci.yml")
     assert "sonar:target" in document["tasks"]
@@ -124,7 +124,7 @@ def test_s4_12_2_3_only_python_lib_has_the_pipeline_tasks(
 
 
 @pytest.mark.parametrize("key", [f"ci:{name}" for name in CI_LINT_CHECKS])
-def test_s4_12_2_5_overrides_take_the_new_keys(tmp_path: Path, key: str) -> None:
+def test_overrides_take_the_new_keys(tmp_path: Path, key: str) -> None:
     root = _root(
         tmp_path,
         extra=f'\n[tasks]\n[tasks.command_overrides]\n"{key}" = "echo hi"\n',
@@ -135,7 +135,7 @@ def test_s4_12_2_5_overrides_take_the_new_keys(tmp_path: Path, key: str) -> None
 
 
 @pytest.mark.parametrize("key", OLD_CI_KEYS)
-def test_s4_12_2_5_old_keys_are_refused(tmp_path: Path, key: str) -> None:
+def test_old_keys_are_refused(tmp_path: Path, key: str) -> None:
     root = _root(
         tmp_path,
         extra=f'\n[tasks]\n[tasks.command_overrides]\n"{key}" = "echo hi"\n',
@@ -145,7 +145,7 @@ def test_s4_12_2_5_old_keys_are_refused(tmp_path: Path, key: str) -> None:
 
 
 @pytest.mark.parametrize("name", archetypes.shipped())
-def test_s4_12_2_6_required_validate_names_the_ci_tasks(name: str) -> None:
+def test_required_validate_names_the_ci_tasks(name: str) -> None:
     required = archetypes.load(name).required_validate
     for task in ("workflows",):
         assert f"ci:lint:{task}" in required
@@ -159,16 +159,16 @@ def test_s4_12_2_6_required_validate_names_the_ci_tasks(name: str) -> None:
 
 
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
-def test_s4_12_2_7_task_layout_accepts_the_rendered_files(
+def test_task_layout_accepts_the_rendered_files(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
-    root = _s4_12_1_root(tmp_path, archetype, extra)
+    root = _ci_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     assert _codes(root) == []
 
 
 @pytest.mark.parametrize("name", ["workflows"])
-def test_s4_12_2_7_gate_shrunk_fires(tmp_path: Path, name: str) -> None:
+def test_gate_shrunk_fires(tmp_path: Path, name: str) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     taskfile = root / "Taskfile.yml"
@@ -182,7 +182,7 @@ def test_s4_12_2_7_gate_shrunk_fires(tmp_path: Path, name: str) -> None:
     )
 
 
-def test_s4_12_2_8_an_include_cannot_take_ci(tmp_path: Path) -> None:
+def test_an_include_cannot_take_ci(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     config = root / ".rn-forge" / "kiln" / "config.toml"
@@ -194,7 +194,7 @@ def test_s4_12_2_8_an_include_cannot_take_ci(tmp_path: Path) -> None:
     assert "taskgraph.reserved-namespace" in _codes(root)
 
 
-def test_s4_12_3_1_node_yml_holds_the_toolchain(tmp_path: Path) -> None:
+def test_node_yml_holds_the_toolchain(tmp_path: Path) -> None:
     root = _node_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "tasks/node.yml")["tasks"]
@@ -208,7 +208,7 @@ def test_s4_12_3_1_node_yml_holds_the_toolchain(tmp_path: Path) -> None:
     assert _load(root, "Taskfile.yml")["includes"]["node"] == "tasks/node.yml"
 
 
-def test_s4_12_3_2_web_yml_keeps_only_dev(tmp_path: Path) -> None:
+def test_web_yml_keeps_only_dev(tmp_path: Path) -> None:
     root = _node_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "tasks/web.yml")["tasks"]
@@ -218,7 +218,7 @@ def test_s4_12_3_2_web_yml_keeps_only_dev(tmp_path: Path) -> None:
     assert "internal" not in tasks["dev"]
 
 
-def test_s4_12_3_3_the_wrappers_call_node(tmp_path: Path) -> None:
+def test_the_wrappers_call_node(tmp_path: Path) -> None:
     root = _node_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "Taskfile.yml")["tasks"]
@@ -235,7 +235,7 @@ def test_s4_12_3_3_the_wrappers_call_node(tmp_path: Path) -> None:
             assert not cmd["task"].startswith("web:")
 
 
-def test_s4_12_3_4_workspace_install_has_no_pnpm(tmp_path: Path) -> None:
+def test_workspace_install_has_no_pnpm(tmp_path: Path) -> None:
     root = _node_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "tasks/workspace.yml")["tasks"]
@@ -247,17 +247,17 @@ def test_s4_12_3_4_workspace_install_has_no_pnpm(tmp_path: Path) -> None:
     ("archetype", "extra"),
     [(a, "") for a in ARCHETYPES] + [("python-web-api", "")],
 )
-def test_s4_12_3_5_only_python_web_app_renders_node_yml(
+def test_only_python_web_app_renders_node_yml(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
-    root = _s4_12_1_root(tmp_path, archetype, extra)
+    root = _ci_root(tmp_path, archetype, extra)
     rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
     assert "tasks/node.yml" not in rendered
     assert "node" not in YamlUtils.load(rendered["Taskfile.yml"])["includes"]
 
 
 @pytest.mark.parametrize("name", NODE_CHECKS)
-def test_s4_12_3_6_overrides_take_the_node_keys(tmp_path: Path, name: str) -> None:
+def test_overrides_take_the_node_keys(tmp_path: Path, name: str) -> None:
     root = _node_root(
         tmp_path,
         extra=f'\n[tasks]\n[tasks.command_overrides]\n"node:{name}" = "echo hi"\n',
@@ -266,7 +266,7 @@ def test_s4_12_3_6_overrides_take_the_node_keys(tmp_path: Path, name: str) -> No
     assert _load(root, "tasks/node.yml")["tasks"][name]["cmds"] == ["echo hi"]
 
 
-def test_s4_12_3_6_node_lint_is_unknown_on_python_tool(tmp_path: Path) -> None:
+def test_node_lint_is_unknown_on_python_tool(tmp_path: Path) -> None:
     root = _root(
         tmp_path,
         extra='\n[tasks]\n[tasks.command_overrides]\n"node:lint" = "echo hi"\n',
@@ -275,7 +275,7 @@ def test_s4_12_3_6_node_lint_is_unknown_on_python_tool(tmp_path: Path) -> None:
         TASKS.artifacts(KilnConfig.load(root), root)
 
 
-def test_s4_12_3_7_node_tasks_must_be_internal(tmp_path: Path) -> None:
+def test_node_tasks_must_be_internal(tmp_path: Path) -> None:
     root = _node_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     node = root / "tasks/node.yml"
@@ -288,7 +288,7 @@ def test_s4_12_3_7_node_tasks_must_be_internal(tmp_path: Path) -> None:
     assert "taskgraph.not-internal" in _codes(root)
 
 
-def test_s9_1_9_1_node_yml_adds_typecheck_and_e2e_for_node_lib(
+def test_node_yml_adds_typecheck_and_e2e_for_node_lib(
     tmp_path: Path,
 ) -> None:
     root = _node_lib_root(tmp_path)
@@ -303,16 +303,14 @@ def test_s9_1_9_1_node_yml_adds_typecheck_and_e2e_for_node_lib(
 
 
 @pytest.mark.parametrize("name", ["typecheck", "e2e"])
-def test_s9_1_9_1_node_lib_overrides_take_the_new_keys(
-    tmp_path: Path, name: str
-) -> None:
+def test_node_lib_overrides_take_the_new_keys(tmp_path: Path, name: str) -> None:
     config = '\n[tasks]\n[tasks.command_overrides]\n"node:{}" = "echo hi"\n'
     root = _root(tmp_path, "node-lib", extra=config.format(name))
     cycle.apply(root, home=tmp_path / "home")
     assert _load(root, "tasks/node.yml")["tasks"][name]["cmds"] == ["echo hi"]
 
 
-def test_s9_1_9_2_node_lib_root_verbs_wrap_node(tmp_path: Path) -> None:
+def test_node_lib_root_verbs_wrap_node(tmp_path: Path) -> None:
     root = _node_lib_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "Taskfile.yml")["tasks"]
@@ -325,7 +323,7 @@ def test_s9_1_9_2_node_lib_root_verbs_wrap_node(tmp_path: Path) -> None:
     assert {"task": "typecheck"} in tasks["validate"]["cmds"]
 
 
-def test_s9_1_9_2_node_lib_calls_no_python_task_that_needs_a_package(
+def test_node_lib_calls_no_python_task_that_needs_a_package(
     tmp_path: Path,
 ) -> None:
     root = _node_lib_root(tmp_path)
@@ -341,7 +339,7 @@ def test_s9_1_9_2_node_lib_calls_no_python_task_that_needs_a_package(
     assert {"task": "python:format"} not in tasks["format"]["cmds"]
 
 
-def test_s9_2_6_3_web_app_coverage_runs_python_then_node(tmp_path: Path) -> None:
+def test_web_app_coverage_runs_python_then_node(tmp_path: Path) -> None:
     root = _node_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "Taskfile.yml")["tasks"]
@@ -351,21 +349,21 @@ def test_s9_2_6_3_web_app_coverage_runs_python_then_node(tmp_path: Path) -> None
     ]
 
 
-def test_s9_2_6_3_node_lib_coverage_stays_node_only(tmp_path: Path) -> None:
+def test_node_lib_coverage_stays_node_only(tmp_path: Path) -> None:
     root = _node_lib_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "Taskfile.yml")["tasks"]
     assert tasks["test:coverage"]["cmds"] == [{"task": "node:test"}]
 
 
-def test_s9_2_6_3_python_web_api_coverage_calls_no_node(tmp_path: Path) -> None:
+def test_python_web_api_coverage_calls_no_node(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-web-api")
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "Taskfile.yml")["tasks"]
     assert tasks["test:coverage"]["cmds"] == [{"task": "python:test:coverage"}]
 
 
-def test_s9_1_9_3_node_lib_taskfile_includes_no_python_or_api(
+def test_node_lib_taskfile_includes_no_python_or_api(
     tmp_path: Path,
 ) -> None:
     root = _node_lib_root(tmp_path)
@@ -421,7 +419,7 @@ CI_OLD_NAMES = (
 )
 
 
-def test_s17_2_1_1_grammar(tmp_path: Path) -> None:
+def test_ci_task_names_and_descriptions_follow_grammar(tmp_path: Path) -> None:
     for archetype, root in _ci_cells(tmp_path):
         tasks = _ci_rendered(root)
         public = [n for n, t in tasks.items() if not t.get("internal")]
@@ -436,7 +434,7 @@ def test_s17_2_1_1_grammar(tmp_path: Path) -> None:
             assert sentence[0].isupper() and sentence.endswith("."), (archetype, full)
 
 
-def test_s17_2_1_2_one_name_per_idea(tmp_path: Path) -> None:
+def test_one_name_per_idea(tmp_path: Path) -> None:
     for archetype, root in _ci_cells(tmp_path):
         names = {f"ci:{name}" for name in _ci_rendered(root)}
         assert not names & set(CI_OLD_NAMES), (archetype, names & set(CI_OLD_NAMES))
@@ -460,7 +458,7 @@ def test_s17_2_1_2_one_name_per_idea(tmp_path: Path) -> None:
     assert {"task": "node:version"} in root_yml["tasks"]["version"]["cmds"]
 
 
-def test_s17_2_1_3_workflows_call_the_new_names(tmp_path: Path) -> None:
+def test_workflows_call_the_new_names(tmp_path: Path) -> None:
     for archetype, root in _ci_cells(tmp_path):
         files = [p for p in (root / ".github").rglob("*") if p.is_file()]
         assert files, archetype

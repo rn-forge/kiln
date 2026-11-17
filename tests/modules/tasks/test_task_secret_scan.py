@@ -22,9 +22,7 @@ def _gitleaks_pin() -> dict[str, dict[str, str]]:
 
 
 @pytest.mark.parametrize("archetype", SIX_ARCHETYPES)
-def test_s15_3_2_1_task_renders_for_every_archetype(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_task_renders_for_every_archetype(tmp_path: Path, archetype: str) -> None:
     tasks = _ci_rendered(_secrets_root(tmp_path, archetype))
     assert tasks["secret-scan"]["cmds"] == [
         {"task": "secrets:install"},
@@ -35,7 +33,7 @@ def test_s15_3_2_1_task_renders_for_every_archetype(
     assert tasks["secrets:install"]["internal"] is True
 
 
-def test_s15_3_2_2_install_verifies_the_sha(tmp_path: Path) -> None:
+def test_install_verifies_the_sha(tmp_path: Path) -> None:
     install = _ci_rendered(_secrets_root(tmp_path, "python-tool"))["secrets:install"]
     assert install["status"] == ["test -x .rn-forge/kiln/rendered/bin/gitleaks"]
     (script,) = install["cmds"]
@@ -57,7 +55,7 @@ def test_s15_3_2_2_install_verifies_the_sha(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("archetype", SIX_ARCHETYPES)
-def test_s15_3_2_3_off(tmp_path: Path, archetype: str) -> None:
+def test_secret_scan_off_removes_tasks(tmp_path: Path, archetype: str) -> None:
     on_dir, off_dir = tmp_path / "on", tmp_path / "off"
     on_dir.mkdir()
     off_dir.mkdir()
@@ -73,7 +71,7 @@ def test_s15_3_2_3_off(tmp_path: Path, archetype: str) -> None:
     assert "secrets" not in json.dumps(off_lint["tasks"]["lint"])
 
 
-def test_s15_4_2_1_task(tmp_path: Path) -> None:
+def test_internal_ranges_task_only_for_python_lib(tmp_path: Path) -> None:
     tasks = _ci_rendered(_applied(tmp_path / "lib", "python-lib"))
     assert tasks["internal-ranges"]["cmds"] == ["{{.DEVOPS}} requirements"]
     for archetype in ("python-tool", "python-app"):
@@ -81,7 +79,7 @@ def test_s15_4_2_1_task(tmp_path: Path) -> None:
         assert "internal-ranges" not in other
 
 
-def test_s15_4_3_8_node_task(tmp_path: Path) -> None:
+def test_node_task(tmp_path: Path) -> None:
     tasks = _ci_rendered(_applied(tmp_path / "lib", "node-lib"))
     assert tasks["internal-ranges"]["cmds"] == [
         "set -o pipefail; pnpm ls -r --depth -1 --json"

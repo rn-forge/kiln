@@ -17,7 +17,7 @@ from tests.modules.tasks.support import (
     _load,
     _root,
     _run_task,
-    _s4_12_1_root,
+    _ci_root,
     _unmarked,
 )
 
@@ -57,10 +57,10 @@ KILN_DOCTOR_CMDS = [
 
 
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
-def test_s4_12_6_1_kiln_yml_holds_one_internal_doctor_task(
+def test_kiln_yml_holds_one_internal_doctor_task(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
-    root = _s4_12_1_root(tmp_path, archetype, extra)
+    root = _ci_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     document = _load(root, "tasks/kiln.yml")
     assert set(document["tasks"]) == {"doctor", "diff", "apply", "pin"}
@@ -73,10 +73,10 @@ def test_s4_12_6_1_kiln_yml_holds_one_internal_doctor_task(
 
 
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
-def test_s4_12_6_2_root_lint_runs_in_the_exact_order(
+def test_root_lint_runs_in_the_exact_order(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
-    root = _s4_12_1_root(tmp_path, archetype, extra)
+    root = _ci_root(tmp_path, archetype, extra)
     expected = list(LINT_ORDER)
     if archetype == "python-web-app":
         expected[2:2] = ["node:lint", "node:lint:format"]
@@ -96,8 +96,8 @@ def test_s4_12_6_2_root_lint_runs_in_the_exact_order(
 
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
 @requires("task")
-def test_s4_12_6_3_doctor_runs_once(tmp_path: Path, archetype: str, extra: str) -> None:
-    root = _s4_12_1_root(tmp_path, archetype, extra)
+def test_doctor_runs_once(tmp_path: Path, archetype: str, extra: str) -> None:
+    root = _ci_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     without = _run_task(root, "--dry", "lint")
     assert without.returncode == 0, without.stderr
@@ -111,7 +111,7 @@ def test_s4_12_6_3_doctor_runs_once(tmp_path: Path, archetype: str, extra: str) 
     assert out.count("kiln doctor .") == 1
 
 
-def test_s7_4_1_1_kiln_yml_runs_the_pinned_kiln(tmp_path: Path) -> None:
+def test_kiln_yml_runs_the_pinned_kiln(tmp_path: Path) -> None:
     root = _root(tmp_path, extra='\n[kiln]\nref = "v9.9.9"\n')
     cycle.apply(root, home=tmp_path / "home")
     assert _load(root, "tasks/kiln.yml")["vars"]["KILN"] == (
@@ -119,7 +119,7 @@ def test_s7_4_1_1_kiln_yml_runs_the_pinned_kiln(tmp_path: Path) -> None:
     )
 
 
-def test_s7_4_1_2_kiln_itself_runs_its_working_tree(tmp_path: Path) -> None:
+def test_kiln_itself_runs_its_working_tree(tmp_path: Path) -> None:
     root = _root(
         tmp_path, extra='\n[archetype."python-tool"]\nmodule = "rn_forge.kiln"\n'
     )
@@ -127,7 +127,7 @@ def test_s7_4_1_2_kiln_itself_runs_its_working_tree(tmp_path: Path) -> None:
     assert _load(root, "tasks/kiln.yml")["vars"]["KILN"] == "uv run kiln"
 
 
-def test_s7_2_5_3_task_order(tmp_path: Path) -> None:
+def test_task_order(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     pin = _load(root, "tasks/kiln.yml")["tasks"]["pin"]
@@ -140,7 +140,7 @@ def test_s7_2_5_3_task_order(tmp_path: Path) -> None:
     ]
 
 
-def test_s18_14_2_7_the_pin_task_takes_no_argument(tmp_path: Path) -> None:
+def test_the_pin_task_takes_no_argument(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     pin = _load(root, "tasks/kiln.yml")["tasks"]["pin"]
@@ -148,7 +148,7 @@ def test_s18_14_2_7_the_pin_task_takes_no_argument(tmp_path: Path) -> None:
     assert pin["cmds"][-1].endswith('@$({{.KILN}} pin --show)" kiln apply')
 
 
-def test_s7_2_5_5_not_in_kiln(tmp_path: Path) -> None:
+def test_not_in_kiln(tmp_path: Path) -> None:
     root = _root(
         tmp_path, extra='\n[archetype."python-tool"]\nmodule = "rn_forge.kiln"\n'
     )
@@ -156,7 +156,7 @@ def test_s7_2_5_5_not_in_kiln(tmp_path: Path) -> None:
     assert "pin" not in _load(root, "tasks/kiln.yml")["tasks"]
 
 
-def test_s7_4_1_3_an_unpinned_config_runs_kilns_own_ref(tmp_path: Path) -> None:
+def test_an_unpinned_config_runs_kilns_own_ref(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     assert _load(root, "tasks/kiln.yml")["vars"]["KILN"] == archetypes.kiln_command(
@@ -165,7 +165,7 @@ def test_s7_4_1_3_an_unpinned_config_runs_kilns_own_ref(tmp_path: Path) -> None:
     assert archetypes.KILN_REF in _load(root, "tasks/kiln.yml")["vars"]["KILN"]
 
 
-def test_s7_4_1_4_docs_generate_runs_the_pinned_kiln(tmp_path: Path) -> None:
+def test_docs_generate_runs_the_pinned_kiln(tmp_path: Path) -> None:
     root = _root(tmp_path, extra='\n[kiln]\nref = "v9.9.9"\n')
     cycle.apply(root, home=tmp_path / "home")
     docs = _load(root, "tasks/docs.yml")
@@ -173,7 +173,7 @@ def test_s7_4_1_4_docs_generate_runs_the_pinned_kiln(tmp_path: Path) -> None:
     assert docs["tasks"]["generate"]["cmds"] == ["{{.KILN}} docs-generate ."]
 
 
-def test_s4_12_6_4_docs_yml_holds_the_three_verbs(tmp_path: Path) -> None:
+def test_docs_yml_holds_the_three_verbs(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "tasks/docs.yml")["tasks"]
@@ -182,7 +182,7 @@ def test_s4_12_6_4_docs_yml_holds_the_three_verbs(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("key", REMOVED_KEYS)
-def test_s4_12_6_5_removed_keys_are_refused(tmp_path: Path, key: str) -> None:
+def test_removed_keys_are_refused(tmp_path: Path, key: str) -> None:
     root = _root(
         tmp_path,
         extra=f'\n[tasks]\n[tasks.command_overrides]\n"{key}" = "echo hi"\n',
@@ -191,7 +191,7 @@ def test_s4_12_6_5_removed_keys_are_refused(tmp_path: Path, key: str) -> None:
         TASKS.artifacts(KilnConfig.load(root), root)
 
 
-def test_s4_12_6_6_an_include_cannot_take_kiln(tmp_path: Path) -> None:
+def test_an_include_cannot_take_kiln(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     config = root / ".rn-forge" / "kiln" / "config.toml"
@@ -203,7 +203,7 @@ def test_s4_12_6_6_an_include_cannot_take_kiln(tmp_path: Path) -> None:
     assert "taskgraph.reserved-namespace" in _codes(root)
 
 
-def test_s4_12_6_7_kiln_doctor_must_be_internal(tmp_path: Path) -> None:
+def test_kiln_doctor_must_be_internal(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     path = root / "tasks/kiln.yml"
@@ -216,7 +216,7 @@ def test_s4_12_6_7_kiln_doctor_must_be_internal(tmp_path: Path) -> None:
     assert "taskgraph.not-internal" in _codes(root)
 
 
-def test_s4_12_6_8_gate_shrunk_names_kiln_doctor(tmp_path: Path) -> None:
+def test_gate_shrunk_names_kiln_doctor(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     taskfile = root / "Taskfile.yml"
@@ -229,16 +229,16 @@ def test_s4_12_6_8_gate_shrunk_names_kiln_doctor(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
-def test_s4_12_6_9_task_layout_accepts_the_rendered_files(
+def test_task_layout_accepts_the_rendered_files(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
-    root = _s4_12_1_root(tmp_path, archetype, extra)
+    root = _ci_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     assert _codes(root) == []
 
 
 @pytest.mark.parametrize("name", [n for n in archetypes.shipped() if n != "node-lib"])
-def test_s4_12_6_10_required_validate_names_kiln_doctor(name: str) -> None:
+def test_required_validate_names_kiln_doctor(name: str) -> None:
     required = archetypes.load(name).required_validate
     assert required[required.index("python:lint") + 1] == "kiln:doctor"
     for gone in (
@@ -252,7 +252,7 @@ def test_s4_12_6_10_required_validate_names_kiln_doctor(name: str) -> None:
         assert gone not in required
 
 
-def test_s4_12_6_11_without_mkdocs_kiln_yml_still_renders(tmp_path: Path) -> None:
+def test_without_mkdocs_kiln_yml_still_renders(tmp_path: Path) -> None:
     root = _root(tmp_path, profile="none")
     cycle.apply(root, home=tmp_path / "home")
     assert (root / "tasks/kiln.yml").is_file()
@@ -272,7 +272,7 @@ def _release_script(root: Path, task: str) -> str:
     return "\n".join(_ci_tasks(root)["tasks"][task]["cmds"])  # type: ignore[index]
 
 
-def test_s7_6_4_6_release_tasks_upload(tmp_path: Path) -> None:
+def test_release_tasks_upload(tmp_path: Path) -> None:
     pypi = _root(tmp_path / "pypi", "python-lib", extra='\n[ci]\nrelease = "pypi"\n')
     build = _release_script(pypi, "release:build")
     publish = _release_script(pypi, "release:publish")
@@ -293,7 +293,7 @@ def test_s7_6_4_6_release_tasks_upload(tmp_path: Path) -> None:
             assert forbidden not in text, (task, forbidden)
 
 
-def test_s7_6_5_1_verify_release_from_pypi(tmp_path: Path) -> None:
+def test_verify_release_from_pypi(tmp_path: Path) -> None:
     pypi = _root(tmp_path / "pypi", "python-lib", extra='\n[ci]\nrelease = "pypi"\n')
     task = _ci_tasks(pypi)["tasks"]["verify-release"]  # type: ignore[index]
     assert task["desc"] == (

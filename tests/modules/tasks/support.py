@@ -122,7 +122,7 @@ def _audit_root(tmp_path: Path, archetype: str, extra: str = "") -> Path:
     return _web_root(tmp_path, archetype, "fastapi", extra=extra)
 
 
-def _s4_12_1_root(tmp_path: Path, archetype: str, extra: str = "") -> Path:
+def _ci_root(tmp_path: Path, archetype: str, extra: str = "") -> Path:
     if archetype in ARCHETYPES:
         return _root(tmp_path, archetype)
     return _web_root(tmp_path, archetype, "fastapi", extra=extra)

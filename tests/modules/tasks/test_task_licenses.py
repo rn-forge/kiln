@@ -22,7 +22,7 @@ LICENSES_DENY = " ".join(
 )
 
 
-def test_s15_2_2_1_python_lint_licenses_task(tmp_path: Path) -> None:
+def test_python_lint_licenses_task(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-lib")
     cycle.apply(root, home=tmp_path / "home")
     root_tasks, python = _rendered_yaml(root)
@@ -38,7 +38,7 @@ def test_s15_2_2_1_python_lint_licenses_task(tmp_path: Path) -> None:
     )
 
 
-def test_s15_2_2_2_policy_reaches_the_task(tmp_path: Path) -> None:
+def test_policy_reaches_the_task(tmp_path: Path) -> None:
     root = _root(
         tmp_path,
         extra='\n[ci.checks]\nlicenses = { deny = ["GPL-*"], ignore = ["foo"] }\n',
@@ -53,7 +53,7 @@ def test_s15_2_2_2_policy_reaches_the_task(tmp_path: Path) -> None:
     assert cmd.count("--deny") == 1
 
 
-def test_s15_2_2_3_off(tmp_path: Path) -> None:
+def test_python_licenses_off_removes_lint_task(tmp_path: Path) -> None:
     root = _root(tmp_path, extra="\n[ci.checks]\nlicenses = false\n")
     cycle.apply(root, home=tmp_path / "home")
     root_tasks, python = _rendered_yaml(root)
@@ -70,7 +70,7 @@ def _node_lib_rendered(root: Path) -> tuple[dict[str, dict], dict[str, dict]]:
     return root_tasks["tasks"], node["tasks"]
 
 
-def test_s15_2_3_1_node_lint_licenses_task(tmp_path: Path) -> None:
+def test_node_lint_licenses_task(tmp_path: Path) -> None:
     root = _node_lib_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     root_tasks, node = _node_lib_rendered(root)
@@ -89,7 +89,7 @@ def test_s15_2_3_1_node_lint_licenses_task(tmp_path: Path) -> None:
     )
 
 
-def test_s15_2_3_2_off(tmp_path: Path) -> None:
+def test_node_licenses_off_removes_lint_task(tmp_path: Path) -> None:
     root = _root(tmp_path, "node-lib", extra="\n[ci.checks]\nlicenses = false\n")
     cycle.apply(root, home=tmp_path / "home")
     root_tasks, node = _node_lib_rendered(root)
@@ -100,7 +100,7 @@ def test_s15_2_3_2_off(tmp_path: Path) -> None:
     )
 
 
-def test_s15_2_4_1_node_lint_audit_task(tmp_path: Path) -> None:
+def test_node_lint_audit_task(tmp_path: Path) -> None:
     root = _node_lib_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     root_tasks, node = _node_lib_rendered(root)
@@ -111,7 +111,7 @@ def test_s15_2_4_1_node_lint_audit_task(tmp_path: Path) -> None:
     assert "network" in task["desc"]
 
 
-def test_s15_2_4_2_python_archetypes_have_none(tmp_path: Path) -> None:
+def test_python_archetypes_have_none(tmp_path: Path) -> None:
     for archetype in ("python-tool",):
         sub = tmp_path / archetype
         sub.mkdir()
@@ -132,7 +132,7 @@ WEB_LINT_TAIL = [
 ]
 
 
-def test_s16_7_6_1_web_app_audits_its_frontend(tmp_path: Path) -> None:
+def test_web_app_audits_its_frontend(tmp_path: Path) -> None:
     lib = _node_lib_root(tmp_path / "lib")
     app = _node_root(tmp_path / "app")
     cycle.apply(lib, home=tmp_path / "home")
@@ -154,7 +154,7 @@ def test_s16_7_6_1_web_app_audits_its_frontend(tmp_path: Path) -> None:
     assert cmds[-len(WEB_LINT_TAIL) :] == WEB_LINT_TAIL
 
 
-def test_s16_7_6_2_licences_off_drops_only_the_licences_task(tmp_path: Path) -> None:
+def test_licences_off_drops_only_the_licences_task(tmp_path: Path) -> None:
     app = _node_root(tmp_path, "\n[ci.checks]\nlicenses = false\n")
     cycle.apply(app, home=tmp_path / "home")
     root_tasks, node = _node_lib_rendered(app)

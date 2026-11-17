@@ -49,7 +49,7 @@ def _audit_cmd(root: Path) -> str:
 
 
 @pytest.mark.parametrize(("archetype", "extra"), AUDIT_ALL_CELLS)
-def test_s4_11_5_1_lint_runs_audit_after_workflows(
+def test_lint_runs_audit_after_workflows(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
     root = _audit_root(tmp_path, archetype, extra)
@@ -66,7 +66,7 @@ def test_s4_11_5_1_lint_runs_audit_after_workflows(
     assert "dependency vulnerabilities" in root_tasks["lint"]["desc"]
 
 
-def test_s4_11_5_1_the_command(tmp_path: Path) -> None:
+def test_the_command(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     cmd = _audit_cmd(root)
@@ -78,7 +78,7 @@ def test_s4_11_5_1_the_command(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s16_6_4_1_audit_exports_extras(tmp_path: Path, archetype: str) -> None:
+def test_audit_exports_extras(tmp_path: Path, archetype: str) -> None:
     root = _root(tmp_path, archetype)
     cycle.apply(root, home=tmp_path / "home")
     cmd = _audit_cmd(root)
@@ -86,13 +86,13 @@ def test_s16_6_4_1_audit_exports_extras(tmp_path: Path, archetype: str) -> None:
     assert "set -o pipefail" in cmd
 
 
-def test_s16_4_4_1_audit_command_has_no_exclude_flags(tmp_path: Path) -> None:
+def test_audit_command_has_no_exclude_flags(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     assert "--no-emit-package" not in _audit_cmd(root)
 
 
-def test_s4_11_5_3_web_and_lib_cells_render_the_same_command(tmp_path: Path) -> None:
+def test_web_and_lib_cells_render_the_same_command(tmp_path: Path) -> None:
     commands = set()
     for archetype, extra in AUDIT_ALL_CELLS:
         root = _audit_root(tmp_path / archetype, archetype, extra)
@@ -105,7 +105,7 @@ def test_s4_11_5_3_web_and_lib_cells_render_the_same_command(tmp_path: Path) -> 
     assert len(commands) == 1
 
 
-def test_s4_11_5_4_ignore_entries_become_flags(tmp_path: Path) -> None:
+def test_ignore_entries_become_flags(tmp_path: Path) -> None:
     one = _root(
         tmp_path / "one",
         extra=(
@@ -141,15 +141,13 @@ def test_s4_11_5_4_ignore_entries_become_flags(tmp_path: Path) -> None:
         'id = "PYSEC-1"\nreason = "again"',
     ],
 )
-def test_s4_11_5_5_ignore_entries_need_id_and_reason(
-    tmp_path: Path, entry: str
-) -> None:
+def test_ignore_entries_need_id_and_reason(tmp_path: Path, entry: str) -> None:
     root = _root(tmp_path, extra=f"\n[[ci.checks.pip-audit.ignore]]\n{entry}\n")
     with pytest.raises(AppException):
         KilnConfig.load(root)
 
 
-def test_s4_11_5_5_an_id_with_shell_characters_is_refused(tmp_path: Path) -> None:
+def test_an_id_with_shell_characters_is_refused(tmp_path: Path) -> None:
     root = _root(
         tmp_path,
         extra='\n[[ci.checks.pip-audit.ignore]]\nid = "x; rm"\nreason = "why"\n',
@@ -158,11 +156,11 @@ def test_s4_11_5_5_an_id_with_shell_characters_is_refused(tmp_path: Path) -> Non
         KilnConfig.load(root)
 
 
-def test_s4_11_5_5_the_default_config_has_an_empty_list() -> None:
+def test_the_default_config_has_an_empty_list() -> None:
     assert CiConfig().audit_policy().ignore == []
 
 
-def test_s4_11_5_6_command_override_is_refused(tmp_path: Path) -> None:
+def test_command_override_is_refused(tmp_path: Path) -> None:
     root = _root(
         tmp_path,
         extra=(
@@ -174,7 +172,7 @@ def test_s4_11_5_6_command_override_is_refused(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("name", [n for n in archetypes.shipped() if n != "node-lib"])
-def test_s4_11_5_7_required_validate_gains_it(name: str) -> None:
+def test_required_validate_gains_it(name: str) -> None:
     required = archetypes.load(name).required_validate
     assert "python:lint:audit" in required
     assert required.index("python:lint:audit") == (
@@ -183,7 +181,7 @@ def test_s4_11_5_7_required_validate_gains_it(name: str) -> None:
 
 
 @pytest.mark.parametrize(("archetype", "extra"), AUDIT_ALL_CELLS)
-def test_s4_11_5_7_task_layout_accepts_the_rendered_files(
+def test_task_layout_accepts_the_rendered_files(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
     root = _audit_root(tmp_path, archetype, extra)
@@ -191,7 +189,7 @@ def test_s4_11_5_7_task_layout_accepts_the_rendered_files(
     assert _codes(root) == []
 
 
-def test_s4_11_5_7_gate_shrunk_fires_when_lint_drops_audit(tmp_path: Path) -> None:
+def test_gate_shrunk_fires_when_lint_drops_audit(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     taskfile = root / "Taskfile.yml"
@@ -205,7 +203,7 @@ def test_s4_11_5_7_gate_shrunk_fires_when_lint_drops_audit(tmp_path: Path) -> No
     )
 
 
-def test_s17_1_2_1_audit_override_is_refused(tmp_path: Path) -> None:
+def test_audit_override_is_refused(tmp_path: Path) -> None:
     root = _root(
         tmp_path,
         extra='\n[tasks]\n[tasks.command_overrides]\n"python:lint:audit" = "true"\n',
@@ -231,7 +229,7 @@ GUARDED = (
     ("archetype", "extra"),
     [(a, "") for a in (*ARCHETYPES, "node-lib")] + list(WEB_CELLS),
 )
-def test_s17_1_2_2_no_guarded_check_is_overridable(
+def test_no_guarded_check_is_overridable(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
     bad = '\n[tasks]\n[tasks.command_overrides]\n"x:y" = "true"\n'
@@ -246,7 +244,7 @@ def test_s17_1_2_2_no_guarded_check_is_overridable(
     assert names.isdisjoint(GUARDED)
 
 
-def test_s17_1_2_3_primitives_stay_overridable(tmp_path: Path) -> None:
+def test_primitives_stay_overridable(tmp_path: Path) -> None:
     root = _root(
         tmp_path,
         extra=(
@@ -258,7 +256,7 @@ def test_s17_1_2_3_primitives_stay_overridable(tmp_path: Path) -> None:
     assert python["lint:imports"]["cmds"] == ["echo hi"]
 
 
-def test_s17_1_3_4_unreachable_licences_is_a_finding(tmp_path: Path) -> None:
+def test_unreachable_licences_is_a_finding(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     taskfile = root / "Taskfile.yml"

@@ -25,7 +25,7 @@ def _docs_job(tmp_path: Path) -> dict[str, object]:
     return _node_lib_ci(tmp_path)["jobs"]["docs"]  # type: ignore[index,return-value]
 
 
-def test_s9_1_11_1_node_lib_renders_no_docs_yml_and_one_docs_job(
+def test_node_lib_renders_no_docs_yml_and_one_docs_job(
     tmp_path: Path,
 ) -> None:
     rendered = _rendered(_root(tmp_path / "files", "node-lib"))
@@ -51,13 +51,13 @@ def test_s9_1_11_1_node_lib_renders_no_docs_yml_and_one_docs_job(
     assert job["concurrency"] == {"group": "pages", "cancel-in-progress": False}
 
 
-def test_s9_1_11_1_node_lib_without_mkdocs_has_no_docs_job(tmp_path: Path) -> None:
+def test_node_lib_without_mkdocs_has_no_docs_job(tmp_path: Path) -> None:
     jobs = _ci_jobs(_root(tmp_path, "node-lib", profile="none"))
     assert "docs" not in jobs
     assert "docs" not in jobs["ci-ok"]["needs"]  # type: ignore[index,operator]
 
 
-def test_s9_1_11_2_steps(tmp_path: Path) -> None:
+def test_docs_job_steps_in_order(tmp_path: Path) -> None:
     pins = load_pins()
     steps = _docs_job(tmp_path)["steps"]
     checkout, setup, mkdocs, site, pages, upload, deploy = steps  # type: ignore[misc]
@@ -80,7 +80,7 @@ def test_s9_1_11_2_steps(tmp_path: Path) -> None:
     )
 
 
-def test_s9_3_1_3_docs_job_steps_have_no_id_env_or_if(tmp_path: Path) -> None:
+def test_docs_job_steps_have_no_id_env_or_if(tmp_path: Path) -> None:
     job = _docs_job(tmp_path)
     steps = job["steps"]
     assert [s.get("uses", s.get("run")) for s in steps][2:4] == [  # type: ignore[attr-defined,union-attr]
@@ -98,14 +98,14 @@ def test_s9_3_1_3_docs_job_steps_have_no_id_env_or_if(tmp_path: Path) -> None:
     }
 
 
-def test_s9_3_1_3_nx_set_shas_is_used_twice(tmp_path: Path) -> None:
+def test_nx_set_shas_is_used_twice(tmp_path: Path) -> None:
     text = _root(tmp_path, "node-lib") / CI_YML
     cycle.apply(_root(tmp_path / "r", "node-lib"), home=tmp_path / "home")
     text = (tmp_path / "r" / CI_YML).read_text(encoding="utf-8")
     assert text.count("nrwl/nx-set-shas") == 2
 
 
-def test_s9_1_11_2_docs_hooks_run_on_the_assembled_site(tmp_path: Path) -> None:
+def test_docs_hooks_run_on_the_assembled_site(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "node-lib"), DOCS_HOOKS)
     steps = _job_steps(root, ".github/workflows/ci.yml", "docs")
     site = next(i for i, s in enumerate(steps) if s.get("run") == "task ci:docs:site")
@@ -120,7 +120,7 @@ def test_s9_1_11_2_docs_hooks_run_on_the_assembled_site(tmp_path: Path) -> None:
 
 
 @requires("actionlint")
-def test_s9_1_11_2_actionlint_passes(tmp_path: Path) -> None:
+def test_actionlint_passes(tmp_path: Path) -> None:
     root = _root(tmp_path, "node-lib")
     cycle.apply(root, home=tmp_path / "home")
     result = subprocess.run(
@@ -133,7 +133,7 @@ def test_s9_1_11_2_actionlint_passes(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_s9_1_11_6_the_idea_row_is_gone() -> None:
+def test_the_idea_row_is_gone() -> None:
     ideas = (SITE_ROOT / "docs" / "specs" / "ideas" / "index.md").read_text(
         encoding="utf-8"
     )

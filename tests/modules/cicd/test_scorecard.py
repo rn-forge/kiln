@@ -28,12 +28,14 @@ def _scorecard_root(tmp_path: Path, archetype: str) -> Path:
 
 
 @pytest.mark.parametrize("archetype", [*ARCHETYPES, "node-lib"])
-def test_s15_6_1_1_absent_by_default(tmp_path: Path, archetype: str) -> None:
+def test_absent_by_default(tmp_path: Path, archetype: str) -> None:
     assert SCORECARD not in _rendered(_root(tmp_path, archetype))
 
 
 @pytest.mark.parametrize("archetype", [*ARCHETYPES, "node-lib"])
-def test_s15_6_1_2_on(tmp_path: Path, archetype: str) -> None:
+def test_scorecard_workflow_triggers_and_permissions(
+    tmp_path: Path, archetype: str
+) -> None:
     workflow = YamlUtils.load(
         _rendered(_scorecard_root(tmp_path, archetype))[SCORECARD]
     )
@@ -66,14 +68,14 @@ def test_s15_6_1_2_on(tmp_path: Path, archetype: str) -> None:
 
 
 @pytest.mark.parametrize("archetype", [*ARCHETYPES, "node-lib"])
-def test_s15_6_1_3_not_gating(tmp_path: Path, archetype: str) -> None:
+def test_not_gating(tmp_path: Path, archetype: str) -> None:
     jobs = _ci_jobs(_scorecard_root(tmp_path, archetype))
     assert "scorecard" not in jobs
     assert "scorecard" not in jobs["ci-ok"]["needs"]
 
 
 @pytest.mark.parametrize("archetype", [*ARCHETYPES, "node-lib"])
-def test_s15_6_1_4_pins(tmp_path: Path, archetype: str) -> None:
+def test_scorecard_pins_have_full_sha(tmp_path: Path, archetype: str) -> None:
     root = _scorecard_root(tmp_path, archetype)
     assert "ci.unpinned" not in _codes(root)
     assert "ci.permissions" not in _codes(root)
@@ -83,7 +85,7 @@ def test_s15_6_1_4_pins(tmp_path: Path, archetype: str) -> None:
         assert f"@{pins[key]['sha']} # {pins[key]['version']}" in rendered
 
 
-def test_s15_6_1_5_generated_job_name(tmp_path: Path) -> None:
+def test_generated_job_name(tmp_path: Path) -> None:
     assert "scorecard" in GENERATED_JOBS
     extra = f'\n[[ci.jobs]]\nname = "scorecard"\nuses = "{CALL}"\n'
     root = _with_ci(_root(tmp_path, "python-lib"), extra)
@@ -102,7 +104,7 @@ def _unique_uses(pins: dict[str, dict[str, str]]) -> list[str]:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES + ("node-lib",))
-def test_s15_7_1_1_github_actions_entry(tmp_path: Path, archetype: str) -> None:
+def test_github_actions_entry(tmp_path: Path, archetype: str) -> None:
     updates = _updates(_root(tmp_path, archetype))
     entry = updates["github-actions"]
     assert entry["directory"] == "/"
@@ -114,7 +116,7 @@ def test_s15_7_1_1_github_actions_entry(tmp_path: Path, archetype: str) -> None:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES + ("node-lib",))
-def test_s15_7_1_2_ignore_covers_every_pin(tmp_path: Path, archetype: str) -> None:
+def test_ignore_covers_every_pin(tmp_path: Path, archetype: str) -> None:
     names = [
         i["dependency-name"]
         for i in _actions_entry(_root(tmp_path, archetype))["ignore"]
@@ -126,9 +128,7 @@ def test_s15_7_1_2_ignore_covers_every_pin(tmp_path: Path, archetype: str) -> No
     assert not any(n.count("/") != 1 for n in names)
 
 
-def test_s15_7_1_3_new_pin_is_ignored(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_new_pin_is_ignored(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     pins = load_pins() | {"extra": {"uses": "x/y", "sha": "0" * 40, "version": "v1"}}
     monkeypatch.setattr("rn_forge.kiln.modules.cicd.artifacts.load_pins", lambda: pins)
     names = [i["dependency-name"] for i in _actions_entry(_root(tmp_path))["ignore"]]  # type: ignore[attr-defined,index]

@@ -26,9 +26,7 @@ def _review_jobs(root: Path) -> dict[str, dict[str, object]]:
 
 
 @pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
-def test_s4_11_5_8_dependency_review_job(
-    tmp_path: Path, archetype: str, extra: str
-) -> None:
+def test_dependency_review_job(tmp_path: Path, archetype: str, extra: str) -> None:
     jobs = _review_jobs(_cell_root(tmp_path, archetype, extra))
     job = jobs["dependency-review"]
     assert job["if"] == "${{ github.event_name == 'pull_request' }}"
@@ -48,7 +46,7 @@ def test_s4_11_5_8_dependency_review_job(
     assert all("actions/setup" not in str(s.get("uses", "")) for s in steps)  # type: ignore[attr-defined]
 
 
-def test_s4_11_5_8_dependency_review_is_pinned(tmp_path: Path) -> None:
+def test_dependency_review_is_pinned(tmp_path: Path) -> None:
     pin = load_pins()["dependency-review"]
     assert pin["uses"] == "actions/dependency-review-action"
     assert re.fullmatch(r"[0-9a-f]{40}", pin["sha"])
@@ -60,14 +58,14 @@ def test_s4_11_5_8_dependency_review_is_pinned(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
-def test_s4_11_5_8_ci_ok_needs_dependency_review(
+def test_ci_ok_needs_dependency_review(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
     jobs = _review_jobs(_cell_root(tmp_path, archetype, extra))
     assert "dependency-review" in jobs["checks-ok"]["needs"]  # type: ignore[operator]
 
 
-def test_s4_11_5_8_declared_jobs_cannot_take_the_name(tmp_path: Path) -> None:
+def test_declared_jobs_cannot_take_the_name(tmp_path: Path) -> None:
     assert "dependency-review" in GENERATED_JOBS
     extra = f'\n[[ci.jobs]]\nname = "dependency-review"\nuses = "{CALL}"\n'
     root = _with_ci(_root(tmp_path, "python-tool"), extra)

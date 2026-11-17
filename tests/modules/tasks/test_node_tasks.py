@@ -29,16 +29,16 @@ from tests.modules.tasks.support import (
     _node_root,
     _root,
     _run_task,
-    _s4_12_1_root,
+    _ci_root,
 )
 
 
-def test_s9_2_5_1_node_yml_is_byte_identical_in_both_cells(tmp_path: Path) -> None:
+def test_node_yml_is_byte_identical_in_both_cells(tmp_path: Path) -> None:
     lib = _node_lib_root(tmp_path / "lib")
     app = _node_root(tmp_path / "app")
     cycle.apply(lib, home=tmp_path / "home")
     cycle.apply(app, home=tmp_path / "home")
-    # Only a library publishes, so the lib file adds exactly `version` (S16.7.6).
+    # Only a library publishes, so the lib file adds exactly `version`.
     lib_doc = YamlUtils.load((lib / "tasks/node.yml").read_text(encoding="utf-8"))
     text = (app / "tasks/node.yml").read_text(encoding="utf-8")
     del lib_doc["tasks"]["version"]
@@ -47,7 +47,7 @@ def test_s9_2_5_1_node_yml_is_byte_identical_in_both_cells(tmp_path: Path) -> No
 
 
 @pytest.mark.parametrize("cell", ["lib", "app"])
-def test_s9_2_5_2_typecheck_is_the_angular_build(tmp_path: Path, cell: str) -> None:
+def test_typecheck_is_the_angular_build(tmp_path: Path, cell: str) -> None:
     root = (_node_lib_root if cell == "lib" else _node_root)(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     task = _load(root, "tasks/node.yml")["tasks"]["typecheck"]
@@ -55,7 +55,7 @@ def test_s9_2_5_2_typecheck_is_the_angular_build(tmp_path: Path, cell: str) -> N
     assert task["desc"] == "Type-check every project through its Angular build."
 
 
-def test_s9_2_5_3_root_typecheck_per_archetype(tmp_path: Path) -> None:
+def test_root_typecheck_per_archetype(tmp_path: Path) -> None:
     lib = _node_lib_root(tmp_path / "lib")
     app = _node_root(tmp_path / "app")
     cycle.apply(lib, home=tmp_path / "home")
@@ -69,7 +69,7 @@ def test_s9_2_5_3_root_typecheck_per_archetype(tmp_path: Path) -> None:
     ]
 
 
-def test_s9_2_5_3_python_archetypes_typecheck_calls_no_node(tmp_path: Path) -> None:
+def test_python_archetypes_typecheck_calls_no_node(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     assert _load(root, "Taskfile.yml")["tasks"]["typecheck"]["cmds"] == [
@@ -77,7 +77,7 @@ def test_s9_2_5_3_python_archetypes_typecheck_calls_no_node(tmp_path: Path) -> N
     ]
 
 
-def test_s9_2_5_4_clean_removes_the_nx_cache_and_the_web_dist(tmp_path: Path) -> None:
+def test_clean_removes_the_nx_cache_and_the_web_dist(tmp_path: Path) -> None:
     lib = _node_lib_root(tmp_path / "lib")
     app = _node_root(tmp_path / "app")
     cycle.apply(lib, home=tmp_path / "home")
@@ -90,7 +90,7 @@ def test_s9_2_5_4_clean_removes_the_nx_cache_and_the_web_dist(tmp_path: Path) ->
 
 
 @pytest.mark.parametrize("name", ["typecheck", "e2e"])
-def test_s9_2_5_6_python_web_app_overrides_take_the_merged_keys(
+def test_python_web_app_overrides_take_the_merged_keys(
     tmp_path: Path, name: str
 ) -> None:
     root = _node_root(
@@ -101,7 +101,7 @@ def test_s9_2_5_6_python_web_app_overrides_take_the_merged_keys(
     assert _load(root, "tasks/node.yml")["tasks"][name]["cmds"] == ["echo hi"]
 
 
-def test_s9_2_5_6_a_python_tool_still_refuses_the_node_keys(tmp_path: Path) -> None:
+def test_a_python_tool_still_refuses_the_node_keys(tmp_path: Path) -> None:
     root = _root(
         tmp_path,
         extra='\n[tasks]\n[tasks.command_overrides]\n"node:typecheck" = "echo hi"\n',
@@ -150,10 +150,10 @@ PYTHON_OLD_KEYS = {
 
 
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
-def test_s4_12_4_1_python_yml_holds_the_toolchain(
+def test_python_yml_holds_the_toolchain(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
-    root = _s4_12_1_root(tmp_path, archetype, extra)
+    root = _ci_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "tasks/python.yml")["tasks"]
     assert set(tasks) == set(PYTHON_TASKS)
@@ -162,7 +162,7 @@ def test_s4_12_4_1_python_yml_holds_the_toolchain(
         assert task["desc"].strip(), name
 
 
-def test_s4_12_4_2_the_bodies_moved_unchanged(tmp_path: Path) -> None:
+def test_the_bodies_moved_unchanged(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "tasks/python.yml")["tasks"]
@@ -177,10 +177,8 @@ def test_s4_12_4_2_the_bodies_moved_unchanged(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
-def test_s4_12_4_3_quality_is_repository_wide(
-    tmp_path: Path, archetype: str, extra: str
-) -> None:
-    root = _s4_12_1_root(tmp_path, archetype, extra)
+def test_quality_is_repository_wide(tmp_path: Path, archetype: str, extra: str) -> None:
+    root = _ci_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     quality = _load(root, "tasks/quality.yml")
     assert set(quality["tasks"]) == QUALITY_STAYS
@@ -188,17 +186,15 @@ def test_s4_12_4_3_quality_is_repository_wide(
 
 
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
-def test_s4_12_4_4_workspace_is_clean_only(
-    tmp_path: Path, archetype: str, extra: str
-) -> None:
-    root = _s4_12_1_root(tmp_path, archetype, extra)
+def test_workspace_is_clean_only(tmp_path: Path, archetype: str, extra: str) -> None:
+    root = _ci_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     workspace = _load(root, "tasks/workspace.yml")
     assert set(workspace["tasks"]) == {"banner", "step", "clean"}
     assert "vars" not in workspace
 
 
-def test_s4_12_4_5_python_lib_vars_move_with_the_tasks(tmp_path: Path) -> None:
+def test_python_lib_vars_move_with_the_tasks(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-lib")
     cycle.apply(root, home=tmp_path / "home")
     assert set(_load(root, "tasks/python.yml")["vars"]) == {
@@ -209,10 +205,10 @@ def test_s4_12_4_5_python_lib_vars_move_with_the_tasks(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
-def test_s4_12_4_6_the_wrappers_call_python_in_place(
+def test_the_wrappers_call_python_in_place(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
-    root = _s4_12_1_root(tmp_path, archetype, extra)
+    root = _ci_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "Taskfile.yml")["tasks"]
 
@@ -247,7 +243,7 @@ def test_s4_12_4_6_the_wrappers_call_python_in_place(
 @pytest.mark.parametrize(
     "new", [n for n in PYTHON_OLD_KEYS.values() if n != "python:lint:audit"]
 )
-def test_s4_12_4_7_overrides_take_the_new_keys(tmp_path: Path, new: str) -> None:
+def test_overrides_take_the_new_keys(tmp_path: Path, new: str) -> None:
     root = _root(
         tmp_path,
         extra=f'\n[tasks]\n[tasks.command_overrides]\n"{new}" = "echo hi"\n',
@@ -258,7 +254,7 @@ def test_s4_12_4_7_overrides_take_the_new_keys(tmp_path: Path, new: str) -> None
 
 
 @pytest.mark.parametrize("old", PYTHON_OLD_KEYS)
-def test_s4_12_4_7_old_keys_are_refused(tmp_path: Path, old: str) -> None:
+def test_old_keys_are_refused(tmp_path: Path, old: str) -> None:
     root = _root(
         tmp_path,
         extra=f'\n[tasks]\n[tasks.command_overrides]\n"{old}" = "echo hi"\n',
@@ -268,7 +264,7 @@ def test_s4_12_4_7_old_keys_are_refused(tmp_path: Path, old: str) -> None:
 
 
 @pytest.mark.parametrize("name", [n for n in archetypes.shipped() if n != "node-lib"])
-def test_s4_12_4_8_required_validate_names_the_python_tasks(name: str) -> None:
+def test_required_validate_names_the_python_tasks(name: str) -> None:
     required = archetypes.load(name).required_validate
     for task in ("lint", "lint:imports", "lint:audit", "typecheck", "test"):
         assert f"python:{task}" in required
@@ -276,7 +272,7 @@ def test_s4_12_4_8_required_validate_names_the_python_tasks(name: str) -> None:
     assert not [r for r in required if r.startswith("quality:") and r not in allowed]
 
 
-def test_s4_12_4_9_python_tasks_must_be_internal(tmp_path: Path) -> None:
+def test_python_tasks_must_be_internal(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     path = root / "tasks/python.yml"
@@ -290,10 +286,10 @@ def test_s4_12_4_9_python_tasks_must_be_internal(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
-def test_s4_12_4_10_task_layout_accepts_the_rendered_files(
+def test_task_layout_accepts_the_rendered_files(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
-    root = _s4_12_1_root(tmp_path, archetype, extra)
+    root = _ci_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     assert _codes(root) == []
 
@@ -343,14 +339,14 @@ def _outside(tmp_path: Path, *changed: str) -> list[str]:
         (("libs/ab/src/x.ts",), ["libs/ab/src/x.ts"]),
     ],
 )
-def test_s9_1_2_5_changed_file_rule(
+def test_changed_file_rule(
     tmp_path: Path, changed: tuple[str, ...], outside: list[str]
 ) -> None:
     assert _outside(tmp_path, *changed) == outside
 
 
 @requires("task", "jq")
-def test_s9_1_2_5_affected_selects_run_many_or_affected(tmp_path: Path) -> None:
+def test_affected_selects_run_many_or_affected(tmp_path: Path) -> None:
     root = _node_lib_root(tmp_path / "cell")
     cycle.apply(root, home=tmp_path / "home")
     stub = tmp_path / "bin"
@@ -411,7 +407,7 @@ def test_s9_1_2_5_affected_selects_run_many_or_affected(tmp_path: Path) -> None:
     )
 
 
-def test_s9_1_2_5_node_lib_ci_tasks_are_described_and_public(tmp_path: Path) -> None:
+def test_node_lib_ci_tasks_are_described_and_public(tmp_path: Path) -> None:
     tasks = _ci_tasks(_node_lib_root(tmp_path))["tasks"]
     for name in NODE_LIB_CI_TASKS:
         assert tasks[name]["desc"], name  # type: ignore[index]
@@ -427,7 +423,7 @@ def test_s9_1_2_5_node_lib_ci_tasks_are_described_and_public(tmp_path: Path) -> 
     ]  # type: ignore[index]
 
 
-def test_s9_1_2_5_other_archetypes_render_no_affected_tasks(tmp_path: Path) -> None:
+def test_other_archetypes_render_no_affected_tasks(tmp_path: Path) -> None:
     for archetype in ARCHETYPES:
         tasks = _ci_tasks(_root(tmp_path / archetype, archetype))["tasks"]
         assert not set(NODE_LIB_CI_TASKS[1:]) & set(tasks), archetype  # type: ignore[arg-type]
@@ -444,7 +440,7 @@ CI_VALIDATE_HEAD = [
 ]
 
 
-def test_s9_3_4_1_node_lib_ci_validate_is_public_and_ordered(tmp_path: Path) -> None:
+def test_node_lib_ci_validate_is_public_and_ordered(tmp_path: Path) -> None:
     task = _ci_tasks(_node_lib_root(tmp_path / "docs"))["tasks"]["validate"]  # type: ignore[index]
     assert task["desc"].startswith("CI only")
     assert "internal" not in task
@@ -454,7 +450,7 @@ def test_s9_3_4_1_node_lib_ci_validate_is_public_and_ordered(tmp_path: Path) -> 
     assert task["cmds"] == CI_VALIDATE_HEAD
 
 
-def test_s9_3_4_2_only_node_lib_and_single_packages_have_a_ci_validate_task(
+def test_only_node_lib_and_single_packages_have_a_ci_validate_task(
     tmp_path: Path,
 ) -> None:
     for archetype in (*ARCHETYPES,):
@@ -463,7 +459,7 @@ def test_s9_3_4_2_only_node_lib_and_single_packages_have_a_ci_validate_task(
 
 
 @requires("task")
-def test_s9_3_4_4_dry_run_prints_doctor_with_full_only_when_asked(
+def test_dry_run_prints_doctor_with_full_only_when_asked(
     tmp_path: Path,
 ) -> None:
     root = _node_lib_root(tmp_path / "cell")
@@ -493,7 +489,7 @@ def test_s9_3_4_4_dry_run_prints_doctor_with_full_only_when_asked(
     assert all("--full" in line for line in full)
 
 
-def test_s9_3_4_5_root_validate_still_runs_the_nx_verbs(tmp_path: Path) -> None:
+def test_root_validate_still_runs_the_nx_verbs(tmp_path: Path) -> None:
     root = _node_lib_root(tmp_path)
     cmds = [
         c
@@ -508,7 +504,7 @@ def test_s9_3_4_5_root_validate_still_runs_the_nx_verbs(tmp_path: Path) -> None:
     ]
 
 
-def test_s9_3_4_6_extra_refs_run_in_root_validate_order(tmp_path: Path) -> None:
+def test_extra_refs_run_in_root_validate_order(tmp_path: Path) -> None:
     extra = (
         "\n[tasks]\n[tasks.extra_refs]\n"
         'lint = ["workspace:clean"]\n'
@@ -534,7 +530,7 @@ def _load_from_render(root: Path) -> dict[str, object]:
     return YamlUtils.load(rendered["Taskfile.yml"])
 
 
-def test_s16_4_5_1_tasks(tmp_path: Path) -> None:
+def test_kiln_tasks_run_diff_and_apply(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     specs = YamlUtils.load((root / "tasks" / "kiln.yml").read_text(encoding="utf-8"))[
@@ -551,7 +547,7 @@ def test_s16_4_5_1_tasks(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s16_4_5_3_ten_root_verbs(tmp_path: Path, archetype: str) -> None:
+def test_ten_root_verbs(tmp_path: Path, archetype: str) -> None:
     root = _root(tmp_path, archetype, profile="none")
     cycle.apply(root, home=tmp_path / "home")
     result = _run_task(root, "--list", "--json")

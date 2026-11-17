@@ -46,9 +46,7 @@ SINGLE_RELEASE_CELLS = [(a, e) for a, e in SECURITY_CELLS if a != "python-lib"]
 
 
 @pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
-def test_s4_11_6_3_release_job_permissions(
-    tmp_path: Path, archetype: str, extra: str
-) -> None:
+def test_release_job_permissions(tmp_path: Path, archetype: str, extra: str) -> None:
     root = _cell_root(tmp_path, archetype, extra)
     allowed = {
         ("ci.yml", "release"),
@@ -71,7 +69,7 @@ def test_s4_11_6_3_release_job_permissions(
 
 
 @pytest.mark.parametrize(("archetype", "extra"), SINGLE_RELEASE_CELLS)
-def test_s4_11_6_4_single_package_release_attests_before_publishing(
+def test_single_package_release_attests_before_publishing(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
     steps = _release_steps(_cell_root(tmp_path, archetype, extra))
@@ -89,7 +87,7 @@ def test_s4_11_6_4_single_package_release_attests_before_publishing(
     assert steps[publish]["run"] == "task ci:release:publish"
 
 
-def test_s4_11_6_4_lib_release_attests_between_build_and_publish(
+def test_lib_release_attests_between_build_and_publish(
     tmp_path: Path,
 ) -> None:
     steps = _lib_jobs(tmp_path)["release"]["steps"]  # type: ignore[assignment]
@@ -115,7 +113,7 @@ def test_s4_11_6_4_lib_release_attests_between_build_and_publish(
     assert publish["env"] == env
 
 
-def test_s4_11_6_5_attest_is_pinned(tmp_path: Path) -> None:
+def test_attest_is_pinned(tmp_path: Path) -> None:
     pin = load_pins()["attest"]
     assert pin["uses"] == "actions/attest"
     assert re.fullmatch(r"[0-9a-f]{40}", pin["sha"])
@@ -128,7 +126,7 @@ def test_s4_11_6_5_attest_is_pinned(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
-def test_s4_11_6_6_release_none_renders_no_attestation(
+def test_release_none_renders_no_attestation(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
     root = _cell_root(tmp_path, archetype, extra)
@@ -168,7 +166,7 @@ def _docs_hook_steps(*names: str) -> list[dict[str, object]]:
     ]
 
 
-def test_s4_11_7_1_docs_hooks_render_before_the_upload(tmp_path: Path) -> None:
+def test_docs_hooks_render_before_the_upload(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "python-lib"), DOCS_HOOKS)
     steps = _job_steps(root, ".github/workflows/ci.yml", "docs")
     names = [s["name"] for s in steps]
@@ -177,7 +175,7 @@ def test_s4_11_7_1_docs_hooks_render_before_the_upload(tmp_path: Path) -> None:
     assert names[upload - 3] == "Deploy the package sites and build the root site"
 
 
-def test_s4_11_7_1_docs_hooks_render_in_the_single_package_docs_job(
+def test_docs_hooks_render_in_the_single_package_docs_job(
     tmp_path: Path,
 ) -> None:
     root = _with_ci(_root(tmp_path, "python-tool"), DOCS_HOOKS)
@@ -189,9 +187,7 @@ def test_s4_11_7_1_docs_hooks_render_in_the_single_package_docs_job(
 
 
 @pytest.mark.parametrize("archetype", ["python-lib", "python-tool"])
-def test_s4_11_7_2_no_docs_hooks_is_byte_identical(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_no_docs_hooks_is_byte_identical(tmp_path: Path, archetype: str) -> None:
     root = _root(tmp_path, archetype)
     plain = _rendered(root)
     empty = _rendered(_with_ci(root, "hooks = { docs = [] }\n"))
@@ -199,7 +195,7 @@ def test_s4_11_7_2_no_docs_hooks_is_byte_identical(
         assert plain.get(workflow) == empty.get(workflow), workflow
 
 
-def test_s4_11_7_3_docs_hooks_are_not_setup_hooks(tmp_path: Path) -> None:
+def test_docs_hooks_are_not_setup_hooks(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "python-tool"), DOCS_HOOKS)
     assert "Run ./" not in _action(root)
 
@@ -215,7 +211,7 @@ def test_s4_11_7_3_docs_hooks_are_not_setup_hooks(tmp_path: Path) -> None:
         "./.github/workflows/x.yml",
     ],
 )
-def test_s4_11_7_4_bad_docs_hook_paths_are_refused(tmp_path: Path, path: str) -> None:
+def test_bad_docs_hook_paths_are_refused(tmp_path: Path, path: str) -> None:
     root = _with_ci(
         _root(tmp_path, "python-tool"), f'\n[ci.hooks]\ndocs = ["{path}"]\n'
     )
@@ -223,7 +219,7 @@ def test_s4_11_7_4_bad_docs_hook_paths_are_refused(tmp_path: Path, path: str) ->
         KilnConfig.load(root)
 
 
-def test_s4_11_7_4_duplicate_docs_hooks_are_refused(tmp_path: Path) -> None:
+def test_duplicate_docs_hooks_are_refused(tmp_path: Path) -> None:
     extra = '\n[ci.hooks]\ndocs = ["./.github/actions/a", "./.github/actions/a"]\n'
     with pytest.raises(AppException):
         KilnConfig.load(_with_ci(_root(tmp_path / "dup", "python-tool"), extra))
@@ -234,13 +230,13 @@ def test_s4_11_7_4_duplicate_docs_hooks_are_refused(tmp_path: Path) -> None:
     KilnConfig.load(_with_ci(_root(tmp_path / "both", "python-tool"), both))
 
 
-def test_s4_11_7_5_docs_hooks_without_docs_are_refused(tmp_path: Path) -> None:
+def test_docs_hooks_without_docs_are_refused(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "python-tool", profile="none"), DOCS_HOOKS)
     with pytest.raises(AppException, match="nothing deploys Pages"):
         _rendered(root)
 
 
-def test_s4_11_7_6_dependabot_covers_docs_hooks(tmp_path: Path) -> None:
+def test_dependabot_covers_docs_hooks(tmp_path: Path) -> None:
     extra = (
         '\n[ci.hooks]\nsetup = ["./.github/actions/a"]\n'
         'docs = ["./.github/actions/b", "./.github/actions/a"]\n'
@@ -253,7 +249,7 @@ def test_s4_11_7_6_dependabot_covers_docs_hooks(tmp_path: Path) -> None:
 
 
 @requires("actionlint")
-def test_s4_11_7_7_actionlint_passes_on_a_docs_hook(tmp_path: Path) -> None:
+def test_actionlint_passes_on_a_docs_hook(tmp_path: Path) -> None:
     root = _with_ci(
         _root(tmp_path, "python-lib"),
         '\n[ci.hooks]\ndocs = ["./.github/actions/a"]\n',
@@ -281,7 +277,7 @@ def _ci_workflow(root: Path) -> dict[str, object]:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_11_8_1_default_is_byte_identical(tmp_path: Path, archetype: str) -> None:
+def test_default_is_byte_identical(tmp_path: Path, archetype: str) -> None:
     plain = _rendered(_root(tmp_path / "plain", archetype))
     named = _rendered(
         _with_ci(
@@ -292,7 +288,7 @@ def test_s4_11_8_1_default_is_byte_identical(tmp_path: Path, archetype: str) -> 
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_11_8_2_every_run_sets_the_variable(tmp_path: Path, archetype: str) -> None:
+def test_every_run_sets_the_variable(tmp_path: Path, archetype: str) -> None:
     default = _ci_workflow(_root(tmp_path / "default", archetype))
     every = _ci_workflow(
         _with_ci(_root(tmp_path / "every", archetype), 'doctor_full = "every-run"\n')
@@ -308,14 +304,14 @@ def test_s4_11_8_2_every_run_sets_the_variable(tmp_path: Path, archetype: str) -
     assert every == default
 
 
-def test_s4_11_8_3_bad_value_is_refused(tmp_path: Path) -> None:
+def test_bad_value_is_refused(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "python-tool"), 'doctor_full = "always"\n')
     with pytest.raises(AppException, match=r"ci\.doctor_full"):
         KilnConfig.load(root)
 
 
 @requires("actionlint")
-def test_s4_11_8_4_actionlint_passes_on_every_run(tmp_path: Path) -> None:
+def test_actionlint_passes_on_every_run(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "python-app"), 'doctor_full = "every-run"\n')
     cycle.apply(root, home=tmp_path / "home")
     result = subprocess.run(
@@ -332,7 +328,7 @@ def _ci_text(root: Path) -> dict[str, object]:
     return YamlUtils.load(_rendered(root)[".github/workflows/ci.yml"])
 
 
-def test_s7_6_4_1_dispatch_takes_testpypi(tmp_path: Path) -> None:
+def test_dispatch_takes_testpypi(tmp_path: Path) -> None:
     on = _ci_text(_pypi_root(tmp_path / "pypi"))["on"]
     assert on["workflow_dispatch"] == {  # type: ignore[index]
         "inputs": {
@@ -347,7 +343,7 @@ def test_s7_6_4_1_dispatch_takes_testpypi(tmp_path: Path) -> None:
     assert plain["workflow_dispatch"] == {}  # type: ignore[index]
 
 
-def test_s7_6_4_2_release_job_environment(tmp_path: Path) -> None:
+def test_release_job_environment(tmp_path: Path) -> None:
     release = _ci_jobs(_pypi_root(tmp_path))["release"]
     assert release["environment"] == "${{ inputs.testpypi && 'testpypi' || 'pypi' }}"
     assert release["permissions"] == RELEASE_PERMISSIONS
@@ -360,7 +356,7 @@ def test_s7_6_4_2_release_job_environment(tmp_path: Path) -> None:
     assert release["if"] == expected
 
 
-def test_s7_6_4_3_release_steps_pass_testpypi(tmp_path: Path) -> None:
+def test_release_steps_pass_testpypi(tmp_path: Path) -> None:
     steps = _release_steps(_pypi_root(tmp_path))
     expected = "${{ github.event_name == 'workflow_dispatch' && inputs.testpypi }}"
     for name in ("Build releases", "Publish releases"):
@@ -373,14 +369,14 @@ def test_s7_6_4_3_release_steps_pass_testpypi(tmp_path: Path) -> None:
         assert "TESTPYPI" not in str(step)
 
 
-def test_s7_6_4_4_pypi_needs_a_workspace(tmp_path: Path) -> None:
+def test_pypi_needs_a_workspace(tmp_path: Path) -> None:
     root = _pypi_root(tmp_path, "python-tool")
     with pytest.raises(ValueError, match=r"ci\.release"):
         _rendered(root)
 
 
 @pytest.mark.parametrize("sonar", [True, False])
-def test_s7_6_4_5_pypi_keeps_every_tag_exists_job(tmp_path: Path, sonar: bool) -> None:
+def test_pypi_keeps_every_tag_exists_job(tmp_path: Path, sonar: bool) -> None:
     plain = _ci_jobs(_root(tmp_path / "plain", "python-lib", sonar=sonar))
     pypi = _ci_jobs(_pypi_root(tmp_path / "pypi", sonar=sonar))
     assert list(pypi) == list(plain)
@@ -391,19 +387,19 @@ def test_s7_6_4_5_pypi_keeps_every_tag_exists_job(tmp_path: Path, sonar: bool) -
     assert "verify-release" in pypi["ci-ok"]["needs"]  # type: ignore[operator]
 
 
-def test_s7_6_6_1_declared_job_can_write_contents(tmp_path: Path) -> None:
+def test_declared_job_can_write_contents(tmp_path: Path) -> None:
     extra = f'\n[[ci.jobs]]\nname = "extra"\nuses = "{CALL}"\ncontents = "write"\n'
     job = _ci_jobs(_with_ci(_root(tmp_path, "python-tool"), extra))["extra"]
     assert job["permissions"] == {"contents": "write"}
 
 
-def test_s7_6_6_2_declared_job_reads_by_default(tmp_path: Path) -> None:
+def test_declared_job_reads_by_default(tmp_path: Path) -> None:
     extra = f'\n[[ci.jobs]]\nname = "extra"\nuses = "{CALL}"\n'
     job = _ci_jobs(_with_ci(_root(tmp_path, "python-tool"), extra))["extra"]
     assert job["permissions"] == {"contents": "read"}
 
 
-def test_s7_6_6_3_bad_contents_is_refused(tmp_path: Path) -> None:
+def test_bad_contents_is_refused(tmp_path: Path) -> None:
     extra = f'\n[[ci.jobs]]\nname = "extra"\nuses = "{CALL}"\ncontents = "admin"\n'
     root = _with_ci(_root(tmp_path, "python-tool"), extra)
     with pytest.raises(AppException):

@@ -7,7 +7,7 @@ from rn_forge.kiln.modules.core import cycle
 from tests.modules.tasks.support import _load, _root
 
 
-S16_7_1_WEB = """
+WEB_ROOTS = """
 schema_version = 1
 
 [repository]
@@ -27,7 +27,7 @@ docs = ["./.github/actions/x"]
 """
 
 
-S16_7_1_SKIP = (
+SKIPPED_ROOTS = (
     ".rn-forge/kiln/config.toml",
     ".rn-forge/kiln/backups",
     ".rn-forge/kiln/rendered",
@@ -35,12 +35,12 @@ S16_7_1_SKIP = (
 )
 
 
-def _s16_7_1_root(tmp_path: Path, archetype: str, site_dir: str) -> Path:
+def _site_dir_root(tmp_path: Path, archetype: str, site_dir: str) -> Path:
     line = f'site_dir = "{site_dir}"\n'
     if archetype == "python-web-app":
         config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
         config.parent.mkdir(parents=True)
-        config.write_text(S16_7_1_WEB.format(site_dir=line), encoding="utf-8")
+        config.write_text(WEB_ROOTS.format(site_dir=line), encoding="utf-8")
         return tmp_path
     root = _root(tmp_path, archetype, extra=line)
     if archetype == "node-lib":
@@ -56,16 +56,16 @@ def _s16_7_1_root(tmp_path: Path, archetype: str, site_dir: str) -> Path:
 @pytest.mark.parametrize(
     "archetype", ["python-tool", "python-lib", "node-lib", "python-web-app"]
 )
-def test_s16_7_1_1_no_default_literal_with_a_custom_site_dir(
+def test_no_default_literal_with_a_custom_site_dir(
     tmp_path: Path, archetype: str
 ) -> None:
-    root = _s16_7_1_root(tmp_path, archetype, "out/site")
+    root = _site_dir_root(tmp_path, archetype, "out/site")
     cycle.apply(root, home=tmp_path / "home")
     leaks = []
     for path in sorted(root.rglob("*")):
         rel = path.relative_to(root).as_posix()
         if not path.is_file() or any(
-            rel == skip or rel.startswith(skip + "/") for skip in S16_7_1_SKIP
+            rel == skip or rel.startswith(skip + "/") for skip in SKIPPED_ROOTS
         ):
             continue
         if b".docs-site" in path.read_bytes():
@@ -84,8 +84,8 @@ def test_s16_7_1_1_no_default_literal_with_a_custom_site_dir(
         assert hook["env"] == {"SITE_DIR": "out/site"}
 
 
-def test_s16_7_1_3_empty_site_dir_means_mkdocs_default(tmp_path: Path) -> None:
-    root = _s16_7_1_root(tmp_path, "node-lib", "")
+def test_empty_site_dir_means_mkdocs_default(tmp_path: Path) -> None:
+    root = _site_dir_root(tmp_path, "node-lib", "")
     cycle.apply(root, home=tmp_path / "home")
     assert (
         "{{.DEVOPS}} site-assemble site"
@@ -99,7 +99,7 @@ def test_s16_7_1_3_empty_site_dir_means_mkdocs_default(tmp_path: Path) -> None:
     assert "site_dir" not in (root / "mkdocs.yml").read_text(encoding="utf-8")
 
 
-def test_s16_9_5_2_clean_removes_the_scratch_root(tmp_path: Path) -> None:
+def test_clean_removes_the_scratch_root(tmp_path: Path) -> None:
     root = _root(tmp_path / "default")
     cycle.apply(root, home=tmp_path / "home")
     cmds = _load(root, "tasks/workspace.yml")["tasks"]["clean"]["cmds"]

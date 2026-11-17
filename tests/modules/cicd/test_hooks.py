@@ -31,13 +31,13 @@ GOLDEN_RENDER = (
 )
 
 
-def test_s4_8_3_1_node_off_renders_no_node_steps(tmp_path: Path) -> None:
+def test_node_off_renders_no_node_steps(tmp_path: Path) -> None:
     action = _action(_root(tmp_path, "python-tool"))
     assert "pnpm/action-setup" not in action
     assert "actions/setup-node" not in action
 
 
-def test_s4_8_3_1_web_app_keeps_node(tmp_path: Path) -> None:
+def test_web_app_keeps_node(tmp_path: Path) -> None:
     web = _action(
         _web_root(tmp_path / "web", "python-web-app", extra='frontend = "angular"')
     )
@@ -47,7 +47,7 @@ def test_s4_8_3_1_web_app_keeps_node(tmp_path: Path) -> None:
     assert "\n\n\n" not in web
 
 
-def test_s4_8_3_2_no_declared_jobs_is_unchanged(tmp_path: Path) -> None:
+def test_no_declared_jobs_is_unchanged(tmp_path: Path) -> None:
     roots = [_root(tmp_path / a, a) for a in ARCHETYPES] + [
         _web_root(tmp_path / "web", "python-web-app", extra='frontend = "angular"')
     ]
@@ -63,7 +63,7 @@ def _hook_steps(action: str) -> list[dict[str, str]]:
     return YamlUtils.load(action)["runs"]["steps"]
 
 
-def test_s4_11_1_1_setup_hooks_render_last_and_in_order(tmp_path: Path) -> None:
+def test_setup_hooks_render_last_and_in_order(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "python-tool"), HOOKS)
     steps = _hook_steps(_action(root))
     assert steps[-3]["name"] == "Install go-task"
@@ -73,7 +73,7 @@ def test_s4_11_1_1_setup_hooks_render_last_and_in_order(tmp_path: Path) -> None:
     ]
 
 
-def test_s4_11_1_1_hooks_follow_the_node_steps(tmp_path: Path) -> None:
+def test_hooks_follow_the_node_steps(tmp_path: Path) -> None:
     root = _web_root(tmp_path, "python-web-app", extra='frontend = "angular"')
     plain = _hook_steps(_action(root))
     steps = _hook_steps(_action(_with_ci(root, HOOKS)))
@@ -85,7 +85,7 @@ def test_s4_11_1_1_hooks_follow_the_node_steps(tmp_path: Path) -> None:
     ]
 
 
-def test_s4_11_1_2_no_hooks_is_byte_identical(tmp_path: Path) -> None:
+def test_no_hooks_is_byte_identical(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-tool")
     plain = _action(root)
     empty = _action(_with_ci(root, "hooks = { setup = [] }\n"))
@@ -94,7 +94,7 @@ def test_s4_11_1_2_no_hooks_is_byte_identical(tmp_path: Path) -> None:
     assert "\n\n\n" not in plain
 
 
-def test_s4_11_1_3_web_app_still_renders_node_steps(tmp_path: Path) -> None:
+def test_web_app_still_renders_node_steps(tmp_path: Path) -> None:
     web = _action(
         _web_root(tmp_path / "web", "python-web-app", extra='frontend = "angular"')
     )
@@ -103,7 +103,7 @@ def test_s4_11_1_3_web_app_still_renders_node_steps(tmp_path: Path) -> None:
     assert "cache: pnpm" in web
 
 
-def test_s4_11_1_4_node_key_is_refused(tmp_path: Path) -> None:
+def test_node_key_is_refused(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "python-tool"), "node = true\n")
     with pytest.raises(AppException):
         KilnConfig.load(root)
@@ -120,7 +120,7 @@ def test_s4_11_1_4_node_key_is_refused(tmp_path: Path) -> None:
         "./.github/workflows/x.yml",
     ],
 )
-def test_s4_11_1_5_bad_hook_paths_are_refused(tmp_path: Path, path: str) -> None:
+def test_bad_hook_paths_are_refused(tmp_path: Path, path: str) -> None:
     root = _with_ci(
         _root(tmp_path, "python-tool"), f'\n[ci.hooks]\nsetup = ["{path}"]\n'
     )
@@ -128,14 +128,14 @@ def test_s4_11_1_5_bad_hook_paths_are_refused(tmp_path: Path, path: str) -> None
         KilnConfig.load(root)
 
 
-def test_s4_11_1_5_duplicate_hooks_are_refused(tmp_path: Path) -> None:
+def test_duplicate_hooks_are_refused(tmp_path: Path) -> None:
     extra = '\n[ci.hooks]\nsetup = ["./.github/actions/a", "./.github/actions/a"]\n'
     root = _with_ci(_root(tmp_path, "python-tool"), extra)
     with pytest.raises(AppException):
         KilnConfig.load(root)
 
 
-def test_s4_11_1_6_declared_job_renders_as_a_call(tmp_path: Path) -> None:
+def test_declared_job_renders_as_a_call(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "python-tool"), GOLDEN_RENDER)
     jobs = _ci_jobs(root)
     assert jobs["golden-render"] == {
@@ -151,13 +151,13 @@ def test_s4_11_1_6_declared_job_renders_as_a_call(tmp_path: Path) -> None:
     assert names[-3] == "golden-render"
 
 
-def test_s4_11_1_6_declared_job_defaults_to_every_event(tmp_path: Path) -> None:
+def test_declared_job_defaults_to_every_event(tmp_path: Path) -> None:
     extra = f'\n[[ci.jobs]]\nname = "extra"\nuses = "{CALL}"\n'
     job = _ci_jobs(_with_ci(_root(tmp_path, "python-tool"), extra))["extra"]
     assert "if" not in job
 
 
-def test_s4_11_1_6_declared_job_with_two_events_ors_them(tmp_path: Path) -> None:
+def test_declared_job_with_two_events_ors_them(tmp_path: Path) -> None:
     extra = (
         f'\n[[ci.jobs]]\nname = "extra"\nuses = "{CALL}"\n'
         'events = ["push", "workflow_dispatch"]\n'
@@ -180,14 +180,14 @@ def test_s4_11_1_6_declared_job_with_two_events_ors_them(tmp_path: Path) -> None
         "owner/repo/.github/workflows/x.yml@v1",
     ],
 )
-def test_s4_11_1_7_bad_uses_is_refused(tmp_path: Path, uses: str) -> None:
+def test_bad_uses_is_refused(tmp_path: Path, uses: str) -> None:
     extra = f'\n[[ci.jobs]]\nname = "extra"\nuses = "{uses}"\n'
     root = _with_ci(_root(tmp_path, "python-tool"), extra)
     with pytest.raises(AppException):
         KilnConfig.load(root)
 
 
-def test_s4_11_1_7_task_key_is_refused(tmp_path: Path) -> None:
+def test_task_key_is_refused(tmp_path: Path) -> None:
     extra = f'\n[[ci.jobs]]\nname = "extra"\nuses = "{CALL}"\ntask = "validate"\n'
     root = _with_ci(_root(tmp_path, "python-tool"), extra)
     with pytest.raises(AppException):
@@ -197,14 +197,14 @@ def test_s4_11_1_7_task_key_is_refused(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     "name", ["sonar", "validate", "ci-ok", "checks-ok", "Golden", "a_b"]
 )
-def test_s4_11_1_7_job_name_collision_is_refused(tmp_path: Path, name: str) -> None:
+def test_job_name_collision_is_refused(tmp_path: Path, name: str) -> None:
     extra = f'\n[[ci.jobs]]\nname = "{name}"\nuses = "{CALL}"\n'
     root = _with_ci(_root(tmp_path, "python-tool"), extra)
     with pytest.raises(AppException):
         KilnConfig.load(root)
 
 
-def test_s4_11_1_7_duplicate_declared_names_are_refused(tmp_path: Path) -> None:
+def test_duplicate_declared_names_are_refused(tmp_path: Path) -> None:
     extra = f'\n[[ci.jobs]]\nname = "a"\nuses = "{CALL}"\n' * 2
     root = _with_ci(_root(tmp_path, "python-tool"), extra)
     with pytest.raises(AppException):
@@ -212,7 +212,7 @@ def test_s4_11_1_7_duplicate_declared_names_are_refused(tmp_path: Path) -> None:
 
 
 @requires("actionlint")
-def test_s4_11_1_8_actionlint_passes_on_a_declared_call(tmp_path: Path) -> None:
+def test_actionlint_passes_on_a_declared_call(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "python-tool"), HOOKS + GOLDEN_RENDER)
     cycle.apply(root, home=tmp_path / "home")
     for name in ("a", "b"):
@@ -253,7 +253,7 @@ def test_s4_11_1_8_actionlint_passes_on_a_declared_call(tmp_path: Path) -> None:
         ("python-web-app", 'frontend = "angular"'),
     ],
 )
-def test_s4_11_2_5_every_cell_passes_ci_pins_and_ci_hooks(
+def test_every_cell_passes_ci_pins_and_ci_hooks(
     tmp_path: Path, archetype: str, extra: str
 ) -> None:
     if archetype.startswith("python-web"):

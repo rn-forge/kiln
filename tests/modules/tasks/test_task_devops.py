@@ -27,7 +27,7 @@ from tests.modules.tasks.support import (
         ("python-tool", "", False),
     ],
 )
-def test_s9_4_4_1_dist_tasks_render_for_node_cells_only(
+def test_dist_tasks_render_for_node_cells_only(
     tmp_path: Path, archetype: str, extra: str, has: bool
 ) -> None:
     if archetype == "python-web-app":
@@ -44,7 +44,7 @@ def test_s9_4_4_1_dist_tasks_render_for_node_cells_only(
             assert name not in tasks  # type: ignore[operator]
 
 
-def test_s9_4_4_2_release_github_writes_notes_with_kiln_devops(
+def test_release_github_writes_notes_with_kiln_devops(
     tmp_path: Path,
 ) -> None:
     task = _ci_tasks(_node_lib_root(tmp_path))["tasks"]["release:github"]  # type: ignore[index]
@@ -60,7 +60,7 @@ def test_s9_4_4_2_release_github_writes_notes_with_kiln_devops(
     ("archetype", "has"),
     [("node-lib", True), ("python-web-app", True), ("python-lib", False)],
 )
-def test_s9_4_5_11_consumer_task_renders_for_node_cells_only(
+def test_consumer_task_renders_for_node_cells_only(
     tmp_path: Path, archetype: str, has: bool
 ) -> None:
     root = (
@@ -84,7 +84,7 @@ SONAR_DESC = (
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s6_10_3_1_sonar_on_renders_the_verb_and_its_include(
+def test_sonar_on_renders_the_verb_and_its_include(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _root(tmp_path, archetype)
@@ -100,7 +100,7 @@ def test_s6_10_3_1_sonar_on_renders_the_verb_and_its_include(
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s6_10_3_2_sonar_off_renders_neither_file_nor_include(
+def test_sonar_off_renders_neither_file_nor_include(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _root(tmp_path, archetype, extra="\n[ci]\nsonar = false\n")
@@ -115,7 +115,7 @@ def _python_test_cmds(root: Path) -> list[object]:
     return _load(root, "tasks/python.yml")["tasks"]["test"]["cmds"]
 
 
-def test_s18_13_4_1_workspace_test_takes_a_package_and_pytest_args(
+def test_workspace_test_takes_a_package_and_pytest_args(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path, "python-lib")
@@ -127,7 +127,7 @@ def test_s18_13_4_1_workspace_test_takes_a_package_and_pytest_args(
     assert "pass -- <package>" in desc
 
 
-def test_s18_13_4_2_single_package_test_passes_args_to_pytest(tmp_path: Path) -> None:
+def test_single_package_test_passes_args_to_pytest(tmp_path: Path) -> None:
     tool = _root(tmp_path / "tool", "python-tool")
     assert _python_test_cmds(tool) == ["uv run pytest -q {{.CLI_ARGS}}"]
     web = _web_root(
@@ -140,7 +140,7 @@ def test_s18_13_4_2_single_package_test_passes_args_to_pytest(tmp_path: Path) ->
     ]
 
 
-def test_s18_13_4_3_no_args_form_is_unchanged(tmp_path: Path) -> None:
+def test_no_args_form_is_unchanged(tmp_path: Path) -> None:
     cmd = "\n".join(
         str(c) for c in _python_test_cmds(_root(tmp_path / "a", "python-lib"))
     )
@@ -153,7 +153,7 @@ def test_s18_13_4_3_no_args_form_is_unchanged(tmp_path: Path) -> None:
 
 
 @requires("task")
-def test_s18_13_4_4_unknown_package_fails_naming_it(tmp_path: Path) -> None:
+def test_unknown_package_fails_naming_it(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-lib")
     cycle.apply(root, home=tmp_path / "home")
     result = _run_task(root, "test", "--", "nope")

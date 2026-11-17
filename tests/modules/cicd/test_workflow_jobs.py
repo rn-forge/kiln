@@ -42,7 +42,7 @@ def _assert_checks_out_first(workflow: str, where: str) -> None:
                 assert previous.get("with", {}).get("fetch-depth") == 0, where
 
 
-def test_s4_4_5_1_every_job_checks_out_before_the_setup_action(
+def test_every_job_checks_out_before_the_setup_action(
     tmp_path: Path,
 ) -> None:
     roots = [_root(tmp_path / archetype, archetype) for archetype in ARCHETYPES] + [
@@ -54,7 +54,7 @@ def test_s4_4_5_1_every_job_checks_out_before_the_setup_action(
                 _assert_checks_out_first(content, f"{root.name}:{path}")
 
 
-def test_s4_4_5_2_setup_action_has_no_checkout(tmp_path: Path) -> None:
+def test_setup_action_has_no_checkout(tmp_path: Path) -> None:
     action = _rendered(_root(tmp_path))[".github/actions/setup/action.yml"]
     assert "actions/checkout@" not in action
     assert "fetch-depth" not in action
@@ -62,7 +62,7 @@ def test_s4_4_5_2_setup_action_has_no_checkout(tmp_path: Path) -> None:
     assert "fetch-depth" not in parsed["inputs"]
 
 
-def test_s4_4_5_3_kiln_and_rendered_repos_check_out_first(
+def test_kiln_and_rendered_repos_check_out_first(
     rendered: Callable[[str], Path],
 ) -> None:
     repo = Path(__file__).resolve().parents[3]
@@ -74,7 +74,7 @@ def test_s4_4_5_3_kiln_and_rendered_repos_check_out_first(
             )
 
 
-def test_s6_3_1_every_job_has_a_timeout(tmp_path: Path) -> None:
+def test_every_job_has_a_timeout(tmp_path: Path) -> None:
     roots = [_root(tmp_path / archetype, archetype) for archetype in ARCHETYPES] + [
         _web_root(tmp_path / "api", "python-web-api"),
         _web_root(tmp_path / "web", "python-web-app", extra='frontend = "angular"'),
@@ -103,7 +103,7 @@ def _ci_ok_roots(tmp_path: Path) -> list[Path]:
     ]
 
 
-def test_s6_3_2_ci_ok_needs_every_other_job(tmp_path: Path) -> None:
+def test_ci_ok_needs_every_other_job(tmp_path: Path) -> None:
     for root in _ci_ok_roots(tmp_path):
         jobs = _ci_jobs(root)
         assert list(jobs)[-1] == "ci-ok", root.name
@@ -112,12 +112,12 @@ def test_s6_3_2_ci_ok_needs_every_other_job(tmp_path: Path) -> None:
         assert jobs["ci-ok"]["if"] == "always()", root.name
 
 
-def test_s6_3_2_ci_ok_has_no_permissions(tmp_path: Path) -> None:
+def test_ci_ok_has_no_permissions(tmp_path: Path) -> None:
     for root in _ci_ok_roots(tmp_path):
         assert _ci_jobs(root)["ci-ok"]["permissions"] == {}, root.name
 
 
-def test_s6_3_2_ci_ok_fails_on_failure_or_cancel(tmp_path: Path) -> None:
+def test_ci_ok_fails_on_failure_or_cancel(tmp_path: Path) -> None:
     for root in _ci_ok_roots(tmp_path):
         steps = _ci_jobs(root)["ci-ok"]["steps"]
         assert len(steps) == 1  # type: ignore[arg-type]
@@ -131,7 +131,7 @@ def _sonar_steps(root: Path) -> list[dict[str, object]]:
     return _ci_jobs(root)["sonar"]["steps"]  # type: ignore[return-value]
 
 
-def test_s6_3_3_scan_passes_the_target_branch_arg(tmp_path: Path) -> None:
+def test_scan_passes_the_target_branch_arg(tmp_path: Path) -> None:
     for root in _ci_ok_roots(tmp_path):
         if root.name == "nosonar":
             continue
@@ -145,7 +145,7 @@ def test_s6_3_3_scan_passes_the_target_branch_arg(tmp_path: Path) -> None:
         ), root.name
 
 
-def test_s6_3_3_ref_text_reaches_run_only_through_env(tmp_path: Path) -> None:
+def test_ref_text_reaches_run_only_through_env(tmp_path: Path) -> None:
     for root in _ci_ok_roots(tmp_path):
         if root.name == "nosonar":
             continue
@@ -155,7 +155,7 @@ def test_s6_3_3_ref_text_reaches_run_only_through_env(tmp_path: Path) -> None:
             assert "github.head_ref" not in run, root.name
 
 
-def test_s6_7_4_1_the_target_step_is_a_task_call(tmp_path: Path) -> None:
+def test_the_target_step_is_a_task_call(tmp_path: Path) -> None:
     for root in _ci_ok_roots(tmp_path):
         if root.name == "nosonar":
             continue
@@ -169,7 +169,7 @@ def test_s6_7_4_1_the_target_step_is_a_task_call(tmp_path: Path) -> None:
         assert step["run"] == 'task ci:sonar:target >> "$GITHUB_OUTPUT"', root.name
 
 
-def test_s6_3_8_sonar_runs_only_on_a_pull_request_or_main(tmp_path: Path) -> None:
+def test_sonar_runs_only_on_a_pull_request_or_main(tmp_path: Path) -> None:
     for root in _ci_ok_roots(tmp_path):
         if root.name == "nosonar":
             continue
@@ -181,7 +181,7 @@ def test_s6_3_8_sonar_runs_only_on_a_pull_request_or_main(tmp_path: Path) -> Non
         ) in condition, root.name
 
 
-def test_s6_7_5_6_the_release_job_is_task_calls(tmp_path: Path) -> None:
+def test_the_release_job_is_task_calls(tmp_path: Path) -> None:
     for root in _release_roots(tmp_path):
         steps = _release_steps(root)
         assert [s["name"] for s in steps] == [
@@ -197,7 +197,7 @@ def test_s6_7_5_6_the_release_job_is_task_calls(tmp_path: Path) -> None:
             assert "\n" not in str(step.get("run", "")), (root.name, step["name"])
 
 
-def test_s6_3_4_check_step_outputs_the_tag_state(tmp_path: Path) -> None:
+def test_check_step_outputs_the_tag_state(tmp_path: Path) -> None:
     for root in _release_roots(tmp_path):
         steps = _release_steps(root)
         check = next(step for step in steps if step.get("id") == "check")
@@ -205,7 +205,7 @@ def test_s6_3_4_check_step_outputs_the_tag_state(tmp_path: Path) -> None:
         assert check["run"] == 'task ci:release:state >> "$GITHUB_OUTPUT"', root.name
 
 
-def test_s6_3_4_checkout_of_the_tag_precedes_build(tmp_path: Path) -> None:
+def test_checkout_of_the_tag_precedes_build(tmp_path: Path) -> None:
     for root in _release_roots(tmp_path):
         steps = _release_steps(root)
         index = _step_index(steps, "Check out the release source")
@@ -218,7 +218,7 @@ def test_s6_3_4_checkout_of_the_tag_precedes_build(tmp_path: Path) -> None:
         assert check < index < _step_index(steps, "Build"), root.name
 
 
-def test_s6_3_4_draft_is_deleted_before_publish(tmp_path: Path) -> None:
+def test_draft_is_deleted_before_publish(tmp_path: Path) -> None:
     for root in _release_roots(tmp_path):
         steps = _release_steps(root)
         names = [s["name"] for s in steps]
@@ -228,7 +228,7 @@ def test_s6_3_4_draft_is_deleted_before_publish(tmp_path: Path) -> None:
         assert _step_index(steps, "Build") < names.index("Publish GitHub Release")
 
 
-def test_s6_3_4_publish_targets_the_source_commit(tmp_path: Path) -> None:
+def test_publish_targets_the_source_commit(tmp_path: Path) -> None:
     for root in _release_roots(tmp_path):
         steps = _release_steps(root)
         publish = steps[_step_index(steps, "Publish GitHub Release")]
@@ -239,7 +239,7 @@ def test_s6_3_4_publish_targets_the_source_commit(tmp_path: Path) -> None:
         assert any(step.get("id") == "source" for step in steps)
 
 
-def test_s6_3_6_release_uploads_distributions_and_sbom_only(tmp_path: Path) -> None:
+def test_release_uploads_distributions_and_sbom_only(tmp_path: Path) -> None:
     for root in _release_roots(tmp_path):
         steps = _release_steps(root)
         publish = steps[_step_index(steps, "Publish GitHub Release")]
@@ -250,7 +250,7 @@ def test_s6_3_6_release_uploads_distributions_and_sbom_only(tmp_path: Path) -> N
         assert "dist/*" not in run.split(), root.name
 
 
-def test_s6_3_5_setup_uv_enables_the_cache(tmp_path: Path) -> None:
+def test_setup_uv_enables_the_cache(tmp_path: Path) -> None:
     action = YamlUtils.load(
         _rendered(_root(tmp_path))[".github/actions/setup/action.yml"]
     )
@@ -260,7 +260,7 @@ def test_s6_3_5_setup_uv_enables_the_cache(tmp_path: Path) -> None:
     assert install["with"]["enable-cache"] is True
 
 
-def test_s7_4_4_1_uv_cache_follows_the_kiln_pin(tmp_path: Path) -> None:
+def test_uv_cache_follows_the_kiln_pin(tmp_path: Path) -> None:
     action = YamlUtils.load(
         _rendered(_root(tmp_path))[".github/actions/setup/action.yml"]
     )
@@ -273,14 +273,14 @@ def test_s7_4_4_1_uv_cache_follows_the_kiln_pin(tmp_path: Path) -> None:
     ]
 
 
-def test_s6_3_5_pins_match_the_upstream_versions() -> None:
+def test_pins_match_the_upstream_versions() -> None:
     pins_file = Path(pins_module.__file__ or "").parent / "pins.toml"
     pins = tomllib.loads(pins_file.read_text(encoding="utf-8"))
     for key, (sha, version) in UPSTREAM_PINS.items():
         assert (pins[key]["sha"], pins[key]["version"]) == (sha, version), key
 
 
-def test_s4_6_4_2_ci_sets_the_variable_on_default_branch_pushes(
+def test_ci_sets_the_variable_on_default_branch_pushes(
     tmp_path: Path,
 ) -> None:
     for archetype in ARCHETYPES:

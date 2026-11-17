@@ -1,4 +1,4 @@
-"""Stage names of the one-workflow contract (F15.8)."""
+"""Stage names of the one-workflow contract."""
 
 from __future__ import annotations
 
@@ -46,7 +46,7 @@ def _jobs(tmp_path: Path, archetype: str) -> dict[str, dict[str, Any]]:
     return workflows.jobs(_render(tmp_path, archetype))
 
 
-def test_s15_8_1_1_lib_jobs(tmp_path: Path) -> None:
+def test_lib_jobs(tmp_path: Path) -> None:
     names = [n for n in _jobs(tmp_path, "python-lib") if n != "secret-scan"]
     assert names == [
         "validate",
@@ -65,7 +65,7 @@ def test_s15_8_1_1_lib_jobs(tmp_path: Path) -> None:
     ]
 
 
-def test_s15_8_1_3_test_task(tmp_path: Path) -> None:
+def test_test_task(tmp_path: Path) -> None:
     files = _render(tmp_path, "python-lib")
     tasks = YamlUtils.load(files["tasks/ci.yml"])["tasks"]
     assert "test" in tasks and "verify" not in tasks
@@ -74,7 +74,7 @@ def test_s15_8_1_3_test_task(tmp_path: Path) -> None:
     assert any(s.get("run") == "task ci:test -- ${{ matrix.name }}" for s in steps)
 
 
-def test_s15_8_1_4_node_jobs(tmp_path: Path) -> None:
+def test_node_jobs(tmp_path: Path) -> None:
     jobs = _jobs(tmp_path, "node-lib")
     assert {"test-cloud", "test-local", "smoke"} <= set(jobs)
     assert not {"ci-cloud", "ci-local", "package"} & set(jobs)
@@ -99,7 +99,7 @@ def test_s15_8_1_4_node_jobs(tmp_path: Path) -> None:
         "node-lib",
     ],
 )
-def test_s15_8_1_5_no_old_name(tmp_path: Path, archetype: str) -> None:
+def test_no_old_name(tmp_path: Path, archetype: str) -> None:
     files = _render(tmp_path, archetype)
     text = "\n".join(
         c for p, c in files.items() if p.startswith((".github/", "tasks/"))
@@ -111,7 +111,7 @@ def test_s15_8_1_5_no_old_name(tmp_path: Path, archetype: str) -> None:
     assert "verify" not in jobs
 
 
-def test_s15_8_2_7_job(tmp_path: Path) -> None:
+def test_python_lib_integration_job(tmp_path: Path) -> None:
     jobs = _jobs(tmp_path, "python-lib")
     assert not {"postgres", "redis"} & set(jobs)
     job = jobs["integration"]
@@ -131,7 +131,7 @@ def test_s15_8_2_7_job(tmp_path: Path) -> None:
     assert "integration" in jobs["checks-ok"]["needs"]
 
 
-def test_s15_8_2_8_task(tmp_path: Path) -> None:
+def test_python_lib_integration_task(tmp_path: Path) -> None:
     tasks = YamlUtils.load(_render(tmp_path, "python-lib")["tasks/ci.yml"])["tasks"]
     assert tasks["integration"]["cmds"] == ["{{.DEVOPS}} integration {{.CLI_ARGS}}"]
     assert not {"postgres", "redis"} & set(tasks)
@@ -153,7 +153,7 @@ def _render_single(tmp_path: Path, archetype: str, extra: str = "") -> dict[str,
 
 
 @pytest.mark.parametrize("archetype", SINGLE)
-def test_s15_8_3_3_jobs(tmp_path: Path, archetype: str) -> None:
+def test_single_package_jobs_match_python_lib(tmp_path: Path, archetype: str) -> None:
     lib = _jobs(tmp_path, "python-lib")
     jobs = workflows.jobs(_render_single(tmp_path, archetype))
     # Only a repository with two members checks their internal ranges.
@@ -168,7 +168,7 @@ def test_s15_8_3_3_jobs(tmp_path: Path, archetype: str) -> None:
 
 
 @pytest.mark.parametrize("archetype", SINGLE)
-def test_s15_8_3_4_validate_task(tmp_path: Path, archetype: str) -> None:
+def test_validate_task(tmp_path: Path, archetype: str) -> None:
     files = _render_single(tmp_path, archetype)
     tasks = YamlUtils.load(files["tasks/ci.yml"])["tasks"]
     assert tasks["validate"]["cmds"] == [
@@ -185,7 +185,7 @@ def test_s15_8_3_4_validate_task(tmp_path: Path, archetype: str) -> None:
 
 
 @pytest.mark.parametrize("archetype", SINGLE)
-def test_s15_8_3_5_needs(tmp_path: Path, archetype: str) -> None:
+def test_single_package_sonar_needs(tmp_path: Path, archetype: str) -> None:
     jobs = workflows.jobs(_render_single(tmp_path, archetype))
     assert jobs["sonar"]["needs"] == [
         "validate",
@@ -215,7 +215,7 @@ def test_s15_8_3_5_needs(tmp_path: Path, archetype: str) -> None:
 
 
 @pytest.mark.parametrize("archetype", SINGLE)
-def test_s15_8_3_6_suites_are_declared(tmp_path: Path, archetype: str) -> None:
+def test_suites_are_declared(tmp_path: Path, archetype: str) -> None:
     suites = workflows.jobs(_render_single(tmp_path, archetype))["suites"]
     assert suites["strategy"]["matrix"] == {
         "include": "${{ fromJSON(needs.plan.outputs.suites) }}"
@@ -235,7 +235,7 @@ def _lib_files(tmp_path: Path, release: str) -> dict[str, str]:
     return files
 
 
-def test_s15_8_4_3_task(tmp_path: Path) -> None:
+def test_verify_release_task_by_release_source(tmp_path: Path) -> None:
     for release, source in (("tag-exists", "git"), ("pypi", "pypi")):
         tasks = YamlUtils.load(_lib_files(tmp_path, release)["tasks/ci.yml"])["tasks"]
         assert tasks["verify-release"]["cmds"] == [
@@ -250,7 +250,7 @@ def test_s15_8_4_3_task(tmp_path: Path) -> None:
         assert "external-install" not in tasks
 
 
-def test_s15_8_4_4_lib_job(tmp_path: Path) -> None:
+def test_python_lib_verify_release_job(tmp_path: Path) -> None:
     jobs = workflows.jobs(_lib_files(tmp_path, "tag-exists"))
     assert "external-install" not in jobs
     job = jobs["verify-release"]
@@ -263,7 +263,7 @@ def test_s15_8_4_4_lib_job(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("archetype", SINGLE)
-def test_s15_8_4_5_single_package_job(tmp_path: Path, archetype: str) -> None:
+def test_single_package_job(tmp_path: Path, archetype: str) -> None:
     jobs = workflows.jobs(_render_single(tmp_path, archetype))
     tag = (
         "${{ steps.check.outputs.should-release == 'true' "
@@ -279,7 +279,7 @@ def test_s15_8_4_5_single_package_job(tmp_path: Path, archetype: str) -> None:
     assert last["env"]["TAG"] == "${{ needs.release.outputs.tag }}"
 
 
-def test_s15_8_4_6_none(tmp_path: Path) -> None:
+def test_no_verify_release_when_release_is_none(tmp_path: Path) -> None:
     assert "verify-release" not in workflows.jobs(_lib_files(tmp_path, "none"))
     root = tmp_path / "single-none"
     _config(root, "python-tool", "none")
@@ -314,13 +314,13 @@ def _node(tmp_path: Path, release: str = "nx-dispatch") -> dict[str, str]:
     return files
 
 
-def test_s15_8_5_1_no_release_yml(tmp_path: Path) -> None:
+def test_no_release_yml(tmp_path: Path) -> None:
     files = _node(tmp_path)
     assert ".github/workflows/release.yml" not in files
     assert not [p for p in files if p.endswith("/release.yml")]
 
 
-def test_s15_8_5_2_release_job(tmp_path: Path) -> None:
+def test_release_job(tmp_path: Path) -> None:
     job = workflows.jobs(_node(tmp_path))["release"]
     assert job["needs"] == ["checks-ok"]
     assert job["if"] == (
@@ -341,7 +341,7 @@ def test_s15_8_5_2_release_job(tmp_path: Path) -> None:
     assert job["steps"][1]["with"]["token"] == "${{ steps.app-token.outputs.token }}"
 
 
-def test_s15_8_5_4_modes_gate_the_steps(tmp_path: Path) -> None:
+def test_modes_gate_the_steps(tmp_path: Path) -> None:
     job = workflows.jobs(_node(tmp_path))["release"]
     by_run = {s.get("run"): s for s in job["steps"]}
     new = "${{ steps.state.outputs.mode == 'new' }}"
@@ -358,7 +358,7 @@ def test_s15_8_5_4_modes_gate_the_steps(tmp_path: Path) -> None:
     )
 
 
-def test_s15_8_5_6_publish_flags(tmp_path: Path) -> None:
+def test_publish_flags(tmp_path: Path) -> None:
     job = workflows.jobs(_node(tmp_path))["release"]
     publish = next(s for s in job["steps"] if s.get("run") == "task ci:release:publish")
     assert publish["env"] == {
@@ -370,7 +370,7 @@ def test_s15_8_5_6_publish_flags(tmp_path: Path) -> None:
     assert "DRY_RUN" not in json.dumps(job)
 
 
-def test_s15_8_5_7_version_task(tmp_path: Path) -> None:
+def test_version_task(tmp_path: Path) -> None:
     files = _node(tmp_path)
     root = YamlUtils.load(files["Taskfile.yml"])["tasks"]
     assert root["version"]["cmds"] == [{"task": "node:version"}]
@@ -385,7 +385,7 @@ def test_s15_8_5_7_version_task(tmp_path: Path) -> None:
     ) in cmds
 
 
-def test_s15_8_5_8_verify_release(tmp_path: Path) -> None:
+def test_verify_release(tmp_path: Path) -> None:
     files = _node(tmp_path)
     jobs = workflows.jobs(files)
     job = jobs["verify-release"]
@@ -398,7 +398,7 @@ def test_s15_8_5_8_verify_release(tmp_path: Path) -> None:
     assert "gh release download" in "\n".join(tasks["verify-release"]["cmds"])
 
 
-def test_s15_8_5_9_ci_ok(tmp_path: Path) -> None:
+def test_node_ci_ok_needs_by_release(tmp_path: Path) -> None:
     jobs = workflows.jobs(_node(tmp_path))
     assert jobs["ci-ok"]["needs"] == ["checks-ok", "release", "verify-release", "docs"]
     none = _node(tmp_path, "none")
@@ -409,7 +409,7 @@ def test_s15_8_5_9_ci_ok(tmp_path: Path) -> None:
     assert not [t for t in tasks if t.startswith("release:") or t == "verify-release"]
 
 
-def test_s15_8_5_10_no_dispatch_inputs(tmp_path: Path) -> None:
+def test_no_dispatch_inputs(tmp_path: Path) -> None:
     files = _node(tmp_path)
     for path, text in files.items():
         if not path.startswith(".github/workflows/"):
@@ -471,13 +471,13 @@ def _release_for(archetype: str, release: str) -> str:
 
 @pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
 @pytest.mark.parametrize("release", ["tag-exists", "none"])
-def test_s15_8_6_1_no_docs_yml(tmp_path: Path, archetype: str, release: str) -> None:
+def test_no_docs_yml(tmp_path: Path, archetype: str, release: str) -> None:
     files = _docs_render(tmp_path, archetype, _release_for(archetype, release))
     assert ".github/workflows/docs.yml" not in files
 
 
 @pytest.mark.parametrize("archetype", SINGLE)
-def test_s15_8_6_2_job(tmp_path: Path, archetype: str) -> None:
+def test_docs_job_permissions_and_environment(tmp_path: Path, archetype: str) -> None:
     job = workflows.jobs(_docs_render(tmp_path, archetype, "tag-exists"))["docs"]
     assert job["permissions"] == {
         "contents": "read",
@@ -500,7 +500,9 @@ def test_s15_8_6_2_job(tmp_path: Path, archetype: str) -> None:
 
 
 @pytest.mark.parametrize("archetype", SINGLE)
-def test_s15_8_6_2b_hook_steps(tmp_path: Path, archetype: str) -> None:
+def test_docs_hooks_run_in_order_before_pages_deploy(
+    tmp_path: Path, archetype: str
+) -> None:
     extra = '\n[ci.hooks]\ndocs = ["./.github/actions/a", "./.github/actions/b"]\n'
     steps = workflows.jobs(
         _docs_render(tmp_path, archetype, "tag-exists", extra=extra)
@@ -523,7 +525,7 @@ GATES = [
 
 @pytest.mark.parametrize(("release", "sonar"), GATES)
 @pytest.mark.parametrize("archetype", ["python-tool", "python-lib", "node-lib"])
-def test_s15_8_6_3_gate(
+def test_docs_job_needs_and_condition(
     tmp_path: Path, archetype: str, release: str, sonar: bool
 ) -> None:
     release = _release_for(archetype, release)
@@ -541,7 +543,7 @@ def test_s15_8_6_3_gate(
 
 
 @pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
-def test_s15_8_6_3b_skipped_release_deploys(tmp_path: Path, archetype: str) -> None:
+def test_skipped_release_deploys(tmp_path: Path, archetype: str) -> None:
     release = _release_for(archetype, "tag-exists")
     cond = workflows.jobs(_docs_render(tmp_path, archetype, release))["docs"]["if"]
     assert "needs.release.result" not in cond
@@ -549,21 +551,21 @@ def test_s15_8_6_3b_skipped_release_deploys(tmp_path: Path, archetype: str) -> N
 
 
 @pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
-def test_s15_8_6_4_ci_ok(tmp_path: Path, archetype: str) -> None:
+def test_docs_is_needed_by_ci_ok(tmp_path: Path, archetype: str) -> None:
     release = _release_for(archetype, "tag-exists")
     jobs = workflows.jobs(_docs_render(tmp_path, archetype, release))
     assert jobs["ci-ok"]["needs"] == ["checks-ok", "release", "verify-release", "docs"]
 
 
 @pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
-def test_s15_8_6_5_no_profile(tmp_path: Path, archetype: str) -> None:
+def test_no_profile(tmp_path: Path, archetype: str) -> None:
     release = _release_for(archetype, "tag-exists")
     jobs = workflows.jobs(_docs_render(tmp_path, archetype, release, docs=False))
     assert "docs" not in jobs
     assert "docs" not in jobs["ci-ok"]["needs"]
 
 
-def test_s15_8_6_6_node_lib_gate(tmp_path: Path) -> None:
+def test_node_lib_gate(tmp_path: Path) -> None:
     job = workflows.jobs(_docs_render(tmp_path, "node-lib", "nx-dispatch"))["docs"]
     assert job["needs"] == ["checks-ok", "release", "verify-release"]
     assert job["if"] == DOCS_IF
@@ -571,7 +573,7 @@ def test_s15_8_6_6_node_lib_gate(tmp_path: Path) -> None:
     assert "test-local" not in str(job["needs"]) + job["if"]
 
 
-def test_s15_8_6_7_lib_gate(tmp_path: Path) -> None:
+def test_lib_gate(tmp_path: Path) -> None:
     job = workflows.jobs(_docs_render(tmp_path, "python-lib", "pypi"))["docs"]
     assert job["needs"] == ["checks-ok", "plan", "release", "verify-release"]
     assert PLAN_TERM in job["if"]
@@ -590,14 +592,14 @@ TEST_STAGES = ("test", "test-cloud", "test-local", "integration", "smoke", "suit
 
 
 @pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
-def test_s15_8_8_1_same_guard(tmp_path: Path, archetype: str) -> None:
+def test_same_guard(tmp_path: Path, archetype: str) -> None:
     release = _release_for(archetype, "tag-exists")
     jobs = workflows.jobs(_docs_render(tmp_path, archetype, release))
     assert jobs["sonar"]["if"] == SONAR_IF
 
 
 @pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
-def test_s15_8_8_2_needs(tmp_path: Path, archetype: str) -> None:
+def test_sonar_needs_validate_and_test_stages(tmp_path: Path, archetype: str) -> None:
     release = _release_for(archetype, "tag-exists")
     jobs = workflows.jobs(_docs_render(tmp_path, archetype, release))
     rendered = [s for s in TEST_STAGES if s in jobs]
@@ -605,7 +607,7 @@ def test_s15_8_8_2_needs(tmp_path: Path, archetype: str) -> None:
 
 
 @pytest.mark.parametrize("archetype", ALL_ARCHETYPES)
-def test_s15_8_8_3_gate_waits(tmp_path: Path, archetype: str) -> None:
+def test_gate_waits(tmp_path: Path, archetype: str) -> None:
     release = _release_for(archetype, "tag-exists")
     jobs = workflows.jobs(_docs_render(tmp_path, archetype, release))
     steps = jobs["sonar"]["steps"]
