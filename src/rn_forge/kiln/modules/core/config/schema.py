@@ -9,8 +9,10 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, ClassVar
 
-from pydantic import ConfigDict, Field, create_model
+from pydantic import ConfigDict, Field, create_model, model_validator
 from rn_forge.commons.lang.models import StrictModel
+
+from rn_forge.kiln.modules.core import kiln_ref
 
 if TYPE_CHECKING:
     from rn_forge.kiln.modules.base import KilnModule
@@ -66,8 +68,23 @@ class KilnPin(ConfigModel):
     """The kiln this repository runs."""
 
     ref: str
-    """A kiln release tag, `v<version>`; a branch only before kiln's first
-    release. `kiln apply` pins the dev dependency and the CI install to it."""
+    """A kiln release tag, `v<version>`, or a full 40-character commit SHA.
+    `kiln apply` pins the dev dependency, the `uvx` commands and the CI install
+    to it. A branch name is refused."""
+    track: str | None = None
+    """The branch `ref`'s commit was taken from, for `kiln pin` to move on from.
+    Only with a SHA `ref`. Default: none."""
+
+    @model_validator(mode="after")
+    def _ref_is_a_commit(self) -> KilnPin:
+        if not (kiln_ref.TAG.match(self.ref) or kiln_ref.SHA.match(self.ref)):
+            raise ValueError(
+                f"kiln.ref: {self.ref!r} names a branch; run "
+                f"`task kiln:pin -- {self.ref}` to pin its newest commit"
+            )
+        if self.track is not None and not kiln_ref.SHA.match(self.ref):
+            raise ValueError("kiln.track: needs a commit SHA in kiln.ref")
+        return self
 
 
 class SourceConfig(ConfigModel):

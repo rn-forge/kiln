@@ -281,6 +281,39 @@ def new_repo(directory: Path, **kwargs: Any) -> None:
     commands.new(directory, **kwargs)
 
 
+@pytest.fixture(scope="session")
+def kiln_remote(tmp_path_factory: pytest.TempPathFactory) -> tuple[str, str]:
+    """A local bare repository with one commit on `feature/v1`, tagged `v0.0.1`.
+
+    Returns its `file://` URL and the commit's SHA.
+    """
+    base = tmp_path_factory.mktemp("kiln-remote")
+    work = base / "work"
+    work.mkdir()
+    git(work, "init", "-q", "-b", "feature/v1")
+    git(work, "commit", "-q", "--allow-empty", "-m", "initial")
+    git(work, "tag", "v0.0.1")
+    bare = base / "kiln.git"
+    git(base, "clone", "-q", "--bare", str(work), str(bare))
+    return bare.as_uri(), git(work, "rev-parse", "HEAD")
+
+
+@pytest.fixture(scope="session")
+def kiln_remote_sha(kiln_remote: tuple[str, str]) -> str:
+    """The commit `feature/v1` and `v0.0.1` name in the local kiln remote."""
+    return kiln_remote[1]
+
+
+@pytest.fixture(autouse=True)
+def _local_kiln_remote(
+    kiln_remote: tuple[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Point `kiln_ref.REMOTE` at the local remote, so no test reaches the network."""
+    from rn_forge.kiln.modules.core import kiln_ref
+
+    monkeypatch.setattr(kiln_ref, "REMOTE", kiln_remote[0])
+
+
 @pytest.fixture(autouse=True, scope="session")
 def _no_uv_locked() -> Iterator[None]:
     """CI sets UV_LOCKED=1 for kiln's own lock; tests that run `task setup` in a

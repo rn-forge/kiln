@@ -34,8 +34,8 @@ def test_s7_4_3_2_other_tag_is_a_mismatch(repo) -> None:
     assert "[kiln] ref" in message
 
 
-def test_s7_4_3_3_branch_ref_is_not_checked(repo) -> None:
-    assert run(repo(), '\n[kiln]\nref = "feature/v1"\n') == []
+def test_s7_4_3_3_sha_ref_is_not_checked(repo, kiln_remote_sha: str) -> None:
+    assert run(repo(), f'\n[kiln]\nref = "{kiln_remote_sha}"\n') == []
 
 
 def test_s7_4_3_4_missing_pin_is_a_warning(repo) -> None:

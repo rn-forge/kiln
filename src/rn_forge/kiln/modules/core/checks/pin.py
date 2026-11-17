@@ -7,13 +7,13 @@ working tree and needs no pin.
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 from rn_forge.commons.findings import Finding, Severity
 
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
+from rn_forge.kiln.modules.core import kiln_ref
 
 __all__ = ["MISMATCH", "MISSING", "NAME", "check"]
 
@@ -21,7 +21,6 @@ NAME = "kiln-pin"
 MISMATCH = "kiln.pin-mismatch"
 MISSING = "kiln.pin-missing"
 
-_TAG = re.compile(r"^v(\d+\.\d+\.\d+)$")
 _OWN_MODULE = "rn_forge.kiln"
 
 
@@ -41,14 +40,16 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
                 path=label,
             )
         ]
-    tag = _TAG.match(pin.ref)
-    if tag is None or tag.group(1) == __version__:
+    if not kiln_ref.TAG.match(pin.ref):
+        return []
+    pinned = pin.ref.removeprefix("v")
+    if pinned == __version__:
         return []
     return [
         Finding(
             MISMATCH,
             Severity.ERROR,
-            f"[kiln] ref pins kiln {tag.group(1)}, but kiln {__version__} is "
+            f"[kiln] ref pins kiln {pinned}, but kiln {__version__} is "
             f"running — run kiln through `task`, or move [kiln] ref",
             path=label,
         )

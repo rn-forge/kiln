@@ -124,7 +124,12 @@ def _break_pin(root: Path) -> None:
     _edit(
         root,
         ".rn-forge/kiln/config.toml",
-        lambda text: text.replace('ref = "feature/v1"', 'ref = "v0.0.0"'),
+        lambda text: re.sub(
+            r"^track = .*\n",
+            "",
+            re.sub(r'ref = "[0-9a-f]{40}"', 'ref = "v0.0.0"', text),
+            flags=re.M,
+        ),
     )
 
 

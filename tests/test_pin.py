@@ -40,6 +40,7 @@ def _files(root: Path) -> dict[str, bytes]:
 def test_s7_2_5_1_writes_only_the_ref(
     repo: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
+    commands.pin("v1.0.0")  # a tag pin carries no `track`
     before = _files(repo)
     commands.pin("v9.9.9")
     after = _files(repo)
@@ -47,8 +48,8 @@ def test_s7_2_5_1_writes_only_the_ref(
     assert set(after) == set(before)
     old = before[str(CONFIG)].decode()
     new = after[str(CONFIG)].decode()
-    assert old.replace('ref = "feature/v1"', 'ref = "v9.9.9"') == new
-    assert "kiln ref feature/v1 \u2192 v9.9.9" in capsys.readouterr().out
+    assert old.replace('ref = "v1.0.0"', 'ref = "v9.9.9"') == new
+    assert "kiln ref v1.0.0 \u2192 v9.9.9" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("ref", ["", "   "])

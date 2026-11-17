@@ -282,13 +282,13 @@ def test_s16_9_1_2_new_with_a_local_config_records_no_source(tmp_path: Path) -> 
     assert str(tmp_path) not in text
 
 
-def test_s7_4_1_5_new_pins_kiln(tmp_path: Path) -> None:
+def test_s7_4_1_5_new_pins_kiln(tmp_path: Path, kiln_remote_sha: str) -> None:
     directory = tmp_path / "demo-pinned"
     new_repo(directory, archetype="python-tool", docs="none", yes=True)
     written = tomllib.loads(
         (directory / ".rn-forge" / "kiln" / "config.toml").read_text(encoding="utf-8")
     )
-    assert written["kiln"] == {"ref": archetypes.KILN_REF}
+    assert written["kiln"] == {"ref": kiln_remote_sha, "track": archetypes.KILN_REF}
 
 
 def test_s7_4_1_6_a_config_layer_pin_wins(tmp_path: Path) -> None:
@@ -404,3 +404,16 @@ def test_s4_5_7_2_unreachable_url_and_missing_ref_name_the_url(
     assert location in str(no_ref.value)
     assert not (tmp_path / "a").exists()
     assert not (tmp_path / "b").exists()
+
+
+def test_s18_14_1_5_new_pins_the_branch_head(
+    tmp_path: Path, kiln_remote_sha: str
+) -> None:
+    directory = tmp_path / "demo-head"
+    new_repo(directory, archetype="python-tool", docs="none", yes=True)
+    written = tomllib.loads(
+        (directory / ".rn-forge" / "kiln" / "config.toml").read_text(encoding="utf-8")
+    )
+    assert written["kiln"] == {"ref": kiln_remote_sha, "track": archetypes.KILN_REF}
+    kiln_yml = (directory / "tasks" / "kiln.yml").read_text(encoding="utf-8")
+    assert f"@{kiln_remote_sha}" in kiln_yml

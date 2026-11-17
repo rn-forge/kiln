@@ -14,7 +14,7 @@ from rn_forge.kiln import archetypes
 from rn_forge.kiln.commands import output
 from rn_forge.kiln.commands.generate import add_package
 from rn_forge.kiln.config import KilnConfig
-from rn_forge.kiln.modules.core import cycle
+from rn_forge.kiln.modules.core import cycle, kiln_ref
 from rn_forge.kiln.modules.core.config import catalog
 from rn_forge.kiln.modules.core.config.manager import ConfigManager, Resolution
 from rn_forge.kiln.modules.core.config.sources import Source, fetch
@@ -191,7 +191,8 @@ def _resolve_config(
     if chosen:
         DictUtils.set(flags, "repository.owner", chosen)
     if not layer_pins_kiln:
-        DictUtils.set(flags, "kiln.ref", archetypes.KILN_REF)
+        DictUtils.set(flags, "kiln.ref", kiln_ref.resolve(archetypes.KILN_REF))
+        DictUtils.set(flags, "kiln.track", archetypes.KILN_REF)
     if module is not None:
         DictUtils.set(flags, f"archetype.{archetype}.module", module)
     package = module or module_name(name)
