@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from rn_forge.kiln import archetypes, commands
+from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core.config import catalog
 from rn_forge.kiln.modules.core.config.manager import ConfigManager
@@ -24,7 +24,7 @@ def _config(name: str = "python-tool", **sections: dict[str, object]) -> KilnCon
 
 
 def _written(tmp_path: Path, config: KilnConfig) -> str:
-    commands._write_config(tmp_path, config)  # noqa: SLF001
+    catalog.write(tmp_path, config)
     return (tmp_path / CONFIG).read_text(encoding="utf-8")
 
 

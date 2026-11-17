@@ -95,7 +95,6 @@ def test_s6_7_2_4_devops_contracts_exist() -> None:
             "checks",
             "commands",
             "config",
-            "doctor",
             "main",
             "modules",
         )

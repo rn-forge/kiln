@@ -10,6 +10,7 @@ from pathlib import Path
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.runtime.console import OutputMode, console
 from rn_forge.kiln import commands
+from rn_forge.kiln.modules.instructions import scaffold as instructions_scaffold
 from tests.conftest import new_repo
 from typing import Any
 from tests.commands.new_support import _last_json
@@ -86,7 +87,7 @@ def test_s4_5_9_4_failure_retains_staging_and_writes_no_target(
     def boom(*_args: object) -> None:
         raise AppException("boom")
 
-    monkeypatch.setattr(commands, "instructions_scaffold", boom)
+    monkeypatch.setattr(instructions_scaffold, "scaffold", boom)
     target = tmp_path / "demo"
     if target_exists:
         target.mkdir()
@@ -155,7 +156,7 @@ def test_s4_5_11_3_failure_or_refusal_creates_no_git(
     def boom(*_args: object) -> None:
         raise AppException("boom")
 
-    monkeypatch.setattr(commands, "instructions_scaffold", boom)
+    monkeypatch.setattr(instructions_scaffold, "scaffold", boom)
     failed = tmp_path / "failed"
     with pytest.raises(AppException, match="boom"):
         new_repo(failed, archetype="python-tool", docs="none", yes=True)
@@ -203,7 +204,7 @@ def test_s4_5_9_6_no_retention_or_cleanup_flag_and_no_rnf_home(
         raise AppException("stop")
 
     monkeypatch.delenv("RNF_HOME", raising=False)
-    monkeypatch.setattr(commands, "instructions_scaffold", stop)
+    monkeypatch.setattr(instructions_scaffold, "scaffold", stop)
     with pytest.raises(AppException, match="stop"):
         new_repo(tmp_path / "demo", archetype="python-tool", docs="none", yes=True)
     assert seen == [False]

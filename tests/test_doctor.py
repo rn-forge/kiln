@@ -17,7 +17,9 @@ from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding, Severity
 from rn_forge.commons.runtime.console import OutputMode, console
 
-from rn_forge.kiln import checks, commands, doctor
+from rn_forge.kiln import checks, commands
+from rn_forge.kiln.commands import output
+from rn_forge.kiln.commands.doctor import full as doctor_full
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.core.checks.generated import digest
@@ -168,7 +170,7 @@ def test_s4_6_1_1_each_check_reports_only_its_own_code(copy: Path, name: str) ->
 
 
 def test_s4_6_1_2_full_on_a_fresh_repo_exits_0(copy: Path) -> None:
-    assert doctor.full(copy) == []
+    assert doctor_full(copy) == []
     commands.doctor([copy], full=True)
 
 
@@ -178,7 +180,7 @@ def test_s4_6_1_2_full_reports_a_stale_artifact(copy: Path) -> None:
         ".rn-forge/kiln/config.toml",
         lambda text: text.replace("sonar = true", "sonar = false"),
     )
-    stale = [f for f in doctor.full(copy) if f.code == "artifact.stale"]
+    stale = [f for f in doctor_full(copy) if f.code == "artifact.stale"]
     changed = {c.path for c in cycle.plan(copy).changes if c.action.value == "update"}
     assert changed
     assert changed <= {f.path for f in stale}
@@ -230,7 +232,7 @@ def test_s4_6_1_4_apply_fails_on_an_error_finding(
 def test_s4_6_5_1_seeded_edits_and_deletions_are_silent(copy: Path) -> None:
     _edit(copy, "README.md", lambda text: text + "\nmy own words\n")
     (copy / "src" / "python_app" / "commands.py").unlink()
-    for findings in (checks.run(copy), doctor.full(copy)):
+    for findings in (checks.run(copy), doctor_full(copy)):
         assert [
             str(f)
             for f in findings
@@ -265,11 +267,11 @@ def test_s4_6_5_3_quality_checks_run_by_default(copy: Path) -> None:
 
 
 def test_s4_6_5_4_a_sibling_under_rn_forge_is_ignored(copy: Path) -> None:
-    before = ([str(f) for f in checks.run(copy)], [str(f) for f in doctor.full(copy)])
+    before = ([str(f) for f in checks.run(copy)], [str(f) for f in doctor_full(copy)])
     sibling = copy / ".rn-forge" / "other"
     sibling.mkdir()
     (sibling / "state.json").write_text("{not json", encoding="utf-8")
-    after = ([str(f) for f in checks.run(copy)], [str(f) for f in doctor.full(copy)])
+    after = ([str(f) for f in checks.run(copy)], [str(f) for f in doctor_full(copy)])
     assert after == before
 
 
@@ -442,11 +444,11 @@ def test_s4_12_5_2_the_ownership_scope_skips_them(copy: Path) -> None:
 
 def test_s4_12_5_3_apply_does_not_fail_on_them(copy: Path) -> None:
     _break_quality(copy)
-    commands._fail_on_errors(copy)
+    output.fail_on_errors(copy)
     commands.apply()
     _break_generated(copy)
     with pytest.raises(AppException, match=r"check\(s\) failed"):
-        commands._fail_on_errors(copy)
+        output.fail_on_errors(copy)
 
 
 def test_s4_12_5_4_full_includes_them_and_the_render_findings(

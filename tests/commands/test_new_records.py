@@ -6,7 +6,8 @@ import pytest
 from collections.abc import Callable
 from pathlib import Path
 from rn_forge.commons.runtime.console import OutputMode, console
-from rn_forge.kiln import commands
+from rn_forge.kiln.modules.node import scaffold as node_scaffold
+from rn_forge.kiln.modules.python import scaffold as python_scaffold
 from tests.conftest import new_repo
 from typing import Any
 
@@ -31,16 +32,16 @@ def test_s16_7_3_8_new_formats_after_apply(
     frontend = tmp_path / "prepared"
     frontend.mkdir()
 
-    monkeypatch.setattr(commands, "scaffold_backend", lambda *_: None)
-    monkeypatch.setattr(commands, "reconcile_backend", lambda *_: None)
+    monkeypatch.setattr(python_scaffold, "scaffold_backend", lambda *_: None)
+    monkeypatch.setattr(python_scaffold, "reconcile_backend", lambda *_: None)
     monkeypatch.setattr(
-        commands,
+        node_scaffold,
         "scaffold_node",
         lambda _raw, config: frontend if config.archetype == "node-lib" else None,
     )
-    monkeypatch.setattr(commands, "reconcile_node", lambda *_: None)
+    monkeypatch.setattr(node_scaffold, "reconcile_node", lambda *_: None)
     monkeypatch.setattr(
-        commands,
+        node_scaffold,
         "format_node",
         lambda workspace: calls.append(
             (workspace, (workspace / ".prettierrc").is_file())

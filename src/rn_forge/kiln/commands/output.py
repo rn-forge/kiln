@@ -10,11 +10,14 @@ from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding
 from rn_forge.commons.runtime.console import OutputMode, console
 
+from rn_forge.kiln import checks
+
 __all__ = [
     "artifact_rows",
     "change_rows",
     "emit",
     "emit_rows",
+    "fail_on_errors",
     "finding_json",
     "report_findings",
     "use_json",
@@ -95,3 +98,8 @@ def artifact_rows(
         )
         for artifact in artifacts
     ]
+
+
+def fail_on_errors(root: Path) -> None:
+    """Run `kiln doctor`'s ownership checks over *root*, raising if any is an error."""
+    report_findings(checks.run(root, scope="ownership"), root)

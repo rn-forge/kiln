@@ -11,6 +11,7 @@ import re
 import types
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Annotated, Any, Literal, Union, cast, get_args, get_origin
 
 from pydantic import BaseModel
@@ -20,12 +21,16 @@ from rn_forge.commons.fs.documents import ConfigFormat, DocumentUtils
 from rn_forge.commons.lang.types import JsonValue
 
 from rn_forge.kiln import archetypes
-from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
 from rn_forge.kiln.modules.core.config.schema import compose
 from rn_forge.kiln.modules.registry import builtin
 
-__all__ = ["OptionSpec", "for_archetype", "render"]
+__all__ = ["CONFIG_HEADER", "OptionSpec", "for_archetype", "render", "write"]
 
+CONFIG_HEADER = (
+    "The one hand-authored input kiln reads (kiln ADR-0004). Edit this, then run\n"
+    "`kiln apply`. Everything else under .rn-forge/kiln/ is kiln's."
+)
 _UNTYPED = ("cli", "lifecycle")
 _DEFAULT_SENTENCE = re.compile(r"(?:^|(?<=\s))Default:\s*(.*)\Z", re.DOTALL)
 _KEY_LINE = re.compile(r'^([A-Za-z0-9_-]+|"[^"]*")\s*=')
@@ -261,3 +266,10 @@ def _literal(value: JsonValue) -> str:
         return "{}" if not value else str(value)
     text = DocumentUtils.dumps({"x": value}, ConfigFormat.TOML)
     return text.removeprefix("x = ").strip()
+
+
+def write(directory: Path, config: KilnConfig) -> None:
+    """Write *config* as `directory`'s committed `config.toml`, with kiln's header."""
+    config_path = directory / CONFIG_PATH
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    config_path.write_text(render(config, header=CONFIG_HEADER), encoding="utf-8")

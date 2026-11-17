@@ -359,7 +359,7 @@
     }
   },
   "metadata": {
-    "config_hash": "abb912026b483cbcdc8f7ae28729183d3bf9ed5ead2c1f26be3a02c2f50d0ccd",
+    "config_hash": "94da61094afd27db7e36ebabfe339468415c26de945053e47c5f4cb782165aa4",
     "config_provenance": {
       "archetype.python-app.module": {
         "layer": "repo",

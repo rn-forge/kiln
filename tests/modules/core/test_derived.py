@@ -198,7 +198,7 @@ def test_s16_2_2_12_one_classifier() -> None:
     inside = {getattr(n, "lineno", 0) for n in ast.walk(classify)}
     assert {line for _, line in callers[cycle_py]} <= inside
 
-    commands = (SRC / "rn_forge" / "kiln" / "commands" / "__init__.py").read_text(
+    commands = (SRC / "rn_forge" / "kiln" / "commands" / "config.py").read_text(
         encoding="utf-8"
     )
     rows = re.search(r"def _config_change_rows.*?\n\n\ndef ", commands, re.DOTALL)

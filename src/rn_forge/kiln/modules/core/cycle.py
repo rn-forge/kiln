@@ -7,13 +7,14 @@ engine then stages, backs up and swaps them in, and writes `state.json` last.
 from __future__ import annotations
 
 import json
+import subprocess
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 
 from rn_forge.commons import generation
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding, Severity
-from rn_forge.commons.fs.documents import DocumentUtils
+from rn_forge.commons.fs.documents import ConfigFormat, DocumentUtils
 from rn_forge.commons.fs.hashing import ContentHash
 from rn_forge.commons.fs.state import StateStore
 from rn_forge.commons.generation import (
@@ -37,6 +38,7 @@ __all__ = [
     "apply",
     "classify",
     "plan",
+    "record_scaffolded",
 ]
 
 STATE_SCHEMA_VERSION = "1"
@@ -264,3 +266,36 @@ def _without_converted(
         for key, entry in entries.items()
         if entry.kind is ArtifactKind.BLOCK or entry.path not in converted
     }
+
+
+def record_scaffolded(directory: Path) -> None:
+    """Record in `state.json` the files `kiln new` wrote that no artifact owns.
+
+    Args:
+        directory: The new repository, already `git init`-ed.
+    """
+    listed = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(directory),
+            "ls-files",
+            "--others",
+            "--exclude-standard",
+            "-z",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    state_path = directory / ".rn-forge" / "kiln" / "state.json"
+    state = DocumentUtils.read(state_path)
+    owned = {entry["path"] for entry in state["entries"].values()}
+    state["metadata"]["scaffolded"] = sorted(
+        path
+        for path in listed.split("\0")
+        if path and path not in owned and not path.startswith(".rn-forge/")
+    )
+    state_path.write_text(
+        DocumentUtils.dumps(state, ConfigFormat.JSON), encoding="utf-8"
+    )

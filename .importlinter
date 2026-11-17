@@ -119,7 +119,6 @@ source_modules =
     rn_forge.kiln.checks
     rn_forge.kiln.commands
     rn_forge.kiln.config
-    rn_forge.kiln.doctor
     rn_forge.kiln.main
     rn_forge.kiln.modules
 forbidden_modules =

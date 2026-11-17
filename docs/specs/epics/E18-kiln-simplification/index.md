@@ -14,7 +14,7 @@
 | [F18.3 — One epic per area](F18.3-area-epics.md) | New | release-1 | 10 New |
 | [F18.4 — `feature/v1` lands on `main` as one commit](F18.4-one-commit-on-main.md) | New | release-1 | 2 New |
 | [F18.5 — Tests that survive a refactor](F18.5-tests-survive-a-refactor.md) | Closed | release-1 | 4 Closed |
-| [F18.6 — `commands` is a package, one module per command](F18.6-commands-package.md) | Active | release-1 | 2 New · 1 Closed |
+| [F18.6 — `commands` is a package, one module per command](F18.6-commands-package.md) | Active | release-1 | 1 New · 2 Closed |
 | [F18.7 — One owner per concept](F18.7-one-owner-per-concept.md) | New | release-1 | 4 New |
 | [F18.8 — Modules meet only through composition](F18.8-modules-meet-through-composition.md) | New | release-1 | 2 New |
 | [F18.9 — Large files split by job](F18.9-large-files-split.md) | New | release-1 | 4 New |

@@ -12,7 +12,8 @@ import tomllib
 from pathlib import Path
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.runtime.console import OutputMode, console
-from rn_forge.kiln import archetypes, checks, commands
+from rn_forge.kiln import archetypes, checks
+from rn_forge.kiln.commands.new import FLAG_NAMES, flag_layer
 from rn_forge.kiln.modules.core.config.manager import ConfigManager
 from rn_forge.kiln.modules.registry import builtin
 from tests.conftest import new_repo, requires
@@ -36,11 +37,11 @@ def test_s4_5_1_flags_match_module_union() -> None:
     """`new`'s config-setting flags are exactly backed by a registered module's `Option`.
 
     `framework`/`frontend` join both the signature and this set once F5.1/F5.2
-    register a module that declares them — see commands.py's `_FLAG_NAMES`
+    register a module that declares them — see `FLAG_NAMES` in commands/new.py
     comment.
     """
     union = {option.flag for module in builtin().modules for option in module.options()}
-    assert set(commands._FLAG_NAMES) == union
+    assert set(FLAG_NAMES) == union
 
 
 def test_s4_5_1_preview_without_yes_writes_nothing(tmp_path: Path) -> None:
@@ -96,14 +97,14 @@ def test_s4_5_1_untested_flag_value_is_refused_without_allow_untested() -> None:
     )
 
     with pytest.raises(AppException, match="--docs"):
-        commands._flag_layer(
+        flag_layer(
             archetype="python-app",
             docs="external",
             manifest=manifest,
             allow_untested=False,
         )
 
-    flags = commands._flag_layer(
+    flags = flag_layer(
         archetype="python-app", docs="external", manifest=manifest, allow_untested=True
     )
     assert flags["docs"]["profile"] == "external"
@@ -164,7 +165,7 @@ def test_s5_1_1_4_a_refused_selector_is_rejected_before_writing(
 @pytest.mark.parametrize("archetype", ["python-web-api", "python-web-app"])
 def test_s5_3_1_web_defaults_select_fastapi(archetype: str) -> None:
     manifest = archetypes.load(archetype)
-    flags = commands._flag_layer(
+    flags = flag_layer(
         archetype=archetype,
         docs="none",
         manifest=manifest,
@@ -188,7 +189,7 @@ def test_s5_3_1_explicit_selectors_override_web_defaults(
     archetype: str, selector: str, value: str
 ) -> None:
     manifest = archetypes.load(archetype)
-    flags = commands._flag_layer(
+    flags = flag_layer(
         archetype=archetype,
         docs="none",
         manifest=manifest,

@@ -8,6 +8,7 @@ sections check 8a verifies, using the same expected values that check reads.
 
 from __future__ import annotations
 
+import dataclasses
 import os
 import re
 import shutil
@@ -27,17 +28,20 @@ from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import gitignore
 from rn_forge.kiln.modules.core.versions import PYTHON_VERSION
 from rn_forge.kiln.modules.python.checks.rn_forge_deps import distribution
+from rn_forge.kiln.modules.python.config import ArchetypeConfig
 
 __all__ = [
     "SAMPLE_TEST",
     "TASK_TOOLS",
     "add_package",
+    "declared_modules",
     "docs_group",
     "reconcile_backend",
     "sample_test",
     "scaffold",
     "scaffold_backend",
     "uv_gitignore",
+    "without_members",
 ]
 
 REQUIRES_PYTHON = f">={PYTHON_VERSION}"
@@ -559,3 +563,22 @@ def _existing_list(path: Path, *keys: str) -> list[str]:
     return DictUtils.get_strings(
         DocumentUtils.read(path, missing_ok=True), ".".join(keys)
     )
+
+
+def declared_modules(config: KilnConfig) -> dict[str, str]:
+    """A `python-lib` config's `modules` table; empty for any other archetype."""
+    section = getattr(config.document, "archetype", None)
+    lib = section.python_lib if isinstance(section, ArchetypeConfig) else None
+    return dict(lib.modules) if config.archetype == "python-lib" and lib else {}
+
+
+def without_members(config: KilnConfig) -> KilnConfig:
+    """*config* with a `python-lib`'s `packages` and `modules` emptied."""
+    section = getattr(config.document, "archetype", None)
+    if not isinstance(section, ArchetypeConfig) or section.python_lib is None:
+        return config
+    lib = section.python_lib.model_copy(update={"packages": [], "modules": {}})
+    bare = config.document.model_copy(
+        update={"archetype": section.model_copy(update={"python_lib": lib})}
+    )
+    return dataclasses.replace(config, document=bare)

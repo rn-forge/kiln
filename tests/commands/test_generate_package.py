@@ -109,7 +109,9 @@ def test_s11_3_1_0_the_command_is_declared_as_generate_package() -> None:
     commands_declared = {
         c["name"]: c["target"] for c in main.SURFACE["cli"]["commands"]
     }
-    assert commands_declared["generate"] == "rn_forge.kiln.commands:generate_app"
+    assert (
+        commands_declared["generate"] == "rn_forge.kiln.commands.generate:generate_app"
+    )
     assert [c.name for c in commands.generate_app.registered_commands] == ["package"]
 
 

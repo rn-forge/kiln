@@ -11,6 +11,7 @@ from rn_forge.commons.runtime.console import OutputMode, console
 from rn_forge.kiln import checks, commands
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core.config import catalog
+from rn_forge.kiln.modules.python import scaffold as python_scaffold
 from tests.conftest import new_repo, requires
 from typing import Any
 
@@ -123,9 +124,7 @@ def test_s16_7_10_3_same_result_as_generate_package(
 def _commented_form(root: Path) -> tuple[str, str]:
     """The committed `config.toml` and what `catalog.render` makes of its parse."""
     written = (root / ".rn-forge/kiln/config.toml").read_text(encoding="utf-8")
-    return written, catalog.render(
-        KilnConfig.load(root), header=commands._CONFIG_HEADER
-    )
+    return written, catalog.render(KilnConfig.load(root), header=catalog.CONFIG_HEADER)
 
 
 def test_s16_9_2_1_generate_package_writes_the_commented_form(
@@ -203,7 +202,7 @@ def test_s16_7_10_4_a_failing_second_package_leaves_no_directory(
 def test_s16_7_10_5_a_failing_member_step_leaves_no_directory(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    real = commands.python_add_package
+    real = python_scaffold.add_package
     calls: list[str] = []
 
     def flaky(*args: Any, **kwargs: Any) -> None:
@@ -212,7 +211,7 @@ def test_s16_7_10_5_a_failing_member_step_leaves_no_directory(
             raise AppException("boom")
         real(*args, **kwargs)
 
-    monkeypatch.setattr(commands, "python_add_package", flaky)
+    monkeypatch.setattr(python_scaffold, "add_package", flaky)
     target = tmp_path / "lib"
 
     with pytest.raises(AppException, match="boom"):

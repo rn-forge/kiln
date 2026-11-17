@@ -40,47 +40,47 @@ default_log_level = "info"
 
 [[cli.commands]]
 name = "doctor"
-target = "rn_forge.kiln.commands:doctor"
+target = "rn_forge.kiln.commands.doctor:doctor"
 
 [[cli.commands]]
 name = "docs-generate"
-target = "rn_forge.kiln.commands:docs_generate"
+target = "rn_forge.kiln.commands.generate:docs_generate"
 
 [[cli.commands]]
 name = "new"
-target = "rn_forge.kiln.commands:new"
+target = "rn_forge.kiln.commands.new:new"
 
 [[cli.commands]]
 name = "apply"
-target = "rn_forge.kiln.commands:apply"
+target = "rn_forge.kiln.commands.apply:apply"
 
 [[cli.commands]]
 name = "generate"
-target = "rn_forge.kiln.commands:generate_app"
+target = "rn_forge.kiln.commands.generate:generate_app"
 
 [[cli.commands]]
 name = "config-update"
-target = "rn_forge.kiln.commands:config_update"
+target = "rn_forge.kiln.commands.config:config_update"
 
 [[cli.commands]]
 name = "config-upgrade"
-target = "rn_forge.kiln.commands:config_upgrade"
+target = "rn_forge.kiln.commands.config:config_upgrade"
 
 [[cli.commands]]
 name = "pin"
-target = "rn_forge.kiln.commands:pin"
+target = "rn_forge.kiln.commands.config:pin"
 
 [[cli.commands]]
 name = "diff"
-target = "rn_forge.kiln.commands:diff"
+target = "rn_forge.kiln.commands.diff:diff"
 
 [[cli.commands]]
 name = "version"
-target = "rn_forge.kiln.commands:version"
+target = "rn_forge.kiln.commands.info:version"
 
 [[cli.commands]]
 name = "prompt"
-target = "rn_forge.kiln.commands:prompt"
+target = "rn_forge.kiln.commands.info:prompt"
 
 # The lifecycle verbs mounted under the CLI, read by rn-forge-tooling's
 # `build_tool_app` and carried as written. `kiln apply` does not read it.
