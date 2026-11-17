@@ -147,6 +147,7 @@ nav:
               - F9.3 — Node CI holds for ngkit and for every `node-lib`: specs/epics/E9-node-archetypes/F9.3-node-ci-holds-for-every-node-lib.md
               - F9.4 — The node CI helpers run from `kiln-devops`: specs/epics/E9-node-archetypes/F9.4-node-helpers-in-kiln-devops.md
               - F9.5 — What ngkit's cutover found about node-lib releases: specs/epics/E9-node-archetypes/F9.5-node-lib-release-findings.md
+              - F9.6 — Nx Cloud agents can run `task`: specs/epics/E9-node-archetypes/F9.6-nx-cloud-agents-run-task.md
           - E10 — kiln generators:
               - specs/epics/E10-kiln-generators/index.md
       - E11–E20:
