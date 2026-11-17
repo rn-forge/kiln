@@ -19,12 +19,12 @@ from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.core.config import catalog
 from rn_forge.kiln.modules.core.config.manager import ConfigManager, Resolution
 from rn_forge.kiln.modules.core.config.sources import Source, fetch
+from rn_forge.kiln.modules.core.names import module_name
 from rn_forge.kiln.modules.docs import generate as docs_generator
 from rn_forge.kiln.modules.instructions import scaffold as instructions_scaffold
 from rn_forge.kiln.modules.node import scaffold as node_scaffold
 from rn_forge.kiln.modules.python import scaffold as python_scaffold
 from rn_forge.kiln.modules.python import starter as python_starter
-from rn_forge.kiln.modules.python.artifacts import root_package
 from rn_forge.kiln.modules.registry import builtin
 
 __all__ = ["FLAG_NAMES", "STAGING", "flag_layer", "new"]
@@ -86,7 +86,7 @@ def new(
         allow_untested=allow_untested,
     )
     resolved = resolution.config
-    members = resolved.packages if resolved.archetype == "python-lib" else ()
+    members = resolved.docs_packages
     declared = python_scaffold.declared_modules(resolved)
     bare = python_scaffold.without_members(resolved)
 
@@ -116,11 +116,7 @@ def new(
     for member in members:
         add_package(workspace, Path(member).name, declared.get(member))
     if resolved.docs_profile == "mkdocs":
-        packages = (
-            KilnConfig.load(workspace).packages
-            if resolved.archetype == "python-lib"
-            else ()
-        )
+        packages = KilnConfig.load(workspace).packages if resolved.is_workspace else ()
         docs_generator.generate(workspace, packages)
     if frontend_workspace is not None:
         node_scaffold.format_node(workspace)
@@ -194,7 +190,7 @@ def _resolve_config(
         DictUtils.set(flags, "kiln.ref", archetypes.KILN_REF)
     if module is not None:
         DictUtils.set(flags, f"archetype.{archetype}.module", module)
-    package = module or root_package(name)
+    package = module or module_name(name)
     for key, value in python_starter.starter_flags(archetype, name, package).items():
         DictUtils.set(flags, key, value)
 

@@ -18,5 +18,5 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
     """Check the site MkDocs would build, for a repo with an MkDocs site."""
     if config.docs_profile != "mkdocs":
         return []
-    packages = config.packages if config.archetype == "python-lib" else ()
+    packages = config.docs_packages
     return check_site(root, packages=packages)

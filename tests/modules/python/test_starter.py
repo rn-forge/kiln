@@ -18,7 +18,7 @@ from rn_forge.kiln import commands
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.base import StarterModule
 from rn_forge.kiln.modules.python import PYTHON, starter
-from rn_forge.kiln.modules.python.artifacts import root_package
+from rn_forge.kiln.modules.core.names import module_name
 
 TOOL_PATHS = {
     "src/python_tool/main.py",
@@ -248,10 +248,10 @@ def test_s4_9_5_1_starter_is_formatter_stable_at_any_name(
 ) -> None:
     if archetype == "python-lib":
         config = _lib(tmp_path, [f"packages/{name}"], name=name)
-        _fresh(tmp_path / "packages" / name, root_package(name))
+        _fresh(tmp_path / "packages" / name, module_name(name))
     else:
         config = _config(tmp_path, archetype, name=name)
-        _fresh(tmp_path, root_package(name))
+        _fresh(tmp_path, module_name(name))
     artifacts = starter.render(config, tmp_path)
     assert artifacts
     _assert_formatter_stable(tmp_path, artifacts)
@@ -262,7 +262,7 @@ def test_s4_9_5_2_web_api_starter_is_formatter_stable(
     tmp_path: Path, name: str
 ) -> None:
     config = _config(tmp_path, "python-web-api", name=name, backend="fastapi")
-    _fresh_api(tmp_path, "apps/api", module=root_package(f"{name}-api"))
+    _fresh_api(tmp_path, "apps/api", module=module_name(f"{name}-api"))
     artifacts = starter.render(config, tmp_path)
     assert artifacts
     _assert_formatter_stable(tmp_path, artifacts)

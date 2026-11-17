@@ -14,8 +14,6 @@ from rn_forge.commons.text.templates import TemplateEngine
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd import registry
-from rn_forge.kiln.modules.cicd.config import CiConfig
-from rn_forge.kiln.modules.docs.config import DocsConfig
 from rn_forge.kiln.modules.tasks.surface import public_tasks
 
 __all__ = ["KILN_BLOCK", "context", "md_cell", "render"]
@@ -128,13 +126,12 @@ def md_cell(text: str) -> str:
 
 def context(config: KilnConfig) -> dict[str, object]:
     """The template context every `instructions` template renders with."""
-    docs = getattr(config.document, "docs", None)
-    ci = getattr(config.document, "ci", None)
-    ci = ci if isinstance(ci, CiConfig) else CiConfig()
+    docs = config.docs
+    ci = config.ci
     lifecycle = config.lifecycle
-    web = config.archetype in {"python-web-api", "python-web-app"}
-    web_app = config.archetype == "python-web-app"
-    node_lib = config.archetype == "node-lib"
+    web = config.is_web
+    web_app = config.is_web_app
+    node_lib = config.is_node_lib
     web_dir = config.web_dir
     sonar = "on" if ci.sonar else "off"
     display = (
@@ -146,7 +143,7 @@ def context(config: KilnConfig) -> dict[str, object]:
     if web_app:
         selectors += f", frontend: `{config.frontend}`"
     selectors += ")" if web else ""
-    api_module = f"{config.name}-api".replace("-", "_")
+    api_module = config.api_module
     api_text = (
         f"`task api:dev` serves `{config.api_dir}/src/{api_module}/app.py`, "
         "which must define the ASGI application as `app`. The application "
@@ -199,9 +196,7 @@ def context(config: KilnConfig) -> dict[str, object]:
             "`proxy.conf.json`) once at `kiln new`."
         ),
         "api_paragraph": _paragraph(api_text),
-        "docs_bullet": _bullet(
-            f"**Docs:** external, at [docs]({docs.external_url if isinstance(docs, DocsConfig) else ''})."
-        ),
+        "docs_bullet": _bullet(f"**Docs:** external, at [docs]({docs.external_url})."),
     }
     public = public_tasks(config)
     return {
@@ -213,11 +208,11 @@ def context(config: KilnConfig) -> dict[str, object]:
         "name": config.name,
         "display_archetype": display,
         "lifecycle": lifecycle,
-        "workspace": config.archetype == "python-lib",
+        "workspace": config.is_workspace,
         "packages": [Path(package).name for package in config.packages],
         "docs_profile": config.docs_profile,
         "docs": config.docs_profile == "mkdocs",
-        "external_url": docs.external_url if isinstance(docs, DocsConfig) else "",
+        "external_url": docs.external_url,
         "sonar": ci.sonar,
         "release": config.release,
         "web": web,

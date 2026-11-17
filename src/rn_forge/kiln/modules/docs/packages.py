@@ -278,7 +278,7 @@ def check_packages(root: Path, config: KilnConfig) -> list[Finding]:
     """
     root = root.resolve()
     members = _workspace_members(root)
-    if config.archetype == "python-lib":
+    if config.is_workspace:
         findings = [
             f for package in config.packages for f in _check_package(root, package)
         ]

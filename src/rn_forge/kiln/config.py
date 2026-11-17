@@ -13,9 +13,11 @@ from typing import Any
 
 from rn_forge.kiln.modules.cicd import registry
 from rn_forge.kiln.modules.cicd.config import CiConfig, resolve_release
-from rn_forge.kiln.modules.core.config.schema import RootConfig
+from rn_forge.kiln.modules.core.config.schema import KilnPin, RootConfig
+from rn_forge.kiln.modules.core.names import module_name
 from rn_forge.kiln.modules.docs.config import DocsConfig
 from rn_forge.kiln.modules.python.config import ArchetypeConfig, WebAppConfig
+from rn_forge.kiln.modules.tasks.config import TasksConfig
 
 __all__ = ["CONFIG_PATH", "KilnConfig"]
 
@@ -63,23 +65,48 @@ class KilnConfig:
         return self.document.repository.owner
 
     @property
+    def ci(self) -> CiConfig:
+        """The `[ci]` section, or its defaults."""
+        section = getattr(self.document, "ci", None)
+        return section if isinstance(section, CiConfig) else CiConfig()
+
+    @property
+    def docs(self) -> DocsConfig:
+        """The `[docs]` section, or its defaults."""
+        section = getattr(self.document, "docs", None)
+        return section if isinstance(section, DocsConfig) else DocsConfig()
+
+    @property
+    def tasks(self) -> TasksConfig:
+        """The `[tasks]` section, or its defaults."""
+        section = getattr(self.document, "tasks", None)
+        return section if isinstance(section, TasksConfig) else TasksConfig()
+
+    @property
+    def kiln_pin(self) -> KilnPin | None:
+        """The `[kiln]` pin, or `None` when the repository declares none."""
+        return getattr(self.document, "kiln", None)
+
+    @property
+    def archetype_section(self) -> ArchetypeConfig | None:
+        """The `[archetype]` section, or `None` when the repository declares none."""
+        section = getattr(self.document, "archetype", None)
+        return section if isinstance(section, ArchetypeConfig) else None
+
+    @property
     def docs_profile(self) -> str:
         """`mkdocs`, `external` or `none`."""
-        docs = getattr(self.document, "docs", None)
-        return docs.profile if isinstance(docs, DocsConfig) else "none"
+        return self.docs.profile
 
     @property
     def docs_site_dir(self) -> str:
         """Where `mkdocs` builds the site: `[docs] site_dir`, else mkdocs's own `site`."""
-        docs = getattr(self.document, "docs", None)
-        configured = docs.site_dir if isinstance(docs, DocsConfig) else ".docs-site"
-        return configured or "site"
+        return self.docs.site_dir or "site"
 
     @property
     def ci_provider(self) -> str:
         """`github`; `ado` is reserved."""
-        ci = getattr(self.document, "ci", None)
-        return ci.provider if isinstance(ci, CiConfig) else "github"
+        return self.ci.provider
 
     @property
     def release(self) -> str:
@@ -88,29 +115,46 @@ class KilnConfig:
         Raises:
             ValueError: the mode does not fit the archetype.
         """
-        ci = getattr(self.document, "ci", None)
-        return resolve_release(
-            ci if isinstance(ci, CiConfig) else CiConfig(), self.archetype
-        )
+        return resolve_release(self.ci, self.archetype)
 
     @property
     def licenses_enabled(self) -> bool:
         """Whether the registry's licences check runs for this repository."""
-        ci = getattr(self.document, "ci", None)
-        names = registry.enabled_names(
-            ci if isinstance(ci, CiConfig) else CiConfig(),
-            self.archetype,
-            len(self.packages),
-        )
+        names = registry.enabled_names(self.ci, self.archetype, len(self.packages))
         return "licenses" in names
+
+    @property
+    def is_workspace(self) -> bool:
+        """Whether the repository is a `python-lib` workspace."""
+        return self.archetype == "python-lib"
+
+    @property
+    def is_web(self) -> bool:
+        """Whether the repository has an API member: `python-web-api` or `python-web-app`."""
+        return self.archetype in {"python-web-api", "python-web-app"}
+
+    @property
+    def is_web_app(self) -> bool:
+        """Whether the repository is a `python-web-app`."""
+        return self.archetype == "python-web-app"
+
+    @property
+    def is_node_lib(self) -> bool:
+        """Whether the repository is a `node-lib`."""
+        return self.archetype == "node-lib"
+
+    @property
+    def docs_packages(self) -> tuple[str, ...]:
+        """The member directories the docs site covers: `packages` for `python-lib`."""
+        return self.packages if self.is_workspace else ()
 
     @property
     def packages(self) -> tuple[str, ...]:
         """Workspace member directories: `packages` for `python-lib`, `(api_dir,)`
         for a web archetype, empty otherwise — so every per-member code path
         that already exists applies to a web archetype's one member."""
-        section = getattr(self.document, "archetype", None)
-        if not isinstance(section, ArchetypeConfig):
+        section = self.archetype_section
+        if section is None:
             return ()
         api_dir = self.api_dir
         if api_dir is not None:
@@ -119,34 +163,30 @@ class KilnConfig:
 
     def module_for(self, package: str) -> str:
         """The import module of workspace member *package* (a path in `packages`)."""
-        section = getattr(self.document, "archetype", None)
-        if not isinstance(section, ArchetypeConfig):
-            return Path(package).name.replace("-", "_")
+        section = self.archetype_section
+        if section is None:
+            return module_name(Path(package).name)
         return section.module_for(self.archetype, package)
 
     @property
     def module(self) -> str:
         """The import module of a single-package repository: the declared one,
         else the repository name with `-` as `_`."""
-        section = getattr(self.document, "archetype", None)
-        declared = (
-            section.module_of(self.archetype)
-            if isinstance(section, ArchetypeConfig)
-            else None
-        )
-        return declared or self.name.replace("-", "_")
+        section = self.archetype_section
+        declared = section.module_of(self.archetype) if section is not None else None
+        return declared or module_name(self.name)
 
     @property
     def import_contracts(self) -> str:
         """`own` when a `python-lib` repo writes its own import contracts, else `kiln`."""
-        section = getattr(self.document, "archetype", None)
-        if not isinstance(section, ArchetypeConfig):
+        section = self.archetype_section
+        if section is None:
             return "kiln"
         return section.import_contracts_for(self.archetype)
 
     def _web_section(self) -> Any:
-        section = getattr(self.document, "archetype", None)
-        if not isinstance(section, ArchetypeConfig):
+        section = self.archetype_section
+        if section is None:
             return None
         return section.web_for(self.archetype)
 
@@ -173,6 +213,23 @@ class KilnConfig:
         """The frontend's directory, for `python-web-app`. `None` otherwise."""
         section = self._web_section()
         return section.web_dir if isinstance(section, WebAppConfig) else None
+
+    @property
+    def api_package(self) -> str | None:
+        """The API member's distribution name, for a web archetype. `None` otherwise."""
+        return f"{self.name}-api" if self.is_web else None
+
+    @property
+    def api_module(self) -> str | None:
+        """The API member's import module, for a web archetype. `None` otherwise."""
+        package = self.api_package
+        return module_name(package) if package is not None else None
+
+    @property
+    def web_project(self) -> str | None:
+        """The frontend's Nx project name: its directory's name. `None` without one."""
+        web_dir = self.web_dir
+        return Path(web_dir).name if web_dir else None
 
     def to_document(self) -> dict[str, Any]:
         """The config as a TOML-ready mapping, defaults included."""

@@ -436,8 +436,7 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
     document = _load_yaml(root_taskfile)
     root_tasks = task_specs(document)
     includes = include_map(document)
-    section = getattr(config.document, "tasks", None)
-    tasks_config = section if isinstance(section, TasksConfig) else TasksConfig()
+    tasks_config = config.tasks
     owned_paths = {Path(i.taskfile).as_posix() for i in tasks_config.includes}
     owned = {ns for ns, path in includes.items() if path in owned_paths}
     managed = set(includes) - owned

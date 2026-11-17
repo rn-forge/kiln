@@ -15,7 +15,6 @@ from rn_forge.commons.text.templates import TemplateEngine
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd import registry
-from rn_forge.kiln.modules.cicd.config import CiConfig
 from rn_forge.kiln.modules.core.versions import PYTHON_VERSION
 
 __all__ = ["SONAR_ORGANIZATION", "load_pins", "render"]
@@ -72,11 +71,6 @@ def pinned_actions() -> list[str]:
     )
 
 
-def _ci_config(config: KilnConfig) -> CiConfig:
-    section = getattr(config.document, "ci", None)
-    return section if isinstance(section, CiConfig) else CiConfig()
-
-
 def render(config: KilnConfig) -> list[Artifact]:
     """Render the setup action, `ci.yml` and its reusable stage workflows `_<stage>.yml`, `dependabot.yml`, `scorecard.yml` (when `ci.checks.scorecard` is on), `sonar-project.properties` and, for `node-lib`, `.nx/workflows/agents.yaml`.
 
@@ -84,7 +78,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         AppException: `ci.provider` is `ado`, which is reserved, or `ci.hooks.docs` is set without a docs site.
         ValueError: `ci.release` does not fit the archetype.
     """
-    ci = _ci_config(config)
+    ci = config.ci
     if ci.provider == "ado":
         raise AppException(
             "cicd.render: ci.provider = 'ado' is reserved for E8 and renders nothing yet"
@@ -100,10 +94,10 @@ def render(config: KilnConfig) -> list[Artifact]:
         raise AppException(
             "cicd.render: ci.hooks.docs is set but nothing deploys Pages (docs profile is not mkdocs)"
         )
-    workspace = config.archetype == "python-lib"
-    web = config.archetype in {"python-web-api", "python-web-app"}
-    web_app = config.archetype == "python-web-app"
-    node_lib = config.archetype == "node-lib"
+    workspace = config.is_workspace
+    web = config.is_web
+    web_app = config.is_web_app
+    node_lib = config.is_node_lib
     context: dict[str, object] = {
         "kiln_version": __version__,
         "name": config.name,

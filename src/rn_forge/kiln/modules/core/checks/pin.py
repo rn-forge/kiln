@@ -29,7 +29,7 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
     """Report a missing pin, or a tag pin that names another kiln than the running one."""
     del root
     label = CONFIG_PATH.as_posix()
-    pin = getattr(config.document, "kiln", None)
+    pin = config.kiln_pin
     if pin is None:
         if config.module == _OWN_MODULE:
             return []

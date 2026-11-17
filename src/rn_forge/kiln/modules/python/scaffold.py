@@ -27,9 +27,10 @@ from rn_forge.commons.runtime.subprocess import Process
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import gitignore
+from rn_forge.kiln.modules.core.names import module_name
 from rn_forge.kiln.modules.core.versions import PYTHON_VERSION
 from rn_forge.kiln.modules.python.checks.rn_forge_deps import distribution
-from rn_forge.kiln.modules.python.config import MODULE_PATTERN, ArchetypeConfig
+from rn_forge.kiln.modules.python.config import MODULE_PATTERN
 
 __all__ = [
     "SAMPLE_TEST",
@@ -104,9 +105,7 @@ repository's lock."""
 
 def docs_group(config: KilnConfig) -> list[str]:
     """The `docs` dependency group `kiln new` writes for *config*, entry by entry."""
-    return _docs_group(
-        mkdocs=config.docs_profile == "mkdocs", lib=config.archetype == "python-lib"
-    )
+    return _docs_group(mkdocs=config.docs_profile == "mkdocs", lib=config.is_workspace)
 
 
 def _docs_group(*, mkdocs: bool, lib: bool) -> list[str]:
@@ -140,16 +139,16 @@ def scaffold_backend(raw: Path, config: KilnConfig) -> None:
     Raises:
         AppException: `uv` is not on `PATH`, or exits non-zero.
     """
-    workspace = config.archetype == "python-lib"
-    web = config.archetype in {"python-web-api", "python-web-app"}
-    if config.archetype == "node-lib":
+    workspace = config.is_workspace
+    web = config.is_web
+    if config.is_node_lib:
         _uv_init(raw, name=config.name, bare=True)
     elif workspace or web:
         _uv_init(raw, name=config.name, bare=True)
         for package in config.packages:
             member = raw / package
             member.mkdir(parents=True, exist_ok=True)
-            member_name = f"{config.name}-api" if web else Path(package).name
+            member_name = config.api_package or Path(package).name
             module = config.module_for(package) if workspace else None
             _uv_init(
                 member,
@@ -329,7 +328,7 @@ def sample_test(name: str, module: str | None = None) -> str:
     A new package has no tests, and pytest exits 5 on an empty suite, so
     without this a fresh repository's `task validate` fails.
     """
-    module = module or name.replace("-", "_")
+    module = module or module_name(name)
     return (
         f"import {module}\n\n\n"
         "def test_package_imports():\n"
@@ -393,20 +392,20 @@ def _reconcile_pyprojects(root: Path, config: KilnConfig) -> None:
 
 
 def _reconcile_pyproject(root: Path, config: KilnConfig, relative: Path) -> None:
-    workspace = config.archetype == "python-lib"
-    web = config.archetype in {"python-web-api", "python-web-app"}
+    workspace = config.is_workspace
+    web = config.is_web
     required = archetypes.for_config(config).dependencies.required
     path = root / relative
     is_root = path.parent == root
     is_member = not is_root
-    is_workspace_root = (workspace or web or config.archetype == "node-lib") and is_root
+    is_workspace_root = (workspace or web or config.is_node_lib) and is_root
     name = _member_name(config, path, root, web=web, is_member=is_member)
     if workspace and is_member:
         module = config.module_for(path.parent.relative_to(root).as_posix())
     elif config.archetype in {"python-tool", "python-app"} and is_root:
         module = config.module
     else:
-        module = name.replace("-", "_")
+        module = module_name(name)
     extra_dev = _extra_dev(config, web=web, is_member=is_member)
     _reconcile(
         path,
@@ -442,8 +441,8 @@ def _reconcile_pyproject(root: Path, config: KilnConfig, relative: Path) -> None
 def _member_name(
     config: KilnConfig, path: Path, root: Path, *, web: bool, is_member: bool
 ) -> str:
-    if web and is_member:
-        return f"{config.name}-api"
+    if web and is_member and config.api_package is not None:
+        return config.api_package
     return path.parent.name if path.parent != root else config.name
 
 
@@ -472,7 +471,7 @@ def _uv_init(
     args += ["--no-pin-python"] if member else ["--no-workspace"]
     Process.execute(f"uv-init[{name}]", *args, cwd=str(target))
     if not bare:
-        derived = target / "src" / name.replace("-", "_")
+        derived = target / "src" / module_name(name)
         package_dir = target / "src" / (module or derived.name).replace(".", "/")
         if package_dir != derived:
             package_dir.parent.mkdir(parents=True, exist_ok=True)
@@ -605,15 +604,15 @@ def _existing_list(path: Path, *keys: str) -> list[str]:
 
 def declared_modules(config: KilnConfig) -> dict[str, str]:
     """A `python-lib` config's `modules` table; empty for any other archetype."""
-    section = getattr(config.document, "archetype", None)
-    lib = section.python_lib if isinstance(section, ArchetypeConfig) else None
-    return dict(lib.modules) if config.archetype == "python-lib" and lib else {}
+    section = config.archetype_section
+    lib = section.python_lib if section is not None else None
+    return dict(lib.modules) if config.is_workspace and lib else {}
 
 
 def without_members(config: KilnConfig) -> KilnConfig:
     """*config* with a `python-lib`'s `packages` and `modules` emptied."""
-    section = getattr(config.document, "archetype", None)
-    if not isinstance(section, ArchetypeConfig) or section.python_lib is None:
+    section = config.archetype_section
+    if section is None or section.python_lib is None:
         return config
     lib = section.python_lib.model_copy(update={"packages": [], "modules": {}})
     bare = config.document.model_copy(

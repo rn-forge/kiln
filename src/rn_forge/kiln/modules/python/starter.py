@@ -10,7 +10,6 @@ from rn_forge.commons.generation.templated import TemplateArtifact, render_artif
 from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln.config import KilnConfig
-from rn_forge.kiln.modules.python.artifacts import root_package
 
 __all__ = ["render", "seedable", "starter_flags"]
 
@@ -66,7 +65,7 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
             tests=_TOOL_TESTS if tool else _APP_TESTS,
             context={"name": config.name, "package": package},
         )
-    if config.archetype == "python-lib":
+    if config.is_workspace:
         artifacts: list[Artifact] = []
         for member in config.packages:
             module = config.module_for(member)
@@ -80,10 +79,11 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
                 context={"name": config.name, "module": module},
             )
         return artifacts
-    if config.archetype in {"python-web-api", "python-web-app"}:
+    if config.is_web:
         if config.backend != "fastapi":
             return []
-        module = root_package(f"{config.name}-api")
+        module = config.api_module
+        assert module is not None  # `is_web` implies an API member
         return _render(
             engine,
             root,

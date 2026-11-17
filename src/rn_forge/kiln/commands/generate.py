@@ -14,10 +14,10 @@ from rn_forge.kiln.config import CONFIG_PATH
 from rn_forge.kiln.modules.core import cycle, umbrella
 from rn_forge.kiln.modules.core.config import catalog
 from rn_forge.kiln.modules.core.config.manager import ConfigManager
+from rn_forge.kiln.modules.core.names import module_name
 from rn_forge.kiln.modules.docs import generate as docs_generator
 from rn_forge.kiln.modules.docs import scaffold as docs_scaffold
 from rn_forge.kiln.modules.python import scaffold as python_scaffold
-from rn_forge.kiln.modules.python.artifacts import root_package
 
 __all__ = ["add_package", "docs_generate", "generate_app", "generate_package"]
 
@@ -72,7 +72,7 @@ def add_package(root: Path, name: str, module: str | None) -> ApplyResult:
     relative = f"packages/{name}"
 
     section: dict[str, object] = {"packages": [*config.packages, relative]}
-    if module is not None and module != root_package(name):
+    if module is not None and module != module_name(name):
         section["modules"] = {relative: module}
     DocumentUtils.update(root / CONFIG_PATH, {"archetype": {"python-lib": section}})
     config = ConfigManager().load(root)
@@ -90,7 +90,7 @@ def docs_generate(path: Path) -> None:
     `kiln doctor` checks that they are current.
     """
     config = ConfigManager().load(path)
-    packages = config.packages if config.archetype == "python-lib" else ()
+    packages = config.docs_packages
     written, findings = docs_generator.generate(path, packages)
     if not written:
         console.info("no change")

@@ -16,7 +16,7 @@ from rn_forge.commons.findings import Finding, Severity
 from rn_forge.commons.fs.documents import YamlUtils
 
 from rn_forge.kiln.config import KilnConfig
-from rn_forge.kiln.modules.cicd.config import STAGE_WORKFLOWS, CiConfig
+from rn_forge.kiln.modules.cicd.config import STAGE_WORKFLOWS
 
 __all__ = ["MISSING", "NAME", "NOT_CALLABLE", "RESERVED", "check"]
 
@@ -41,8 +41,7 @@ def _calls(workflow: object) -> bool:
 
 def check(config: KilnConfig, root: Path) -> list[Finding]:
     """Report a hook or declared job whose file is missing, a workflow that cannot be called, or a call to a workflow kiln renders."""
-    section = getattr(config.document, "ci", None)
-    ci = section if isinstance(section, CiConfig) else CiConfig()
+    ci = config.ci
     findings: list[Finding] = []
     for entry in dict.fromkeys([*ci.hooks.setup, *ci.hooks.docs]):
         directory = root / entry

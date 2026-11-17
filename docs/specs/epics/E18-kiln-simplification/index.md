@@ -15,7 +15,7 @@
 | [F18.4 — `feature/v1` lands on `main` as one commit](F18.4-one-commit-on-main.md) | New | release-1 | 2 New |
 | [F18.5 — Tests that survive a refactor](F18.5-tests-survive-a-refactor.md) | Closed | release-1 | 4 Closed |
 | [F18.6 — `commands` is a package, one module per command](F18.6-commands-package.md) | Closed | release-1 | 3 Closed |
-| [F18.7 — One owner per concept](F18.7-one-owner-per-concept.md) | Active | release-1 | 3 New · 1 Closed |
+| [F18.7 — One owner per concept](F18.7-one-owner-per-concept.md) | Active | release-1 | 2 New · 2 Closed |
 | [F18.8 — Modules meet only through composition](F18.8-modules-meet-through-composition.md) | New | release-1 | 2 New |
 | [F18.9 — Large files split by job](F18.9-large-files-split.md) | New | release-1 | 4 New |
 | [F18.10 — The defects the reviews confirmed](F18.10-review-defects.md) | New | release-2 | 12 New · 3 Removed |

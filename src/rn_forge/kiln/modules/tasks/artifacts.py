@@ -15,9 +15,6 @@ from rn_forge.kiln.archetypes import KILN_GIT, KILN_REF, kiln_command
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd import registry
 from rn_forge.kiln.modules.cicd.artifacts import load_pins
-from rn_forge.kiln.modules.cicd.config import CiConfig
-from rn_forge.kiln.modules.python.artifacts import root_package
-from rn_forge.kiln.modules.tasks.config import TasksConfig
 
 __all__ = ["render"]
 
@@ -62,25 +59,19 @@ _NODE_TASKS = (
 _DOCS_TASKS = ("docs:build", "docs:serve", "docs:generate")
 
 
-def _tasks_config(config: KilnConfig) -> TasksConfig:
-    section = getattr(config.document, "tasks", None)
-    return section if isinstance(section, TasksConfig) else TasksConfig()
-
-
 def render(config: KilnConfig) -> list[Artifact]:
     """Render `Taskfile.yml`, `tasks/*.yml`, and one seeded file per include."""
-    workspace = config.archetype == "python-lib"
-    web = config.archetype in {"python-web-api", "python-web-app"}
-    web_app = config.archetype == "python-web-app"
-    node_lib = config.archetype == "node-lib"
+    workspace = config.is_workspace
+    web = config.is_web
+    web_app = config.is_web_app
+    node_lib = config.is_node_lib
     node = web_app or node_lib
     packages = [Path(package).name for package in config.packages]
-    api_package = f"{config.name}-api" if web else None
+    api_package = config.api_package
     web_dir = config.web_dir
     docs = config.docs_profile == "mkdocs"
-    tasks_config = _tasks_config(config)
-    ci = getattr(config.document, "ci", None)
-    ci = ci if isinstance(ci, CiConfig) else CiConfig()
+    tasks_config = config.tasks
+    ci = config.ci
     checks = registry.enabled_names(ci, config.archetype, len(packages))
     policy = ci.licenses_policy()
     gitleaks = cast("dict[str, Any]", load_pins()["gitleaks"])
@@ -102,7 +93,7 @@ def render(config: KilnConfig) -> list[Artifact]:
             )
 
     # Kiln's own repository runs its working tree.
-    pin = getattr(config.document, "kiln", None)
+    pin = config.kiln_pin
     ref = pin.ref if pin is not None else KILN_REF
     if config.module == "rn_forge.kiln":
         kiln = "uv run kiln"
@@ -153,9 +144,9 @@ def render(config: KilnConfig) -> list[Artifact]:
         "backend": config.backend,
         "api_dir": config.api_dir,
         "api_package": api_package,
-        "api_module": root_package(api_package) if api_package else None,
+        "api_module": config.api_module,
         "web_dir": web_dir,
-        "web_project": Path(web_dir).name if web_dir else None,
+        "web_project": config.web_project,
     }
     engine = TemplateEngine.cached(
         package="rn_forge.kiln.modules.tasks",

@@ -11,7 +11,6 @@ from rn_forge.commons.lang.collections import DictUtils
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.tasks import artifacts
 from rn_forge.kiln.modules.tasks.checks.layout import include_map, task_specs
-from rn_forge.kiln.modules.tasks.config import TasksConfig
 
 __all__ = ["PublicTask", "public_tasks"]
 
@@ -39,8 +38,7 @@ def public_tasks(config: KilnConfig) -> list[PublicTask]:
         skipped.
     """
     rendered = {a.path: _content(a.content) for a in artifacts.render(config)}
-    section = getattr(config.document, "tasks", None)
-    tasks_config = section if isinstance(section, TasksConfig) else TasksConfig()
+    tasks_config = config.tasks
     owned = {PurePosixPath(i.taskfile).as_posix() for i in tasks_config.includes}
     root = YamlUtils.load(rendered["Taskfile.yml"])
     found = {("", name): spec for name, spec in task_specs(root).items()}

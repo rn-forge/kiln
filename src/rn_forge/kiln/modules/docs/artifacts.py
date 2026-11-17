@@ -16,7 +16,6 @@ from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core.derived import NAV_BLOCK
 from rn_forge.kiln.modules.core.settle import DerivedArtifact
-from rn_forge.kiln.modules.docs.config import DocsConfig
 from rn_forge.kiln.modules.docs.nav import build_nav
 
 __all__ = ["SEEDS", "render"]
@@ -72,9 +71,7 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
         "module": config.module,
         "kiln_version": __version__,
     }
-    skipped = (
-        _PACKAGE_SITE_SKIPS if config.archetype == "python-lib" else _PYTHON_LIB_ONLY
-    )
+    skipped = _PACKAGE_SITE_SKIPS if config.is_workspace else _PYTHON_LIB_ONLY
     if config.archetype not in ("python-app", "python-tool"):
         skipped += _APP_TOOL_ONLY
     rendered = render_artifacts(
@@ -90,14 +87,11 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
 
 def _mkdocs_yml(engine: TemplateEngine, config: KilnConfig, root: Path) -> Artifact:
     """`mkdocs.yml`, rendered whole; the nav fence holds the nav of the tree as it is."""
-    docs = getattr(config.document, "docs", None)
-    if not isinstance(docs, DocsConfig):
-        docs = DocsConfig()
-    extra = docs.mkdocs
-    packages = config.packages if config.archetype == "python-lib" else ()
+    extra = config.docs.mkdocs
+    packages = config.docs_packages
     sources = (
         ["packages/*/src"]
-        if config.archetype == "python-lib"
+        if config.is_workspace
         else ["src", *(f"{package}/src" for package in config.packages)]
     )
     description = (
@@ -116,7 +110,7 @@ def _mkdocs_yml(engine: TemplateEngine, config: KilnConfig, root: Path) -> Artif
             "archetype": config.archetype,
             "kiln_version": __version__,
             "source_paths": ", ".join(sources),
-            "site_dir": docs.site_dir,
+            "site_dir": config.docs.site_dir,
             "site_description_line": _yaml({"site_description": description}).rstrip(),
             "theme_extra": _indent(_yaml(extra.theme)) if extra.theme else "",
             "plugins_extra": _indent(_yaml(extra.plugins)),

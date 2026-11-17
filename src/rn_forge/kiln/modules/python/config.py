@@ -9,6 +9,7 @@ from typing import Literal
 from pydantic import Field, model_validator
 
 from rn_forge.kiln.modules.core.config.schema import ConfigModel
+from rn_forge.kiln.modules.core.names import module_name
 
 __all__ = [
     "MODULE_PATTERN",
@@ -135,7 +136,7 @@ class ArchetypeConfig(ConfigModel):
         section = self._section(archetype)
         if isinstance(section, PackagesConfig) and package in section.modules:
             return section.modules[package]
-        return Path(package).name.replace("-", "_")
+        return module_name(Path(package).name)
 
     def module_of(self, archetype: str) -> str | None:
         """The declared import module of a single-package *archetype*, or None."""
