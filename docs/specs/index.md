@@ -13,7 +13,7 @@ Backlog sections below are derived from the epic, feature and release pages by
 | Release | Status | Features |
 | -- | -- | -- |
 | [Release 2 — the architecture baseline and taskkit retired](../releases/release-2/index.md) | planned | 5 New |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 4 Active · 5 New · 78 Closed |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 3 Active · 5 New · 79 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -108,12 +108,11 @@ whoever builds the story — a person, or an agent of any size.
    bottom. Read every file the story's **Build** list names, and every golden
    file it says to diff — with `diff`, never by eye. Read the tests of the
    nearest `done` story in the same feature: they are the shape to copy.
-1. Write the tests first, in the file the story names, named
-   `test_<story id with underscores>_<what>` — `test_s4_3_3_property1_…` for
-   the shared properties, `test_s4_3_3_2_…` for the story's second acceptance
-   bullet. Every acceptance item a script can check is a test named after the
-   story, so `task validate` is the whole scripted check. An item no script
-   can check is listed as not scriptable, with who judges it.
+1. Write the tests first, in the file the story names, each named for the
+   behaviour it proves, `test_<subject>_<behaviour>`, with no spec ID in its
+   name, docstring or comments. Every acceptance item a script can check is a
+   test, so `task validate` is the whole scripted check. An item no script can
+   check is listed as not scriptable, with who judges it.
 1. Build exactly what the **Build** list says. Where it names a file, a
    function, a constant, a code, a template or a context key, use that name
    verbatim. Where it is silent, do the simplest thing that makes the tests

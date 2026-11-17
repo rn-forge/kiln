@@ -380,7 +380,7 @@ def test_features_count_files_or_rows_and_deferred_is_marked(
         },
     )
     body = render_epics(work)
-    # E1 has files F1.1 (Active, release-1) and F1.2 (New): the file states win.
+    # The fixture epic's Active feature is in release-1 and its New one is not: the file states win.
     assert (
         "| [E1 \u2014 Epic](E1-x/index.md) | Active | 1 Active \u00b7 1 New | release-1 |"
         in body

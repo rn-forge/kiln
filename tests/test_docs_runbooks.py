@@ -122,8 +122,9 @@ def test_the_board_says_acceptance_is_tests() -> None:
     flat = " ".join((ROOT / "docs/specs/index.md").read_text(encoding="utf-8").split())
 
     for needle in (
-        "Every acceptance item a script can check is a test named after the "
-        "story, so `task validate` is the whole scripted check",
+        "Every acceptance item a script can check is a test, so "
+        "`task validate` is the whole scripted check",
+        "with no spec ID in its name, docstring or comments",
         "Paste the tail of `task validate` into the story's *What the build "
         "settled* block",
         "holds only what needs the owner's judgement",
