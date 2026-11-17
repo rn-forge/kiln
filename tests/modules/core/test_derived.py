@@ -4,17 +4,19 @@ from __future__ import annotations
 
 import ast
 import re
+import tomllib
 from pathlib import Path
 
 import pytest
 from rn_forge.commons.exceptions import AppException
+from rn_forge.commons.fs.blocks import ManagedBlock
 from rn_forge.commons.fs.hashing import ContentHash
 from rn_forge.commons.generation import Action, Artifact, Change
 
 from rn_forge.kiln.modules.base import ModuleRegistry
 from rn_forge.kiln.modules.cicd import CICD
 from rn_forge.kiln.modules.core import CORE
-from rn_forge.kiln.modules.core import cycle
+from rn_forge.kiln.modules.core import cycle, derived
 from rn_forge.kiln.modules.core.derived import DERIVED, NAV_BLOCK, managed_digest
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs import DocsModule, generate
@@ -201,3 +203,43 @@ def test_s16_2_2_12_one_classifier() -> None:
     assert rows is not None
     assert "cycle.classify(" in rows.group(0)
     assert build_nav  # the nav the settle compares against comes from the tree
+
+
+_NAV_ROOT = Path(__file__).resolve().parents[3]
+
+
+def test_s19_2_1_1_nav_block_is_a_plain_managed_block() -> None:
+    assert type(NAV_BLOCK) is ManagedBlock
+    assert NAV_BLOCK.name == "derived nav"
+    assert NAV_BLOCK.indent == "  "
+    assert NAV_BLOCK.end_indent == ""
+
+
+def test_s19_2_1_2_the_markers_are_unchanged() -> None:
+    assert NAV_BLOCK.begin == "  # BEGIN derived nav"
+    assert NAV_BLOCK.end == "# END derived nav"
+
+
+def test_s19_2_1_3_there_is_no_subclass() -> None:
+    text = Path(derived.__file__).read_text(encoding="utf-8")
+    assert "_NavBlock" not in text
+    assert "_marker" not in text
+
+
+@pytest.mark.parametrize("end", ["# END derived nav", "  # END derived nav"])
+def test_s19_2_1_4_the_nav_block_renders_either_end_form(end: str) -> None:
+    text = f"nav:\n  # BEGIN derived nav\n- a\n{end}\n"
+    assert NAV_BLOCK.extract(text) == "- a\n"
+
+
+def test_s19_2_1_5_the_commons_floor_admits_end_indent() -> None:
+    project = tomllib.loads((_NAV_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    (dep,) = (
+        d
+        for d in project["project"]["dependencies"]
+        if d.startswith("rn-forge-commons[")
+    )
+    assert dep.endswith(">=0.9.0,<0.10")
+    lock = tomllib.loads((_NAV_ROOT / "uv.lock").read_text(encoding="utf-8"))
+    (pkg,) = (p for p in lock["package"] if p["name"] == "rn-forge-commons")
+    assert tuple(int(p) for p in pkg["version"].split(".")) >= (0, 9, 0)

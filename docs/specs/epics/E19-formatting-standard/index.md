@@ -2,15 +2,16 @@
 
 |  |  |
 | -- | -- |
-| **State** | Active |
+| **State** | Closed |
 | **Start Date** | 2026-11-10 |
+| **Closed Date** | 2026-11-16 |
 
 <!-- BEGIN derived features -->
 
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
 | [F19.1 — YAML has a formatter, and kiln's own files pass it](F19.1-yaml-formatter.md) | Closed | release-1 | 4 Closed |
-| [F19.2 — The nav block is a plain `ManagedBlock`](F19.2-nav-block-end-indent.md) | New | release-1 | 1 New |
+| [F19.2 — The nav block is a plain `ManagedBlock`](F19.2-nav-block-end-indent.md) | Closed | release-1 | 1 Closed |
 
 <!-- END derived features -->
 
