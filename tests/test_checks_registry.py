@@ -17,6 +17,7 @@ from rn_forge.kiln.config import KilnConfig
 def test_every_check_is_named_by_its_module() -> None:
     assert checks.names() == (
         "generated",
+        "kiln-pin",
         "rn-forge-deps",
         "workspace-ci",
         "nx-version",
@@ -72,6 +73,7 @@ def test_running_one_check_is_a_subset_of_running_all(repo) -> None:
 def test_quality_checks_run_by_default(repo) -> None:
     root = repo(**{"pyproject.toml": "[project]\nname = 'x'\n"})
     assert [c.name for c in checks.CHECKS if c.scope == "quality"] == [
+        "kiln-pin",
         "rn-forge-deps",
         "workspace-ci",
         "nx-version",
@@ -83,3 +85,19 @@ def test_quality_checks_run_by_default(repo) -> None:
     assert not [
         f for f in checks.run(root, scope="ownership") if f.code.startswith("deps.")
     ]
+
+
+def test_s18_12_1_1_every_check_module_is_registered() -> None:
+    import importlib
+
+    import rn_forge.kiln.modules as modules
+
+    root = Path(modules.__file__).parent
+    registered = set(checks.names())
+    for path in sorted(root.glob("*/checks/*.py")):
+        if path.name == "__init__.py":
+            continue
+        module = importlib.import_module(
+            f"rn_forge.kiln.modules.{path.parent.parent.name}.checks.{path.stem}"
+        )
+        assert module.NAME in registered, module.NAME

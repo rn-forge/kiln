@@ -17,7 +17,7 @@ from rn_forge.commons.findings import Finding
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd.checks import entrypoint, hooks, pins
-from rn_forge.kiln.modules.core.checks import generated
+from rn_forge.kiln.modules.core.checks import generated, pin
 from rn_forge.kiln.modules.docs.checks import derived, site, structure
 from rn_forge.kiln.modules.node.checks import nx_version
 from rn_forge.kiln.modules.python.checks import rn_forge_deps, workspace_ci
@@ -44,9 +44,9 @@ class Check:
     scope: Literal["ownership", "quality"] = "ownership"
 
 
-# kiln-pin (modules/core/checks/pin.py) is not registered yet; S18.10.1 adds it.
 CHECKS: tuple[Check, ...] = (
     Check(generated.NAME, "core", generated.check),
+    Check(pin.NAME, "core", pin.check, "quality"),
     Check(rn_forge_deps.NAME, "python", rn_forge_deps.check, "quality"),
     Check(workspace_ci.NAME, "python", workspace_ci.check, "quality"),
     Check(nx_version.NAME, "node", nx_version.check, "quality"),

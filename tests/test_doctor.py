@@ -120,8 +120,17 @@ def _break_quality(root: Path) -> None:
     )
 
 
+def _break_pin(root: Path) -> None:
+    _edit(
+        root,
+        ".rn-forge/kiln/config.toml",
+        lambda text: text.replace('ref = "feature/v1"', 'ref = "v0.0.0"'),
+    )
+
+
 BREAKS: dict[str, tuple[Callable[[Path], None], str]] = {
     "generated": (_break_generated, "artifact."),
+    "kiln-pin": (_break_pin, "kiln.pin"),
     "rn-forge-deps": (_break_deps, "deps."),
     "task-layout": (_break_layout, "taskgraph."),
     "ci-entrypoint": (_break_entrypoint, "ci.entrypoint"),
@@ -502,3 +511,14 @@ def test_s7_3_3_1_doctor_needs_no_pyyaml(copy: Path) -> None:
     blocked = run("sys.modules['yaml'] = None; ")
     assert blocked.returncode == plain.returncode
     assert "yaml" not in blocked.stderr
+
+
+def test_s18_12_1_2_doctor_reports_an_unpinned_kiln(
+    repo, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = repo()
+    # a bare config fails other checks; only the pin finding matters here
+    with pytest.raises(AppException):
+        commands.doctor([root], json=True)
+    codes = [f["code"] for f in json.loads(capsys.readouterr().out)["findings"]]
+    assert "kiln.pin-missing" in codes

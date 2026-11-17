@@ -47,6 +47,5 @@ def test_s7_4_3_5_kiln_itself_needs_no_pin(repo) -> None:
     assert run(repo(), '\n[archetype."python-app"]\nmodule = "rn_forge.kiln"\n') == []
 
 
-@pytest.mark.xfail(strict=True, reason="pin joins checks.CHECKS in F18.10")
 def test_s18_5_2_3_pin_runs_through_the_registry(repo) -> None:
     run_check(pin.NAME, repo())

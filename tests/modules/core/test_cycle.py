@@ -391,11 +391,7 @@ def test_s4_2_3_core_checks_report_what_doctor_only_generated_reports(
     ]
     from_core = [
         str(finding)
-        for finding in [
-            *module_findings("core", KilnConfig.load(root), root),
-            # kiln-pin is not registered until S18.10.1.
-            *pin.check(KilnConfig.load(root), root),
-        ]
+        for finding in module_findings("core", KilnConfig.load(root), root)
         if not finding.code.startswith("kiln.pin")
     ]
     assert len(from_doctor) == 2
