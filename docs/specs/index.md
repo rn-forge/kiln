@@ -13,7 +13,7 @@ Backlog sections below are derived from the epic, feature and release pages by
 | Release | Status | Features |
 | -- | -- | -- |
 | [Release 2 — the architecture baseline and taskkit retired](../releases/release-2/index.md) | planned | 5 New |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 4 Active · 4 New · 79 Closed |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 3 Active · 4 New · 80 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -169,7 +169,6 @@ whoever builds the story — a person, or an agent of any size.
 - **Open questions live on the feature or epic they block.** Answered, a
   question becomes an ADR or a rejected option recorded on the feature, and
   leaves the page.
-- **Why things are the way they are** — the evidence, the harvest, what each
-  review changed — is [context](../plans/context.md). The original
-  standardization plan is retired at revision 14 and survives only in git
-  history; context §2 maps every part of it to its home here.
+- **Why things are the way they are** is the decision log
+  ([ADR index](../adr/index.md)) and git history. The planning record that was
+  `docs/plans/` was retired on 2026-11-17 and survives in git history.

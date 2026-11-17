@@ -23,10 +23,10 @@ Releases: [release-1](../../../releases/release-1/index.md),
 [ADR-0008](../../../adr/ADR-0008.md), [ADR-0009](../../../adr/ADR-0009.md)
 
 pykit adopted kiln's docs model on 2026-09-26, and kiln's docs checker was run
-against pykit's tree ([plan](../../../plans/pykit-docs-alignment.md)). It passed
-on everything the standard models. Every finding was in something the standard
-does not model yet: a library workspace whose packages each publish their own
-docs site. This epic makes the standard model it, for `python-lib` only
+against pykit's tree (the pykit docs alignment plan). It passed on everything
+the standard models. Every finding was in something the standard does not model
+yet: a library workspace whose packages each publish their own docs site. This
+epic makes the standard model it, for `python-lib` only
 ([ADR-0008](../../../adr/ADR-0008.md)). It also seeds the rule that a
 repository's specs are accepted inside that repository
 ([ADR-0009](../../../adr/ADR-0009.md)).

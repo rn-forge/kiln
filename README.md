@@ -60,14 +60,12 @@ task self:golden:render && task self:golden:validate
   ruff for lint and format.
 - `tests/fixtures/**` holds the scaffold fixtures (`scaffold/`), and is excluded
   from this repo's ruff, pyright and pytest.
-- This repo has a `plans/` docs area that kiln's seeded model does not — which
-  is the point of the model being seeded (D44).
 - Docstrings describe the contract only (what, args, return, raises); no design
-  justification, history, or ADR references — those belong in `docs/guides/`
-  or `docs/plans/`. Code comments explain a non-obvious *why* (an ordering
-  that matters, a library quirk, a rejected alternative), stay shorter than
-  the code they sit beside, and are fixed or deleted in the same edit that
-  changes the code they describe. Straightforward code gets no comment at all.
+  justification, history, or ADR references — those belong in `docs/guides/`.
+  Code comments explain a non-obvious *why* (an ordering that matters, a
+  library quirk, a rejected alternative), stay shorter than the code they sit
+  beside, and are fixed or deleted in the same edit that changes the code they
+  describe. Straightforward code gets no comment at all.
 
 ## Documentation
 
@@ -78,15 +76,11 @@ task self:golden:render && task self:golden:validate
 
 - [Decisions](docs/adr/index.md) — the ADR log
 
-- [Context](docs/plans/context.md) — how kiln got here
-
 - [The rn-forge workspace](docs/architecture/workspace.md) — components and
   graphs
 
 - [Creating a repository](docs/runbooks/creating-a-repo.md)
 
 - [Agent instructions](AGENTS.md) — what AI coding agents follow here
-
-- [Agent configuration after kiln](docs/plans/agent-config-future.md) — parked
 
 - [docs/\_structure.md](docs/_structure.md) — what belongs where in this tree

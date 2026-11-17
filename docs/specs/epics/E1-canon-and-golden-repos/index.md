@@ -22,8 +22,8 @@ deliverables, both reviewed by the owner before Phase C started.
 
 | ID | Feature | State |
 | -- | -- | -- |
-| F1.1 | **Docs — the canon.** `docs/adr/0001…0008.md`, each ≤ 1 page, Context / Decision / Consequences, harvested from the donors (cite the donor ADR in Context). `docs/reference/standard-repo.md`. `docs/architecture/workspace.md`. `docs/runbooks/creating-a-repo.md`. Move the plan into kiln's `docs/plans/` and leave a one-line pointer at `rn-forge/STANDARDIZATION-PLAN.md` (the plan has since been retired; see [context](../../../plans/context.md)). | Closed |
-| F1.2 | **Harvest inventory.** Before writing golden files, for each donor script or lint, one row — donor path, behaviour kept, behaviour dropped, target golden path. The review artifact for "everything common and worth carrying over". Now [context §6](../../../plans/context.md#6-harvest-inventory). | Closed |
+| F1.1 | **Docs — the canon.** `docs/adr/0001…0008.md`, each ≤ 1 page, Context / Decision / Consequences, harvested from the donors (cite the donor ADR in Context). `docs/reference/standard-repo.md`. `docs/architecture/workspace.md`. `docs/runbooks/creating-a-repo.md`. Move the plan into kiln's `docs/plans/` and leave a one-line pointer at `rn-forge/STANDARDIZATION-PLAN.md` (the plan has since been retired). | Closed |
+| F1.2 | **Harvest inventory.** Before writing golden files, for each donor script or lint, one row — donor path, behaviour kept, behaviour dropped, target golden path. The review artifact for "everything common and worth carrying over". Now context §6. | Closed |
 | F1.3 | **Golden repos** under `tests/fixtures/golden/`: `python-cli/` (name `golden-cli`), `python-lib/` (`golden-lib`, two trivial packages), `python-django-ng/` and `python-fastapi-ng/` (`golden-web`; the web fixtures may ship in Phase E if they slow this phase). Each a complete repo with `docs.profile = mkdocs` and `ci.sonar = true`, hand-written provenance headers reading `kiln golden`, a hand-written `state.json`, a one-function package with one test, and a `.rn-forge/kiln/standard.md` rendered by hand from the spec. Scripts written **once**, in `python-cli`, and copied byte-identical (below the config header) into the others. (the web goldens moved to [E5](../E5-web-archetypes/index.md)) | Closed |
 | F1.4 | `tests/support/assert_generated_bodies.py` — strips provenance and the `# BEGIN kiln config` … `# END kiln config` header, prints each body's SHA-256, fails unless all supplied files share one body. (deleted by [F4.1](../E4-generator/F4.1-checks-by-module.md)) | Closed |
 | F1.5 | Review loop with the owner: read every golden file as if it were the finished repo. Changes go into the golden repo, never "later in the template". | Closed |
@@ -31,12 +31,10 @@ deliverables, both reviewed by the owner before Phase C started.
 ## Outcome
 
 Reviewed by the owner and by codex; every item from both is addressed. What each
-review changed is
-[context §7.1–7.2](../../../plans/context.md#7-review-outcomes); the reviews
-themselves are in [plans/reviews](../../../plans/reviews/index.md). The ADR set
-was restructured and specifications moved to the reference (D48), archetypes
-renamed (D47, since superseded), CI kept generated with a composite action
-(D45), and shared CLI design proposed.
+review changed is context §7.1–7.2; the reviews themselves are in plans/reviews.
+The ADR set was restructured and specifications moved to the reference (D48),
+archetypes renamed (D47, since superseded), CI kept generated with a composite
+action (D45), and shared CLI design proposed.
 
 Risk carried by this epic, and its guard: *golden repos reviewed too lightly
 because they look like fixtures* — the acceptance runs them as real repos, and

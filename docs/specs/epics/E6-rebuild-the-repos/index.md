@@ -41,9 +41,9 @@ kiln.
 
 **Out of scope here:** kiln itself is already self-hosted by
 [F4.8](../E4-generator/F4.8-self-hosting.md). intellibuild is built on its own
-schedule by a [standalone plan](../../../plans/intellibuild.md), and does not
-gate kiln. apollo stays parked — its broken working tree is not repaired, and
-when it returns it is `kiln new` + port (D40, open question 10).
+schedule by a standalone plan, and does not gate kiln. apollo stays parked — its
+broken working tree is not repaired, and when it returns it is `kiln new` + port
+(D40, open question 10).
 
 ## Acceptance
 

@@ -18,8 +18,6 @@ site, the archetypes are the fixtures, and the CLI renders one into the other.
    what each owns, and the dependency graphs.
 1. **[Creating a repository](runbooks/creating-a-repo.md)** — `kiln new`, and
    the three points where it cannot decide for you.
-1. **[Context](plans/context.md)** — the evidence, the harvest and the reviews
-   behind all of the above.
 
 ## What each area is for
 
@@ -32,7 +30,6 @@ site, the archetypes are the fixtures, and the CLI renders one into the other.
 | [Releases](releases/index.md) | what ships when, by feature |
 | [Specs](specs/index.md) | work: epics, features, stories, their design and open questions |
 | [Decisions](adr/index.md) | choices between real alternatives |
-| [Plans](plans/index.md) | the record the work grew out of |
 
 ## Where kiln is
 

@@ -7,8 +7,7 @@ This file holds what an agent needs beyond that.
 
 **Picking this up in a new session?** Read [the spec board](docs/specs/index.md)
 for status — what is done and what is next — then the epic you are starting. The
-[decision log](docs/adr/index.md) and [context](docs/plans/context.md) record
-why, so you do not re-derive it.
+[decision log](docs/adr/index.md) records why, so you do not re-derive it.
 [The standard repository](docs/reference/standard-repo.md) is the normative
 text.
 
@@ -38,7 +37,6 @@ text.
   belongs in `docs/reference/standard-repo.md`.
 - Work is an epic under `docs/specs/`, a decision is an ADR, and an open
   question lives on the feature it blocks until it becomes one or the other.
-  Nothing new goes into `docs/plans/`.
 - Do not add a paragraph to `AGENTS.md` that `README.md` already says; link it
   ([ADR-0003](docs/adr/ADR-0003.md), [ADR-0020](docs/adr/ADR-0020.md)).
 

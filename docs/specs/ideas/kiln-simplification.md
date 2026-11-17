@@ -40,10 +40,10 @@ separate tool.
 
 ### 2. The process costs more than the product
 
-[F6.1](../epics/E6-rebuild-the-repos/F6.1-pykit-skeleton.md) is 14.8k words.
-[The standardization plan](../../plans/standardization-plan.md) is 24k words.
-Specs written as verbatim build-lists for smaller models turn every story into a
-design document that then has to be kept in sync.
+[F6.1](../epics/E6-rebuild-the-repos/F6.1-pykit-skeleton.md) is 14.8k words. The
+standardization plan is 24k words. Specs written as verbatim build-lists for
+smaller models turn every story into a design document that then has to be kept
+in sync.
 
 **Possible simplification:**
 

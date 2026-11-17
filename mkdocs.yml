@@ -225,12 +225,4 @@ nav:
           - specs/ideas/index.md
           - kiln simplification: specs/ideas/kiln-simplification.md
   - Decisions: adr/index.md
-  - Plans:
-      - plans/index.md
-      - Context — how kiln got here: plans/context.md
-      - Reviews: plans/reviews/index.md
-      - intellibuild — standalone plan: plans/intellibuild.md
-      - Agent configuration after kiln — parked: plans/agent-config-future.md
-      - pykit docs alignment — standalone plan: plans/pykit-docs-alignment.md
-      - rn-forge repo standardization — plan of action: plans/standardization-plan.md
 # END derived nav

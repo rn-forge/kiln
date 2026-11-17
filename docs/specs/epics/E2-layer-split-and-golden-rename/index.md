@@ -9,11 +9,10 @@
 Implemented at: `afcfa07` · Phase: C.2 (kiln half)
 
 Repos `rn-forge/pykit` (`feature/upgrade`) and `rn-forge/kiln` (`feature/v1`).
-This is what the Phase C review produced
-([context §7.3](../../../plans/context.md#73-what-the-phase-c-review-changed)).
-The executable form of the pykit half lived in pykit's
-`docs/plans/commons-upgrade-plan.md`, at the **"Part D — resume here"** marker;
-pykit's Phase A, Phase C and the pykit steps of C.2 are pykit's own record — see
+This is what the Phase C review produced (context §7.3). The executable form of
+the pykit half lived in pykit's `docs/plans/commons-upgrade-plan.md`, at the
+**"Part D — resume here"** marker; pykit's Phase A, Phase C and the pykit steps
+of C.2 are pykit's own record — see
 [upstream work owned by pykit](../../index.md#upstream-pins).
 
 **Order mattered.** Correctness first, because the defects were in the code
