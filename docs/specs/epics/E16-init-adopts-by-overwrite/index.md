@@ -13,7 +13,7 @@
 | [F16.2 — kiln owns `mkdocs.yml`](F16.2-kiln-owns-mkdocs.md) | Closed | release-1 | 3 Closed |
 | [F16.3 — The cutover SOP](F16.3-cutover-sop.md) | Closed | release-1 | 2 Closed |
 | [F16.4 — Generated-file hygiene](F16.4-generated-file-hygiene.md) | Closed | release-1 | 7 Closed |
-| [F16.5 — Rebuild an existing repository on kiln, and port it](F16.5-rebuild-and-port.md) | New | — | 4 New · 2 Removed |
+| [F16.5 — Rebuild an existing repository on kiln, and port it](F16.5-rebuild-and-port.md) | New | release-1 | 4 New · 2 Removed |
 | [F16.6 — What the cutover rehearsals found](F16.6-cutover-rehearsal-findings.md) | Closed | release-1 | 13 Closed |
 | [F16.7 — What the cutover found](F16.7-cutover-findings.md) | Closed | release-1 | 9 Closed · 1 Removed |
 | [F16.8 — Retire `kiln init`](F16.8-retire-kiln-init.md) | Closed | release-1 | 3 Closed |

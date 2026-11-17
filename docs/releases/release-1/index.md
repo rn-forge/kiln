@@ -99,6 +99,7 @@ are [release-2](../release-2/index.md).
 | [F16.2 — kiln owns `mkdocs.yml`](../../specs/epics/E16-init-adopts-by-overwrite/F16.2-kiln-owns-mkdocs.md) | E16 | Closed |
 | [F16.3 — The cutover SOP](../../specs/epics/E16-init-adopts-by-overwrite/F16.3-cutover-sop.md) | E16 | Closed |
 | [F16.4 — Generated-file hygiene](../../specs/epics/E16-init-adopts-by-overwrite/F16.4-generated-file-hygiene.md) | E16 | Closed |
+| [F16.5 — Rebuild an existing repository on kiln, and port it](../../specs/epics/E16-init-adopts-by-overwrite/F16.5-rebuild-and-port.md) | E16 | New |
 | [F16.6 — What the cutover rehearsals found](../../specs/epics/E16-init-adopts-by-overwrite/F16.6-cutover-rehearsal-findings.md) | E16 | Closed |
 | [F16.7 — What the cutover found](../../specs/epics/E16-init-adopts-by-overwrite/F16.7-cutover-findings.md) | E16 | Closed |
 | [F16.8 — Retire `kiln init`](../../specs/epics/E16-init-adopts-by-overwrite/F16.8-retire-kiln-init.md) | E16 | Closed |
