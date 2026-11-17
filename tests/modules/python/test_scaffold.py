@@ -26,6 +26,7 @@ from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import CORE, cycle
+from rn_forge.kiln.modules.python import pyproject as python_pyproject
 from rn_forge.kiln.modules.python import scaffold as python_scaffold
 from rn_forge.kiln.modules.python.checks import rn_forge_deps
 from rn_forge.kiln.modules.python.scaffold import (
@@ -338,7 +339,7 @@ def test_s5_3_6_4_readable_toml_round_trips_and_keeps_comments(
 
     readable = tmp_path / "readable"
     reconcile_backend(raw, readable, config)
-    monkeypatch.setattr(python_scaffold, "_multiline_lists", lambda path: None)
+    monkeypatch.setattr(python_pyproject, "_multiline_lists", lambda path: None)
     dense = tmp_path / "dense"
     reconcile_backend(raw, dense, config)
 
@@ -649,8 +650,8 @@ def test_s7_1_2_1_build_backend_survives(tmp_path: Path) -> None:
 
 
 def test_s16_4_3_1_every_dev_entry_has_a_floor() -> None:
-    assert python_scaffold._DEV_GROUP
-    for entry in python_scaffold._DEV_GROUP:
+    assert python_pyproject._DEV_GROUP
+    for entry in python_pyproject._DEV_GROUP:
         assert re.match(r"^[A-Za-z0-9_.-]+>=\d", entry), entry
 
 
@@ -663,20 +664,22 @@ def test_s16_4_3_2_floors_match_the_lock() -> None:
         (Path(__file__).parents[3] / "uv.lock").read_text(encoding="utf-8")
     )
     locked = {package["name"]: package["version"] for package in lock["package"]}
-    for entry in python_scaffold._DEV_GROUP:
+    for entry in python_pyproject._DEV_GROUP:
         name, floor = entry.split(">=")
         assert _version_key(floor) <= _version_key(locked[name]), entry
 
 
 def test_s15_2_2_4_pip_licenses_is_a_task_tool() -> None:
     assert "pip-licenses" in TASK_TOOLS
-    assert any(e.startswith("pip-licenses") for e in python_scaffold._DEV_GROUP)
+    assert any(e.startswith("pip-licenses") for e in python_pyproject._DEV_GROUP)
 
 
 def test_s19_1_3_6_the_formatter_is_a_dev_dependency_and_a_task_tool() -> None:
     assert "google-yamlfmt" in TASK_TOOLS
     assert (
-        len([e for e in python_scaffold._DEV_GROUP if e.startswith("google-yamlfmt>=")])
+        len(
+            [e for e in python_pyproject._DEV_GROUP if e.startswith("google-yamlfmt>=")]
+        )
         == 1
     )
 
@@ -781,8 +784,8 @@ def test_s16_9_13_3_tidy_is_idempotent(
     source = (rendered("python-tool") / "pyproject.toml").read_bytes()
     copy = tmp_path / "pyproject.toml"
     copy.write_bytes(source)
-    python_scaffold._tidy(copy)
-    python_scaffold._tidy(copy)
+    python_pyproject.tidy(copy)
+    python_pyproject.tidy(copy)
     assert copy.read_bytes() == source
 
 

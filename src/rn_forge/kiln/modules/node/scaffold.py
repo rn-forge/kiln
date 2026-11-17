@@ -1,18 +1,13 @@
-"""S5.2.1 — the frontend scaffolder, and reconciling its output into the repo.
+"""The frontend scaffolder, and reconciling its output into the repo.
 
-`scaffold_node` is the one part of kiln that runs someone else's generator: it
-dispatches on `config.frontend` (Angular for `node-lib`, which has none) to that
-frontend's scaffolder (`angular.py`), which builds a workspace in a scratch
-directory, and `reconcile_node` folds every top-level entry it wrote into the
-repo at `config.web_dir`. Every file the frontend scaffolder writes is
-repo-owned; the only files kiln adds under `web_dir` are the seeded Angular
-starter's, written once here, along with the `serve` proxy wiring in
-`project.json` and the deletion of Nx's `nx-welcome.ts`. A `node-lib` gets the
-same workspace root as a `python-web-app`, with no application.
+`scaffold_node` runs the selected frontend's generator (Angular for
+`node-lib`, which has none) into a scratch directory, and `reconcile_node`
+folds what it wrote into the repo at `config.web_dir`. Every file the
+generator writes is repo-owned; kiln adds only the seeded Angular starter
+under `web_dir`, the `serve` proxy wiring in `project.json`, and deletes Nx's
+`nx-welcome.ts`.
 
-`--frontend` values other than `angular` normally never reach here: `kiln new`
-refuses them as untested before scaffolding starts. One that does is rejected
-before any subprocess runs.
+A `--frontend` other than `angular` is rejected before any subprocess runs.
 """
 
 from __future__ import annotations
@@ -134,37 +129,36 @@ def scaffold_node(raw: Path, config: KilnConfig) -> Path | None:
 def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
     """Fold *workspace* (a finished frontend scaffold) into *root*.
 
-    Every top-level entry of *workspace* is copied into *root*, except `.git`,
-    `node_modules` and `.nx`, and `_DROPPED`'s files. The scaffolder's
-    `.gitignore` body is appended once to `root/.gitignore`, after uv's,
-    rather than moved, since apply's
-    own `.gitignore` block still has to land in the same file afterwards. If
-    the scaffolder's app directory (`apps/web`) differs from `config.web_dir`,
-    it is renamed and every reference to its old path in `project.json`'s
-    `sourceRoot`/`root` and in `tsconfig.base.json`'s `paths` is rewritten to
-    the new one — nothing else. Last, the Angular starter's files are written
-    under `<web_dir>`, overwriting Nx's stock `app.config.ts`, `app.ts`,
-    `app.html` and `app.spec.ts`; `serve.options.proxyConfig` in `project.json`
-    is set to `<web_dir>/proxy.conf.json` and Nx's `nx-welcome.ts` is deleted.
+    Reads *workspace*, which is left untouched, and `config`'s `name`,
+    `archetype` and `web_dir`. Writes into *root*:
 
-    Every node repository gets `.nvmrc`, root `package.json`'s
-    `packageManager` and `name` (`@<repository name>/source`), and coverage switched on for both unit-test executors in
-    `nx.json`, set after the copy, and its `release` block with the `pack` and
-    `verify-dist` target defaults, each kept if `nx.json` already holds one.
-    For a `node-lib` the workspace has no app: the fold stops there, after
-    writing empty `libs/.gitkeep` and `apps/.gitkeep`.
-
-    A shared top-level directory (`apps/`, holding the API member too) merges
-    rather than conflicts: only an actual file colliding with an existing file
-    at the same path is a conflict.
+    - every top-level entry of *workspace* except `.git`, `node_modules`, `.nx`
+      and `_DROPPED`'s files; a directory both hold merges, and the
+      scaffolder's `.gitignore` body is appended to `root/.gitignore` after
+      uv's;
+    - `.nvmrc`, the root `package.json`'s `packageManager` and `name`, and
+      `nx.json`'s coverage settings and `release` block;
+    - for a `node-lib`, empty `libs/.gitkeep` and `apps/.gitkeep`, and nothing
+      else;
+    - otherwise the application directory renamed to `config.web_dir` with its
+      path references rewritten, and the Angular starter's files under it.
 
     Raises:
         AppException: a file *workspace* would move already exists at that
             same path under *root*, naming it.
     """
-    web_dir = config.web_dir or SCAFFOLD_APP_DIR
-    lib = config.archetype == "node-lib"
+    _fold_workspace(root, workspace)
+    _stamp_root(root, config)
+    if config.archetype == "node-lib":
+        # sonar-scanner fails on a sonar.sources folder that does not exist.
+        for directory in ("libs", "apps"):
+            (root / directory).mkdir(exist_ok=True)
+            (root / directory / ".gitkeep").write_text("", encoding="utf-8")
+        return
+    _place_app(root, config)
 
+
+def _fold_workspace(root: Path, workspace: Path) -> None:
     entries = [p for p in workspace.iterdir() if p.name not in _EXCLUDED_TOP_LEVEL]
     conflicts = [
         conflict
@@ -186,16 +180,15 @@ def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
             continue
         _copy_or_merge(entry, root / entry.name)
 
+
+def _stamp_root(root: Path, config: KilnConfig) -> None:
     (root / _NVMRC).write_text(f"{NODE_MAJOR}\n", encoding="utf-8")
     _pin_and_name_package(root / "package.json", config.name)
     _configure_nx(root)
-    if lib:
-        # sonar-scanner fails on a sonar.sources folder that does not exist.
-        for directory in ("libs", "apps"):
-            (root / directory).mkdir(exist_ok=True)
-            (root / directory / ".gitkeep").write_text("", encoding="utf-8")
-        return
 
+
+def _place_app(root: Path, config: KilnConfig) -> None:
+    web_dir = config.web_dir or SCAFFOLD_APP_DIR
     if web_dir != SCAFFOLD_APP_DIR:
         shutil.move(str(root / SCAFFOLD_APP_DIR), str(root / web_dir))
         _rewrite_app_dir(root, web_dir)

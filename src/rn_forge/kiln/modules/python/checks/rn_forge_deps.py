@@ -19,7 +19,7 @@ Four rules, all read from `pyproject.toml`:
 
 A fifth rule keeps kiln out of the lock: `rn-forge-kiln` in any dependency,
 optional dependency or dependency group is an error, because kiln runs from
-`[kiln] ref` in its own environment (F7.4). The root project's own
+`[kiln] ref` in its own environment. The root project's own
 `[project] name` is not a dependency, so kiln's own repository passes.
 """
 
@@ -56,7 +56,7 @@ CODEGEN_EXTRA = re.compile(r"^\s*[A-Za-z0-9][A-Za-z0-9._-]*\[[^\]]*\bcodegen\b[^
 SPECIFIER = re.compile(r"^\s*[A-Za-z0-9][A-Za-z0-9._-]*(?:\[[^\]]*\])?\s*([^;@]*)")
 
 _PYKIT_INDEX = "https://rn-forge.github.io/pykit/simple/"
-"""pykit's retired Pages index (ADR-0018 as revised)."""
+"""pykit's retired Pages index."""
 
 KILN = "rn-forge-kiln"
 """The generator itself: never a dependency of the repo it runs beside."""
@@ -126,7 +126,7 @@ def every_dependency(document: dict[str, object]) -> list[str]:
     """Published and dependency-group requirements, flattened.
 
     A dependency group is still a dependency: a kit that a repo installs only
-    to develop with is exactly the coupling kiln ADR-0002 is about.
+    to develop with is still a coupling to that kit.
     """
     return [*published_dependencies(document), *group_dependencies(document)]
 
@@ -241,7 +241,7 @@ def _check_no_codegen_in_runtime(
 ) -> list[Finding]:
     """A framework's `[codegen]` extra is a dev-only entry-point group, never a
     runtime dependency: kiln discovers generators in the environment it runs
-    in, never the one the application ships (kiln ADR-0005)."""
+    in, never the one the application ships."""
     return [
         Finding(
             f"{CODE}.codegen-runtime",
@@ -295,55 +295,75 @@ def _declares_index(document: dict[str, object]) -> bool:
 def check(config: KilnConfig, root: Path) -> list[Finding]:
     """Hold every `pyproject.toml` in the repo to the archetype's contract."""
     archetype = archetypes.for_config(config)
-
-    findings: list[Finding] = []
-    declared: set[str] = set()
     members = workspace_members(config, root)
+    declared: set[str] = set()
     root_document: dict[str, object] = {}
+    findings: list[Finding] = []
 
     for relative in archetypes.pyproject_paths(config):
         label = relative.as_posix()
         path = root / relative
         if not path.exists():
-            findings.append(
-                Finding(
-                    f"{CODE}.pyproject-missing",
-                    Severity.ERROR,
-                    "not found — the archetype expects it",
-                    path=label,
-                )
-            )
+            findings.append(_missing(label))
             continue
         document = DocumentUtils.read(path)
         findings.extend(
-            _check_allowed(
+            _check_document(
                 label, document, tuple(archetype.dependencies.allowed), members
             )
         )
-        findings.extend(_check_kiln_not_in_lock(label, document))
-        findings.extend(_check_source(label, document, members))
         if relative == Path("pyproject.toml"):
             root_document = document
-        findings.extend(_check_no_shadowing_source(label, document, members))
-        findings.extend(_check_no_codegen_in_runtime(label, document))
         declared.update(distribution(r) for r in runtime_dependencies(document))
 
     if _declares_index(root_document):
-        findings.append(
-            Finding(
-                f"{CODE}.pykit-index",
-                Severity.ERROR,
-                f"pyproject.toml declares pykit's retired index ({_PYKIT_INDEX}); "
-                f"delete the [[tool.uv.index]] table, and the next `task setup` "
-                f"re-locks from PyPI",
-                path="pyproject.toml",
-            )
-        )
-
+        findings.append(_retired_index())
     if config.archetype == "python-lib" and not config.packages:
         return findings
+    findings.extend(_required_missing(archetype, declared, members))
+    return findings
 
-    findings.extend(
+
+def _missing(label: str) -> Finding:
+    return Finding(
+        f"{CODE}.pyproject-missing",
+        Severity.ERROR,
+        "not found — the archetype expects it",
+        path=label,
+    )
+
+
+def _check_document(
+    label: str,
+    document: dict[str, object],
+    allowed: tuple[str, ...],
+    members: frozenset[str],
+) -> list[Finding]:
+    """The findings for one `pyproject.toml`, in the order the checks run."""
+    return [
+        *_check_allowed(label, document, allowed, members),
+        *_check_kiln_not_in_lock(label, document),
+        *_check_source(label, document, members),
+        *_check_no_shadowing_source(label, document, members),
+        *_check_no_codegen_in_runtime(label, document),
+    ]
+
+
+def _retired_index() -> Finding:
+    return Finding(
+        f"{CODE}.pykit-index",
+        Severity.ERROR,
+        f"pyproject.toml declares pykit's retired index ({_PYKIT_INDEX}); "
+        f"delete the [[tool.uv.index]] table, and the next `task setup` "
+        f"re-locks from PyPI",
+        path="pyproject.toml",
+    )
+
+
+def _required_missing(
+    archetype: archetypes.Archetype, declared: set[str], members: frozenset[str]
+) -> list[Finding]:
+    return [
         Finding(
             f"{CODE}.required-missing",
             Severity.ERROR,
@@ -353,5 +373,4 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
         )
         for name in archetype.dependencies.required
         if name.lower() not in declared and distribution(name) not in members
-    )
-    return findings
+    ]

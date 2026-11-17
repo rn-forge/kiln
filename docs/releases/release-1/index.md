@@ -117,7 +117,7 @@ are [release-2](../release-2/index.md).
 | [F18.6 — `commands` is a package, one module per command](../../specs/epics/E18-kiln-simplification/F18.6-commands-package.md) | E18 | Closed |
 | [F18.7 — One owner per concept](../../specs/epics/E18-kiln-simplification/F18.7-one-owner-per-concept.md) | E18 | Closed |
 | [F18.8 — Modules meet only through composition](../../specs/epics/E18-kiln-simplification/F18.8-modules-meet-through-composition.md) | E18 | Closed |
-| [F18.9 — Large files split by job](../../specs/epics/E18-kiln-simplification/F18.9-large-files-split.md) | E18 | New |
+| [F18.9 — Large files split by job](../../specs/epics/E18-kiln-simplification/F18.9-large-files-split.md) | E18 | Active |
 | [F18.12 — The review defects release 1 takes](../../specs/epics/E18-kiln-simplification/F18.12-release-1-review-defects.md) | E18 | New |
 | [F18.13 — Build briefs outside the record](../../specs/epics/E18-kiln-simplification/F18.13-build-briefs-outside-the-record.md) | E18 | Closed |
 | [F18.14 — A kiln pin is a commit](../../specs/epics/E18-kiln-simplification/F18.14-a-pin-is-a-commit.md) | E18 | New |
