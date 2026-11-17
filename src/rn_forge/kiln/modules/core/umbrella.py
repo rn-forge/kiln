@@ -15,6 +15,7 @@ __all__ = [
     "LEGACY_CODE",
     "RENDERED",
     "STATE_PATH",
+    "STATE_SCHEMA_VERSION",
     "UMBRELLA",
     "find_root",
     "legacy",
@@ -22,6 +23,7 @@ __all__ = [
 
 UMBRELLA = Path(".rn-forge/kiln")
 STATE_PATH = UMBRELLA / "state.json"
+STATE_SCHEMA_VERSION = "1"
 BACKUPS = UMBRELLA / "backups"
 RENDERED = UMBRELLA / "rendered"
 
@@ -59,7 +61,7 @@ def legacy(*trees: Path) -> list[Finding]:
 
 def _declares_schema_version(tree: Path) -> bool:
     config = tree / "config.toml"
-    state = tree / "state.json"
+    state = tree / STATE_PATH.name
     try:
         if config.is_file() and "schema_version" in DocumentUtils.read(config):
             return True

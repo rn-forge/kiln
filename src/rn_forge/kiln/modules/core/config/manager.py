@@ -21,6 +21,7 @@ from rn_forge.commons.runtime.console import console
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
 from rn_forge.kiln.modules.base import KilnModule, ModuleRegistry
+from rn_forge.kiln.modules.core import umbrella
 from rn_forge.kiln.modules.core.config.schema import (
     SCHEMA_VERSION,
     RepositoryConfig,
@@ -50,7 +51,6 @@ REPO_LAYER = "repo"
 PROVENANCE_KEY = "config_provenance"
 """The `state.json` metadata key per-key provenance is recorded under."""
 
-_STATE_PATH = Path(".rn-forge/kiln/state.json")
 _UNLAYERED = ("schema_version", "source")
 
 
@@ -359,7 +359,7 @@ def _read_config(root: Path) -> dict[str, Any]:
 
 
 def _recorded_provenance(root: Path) -> dict[str, Provenance]:
-    path = root / _STATE_PATH
+    path = root / umbrella.STATE_PATH
     if not path.is_file():
         return {}
     state = DocumentUtils.read(path)

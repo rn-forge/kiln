@@ -24,15 +24,13 @@ from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.fs.hashing import ContentHash
 
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.core import umbrella
 from rn_forge.kiln.modules.core.derived import managed_digest
 
 __all__ = ["CODE", "NAME", "block_body", "check", "digest"]
 
 NAME = "generated"
 CODE = "artifact"
-
-STATE_PATH = Path(".rn-forge/kiln/state.json")
-SCHEMA_VERSION = "1"
 
 
 def digest(content: str) -> str:
@@ -151,8 +149,8 @@ _KINDS = {"managed": _check_managed, "block": _check_block}
 def check(config: KilnConfig, root: Path) -> list[Finding]:
     """Compare every recorded artifact against the tree."""
     del config  # the baseline is state.json's business, not config's
-    state_path = root / STATE_PATH
-    label = STATE_PATH.as_posix()
+    state_path = root / umbrella.STATE_PATH
+    label = umbrella.STATE_PATH.as_posix()
 
     if not state_path.exists():
         return [
@@ -166,13 +164,13 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
 
     state = DocumentUtils.read(state_path)
     declared = state.get("schema_version")
-    if declared != SCHEMA_VERSION:
+    if declared != umbrella.STATE_SCHEMA_VERSION:
         return [
             Finding(
                 "state.schema-version",
                 Severity.ERROR,
                 f"schema_version is {declared!r}, and this kiln understands "
-                f"{SCHEMA_VERSION} — upgrade kiln and re-run `kiln apply`",
+                f"{umbrella.STATE_SCHEMA_VERSION} — upgrade kiln and re-run `kiln apply`",
                 path=label,
             )
         ]
@@ -192,7 +190,7 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
                 )
             )
             continue
-        if Path(str(entry["path"])) == STATE_PATH:
+        if Path(str(entry["path"])) == umbrella.STATE_PATH:
             findings.append(
                 Finding(
                     "state.self-hash",

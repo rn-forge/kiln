@@ -42,8 +42,6 @@ __all__ = [
     "record_scaffolded",
 ]
 
-STATE_SCHEMA_VERSION = "1"
-
 SCAFFOLDED_KEY = "scaffolded"
 
 UNFENCED_CODE = "core.block-unfenced"
@@ -167,7 +165,9 @@ def _prepare(
         metadata[PROVENANCE_KEY] = dict(provenance)
     elif state_path.is_file():
         previous = StateStore(
-            state_path, entry_type=StateEntry, schema_version=STATE_SCHEMA_VERSION
+            state_path,
+            entry_type=StateEntry,
+            schema_version=umbrella.STATE_SCHEMA_VERSION,
         )
         recorded = previous.metadata.get(PROVENANCE_KEY)
         if recorded is not None:
@@ -179,7 +179,7 @@ def _prepare(
     store = StateStore(
         state_path,
         entry_type=StateEntry,
-        schema_version=STATE_SCHEMA_VERSION,
+        schema_version=umbrella.STATE_SCHEMA_VERSION,
         metadata=metadata,
     )
     entries = _without_converted(store.load(), artifacts)
@@ -308,6 +308,6 @@ def preview(root: Path, config: KilnConfig) -> list[generation.Change]:
     store = StateStore(
         root / umbrella.STATE_PATH,
         entry_type=StateEntry,
-        schema_version=STATE_SCHEMA_VERSION,
+        schema_version=umbrella.STATE_SCHEMA_VERSION,
     )
     return list(classify(root, artifacts, store.load()).changes)

@@ -27,6 +27,7 @@ from rn_forge.commons.lang.collections import DictUtils, ListUtils
 
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.core import umbrella
 from rn_forge.kiln.modules.tasks.config import ROOT_VERBS, TasksConfig
 
 __all__ = ["CODE", "NAME", "check"]
@@ -35,7 +36,6 @@ NAME = "task-layout"
 CODE = "taskgraph"
 
 ROOT_TASKFILE = Path("Taskfile.yml")
-STATE_PATH = Path(".rn-forge/kiln/state.json")
 
 RESERVED_NAMESPACES = frozenset({"quality", "workspace", "node", "python", "kiln"})
 """Namespaces whose tasks are inner implementation and must be `internal`."""
@@ -390,7 +390,7 @@ def _run_values(lines: list[str]) -> list[tuple[int, str]]:
 
 def _check_owned_text(root: Path, graph: dict[str, object]) -> list[Finding]:
     """`task <name>` in managed workflows and managed blocks must resolve."""
-    state_path = root / STATE_PATH
+    state_path = root / umbrella.STATE_PATH
     if not state_path.exists():
         return []
     entries = DictUtils.get_mapping(DocumentUtils.read(state_path), "entries")

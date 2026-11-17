@@ -463,7 +463,9 @@ def test_s4_7_3_5_fenced_file_with_old_state_converts_under_force(
 ) -> None:
     cycle.apply(root, home=home)
     store = StateStore(
-        root / STATE, entry_type=StateEntry, schema_version=cycle.STATE_SCHEMA_VERSION
+        root / STATE,
+        entry_type=StateEntry,
+        schema_version=umbrella.STATE_SCHEMA_VERSION,
     )
     entries = store.load()
     del entries[IMPORTLINTER_KEY]
