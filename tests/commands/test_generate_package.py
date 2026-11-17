@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from tests.conftest import git
+from tests.conftest import git, snapshot
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.runtime.console import OutputMode, console
 
@@ -401,3 +401,25 @@ def test_s16_6_9_3_generate_package_writes_no_self_dependency(tmp_path: Path) ->
 def test_s16_6_10_2_generate_package_writes_no_ruff_table(generated: Path) -> None:
     document = _toml(generated / "packages/golden-alpha/pyproject.toml")
     assert "ruff" not in document["tool"]
+
+
+def test_s18_12_3_1_drift_refuses_before_any_write(tmp_path: Path) -> None:
+    root = _lib(tmp_path, None)
+    state = json.loads((root / ".rn-forge/kiln/state.json").read_text("utf-8"))
+    entries = state.get("entries", state.get("files", state))
+    managed = next(
+        key
+        for key, entry in entries.items()
+        if isinstance(entry, dict)
+        and entry.get("kind") == "managed"
+        and (root / key).is_file()
+    )
+    with (root / managed).open("a", encoding="utf-8") as handle:
+        handle.write("# drift\n")
+    before = snapshot(root)
+    with pytest.raises(AppException):
+        _generate(root, "demo-new")
+    assert snapshot(root) == before
+    assert "packages/demo-new" not in (root / ".rn-forge/kiln/config.toml").read_text(
+        "utf-8"
+    )

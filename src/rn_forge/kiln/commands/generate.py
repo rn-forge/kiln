@@ -69,6 +69,9 @@ def add_package(root: Path, name: str, module: str | None) -> ApplyResult:
     """Add the package NAME to the `python-lib` repository at *root*; see `generate_package`."""
     config = ConfigManager().load(root)
     python_scaffold.package_preflight(root, config, name, module)
+    # A dry run still refuses on drift, so nothing is written for a repository
+    # the closing apply would refuse.
+    cycle.apply(root, dry_run=True)
     relative = f"packages/{name}"
 
     section: dict[str, object] = {"packages": [*config.packages, relative]}
