@@ -910,7 +910,6 @@ def test_the_section_says_how_a_library_declares_its_matrix(
         '"verify-consumer": {}',
         "workspace-ci.consumer",
         "package.json",
-        "s945-kiln-devops-consumer",
     ):
         assert phrase in section, phrase
 

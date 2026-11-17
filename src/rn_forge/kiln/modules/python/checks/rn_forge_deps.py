@@ -152,7 +152,7 @@ def _check_kiln_not_in_lock(label: str, document: dict[str, object]) -> list[Fin
         Finding(
             f"{CODE}.kiln-in-lock",
             Severity.ERROR,
-            f"{KILN} is in {group}; kiln runs from [kiln] ref (F7.4), so remove it",
+            f"{KILN} is in {group}; kiln runs from [kiln] ref, so remove it",
             path=label,
         )
         for group, requirements in lists.items()

@@ -23,7 +23,7 @@ In the old repo, before writing anything in the new one:
   lines whose top-level headings cover objective *and* decisions *and* stories
   *and* history — and list its headings (`rg -n '^## ' <file>`). That list is
   the mapping's input.
-- **Its ID scheme** (`§14`, `E1`, `S2.3`, ticket keys).
+- **Its ID scheme** (`§14`, `E1`, story numbers, ticket keys).
 - **Every inbound reference, repo-wide**, including deep anchors
   (`spec.md#43-composable-adapters`) from README, CLAUDE.md, AGENTS.md and
   `mkdocs.yml`. A docs linter walks only `docs/`, so these rot silently.
