@@ -5,7 +5,7 @@ version: "3"
 # standard's rules on the rest — run once, by `lint`. `doctor` is internal;
 # `diff` and `apply` are public, reached as `kiln:diff` and `kiln:apply`, and
 # pass their arguments through (`task kiln:diff -- --artifact Taskfile.yml`).
-{% if not kiln_own %}# `pin` moves the repository to another kiln ref (`task kiln:pin -- <ref>`).
+{% if not kiln_own %}# `pin` pins a branch's newest commit, a tag or a SHA (`task kiln:pin -- <ref>`); with no argument it follows `track`.
 {% endif %}
 vars:
   KILN: '[[ kiln ]]'
@@ -31,12 +31,8 @@ tasks:
       - '{{.KILN}} apply {{.CLI_ARGS}}'
 {% if not kiln_own %}
   pin:
-    desc: Move kiln to another ref (tag, branch or SHA) and re-render with it. Pass the ref after `--`.
-    preconditions:
-      - sh: '[ -n "{{.CLI_ARGS}}" ]'
-        msg: pass a kiln ref after --
+    desc: Pin kiln to a branch's newest commit, a tag or a SHA and re-render with it. Pass it after `--`; with none, follow `track`.
     cmds:
-      - 'uvx --from "rn-forge-kiln @ [[ kiln_git ]]@{{.CLI_ARGS}}" kiln version'
       - '{{.KILN}} pin {{.CLI_ARGS}}'
-      - 'uvx --from "rn-forge-kiln @ [[ kiln_git ]]@{{.CLI_ARGS}}" kiln apply'
+      - 'uvx --from "rn-forge-kiln @ [[ kiln_git ]]@$({{.KILN}} pin --show)" kiln apply'
 {% endif %}

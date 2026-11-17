@@ -2,19 +2,20 @@
 
 from __future__ import annotations
 
-import dataclasses
 from pathlib import Path
+from typing import Any
 
 from rn_forge.commons import generation
 from rn_forge.commons.exceptions import AppException
+from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.runtime.console import console
 
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.commands import output
-from rn_forge.kiln.modules.core import cycle, umbrella
+from rn_forge.kiln.config import CONFIG_PATH
+from rn_forge.kiln.modules.core import cycle, kiln_ref, umbrella
 from rn_forge.kiln.modules.core.config import catalog
 from rn_forge.kiln.modules.core.config.manager import ConfigManager
-from rn_forge.kiln.modules.core.config.schema import KilnPin
 
 __all__ = ["config_update", "config_upgrade", "pin"]
 
@@ -93,20 +94,48 @@ def _config_reresolve(
     output.fail_on_errors(root)
 
 
-def pin(ref: str) -> None:
-    """Set the current repository's `[kiln] ref` to REF, and write nothing else.
+def pin(ref: str = "", show: bool = False) -> None:
+    """Pin the repository's `[kiln]` table to a commit, and write nothing else.
 
-    Does not apply and does not check that REF exists; `task kiln:pin` does both.
+    A branch pins its newest commit and is recorded as `track`. A tag or SHA
+    pins itself and drops `track`. With no REF, follows `track`. `--show`
+    prints the current `ref` and writes nothing. Reads only the `[kiln]` table,
+    so a repository whose `ref` is still a branch can migrate. Does not apply;
+    `task kiln:pin` does.
 
     Raises:
-        AppException: REF is empty or only whitespace.
+        AppException: `kiln.track-missing`, no REF and no `track`; or REF is
+            not a branch or tag at kiln's remote.
     """
+    path = umbrella.find_root(Path.cwd()) / CONFIG_PATH
+    document = DocumentUtils.read_document(path)
+    table: dict[str, Any] = document.get("kiln") or {}
+    old = table.get("ref", archetypes.KILN_REF)
+    if show:
+        console.print(old)
+        return
     ref = ref.strip()
     if not ref:
-        raise AppException("a kiln ref is required")
-    root = umbrella.find_root(Path.cwd())
-    config = ConfigManager().load(root)
-    old = config.document.kiln.ref if config.document.kiln else archetypes.KILN_REF
-    document = config.document.model_copy(update={"kiln": KilnPin(ref=ref)})
-    catalog.write(root, dataclasses.replace(config, document=document))
-    console.info("kiln ref {} \u2192 {}", old, ref)
+        track = table.get("track")
+        if not track:
+            raise AppException(
+                "kiln.track-missing: no [kiln] track to follow "
+                "\u2014 pass a branch, tag or SHA"
+            )
+        ref = str(track)
+    if kiln_ref.SHA.match(ref):
+        new, track = ref, None
+    elif kiln_ref.TAG.match(ref):
+        kiln_ref.resolve(ref)  # an unknown tag is an error
+        new, track = ref, None
+    else:
+        new, track = kiln_ref.resolve(ref), ref
+    if "kiln" not in document:
+        document["kiln"] = {}
+    document["kiln"]["ref"] = new
+    if track is None:
+        document["kiln"].pop("track", None)
+    else:
+        document["kiln"]["track"] = track
+    DocumentUtils.write_document(path, document)
+    console.info("kiln ref {} \u2192 {}", old, new)

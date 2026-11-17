@@ -127,11 +127,6 @@ def test_s7_4_1_2_kiln_itself_runs_its_working_tree(tmp_path: Path) -> None:
     assert _load(root, "tasks/kiln.yml")["vars"]["KILN"] == "uv run kiln"
 
 
-PIN_PREFIX = (
-    'uvx --from "rn-forge-kiln @ git+https://github.com/rn-forge/kiln@{{.CLI_ARGS}}"'
-)
-
-
 def test_s7_2_5_3_task_order(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
@@ -139,19 +134,18 @@ def test_s7_2_5_3_task_order(tmp_path: Path) -> None:
     assert "internal" not in pin
     assert pin["desc"].strip()
     assert pin["cmds"] == [
-        f"{PIN_PREFIX} kiln version",
         "{{.KILN}} pin {{.CLI_ARGS}}",
-        f"{PIN_PREFIX} kiln apply",
+        'uvx --from "rn-forge-kiln @ git+https://github.com/rn-forge/kiln'
+        '@$({{.KILN}} pin --show)" kiln apply',
     ]
 
 
-def test_s7_2_5_4_precondition(tmp_path: Path) -> None:
+def test_s18_14_2_7_the_pin_task_takes_no_argument(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     pin = _load(root, "tasks/kiln.yml")["tasks"]["pin"]
-    assert pin["preconditions"] == [
-        {"sh": '[ -n "{{.CLI_ARGS}}" ]', "msg": "pass a kiln ref after --"}
-    ]
+    assert "preconditions" not in pin
+    assert pin["cmds"][-1].endswith('@$({{.KILN}} pin --show)" kiln apply')
 
 
 def test_s7_2_5_5_not_in_kiln(tmp_path: Path) -> None:
