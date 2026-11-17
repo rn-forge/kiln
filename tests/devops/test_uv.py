@@ -9,7 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from rn_forge.kiln.devops import Package, Service, Smoke, Workspace, uv
+from rn_forge.kiln.devops import uv
+from rn_forge.kiln.devops.ci import Package, Service, Smoke, Workspace
 from rn_forge.kiln.devops.ci import plan, select
 
 

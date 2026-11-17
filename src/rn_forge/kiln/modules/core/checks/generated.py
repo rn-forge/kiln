@@ -64,7 +64,7 @@ def _error(message: str, path: str) -> Finding:
     return Finding(f"{CODE}.drift", Severity.ERROR, message, path=path)
 
 
-def _check_managed(root: Path, key: str, entry: dict[str, object]) -> list[Finding]:
+def _check_managed(root: Path, entry: dict[str, object]) -> list[Finding]:
     relative = str(entry["path"])
     path = root / relative
     if not path.exists():
@@ -143,9 +143,6 @@ def _read(path: Path) -> str:
         return handle.read()
 
 
-_KINDS = {"managed": _check_managed, "block": _check_block}
-
-
 def check(config: KilnConfig, root: Path) -> list[Finding]:
     """Compare every recorded artifact against the tree."""
     del config  # the baseline is state.json's business, not config's
@@ -180,7 +177,7 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
         kind = entry.get("kind")
         if kind == "seeded":
             continue
-        if kind not in _KINDS:
+        if kind not in {"managed", "block"}:
             findings.append(
                 Finding(
                     "state.unknown-kind",
@@ -200,5 +197,8 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
                 )
             )
             continue
-        findings.extend(_KINDS[kind](root, key, entry))
+        if kind == "managed":
+            findings.extend(_check_managed(root, entry))
+        else:
+            findings.extend(_check_block(root, key, entry))
     return findings

@@ -20,7 +20,6 @@ from rn_forge.kiln.modules.docs.work import (
     epic_range,
     load_work,
     range_label,
-    read_metadata,
     read_stories,
     render_board,
     render_epics,
@@ -73,16 +72,24 @@ def broken(tmp_path: Path, name: str, old: str, new: str) -> list[str]:
     return codes(tmp_path, {**VALID, name: VALID[name].replace(old, new)})
 
 
-def test_s13_2_1_read_metadata_accepts_both_table_styles() -> None:
+def _release_meta(tmp_path: Path, text: str) -> tuple[tuple[str, str], ...]:
+    page = tmp_path / "docs/releases/release-1/index.md"
+    page.parent.mkdir(parents=True)
+    page.write_text(text, encoding="utf-8")
+    return load_work(tmp_path / "docs").releases[0].page.meta
+
+
+def test_s13_2_1_read_metadata_accepts_both_table_styles(tmp_path: Path) -> None:
     plain = "# T\n\n| | |\n| --- | --- |\n| **State** | New |\n| **Tags** | a, b |\n"
     mdformat = "# T\n\n|  |  |\n| -- | -- |\n| **State** | New |\n| **Tags** | a, b |\n"
-    expected = [("State", "New"), ("Tags", "a, b")]
-    assert read_metadata(plain) == expected
-    assert read_metadata(mdformat) == expected
+    expected = (("State", "New"), ("Tags", "a, b"))
+    assert _release_meta(tmp_path / "plain", plain) == expected
+    assert _release_meta(tmp_path / "mdformat", mdformat) == expected
 
 
-def test_s13_2_1_read_metadata_none_after_a_paragraph() -> None:
-    assert read_metadata("# T\n\ntext\n\n" + TABLE + "| **State** | New |\n") is None
+def test_s13_2_1_read_metadata_none_after_a_paragraph(tmp_path: Path) -> None:
+    text = "# T\n\ntext\n\n" + TABLE + "| **State** | New |\n"
+    assert _release_meta(tmp_path, text) == ()
 
 
 def test_s13_2_1_valid_tree_has_no_findings(tmp_path: Path) -> None:

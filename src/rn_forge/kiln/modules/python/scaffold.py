@@ -41,7 +41,6 @@ __all__ = [
     "package_preflight",
     "reconcile_backend",
     "sample_test",
-    "scaffold",
     "scaffold_backend",
     "uv_gitignore",
     "without_members",
@@ -84,19 +83,7 @@ _DOCS_GROUP_MKDOCS_LIB = [
 """`_DOCS_GROUP_MKDOCS` plus the monorepo plugin, for `python-lib`, which
 includes each package's site."""
 
-TASK_TOOLS = (
-    "actionlint-py",
-    "google-yamlfmt",
-    "import-linter",
-    "pip-audit",
-    "pip-licenses",
-    "pyright",
-    "pytest",
-    "pytest-cov",
-    "ruff",
-    "taplo",
-    "zizmor",
-)
+TASK_TOOLS = tuple(distribution(entry) for entry in _DEV_GROUP)
 """The tools `task lint`, `task typecheck` and `task test` invoke through `uv run`.
 
 kiln is not listed: `{{.KILN}}` runs the pinned release with `uvx`, outside the
@@ -111,19 +98,6 @@ def docs_group(config: KilnConfig) -> list[str]:
 def _docs_group(*, mkdocs: bool, lib: bool) -> list[str]:
     mkdocs_group = _DOCS_GROUP_MKDOCS_LIB if lib else _DOCS_GROUP_MKDOCS
     return [*_DOCS_GROUP, *(mkdocs_group if mkdocs else [])]
-
-
-def scaffold(root: Path, config: KilnConfig) -> None:
-    """Run `uv init` into *root*, then reconcile every `pyproject.toml` it makes.
-
-    `scaffold_backend` and `reconcile_backend` in one place: the output is
-    reconciled where it was written. `kiln new` runs the two halves apart.
-
-    Raises:
-        AppException: `uv` is not on `PATH`, or exits non-zero.
-    """
-    scaffold_backend(root, config)
-    _reconcile_tree(root, config)
 
 
 def scaffold_backend(raw: Path, config: KilnConfig) -> None:
@@ -141,10 +115,10 @@ def scaffold_backend(raw: Path, config: KilnConfig) -> None:
     """
     workspace = config.is_workspace
     web = config.is_web
-    if config.is_node_lib:
+    members = (workspace or web) and not config.is_node_lib
+    if config.is_node_lib or members:
         _uv_init(raw, name=config.name, bare=True)
-    elif workspace or web:
-        _uv_init(raw, name=config.name, bare=True)
+    if members:
         for package in config.packages:
             member = raw / package
             member.mkdir(parents=True, exist_ok=True)
@@ -170,7 +144,7 @@ def scaffold_backend(raw: Path, config: KilnConfig) -> None:
                 }
             },
         )
-    else:
+    elif not config.is_node_lib:
         _uv_init(raw, name=config.name, bare=False, module=config.module)
         _write_sample_test(raw, config.name, config.module)
     (raw / gitignore.GITIGNORE).write_text(uv_gitignore(), encoding="utf-8")

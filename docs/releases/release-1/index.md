@@ -115,7 +115,7 @@ are [release-2](../release-2/index.md).
 | [F18.4 — `feature/v1` lands on `main` as one commit](../../specs/epics/E18-kiln-simplification/F18.4-one-commit-on-main.md) | E18 | New |
 | [F18.5 — Tests that survive a refactor](../../specs/epics/E18-kiln-simplification/F18.5-tests-survive-a-refactor.md) | E18 | Closed |
 | [F18.6 — `commands` is a package, one module per command](../../specs/epics/E18-kiln-simplification/F18.6-commands-package.md) | E18 | Closed |
-| [F18.7 — One owner per concept](../../specs/epics/E18-kiln-simplification/F18.7-one-owner-per-concept.md) | E18 | Active |
+| [F18.7 — One owner per concept](../../specs/epics/E18-kiln-simplification/F18.7-one-owner-per-concept.md) | E18 | Closed |
 | [F18.8 — Modules meet only through composition](../../specs/epics/E18-kiln-simplification/F18.8-modules-meet-through-composition.md) | E18 | New |
 | [F18.9 — Large files split by job](../../specs/epics/E18-kiln-simplification/F18.9-large-files-split.md) | E18 | New |
 | [F18.12 — The review defects release 1 takes](../../specs/epics/E18-kiln-simplification/F18.12-release-1-review-defects.md) | E18 | New |

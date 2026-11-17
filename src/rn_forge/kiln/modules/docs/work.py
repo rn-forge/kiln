@@ -19,22 +19,13 @@ from rn_forge.kiln.modules.docs.policy import POLICY
 __all__ = [
     "BOARD_BLOCK",
     "EPICS_BLOCK",
-    "EPIC_KEYS",
     "EPIC_RANGE",
     "FEATURES_BLOCK",
     "FEATURE_FILE",
-    "FEATURE_KEYS",
-    "RELEASE_KEYS",
-    "RELEASE_STATUSES",
     "SCOPE_BLOCK",
-    "STATES",
     "STORIES_BLOCK",
     "STORY_HEADING_RE",
-    "Epic",
-    "Feature",
-    "FeatureRow",
     "Page",
-    "Release",
     "Story",
     "Work",
     "epic_range",
@@ -42,7 +33,6 @@ __all__ = [
     "load_work",
     "metadata_end",
     "range_label",
-    "read_metadata",
     "read_stories",
     "render_board",
     "render_epics",
@@ -196,12 +186,6 @@ def _metadata(lines: list[str]) -> tuple[list[tuple[str, str]], int] | None:
             break
         pairs.append((key.group(1).strip(), row[1]))
     return pairs, table.start + 2 + len(pairs)
-
-
-def read_metadata(text: str) -> list[tuple[str, str]] | None:
-    """The `(key, value)` rows of the metadata table after the title, or `None`."""
-    found = _metadata(text.splitlines())
-    return None if found is None else found[0]
 
 
 def metadata_end(lines: list[str]) -> int | None:

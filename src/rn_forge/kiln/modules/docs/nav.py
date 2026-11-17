@@ -28,12 +28,9 @@ from rn_forge.kiln.modules.docs.work import (
 )
 
 __all__ = [
-    "ACRONYMS",
     "NAV_BLOCK",
-    "NavEntry",
     "build_nav",
     "page_title",
-    "title_from_filename",
     "update_nav",
 ]
 

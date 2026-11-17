@@ -35,12 +35,19 @@ from rn_forge.kiln.modules.python.scaffold import (
     docs_group,
     reconcile_backend,
     sample_test,
-    scaffold,
     scaffold_backend,
     uv_gitignore,
 )
 
 TAPLO = Path(sys.executable).parent / "taplo"
+
+
+def scaffold(root: Path, config: KilnConfig) -> None:
+    """`uv init` into *root*, then reconcile it where it was written."""
+    raw = root.parent / f"{root.name}-raw"
+    raw.mkdir()
+    scaffold_backend(raw, config)
+    reconcile_backend(raw, root, config)
 
 
 def _root(tmp_path: Path, archetype: str, *, docs_profile: str = "mkdocs") -> Path:

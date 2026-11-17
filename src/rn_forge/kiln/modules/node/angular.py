@@ -44,11 +44,11 @@ SCAFFOLD_APP_DIR = "apps/web"
 VITEST_COVERAGE = "@vitest/coverage-v8@^4.0.8"
 """The coverage provider the scaffold adds; its major matches `vitest`'s."""
 
-PRETTIER = "prettier@~3.9.10"
-"""The formatter the scaffold adds as a dev dependency (ngkit's range)."""
-
 PRETTIER_VERSION = "3.9.10"
 """The release `scaffold.format_node` runs with `pnpm dlx`."""
+
+PRETTIER = f"prettier@~{PRETTIER_VERSION}"
+"""The formatter the scaffold adds as a dev dependency (ngkit's range)."""
 
 _ALLOW_BUILDS = ("@parcel/watcher", "esbuild", "lmdb", "msgpackr-extract")
 """Native build scripts pnpm 12 blocks by default (`ERR_PNPM_IGNORED_BUILDS`);

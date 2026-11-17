@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import copy
 import shutil
-from collections.abc import Callable
 from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
@@ -39,10 +38,6 @@ from rn_forge.kiln.modules.node.angular import (
 )
 
 __all__ = ["format_node", "reconcile_node", "scaffold_node"]
-
-_SCAFFOLDERS: dict[str, Callable[[Path], Path]] = {"angular": scaffold_angular}
-"""Each implemented frontend: it scaffolds into a raw directory and returns
-the finished workspace."""
 
 NODE_MAJOR = 24
 """The Node major `.nvmrc` pins in every node repository."""
@@ -119,14 +114,13 @@ def scaffold_node(raw: Path, config: KilnConfig) -> Path | None:
         return None
 
     lib = config.archetype == "node-lib"
-    scaffolder = _SCAFFOLDERS.get(config.frontend or "angular")
-    if scaffolder is None:
+    if (config.frontend or "angular") != "angular":
         raise AppException(
             "no scaffolder for frontend {!r}; kiln implements {}",
             config.frontend,
-            ", ".join(sorted(_SCAFFOLDERS)),
+            "angular",
         )
-    workspace = scaffolder(raw)
+    workspace = scaffold_angular(raw)
     # pnpm records `packageManagerDependencies` only if this is set when it next
     # writes the lockfile; without that entry `--frozen-lockfile` fails.
     _pin_package_manager(workspace / "package.json")
@@ -193,10 +187,8 @@ def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
         _copy_or_merge(entry, root / entry.name)
 
     (root / _NVMRC).write_text(f"{NODE_MAJOR}\n", encoding="utf-8")
-    _pin_package_manager(root / "package.json")
-    _name_package(root / "package.json", config.name)
-    _enable_coverage(root)
-    _declare_release(root)
+    _pin_and_name_package(root / "package.json", config.name)
+    _configure_nx(root)
     if lib:
         # sonar-scanner fails on a sonar.sources folder that does not exist.
         for directory in ("libs", "apps"):
@@ -239,13 +231,14 @@ def _pin_package_manager(package_path: Path) -> None:
     DocumentUtils.write(package_path, package)
 
 
-def _name_package(package_path: Path, repository: str) -> None:
+def _pin_and_name_package(package_path: Path, repository: str) -> None:
     package = DocumentUtils.read(package_path)
+    package["packageManager"] = f"pnpm@{PNPM_VERSION}"
     package["name"] = f"@{repository}/source"
     DocumentUtils.write(package_path, package)
 
 
-def _enable_coverage(root: Path) -> None:
+def _configure_nx(root: Path) -> None:
     path = root / "nx.json"
     nx = DocumentUtils.read(path)
     defaults = nx.setdefault("targetDefaults", {})
@@ -256,14 +249,7 @@ def _enable_coverage(root: Path) -> None:
     unit_test = defaults["@nx/angular:unit-test"]
     unit_test["cache"] = True
     unit_test["inputs"] = ["default", "^production"]
-    DocumentUtils.write(path, nx)
-
-
-def _declare_release(root: Path) -> None:
-    path = root / "nx.json"
-    nx = DocumentUtils.read(path)
     nx.setdefault("release", copy.deepcopy(_RELEASE))
-    defaults = nx.setdefault("targetDefaults", {})
     for target, value in _RELEASE_TARGET_DEFAULTS.items():
         defaults.setdefault(target, copy.deepcopy(value))
     DocumentUtils.write(path, nx)

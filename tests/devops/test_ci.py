@@ -8,16 +8,18 @@ from pathlib import Path
 
 import pytest
 
-from rn_forge.kiln.devops import (
+from rn_forge.kiln.devops.ci import (
     Package,
     Service,
     Smoke,
+    Workspace,
+    changed_files,
     normalize,
     plan,
-    release_order,
     releasable,
+    release_order,
+    select,
 )
-from rn_forge.kiln.devops.ci import Workspace, changed_files, select
 
 
 def _packages() -> dict[str, Package]:

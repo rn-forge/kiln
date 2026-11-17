@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from functools import cache
+
 from rn_forge.kiln.modules.base import ModuleRegistry
 from rn_forge.kiln.modules.cicd import CICD
 from rn_forge.kiln.modules.core import CORE
@@ -14,6 +16,7 @@ from rn_forge.kiln.modules.tasks import TASKS
 __all__ = ["builtin"]
 
 
+@cache
 def builtin() -> ModuleRegistry:
     """A registry of every module this kiln ships."""
     return ModuleRegistry([CORE, PYTHON, NODE, DOCS, TASKS, CICD, INSTRUCTIONS])

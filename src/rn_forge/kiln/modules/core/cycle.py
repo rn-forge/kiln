@@ -238,15 +238,21 @@ def _unfenced(root: Path, artifacts: Sequence[generation.Artifact]) -> list[Find
         "contract, move any contract of your own below the END marker, then "
         "run `kiln apply --force .importlinter`"
     )
-    return [
-        Finding(UNFENCED_CODE, Severity.ERROR, message, path=artifact.path)
-        for artifact in artifacts
-        if artifact.block is not None
-        and artifact.path in _NO_APPEND
-        and (root / artifact.path).is_file()
-        and _text(root / artifact.path).strip()
-        and artifact.block.extract(_text(root / artifact.path)) is None
-    ]
+    findings: list[Finding] = []
+    for artifact in artifacts:
+        path = root / artifact.path
+        if (
+            artifact.block is None
+            or artifact.path not in _NO_APPEND
+            or not path.is_file()
+        ):
+            continue
+        text = _text(path)
+        if text.strip() and artifact.block.extract(text) is None:
+            findings.append(
+                Finding(UNFENCED_CODE, Severity.ERROR, message, path=artifact.path)
+            )
+    return findings
 
 
 def _text(path: Path) -> str:

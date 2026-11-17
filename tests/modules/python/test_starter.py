@@ -184,7 +184,10 @@ def test_s4_9_2_3_httpx_is_a_dev_dependency(tmp_path: Path) -> None:
     from rn_forge.kiln.modules.python import scaffold
 
     config = _web(tmp_path, "python-web-api")
-    scaffold.scaffold(tmp_path, config)
+    raw = tmp_path.parent / f"{tmp_path.name}-raw"
+    raw.mkdir()
+    scaffold.scaffold_backend(raw, config)
+    scaffold.reconcile_backend(raw, tmp_path, config)
     document = tomllib.loads(
         (tmp_path / "apps/api/pyproject.toml").read_text(encoding="utf-8")
     )

@@ -36,7 +36,16 @@ from rn_forge.kiln.modules.node.scaffold import (
     reconcile_node,
     scaffold_node,
 )
-from rn_forge.kiln.modules.python.scaffold import scaffold
+from rn_forge.kiln.modules.python.scaffold import reconcile_backend, scaffold_backend
+
+
+def scaffold(root: Path, config: KilnConfig) -> None:
+    """`uv init` into *root*, then reconcile it where it was written."""
+    raw = root.parent / f"{root.name}-raw"
+    raw.mkdir()
+    scaffold_backend(raw, config)
+    reconcile_backend(raw, root, config)
+
 
 FIXTURE = Path(__file__).parents[2] / "fixtures" / "scaffold" / "nx-angular"
 UV_FIXTURE = Path(__file__).parents[2] / "fixtures" / "scaffold" / "uv" / ".gitignore"
