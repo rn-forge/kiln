@@ -699,7 +699,7 @@ def test_s16_6_9_1_member_named_like_the_requirement_has_no_self_dependency(
 def test_s16_6_9_2_other_members_keep_the_requirement(tmp_path: Path) -> None:
     root, _ = _commons_lib(tmp_path, ["rn-forge-commons", "rn-forge-cli"])
     document = _toml(root / "packages/rn-forge-cli/pyproject.toml")
-    assert "rn-forge-commons>=0.8.1,<0.9" in document["project"]["dependencies"]
+    assert "rn-forge-commons>=0.9.0,<0.10" in document["project"]["dependencies"]
 
 
 def test_s16_6_9_4_a_lone_required_member_passes_the_check(tmp_path: Path) -> None:
