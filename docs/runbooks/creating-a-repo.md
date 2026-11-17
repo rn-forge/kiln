@@ -74,7 +74,7 @@ git commit -m "Initial commit from kiln new"
 
 **Pre-release workaround: a local kiln.** kiln is not a dependency of the
 generated repo: `[kiln] ref` in `.rn-forge/kiln/config.toml` pins it, and `task`
-runs it beside the repo with `uvx` (F7.4). Until that ref resolves for you, set
+runs it beside the repo with `uvx`. Until that ref resolves for you, set
 `[kiln] ref` by hand to a ref that does, or run a local checkout against the
 repo with `uv run --project ../kiln kiln <command>`.
 
@@ -94,7 +94,7 @@ output.
 ### A node-lib's libraries
 
 A `node-lib` starts with no library. Each one is made by the repository's own Nx
-generator step (F9.2), not by kiln:
+generator step, not by kiln:
 
 ```bash
 pnpm exec nx g @nx/angular:library libs/<n> --name=<n> --prefix=<prefix> \

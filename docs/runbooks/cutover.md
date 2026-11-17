@@ -16,10 +16,13 @@ is rebuilt with `kiln new` ([creating a repository](creating-a-repo.md)).
    `kiln new <dir> --archetype <archetype> --docs mkdocs --owner <owner> --config <file> --yes`
    from the `[kiln] ref` the cutover targets. The config file's content, and
    any `kiln generate package` or generator runs, are written out in the
-   repository's own cutover story (pykit S16.3.1, ngkit S17.2.1); the file
-   passed to `--config` is a copy of that block. Run `task setup` and
-   `task validate` in the reference; it must pass before anything is brought
-   over.
+   repository's own cutover story (see
+   [pykit's](https://github.com/rn-forge/pykit/blob/main/docs/specs/index.md)
+   and
+   [ngkit's](https://github.com/rn-forge/ngkit/blob/main/docs/specs/index.md)
+   spec boards); the file passed to `--config` is a copy of that block. Run
+   `task setup` and `task validate` in the reference; it must pass before
+   anything is brought over.
 
 1. **Format first.** Once, before the first overlay, so that the overlay's diff
    carries no reformatting of the repository's own files. In the existing
@@ -52,25 +55,24 @@ is rebuilt with `kiln new` ([creating a repository](creating-a-repo.md)).
    and tags stay.
 
 1. **Bring the files over.** Take the inventory: from the reference, run
-   `kiln diff --old <old repo>`
-   ([S16.9.11](../specs/epics/E16-init-adopts-by-overwrite/F16.9-overlay-cutover-findings.md#s16911-kiln-diff-old-old-repo-the-cutovers-inventory)).
-   It lists every file with its class (`managed`, `block`, `seeded`,
-   `scaffolded`, `old-only`) and whether the bytes match; the `old-only` rows
-   are the deletions list. Then, by class: copy each `managed` file
-   byte-for-byte (`cp`); replace each `block` file's fenced region with the
-   reference's, markers included, leaving the repository's text outside;
-   `AGENTS.md` takes the reference's block, and a fenced kiln region left in
-   `CLAUDE.md` is deleted; add each `seeded` or `scaffolded` file the
-   repository lacks. A `seeded` or `scaffolded` configuration file the
-   repository has (`pyproject.toml`, `nx.json`, `package.json`,
-   `tsconfig.base.json`, `pnpm-workspace.yaml`, `eslint.config.mjs`,
-   `.mdformat.toml` and the like) also starts from the reference's copy: copy
-   it over, then re-apply the repository's own changes to it, each a named
-   hand edit in its cutover story with the reason it stays. A change with no
-   reason is dropped, and one every repository would want is an absorb row.
-   The file's diff against the reference is then only the repository's edits,
-   as if kiln had seeded it and the repository had edited it since. List them
-   with `diff -u <reference>/<path> <old repo>/<path>` for each row
+   `kiln diff --old <old repo>`. It lists every file with its class
+   (`managed`, `block`, `seeded`, `scaffolded`, `old-only`) and whether the
+   bytes match; the `old-only` rows are the deletions list. Then, by class:
+   copy each `managed` file byte-for-byte (`cp`); replace each `block` file's
+   fenced region with the reference's, markers included, leaving the
+   repository's text outside; `AGENTS.md` takes the reference's block, and a
+   fenced kiln region left in `CLAUDE.md` is deleted; add each `seeded` or
+   `scaffolded` file the repository lacks. A `seeded` or `scaffolded`
+   configuration file the repository has (`pyproject.toml`, `nx.json`,
+   `package.json`, `tsconfig.base.json`, `pnpm-workspace.yaml`,
+   `eslint.config.mjs`, `.mdformat.toml` and the like) also starts from the
+   reference's copy: copy it over, then re-apply the repository's own changes
+   to it, each a named hand edit in its cutover story with the reason it
+   stays. A change with no reason is dropped, and one every repository would
+   want is an absorb row. The file's diff against the reference is then only
+   the repository's edits, as if kiln had seeded it and the repository had
+   edited it since. List them with
+   `diff -u <reference>/<path> <old repo>/<path>` for each row
    `kiln diff --old` marks as differing; build the reference with the
    repository's toolchain versions (its Nx and Angular, its Python) and its
    generator choices, or version noise hides the edits. A lockfile is never
@@ -104,11 +106,9 @@ is rebuilt with `kiln new` ([creating a repository](creating-a-repo.md)).
 
     Known rows for pykit: its `[tool.workspace-ci.postgres]` and
     `[tool.workspace-ci.redis]` tables become
-    `[tool.workspace-ci.integration.<name>]` service declarations
-    ([S15.8.2](../specs/epics/E15-ci-standard/F15.8-one-workflow-contract.md#s1582-the-integration-stage-services-as-data));
-    kiln does not read the old keys. Its `broker-profile.yml` row is absorb:
-    an `integration` service of `rn-forge-auth`
-    ([S16.6.5](../specs/epics/E16-init-adopts-by-overwrite/F16.6-cutover-rehearsal-findings.md#s1665-integration-services-cover-pykits-broker-profile-and-broker-profileyml-retires)).
+    `[tool.workspace-ci.integration.<name>]` service declarations; kiln does
+    not read the old keys. Its `broker-profile.yml` row is absorb: an
+    `integration` service of `rn-forge-auth`.
 
 1. **Land the absorb stories** in kiln.
 
@@ -154,9 +154,9 @@ is rebuilt with `kiln new` ([creating a repository](creating-a-repo.md)).
 
 ## Examples
 
-- kiln's own table, for its `mkdocs.yml`:
-  [S16.2.1](../specs/epics/E16-init-adopts-by-overwrite/F16.2-kiln-owns-mkdocs.md#s1621-inventory-what-the-three-mkdocsyml-files-carry).
+- kiln's own table, for its `mkdocs.yml`: the `mkdocs.yml` inventory in kiln's
+  spec board.
 - pykit's verdict tables and runs:
-  [F16.3](https://github.com/rn-forge/pykit/blob/main/docs/specs/epics/E16-kiln-adoption/F16.3-cutover.md).
+  [pykit's spec board](https://github.com/rn-forge/pykit/blob/main/docs/specs/index.md).
 - ngkit's verdict tables and runs:
-  [F17.2](https://github.com/rn-forge/ngkit/blob/main/docs/specs/epics/E17-kiln-adoption/F17.2-cutover.md).
+  [ngkit's spec board](https://github.com/rn-forge/ngkit/blob/main/docs/specs/index.md).

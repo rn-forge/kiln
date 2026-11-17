@@ -159,8 +159,7 @@ are read-only to the repository.
 `checks-ok` and `ci-ok` stay in `ci.yml`: each is short or needs `ci.yml`'s
 outputs. For a library workspace `release` stays there too: PyPI matches the
 trusted publisher on the called workflow and checks the attestation against the
-caller, so the upload must run in the top-level workflow
-([F6.11](../specs/epics/E6-rebuild-the-repos/F6.11-pypi-release-in-ci-yml.md)).
+caller, so the upload must run in the top-level workflow.
 
 - The caller job in `ci.yml` grants the permissions; a called workflow can only
   narrow them. Secrets are passed by name, never `secrets: inherit`.
@@ -378,10 +377,6 @@ package's containers, waits for their health, runs the package's tests with the
 ### `python-lib`, event by event
 
 What the workspace pipeline does on each event, and how a release is decided.
-The `docs` job is
-[S11.5.1](../specs/epics/E11-package-docs/F11.5-deploy-package-sites.md#s1151-ci-deploys-versioned-package-sites);
-the pipeline was built in
-[F6.4](../specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md).
 
 #### Triggers
 

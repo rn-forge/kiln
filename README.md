@@ -25,16 +25,14 @@ Working towards [release 1](docs/releases/release-1/index.md). The canon and the
 rendered archetype cells match pykit's `feature/upgrade` branch, tool lifecycle
 surface included (E1–E3, done 2026-09-15). The
 [shared CLI integration](docs/specs/epics/E3-realign-goldens-and-canon/index.md#shared-cli-design)
-was proven by the hand-authored golden repos, which have since left git
-([S4.4.9](docs/specs/epics/E4-generator/F4.4-render-matrix.md#s449-the-goldens-leave-the-repository)).
-E4's render-free checks, module contract, config manager, apply cycle and
-concern modules exist, and so does the render matrix. E5's FastAPI and Angular
-cells pass their own gates in it. What is left is proving them from a clean
-clone, the owner's approval, and a first real project
-([F5.3](docs/specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md)). Django
-is deferred until a real repository needs it. The order is deliberate —
-templates reviewed as templates are how the fleet ended up with four divergent
-pipelines, so the standard is reviewed as complete runnable repositories.
+was proven by the hand-authored golden repos, which have since left git. E4's
+render-free checks, module contract, config manager, apply cycle and concern
+modules exist, and so does the render matrix. E5's FastAPI and Angular cells
+pass their own gates in it. What is left is proving them from a clean clone, the
+owner's approval, and a first real project. Django is deferred until a real
+repository needs it. The order is deliberate — templates reviewed as templates
+are how the fleet ended up with four divergent pipelines, so the standard is
+reviewed as complete runnable repositories.
 
 ```bash
 task self:golden:render && task self:golden:validate
@@ -45,13 +43,13 @@ task self:golden:render && task self:golden:validate
 - Run everything through `task`. `task validate` is the gate.
 - **A standard change is a template change**, reviewed as the rendered cells
   (`task self:golden:compare BASE=<ref>`), per the
-  [render-matrix policy](docs/specs/epics/E4-generator/F4.4-render-matrix.md#template-review-policy).
+  [render-matrix policy](docs/reference/standard-repo.md#the-render-matrix).
 - The policy and docs checks are `kiln doctor`, and `kiln docs-generate` writes
   the derived regions; no repo carries `scripts/**` for them
   ([ADR-0006](docs/adr/ADR-0006.md)).
 - This repo generates its own skeleton: it is the `python-app` archetype with
-  `lifecycle = true` (S4.8.1). Change `.rn-forge/kiln/config.toml` or a
-  template, never a generated file.
+  `lifecycle = true`. Change `.rn-forge/kiln/config.toml` or a template, never
+  a generated file.
 - **After changing a managed file's source, run `kiln apply`.** It rewrites the
   file and `.rn-forge/kiln/state.json`; `task lint` fails with
   `has drifted from the committed state` on an edit in place.

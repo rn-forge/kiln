@@ -54,7 +54,7 @@ git grep --untracked -lz -e '' -- '<glob>' | xargs -0 -r <tool>
 - Each task passes a glob, such as `'*.md'` or `'*.toml'`. The YAML pair passes
   `'*.yml'` and `'*.yaml'`.
 - The Markdown pair batches, `xargs -0 -r -n 20 -P 4`, twenty files to each of
-  four processes (S17.3.4). The TOML pair and the YAML pair run serially.
+  four processes. The TOML pair and the YAML pair run serially.
 - `command_overrides` replaces one task's command, keyed by the task name
   (`quality:lint:markdown`, and so on); the other task of the pair keeps its
   own.

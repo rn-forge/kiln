@@ -113,10 +113,10 @@ Every path kiln writes or reads has exactly one of these kinds:
   never touches it if present. Starter source is the exception: only
   `kiln new` and `kiln generate package` write it (`kiln new` generates the
   packages its config lists, and `kiln generate package` adds the rest one at
-  a time; *Revised 2026-11-09 (S16.7.10)*), and a later `kiln apply` does not
-  recreate it. A scaffolded file (`pyproject.toml`, `README.md`, `CLAUDE.md`,
-  the bodies of `AGENTS.md` and `mkdocs.yml`, the first `src/` and `tests/`)
-  is written by `kiln new` before its first apply, and never again.
+  a time; *Revised 2026-11-09*), and a later `kiln apply` does not recreate
+  it. A scaffolded file (`pyproject.toml`, `README.md`, `CLAUDE.md`, the
+  bodies of `AGENTS.md` and `mkdocs.yml`, the first `src/` and `tests/`) is
+  written by `kiln new` before its first apply, and never again.
 - `.tmp/` is the repo's scratch root: disposable, gitignored, removed by
   `task clean`. Tests and tools write their output under it, and nothing kiln
   or the repo keeps lives there.
@@ -184,9 +184,7 @@ To change a managed file: change `.rn-forge/kiln/config.toml`, run `kiln apply`.
 ### The render matrix
 
 To change what kiln renders: change its Jinja templates, which are the authored
-source
-([template review policy](../specs/epics/E4-generator/F4.4-render-matrix.md#template-review-policy)).
-A rendered repo is reviewed whole but never committed:
+source. A rendered repo is reviewed whole but never committed:
 
 1. `task self:golden:render` renders every shipped archetype × flag cell into
    gitignored `.goldens/<ref>/`; `task self:golden:validate` runs each cell's
@@ -216,8 +214,7 @@ select independent capabilities or implementations within that shape.
 `lifecycle` is available to any Python archetype; it adds tooling's lifecycle
 surface. Docs profiles are independent: `mkdocs` seeds a docs site, `external`
 records its URL, and `none` generates no docs site. The shipped web combinations
-and promotion criteria live in
-[F5.3](../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md).
+and promotion criteria live in the [spec board](../specs/index.md).
 
 **Docs layout per archetype** ([ADR-0008](../adr/ADR-0008.md)). Only a published
 package gets its own docs site. In `python-lib`, every package carries
@@ -232,7 +229,7 @@ cross-package material. Every other Python archetype has one root site: its
 internal workspace packages have no docs of their own, and their reference
 renders in the root site. `kiln new` generates the packages a `python-lib`
 config lists, and `kiln generate package` adds the rest one at a time. *Revised
-2026-11-09 (S16.7.10).*
+2026-11-09.*
 
 ## 3. The dependency set
 
@@ -357,8 +354,8 @@ installed kiln, no `$RNF_HOME`, no bootstrap script — proves all of this:
   current, every tracked Markdown file is mdformat-clean, and no link or
   anchor is broken (`mkdocs` profile). mdformat formats every Markdown file; a
   repository that uses Prettier lists `*.md`, `*.toml`, `*.yml` and `*.yaml`
-  there ([ADR-0012](../adr/ADR-0012.md)). Revised 2026-11-09 (S16.7.3): kiln
-  renders `.prettierrc` and a fenced `.prettierignore` block for node-lib and
+  there ([ADR-0012](../adr/ADR-0012.md)). Revised 2026-11-09: kiln renders
+  `.prettierrc` and a fenced `.prettierignore` block for node-lib and
   python-web-app; the block lists `*.md`, `*.toml`, `*.yml` and `*.yaml`, so
   Prettier and mdformat still never format the same file;
 - **every managed file and every managed block still hashes to the value
@@ -521,8 +518,7 @@ The rules:
   units whose every check passed. A dispatched release on the default branch,
   gated on a green CI run ([ADR-0015](../adr/ADR-0015.md)), satisfies this.
   (`python-lib`'s generated `release` does not yet wait on `sonar` or skip
-  pull requests:
-  [S6.4.7](../specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md#s647-release-publishes-from-the-default-branch-after-the-quality-gate).)
+  pull requests.)
 - `[ci] release = "pypi"` (`python-lib` only) does everything `tag-exists` does
   and uploads each package to pypi.org by trusted publishing
   (`uv publish --trusted-publishing always`, with each wheel's and sdist's PEP

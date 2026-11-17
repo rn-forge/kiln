@@ -137,8 +137,8 @@ the licences policy (`[ci.checks] licenses`) and the audit's accepted advisories
 never a boolean, because the audit is standard and stays on).
 
 `command_overrides` has no key for the dependency audits, the licences check,
-the secret scan or internal ranges. `python:lint:audit` took one until S17.1.2;
-an override now fails with `unknown task`.
+the secret scan or internal ranges. `python:lint:audit` used to take one; an
+override now fails with `unknown task`.
 
 ## What `task-layout` checks
 

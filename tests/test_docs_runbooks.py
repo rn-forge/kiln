@@ -49,8 +49,7 @@ def test_runbook_has_no_init() -> None:
         "kiln new",
         "kiln diff --old",
         "byte-for-byte",
-        "S16.3.1",
-        "S17.2.1",
+        "own cutover story",
         "ADR-0019",
     ):
         assert present in text, present
@@ -75,11 +74,12 @@ def test_runbook_names_migrate() -> None:
 
 def test_runbook_pins_prettier_and_the_pages_record_the_revision() -> None:
     assert "prettier@~3.9.10" in _flat()
+    for page in ("docs/adr/ADR-0012.md", "docs/reference/standard-repo.md"):
+        text = " ".join((ROOT / page).read_text(encoding="utf-8").split())
+        assert "Revised 2026-11-09:" in text, page
     for page in (
-        "docs/adr/ADR-0012.md",
         "docs/specs/epics/E9-node-archetypes/index.md",
         "docs/specs/epics/E9-node-archetypes/F9.2-one-node-scaffold.md",
-        "docs/reference/standard-repo.md",
     ):
         text = " ".join((ROOT / page).read_text(encoding="utf-8").split())
         assert "Revised 2026-11-09 (S16.7.3)" in text, page
