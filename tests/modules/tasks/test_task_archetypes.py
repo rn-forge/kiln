@@ -13,7 +13,7 @@ from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.tasks import TASKS
-from tests.conftest import requires
+from tests.conftest import module_findings, requires
 from tests.modules.tasks.support import (
     ARCHETYPES,
     WEB_CELLS,
@@ -680,7 +680,7 @@ def test_s4_11_3_8_gate_shrunk_fires_when_lint_drops_workflows(
     text = taskfile.read_text(encoding="utf-8")
     assert line in text
     taskfile.write_text(text.replace(line, ""), encoding="utf-8")
-    findings = [f for f in TASKS.checks(KilnConfig.load(root), root)]
+    findings = [f for f in module_findings("tasks", KilnConfig.load(root), root)]
     assert any(
         f.code == "gate.shrunk" and "ci:lint:workflows" in str(f) for f in findings
     )

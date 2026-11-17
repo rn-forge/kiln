@@ -14,11 +14,14 @@ import shutil
 import subprocess
 from collections.abc import Callable, Iterator
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from rn_forge.commons.findings import Finding
 from rn_forge.commons.generation import Action
+
+if TYPE_CHECKING:
+    from rn_forge.kiln.config import KilnConfig
 
 CONFIG = """
 schema_version = 1
@@ -382,3 +385,15 @@ def run_check(name: str, root: Path) -> list[Finding]:
 
     registered = {check.name: check for check in checks.CHECKS}
     return registered[name].run(KilnConfig.load(root), root)
+
+
+def module_findings(module: str, config: KilnConfig, root: Path) -> list[Finding]:
+    """Stand in for the removed `Module.checks()`: every registered check of *module*."""
+    from rn_forge.kiln import checks
+
+    return [
+        finding
+        for entry in checks.CHECKS
+        if entry.module == module
+        for finding in entry.run(config, root)
+    ]

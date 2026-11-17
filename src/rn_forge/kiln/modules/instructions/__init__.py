@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 from rn_forge.kiln.modules.base import Option
 
 if TYPE_CHECKING:
-    from rn_forge.commons.findings import Finding
     from rn_forge.commons.generation import Artifact
 
     from rn_forge.kiln.config import KilnConfig
@@ -35,11 +34,6 @@ class InstructionsModule:
         from rn_forge.kiln.modules.instructions import artifacts
 
         return artifacts.render(config)
-
-    def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:
-        """This module has no render-free checks."""
-        del config, root
-        return []
 
 
 INSTRUCTIONS = InstructionsModule()

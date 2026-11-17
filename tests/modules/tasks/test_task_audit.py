@@ -1,6 +1,8 @@
 """The dependency vulnerability audit task."""
 
 from __future__ import annotations
+
+from tests.conftest import module_findings
 import pytest
 from pathlib import Path
 from rn_forge.commons.exceptions import AppException
@@ -197,7 +199,7 @@ def test_s4_11_5_7_gate_shrunk_fires_when_lint_drops_audit(tmp_path: Path) -> No
     text = taskfile.read_text(encoding="utf-8")
     assert line in text
     taskfile.write_text(text.replace(line, ""), encoding="utf-8")
-    findings = [f for f in TASKS.checks(KilnConfig.load(root), root)]
+    findings = [f for f in module_findings("tasks", KilnConfig.load(root), root)]
     assert any(
         f.code == "gate.shrunk" and "python:lint:audit" in str(f) for f in findings
     )
@@ -264,7 +266,7 @@ def test_s17_1_3_4_unreachable_licences_is_a_finding(tmp_path: Path) -> None:
     text = taskfile.read_text(encoding="utf-8")
     assert line in text
     taskfile.write_text(text.replace(line, ""), encoding="utf-8")
-    findings = TASKS.checks(KilnConfig.load(root), root)
+    findings = module_findings("tasks", KilnConfig.load(root), root)
     assert any(
         f.code == "gate.shrunk" and "python:lint:licenses" in str(f) for f in findings
     )

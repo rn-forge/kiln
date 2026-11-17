@@ -9,7 +9,7 @@ from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.tasks import TASKS
-from tests.conftest import LIB_PACKAGES, git, write_config
+from tests.conftest import module_findings, LIB_PACKAGES, git, write_config
 
 
 ARCHETYPES = ("python-app", "python-tool", "python-lib")
@@ -32,7 +32,7 @@ def _root(
 
 
 def _codes(root: Path) -> list[str]:
-    return sorted(f.code for f in TASKS.checks(KilnConfig.load(root), root))
+    return sorted(f.code for f in module_findings("tasks", KilnConfig.load(root), root))
 
 
 def _run_task(root: Path, *args: str) -> subprocess.CompletedProcess[str]:

@@ -14,7 +14,7 @@ from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.tasks import TASKS
 from rn_forge.kiln.modules.tasks.config import ROOT_VERBS
-from tests.conftest import git, requires
+from tests.conftest import module_findings, git, requires
 from tests.modules.tasks.support import (
     ALL_CELLS,
     ARCHETYPES,
@@ -567,6 +567,6 @@ def test_s16_4_5_3_ten_root_verbs(tmp_path: Path, archetype: str) -> None:
     )
     assert not [
         f
-        for f in TASKS.checks(KilnConfig.load(root), root)
+        for f in module_findings("tasks", KilnConfig.load(root), root)
         if f.code.startswith("taskgraph")
     ]

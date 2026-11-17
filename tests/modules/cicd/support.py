@@ -6,7 +6,7 @@ from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd import CICD
 from rn_forge.kiln.modules.tasks import TASKS
-from tests.conftest import LIB_PACKAGES, write_config
+from tests.conftest import module_findings, LIB_PACKAGES, write_config
 from tests.modules.cicd import workflows
 
 
@@ -55,7 +55,7 @@ def _rendered(root: Path) -> dict[str, str]:
 
 
 def _codes(root: Path) -> list[str]:
-    return sorted(f.code for f in CICD.checks(KilnConfig.load(root), root))
+    return sorted(f.code for f in module_findings("cicd", KilnConfig.load(root), root))
 
 
 WEB_CONFIG = """

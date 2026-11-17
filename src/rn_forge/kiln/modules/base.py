@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from rn_forge.commons.exceptions import AppException
-from rn_forge.commons.findings import Finding
 from rn_forge.commons.lang.models import StrictModel
 
 if TYPE_CHECKING:
@@ -65,10 +64,6 @@ class KilnModule(Protocol):
 
     def artifacts(self, config: KilnConfig, root: Path) -> Sequence[Artifact]:
         """Render every artifact this module owns for *config* at *root*, writing nothing."""
-        ...
-
-    def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:
-        """Check what this module owns in the repo at *root*."""
         ...
 
 

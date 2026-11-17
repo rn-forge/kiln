@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 from rn_forge.kiln.modules.base import Option
 
 if TYPE_CHECKING:
-    from rn_forge.commons.findings import Finding
     from rn_forge.commons.generation import Artifact
     from rn_forge.commons.lang.models import StrictModel
 
@@ -63,11 +62,6 @@ class NodeModule:
         from rn_forge.kiln.modules.node import starter
 
         return [a.path for a in starter.render(config, root)]
-
-    def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:
-        """Nothing yet: this module has no render-free checks."""
-        del config, root
-        return ()
 
 
 NODE = NodeModule()

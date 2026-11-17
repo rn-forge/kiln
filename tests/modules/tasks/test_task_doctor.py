@@ -9,7 +9,7 @@ from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.tasks import TASKS
-from tests.conftest import requires
+from tests.conftest import module_findings, requires
 from tests.modules.tasks.support import (
     ALL_CELLS,
     _ci_tasks,
@@ -230,7 +230,7 @@ def test_s4_12_6_8_gate_shrunk_names_kiln_doctor(tmp_path: Path) -> None:
     text = taskfile.read_text(encoding="utf-8")
     assert line in text
     taskfile.write_text(text.replace(line, ""), encoding="utf-8")
-    findings = list(TASKS.checks(KilnConfig.load(root), root))
+    findings = list(module_findings("tasks", KilnConfig.load(root), root))
     assert any(f.code == "gate.shrunk" and "kiln:doctor" in str(f) for f in findings)
 
 

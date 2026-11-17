@@ -44,6 +44,7 @@ class Check:
     scope: Literal["ownership", "quality"] = "ownership"
 
 
+# kiln-pin (modules/core/checks/pin.py) is not registered yet; S18.10.1 adds it.
 CHECKS: tuple[Check, ...] = (
     Check(generated.NAME, "core", generated.check),
     Check(rn_forge_deps.NAME, "python", rn_forge_deps.check, "quality"),

@@ -10,7 +10,6 @@ from rn_forge.kiln.modules.base import Option
 from rn_forge.kiln.modules.docs.config import DocsConfig
 
 if TYPE_CHECKING:
-    from rn_forge.commons.findings import Finding
     from rn_forge.commons.generation import Artifact
 
     from rn_forge.kiln.config import KilnConfig
@@ -39,16 +38,6 @@ class DocsModule:
         from rn_forge.kiln.modules.docs import artifacts
 
         return artifacts.render(config, root)
-
-    def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:
-        """This module's render-free checks."""
-        from rn_forge.kiln.modules.docs.checks import derived, site, structure
-
-        return [
-            *structure.check(config, root),
-            *derived.check(config, root),
-            *site.check(config, root),
-        ]
 
 
 DOCS = DocsModule()

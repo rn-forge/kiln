@@ -10,7 +10,6 @@ from rn_forge.kiln.modules.base import Option
 from rn_forge.kiln.modules.tasks.config import TasksConfig
 
 if TYPE_CHECKING:
-    from rn_forge.commons.findings import Finding
     from rn_forge.commons.generation import Artifact
 
     from rn_forge.kiln.config import KilnConfig
@@ -36,12 +35,6 @@ class TasksModule:
         from rn_forge.kiln.modules.tasks import artifacts
 
         return artifacts.render(config)
-
-    def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:
-        """This module's render-free checks."""
-        from rn_forge.kiln.modules.tasks.checks import layout
-
-        return layout.check(config, root)
 
 
 TASKS = TasksModule()

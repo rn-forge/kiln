@@ -15,6 +15,7 @@ import pytest
 from tests.conftest import LIB_PACKAGES, actions as _actions, write_config
 from rn_forge.commons.generation import Action, ArtifactKind
 
+from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.docs import DOCS, generate
@@ -109,8 +110,8 @@ def _normalized(text: str) -> str:
 def test_s4_3_5_property5_the_module_has_no_render_free_checks(
     tmp_path: Path, archetype: str
 ) -> None:
-    root = _new(tmp_path, archetype)
-    assert INSTRUCTIONS.checks(KilnConfig.load(root), root) == []
+    del tmp_path, archetype
+    assert [c.name for c in checks.CHECKS if c.module == "instructions"] == []
 
 
 def test_s4_3_5_1_edits_to_each_body_survive_and_the_block_is_unchanged(
@@ -239,7 +240,13 @@ def test_s4_3_5_5_docs_structure_passes_with_no_hand_written_claude_md(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _new(tmp_path, archetype)
-    codes = [f.code for f in DOCS.checks(KilnConfig.load(root), root)]
+    config = KilnConfig.load(root)
+    codes = [
+        f.code
+        for check in checks.CHECKS
+        if check.module == "docs"
+        for f in check.run(config, root)
+    ]
     # The fixture lists packages it never seeds a site for (S11.2.3's checks).
     assert [c for c in codes if not c.startswith("docs.package-")] == []
 

@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING
 from rn_forge.kiln.modules.base import Option
 
 if TYPE_CHECKING:
-    from rn_forge.commons.findings import Finding
     from rn_forge.commons.generation import Artifact
 
     from rn_forge.kiln.config import KilnConfig
@@ -39,12 +38,6 @@ class CoreModule:
         from rn_forge.kiln.modules.core import artifacts
 
         return artifacts.render(config)
-
-    def checks(self, config: KilnConfig, root: Path) -> Sequence[Finding]:
-        """The committed-state baseline check."""
-        from rn_forge.kiln.modules.core.checks import generated, pin
-
-        return [*generated.check(config, root), *pin.check(config, root)]
 
 
 CORE = CoreModule()

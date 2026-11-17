@@ -12,7 +12,12 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from tests.conftest import LIB_PACKAGES, actions as _actions, write_config
+from tests.conftest import (
+    module_findings,
+    LIB_PACKAGES,
+    actions as _actions,
+    write_config,
+)
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.commons.fs.hashing import ContentHash
@@ -88,7 +93,7 @@ def _new(tmp_path: Path, archetype: str = "python-tool", origin: str = "") -> Pa
 
 
 def _codes(root: Path) -> list[str]:
-    return sorted(f.code for f in DOCS.checks(KilnConfig.load(root), root))
+    return sorted(f.code for f in module_findings("docs", KilnConfig.load(root), root))
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
@@ -240,7 +245,7 @@ def test_s4_3_2_2_an_edited_areas_yml_survives_and_is_what_the_check_reads(
     assert _actions(root, tmp_path)["docs/_areas.yml"] is Action.SKIP
     cycle.apply(root, home=tmp_path / "home")
     assert areas.read_text(encoding="utf-8") == edited
-    findings = DOCS.checks(KilnConfig.load(root), root)
+    findings = module_findings("docs", KilnConfig.load(root), root)
     assert any(
         f.code == "docs.missing-area" and Path(f.path or "").name == "notes"
         for f in findings

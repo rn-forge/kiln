@@ -1,6 +1,8 @@
 """The `ci:` tasks: where they live and the grammar they follow."""
 
 from __future__ import annotations
+
+from tests.conftest import module_findings
 import pytest
 import re
 from pathlib import Path
@@ -174,7 +176,7 @@ def test_s4_12_2_7_gate_shrunk_fires(tmp_path: Path, name: str) -> None:
     text = taskfile.read_text(encoding="utf-8")
     assert line in text
     taskfile.write_text(text.replace(line, ""), encoding="utf-8")
-    findings = list(TASKS.checks(KilnConfig.load(root), root))
+    findings = list(module_findings("tasks", KilnConfig.load(root), root))
     assert any(
         f.code == "gate.shrunk" and f"ci:lint:{name}" in str(f) for f in findings
     )
