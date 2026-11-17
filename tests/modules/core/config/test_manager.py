@@ -1,4 +1,4 @@
-"""S4.2.2 — the config manager."""
+"""The config manager."""
 
 from __future__ import annotations
 
@@ -55,7 +55,7 @@ def commit(root: Path, resolution, source: str | None = None) -> None:
     )
 
 
-def test_s4_2_2_an_invalid_config_names_every_failing_key_by_dotted_path(
+def test_an_invalid_config_names_every_failing_key_by_dotted_path(
     tmp_path: Path,
 ) -> None:
     root = write_config(
@@ -80,7 +80,7 @@ profile = 3
     assert "docs.profile" in caught.value.message
 
 
-def test_s4_2_2_a_layer_that_sets_a_list_replaces_it_while_tables_and_scalars_merge(
+def test_a_layer_that_sets_a_list_replaces_it_while_tables_and_scalars_merge(
     tmp_path: Path,
 ) -> None:
     layer = write_layer(
@@ -120,7 +120,7 @@ def test_s4_2_2_a_layer_that_sets_a_list_replaces_it_while_tables_and_scalars_me
     assert layers["ci.sonar"] == "defaults"
 
 
-def test_s4_2_2_a_config_from_a_newer_schema_is_refused_naming_the_version_it_needs(
+def test_a_config_from_a_newer_schema_is_refused_naming_the_version_it_needs(
     tmp_path: Path,
 ) -> None:
     root = write_config(
@@ -132,7 +132,7 @@ def test_s4_2_2_a_config_from_a_newer_schema_is_refused_naming_the_version_it_ne
     assert "schema_version 2 needs a newer kiln" in caught.value.message
 
 
-def test_s4_2_2_a_section_for_a_module_the_archetype_does_not_enable_is_rejected(
+def test_a_section_for_a_module_the_archetype_does_not_enable_is_rejected(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     without_docs = archetypes.load("python-app").model_copy(
@@ -148,7 +148,7 @@ def test_s4_2_2_a_section_for_a_module_the_archetype_does_not_enable_is_rejected
         )
 
 
-def test_s16_9_1_1_a_path_source_resolves_and_is_not_recorded(
+def test_a_path_source_resolves_and_is_not_recorded(
     tmp_path: Path,
 ) -> None:
     write_layer(tmp_path / "profile" / "config.toml", {"ci": {"sonar": False}})
@@ -160,7 +160,7 @@ def test_s16_9_1_1_a_path_source_resolves_and_is_not_recorded(
     assert "source" not in document
 
 
-def test_s4_2_2_a_git_source_records_location_ref_and_resolved_commit(
+def test_a_git_source_records_location_ref_and_resolved_commit(
     tmp_path: Path,
 ) -> None:
     work = tmp_path / "work"
@@ -199,9 +199,7 @@ def test_s4_2_2_a_git_source_records_location_ref_and_resolved_commit(
 @pytest.mark.parametrize(
     ("archetype", "lifecycle"), [("python-tool", True), ("python-app", False)]
 )
-def test_s4_4_6_2_new_python_tool_writes_lifecycle_true(
-    archetype: str, lifecycle: bool
-) -> None:
+def test_new_python_tool_writes_lifecycle_true(archetype: str, lifecycle: bool) -> None:
     resolution = ConfigManager().resolve(
         flags={
             "repository": {"name": "demo", "owner": "rn-forge", "archetype": archetype}
@@ -210,7 +208,7 @@ def test_s4_4_6_2_new_python_tool_writes_lifecycle_true(
     assert resolution.config.document.repository.lifecycle is lifecycle
 
 
-def test_s4_2_2_re_resolution_keeps_and_lists_a_repo_override(tmp_path: Path) -> None:
+def test_re_resolution_keeps_and_lists_a_repo_override(tmp_path: Path) -> None:
     layer = tmp_path / "profile" / "config.toml"
     write_layer(
         layer,
@@ -242,7 +240,7 @@ def test_s4_2_2_re_resolution_keeps_and_lists_a_repo_override(tmp_path: Path) ->
     assert resolution.provenance["ci.sonar"].layer == "repo"
 
 
-def test_s4_2_2_the_manager_merges_through_dictutils_merge_layers(
+def test_the_manager_merges_through_dictutils_merge_layers(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls: list[tuple[str, ...]] = []

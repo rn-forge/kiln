@@ -32,7 +32,7 @@ def _recording(name: str, seen: list[str], monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setattr(MarkdownUtils, name, staticmethod(wrapper))
 
 
-def test_s17_3_3_1_same_text_is_parsed_once(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_same_text_is_parsed_once(monkeypatch: pytest.MonkeyPatch) -> None:
     parsed.headings.cache_clear()
     parsed.links.cache_clear()
     seen: list[str] = []
@@ -48,7 +48,7 @@ def test_s17_3_3_1_same_text_is_parsed_once(monkeypatch: pytest.MonkeyPatch) -> 
     assert len(seen_links) == 1
 
 
-def test_s17_3_3_2_results_equal_the_library() -> None:
+def test_results_equal_the_library() -> None:
     parsed.headings.cache_clear()
     parsed.links.cache_clear()
     assert parsed.headings(_TEXT) == tuple(MarkdownUtils.headings(_TEXT))
@@ -56,7 +56,7 @@ def test_s17_3_3_2_results_equal_the_library() -> None:
     assert parsed.anchors(_TEXT) == MarkdownUtils.anchors(_TEXT)
 
 
-def test_s17_3_3_3_no_docs_module_calls_the_library_directly() -> None:
+def test_no_docs_module_calls_the_library_directly() -> None:
     docs = ROOT / "src" / "rn_forge" / "kiln" / "modules" / "docs"
     banned = (
         "MarkdownUtils.headings(",
@@ -72,7 +72,7 @@ def test_s17_3_3_3_no_docs_module_calls_the_library_directly() -> None:
     assert offenders == []
 
 
-def test_s17_3_3_4_the_docs_checks_parse_each_page_once(
+def test_the_docs_checks_parse_each_page_once(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     parsed.headings.cache_clear()

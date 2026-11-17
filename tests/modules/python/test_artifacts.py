@@ -1,7 +1,6 @@
-"""S4.3.1 — the `python` module's artifacts: `.importlinter`.
+"""The `python` module's artifacts: `.importlinter`.
 
-Also proves the five properties every F4.3 story owes its module
-(`docs/specs/epics/E4-generator/F4.3-concern-modules.md`).
+Also proves the five properties every concern module owes.
 """
 
 from __future__ import annotations
@@ -23,7 +22,7 @@ ARCHETYPES = ("python-app", "python-tool", "python-lib")
 
 
 def _importlinter(config: KilnConfig, root: Path) -> list[Artifact]:
-    """The module's `.importlinter` alone; the seeded starter files are S4.9.1's."""
+    """The module's `.importlinter` alone; the seeded starter files belong to the starter tests."""
     return [a for a in PYTHON.artifacts(config, root) if a.path == ".importlinter"]
 
 
@@ -37,7 +36,7 @@ def _root(tmp_path: Path, archetype: str) -> Path:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_1_property1_renders_exactly_the_module_s_template_inventory_row(
+def test_renders_exactly_the_module_s_template_inventory_row(
     tmp_path: Path, archetype: str
 ) -> None:
     """The template inventory lists only `.importlinter` for `python`."""
@@ -48,9 +47,7 @@ def test_s4_3_1_property1_renders_exactly_the_module_s_template_inventory_row(
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_1_property2_into_an_empty_directory_only_creates(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_into_an_empty_directory_only_creates(tmp_path: Path, archetype: str) -> None:
     root = _root(tmp_path, archetype)
     home = tmp_path / "home"
     actions = {
@@ -61,9 +58,7 @@ def test_s4_3_1_property2_into_an_empty_directory_only_creates(
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_1_property3_a_second_apply_is_unchanged(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_a_second_apply_is_unchanged(tmp_path: Path, archetype: str) -> None:
     root = _root(tmp_path, archetype)
     home = tmp_path / "home"
     cycle.apply(root, home=home)
@@ -74,7 +69,7 @@ def test_s4_3_1_property3_a_second_apply_is_unchanged(
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_1_3_lint_imports_passes_on_the_rendered_importlinter(
+def test_lint_imports_passes_on_the_rendered_importlinter(
     tmp_path: Path,
     archetype: str,
     monkeypatch: pytest.MonkeyPatch,
@@ -132,14 +127,14 @@ def _web_root(tmp_path: Path, archetype: str, backend: str, extra: str = "") -> 
     return tmp_path
 
 
-def test_s5_1_2_python_web_api_root_package_is_the_api_member(tmp_path: Path) -> None:
+def test_python_web_api_root_package_is_the_api_member(tmp_path: Path) -> None:
     root = _web_root(tmp_path, "python-web-api", "fastapi")
     config = KilnConfig.load(root)
     [artifact] = PYTHON.artifacts(config, root)
     assert "root_package = demo_api" in artifact.content
 
 
-def test_s5_1_2_python_web_api_fastapi_forbids_django_not_fastapi(
+def test_python_web_api_fastapi_forbids_django_not_fastapi(
     tmp_path: Path,
 ) -> None:
     root = _web_root(tmp_path, "python-web-api", "fastapi")
@@ -155,7 +150,7 @@ def test_s5_1_2_python_web_api_fastapi_forbids_django_not_fastapi(
     assert "click" in forbidden
 
 
-def test_s5_1_2_python_web_app_django_forbids_fastapi_not_django(
+def test_python_web_app_django_forbids_fastapi_not_django(
     tmp_path: Path,
 ) -> None:
     root = _web_root(tmp_path, "python-web-app", "django", extra='frontend = "angular"')
@@ -168,7 +163,7 @@ def test_s5_1_2_python_web_app_django_forbids_fastapi_not_django(
     assert "django" not in forbidden
 
 
-def test_s5_1_3_backend_flag_only_changes_the_importlinter_forbidden_list(
+def test_backend_flag_only_changes_the_importlinter_forbidden_list(
     tmp_path: Path,
 ) -> None:
     """`backend` never changes topology — only .importlinter's forbidden list."""
@@ -197,13 +192,13 @@ def _lib(
     return KilnConfig.load(tmp_path)
 
 
-def test_s6_1_3_1_module_defaults_from_the_path(tmp_path: Path) -> None:
+def test_module_defaults_from_the_path(tmp_path: Path) -> None:
     config = KilnConfig.load(_root(tmp_path, "python-lib"))
     assert config.module_for("packages/alpha") == "alpha"
     assert config.module_for("packages/rn-forge-cli") == "rn_forge_cli"
 
 
-def test_s6_1_3_1_module_is_read_from_config(tmp_path: Path) -> None:
+def test_lib_module_is_read_from_config(tmp_path: Path) -> None:
     config = _lib(
         tmp_path,
         'modules = { "packages/rn-forge-cli" = "rn_forge.cli" }\n',
@@ -213,19 +208,19 @@ def test_s6_1_3_1_module_is_read_from_config(tmp_path: Path) -> None:
     assert config.module_for("packages/beta") == "beta"
 
 
-def test_s6_1_3_1_a_modules_key_outside_packages_is_a_config_error(
+def test_a_modules_key_outside_packages_is_a_config_error(
     tmp_path: Path,
 ) -> None:
     with pytest.raises(AppException, match="packages/gamma"):
         _lib(tmp_path, 'modules = { "packages/gamma" = "gamma" }\n')
 
 
-def test_s6_1_3_1_an_invalid_module_value_is_a_config_error(tmp_path: Path) -> None:
+def test_an_invalid_module_value_is_a_config_error(tmp_path: Path) -> None:
     with pytest.raises(AppException):
         _lib(tmp_path, 'modules = { "packages/alpha" = "Rn-Forge" }\n')
 
 
-def test_s6_1_3_2_importlinter_names_the_declared_module(tmp_path: Path) -> None:
+def test_importlinter_names_each_declared_lib_module(tmp_path: Path) -> None:
     [artifact] = _importlinter(_lib(tmp_path, MODULE_TAIL), tmp_path)
     roots = [line.strip() for line in artifact.content.splitlines()]
     assert "rn_forge.alpha" in roots
@@ -243,7 +238,7 @@ def _load(tmp_path: Path, text: str) -> KilnConfig:
     return KilnConfig.load(tmp_path)
 
 
-def test_s6_1_4_1_default_keeps_kiln_contracts(tmp_path: Path) -> None:
+def test_default_keeps_kiln_contracts(tmp_path: Path) -> None:
     config = _lib(tmp_path)
     assert config.import_contracts == "kiln"
     [artifact] = _importlinter(config, tmp_path)
@@ -252,7 +247,7 @@ def test_s6_1_4_1_default_keeps_kiln_contracts(tmp_path: Path) -> None:
     assert "owns its import contracts" not in artifact.content
 
 
-def test_s6_1_4_2_own_renders_only_the_root(tmp_path: Path) -> None:
+def test_own_renders_only_the_root(tmp_path: Path) -> None:
     config = _lib(tmp_path, OWN_TAIL)
     assert config.import_contracts == "own"
     [artifact] = _importlinter(config, tmp_path)
@@ -272,7 +267,7 @@ def test_s6_1_4_2_own_renders_only_the_root(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("archetype", ["python-app", "python-tool"])
-def test_s6_1_4_3_own_is_python_lib_only(tmp_path: Path, archetype: str) -> None:
+def test_own_is_python_lib_only(tmp_path: Path, archetype: str) -> None:
     with pytest.raises(AppException):
         write_config(
             tmp_path,
@@ -283,7 +278,7 @@ def test_s6_1_4_3_own_is_python_lib_only(tmp_path: Path, archetype: str) -> None
         KilnConfig.load(tmp_path)
 
 
-def test_s6_1_4_4_an_unknown_value_is_refused(tmp_path: Path) -> None:
+def test_an_unknown_value_is_refused(tmp_path: Path) -> None:
     with pytest.raises(AppException):
         _lib(tmp_path, 'import_contracts = "none"\n')
 
@@ -302,12 +297,12 @@ archetype = "{archetype}"
     return _load(tmp_path, text)
 
 
-def test_s4_8_2_1_module_defaults_from_the_name(tmp_path: Path) -> None:
+def test_module_defaults_from_the_name(tmp_path: Path) -> None:
     assert _single(tmp_path, "python-tool").module == "demo_tool"
 
 
 @pytest.mark.parametrize("archetype", ["python-tool", "python-app"])
-def test_s4_8_2_1_module_is_read_from_config(tmp_path: Path, archetype: str) -> None:
+def test_single_module_is_read_from_config(tmp_path: Path, archetype: str) -> None:
     config = _single(
         tmp_path,
         archetype,
@@ -316,7 +311,7 @@ def test_s4_8_2_1_module_is_read_from_config(tmp_path: Path, archetype: str) -> 
     assert config.module == "rn_forge.demo"
 
 
-def test_s4_8_2_1_an_invalid_module_is_a_config_error(tmp_path: Path) -> None:
+def test_an_invalid_module_is_a_config_error(tmp_path: Path) -> None:
     with pytest.raises(AppException):
         _single(
             tmp_path,
@@ -328,7 +323,7 @@ def test_s4_8_2_1_an_invalid_module_is_a_config_error(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     "archetype", ["python-lib", "python-web-api", "python-web-app"]
 )
-def test_s4_8_2_1_module_is_single_package_only(tmp_path: Path, archetype: str) -> None:
+def test_module_is_single_package_only(tmp_path: Path, archetype: str) -> None:
     with pytest.raises(AppException):
         _single(
             tmp_path,
@@ -337,7 +332,7 @@ def test_s4_8_2_1_module_is_single_package_only(tmp_path: Path, archetype: str) 
         )
 
 
-def test_s4_8_2_2_importlinter_names_the_declared_module(tmp_path: Path) -> None:
+def test_importlinter_names_the_declared_tool_module(tmp_path: Path) -> None:
     config = _single(
         tmp_path,
         "python-tool",

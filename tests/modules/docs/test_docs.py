@@ -129,12 +129,12 @@ class TestAreas:
         with pytest.raises(AppException):
             load_areas(tmp_path)
 
-    def test_s11_1_1_1_an_include_area_loads(self, tmp_path):
+    def test_an_include_area_loads(self, tmp_path):
         write(tmp_path / "_areas.yml", "areas:\n  - key: packages\n    nav: include\n")
         (area,) = load_areas(tmp_path)
         assert (area.key, area.nav, area.title) == ("packages", "include", "Packages")
 
-    def test_s14_1_3_3_a_work_area_loads(self, tmp_path):
+    def test_a_work_area_loads(self, tmp_path):
         write(tmp_path / "_areas.yml", "areas:\n  - key: specs\n    nav: work\n")
         (area,) = load_areas(tmp_path)
         assert (area.key, area.nav, area.title) == ("specs", "work", "Specs")
@@ -246,12 +246,12 @@ class TestCheckStructure:
             check_structure(repo, repo / "docs", POLICY)
         )
 
-    def test_s16_10_4_1_an_import_line_counts_as_a_pointer(self, repo):
+    def test_an_import_line_counts_as_a_pointer(self, repo):
         assert "docs.missing-docs-pointer" not in codes(
             check_structure(repo, repo / "docs", POLICY)
         )
 
-    def test_s16_10_4_2_a_claude_md_with_neither_import_nor_link_is_flagged(self, repo):
+    def test_a_claude_md_with_neither_import_nor_link_is_flagged(self, repo):
         write(repo / "CLAUDE.md", "# Repo\n\nRead README.md.\n")
         found = [
             f
@@ -262,7 +262,7 @@ class TestCheckStructure:
         assert found[0].path.endswith("CLAUDE.md")
         assert "AGENTS.md" in found[0].message
 
-    def test_s16_10_4_3_an_import_in_a_code_span_is_not_a_pointer(self, repo):
+    def test_an_import_in_a_code_span_is_not_a_pointer(self, repo):
         write(repo / "CLAUDE.md", "`@AGENTS.md`\n")
         found = [
             f
@@ -271,7 +271,7 @@ class TestCheckStructure:
         ]
         assert [f.path.endswith("CLAUDE.md") for f in found] == [True]
 
-    def test_s16_10_4_4_a_relative_import_resolves(self, repo):
+    def test_a_relative_import_resolves(self, repo):
         write(repo / "CLAUDE.md", "@./AGENTS.md\n")
         assert "docs.missing-docs-pointer" not in codes(
             check_structure(repo, repo / "docs", POLICY)
@@ -284,7 +284,7 @@ class TestCheckStructure:
             "docs.missing-instruction-file"
         ]
 
-    def test_s13_4_1_2_an_ideas_md_is_reported(self, repo):
+    def test_an_ideas_md_is_reported(self, repo):
         write(repo / "docs/specs/ideas.md", "# Ideas\n")
         found = [
             f
@@ -295,7 +295,7 @@ class TestCheckStructure:
         assert (found[0].path or "").endswith("specs/ideas.md")
         assert found[0].message == "move it to specs/ideas/index.md"
 
-    def test_s13_4_1_3_an_unlisted_idea_page_is_reported(self, repo):
+    def test_an_unlisted_idea_page_is_reported(self, repo):
         write(repo / "docs/specs/ideas/index.md", "# Ideas\n\n- [A](alpha.md)\n")
         write(repo / "docs/specs/ideas/alpha.md", "# Alpha\n")
         write(repo / "docs/specs/ideas/beta.md", "# Beta\n")
@@ -308,7 +308,7 @@ class TestCheckStructure:
         assert (found[0].path or "").endswith("ideas/beta.md")
         assert found[0].message == "is not linked from specs/ideas/index.md"
 
-    def test_s13_4_1_3_listed_idea_pages_pass(self, repo):
+    def test_listed_idea_pages_pass(self, repo):
         write(
             repo / "docs/specs/ideas/index.md",
             "# Ideas\n\n- [A](alpha.md)\n- [B](beta.md)\n",
@@ -320,12 +320,12 @@ class TestCheckStructure:
             got
         )
 
-    def test_s13_4_1_3_an_ideas_folder_without_an_index_reports_every_page(self, repo):
+    def test_an_ideas_folder_without_an_index_reports_every_page(self, repo):
         write(repo / "docs/specs/ideas/alpha.md", "# Alpha\n")
         got = codes(check_structure(repo, repo / "docs", POLICY))
         assert got.count("docs.idea-unlisted") == 1
 
-    def test_s13_4_1_4_an_idea_page_is_kebab_case(self, repo):
+    def test_an_idea_page_is_kebab_case(self, repo):
         write(repo / "docs/specs/ideas/index.md", "# Ideas\n\n- [B](Big_Idea.md)\n")
         write(repo / "docs/specs/ideas/Big_Idea.md", "# Big\n")
         found = [
@@ -336,7 +336,7 @@ class TestCheckStructure:
         assert len(found) == 1
         assert (found[0].path or "").endswith("ideas/Big_Idea.md")
 
-    def test_s13_4_1_4_a_policy_without_ideas_checks_nothing(self, repo):
+    def test_a_policy_without_ideas_checks_nothing(self, repo):
         write(repo / "docs/specs/ideas.md", "# Ideas\n")
         write(repo / "docs/specs/ideas/alpha.md", "# Alpha\n")
         policy = dataclasses.replace(POLICY, ideas=None)
@@ -354,7 +354,7 @@ class TestNav:
         body = build_nav(repo / "docs")
         assert body.index("guides/setup.md") < body.index("guides/alpha.md")
 
-    def test_s11_1_1_2_include_area_renders_one_include_per_package(self, repo):
+    def test_include_area_renders_one_include_per_package(self, repo):
         write(
             repo / "docs/_areas.yml",
             AREAS + "  - key: packages\n    title: Packages\n    nav: include\n",
@@ -365,7 +365,7 @@ class TestNav:
         )
         assert "  - Packages:\n" in body
 
-    def test_s11_1_1_3_include_area_without_packages_renders_nothing(self, repo):
+    def test_include_area_without_packages_renders_nothing(self, repo):
         write(
             repo / "docs/_areas.yml",
             AREAS + "  - key: packages\n    title: Packages\n    nav: include\n",
@@ -373,7 +373,7 @@ class TestNav:
         assert "Packages" not in build_nav(repo / "docs")
         assert "Packages" not in build_nav(repo / "docs", ())
 
-    def test_s16_6_3_1_nav_skips_a_link_outside_docs(self, repo):
+    def test_nav_skips_a_link_outside_docs(self, repo):
         write(repo / "docs/_areas.yml", AREAS + "  - key: reference\n    title: Ref\n")
         write(repo / "libs/ng/README.md", "# ng\n")
         write(
@@ -384,7 +384,7 @@ class TestNav:
         assert "reference/index.md" in body
         assert ".." not in body
 
-    def test_s16_6_3_2_nav_keeps_a_link_inside_docs(self, repo):
+    def test_nav_keeps_a_link_inside_docs(self, repo):
         write(repo / "docs/_areas.yml", AREAS + "  - key: reference\n    title: Ref\n")
         write(repo / "docs/reference/a.md", "# A\n")
         write(repo / "docs/guides/b.md", "# B\n")
@@ -411,19 +411,19 @@ class TestNav:
         write(repo / "docs/guides/cli-api.md", "no heading here\n")
         assert "CLI API: guides/cli-api.md" in build_nav(repo / "docs")
 
-    def test_s13_1_1_3_page_title_is_the_h1_or_the_filename_title(self, repo):
+    def test_page_title_is_the_h1_or_the_filename_title(self, repo):
         write(repo / "docs/guides/with-h1.md", "intro\n#  Choosing packages  \n")
         write(repo / "docs/guides/no-h1.md", "## Only a subheading\n")
         assert page_title(repo / "docs/guides/with-h1.md") == "Choosing packages"
         assert page_title(repo / "docs/guides/no-h1.md") == "No H1"
 
-    def test_s13_1_1_3_nav_titles_come_from_h1s(self, repo):
+    def test_nav_titles_come_from_h1s(self, repo):
         write(repo / "docs/guides/choosing-packages.md", "# Choosing packages\n")
         body = build_nav(repo / "docs")
         assert "Choosing packages: guides/choosing-packages.md" in body
         assert "  - adr/index.md\n" in body
 
-    def test_s14_1_1_1_an_area_index_is_the_first_untitled_item(self, repo):
+    def test_an_area_index_is_the_first_untitled_item(self, repo):
         write(repo / "docs/guides/a.md", "# A\n")
         body = build_nav(repo / "docs")
         assert "Overview:" not in body
@@ -449,7 +449,7 @@ class TestNav:
                 repo / "docs/specs/epics/E12-twelve/index.md", "# E12 \u2014 Twelve\n"
             )
 
-    def test_s14_1_3_1_work_area_lists_epics_in_ranges(self, repo):
+    def test_work_area_lists_epics_in_ranges(self, repo):
         self._specs(repo)
         body = build_nav(repo / "docs")
         e = "specs/epics"
@@ -471,14 +471,14 @@ class TestNav:
             "      - Ideas:\n          - specs/ideas/index.md\n"
         )
 
-    def test_s14_1_3_2_a_work_area_without_epics_lists_index_and_root_pages(self, repo):
+    def test_a_work_area_without_epics_lists_index_and_root_pages(self, repo):
         self._specs(repo, epics=False)
         body = build_nav(repo / "docs")
         assert body.split("  - Specs:\n", 1)[1] == (
             "      - specs/index.md\n      - Ideas:\n          - specs/ideas/index.md\n"
         )
 
-    def test_s13_4_1_1_ideas_folder_is_a_nav_section(self, repo):
+    def test_ideas_folder_is_a_nav_section(self, repo):
         self._specs(repo)
         write(repo / "docs/specs/ideas/beta.md", "# Beta\n")
         write(repo / "docs/specs/ideas/alpha.md", "# Alpha\n")
@@ -492,7 +492,7 @@ class TestNav:
         )
         assert "_draft.md" not in body
 
-    def test_s13_4_1_1_a_root_ideas_md_is_still_listed(self, repo):
+    def test_a_root_ideas_md_is_still_listed(self, repo):
         self._specs(repo, epics=False)
         (repo / "docs/specs/ideas/index.md").unlink()
         (repo / "docs/specs/ideas").rmdir()
@@ -541,18 +541,18 @@ class TestCheckSite:
         (navved / "docs/guides/setup.md").unlink()
         assert "docs.nav-missing-page" in codes(check_site(navved))
 
-    def test_broken_link_is_reported(self, navved):
+    def test_broken_link_in_the_site_is_reported(self, navved):
         write(navved / "docs/guides/setup.md", "# Setup\n\n[gone](missing.md)\n")
         assert "docs.broken-link" in codes(check_site(navved))
 
-    def test_s7_3_5_1_link_in_inline_code_is_not_checked(self, navved):
+    def test_link_in_inline_code_is_not_checked(self, navved):
         write(
             navved / "docs/guides/setup.md",
             "# Setup\n\nWrite `[gone](missing.md)` to link.\n",
         )
         assert "docs.broken-link" not in codes(check_site(navved))
 
-    def test_s7_3_5_2_link_text_with_brackets_is_checked(self, navved):
+    def test_link_text_with_brackets_is_checked(self, navved):
         write(
             navved / "docs/guides/setup.md",
             "# Setup\n\n[No deleted `[cli]` keys](missing.md)\n",
@@ -572,7 +572,7 @@ class TestCheckSite:
             "../../libs/ng/project.json",
         ],
     )
-    def test_s16_6_3_3_doctor_reports_a_link_outside_docs(self, navved, link):
+    def test_doctor_reports_a_link_outside_docs(self, navved, link):
         write(navved / link.removeprefix("../../"), "x\n")
         page = navved / "docs/guides/setup.md"
         write(page, f"# Setup\n\n[x]({link})\n")
@@ -584,7 +584,7 @@ class TestCheckSite:
             findings[0].message == f"links outside docs/: {link}; use an absolute URL"
         )
 
-    def test_s16_6_3_4_covers_markdown_and_other_files(self, navved):
+    def test_covers_markdown_and_other_files(self, navved):
         write(navved / "libs/ng/README.md", "# ng\n")
         write(navved / "libs/ng/project.json", "{}\n")
         write(
@@ -633,21 +633,21 @@ class TestMarkdownAgreesWithTheRenderer:
 
 
 class TestGenerate:
-    def test_s13_1_1_5_generate_writes_a_stale_nav_once(self, repo):
+    def test_generate_writes_a_stale_nav_once(self, repo):
         from rn_forge.kiln.modules.docs import generate
 
         assert generate.generate(repo) == ([repo / "mkdocs.yml"], [])
         assert generate.generate(repo) == ([], [])
         assert generate.stale(repo) == []
 
-    def test_s13_1_1_5_stale_reports_the_finding_without_writing(self, repo):
+    def test_stale_reports_the_finding_without_writing(self, repo):
         from rn_forge.kiln.modules.docs import generate
 
         before = (repo / "mkdocs.yml").read_text()
         assert codes(generate.stale(repo)) == ["docs.nav-stale"]
         assert (repo / "mkdocs.yml").read_text() == before
 
-    def test_s13_1_1_5_nothing_happens_without_mkdocs_yml(self, tmp_path):
+    def test_nothing_happens_without_mkdocs_yml(self, tmp_path):
         from rn_forge.kiln.modules.docs import generate
 
         assert generate.generate(tmp_path) == ([], [])
@@ -678,7 +678,7 @@ def _packages_repo(repo):
     return repo
 
 
-def test_s16_2_3_1_packages_without_an_area(repo):
+def test_packages_without_an_area(repo):
     _packages_repo(repo)
     body = build_nav(repo / "docs", ("packages/b", "packages/a"))
     assert _top_titles(body) == [
@@ -693,7 +693,7 @@ def test_s16_2_3_1_packages_without_an_area(repo):
     )
 
 
-def test_s16_2_3_2_area_overrides_title_and_position(repo):
+def test_area_overrides_title_and_position(repo):
     _packages_repo(repo)
     write(
         repo / "docs/_areas.yml",
@@ -704,13 +704,13 @@ def test_s16_2_3_2_area_overrides_title_and_position(repo):
     assert "Packages" not in titles
 
 
-def test_s16_2_3_3_no_packages_no_section(repo):
+def test_no_packages_no_section(repo):
     _packages_repo(repo)
     assert "Packages" not in _top_titles(build_nav(repo / "docs"))
     assert "Packages" not in _top_titles(build_nav(repo / "docs", ()))
 
 
-def test_s16_2_3_5_seed_header(tmp_path):
+def test_areas_seed_header_says_kiln_derives_the_nav(tmp_path):
     root = tmp_path
     config = root / ".rn-forge" / "kiln" / "config.toml"
     config.parent.mkdir(parents=True)

@@ -52,7 +52,7 @@ def _codes(root: Path) -> list[str]:
     return [f.code for f in check_packages(root, KilnConfig.load(root))]
 
 
-def test_s11_2_3_0_a_well_formed_package_reports_nothing(repo) -> None:
+def test_a_well_formed_package_reports_nothing(repo) -> None:
     assert _codes(_lib(repo)) == []
 
 
@@ -81,44 +81,44 @@ CASES = {
 
 
 @pytest.mark.parametrize("code", CASES)
-def test_s11_2_3_1_each_code_has_a_fixture_reporting_only_it(repo, code: str) -> None:
+def test_each_code_has_a_fixture_reporting_only_it(repo, code: str) -> None:
     root = _lib(repo, **CASES[code])
     assert _codes(root) == [code]
 
 
-def test_s11_2_3_1_docs_structure_runs_the_package_checks(repo) -> None:
+def test_docs_structure_runs_the_package_checks(repo) -> None:
     root = _lib(repo, **CASES["docs.package-missing-index"])
     found = [f.code for f in run_check(structure.NAME, root)]
     assert "docs.package-missing-index" in found
 
 
-def test_s11_2_3_1_changelog_nav_must_name_the_page(repo) -> None:
+def test_changelog_nav_must_name_the_page(repo) -> None:
     root = _lib(
         repo, **{f"{PKG}/mkdocs.yml": "site_name: alpha\nnav:\n  - Home: index.md\n"}
     )
     assert _codes(root) == ["docs.package-changelog-page"]
 
 
-def test_s11_2_3_1_a_changelog_needs_an_unreleased_heading(repo) -> None:
+def test_a_changelog_needs_an_unreleased_heading(repo) -> None:
     root = _lib(
         repo, **{f"{PKG}/CHANGELOG.md": "# Changelog\n\n## [0.1.0] - 2026-09-26\n"}
     )
     assert _codes(root) == ["docs.package-changelog"]
 
 
-def test_s11_2_3_1_a_generated_reference_is_not_naming_checked(repo) -> None:
+def test_a_generated_reference_is_not_naming_checked(repo) -> None:
     root = _lib(repo, **{f"{PKG}/docs/reference/Odd_Name.md": "# Odd\n"})
     assert _codes(root) == []
 
 
-def test_s11_2_3_2_the_rendered_python_lib_reports_none(
+def test_the_rendered_python_lib_reports_none(
     rendered: Callable[[str], Path],
 ) -> None:
     root = rendered("python-lib")
     assert check_packages(root, KilnConfig.load(root)) == []
 
 
-def test_s11_2_3_3_an_app_package_with_docs_is_not_allowed(repo) -> None:
+def test_an_app_package_with_docs_is_not_allowed(repo) -> None:
     root = repo(
         archetype="python-app",
         docs="mkdocs",
@@ -135,7 +135,7 @@ def test_s11_2_3_3_an_app_package_with_docs_is_not_allowed(repo) -> None:
     )
 
 
-def test_s11_2_3_3_an_app_package_without_docs_is_fine(repo) -> None:
+def test_an_app_package_without_docs_is_fine(repo) -> None:
     root = repo(
         archetype="python-app",
         docs="mkdocs",
@@ -147,7 +147,7 @@ def test_s11_2_3_3_an_app_package_without_docs_is_fine(repo) -> None:
     assert check_packages(root, KilnConfig.load(root)) == []
 
 
-def test_s6_1_10_1_mkdocs_tags_do_not_stop_the_read(tmp_path: Path) -> None:
+def test_mkdocs_tags_do_not_stop_the_read(tmp_path: Path) -> None:
     path = tmp_path / "mkdocs.yml"
     path.write_text(
         "site_name: x\n"
@@ -163,7 +163,7 @@ def test_s6_1_10_1_mkdocs_tags_do_not_stop_the_read(tmp_path: Path) -> None:
     assert config["nav"] == [{"Home": "index.md"}]
 
 
-def test_s6_1_10_2_docs_site_runs_on_a_tagged_mkdocs(repo) -> None:
+def test_docs_site_runs_on_a_tagged_mkdocs(repo) -> None:
     root = _lib(
         repo,
         **{
@@ -177,7 +177,7 @@ def test_s6_1_10_2_docs_site_runs_on_a_tagged_mkdocs(repo) -> None:
     run_check(site.NAME, root)
 
 
-def test_s6_1_10_3_a_tagged_scalar_in_the_nav_is_not_a_page(tmp_path: Path) -> None:
+def test_a_tagged_scalar_in_the_nav_is_not_a_page(tmp_path: Path) -> None:
     path = tmp_path / "mkdocs.yml"
     path.write_text(
         "nav:\n  - Home: index.md\n  - Tagged: !ENV PAGE\n"
@@ -191,7 +191,7 @@ def test_s6_1_10_3_a_tagged_scalar_in_the_nav_is_not_a_page(tmp_path: Path) -> N
     assert "index.md" in nav_pages(nav)
 
 
-def test_s16_2_3_4_checker_agrees(repo) -> None:
+def test_checker_agrees(repo) -> None:
     root = _lib(
         repo,
         **{

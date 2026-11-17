@@ -1,4 +1,4 @@
-"""S4.2.3 — `core` artifacts and the cycle adapter."""
+"""`core` artifacts and the cycle adapter."""
 
 from __future__ import annotations
 
@@ -60,7 +60,7 @@ def snapshot(root: Path) -> dict[str, bytes]:
     }
 
 
-def test_s4_2_3_applying_core_into_an_empty_directory_only_creates_and_inserts(
+def test_applying_core_into_an_empty_directory_only_creates_and_inserts(
     root: Path, home: Path
 ) -> None:
     assert actions(root, home) == {
@@ -118,7 +118,7 @@ def test_s4_2_3_applying_core_into_an_empty_directory_only_creates_and_inserts(
     )
 
 
-def test_s5_3_1_mdformat_config_is_seeded_once(tmp_path: Path, home: Path) -> None:
+def test_mdformat_config_is_seeded_once(tmp_path: Path, home: Path) -> None:
     root = tmp_path / "absent"
     config = root / ".rn-forge" / "kiln" / "config.toml"
     config.parent.mkdir(parents=True)
@@ -139,7 +139,7 @@ def test_s5_3_1_mdformat_config_is_seeded_once(tmp_path: Path, home: Path) -> No
     assert existing_file.read_text(encoding="utf-8") == expected
 
 
-def test_s4_10_1_1_taplo_config_is_seeded_once(tmp_path: Path, home: Path) -> None:
+def test_taplo_config_is_seeded_once(tmp_path: Path, home: Path) -> None:
     root = tmp_path / "absent"
     config = root / ".rn-forge" / "kiln" / "config.toml"
     config.parent.mkdir(parents=True)
@@ -160,7 +160,7 @@ def test_s4_10_1_1_taplo_config_is_seeded_once(tmp_path: Path, home: Path) -> No
     assert existing_file.read_text(encoding="utf-8") == expected
 
 
-def test_s4_10_1_6_seeded_toml_is_taplo_clean(root: Path, home: Path) -> None:
+def test_seeded_toml_is_taplo_clean(root: Path, home: Path) -> None:
     cycle.apply(root, home=home)
     for relative in (".mdformat.toml", ".taplo.toml"):
         result = subprocess.run(
@@ -173,7 +173,7 @@ def test_s4_10_1_6_seeded_toml_is_taplo_clean(root: Path, home: Path) -> None:
         assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_s19_1_3_7_the_yaml_config_is_seeded_once(tmp_path: Path, home: Path) -> None:
+def test_the_yaml_config_is_seeded_once(tmp_path: Path, home: Path) -> None:
     root = tmp_path / "absent"
     config = root / ".rn-forge" / "kiln" / "config.toml"
     config.parent.mkdir(parents=True)
@@ -194,9 +194,7 @@ def test_s19_1_3_7_the_yaml_config_is_seeded_once(tmp_path: Path, home: Path) ->
     assert existing_file.read_text(encoding="utf-8") == expected
 
 
-def test_s19_1_3_8_the_seeded_config_is_a_clean_yaml_file(
-    root: Path, home: Path
-) -> None:
+def test_the_seeded_config_is_a_clean_yaml_file(root: Path, home: Path) -> None:
     cycle.apply(root, home=home)
     result = subprocess.run(
         [str(Path(sys.executable).parent / "yamlfmt"), "-lint", ".yamlfmt.yaml"],
@@ -208,7 +206,7 @@ def test_s19_1_3_8_the_seeded_config_is_a_clean_yaml_file(
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_s5_3_6_5_workspace_file_is_one_relative_folder(
+def test_workspace_file_is_one_relative_folder(
     root: Path, home: Path, tmp_path: Path
 ) -> None:
     cycle.apply(root, home=home)
@@ -224,7 +222,7 @@ def test_s5_3_6_5_workspace_file_is_one_relative_folder(
     assert (workspace.parent / folder["path"]).resolve() == moved.resolve()
 
 
-def test_s5_3_6_5_apply_preserves_user_edits_to_the_workspace_file(
+def test_apply_preserves_user_edits_to_the_workspace_file(
     root: Path, home: Path
 ) -> None:
     cycle.apply(root, home=home)
@@ -236,14 +234,14 @@ def test_s5_3_6_5_apply_preserves_user_edits_to_the_workspace_file(
     assert workspace.read_text(encoding="utf-8") == edited
 
 
-def test_s4_2_3_a_freshly_applied_repo_passes_the_generated_check(
+def test_a_freshly_applied_repo_passes_the_generated_check(
     root: Path, home: Path
 ) -> None:
     cycle.apply(root, home=home)
     assert generated.check(KilnConfig.load(root), root) == []
 
 
-def test_s4_2_3_a_second_apply_is_unchanged_and_leaves_state_byte_identical(
+def test_a_second_apply_is_unchanged_and_leaves_state_byte_identical(
     root: Path, home: Path
 ) -> None:
     cycle.apply(root, home=home)
@@ -254,9 +252,7 @@ def test_s4_2_3_a_second_apply_is_unchanged_and_leaves_state_byte_identical(
     assert (root / STATE).read_bytes() == before
 
 
-def test_s16_9_4_1_config_hash_ignores_comments_and_layout(
-    root: Path, home: Path
-) -> None:
+def test_config_hash_ignores_comments_and_layout(root: Path, home: Path) -> None:
     cycle.apply(root, home=home)
     before = (root / STATE).read_bytes()
 
@@ -272,7 +268,7 @@ def test_s16_9_4_1_config_hash_ignores_comments_and_layout(
     assert (root / STATE).read_bytes() == before
 
 
-def test_s16_9_4_2_config_hash_follows_a_value(root: Path, home: Path) -> None:
+def test_config_hash_follows_a_value(root: Path, home: Path) -> None:
     cycle.apply(root, home=home)
     first = json.loads((root / STATE).read_text(encoding="utf-8"))["metadata"]
 
@@ -286,7 +282,7 @@ def test_s16_9_4_2_config_hash_follows_a_value(root: Path, home: Path) -> None:
     assert first["config_hash"] != second["config_hash"]
 
 
-def test_s4_2_3_a_hand_edited_artifact_is_drift_and_nothing_is_written(
+def test_a_hand_edited_artifact_is_drift_and_nothing_is_written(
     root: Path, home: Path
 ) -> None:
     cycle.apply(root, home=home)
@@ -300,7 +296,7 @@ def test_s4_2_3_a_hand_edited_artifact_is_drift_and_nothing_is_written(
     assert snapshot(root) == before
 
 
-def test_s4_2_3_forcing_a_drifted_path_rewrites_only_it(root: Path, home: Path) -> None:
+def test_forcing_a_drifted_path_rewrites_only_it(root: Path, home: Path) -> None:
     cycle.apply(root, home=home)
     rendered = (root / ".editorconfig").read_bytes()
     (root / ".editorconfig").write_text("root = false\n", encoding="utf-8")
@@ -316,7 +312,7 @@ def test_s4_2_3_forcing_a_drifted_path_rewrites_only_it(root: Path, home: Path) 
     assert after == before
 
 
-def test_s4_2_3_a_legacy_kiln_tree_is_refused_and_nothing_is_written(
+def test_a_legacy_kiln_tree_is_refused_and_nothing_is_written(
     tmp_path: Path, home: Path
 ) -> None:
     repo = tmp_path / "legacy"
@@ -331,7 +327,7 @@ def test_s4_2_3_a_legacy_kiln_tree_is_refused_and_nothing_is_written(
     assert snapshot(repo) == before
 
 
-def test_s4_2_3_a_legacy_tree_under_rnf_home_is_refused(root: Path, home: Path) -> None:
+def test_a_legacy_tree_under_rnf_home_is_refused(root: Path, home: Path) -> None:
     (home / "kiln").mkdir(parents=True)
     (home / "kiln" / "config.toml").write_text("[kiln]\n", encoding="utf-8")
     with pytest.raises(CycleRefused, match="legacy.kiln-state"):
@@ -339,7 +335,7 @@ def test_s4_2_3_a_legacy_tree_under_rnf_home_is_refused(root: Path, home: Path) 
     assert not (root / ".editorconfig").exists()
 
 
-def test_s4_2_3_find_root_from_a_nested_directory_returns_the_repo_root(
+def test_find_root_from_a_nested_directory_returns_the_repo_root(
     root: Path,
 ) -> None:
     nested = root / "src" / "demo" / "deep"
@@ -347,7 +343,7 @@ def test_s4_2_3_find_root_from_a_nested_directory_returns_the_repo_root(
     assert umbrella.find_root(nested) == root.resolve()
 
 
-def test_s4_2_3_a_write_failure_mid_transaction_rolls_everything_back(
+def test_a_write_failure_mid_transaction_rolls_everything_back(
     root: Path, home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     (root / ".gitignore").write_text("node_modules/\n", encoding="utf-8")
@@ -379,7 +375,7 @@ def test_s4_2_3_a_write_failure_mid_transaction_rolls_everything_back(
     assert snapshot(root) == before
 
 
-def test_s4_2_3_core_checks_report_what_doctor_only_generated_reports(
+def test_core_checks_report_what_doctor_only_generated_reports(
     root: Path, home: Path
 ) -> None:
     cycle.apply(root, home=home)
@@ -402,14 +398,14 @@ IMPORTLINTER_KEY = ".importlinter#rn-forge kiln"
 END_MARKER = "# END rn-forge kiln"
 
 
-def test_s4_7_3_1_new_repo_gets_a_fenced_importlinter(root: Path, home: Path) -> None:
+def test_new_repo_gets_a_fenced_importlinter(root: Path, home: Path) -> None:
     cycle.apply(root, home=home)
     first = (root / ".importlinter").read_text(encoding="utf-8").splitlines()[0]
     assert first == "# BEGIN rn-forge kiln"
     assert actions(root, home)[IMPORTLINTER_KEY] is Action.UNCHANGED
 
 
-def test_s4_7_3_2_own_contract_below_the_block_survives(root: Path, home: Path) -> None:
+def test_own_contract_below_the_block_survives(root: Path, home: Path) -> None:
     cycle.apply(root, home=home)
     path = root / ".importlinter"
     own = "\n[importlinter:contract:mine]\nname = mine\ntype = forbidden\n"
@@ -422,7 +418,7 @@ def test_s4_7_3_2_own_contract_below_the_block_survives(root: Path, home: Path) 
     assert actions(root, home)[IMPORTLINTER_KEY] is Action.UNCHANGED
 
 
-def test_s4_7_3_3_unfenced_importlinter_is_refused(root: Path, home: Path) -> None:
+def test_unfenced_importlinter_is_refused(root: Path, home: Path) -> None:
     path = root / ".importlinter"
     path.write_text("[importlinter]\nroot_package = demo\n", encoding="utf-8")
     before = snapshot(root)
@@ -435,7 +431,7 @@ def test_s4_7_3_3_unfenced_importlinter_is_refused(root: Path, home: Path) -> No
     assert snapshot(root) == before
 
 
-def test_s4_7_3_4_converted_entry_is_forgotten(root: Path) -> None:
+def test_converted_entry_is_forgotten(root: Path) -> None:
     config = KilnConfig.load(root)
     artifacts = PYTHON.artifacts(config, root) + CORE.artifacts(config, root)
     managed = StateEntry(
@@ -460,7 +456,7 @@ def test_s4_7_3_4_converted_entry_is_forgotten(root: Path) -> None:
     }
 
 
-def test_s4_7_3_5_fenced_file_with_old_state_converts_under_force(
+def test_fenced_file_with_old_state_converts_under_force(
     root: Path, home: Path
 ) -> None:
     cycle.apply(root, home=home)
@@ -486,7 +482,7 @@ def test_s4_7_3_5_fenced_file_with_old_state_converts_under_force(
     assert text.startswith("# BEGIN rn-forge kiln")
 
 
-def test_s16_8_1_2_cycle_has_no_adoption_api() -> None:
+def test_cycle_has_no_adoption_api() -> None:
     for name in ("adoption_plan", "fence", "unfenced", "_adopted"):
         assert not hasattr(cycle, name)
     for function in (cycle.plan, cycle.apply, cycle._prepare):

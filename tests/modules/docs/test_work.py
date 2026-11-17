@@ -79,7 +79,7 @@ def _release_meta(tmp_path: Path, text: str) -> tuple[tuple[str, str], ...]:
     return load_work(tmp_path / "docs").releases[0].page.meta
 
 
-def test_s13_2_1_read_metadata_accepts_both_table_styles(tmp_path: Path) -> None:
+def test_read_metadata_accepts_both_table_styles(tmp_path: Path) -> None:
     plain = "# T\n\n| | |\n| --- | --- |\n| **State** | New |\n| **Tags** | a, b |\n"
     mdformat = "# T\n\n|  |  |\n| -- | -- |\n| **State** | New |\n| **Tags** | a, b |\n"
     expected = (("State", "New"), ("Tags", "a, b"))
@@ -87,12 +87,12 @@ def test_s13_2_1_read_metadata_accepts_both_table_styles(tmp_path: Path) -> None
     assert _release_meta(tmp_path / "mdformat", mdformat) == expected
 
 
-def test_s13_2_1_read_metadata_none_after_a_paragraph(tmp_path: Path) -> None:
+def test_read_metadata_none_after_a_paragraph(tmp_path: Path) -> None:
     text = "# T\n\ntext\n\n" + TABLE + "| **State** | New |\n"
     assert _release_meta(tmp_path, text) == ()
 
 
-def test_s13_2_1_valid_tree_has_no_findings(tmp_path: Path) -> None:
+def test_valid_tree_has_no_findings(tmp_path: Path) -> None:
     assert codes(tmp_path, VALID) == []
 
 
@@ -143,19 +143,19 @@ R = "releases/release-1/index.md"
         ("iteration", F1, "release-1](", "release-9]("),
     ],
 )
-def test_s13_2_1_each_rule_reports_one_finding(
+def test_each_rule_reports_one_finding(
     tmp_path: Path, code: str, name: str, old: str, new: str
 ) -> None:
     assert old in VALID[name]
     assert broken(tmp_path, name, old, new) == [f"docs.work-{code}"]
 
 
-def test_s13_2_1_duplicate_ids(tmp_path: Path) -> None:
+def test_duplicate_ids(tmp_path: Path) -> None:
     files = {**VALID, "specs/epics/E1-x/F1.1-dup.md": ACTIVE}
     assert codes(tmp_path, files) == ["docs.work-duplicate-id"]
 
 
-def test_s13_2_1_reports_every_broken_page(tmp_path: Path) -> None:
+def test_reports_every_broken_page(tmp_path: Path) -> None:
     files = {
         **VALID,
         E: EPIC.replace("| **State** | Active |", "| **State** | Done |"),
@@ -164,7 +164,7 @@ def test_s13_2_1_reports_every_broken_page(tmp_path: Path) -> None:
     assert sorted(codes(tmp_path, files)) == ["docs.work-invalid-state"] * 2
 
 
-def test_s13_2_1_bare_id_row_is_never_compared(tmp_path: Path) -> None:
+def test_bare_id_row_is_never_compared(tmp_path: Path) -> None:
     rows = EPIC_ROWS.replace("[F1.1](F1.1-a.md)", "F1.1")
     assert codes(tmp_path, {**VALID, E: rows}) == ["docs.work-feature-table"] * 2
 
@@ -193,7 +193,7 @@ def _stable(block, body: str) -> None:
 RELEASE_2 = "# Release 2\n\n" + TABLE + "| **Status** | planned |\n"
 
 
-def test_s13_2_2_render_board_lists_releases_newest_first_and_the_backlog(
+def test_render_board_lists_releases_newest_first_and_the_backlog(
     tmp_path: Path,
 ) -> None:
     work = _tree(tmp_path, {**VALID, "releases/release-2/index.md": RELEASE_2})
@@ -212,7 +212,7 @@ def test_s13_2_2_render_board_lists_releases_newest_first_and_the_backlog(
     _stable(BOARD_BLOCK, board)
 
 
-def test_s13_2_2_render_board_of_an_empty_tree(tmp_path: Path) -> None:
+def test_render_board_of_an_empty_tree(tmp_path: Path) -> None:
     board = render_board(_tree(tmp_path, {}))
     assert board == (
         "\n## Releases\n\n| Release | Status | Features |\n| -- | -- | -- |\n"
@@ -221,7 +221,7 @@ def test_s13_2_2_render_board_of_an_empty_tree(tmp_path: Path) -> None:
     _stable(BOARD_BLOCK, board)
 
 
-def test_s13_2_2_render_board_new_rows_and_fileless_and_empty_epics(
+def test_render_board_new_rows_and_fileless_and_empty_epics(
     tmp_path: Path,
 ) -> None:
     epic2 = "# E2 — Two\n\n" + TABLE + "| **State** | New |\n"
@@ -254,7 +254,7 @@ def test_s13_2_2_render_board_new_rows_and_fileless_and_empty_epics(
     _stable(BOARD_BLOCK, board)
 
 
-def test_s13_2_2_a_bare_row_with_a_file_is_listed_once(tmp_path: Path) -> None:
+def test_a_bare_row_with_a_file_is_listed_once(tmp_path: Path) -> None:
     epic = EPIC_ROWS.replace("[F1.2](F1.2-b.md)", "F1.2")
     board = render_board(_tree(tmp_path, {**VALID, "specs/epics/E1-x/index.md": epic}))
     assert (
@@ -264,7 +264,7 @@ def test_s13_2_2_a_bare_row_with_a_file_is_listed_once(tmp_path: Path) -> None:
     _stable(BOARD_BLOCK, board)
 
 
-def test_s13_2_2_render_scope_orders_features_numerically(tmp_path: Path) -> None:
+def test_render_scope_orders_features_numerically(tmp_path: Path) -> None:
     def feature(fid: str, state: str) -> str:
         return (
             f"# {fid} — T\n\n" + TABLE + f"| **State** | {state} |\n"
@@ -295,7 +295,7 @@ def test_s13_2_2_render_scope_orders_features_numerically(tmp_path: Path) -> Non
     _stable(SCOPE_BLOCK, scope)
 
 
-def test_s13_2_2_render_scope_of_an_empty_release_keeps_the_header(
+def test_render_scope_of_an_empty_release_keeps_the_header(
     tmp_path: Path,
 ) -> None:
     work = _tree(tmp_path, {**VALID, "releases/release-2/index.md": RELEASE_2})
@@ -304,7 +304,7 @@ def test_s13_2_2_render_scope_of_an_empty_release_keeps_the_header(
     _stable(SCOPE_BLOCK, scope)
 
 
-def test_s13_3_1_seeded_board_is_current() -> None:
+def test_seeded_board_is_current() -> None:
     seed = (
         Path(__file__).parents[3]
         / "src/rn_forge/kiln/modules/docs/templates/docs/specs/index.md.j2"
@@ -313,7 +313,7 @@ def test_s13_3_1_seeded_board_is_current() -> None:
     assert body == render_board(Work((), (), ()))
 
 
-def test_s14_1_2_epic_range_groups_by_tens() -> None:
+def test_epic_range_groups_by_tens() -> None:
     assert EPIC_RANGE == 10
     assert [epic_range(n) for n in (1, 4, 10, 11, 13, 20, 21)] == [
         (1, 10),
@@ -337,7 +337,7 @@ def _epic(number: int, state: str, rest: str = "", title: str = "T") -> str:
     )
 
 
-def test_s14_1_2_1_render_epics_puts_each_range_under_its_own_heading(
+def test_render_epics_puts_each_range_under_its_own_heading(
     tmp_path: Path,
 ) -> None:
     work = _tree(
@@ -356,7 +356,7 @@ def test_s14_1_2_1_render_epics_puts_each_range_under_its_own_heading(
     _stable(EPICS_BLOCK, body)
 
 
-def test_s14_1_2_1_one_epic_gives_one_range_and_one_jump_link(tmp_path: Path) -> None:
+def test_one_epic_gives_one_range_and_one_jump_link(tmp_path: Path) -> None:
     body = render_epics(_tree(tmp_path, VALID))
     assert body.count("## E") == 1
     assert body.count("](#") == 1
@@ -364,7 +364,7 @@ def test_s14_1_2_1_one_epic_gives_one_range_and_one_jump_link(tmp_path: Path) ->
     _stable(EPICS_BLOCK, body)
 
 
-def test_s14_1_2_2_features_count_files_or_rows_and_deferred_is_marked(
+def test_features_count_files_or_rows_and_deferred_is_marked(
     tmp_path: Path,
 ) -> None:
     rows = (
@@ -392,7 +392,7 @@ def test_s14_1_2_2_features_count_files_or_rows_and_deferred_is_marked(
     _stable(EPICS_BLOCK, body)
 
 
-def test_s14_1_2_iterations_are_distinct_and_sorted_by_release(tmp_path: Path) -> None:
+def test_iterations_are_distinct_and_sorted_by_release(tmp_path: Path) -> None:
     def feature(fid: str, release: int) -> str:
         return (
             f"# {fid} \u2014 T\n\n"
@@ -415,12 +415,12 @@ def test_s14_1_2_iterations_are_distinct_and_sorted_by_release(tmp_path: Path) -
     assert "| release-1, release-2, release-10 |" in render_epics(work)
 
 
-def test_s14_1_2_no_epics_says_so() -> None:
+def test_no_epics_says_so() -> None:
     assert render_epics(Work((), (), ())) == "\nNo epics yet.\n\n"
     _stable(EPICS_BLOCK, render_epics(Work((), (), ())))
 
 
-def test_s14_1_2_seeded_epic_list_is_current() -> None:
+def test_seeded_epic_list_is_current() -> None:
     seed = (
         Path(__file__).parents[3]
         / "src/rn_forge/kiln/modules/docs/templates/docs/specs/epics/index.md.j2"
@@ -429,7 +429,7 @@ def test_s14_1_2_seeded_epic_list_is_current() -> None:
     assert body == render_epics(Work((), (), ()))
 
 
-def test_s14_2_1_1_read_stories_reads_id_title_state_and_depends_on() -> None:
+def test_read_stories_reads_id_title_state_and_depends_on() -> None:
     text = (
         "# F9.9 \u2014 F\n\n## S4.5.9 \u2014 x\n\n"
         "**State:** Closed (2026-09-26) \u00b7 **Depends on:** S4.5.1, S5.2.4\n\n"
@@ -442,7 +442,7 @@ def test_s14_2_1_1_read_stories_reads_id_title_state_and_depends_on() -> None:
     assert STORY_HEADING_RE.match("## S1.2.3 \u2014 t")
 
 
-def test_s14_2_1_1_read_stories_ignores_fenced_code_and_stops_state_at_a_dot() -> None:
+def test_read_stories_ignores_fenced_code_and_stops_state_at_a_dot() -> None:
     text = (
         "## S1.1.1 \u2014 a\n\n"
         "**State:** Closed (2026-09-26) \u00b7 **Unblocked 2026-09-25:** pykit\n\n"
@@ -455,7 +455,7 @@ def test_s14_2_1_1_read_stories_ignores_fenced_code_and_stops_state_at_a_dot() -
     )
 
 
-def test_s14_2_4_1_read_stories_joins_a_wrapped_state_paragraph() -> None:
+def test_read_stories_joins_a_wrapped_state_paragraph() -> None:
     text = (
         "## S1.1.5 \u2014 a\n\n"
         "**State:** New \u00b7 **Depends on:** S1.1.1, S1.1.2,\n"
@@ -466,7 +466,7 @@ def test_s14_2_4_1_read_stories_joins_a_wrapped_state_paragraph() -> None:
     )
 
 
-def test_s14_2_4_2_the_paragraph_ends_at_a_blank_line() -> None:
+def test_the_paragraph_ends_at_a_blank_line() -> None:
     text = (
         "## S1.1.5 \u2014 a\n\n"
         "**State:** New \u00b7 **Depends on:** S1.1.1,\n"
@@ -475,7 +475,7 @@ def test_s14_2_4_2_the_paragraph_ends_at_a_blank_line() -> None:
     assert read_stories(text) == (Story("S1.1.5", "a", "New", "S1.1.1, S1.1.2"),)
 
 
-def test_s14_2_4_3_a_label_split_across_lines_is_read() -> None:
+def test_a_label_split_across_lines_is_read() -> None:
     text = (
         "## S1.1.5 \u2014 a\n\n**State:** New \u00b7 **Depends\non:** S1.1.1, S1.1.2\n"
     )
@@ -487,7 +487,7 @@ def _feature_with(tmp_path: Path, body: str):
     return next(f for f in work.features if f.id == "F1.1")
 
 
-def test_s14_2_1_2_render_stories_counts_links_and_dashes(tmp_path: Path) -> None:
+def test_render_stories_counts_links_and_dashes(tmp_path: Path) -> None:
     feature = _feature_with(
         tmp_path,
         "\n## S1.1.1 \u2014 `kiln new`: a | b\n\n**State:** Closed (2026-09-16)\n"
@@ -506,13 +506,13 @@ def test_s14_2_1_2_render_stories_counts_links_and_dashes(tmp_path: Path) -> Non
     _stable(STORIES_BLOCK, body)
 
 
-def test_s14_2_1_2_a_feature_without_stories_says_so(tmp_path: Path) -> None:
+def test_a_feature_without_stories_says_so(tmp_path: Path) -> None:
     body = render_stories(_feature_with(tmp_path, ""))
     assert body == "\nNo stories yet.\n\n"
     _stable(STORIES_BLOCK, body)
 
 
-def test_s14_2_2_a_hand_listed_file_backed_feature_is_reported(tmp_path: Path) -> None:
+def test_a_hand_listed_file_backed_feature_is_reported(tmp_path: Path) -> None:
     files = {**VALID, E: EPIC_ROWS}
     docs = tmp_path / "docs"
     for name, text in files.items():
@@ -525,7 +525,7 @@ def test_s14_2_2_a_hand_listed_file_backed_feature_is_reported(tmp_path: Path) -
     )
 
 
-def test_s14_2_2_a_pre_taxonomy_epic_still_needs_a_state_column(tmp_path: Path) -> None:
+def test_a_pre_taxonomy_epic_still_needs_a_state_column(tmp_path: Path) -> None:
     epic = (
         "# E2 \u2014 Old\n\n" + TABLE + "| **State** | Closed |\n"
         "| **Start Date** | 2026-01-01 |\n| **Closed Date** | 2026-02-01 |\n\n"
@@ -535,14 +535,14 @@ def test_s14_2_2_a_pre_taxonomy_epic_still_needs_a_state_column(tmp_path: Path) 
     assert codes(tmp_path, files) == ["docs.work-no-state-column"]
 
 
-def test_s14_2_2_a_state_column_is_not_needed_when_features_have_files(
+def test_a_state_column_is_not_needed_when_features_have_files(
     tmp_path: Path,
 ) -> None:
     epic = EPIC + "\n| ID | Feature | Status |\n| -- | -- | -- |\n| F9.9 | X | New |\n"
     assert codes(tmp_path, {**VALID, E: epic}) == []
 
 
-def test_s14_2_2_a_row_without_a_file_but_linking_one_is_still_compared(
+def test_a_row_without_a_file_but_linking_one_is_still_compared(
     tmp_path: Path,
 ) -> None:
     rows = EPIC + (
@@ -552,7 +552,7 @@ def test_s14_2_2_a_row_without_a_file_but_linking_one_is_still_compared(
     assert codes(tmp_path, {**VALID, E: rows}) == ["docs.work-state-mismatch"]
 
 
-def test_s14_2_2_render_features_lists_files_in_id_order(tmp_path: Path) -> None:
+def test_render_features_lists_files_in_id_order(tmp_path: Path) -> None:
     def feature(fid: str, title: str, extra: str = "") -> str:
         return (
             f"# {fid} \u2014 {title}\n\n"
@@ -584,7 +584,7 @@ def test_s14_2_2_render_features_lists_files_in_id_order(tmp_path: Path) -> None
     _stable(FEATURES_BLOCK, body)
 
 
-def test_s14_2_2_rows_inside_the_derived_fence_are_not_hand_written(
+def test_rows_inside_the_derived_fence_are_not_hand_written(
     tmp_path: Path,
 ) -> None:
     fenced = (
@@ -596,7 +596,7 @@ def test_s14_2_2_rows_inside_the_derived_fence_are_not_hand_written(
     assert codes(tmp_path, {**VALID, E: fenced}) == []
 
 
-def test_s14_2_3_scope_link_text_is_the_title_with_pipes_escaped(
+def test_scope_link_text_is_the_title_with_pipes_escaped(
     tmp_path: Path,
 ) -> None:
     feature = ACTIVE.replace("# F1.1 \u2014 A", "# F1.1 \u2014 A | B")
@@ -647,7 +647,7 @@ def _states(epic: str, feature: str, story: str | None = None) -> dict[str, str]
         ("Active", "Closed", "Active", F1),
     ],
 )
-def test_s6_1_14_4_a_state_contradicting_its_work_is_reported(
+def test_a_state_contradicting_its_work_is_reported(
     tmp_path: Path, epic: str, feature: str, story: str | None, path: str
 ) -> None:
     docs = tmp_path / "docs"
@@ -670,18 +670,18 @@ def test_s6_1_14_4_a_state_contradicting_its_work_is_reported(
         ("New", "New", "Removed"),
     ],
 )
-def test_s6_1_14_4_states_that_agree_report_nothing(
+def test_states_that_agree_report_nothing(
     tmp_path: Path, epic: str, feature: str, story: str | None
 ) -> None:
     assert codes(tmp_path, _states(epic, feature, story)) == []
 
 
-def test_s6_1_14_4_a_removed_feature_is_ignored(tmp_path: Path) -> None:
+def test_a_removed_feature_is_ignored(tmp_path: Path) -> None:
     files = _states("Closed", "Removed")
     assert codes(tmp_path, files) == []
 
 
-def test_s6_1_14_4_a_hand_written_row_counts_as_a_feature(tmp_path: Path) -> None:
+def test_a_hand_written_row_counts_as_a_feature(tmp_path: Path) -> None:
     epic = (
         f"# E1 — Epic\n\n{TABLE}| **State** | Closed |\n"
         "| **Start Date** | 2026-01-01 |\n| **Closed Date** | 2026-01-02 |\n\n"
@@ -709,12 +709,12 @@ def _board_with_criteria(tmp_path: Path, criteria: str) -> str:
     return render_board(_tree(tmp_path, {"specs/epics/E9-x/index.md": epic}))
 
 
-def test_s16_9_14_1_relative_link_is_rebased(tmp_path: Path) -> None:
+def test_relative_link_is_rebased(tmp_path: Path) -> None:
     board = _board_with_criteria(tmp_path, "[E8](../E8-y/index.md) is done")
     assert "| [E8](epics/E8-y/index.md) is done |\n" in board
 
 
-def test_s16_9_14_2_anchor_and_absolute_are_kept_or_rebased(tmp_path: Path) -> None:
+def test_anchor_and_absolute_are_kept_or_rebased(tmp_path: Path) -> None:
     board = _board_with_criteria(
         tmp_path, "[a](#s) [b](https://x.io/p) [c](/x) [d](mailto:a@b.c)"
     )
@@ -724,7 +724,7 @@ def test_s16_9_14_2_anchor_and_absolute_are_kept_or_rebased(tmp_path: Path) -> N
     )
 
 
-def test_s16_9_14_3_rebased_board_passes_doctor(tmp_path: Path) -> None:
+def test_rebased_board_passes_doctor(tmp_path: Path) -> None:
     from rn_forge.kiln.modules.docs.site import check_site
 
     files = {

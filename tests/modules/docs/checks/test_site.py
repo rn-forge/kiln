@@ -41,26 +41,26 @@ def _codes(root: Path) -> list[str]:
     return [f.code for f in check_site(root, packages=PACKAGES)]
 
 
-def test_s11_1_2_1_a_root_link_into_a_package_page_resolves(repo) -> None:
+def test_a_root_link_into_a_package_page_resolves(repo) -> None:
     root = _repo(repo, "# Root\n\n[usage](alpha/index.md#usage)\n")
     assert check_site(root, packages=PACKAGES) == []
     assert run_check(site.NAME, root) == []
 
 
-def test_s11_1_2_2_a_root_link_to_a_missing_package_page_is_broken(repo) -> None:
+def test_a_root_link_to_a_missing_package_page_is_broken(repo) -> None:
     root = _repo(repo, "# Root\n\n[x](alpha/missing.md)\n")
     assert _codes(root) == ["docs.broken-link"]
     assert [f.code for f in run_check(site.NAME, root)] == ["docs.broken-link"]
 
 
-def test_s11_1_2_2_a_root_link_to_a_missing_package_anchor_is_broken(repo) -> None:
+def test_a_root_link_to_a_missing_package_anchor_is_broken(repo) -> None:
     root = _repo(repo, "# Root\n\n[x](alpha/index.md#nope)\n")
     assert _codes(root) == ["docs.broken-anchor"]
     assert [f.code for f in run_check(site.NAME, root)] == ["docs.broken-anchor"]
 
 
 @pytest.mark.parametrize("link", ["../../beta/docs/index.md", "../../../docs/index.md"])
-def test_s11_1_2_3_a_package_link_that_escapes_is_an_error(repo, link: str) -> None:
+def test_a_package_link_that_escapes_is_an_error(repo, link: str) -> None:
     root = _repo(repo, alpha_page=f"[out]({link})\n")
     assert (root / "packages/alpha/docs" / link).resolve().exists()
     findings = check_site(root, packages=PACKAGES)
@@ -68,14 +68,14 @@ def test_s11_1_2_3_a_package_link_that_escapes_is_an_error(repo, link: str) -> N
     assert findings[0].message == f"links outside packages/alpha/docs: {link}"
 
 
-def test_s11_1_2_4_an_unreachable_package_page_is_an_orphan(repo) -> None:
+def test_an_unreachable_package_page_is_an_orphan(repo) -> None:
     root = _repo(repo, **{"packages/alpha/docs/lonely.md": "# Lonely\n"})
     findings = check_site(root, packages=PACKAGES)
     assert [f.code for f in findings] == ["docs.orphan-page"]
     assert "packages/alpha/docs/lonely.md" in str(findings[0].path)
 
 
-def test_s11_1_2_4_a_package_nav_naming_a_missing_page_is_reported(repo) -> None:
+def test_a_package_nav_naming_a_missing_page_is_reported(repo) -> None:
     root = _repo(
         repo,
         **{
@@ -87,12 +87,12 @@ def test_s11_1_2_4_a_package_nav_naming_a_missing_page_is_reported(repo) -> None
     assert _codes(root) == ["docs.nav-missing-page"]
 
 
-def test_s11_1_2_5_without_packages_a_package_name_is_not_a_mount(repo) -> None:
+def test_without_packages_a_package_name_is_not_a_mount(repo) -> None:
     root = _repo(repo, "# Root\n\n[x](alpha/index.md)\n")
     assert [f.code for f in check_site(root)] == ["docs.broken-link"]
 
 
-def test_s11_1_2_5_only_a_python_lib_has_package_sites(repo) -> None:
+def test_only_a_python_lib_has_package_sites(repo) -> None:
     root = _repo(repo, "# Root\n\n[x](alpha/index.md)\n")
     config = root / ".rn-forge" / "kiln" / "config.toml"
     config.write_text(
@@ -121,24 +121,24 @@ def _excluding_repo(repo, old: str = "", new: str = "", index: str = "# Root\n")
     )
 
 
-def test_s11_1_3_1_a_broken_link_in_an_excluded_page_is_not_reported(repo) -> None:
+def test_a_broken_link_in_an_excluded_page_is_not_reported(repo) -> None:
     root = _excluding_repo(repo, old="[x](gone.md)\n")
     assert check_site(root) == []
     assert run_check(site.NAME, root) == []
 
 
-def test_s11_1_3_1_the_same_link_in_a_shipping_page_is_broken(repo) -> None:
+def test_the_same_link_in_a_shipping_page_is_broken(repo) -> None:
     root = _excluding_repo(repo, new="[x](gone.md)\n")
     assert [f.code for f in check_site(root)] == ["docs.broken-link"]
 
 
-def test_s11_1_3_2_an_excluded_page_is_not_an_orphan(repo) -> None:
+def test_an_excluded_page_is_not_an_orphan(repo) -> None:
     root = _excluding_repo(repo)
     assert (root / "docs/plans/archive/old.md").exists()
     assert check_site(root) == []
 
 
-def test_s11_1_3_3_linking_an_excluded_page_names_the_exclusion(repo) -> None:
+def test_linking_an_excluded_page_names_the_exclusion(repo) -> None:
     root = _excluding_repo(repo, new="[old](archive/old.md)\n")
     findings = check_site(root)
     assert [f.code for f in findings] == ["docs.broken-link"]
@@ -147,7 +147,7 @@ def test_s11_1_3_3_linking_an_excluded_page_names_the_exclusion(repo) -> None:
     )
 
 
-def test_s11_1_3_3_a_package_site_uses_its_own_exclude_docs(repo) -> None:
+def test_a_package_site_uses_its_own_exclude_docs(repo) -> None:
     root = _repo(
         repo,
         **{
@@ -161,7 +161,7 @@ def test_s11_1_3_3_a_package_site_uses_its_own_exclude_docs(repo) -> None:
     assert check_site(root, packages=PACKAGES) == []
 
 
-def test_s11_1_3_4_the_seeded_underscore_exclusion_keeps_todays_behaviour(
+def test_the_seeded_underscore_exclusion_keeps_todays_behaviour(
     repo,
 ) -> None:
     root = repo(
@@ -176,7 +176,7 @@ def test_s11_1_3_4_the_seeded_underscore_exclusion_keeps_todays_behaviour(
     assert check_site(root) == []
 
 
-def test_s11_1_3_excluded_docs_is_empty_without_the_key_or_the_file(
+def test_excluded_docs_is_empty_without_the_key_or_the_file(
     tmp_path: Path,
 ) -> None:
     from rn_forge.kiln.modules.docs.mkdocs import excluded_docs
@@ -186,11 +186,11 @@ def test_s11_1_3_excluded_docs_is_empty_without_the_key_or_the_file(
     assert not excluded_docs(tmp_path / "mkdocs.yml").match_file("a.md")
 
 
-def test_s16_6_3_5_package_mounts_are_not_flagged(repo) -> None:
+def test_package_mounts_are_not_flagged(repo) -> None:
     root = _repo(repo, "# Root\n\n[usage](alpha/index.md#usage)\n")
     assert _codes(root) == []
 
 
-def test_s16_6_3_5_a_package_escape_is_not_also_leaves_docs(repo) -> None:
+def test_a_package_escape_is_not_also_leaves_docs(repo) -> None:
     root = _repo(repo, alpha_page="[out](../../../docs/index.md)\n")
     assert _codes(root) == ["docs.package-link-escapes"]

@@ -1,4 +1,4 @@
-"""S4.9.3 — the `node` module's seeded Angular starter."""
+"""The `node` module's seeded Angular starter."""
 
 from __future__ import annotations
 
@@ -53,7 +53,7 @@ def _config(root: Path, *, archetype: str = "python-web-app", extra: str) -> Kil
 
 
 def _starter(config: KilnConfig, root: Path) -> tuple[Artifact, ...]:
-    """`NODE.artifacts` less the Prettier files (S16.7.3), which have their own tests."""
+    """`NODE.artifacts` less the Prettier files which have their own tests."""
     return tuple(
         a
         for a in NODE.artifacts(config, root)
@@ -82,7 +82,7 @@ def _paths(web_dir: str) -> set[str]:
     }
 
 
-def test_s4_9_3_1_angular_starter_artifacts(tmp_path: Path) -> None:
+def test_angular_starter_artifacts(tmp_path: Path) -> None:
     config = _config(tmp_path, extra='frontend = "angular"')
     _stock(tmp_path, "apps/web")
     artifacts = _starter(config, tmp_path)
@@ -94,7 +94,7 @@ def test_s4_9_3_1_angular_starter_artifacts(tmp_path: Path) -> None:
     assert "LocalStorageService" in by_path["apps/web/src/app/app.config.spec.ts"]
 
 
-def test_s4_9_4_1_starter_paths(tmp_path: Path) -> None:
+def test_starter_paths(tmp_path: Path) -> None:
     config = _config(tmp_path, extra='frontend = "angular"')
     _stock(tmp_path, "apps/web")
     artifacts = _starter(config, tmp_path)
@@ -111,7 +111,7 @@ def test_s4_9_4_1_starter_paths(tmp_path: Path) -> None:
     assert proxy["/v1"]["target"] == "http://localhost:8000"
 
 
-def test_s6_9_1_5_node_starters_include_the_proxy_config(tmp_path: Path) -> None:
+def test_node_starters_include_the_proxy_config(tmp_path: Path) -> None:
     assert isinstance(NODE, StarterModule)
     config = _config(tmp_path, extra='frontend = "angular"')
     _stock(tmp_path, "apps/web")
@@ -120,18 +120,18 @@ def test_s6_9_1_5_node_starters_include_the_proxy_config(tmp_path: Path) -> None
     assert set(paths) == _paths("apps/web")
 
 
-def test_s4_9_3_1_web_dir_moves_the_paths(tmp_path: Path) -> None:
+def test_web_dir_moves_the_paths(tmp_path: Path) -> None:
     config = _config(tmp_path, extra='frontend = "angular"\nweb_dir = "services/web"')
     _stock(tmp_path, "services/web")
     assert {a.path for a in _starter(config, tmp_path)} == _paths("services/web")
 
 
-def test_s4_9_3_1_no_stock_config_gives_nothing(tmp_path: Path) -> None:
+def test_no_stock_config_gives_nothing(tmp_path: Path) -> None:
     config = _config(tmp_path, extra='frontend = "angular"')
     assert _starter(config, tmp_path) == ()
 
 
-def test_s4_9_3_1_no_ngkit_dependency_gives_nothing(tmp_path: Path) -> None:
+def test_no_ngkit_dependency_gives_nothing(tmp_path: Path) -> None:
     config = _config(tmp_path, extra='frontend = "angular"')
     _stock(tmp_path, "apps/web", ngkit=False)
     assert _starter(config, tmp_path) == ()
@@ -141,7 +141,7 @@ def test_s4_9_3_1_no_ngkit_dependency_gives_nothing(tmp_path: Path) -> None:
     assert _starter(config, tmp_path) == ()
 
 
-def test_s4_9_3_1_other_archetype_or_frontend_gives_nothing(tmp_path: Path) -> None:
+def test_other_archetype_or_frontend_gives_nothing(tmp_path: Path) -> None:
     api = _config(tmp_path / "api", archetype="python-web-api", extra="")
     _stock(tmp_path / "api", "apps/web")
     assert _starter(api, tmp_path / "api") == ()
@@ -151,9 +151,7 @@ def test_s4_9_3_1_other_archetype_or_frontend_gives_nothing(tmp_path: Path) -> N
 
 
 @pytest.mark.parametrize("web_dir", ["apps/web", "services/web"])
-def test_s4_9_3_2_reconcile_replaces_the_stock_config(
-    tmp_path: Path, web_dir: str
-) -> None:
+def test_reconcile_replaces_the_stock_config(tmp_path: Path, web_dir: str) -> None:
     config = _config(
         tmp_path / "root",
         extra=f'frontend = "angular"\nweb_dir = "{web_dir}"',
@@ -193,7 +191,7 @@ def _reconciled(tmp_path: Path, web_dir: str, *, ngkit: bool) -> Path:
 
 
 @pytest.mark.parametrize("web_dir", ["apps/web", "services/web"])
-def test_s4_9_4_2_reconcile_wires_the_proxy(tmp_path: Path, web_dir: str) -> None:
+def test_reconcile_wires_the_proxy(tmp_path: Path, web_dir: str) -> None:
     root = _reconciled(tmp_path, web_dir, ngkit=True)
     project = json.loads((root / web_dir / "project.json").read_text(encoding="utf-8"))
     assert (
@@ -207,7 +205,7 @@ def test_s4_9_4_2_reconcile_wires_the_proxy(tmp_path: Path, web_dir: str) -> Non
     assert "NxWelcome" not in app_ts
 
 
-def test_s4_9_4_3_no_starter_no_proxy(tmp_path: Path) -> None:
+def test_no_starter_no_proxy(tmp_path: Path) -> None:
     root = _reconciled(tmp_path, "apps/web", ngkit=False)
     project = json.loads(
         (root / "apps/web" / "project.json").read_text(encoding="utf-8")
@@ -217,7 +215,7 @@ def test_s4_9_4_3_no_starter_no_proxy(tmp_path: Path) -> None:
     assert not (root / "apps/web" / "proxy.conf.json").exists()
 
 
-def test_s4_9_3_3_add_ngkit_adds_the_ngkit_dependency(tmp_path: Path) -> None:
+def test_add_ngkit_adds_the_ngkit_dependency(tmp_path: Path) -> None:
     calls: list[tuple[str, tuple[str, ...], object]] = []
 
     def run(name: str, *args: str, **kwargs: object) -> None:
@@ -232,7 +230,7 @@ def test_s4_9_3_3_add_ngkit_adds_the_ngkit_dependency(tmp_path: Path) -> None:
 
 
 @requires("pnpm")
-def test_s4_9_3_4_new_records_seeded(rendered) -> None:
+def test_new_records_seeded(rendered) -> None:
     directory = rendered("python-web-app")
     entries = json.loads(
         (directory / ".rn-forge" / "kiln" / "state.json").read_text(encoding="utf-8")
@@ -241,5 +239,5 @@ def test_s4_9_3_4_new_records_seeded(rendered) -> None:
         assert entries[path]["kind"] == "seeded"
 
 
-def test_s16_5_5_1_ngkit_pin_is_v0_4_0() -> None:
+def test_ngkit_pin_is_v0_4_0() -> None:
     assert NGKIT_URL.endswith("/v0.4.0/rn-forge-ng-0.4.0.tgz")

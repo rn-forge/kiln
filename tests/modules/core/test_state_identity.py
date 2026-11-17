@@ -1,4 +1,4 @@
-"""State file identity is declared once, in `umbrella` (S18.7.2)."""
+"""State file identity is declared once, in `umbrella`."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ def _docstring_nodes(tree: ast.AST) -> set[int]:
     }
 
 
-def test_s18_7_2_1_state_json_is_named_once() -> None:
+def test_state_json_is_named_once() -> None:
     found: list[str] = []
     for path in sorted(SRC.rglob("*.py")):
         tree = ast.parse(path.read_text(encoding="utf-8"))
@@ -39,7 +39,7 @@ def test_s18_7_2_1_state_json_is_named_once() -> None:
     assert found[0].startswith("modules/core/umbrella.py:"), found
 
 
-def test_s18_7_2_2_one_state_schema_version() -> None:
+def test_one_state_schema_version() -> None:
     assert umbrella.STATE_SCHEMA_VERSION == "1"
     for path in (CORE / "cycle.py", CORE / "checks" / "generated.py"):
         for line in path.read_text(encoding="utf-8").splitlines():

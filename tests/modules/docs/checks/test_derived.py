@@ -34,14 +34,14 @@ def _site(repo, **extra: str):
     )
 
 
-def test_s13_1_1_1_a_stale_nav_is_a_finding(repo) -> None:
+def test_a_stale_nav_is_a_finding(repo) -> None:
     root = _site(repo)
     findings = run_check(derived.NAME, root)
     assert [f.code for f in findings] == ["docs.nav-stale"]
     assert "task docs:generate" in findings[0].message
 
 
-def test_s13_1_1_1_a_repo_without_an_mkdocs_site_is_not_checked(repo) -> None:
+def test_a_repo_without_an_mkdocs_site_is_not_checked(repo) -> None:
     root = repo(docs="none")
     assert run_check(derived.NAME, root) == []
 
@@ -76,7 +76,7 @@ def _codes(root: Path) -> list[str]:
     return [f.code for f in generate.stale(root)]
 
 
-def test_s13_2_2_an_unwritten_board_and_scope_are_stale(repo) -> None:
+def test_an_unwritten_board_and_scope_are_stale(repo) -> None:
     root = _specs(repo)
     assert _codes(root) == [
         "docs.board-stale",
@@ -87,7 +87,7 @@ def test_s13_2_2_an_unwritten_board_and_scope_are_stale(repo) -> None:
     assert all("task docs:generate" in f.message for f in generate.stale(root))
 
 
-def test_s13_2_2_generate_writes_the_regions_and_then_nothing_is_stale(repo) -> None:
+def test_generate_writes_the_regions_and_then_nothing_is_stale(repo) -> None:
     root = _specs(repo)
     written, findings = generate.generate(root)
     assert sorted(p.name for p in written) == [
@@ -101,7 +101,7 @@ def test_s13_2_2_generate_writes_the_regions_and_then_nothing_is_stale(repo) -> 
     assert generate.generate(root) == ([], [])
 
 
-def test_s13_2_2_a_hand_edited_board_row_is_stale(repo) -> None:
+def test_a_hand_edited_board_row_is_stale(repo) -> None:
     root = _specs(repo)
     generate.generate(root)
     index = root / "docs" / "specs" / "index.md"
@@ -114,7 +114,7 @@ def test_s13_2_2_a_hand_edited_board_row_is_stale(repo) -> None:
     assert generate.stale(root) == []
 
 
-def test_s13_2_2_a_tree_without_the_board_fence_has_no_work_findings(repo) -> None:
+def test_a_tree_without_the_board_fence_has_no_work_findings(repo) -> None:
     root = _specs(
         repo,
         **{
@@ -127,7 +127,7 @@ def test_s13_2_2_a_tree_without_the_board_fence_has_no_work_findings(repo) -> No
     assert generate.generate(root) == ([], [])
 
 
-def test_s13_2_2_a_release_without_a_scope_fence_is_reported_and_left_alone(
+def test_a_release_without_a_scope_fence_is_reported_and_left_alone(
     repo,
 ) -> None:
     release = "# Release 1\n\n" + TABLE + "| **Status** | planned |\n"
@@ -140,7 +140,7 @@ def test_s13_2_2_a_release_without_a_scope_fence_is_reported_and_left_alone(
     assert page.read_bytes() == before
 
 
-def test_s13_2_2_one_board_marker_is_reported_and_nothing_is_written(repo) -> None:
+def test_one_board_marker_is_reported_and_nothing_is_written(repo) -> None:
     root = _specs(
         repo, **{"docs__specs__index.md": "# Specs\n\n<!-- BEGIN derived board -->\n"}
     )
@@ -153,13 +153,13 @@ def test_s13_2_2_one_board_marker_is_reported_and_nothing_is_written(repo) -> No
     assert index.read_bytes() == before
 
 
-def test_s13_2_2_metadata_findings_are_reported_alongside_stale_regions(repo) -> None:
+def test_metadata_findings_are_reported_alongside_stale_regions(repo) -> None:
     root = _specs(repo, **{"docs__specs__epics__E1-x__index.md": "# E1\n"})
     assert "docs.work-no-metadata" in _codes(root)
     assert generate.generate(root)[1][0].code == "docs.work-no-metadata"
 
 
-def test_s13_2_2_the_check_reports_the_regions(repo) -> None:
+def test_the_check_reports_the_regions(repo) -> None:
     root = _specs(repo)
     assert [f.code for f in run_check(derived.NAME, root)][:1] == ["docs.board-stale"]
 
@@ -183,7 +183,7 @@ def _lib(repo, archetype: str, table: str):
     return root
 
 
-def test_s11_1_1_2_the_nav_check_passes_python_lib_packages(repo) -> None:
+def test_the_nav_check_passes_python_lib_packages(repo) -> None:
     root = _lib(
         repo, "python-lib", '\n[archetype.python-lib]\npackages = ["packages/a"]\n'
     )
@@ -192,7 +192,7 @@ def test_s11_1_1_2_the_nav_check_passes_python_lib_packages(repo) -> None:
     assert run_check(derived.NAME, root) == []
 
 
-def test_s11_1_1_4_a_web_archetypes_api_dir_is_not_a_package_site(repo) -> None:
+def test_a_web_archetypes_api_dir_is_not_a_package_site(repo) -> None:
     root = _lib(repo, "python-web-api", "")
     generate.generate(root)
     assert run_check(derived.NAME, root) == []
@@ -202,7 +202,7 @@ def test_s11_1_1_4_a_web_archetypes_api_dir_is_not_a_package_site(repo) -> None:
 EPICS = "# Epics\n\n<!-- BEGIN derived epics -->\n<!-- END derived epics -->\n"
 
 
-def test_s14_1_2_3_an_empty_epic_list_fence_is_stale_then_current(repo) -> None:
+def test_an_empty_epic_list_fence_is_stale_then_current(repo) -> None:
     root = _specs(repo, **{"docs__specs__epics__index.md": EPICS})
     assert "docs.epics-stale" in _codes(root)
     generate.generate(root)
@@ -210,7 +210,7 @@ def test_s14_1_2_3_an_empty_epic_list_fence_is_stale_then_current(repo) -> None:
     assert "E1\u2013E10" in (root / "docs/specs/epics/index.md").read_text("utf-8")
 
 
-def test_s14_1_2_3_a_missing_epics_fence_is_reported_and_left_alone(repo) -> None:
+def test_a_missing_epics_fence_is_reported_and_left_alone(repo) -> None:
     root = _specs(repo, **{"docs__specs__epics__index.md": "# Epics\n"})
     page = root / "docs" / "specs" / "epics" / "index.md"
     assert "docs.epics-markers" in _codes(root)
@@ -221,7 +221,7 @@ def test_s14_1_2_3_a_missing_epics_fence_is_reported_and_left_alone(repo) -> Non
     assert message == "has no complete derived epics fence"
 
 
-def test_s14_1_2_4_a_tree_without_an_epic_list_reports_nothing_new(repo) -> None:
+def test_a_tree_without_an_epic_list_reports_nothing_new(repo) -> None:
     root = _specs(repo)
     assert not any(code.startswith("docs.epics") for code in _codes(root))
 
@@ -234,7 +234,7 @@ def _feature_page(root: Path) -> Path:
     return root / "docs" / "specs" / "epics" / "E1-x" / "F1.1-a.md"
 
 
-def test_s14_2_1_3_a_feature_without_a_fence_gets_one_after_its_table(repo) -> None:
+def test_a_feature_without_a_fence_gets_one_after_its_table(repo) -> None:
     root = _specs(repo, **{"docs__specs__epics__E1-x__F1.1-a.md": FEATURE + STORY})
     assert "docs.stories-stale" in _codes(root)
     generate.generate(root)
@@ -248,7 +248,7 @@ def test_s14_2_1_3_a_feature_without_a_fence_gets_one_after_its_table(repo) -> N
     assert generate.generate(root) == ([], [])
 
 
-def test_s14_2_1_3_a_moved_fence_is_rewritten_where_it_is(repo) -> None:
+def test_a_moved_fence_is_rewritten_where_it_is(repo) -> None:
     body = FEATURE + "\nProse.\n\n" + STORIES + "\n" + STORY
     root = _specs(repo, **{"docs__specs__epics__E1-x__F1.1-a.md": body})
     generate.generate(root)
@@ -257,7 +257,7 @@ def test_s14_2_1_3_a_moved_fence_is_rewritten_where_it_is(repo) -> None:
     assert text.count("BEGIN derived stories") == 1
 
 
-def test_s14_2_1_4_half_a_stories_fence_is_reported_and_left_alone(repo) -> None:
+def test_half_a_stories_fence_is_reported_and_left_alone(repo) -> None:
     body = FEATURE + "\n<!-- BEGIN derived stories -->\n" + STORY
     root = _specs(repo, **{"docs__specs__epics__E1-x__F1.1-a.md": body})
     assert "docs.stories-markers" in _codes(root)
@@ -267,7 +267,7 @@ def test_s14_2_1_4_half_a_stories_fence_is_reported_and_left_alone(repo) -> None
     assert _feature_page(root).read_text("utf-8") == body
 
 
-def test_s14_2_1_a_feature_without_a_metadata_table_gets_no_fence(repo) -> None:
+def test_a_feature_without_a_metadata_table_gets_no_fence(repo) -> None:
     root = _specs(repo, **{"docs__specs__epics__E1-x__F1.1-a.md": "# F1.1\n" + STORY})
     generate.generate(root)
     assert "derived stories" not in _feature_page(root).read_text("utf-8")
@@ -278,7 +278,7 @@ def _epic_page(root: Path) -> Path:
     return root / "docs" / "specs" / "epics" / "E1-x" / "index.md"
 
 
-def test_s14_2_2_an_epic_with_feature_files_gets_the_features_region(repo) -> None:
+def test_an_epic_with_feature_files_gets_the_features_region(repo) -> None:
     root = _specs(repo)
     assert "docs.features-stale" in _codes(root)
     generate.generate(root)
@@ -289,7 +289,7 @@ def test_s14_2_2_an_epic_with_feature_files_gets_the_features_region(repo) -> No
     assert generate.generate(root) == ([], [])
 
 
-def test_s14_2_2_an_epic_without_feature_files_gets_no_fence(repo) -> None:
+def test_an_epic_without_feature_files_gets_no_fence(repo) -> None:
     root = repo(
         docs="mkdocs",
         **{
@@ -301,7 +301,7 @@ def test_s14_2_2_an_epic_without_feature_files_gets_no_fence(repo) -> None:
     assert "derived features" not in _epic_page(root).read_text("utf-8")
 
 
-def test_s14_2_2_half_a_features_fence_is_reported_and_left_alone(repo) -> None:
+def test_half_a_features_fence_is_reported_and_left_alone(repo) -> None:
     body = EPIC + "\n<!-- END derived features -->\n"
     root = _specs(repo, **{"docs__specs__epics__E1-x__index.md": body})
     assert "docs.features-markers" in _codes(root)
@@ -348,7 +348,7 @@ def _docs(root: Path) -> dict[Path, bytes]:
 
 
 @pytest.mark.parametrize("state", ["Closed", "Removed"])
-def test_s18_13_2_1_a_brief_for_a_closed_story_is_an_error(repo, state) -> None:
+def test_a_brief_for_a_closed_story_is_an_error(repo, state) -> None:
     root = _briefed(repo, f"{state} (2026-11-14)")
     _brief(root, "S1.1.1.md")
     findings = run_check(derived.NAME, root)
@@ -358,7 +358,7 @@ def test_s18_13_2_1_a_brief_for_a_closed_story_is_an_error(repo, state) -> None:
     assert state in findings[0].message
 
 
-def test_s18_13_2_2_a_brief_for_no_story_of_its_epic_is_an_error(repo) -> None:
+def test_a_brief_for_no_story_of_its_epic_is_an_error(repo) -> None:
     root = _briefed(repo, "Active")
     _brief(root, "S1.1.9.md", "notes.md")
     findings = run_check(derived.NAME, root)
@@ -366,7 +366,7 @@ def test_s18_13_2_2_a_brief_for_no_story_of_its_epic_is_an_error(repo) -> None:
 
 
 @pytest.mark.parametrize("state", ["New", "Active"])
-def test_s18_13_2_3_a_brief_for_an_open_story_passes(repo, state) -> None:
+def test_a_brief_for_an_open_story_passes(repo, state) -> None:
     root = _briefed(repo, state)
     before = _docs(root)
     _brief(root, "S1.1.1.md")

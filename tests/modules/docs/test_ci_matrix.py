@@ -1,4 +1,4 @@
-"""S15.1.4 — the CI page's checks matrix is a derived region."""
+"""The CI page's checks matrix is a derived region."""
 
 from __future__ import annotations
 
@@ -20,20 +20,20 @@ def _page(root: Path, body: str | None) -> Path:
     return page
 
 
-def test_s15_1_4_1_region_is_filled(tmp_path: Path) -> None:
+def test_region_is_filled(tmp_path: Path) -> None:
     page = _page(tmp_path, "")
     generate.generate(tmp_path, ci_matrix=MATRIX)
     assert MATRIX in page.read_text(encoding="utf-8")
     assert not generate.stale(tmp_path, ci_matrix=MATRIX)
 
 
-def test_s15_1_4_2_stale_is_reported(tmp_path: Path) -> None:
+def test_stale_is_reported(tmp_path: Path) -> None:
     _page(tmp_path, "old")
     findings = generate.stale(tmp_path, ci_matrix=MATRIX)
     assert [f.path for f in findings] == ["docs/architecture/ci.md"]
 
 
-def test_s15_1_4_3_absent_fence_is_ignored(tmp_path: Path) -> None:
+def test_absent_fence_is_ignored(tmp_path: Path) -> None:
     page = _page(tmp_path, None)
     before = page.read_text(encoding="utf-8")
     assert generate.generate(tmp_path, ci_matrix=MATRIX) == ([], [])

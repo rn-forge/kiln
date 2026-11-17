@@ -1,4 +1,4 @@
-"""S4.3.5 — the scaffolded bodies of `README.md`, `CLAUDE.md` and `AGENTS.md`."""
+"""The scaffolded bodies of `README.md`, `CLAUDE.md` and `AGENTS.md`."""
 
 from __future__ import annotations
 
@@ -81,14 +81,14 @@ def _root(tmp_path: Path) -> Path:
     return write_config(tmp_path, "python-app", name="demo")
 
 
-def test_s4_3_5_scaffold_writes_the_three_bodies(tmp_path: Path) -> None:
+def test_scaffold_writes_the_three_bodies(tmp_path: Path) -> None:
     root = _root(tmp_path)
     scaffold(root, KilnConfig.load(root))
     assert (root / "README.md").read_text(encoding="utf-8") == README
     assert (root / "AGENTS.md").is_file()
 
 
-def test_s4_3_5_scaffold_never_overwrites_a_present_body(tmp_path: Path) -> None:
+def test_scaffold_never_overwrites_a_present_body(tmp_path: Path) -> None:
     root = _root(tmp_path)
     for name in ("README.md", "CLAUDE.md", "AGENTS.md"):
         (root / name).write_text("mine\n", encoding="utf-8")
@@ -98,7 +98,7 @@ def test_s4_3_5_scaffold_never_overwrites_a_present_body(tmp_path: Path) -> None
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_5_readme_bullets_appear_verbatim_in_every_rendered_readme(
+def test_readme_bullets_appear_verbatim_in_every_rendered_readme(
     archetype: str, rendered: Callable[[str], Path]
 ) -> None:
     text = (rendered(archetype) / "README.md").read_text(encoding="utf-8")
@@ -107,7 +107,7 @@ def test_s4_3_5_readme_bullets_appear_verbatim_in_every_rendered_readme(
         assert bullet in text
 
 
-def test_s4_3_5_readme_is_mdformat_clean(
+def test_readme_is_mdformat_clean(
     tmp_path: Path, rendered: Callable[[str], Path]
 ) -> None:
     """Formatted under the `.mdformat.toml` a rendered repo carries."""
@@ -165,7 +165,7 @@ def _mdformat_check(
         ),
     ],
 )
-def test_s5_3_6_8_web_readme_names_the_api_path_and_is_mdformat_clean(
+def test_web_readme_names_the_api_path_and_is_mdformat_clean(
     tmp_path: Path,
     name: str,
     extra: str,
@@ -196,7 +196,7 @@ app = FastApiApp(AppConfig())
 """
 
 
-def test_s5_3_7_1_fastapi_readme_shows_the_standard_module(
+def test_fastapi_readme_shows_the_standard_module(
     tmp_path: Path, rendered: Callable[[str], Path]
 ) -> None:
     config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
@@ -215,7 +215,7 @@ def test_s5_3_7_1_fastapi_readme_shows_the_standard_module(
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_s5_3_7_2_django_readme_has_no_fastapi_module(
+def test_django_readme_has_no_fastapi_module(
     tmp_path: Path, rendered: Callable[[str], Path]
 ) -> None:
     config = tmp_path / ".rn-forge" / "kiln" / "config.toml"
@@ -235,13 +235,13 @@ def test_s5_3_7_2_django_readme_has_no_fastapi_module(
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_s5_3_6_8_non_web_readme_has_no_api_section(tmp_path: Path) -> None:
+def test_non_web_readme_has_no_api_section(tmp_path: Path) -> None:
     root = _root(tmp_path)
     scaffold(root, KilnConfig.load(root))
     assert "api:dev" not in (root / "README.md").read_text(encoding="utf-8")
 
 
-def test_s16_10_2_1_claude_md_is_the_import_and_a_claude_only_stub(
+def test_claude_md_is_the_import_and_a_claude_only_stub(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path)
@@ -249,7 +249,7 @@ def test_s16_10_2_1_claude_md_is_the_import_and_a_claude_only_stub(
     assert (root / "CLAUDE.md").read_text(encoding="utf-8") == CLAUDE
 
 
-def test_s16_10_2_2_agents_md_is_a_skeleton_that_links_readme(
+def test_agents_md_is_a_skeleton_that_links_readme(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path)
@@ -258,7 +258,7 @@ def test_s16_10_2_2_agents_md_is_a_skeleton_that_links_readme(
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s16_10_2_3_readme_carries_no_agent_directive(
+def test_readme_carries_no_agent_directive(
     archetype: str, rendered: Callable[[str], Path]
 ) -> None:
     text = (rendered(archetype) / "README.md").read_text(encoding="utf-8")
@@ -305,7 +305,7 @@ def _cell(
 
 @pytest.mark.parametrize("profile", ["mkdocs", "none"])
 @pytest.mark.parametrize("archetype", STANDARD_ARCHETYPES)
-def test_s16_9_12_1_standard_is_mdformat_clean(
+def test_standard_is_mdformat_clean(
     archetype: str,
     profile: str,
     tmp_path: Path,
@@ -328,7 +328,7 @@ def test_s16_9_12_1_standard_is_mdformat_clean(
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_s16_9_12_2_seeded_mdformat_config_has_no_exclude(
+def test_seeded_mdformat_config_has_no_exclude(
     rendered: Callable[[str], Path],
 ) -> None:
     text = (rendered("python-tool") / ".mdformat.toml").read_text(encoding="utf-8")

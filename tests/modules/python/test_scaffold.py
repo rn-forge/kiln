@@ -1,8 +1,8 @@
-"""S4.3.1 — `uv init` + reconcile. S4.3.7 — the scaffold completes `pyproject.toml`.
+"""`uv init` + reconcile, and the scaffold completes `pyproject.toml`.
 
 `uv` is invoked once, into an empty directory, and the reconcile leaves a
 `pyproject.toml` with the settings the scaffold fixes, without kiln ever writing the file
-kiln apply owns nothing of (kiln ADR-0003, ADR-0005). S4.3.7 adds the
+kiln apply owns nothing of (kiln ADR-0003, ADR-0005). The scaffold also adds the
 rn-forge dependency lines and the `docs` group so `rn-forge-deps` and
 `task setup` pass on a fresh `kiln new` repo too.
 """
@@ -81,7 +81,7 @@ def _mismatches(config: KilnConfig, root: Path) -> list[str]:
 
 
 @pytest.mark.parametrize("archetype", ["python-app", "python-tool"])
-def test_s4_3_1_1_scaffold_then_reconcile_passes_check_8a(
+def test_scaffold_then_reconcile_passes_check_8a(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _root(tmp_path, archetype)
@@ -92,7 +92,7 @@ def test_s4_3_1_1_scaffold_then_reconcile_passes_check_8a(
     assert _mismatches(config, root) == []
 
 
-def test_s4_3_1_1_scaffold_a_workspace_passes_check_8a_at_root_and_members(
+def test_scaffold_a_workspace_passes_check_8a_at_root_and_members(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path, "python-lib")
@@ -104,7 +104,7 @@ def test_s4_3_1_1_scaffold_a_workspace_passes_check_8a_at_root_and_members(
     assert _mismatches(config, root) == []
 
 
-def test_s4_3_1_1_scaffold_never_leaves_a_git_tree_or_a_readme(tmp_path: Path) -> None:
+def test_scaffold_never_leaves_a_git_tree_or_a_readme(tmp_path: Path) -> None:
     """Scaffolding shells out to `uv init` alone; it never templates its output (D16)."""
     root = _root(tmp_path, "python-app")
     config = KilnConfig.load(root)
@@ -114,9 +114,7 @@ def test_s4_3_1_1_scaffold_never_leaves_a_git_tree_or_a_readme(tmp_path: Path) -
 
 
 @pytest.mark.parametrize("archetype", ["python-app", "python-tool", "python-lib"])
-def test_s4_3_7_rn_forge_deps_passes_after_scaffold(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_rn_forge_deps_passes_after_scaffold(tmp_path: Path, archetype: str) -> None:
     root = _root(tmp_path, archetype)
     config = KilnConfig.load(root)
     scaffold(root, config)
@@ -124,7 +122,7 @@ def test_s4_3_7_rn_forge_deps_passes_after_scaffold(
 
 
 @pytest.mark.parametrize("archetype", ["python-app", "python-tool"])
-def test_s4_3_7_root_dependencies_match_archetype_order(
+def test_root_dependencies_match_archetype_order(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _root(tmp_path, archetype)
@@ -140,7 +138,7 @@ def test_s4_3_7_root_dependencies_match_archetype_order(
 @pytest.mark.parametrize(
     "archetype", ["python-tool", "python-app", "python-web-api", "python-web-app"]
 )
-def test_s7_5_2_1_no_root_declares_an_index(tmp_path: Path, archetype: str) -> None:
+def test_no_root_declares_an_index(tmp_path: Path, archetype: str) -> None:
     root = _root(tmp_path, archetype)
     if archetype.startswith("python-web"):
         config = root / ".rn-forge" / "kiln" / "config.toml"
@@ -155,7 +153,7 @@ def test_s7_5_2_1_no_root_declares_an_index(tmp_path: Path, archetype: str) -> N
     assert "index" not in document["tool"]["uv"]
 
 
-def test_s4_3_7_workspace_members_carry_dependencies_root_does_not(
+def test_workspace_members_carry_dependencies_root_does_not(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path, "python-lib")
@@ -173,9 +171,7 @@ def test_s4_3_7_workspace_members_carry_dependencies_root_does_not(
 
 
 @pytest.mark.parametrize("docs_profile", ["none", "mkdocs"])
-def test_s4_3_7_root_docs_group_reflects_profile(
-    tmp_path: Path, docs_profile: str
-) -> None:
+def test_root_docs_group_reflects_profile(tmp_path: Path, docs_profile: str) -> None:
     root = _root(tmp_path, "python-tool", docs_profile=docs_profile)
     config = KilnConfig.load(root)
     scaffold(root, config)
@@ -186,7 +182,7 @@ def test_s4_3_7_root_docs_group_reflects_profile(
     assert has_mkdocs_entry == (docs_profile == "mkdocs")
 
 
-def test_s4_3_7_check_8a_still_passes(tmp_path: Path) -> None:
+def test_check_8a_still_passes(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-tool")
     config = KilnConfig.load(root)
     scaffold(root, config)
@@ -198,12 +194,12 @@ UV_FIXTURE = (
 )
 
 
-def test_s5_3_6_1_live_uv_capture_matches_the_fixture() -> None:
+def test_live_uv_capture_matches_the_fixture() -> None:
     assert uv_gitignore() == UV_FIXTURE.read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize("archetype", ["python-tool", "python-lib"])
-def test_s5_3_6_1_scaffold_seeds_the_uv_body_once_at_the_root(
+def test_scaffold_seeds_the_uv_body_once_at_the_root(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _root(tmp_path, archetype)
@@ -228,7 +224,7 @@ def test_s5_3_6_1_scaffold_seeds_the_uv_body_once_at_the_root(
         ("python-lib", "packages/demo-alpha/pyproject.toml"),
     ],
 )
-def test_s5_3_6_4_dependency_lists_are_multiline_and_tables_spaced(
+def test_dependency_lists_are_multiline_and_tables_spaced(
     tmp_path: Path, archetype: str, relative: str
 ) -> None:
     root = _root(tmp_path, archetype)
@@ -259,9 +255,7 @@ _TAPLO_CELLS = [
 
 
 @pytest.mark.parametrize(("archetype", "relative"), _TAPLO_CELLS)
-def test_s4_10_1_4_dev_group_has_taplo(
-    tmp_path: Path, archetype: str, relative: str
-) -> None:
+def test_dev_group_has_taplo(tmp_path: Path, archetype: str, relative: str) -> None:
     root = _root(tmp_path, archetype)
     scaffold(root, KilnConfig.load(root))
     groups = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))[
@@ -271,7 +265,7 @@ def test_s4_10_1_4_dev_group_has_taplo(
 
 
 @pytest.mark.parametrize(("archetype", "relative"), _TAPLO_CELLS)
-def test_s4_11_3_9_dev_group_has_zizmor_and_actionlint(
+def test_dev_group_has_zizmor_and_actionlint(
     tmp_path: Path, archetype: str, relative: str
 ) -> None:
     root = _root(tmp_path, archetype)
@@ -284,9 +278,7 @@ def test_s4_11_3_9_dev_group_has_zizmor_and_actionlint(
 
 
 @pytest.mark.parametrize(("archetype", "relative"), _TAPLO_CELLS)
-def test_s4_11_5_10_dev_group_has_pip_audit(
-    tmp_path: Path, archetype: str, relative: str
-) -> None:
+def test_dev_group_has_pip_audit(tmp_path: Path, archetype: str, relative: str) -> None:
     root = _root(tmp_path, archetype)
     scaffold(root, KilnConfig.load(root))
     groups = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))[
@@ -296,9 +288,7 @@ def test_s4_11_5_10_dev_group_has_pip_audit(
 
 
 @pytest.mark.parametrize(("archetype", "relative"), _TAPLO_CELLS)
-def test_s7_4_2_1_no_kiln_in_dev_group(
-    tmp_path: Path, archetype: str, relative: str
-) -> None:
+def test_no_kiln_in_dev_group(tmp_path: Path, archetype: str, relative: str) -> None:
     root = _root(tmp_path, archetype)
     scaffold(root, KilnConfig.load(root))
     groups = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))[
@@ -308,7 +298,7 @@ def test_s7_4_2_1_no_kiln_in_dev_group(
 
 
 @pytest.mark.parametrize(("archetype", "relative"), _TAPLO_CELLS)
-def test_s4_10_1_5_reconciled_pyproject_is_taplo_clean(
+def test_reconciled_pyproject_is_taplo_clean(
     tmp_path: Path, archetype: str, relative: str
 ) -> None:
     root = _root(tmp_path, archetype)
@@ -326,7 +316,7 @@ def test_s4_10_1_5_reconciled_pyproject_is_taplo_clean(
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_s5_3_6_4_readable_toml_round_trips_and_keeps_comments(
+def test_readable_toml_round_trips_and_keeps_comments(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     raw = tmp_path / "raw"
@@ -352,7 +342,7 @@ def test_s5_3_6_4_readable_toml_round_trips_and_keeps_comments(
     assert member_text.startswith("# kept: a repo comment\n")
 
 
-def test_s5_3_6_4_apply_does_not_reformat_repo_owned_toml(tmp_path: Path) -> None:
+def test_apply_does_not_reformat_repo_owned_toml(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-tool")
     scaffold(root, KilnConfig.load(root))
     pyproject = root / "pyproject.toml"
@@ -374,7 +364,7 @@ def test_s5_3_6_4_apply_does_not_reformat_repo_owned_toml(tmp_path: Path) -> Non
         ),
     ],
 )
-def test_s4_5_10_scaffold_writes_a_sample_test_into_each_package(
+def test_scaffold_writes_a_sample_test_into_each_package(
     tmp_path: Path, archetype: str, packages: dict[str, str]
 ) -> None:
     root = _root(tmp_path, archetype)
@@ -390,7 +380,7 @@ def test_s4_5_10_scaffold_writes_a_sample_test_into_each_package(
         assert body == sample_test(name)
 
 
-def test_s4_4_4_1_sample_test_fits_at_a_long_name() -> None:
+def test_sample_test_fits_at_a_long_name() -> None:
     name = "-".join(["abcdefgh"] * 6) + "xyz"
     assert len(name) == 56
     module = name.replace("-", "_")
@@ -407,7 +397,7 @@ def _bare_lib(tmp_path: Path, *, docs_profile: str = "mkdocs") -> Path:
     return write_config(tmp_path, "python-lib", name="demo-lib", docs=docs_profile)
 
 
-def test_s11_2_2_1_a_python_lib_with_no_packages_is_a_bare_workspace(
+def test_a_python_lib_with_no_packages_is_a_bare_workspace(
     tmp_path: Path,
 ) -> None:
     root = _bare_lib(tmp_path)
@@ -425,7 +415,7 @@ def test_s11_2_2_1_a_python_lib_with_no_packages_is_a_bare_workspace(
         ("python-tool", "mkdocs", False),
     ],
 )
-def test_s11_2_2_2_only_python_lib_under_mkdocs_gets_the_monorepo_plugin(
+def test_only_python_lib_under_mkdocs_gets_the_monorepo_plugin(
     tmp_path: Path, archetype: str, docs_profile: str, expected: bool
 ) -> None:
     root = _root(tmp_path, archetype, docs_profile=docs_profile)
@@ -436,7 +426,7 @@ def test_s11_2_2_2_only_python_lib_under_mkdocs_gets_the_monorepo_plugin(
     )
 
 
-def test_s11_2_2_2_the_python_lib_docs_group_is_pinned(tmp_path: Path) -> None:
+def test_the_python_lib_docs_group_is_pinned(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-lib")
     scaffold(root, KilnConfig.load(root))
     rendered = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))
@@ -459,7 +449,7 @@ def test_s11_2_2_2_the_python_lib_docs_group_is_pinned(tmp_path: Path) -> None:
         ("python-lib", None),
     ],
 )
-def test_s4_9_1_7_scaffold_points_project_scripts_at_the_app(
+def test_scaffold_points_project_scripts_at_the_app(
     tmp_path: Path, archetype: str, scripts: dict[str, str] | None
 ) -> None:
     root = _root(tmp_path, archetype)
@@ -508,7 +498,7 @@ def _add_package(root: Path, config: KilnConfig, name: str) -> Path:
     return root / "packages" / name
 
 
-def test_s4_4_8_5_readme_is_set_where_a_readme_is_seeded(tmp_path: Path) -> None:
+def test_readme_is_set_where_a_readme_is_seeded(tmp_path: Path) -> None:
     app, _ = _scaffolded(tmp_path / "app", "python-app")
     lib, _ = _scaffolded(tmp_path / "lib", "python-lib")
     api, _ = _scaffolded(tmp_path / "api", "python-web-api")
@@ -522,7 +512,7 @@ def test_s4_4_8_5_readme_is_set_where_a_readme_is_seeded(tmp_path: Path) -> None
     assert "readme" not in _toml(member_pyproject)["project"]
 
 
-def test_s4_4_8_6_every_package_is_typed(tmp_path: Path) -> None:
+def test_every_package_is_typed(tmp_path: Path) -> None:
     app, _ = _scaffolded(tmp_path / "app", "python-app")
     lib, _ = _scaffolded(tmp_path / "lib", "python-lib")
     api, api_config = _scaffolded(tmp_path / "api", "python-web-api")
@@ -535,7 +525,7 @@ def test_s4_4_8_6_every_package_is_typed(tmp_path: Path) -> None:
     assert (api / api_dir / "src" / "demo_api" / "py.typed").is_file()
 
 
-def test_s4_4_8_7_lib_members_are_libraries(tmp_path: Path) -> None:
+def test_lib_members_are_libraries(tmp_path: Path) -> None:
     root, config = _scaffolded(tmp_path, "python-lib")
     added = _add_package(root, config, "demo-gamma")
 
@@ -549,9 +539,7 @@ def test_s4_4_8_7_lib_members_are_libraries(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("archetype", ["python-app", "python-tool", "python-web-api"])
-def test_s4_5_12_1_app_package_keeps_no_uv_init_stub(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_app_package_keeps_no_uv_init_stub(tmp_path: Path, archetype: str) -> None:
     root, _ = _scaffolded(tmp_path, archetype)
 
     inits = [
@@ -566,13 +554,13 @@ def test_s4_5_12_1_app_package_keeps_no_uv_init_stub(
         assert "print(" not in text
 
 
-def test_s4_5_12_2_console_script_still_points_at_main_app(tmp_path: Path) -> None:
+def test_console_script_still_points_at_main_app(tmp_path: Path) -> None:
     app, _ = _scaffolded(tmp_path, "python-app")
     scripts = _toml(app / "pyproject.toml")["project"]["scripts"]
     assert list(scripts.values()) == ["demo_tool.main:app"]
 
 
-def test_s4_4_8_8_python_version_sits_at_the_workspace_root(tmp_path: Path) -> None:
+def test_python_version_sits_at_the_workspace_root(tmp_path: Path) -> None:
     app, _ = _scaffolded(tmp_path / "app", "python-app")
     lib, lib_config = _scaffolded(tmp_path / "lib", "python-lib")
     api, _ = _scaffolded(tmp_path / "api", "python-web-api")
@@ -590,7 +578,7 @@ def test_s4_4_8_8_python_version_sits_at_the_workspace_root(tmp_path: Path) -> N
     ]
 
 
-def test_s4_4_8_9_lib_root_points_tools_at_packages(tmp_path: Path) -> None:
+def test_lib_root_points_tools_at_packages(tmp_path: Path) -> None:
     lib, _ = _scaffolded(tmp_path / "lib", "python-lib")
     app, _ = _scaffolded(tmp_path / "app", "python-app")
 
@@ -618,7 +606,7 @@ def _scaffolded_app_with_lifecycle(tmp_path: Path) -> Path:
 
 
 @pytest.mark.parametrize("kind", ["python-app", "lifecycle", "python-web-api"])
-def test_s7_1_2_1_application_roots_ignore_sources(tmp_path: Path, kind: str) -> None:
+def test_application_roots_ignore_sources(tmp_path: Path, kind: str) -> None:
     if kind == "lifecycle":
         root = _scaffolded_app_with_lifecycle(tmp_path)
     else:
@@ -627,21 +615,21 @@ def test_s7_1_2_1_application_roots_ignore_sources(tmp_path: Path, kind: str) ->
     assert _uv(root / "pyproject.toml")["no-sources"] is True
 
 
-def test_s7_1_2_1_members_do_not_set_it(tmp_path: Path) -> None:
+def test_members_do_not_set_it(tmp_path: Path) -> None:
     root, config = _scaffolded(tmp_path, "python-web-api")
 
     (member,) = config.packages
     assert "no-sources" not in _uv(root / member / "pyproject.toml")
 
 
-def test_s7_1_2_2_python_lib_keeps_sources(tmp_path: Path) -> None:
+def test_python_lib_keeps_sources(tmp_path: Path) -> None:
     root, _ = _scaffolded(tmp_path, "python-lib")
 
     for path in root.rglob("pyproject.toml"):
         assert "no-sources" not in _uv(path)
 
 
-def test_s7_1_2_1_build_backend_survives(tmp_path: Path) -> None:
+def test_build_backend_survives(tmp_path: Path) -> None:
     root, _ = _scaffolded(tmp_path, "python-app")
 
     uv = _uv(root / "pyproject.toml")
@@ -649,7 +637,7 @@ def test_s7_1_2_1_build_backend_survives(tmp_path: Path) -> None:
     assert uv["no-sources"] is True
 
 
-def test_s16_4_3_1_every_dev_entry_has_a_floor() -> None:
+def test_every_dev_entry_has_a_floor() -> None:
     assert python_pyproject._DEV_GROUP
     for entry in python_pyproject._DEV_GROUP:
         assert re.match(r"^[A-Za-z0-9_.-]+>=\d", entry), entry
@@ -659,7 +647,7 @@ def _version_key(version: str) -> tuple[int, ...]:
     return tuple(int(part) for part in version.split("."))
 
 
-def test_s16_4_3_2_floors_match_the_lock() -> None:
+def test_floors_match_the_lock() -> None:
     lock = tomllib.loads(
         (Path(__file__).parents[3] / "uv.lock").read_text(encoding="utf-8")
     )
@@ -669,12 +657,12 @@ def test_s16_4_3_2_floors_match_the_lock() -> None:
         assert _version_key(floor) <= _version_key(locked[name]), entry
 
 
-def test_s15_2_2_4_pip_licenses_is_a_task_tool() -> None:
+def test_pip_licenses_is_a_task_tool() -> None:
     assert "pip-licenses" in TASK_TOOLS
     assert any(e.startswith("pip-licenses") for e in python_pyproject._DEV_GROUP)
 
 
-def test_s19_1_3_6_the_formatter_is_a_dev_dependency_and_a_task_tool() -> None:
+def test_the_formatter_is_a_dev_dependency_and_a_task_tool() -> None:
     assert "google-yamlfmt" in TASK_TOOLS
     assert (
         len(
@@ -697,7 +685,7 @@ def _commons_lib(tmp_path: Path, packages: list[str]) -> tuple[Path, KilnConfig]
     return tmp_path, loaded
 
 
-def test_s16_6_9_1_member_named_like_the_requirement_has_no_self_dependency(
+def test_member_named_like_the_requirement_has_no_self_dependency(
     tmp_path: Path,
 ) -> None:
     root, _ = _commons_lib(tmp_path, ["rn-forge-commons", "rn-forge-cli"])
@@ -706,19 +694,19 @@ def test_s16_6_9_1_member_named_like_the_requirement_has_no_self_dependency(
     assert "rn-forge-commons" not in names
 
 
-def test_s16_6_9_2_other_members_keep_the_requirement(tmp_path: Path) -> None:
+def test_other_members_keep_the_requirement(tmp_path: Path) -> None:
     root, _ = _commons_lib(tmp_path, ["rn-forge-commons", "rn-forge-cli"])
     document = _toml(root / "packages/rn-forge-cli/pyproject.toml")
     assert "rn-forge-commons>=0.9.0,<0.10" in document["project"]["dependencies"]
 
 
-def test_s16_6_9_4_a_lone_required_member_passes_the_check(tmp_path: Path) -> None:
+def test_a_lone_required_member_passes_the_check(tmp_path: Path) -> None:
     root, config = _commons_lib(tmp_path, ["rn-forge-commons"])
     findings = rn_forge_deps.check(config, root)
     assert [f for f in findings if f.code == "deps.required-missing"] == []
 
 
-def test_s16_6_10_1_lib_members_have_no_ruff_table(tmp_path: Path) -> None:
+def test_lib_members_have_no_ruff_table(tmp_path: Path) -> None:
     root, _ = _scaffolded(tmp_path, "python-lib")
     for member in ("demo-alpha", "demo-beta"):
         document = _toml(root / "packages" / member / "pyproject.toml")
@@ -727,13 +715,13 @@ def test_s16_6_10_1_lib_members_have_no_ruff_table(tmp_path: Path) -> None:
     assert sorted(ignores["**/tests/*"]) == ["ANN", "D", "PLR2004", "S101"]
 
 
-def test_s16_6_10_3_other_archetypes_keep_theirs(tmp_path: Path) -> None:
+def test_other_archetypes_keep_theirs(tmp_path: Path) -> None:
     root, _ = _scaffolded(tmp_path, "python-app")
     ignores = _toml(root / "pyproject.toml")["tool"]["ruff"]["lint"]["per-file-ignores"]
     assert sorted(ignores["tests/*"]) == ["ANN", "D", "PLR2004", "S101"]
 
 
-def test_s16_6_11_2_kiln_new_packages_keep_their_starter(tmp_path: Path) -> None:
+def test_kiln_new_packages_keep_their_starter(tmp_path: Path) -> None:
     root, config = _scaffolded(tmp_path, "python-lib")
     cycle.apply(root, home=tmp_path / "home", starters="")
     for package in ("demo-alpha", "demo-beta"):
@@ -744,7 +732,7 @@ def test_s16_6_11_2_kiln_new_packages_keep_their_starter(tmp_path: Path) -> None
         assert (member / "tests/test_package.py").is_file()
 
 
-def test_s16_7_4_5_requires_python_follows_the_pin() -> None:
+def test_requires_python_follows_the_pin() -> None:
     assert python_scaffold.REQUIRES_PYTHON == ">=3.14"
 
 
@@ -753,7 +741,7 @@ def _pyprojects(root: Path) -> list[Path]:
 
 
 @pytest.mark.parametrize("archetype", ["python-tool", "python-lib"])
-def test_s16_9_13_1_every_table_follows_a_blank_line(
+def test_every_table_follows_a_blank_line(
     archetype: str, rendered: Callable[[str], Path]
 ) -> None:
     for path in _pyprojects(rendered(archetype)):
@@ -766,7 +754,7 @@ def test_s16_9_13_1_every_table_follows_a_blank_line(
 
 
 @pytest.mark.parametrize("archetype", ["python-tool", "python-lib"])
-def test_s16_9_13_2_pyright_keys_are_sorted(
+def test_pyright_keys_are_sorted(
     archetype: str, rendered: Callable[[str], Path]
 ) -> None:
     text = (rendered(archetype) / "pyproject.toml").read_text(encoding="utf-8")
@@ -778,9 +766,7 @@ def test_s16_9_13_2_pyright_keys_are_sorted(
     assert keys == expected
 
 
-def test_s16_9_13_3_tidy_is_idempotent(
-    tmp_path: Path, rendered: Callable[[str], Path]
-) -> None:
+def test_tidy_is_idempotent(tmp_path: Path, rendered: Callable[[str], Path]) -> None:
     source = (rendered("python-tool") / "pyproject.toml").read_bytes()
     copy = tmp_path / "pyproject.toml"
     copy.write_bytes(source)
@@ -797,7 +783,7 @@ def test_s16_9_13_3_tidy_is_idempotent(
         ("python-web-app", "fastapi", 'frontend = "angular"'),
     ],
 )
-def test_s16_5_6_1_web_api_member_has_no_console_script(
+def test_web_api_member_has_no_console_script(
     tmp_path: Path, archetype: str, backend: str, extra: str
 ) -> None:
     config_path = tmp_path / ".rn-forge" / "kiln" / "config.toml"
@@ -826,7 +812,7 @@ backend = "{backend}"
     assert init.read_text(encoding="utf-8") == ""
 
 
-def test_s18_6_3_3_package_preflight_refuses_a_bad_name(tmp_path: Path) -> None:
+def test_package_preflight_refuses_a_bad_name(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-lib")
     with pytest.raises(AppException, match="generate.invalid-name"):
         python_scaffold.package_preflight(root, KilnConfig.load(root), "Bad_Name")

@@ -28,7 +28,7 @@ def test_a_repo_without_an_mkdocs_site_is_not_checked(repo) -> None:
     assert run_check(structure.NAME, root) == []
 
 
-def test_s11_1_1_3_an_include_area_needs_no_directory(tmp_path: Path) -> None:
+def test_an_include_area_needs_no_directory(tmp_path: Path) -> None:
     from rn_forge.kiln.modules.docs.areas import Area
     from rn_forge.kiln.modules.docs.structure import _check_areas
 
@@ -69,21 +69,21 @@ def _link_codes(root: Path) -> list[str]:
     ]
 
 
-def test_s11_1_2_1_a_root_link_into_a_package_page_resolves(repo) -> None:
+def test_a_root_link_into_a_package_page_resolves(repo) -> None:
     assert _link_codes(_packages_repo(repo, "alpha/index.md#usage")) == []
 
 
-def test_s11_1_2_2_a_root_link_to_a_missing_package_page_is_broken(repo) -> None:
+def test_a_root_link_to_a_missing_package_page_is_broken(repo) -> None:
     assert _link_codes(_packages_repo(repo, "alpha/missing.md")) == ["docs.broken-link"]
 
 
-def test_s11_1_2_2_a_root_link_to_a_missing_package_anchor_is_broken(repo) -> None:
+def test_a_root_link_to_a_missing_package_anchor_is_broken(repo) -> None:
     assert _link_codes(_packages_repo(repo, "alpha/index.md#nope")) == [
         "docs.broken-anchor"
     ]
 
 
-def test_s11_1_2_5_without_packages_a_package_name_is_not_a_mount(repo) -> None:
+def test_without_packages_a_package_name_is_not_a_mount(repo) -> None:
     root = _packages_repo(repo, "alpha/index.md")
     findings = check_structure(root, root / "docs", POLICY)
     assert [f.code for f in findings if f.code.endswith("link")] == ["docs.broken-link"]
@@ -112,16 +112,16 @@ def _structure_codes(root: Path) -> list[str]:
     ]
 
 
-def test_s11_1_3_1_a_broken_link_in_an_excluded_page_is_not_reported(repo) -> None:
+def test_a_broken_link_in_an_excluded_page_is_not_reported(repo) -> None:
     assert _structure_codes(_excluding_repo(repo, old="[x](gone.md)\n")) == []
 
 
-def test_s11_1_3_1_the_same_link_in_a_shipping_page_is_broken(repo) -> None:
+def test_the_same_link_in_a_shipping_page_is_broken(repo) -> None:
     root = _excluding_repo(repo, new="[x](gone.md)\n")
     assert _structure_codes(root) == ["docs.broken-link"]
 
 
-def test_s11_1_3_an_excluded_page_may_link_an_underscore_page(repo) -> None:
+def test_an_excluded_page_may_link_an_underscore_page(repo) -> None:
     root = _excluding_repo(repo, underscore="[x](_inc.md)\n")
     assert _structure_codes(root) == []
     (root / "docs/plans/new.md").write_text("[x](_inc.md)\n", encoding="utf-8")
@@ -129,7 +129,7 @@ def test_s11_1_3_an_excluded_page_may_link_an_underscore_page(repo) -> None:
     assert _structure_codes(root) == ["docs.underscore-referenced"]
 
 
-def test_s4_5_8_a_missing_mkdocs_yml_is_a_finding_not_a_crash(tmp_path: Path) -> None:
+def test_a_missing_mkdocs_yml_is_a_finding_not_a_crash(tmp_path: Path) -> None:
     from rn_forge.kiln.modules.docs.site import check_site
 
     (tmp_path / "docs").mkdir()

@@ -1,4 +1,4 @@
-"""S5.3.6 — `.gitignore` is uv's body, then Nx's, then kiln's one block.
+"""`.gitignore` is uv's body, then Nx's, then kiln's one block.
 
 Offline: the upstream bodies are the captured fixtures under
 `tests/fixtures/scaffold/`. The live capture that proves the uv fixture's
@@ -44,7 +44,7 @@ def _sections(uv: str, nx: str | None = None) -> str:
     return text
 
 
-def test_s5_3_6_1_composition_is_uv_then_nx_then_kiln(root: Path) -> None:
+def test_composition_is_uv_then_nx_then_kiln(root: Path) -> None:
     _compose(root, UV_BODY, NX_BODY)
     cycle.apply(root, home=root.parent / "home")
 
@@ -55,7 +55,7 @@ def test_s5_3_6_1_composition_is_uv_then_nx_then_kiln(root: Path) -> None:
     assert text.index("node_modules") < text.index("# BEGIN rn-forge kiln")
 
 
-def test_s5_3_6_1_without_a_frontend_it_is_uv_then_kiln(root: Path) -> None:
+def test_without_a_frontend_it_is_uv_then_kiln(root: Path) -> None:
     _compose(root, UV_BODY)
     cycle.apply(root, home=root.parent / "home")
 
@@ -64,7 +64,7 @@ def test_s5_3_6_1_without_a_frontend_it_is_uv_then_kiln(root: Path) -> None:
     assert text.count("# Python-generated files") == 1
 
 
-def test_s5_3_6_2_negations_keep_their_order(root: Path) -> None:
+def test_negations_keep_their_order(root: Path) -> None:
     _compose(root, UV_BODY, NX_BODY)
     lines = (root / ".gitignore").read_text(encoding="utf-8").splitlines()
     start = lines.index(".vscode/*")
@@ -85,21 +85,19 @@ def test_s5_3_6_2_negations_keep_their_order(root: Path) -> None:
         "\n\ndist\n!dist/keep\n\n\n",  # blank padding
     ],
 )
-def test_s5_3_6_2_upstream_bodies_are_normalized_not_rewritten(
-    root: Path, body: str
-) -> None:
+def test_upstream_bodies_are_normalized_not_rewritten(root: Path, body: str) -> None:
     _compose(root, "# uv\n.venv", body)
     assert (root / ".gitignore").read_text(encoding="utf-8") == (
         "## uv ##\n# uv\n.venv\n\n## nx ##\ndist\n!dist/keep\n"
     )
 
 
-def test_s5_3_6_2_an_empty_body_adds_no_section(root: Path) -> None:
+def test_an_empty_body_adds_no_section(root: Path) -> None:
     _compose(root, UV_BODY, "\n\n")
     assert (root / ".gitignore").read_text(encoding="utf-8") == _sections(UV_BODY)
 
 
-def test_s5_3_6_2_two_applies_keep_bodies_and_user_rules_with_one_block(
+def test_two_applies_keep_bodies_and_user_rules_with_one_block(
     root: Path,
 ) -> None:
     home = root.parent / "home"
@@ -163,7 +161,7 @@ TRACKED = (
 
 
 @pytest.mark.parametrize("bodies", [(UV_BODY,), (UV_BODY, NX_BODY)])
-def test_s5_3_6_3_check_ignore_covers_outputs_and_leaves_sources(
+def test_check_ignore_covers_outputs_and_leaves_sources(
     root: Path, bodies: tuple[str, ...]
 ) -> None:
     _compose(root, *bodies)
@@ -180,12 +178,12 @@ def test_s5_3_6_3_check_ignore_covers_outputs_and_leaves_sources(
     assert [p for p in TRACKED if ignored(p)] == []
 
 
-def test_s4_4_8_1_append_writes_a_tool_header_above_the_body(root: Path) -> None:
+def test_append_writes_a_tool_header_above_the_body(root: Path) -> None:
     gitignore.append(root, "a/\n", "uv")
     assert (root / ".gitignore").read_text(encoding="utf-8") == "## uv ##\na/\n"
 
 
-def test_s4_4_8_2_two_tools_stack_in_call_order(root: Path) -> None:
+def test_two_tools_stack_in_call_order(root: Path) -> None:
     gitignore.append(root, "a/\n!a/keep\n", "uv")
     gitignore.append(root, "b/\n!b/keep\n", "nx")
     assert (root / ".gitignore").read_text(encoding="utf-8") == (
@@ -193,7 +191,7 @@ def test_s4_4_8_2_two_tools_stack_in_call_order(root: Path) -> None:
     )
 
 
-def test_s4_4_8_3_blank_body_adds_no_header(root: Path) -> None:
+def test_blank_body_adds_no_header(root: Path) -> None:
     gitignore.append(root, "\n  \n", "uv")
     assert not (root / ".gitignore").exists()
     gitignore.append(root, "a/\n", "uv")
@@ -201,7 +199,7 @@ def test_s4_4_8_3_blank_body_adds_no_header(root: Path) -> None:
     assert (root / ".gitignore").read_text(encoding="utf-8") == "## uv ##\na/\n"
 
 
-def test_s4_4_8_4_kiln_block_stays_after_the_tool_sections(root: Path) -> None:
+def test_kiln_block_stays_after_the_tool_sections(root: Path) -> None:
     home = root.parent / "home"
     _compose(root, UV_BODY, NX_BODY)
     cycle.apply(root, home=home)
@@ -228,7 +226,7 @@ def _block(root: Path, archetype: str, docs: str) -> str:
     return _kiln_body(root)
 
 
-S16_4_1_BLOCK = """\
+PYTHON_LIB_BLOCK = """\
 # kiln's own state
 .rn-forge/kiln/backups/
 .rn-forge/kiln/rendered/
@@ -256,11 +254,11 @@ coverage.xml
 """
 
 
-def test_s16_4_1_1_groups(root: Path) -> None:
-    assert _block(root, "python-lib", "mkdocs") == S16_4_1_BLOCK
+def test_python_lib_mkdocs_block_has_the_expected_groups(root: Path) -> None:
+    assert _block(root, "python-lib", "mkdocs") == PYTHON_LIB_BLOCK
 
 
-def test_s16_4_1_1_site_dir_is_the_configured_one(root: Path) -> None:
+def test_site_dir_is_the_configured_one(root: Path) -> None:
     config = root / ".rn-forge" / "kiln" / "config.toml"
     config.write_text(
         'schema_version = 1\n\n[repository]\nname = "demo"\nowner = "rn-forge"\n'
@@ -271,7 +269,7 @@ def test_s16_4_1_1_site_dir_is_the_configured_one(root: Path) -> None:
     assert "\nout/site/\n" in _kiln_body(root)
 
 
-def test_s16_4_1_2_node_lib_has_no_python_groups(root: Path) -> None:
+def test_node_lib_has_no_python_groups(root: Path) -> None:
     body = _block(root, "node-lib", "mkdocs")
     assert "# Python tool caches" not in body
     assert "# Coverage output" not in body
@@ -280,14 +278,14 @@ def test_s16_4_1_2_node_lib_has_no_python_groups(root: Path) -> None:
     assert "# Docs build output" in body
 
 
-def test_s16_4_1_3_no_docs(root: Path) -> None:
+def test_no_docs_profile_drops_the_docs_group(root: Path) -> None:
     body = _block(root, "python-lib", "none")
     assert "# Docs build output" not in body
     assert ".docs-site/" not in body
     assert "# Python tool caches" in body
 
 
-def _s16_7_1_lines(root: Path, docs: str, site_dir: str | None) -> list[str]:
+def _site_dir_lines(root: Path, docs: str, site_dir: str | None) -> list[str]:
     config = root / ".rn-forge" / "kiln" / "config.toml"
     extra = "" if site_dir is None else f'site_dir = "{site_dir}"\n'
     config.write_text(
@@ -298,21 +296,21 @@ def _s16_7_1_lines(root: Path, docs: str, site_dir: str | None) -> list[str]:
     return _kiln_body(root).splitlines()
 
 
-def test_s16_7_1_2_gitignore_has_one_build_line(root: Path) -> None:
-    lines = _s16_7_1_lines(root, "mkdocs", "out/site")
+def test_gitignore_has_one_build_line(root: Path) -> None:
+    lines = _site_dir_lines(root, "mkdocs", "out/site")
     assert "out/site/" in lines
     assert "site/" not in lines
     assert "# Docs build output ([docs] site_dir)" in lines
 
-    lines = _s16_7_1_lines(root, "mkdocs", None)
+    lines = _site_dir_lines(root, "mkdocs", None)
     assert ".docs-site/" in lines
     assert "site/" not in lines
 
-    lines = _s16_7_1_lines(root, "mkdocs", "")
+    lines = _site_dir_lines(root, "mkdocs", "")
     assert lines.count("site/") == 1
     assert ".docs-site/" not in lines
 
-    lines = _s16_7_1_lines(root, "none", "out/site")
+    lines = _site_dir_lines(root, "none", "out/site")
     assert not {"out/site/", ".docs-site/", "site/"} & set(lines)
     assert not [line for line in lines if line.startswith("# Docs build output")]
 
@@ -328,7 +326,7 @@ def test_s16_7_1_2_gitignore_has_one_build_line(root: Path) -> None:
         "node-lib",
     ],
 )
-def test_s16_9_5_1_the_block_lists_the_scratch_root(root: Path, archetype: str) -> None:
+def test_the_block_lists_the_scratch_root(root: Path, archetype: str) -> None:
     body = _block(root, archetype, "mkdocs")
     assert ".tmp/" in body.splitlines()
     cycle.apply(root, home=root.parent / "home")

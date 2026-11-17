@@ -1,4 +1,4 @@
-"""S16.6.12 — doctor reports a legacy or incomplete `[tool.workspace-ci]` table."""
+"""Doctor reports a legacy or incomplete `[tool.workspace-ci]` table."""
 
 from __future__ import annotations
 
@@ -39,7 +39,7 @@ def _findings(root: Path) -> list[Finding]:
     return run_check(workspace_ci.NAME, root)
 
 
-def test_s16_6_12_1_legacy_table_is_an_error(tmp_path: Path) -> None:
+def test_legacy_table_is_an_error(tmp_path: Path) -> None:
     root = _repo(tmp_path, '[tool.workspace-ci.redis]\nimage = "redis:7"\n')
     (finding,) = _findings(root)
     assert finding.code == "workspace-ci.legacy-service"
@@ -47,14 +47,14 @@ def test_s16_6_12_1_legacy_table_is_an_error(tmp_path: Path) -> None:
     assert "[tool.workspace-ci.integration.redis]" in finding.message
 
 
-def test_s16_6_12_2_postgres_too(tmp_path: Path) -> None:
+def test_legacy_postgres_table_is_reported(tmp_path: Path) -> None:
     root = _repo(tmp_path, '[tool.workspace-ci.postgres]\nimage = "postgres:17"\n')
     (finding,) = _findings(root)
     assert finding.code == "workspace-ci.legacy-service"
     assert "[tool.workspace-ci.integration.postgres]" in finding.message
 
 
-def test_s16_6_12_3_missing_image_and_bad_health_wait(tmp_path: Path) -> None:
+def test_missing_image_and_bad_health_wait(tmp_path: Path) -> None:
     table = (
         '[tool.workspace-ci.integration.a]\nports = ["1:1"]\n\n'
         '[tool.workspace-ci.integration.b]\nimage = "x"\nhealth-wait = 0\n'
@@ -66,7 +66,7 @@ def test_s16_6_12_3_missing_image_and_bad_health_wait(tmp_path: Path) -> None:
     ]
 
 
-def test_s16_6_12_4_clean_integration_tables_pass(tmp_path: Path) -> None:
+def test_clean_integration_tables_pass(tmp_path: Path) -> None:
     table = (
         "[tool.workspace-ci.integration.keycloak]\n"
         'image = "quay.io/keycloak/keycloak:26.4.7"\n'
@@ -86,7 +86,7 @@ def test_s16_6_12_4_clean_integration_tables_pass(tmp_path: Path) -> None:
         '[tool.workspace-ci.integration.b]\nimage = "x"\nhealth-wait = 0\n',
     ],
 )
-def test_s16_6_12_5_parity_with_the_loader(tmp_path: Path, table: str) -> None:
+def test_parity_with_the_loader(tmp_path: Path, table: str) -> None:
     root = _repo(tmp_path, table)
     with pytest.raises(ValueError) as raised:
         uv.load_workspace(root)
@@ -94,11 +94,11 @@ def test_s16_6_12_5_parity_with_the_loader(tmp_path: Path, table: str) -> None:
     assert finding.message == str(raised.value).removeprefix("auth: ")
 
 
-def test_s16_6_12_6_registry() -> None:
+def test_workspace_ci_follows_rn_forge_deps_in_the_registry() -> None:
     names = checks.names()
     assert names[names.index("rn-forge-deps") + 1] == "workspace-ci"
 
 
-def test_s16_6_12_7_other_archetypes_are_not_read(tmp_path: Path) -> None:
+def test_other_archetypes_are_not_read(tmp_path: Path) -> None:
     root = _repo(tmp_path, '[tool.workspace-ci.redis]\nimage = "r"\n', "python-app")
     assert _findings(root) == []

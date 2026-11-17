@@ -20,11 +20,11 @@ def run(root: Path, extra: str = "") -> list:
     return pin.check(KilnConfig.load(root), root)
 
 
-def test_s7_4_3_1_matching_tag_is_clean(repo) -> None:
+def test_matching_tag_is_clean(repo) -> None:
     assert run(repo(), f'\n[kiln]\nref = "v{__version__}"\n') == []
 
 
-def test_s7_4_3_2_other_tag_is_a_mismatch(repo) -> None:
+def test_other_tag_is_a_mismatch(repo) -> None:
     findings = run(repo(), '\n[kiln]\nref = "v0.0.1"\n')
     assert [(f.code, f.severity) for f in findings] == [(pin.MISMATCH, Severity.ERROR)]
     message = findings[0].message
@@ -34,18 +34,18 @@ def test_s7_4_3_2_other_tag_is_a_mismatch(repo) -> None:
     assert "[kiln] ref" in message
 
 
-def test_s7_4_3_3_sha_ref_is_not_checked(repo, kiln_remote_sha: str) -> None:
+def test_sha_ref_is_not_checked(repo, kiln_remote_sha: str) -> None:
     assert run(repo(), f'\n[kiln]\nref = "{kiln_remote_sha}"\n') == []
 
 
-def test_s7_4_3_4_missing_pin_is_a_warning(repo) -> None:
+def test_missing_pin_is_a_warning(repo) -> None:
     findings = run(repo())
     assert [(f.code, f.severity) for f in findings] == [(pin.MISSING, Severity.WARNING)]
 
 
-def test_s7_4_3_5_kiln_itself_needs_no_pin(repo) -> None:
+def test_kiln_itself_needs_no_pin(repo) -> None:
     assert run(repo(), '\n[archetype."python-app"]\nmodule = "rn_forge.kiln"\n') == []
 
 
-def test_s18_5_2_3_pin_runs_through_the_registry(repo) -> None:
+def test_pin_runs_through_the_registry(repo) -> None:
     run_check(pin.NAME, repo())

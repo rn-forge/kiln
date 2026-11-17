@@ -1,7 +1,6 @@
-"""S4.3.5 — the `instructions` module's artifacts: the kiln block, and `standard.md`.
+"""The `instructions` module's artifacts: the kiln block, and `standard.md`.
 
-Also proves the five properties every F4.3 story owes its module
-(`docs/specs/epics/E4-generator/F4.3-concern-modules.md`).
+Also proves the five properties every concern module owes.
 """
 
 from __future__ import annotations
@@ -70,7 +69,7 @@ def _rendered(root: Path) -> dict[str, str]:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_5_property1_renders_exactly_the_module_s_template_inventory_rows(
+def test_renders_exactly_the_module_s_template_inventory_rows(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _root(tmp_path, archetype)
@@ -83,7 +82,7 @@ def test_s4_3_5_property1_renders_exactly_the_module_s_template_inventory_rows(
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_5_property2_into_an_empty_directory_only_inserts_and_creates(
+def test_into_an_empty_directory_only_inserts_and_creates(
     tmp_path: Path, archetype: str
 ) -> None:
     actions = _actions(_root(tmp_path, archetype), tmp_path)
@@ -92,9 +91,7 @@ def test_s4_3_5_property2_into_an_empty_directory_only_inserts_and_creates(
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_5_property3_a_second_apply_is_unchanged(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_a_second_apply_is_unchanged(tmp_path: Path, archetype: str) -> None:
     root = _new(tmp_path, archetype)
     actions = _actions(root, tmp_path)
     assert actions[BLOCK_KEY] is Action.UNCHANGED
@@ -107,14 +104,12 @@ def _normalized(text: str) -> str:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_5_property5_the_module_has_no_render_free_checks(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_the_module_has_no_render_free_checks(tmp_path: Path, archetype: str) -> None:
     del tmp_path, archetype
     assert [c.name for c in checks.CHECKS if c.module == "instructions"] == []
 
 
-def test_s4_3_5_1_edits_to_each_body_survive_and_the_block_is_unchanged(
+def test_edits_to_each_body_survive_and_the_block_is_unchanged(
     tmp_path: Path,
 ) -> None:
     root = _new(tmp_path)
@@ -135,7 +130,7 @@ def test_s4_3_5_1_edits_to_each_body_survive_and_the_block_is_unchanged(
         assert (root / name).read_text(encoding="utf-8") == text, name
 
 
-def test_s4_3_5_2_turning_sonar_off_updates_only_the_block_and_standard(
+def test_turning_sonar_off_updates_only_the_block_and_standard(
     tmp_path: Path,
 ) -> None:
     root = _new(tmp_path, profile="none")
@@ -165,7 +160,7 @@ def test_s4_3_5_2_turning_sonar_off_updates_only_the_block_and_standard(
     assert KILN_BLOCK.remove(agents_after) == KILN_BLOCK.remove(agents_before)
 
 
-def test_s16_10_1_1_the_block_is_an_agents_md_artifact(tmp_path: Path) -> None:
+def test_the_block_is_an_agents_md_artifact(tmp_path: Path) -> None:
     root = _root(tmp_path)
     artifacts = {a.key: a for a in INSTRUCTIONS.artifacts(KilnConfig.load(root), root)}
     assert "AGENTS.md#rn-forge kiln" in artifacts
@@ -175,7 +170,7 @@ def test_s16_10_1_1_the_block_is_an_agents_md_artifact(tmp_path: Path) -> None:
     assert block.path == "AGENTS.md"
 
 
-def test_s16_10_1_2_apply_puts_the_block_in_agents_md_only(tmp_path: Path) -> None:
+def test_apply_puts_the_block_in_agents_md_only(tmp_path: Path) -> None:
     root = _new(tmp_path)
     block = KILN_BLOCK.extract((root / "AGENTS.md").read_text(encoding="utf-8"))
     assert block is not None
@@ -183,13 +178,13 @@ def test_s16_10_1_2_apply_puts_the_block_in_agents_md_only(tmp_path: Path) -> No
     assert KILN_BLOCK.extract((root / "CLAUDE.md").read_text(encoding="utf-8")) is None
 
 
-def test_s16_10_1_3_the_block_text_is_unchanged(tmp_path: Path) -> None:
+def test_the_block_text_is_unchanged(tmp_path: Path) -> None:
     block = _rendered(_root(tmp_path))[BLOCK_KEY]
     assert "## Repository standard (kiln)" in block
     assert "[.rn-forge/kiln/standard.md](.rn-forge/kiln/standard.md)" in block
 
 
-def test_s4_3_5_3_a_hand_edit_to_standard_md_is_drift(tmp_path: Path) -> None:
+def test_a_hand_edit_to_standard_md_is_drift(tmp_path: Path) -> None:
     root = _new(tmp_path)
     standard = root / STANDARD
     standard.write_text(
@@ -198,7 +193,7 @@ def test_s4_3_5_3_a_hand_edit_to_standard_md_is_drift(tmp_path: Path) -> None:
     assert _actions(root, tmp_path)[STANDARD] is Action.DRIFT
 
 
-def test_s4_3_5_4_external_renders_the_url_into_the_block(tmp_path: Path) -> None:
+def test_external_renders_the_url_into_the_block(tmp_path: Path) -> None:
     root = _root(
         tmp_path,
         profile="external",
@@ -209,21 +204,21 @@ def test_s4_3_5_4_external_renders_the_url_into_the_block(tmp_path: Path) -> Non
     assert "Docs rules" not in block
 
 
-def test_s4_3_5_4_none_renders_no_docs_bullet(tmp_path: Path) -> None:
+def test_none_renders_no_docs_bullet(tmp_path: Path) -> None:
     block = _rendered(_root(tmp_path, profile="none"))[BLOCK_KEY]
     assert "**Docs:**" not in block
     assert "Docs rules" not in block
     assert "docs:build" not in block
 
 
-def test_s18_13_3_1_mkdocs_block_points_at_briefs(tmp_path: Path) -> None:
+def test_mkdocs_block_points_at_briefs(tmp_path: Path) -> None:
     block = _rendered(_root(tmp_path))[BLOCK_KEY]
     assert "- **Briefs:** a story ready to build gets a brief" in block
     assert "docs/specs/_structure.md#briefs" in block
 
 
 @pytest.mark.parametrize("profile", ["external", "none"])
-def test_s18_13_3_2_a_profile_without_specs_has_no_briefs_line(
+def test_a_profile_without_specs_has_no_briefs_line(
     tmp_path: Path, profile: str
 ) -> None:
     extra = (
@@ -236,7 +231,7 @@ def test_s18_13_3_2_a_profile_without_specs_has_no_briefs_line(
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_5_5_docs_structure_passes_with_no_hand_written_claude_md(
+def test_docs_structure_passes_with_no_hand_written_claude_md(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _new(tmp_path, archetype)
@@ -247,7 +242,7 @@ def test_s4_3_5_5_docs_structure_passes_with_no_hand_written_claude_md(
         if check.module == "docs"
         for f in check.run(config, root)
     ]
-    # The fixture lists packages it never seeds a site for (S11.2.3's checks).
+    # The fixture lists packages it never seeds a site for (the docs package checks).
     assert [c for c in codes if not c.startswith("docs.package-")] == []
 
 
@@ -278,14 +273,14 @@ def _web_root(tmp_path: Path, archetype: str, backend: str, extra: str = "") -> 
     return tmp_path
 
 
-def test_s5_1_2_python_web_api_block_names_the_framework(tmp_path: Path) -> None:
+def test_python_web_api_block_names_the_framework(tmp_path: Path) -> None:
     root = _web_root(tmp_path, "python-web-api", "fastapi")
     block = _rendered(root)[BLOCK_KEY]
     assert "backend: `fastapi`" in block
     assert "api:dev" in block
 
 
-def test_s5_1_2_python_web_app_block_has_frontend_clause_and_web_verbs(
+def test_python_web_app_block_has_frontend_clause_and_web_verbs(
     tmp_path: Path,
 ) -> None:
     root = _web_root(tmp_path, "python-web-app", "django", extra='frontend = "angular"')
@@ -299,14 +294,14 @@ def test_s5_1_2_python_web_app_block_has_frontend_clause_and_web_verbs(
     assert "api:migrate" in block
 
 
-def test_s5_1_2_standard_md_web_api_has_api_verb_rows(tmp_path: Path) -> None:
+def test_standard_md_web_api_has_api_verb_rows(tmp_path: Path) -> None:
     root = _web_root(tmp_path, "python-web-api", "fastapi")
     standard = _rendered(root)[".rn-forge/kiln/standard.md"]
     assert "task api:dev" in standard
     assert "task web:lint" not in standard
 
 
-def test_s5_1_2_standard_md_web_app_has_web_verb_rows_and_frontend_clause(
+def test_standard_md_web_app_has_web_verb_rows_and_frontend_clause(
     tmp_path: Path,
 ) -> None:
     root = _web_root(
@@ -321,7 +316,7 @@ def test_s5_1_2_standard_md_web_app_has_web_verb_rows_and_frontend_clause(
     assert "**Frontend:** `angular`" in standard
 
 
-def test_s4_9_4_block_frontend_bullet_names_the_starter_page(tmp_path: Path) -> None:
+def test_block_frontend_bullet_names_the_starter_page(tmp_path: Path) -> None:
     root = _web_root(
         tmp_path, "python-web-app", "fastapi", extra='frontend = "angular"'
     )
@@ -375,7 +370,7 @@ def _mdformat_check(directory: Path) -> subprocess.CompletedProcess[str]:
 
 @pytest.mark.parametrize("variant", BLOCK_VARIANTS)
 @pytest.mark.parametrize("sonar", [True, False])
-def test_s5_3_5_3_the_kiln_block_is_mdformat_clean(
+def test_the_kiln_block_is_mdformat_clean(
     tmp_path: Path, variant: str, sonar: bool
 ) -> None:
     archetype, profile, extra = BLOCK_VARIANTS[variant]
@@ -406,9 +401,7 @@ def test_s5_3_5_3_the_kiln_block_is_mdformat_clean(
 @pytest.mark.parametrize(
     "name", ["demo", "a-repository-with-a-name-long-enough-to-matter-in-a-heading"]
 )
-def test_s5_3_5_3_the_scaffolded_bodies_are_mdformat_clean(
-    tmp_path: Path, name: str
-) -> None:
+def test_the_scaffolded_bodies_are_mdformat_clean(tmp_path: Path, name: str) -> None:
     root = tmp_path / "repo"
     (root / ".rn-forge" / "kiln").mkdir(parents=True)
     (root / ".rn-forge" / "kiln" / "config.toml").write_text(
@@ -422,7 +415,7 @@ def test_s5_3_5_3_the_scaffolded_bodies_are_mdformat_clean(
     assert result.returncode == 0, result.stderr
 
 
-def test_s4_12_6_12_the_instructions_name_three_docs_verbs(tmp_path: Path) -> None:
+def test_the_instructions_name_three_docs_verbs(tmp_path: Path) -> None:
     rendered = _rendered(_root(tmp_path))
     for text in (rendered[BLOCK_KEY], rendered[".rn-forge/kiln/standard.md"]):
         for verb in ("docs:build", "docs:serve", "docs:generate"):
@@ -469,7 +462,7 @@ def _node_lib(tmp_path: Path, profile: str = "mkdocs") -> Path:
     return _new(tmp_path, "node-lib", profile=profile)
 
 
-def test_s9_2_9_1_node_lib_standard_opens_with_the_node_archetype_bullet(
+def test_node_lib_standard_opens_with_the_node_archetype_bullet(
     tmp_path: Path,
 ) -> None:
     standard = _rendered(_node_lib(tmp_path))[STANDARD]
@@ -478,7 +471,7 @@ def test_s9_2_9_1_node_lib_standard_opens_with_the_node_archetype_bullet(
     assert "**Archetype:** `python-" not in opening
 
 
-def test_s9_2_9_1_node_lib_opening_and_task_table_name_no_python_tool(
+def test_node_lib_opening_and_task_table_name_no_python_tool(
     tmp_path: Path,
 ) -> None:
     node_lib = _rendered(_node_lib(tmp_path / "lib"))[STANDARD]
@@ -491,7 +484,7 @@ def test_s9_2_9_1_node_lib_opening_and_task_table_name_no_python_tool(
     assert _task_table(node_lib).count("| `task ") >= 10
 
 
-def test_s9_2_9_1_node_lib_task_table_uses_the_node_wording(tmp_path: Path) -> None:
+def test_node_lib_task_table_uses_the_node_wording(tmp_path: Path) -> None:
     table = _task_table(_rendered(_node_lib(tmp_path))[STANDARD])
     rows = {
         cells[0].strip(" `"): cells[1].strip()
@@ -508,7 +501,7 @@ def test_s9_2_9_1_node_lib_task_table_uses_the_node_wording(tmp_path: Path) -> N
     assert rows["task build"] == "Build every project with Nx."
 
 
-def test_s9_2_9_1_node_lib_standard_names_the_node_entrypoint(tmp_path: Path) -> None:
+def test_node_lib_standard_names_the_node_entrypoint(tmp_path: Path) -> None:
     standard = _rendered(_node_lib(tmp_path))[STANDARD]
     sentence = _squash(_section(standard, 1)).split(" The public surface", 1)[0]
     for tool in ("uv", "mkdocs", "pnpm", "npx", "nx", "ng", "kiln"):
@@ -517,7 +510,7 @@ def test_s9_2_9_1_node_lib_standard_names_the_node_entrypoint(tmp_path: Path) ->
         assert tool not in sentence
 
 
-def test_s9_2_9_1_node_lib_validate_paragraph_drops_ruff_and_pyright(
+def test_node_lib_validate_paragraph_drops_ruff_and_pyright(
     tmp_path: Path,
 ) -> None:
     for profile in ("mkdocs", "none"):
@@ -531,7 +524,7 @@ def test_s9_2_9_1_node_lib_validate_paragraph_drops_ruff_and_pyright(
     assert "pyright" in python_app
 
 
-def test_s9_2_9_1_node_lib_standard_has_no_uv_sources_or_component_library_text(
+def test_node_lib_standard_has_no_uv_sources_or_component_library_text(
     tmp_path: Path,
 ) -> None:
     standard = _rendered(_node_lib(tmp_path / "lib"))[STANDARD]
@@ -541,7 +534,7 @@ def test_s9_2_9_1_node_lib_standard_has_no_uv_sources_or_component_library_text(
         assert text not in standard
 
 
-def test_s9_2_9_1_node_lib_standard_claims_no_python_import_contracts(
+def test_node_lib_standard_claims_no_python_import_contracts(
     tmp_path: Path,
 ) -> None:
     standard = _rendered(_node_lib(tmp_path / "lib"))[STANDARD]
@@ -555,7 +548,7 @@ def test_s9_2_9_1_node_lib_standard_claims_no_python_import_contracts(
     assert _squash(_section(standard, 2)).count(".importlinter") == 0
 
 
-def test_s9_2_9_2_node_lib_claude_block_names_the_node_tools(tmp_path: Path) -> None:
+def test_node_lib_claude_block_names_the_node_tools(tmp_path: Path) -> None:
     from rn_forge.kiln import archetypes
 
     for profile in ("mkdocs", "none"):
@@ -572,7 +565,7 @@ def test_s9_2_9_2_node_lib_claude_block_names_the_node_tools(tmp_path: Path) -> 
         assert named == forbidden
 
 
-def test_s9_2_9_2_python_web_app_tools_are_unchanged(tmp_path: Path) -> None:
+def test_python_web_app_tools_are_unchanged(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-web-app")
     (root / ".rn-forge/kiln/config.toml").write_text(
         (root / ".rn-forge/kiln/config.toml").read_text(encoding="utf-8")
@@ -586,7 +579,7 @@ def test_s9_2_9_2_python_web_app_tools_are_unchanged(tmp_path: Path) -> None:
     ) in bullet
 
 
-def test_s9_2_9_3_node_lib_readme_has_the_node_convention(tmp_path: Path) -> None:
+def test_node_lib_readme_has_the_node_convention(tmp_path: Path) -> None:
     readme = (_node_lib(tmp_path / "lib") / "README.md").read_text(encoding="utf-8")
     assert NODE_LIB_CONVENTION in _squash(readme)
     assert "Python 3.14" not in readme
@@ -602,9 +595,7 @@ def test_s9_2_9_3_node_lib_readme_has_the_node_convention(tmp_path: Path) -> Non
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s9_2_9_5_python_cells_carry_no_node_lib_text(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_python_cells_carry_no_node_lib_text(tmp_path: Path, archetype: str) -> None:
     root = _new(tmp_path, archetype)
     standard = _rendered(root)[STANDARD]
     # The CI checks table is registry data: the Release row's note names node-lib.
@@ -618,8 +609,8 @@ def test_s9_2_9_5_python_cells_carry_no_node_lib_text(
     )
 
 
-S9_3_6_HEADING = "## 9. What a node-lib repository declares"
-S9_3_6_NAMES = (
+NODE_LIB_DECLARES_HEADING = "## 9. What a node-lib repository declares"
+NODE_LIB_DECLARED_NAMES = (
     "nx.json",
     "release",
     "targetDefaults",
@@ -644,17 +635,17 @@ def _declares(root: Path) -> str:
     return _section(_rendered(root)[STANDARD], 9)
 
 
-def test_s9_3_6_1_node_lib_standard_says_what_a_repository_declares(
+def test_node_lib_standard_says_what_a_repository_declares(
     tmp_path: Path,
 ) -> None:
     standard = _rendered(_node_lib(tmp_path))[STANDARD]
-    assert f"\n{S9_3_6_HEADING}\n" in standard
+    assert f"\n{NODE_LIB_DECLARES_HEADING}\n" in standard
     section = _section(standard, 9)
-    for name in S9_3_6_NAMES:
+    for name in NODE_LIB_DECLARED_NAMES:
         assert name in section, name
 
 
-def test_s9_3_6_2_the_section_states_the_pin_rule(tmp_path: Path) -> None:
+def test_the_section_states_the_pin_rule(tmp_path: Path) -> None:
     section = _squash(_declares(_node_lib(tmp_path)))
     for phrase in (
         "pins.toml",
@@ -666,14 +657,14 @@ def test_s9_3_6_2_the_section_states_the_pin_rule(tmp_path: Path) -> None:
         assert phrase in section, phrase
 
 
-def test_s9_3_6_3_node_lib_instructions_never_name_ngkit(tmp_path: Path) -> None:
+def test_node_lib_instructions_never_name_ngkit(tmp_path: Path) -> None:
     rendered = _rendered(_node_lib(tmp_path))
     assert STANDARD in rendered and BLOCK_KEY in rendered
     for key in (STANDARD, BLOCK_KEY):
         assert "ngkit" not in rendered[key].lower(), key
 
 
-def test_s9_3_6_4_docs_none_drops_the_pages_line(tmp_path: Path) -> None:
+def test_docs_none_drops_the_pages_line(tmp_path: Path) -> None:
     with_docs = _declares(_node_lib(tmp_path / "docs"))
     without = _declares(_node_lib(tmp_path / "none", profile="none"))
     assert "GitHub Pages" in with_docs
@@ -681,7 +672,7 @@ def test_s9_3_6_4_docs_none_drops_the_pages_line(tmp_path: Path) -> None:
     assert "ci-ok" in without
 
 
-def test_s9_3_6_4_sonar_false_drops_the_sonar_token_row(tmp_path: Path) -> None:
+def test_sonar_false_drops_the_sonar_token_row(tmp_path: Path) -> None:
     on = _declares(_node_lib(tmp_path / "on"))
     off = _declares(_new(tmp_path / "off", "node-lib", sonar=False))
     assert "| `SONAR_TOKEN` |" in on
@@ -689,7 +680,7 @@ def test_s9_3_6_4_sonar_false_drops_the_sonar_token_row(tmp_path: Path) -> None:
     assert "USE_NX_CLOUD" in off
 
 
-def test_s9_3_6_4_release_none_drops_the_release_app_rows(tmp_path: Path) -> None:
+def test_release_none_drops_the_release_app_rows(tmp_path: Path) -> None:
     on = _declares(_node_lib(tmp_path / "on"))
     root = _root(tmp_path / "off", "node-lib")
     config = root / ".rn-forge/kiln/config.toml"
@@ -703,7 +694,7 @@ def test_s9_3_6_4_release_none_drops_the_release_app_rows(tmp_path: Path) -> Non
     assert "SONAR_TOKEN" in off
 
 
-def test_s16_9_10_1_node_standard_forbids_nxs_ai_block(tmp_path: Path) -> None:
+def test_node_standard_forbids_nxs_ai_block(tmp_path: Path) -> None:
     node = _section(_rendered(_root(tmp_path / "node", "node-lib"))[STANDARD], 1)
     assert "<!-- nx configuration start -->" in node
     assert "<!-- nx configuration end -->" in node
@@ -716,7 +707,7 @@ def test_s16_9_10_1_node_standard_forbids_nxs_ai_block(tmp_path: Path) -> None:
     "archetype",
     ("python-app", "python-tool", "python-lib", "python-web-api", "python-web-app"),
 )
-def test_s9_3_6_5_other_archetypes_render_no_section_nine(
+def test_other_archetypes_render_no_section_nine(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _root(tmp_path, archetype)
@@ -735,7 +726,7 @@ def test_s9_3_6_5_other_archetypes_render_no_section_nine(
         assert token not in standard, token
 
 
-def test_s16_4_5_2_block_names_the_task(tmp_path: Path) -> None:
+def test_block_names_the_task(tmp_path: Path) -> None:
     root = _new(tmp_path)
     block = KILN_BLOCK.extract((root / "AGENTS.md").read_text(encoding="utf-8")) or ""
     assert "`task kiln:apply`" in block
@@ -751,7 +742,7 @@ def test_s16_4_5_2_block_names_the_task(tmp_path: Path) -> None:
     assert "do not edit; run 'kiln apply'" in taskfile
 
 
-def test_s15_1_4_4_standard_lists_this_archetypes_checks(tmp_path: Path) -> None:
+def test_standard_lists_this_archetypes_checks(tmp_path: Path) -> None:
     from rn_forge.kiln.modules.cicd import registry
 
     node = _rendered(_root(tmp_path / "node", "node-lib"))[STANDARD]
@@ -766,9 +757,7 @@ def test_s15_1_4_4_standard_lists_this_archetypes_checks(tmp_path: Path) -> None
     "archetype",
     ("python-app", "python-tool", "python-lib", "python-web-api", "python-web-app"),
 )
-def test_s15_7_2_1_standard_states_repository_workflows(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_standard_states_repository_workflows(tmp_path: Path, archetype: str) -> None:
     root = _root(tmp_path, archetype)
     if archetype.startswith("python-web"):
         key = "backend" if archetype == "python-web-api" else "frontend"
@@ -817,9 +806,7 @@ def _tables(standard: str) -> tuple[str, str]:
 
 
 @pytest.mark.parametrize(("archetype", "frontend"), SURFACE_CELLS)
-def test_s17_1_5_2_developer_table(
-    tmp_path: Path, archetype: str, frontend: str
-) -> None:
+def test_developer_table(tmp_path: Path, archetype: str, frontend: str) -> None:
     root = _surface_root(tmp_path, archetype, frontend)
     standard = _rendered(root)[STANDARD]
     developer, _ = _tables(standard)
@@ -833,7 +820,7 @@ def test_s17_1_5_2_developer_table(
 
 
 @pytest.mark.parametrize(("archetype", "frontend"), SURFACE_CELLS)
-def test_s17_1_5_3_ci_table(tmp_path: Path, archetype: str, frontend: str) -> None:
+def test_ci_table_lists_ci_tasks(tmp_path: Path, archetype: str, frontend: str) -> None:
     root = _surface_root(tmp_path, archetype, frontend)
     standard = _rendered(root)[STANDARD]
     developer, ci = _tables(standard)
@@ -854,9 +841,7 @@ def test_s17_1_5_3_ci_table(tmp_path: Path, archetype: str, frontend: str) -> No
 
 
 @pytest.mark.parametrize(("archetype", "frontend"), SURFACE_CELLS)
-def test_s17_1_5_4_internal_sentence(
-    tmp_path: Path, archetype: str, frontend: str
-) -> None:
+def test_internal_sentence(tmp_path: Path, archetype: str, frontend: str) -> None:
     root = _surface_root(tmp_path, archetype, frontend)
     section = _section(_rendered(root)[STANDARD], 1)
     sentence = "Every other task is `internal: true`"
@@ -866,7 +851,7 @@ def test_s17_1_5_4_internal_sentence(
 
 
 @pytest.mark.parametrize(("archetype", "frontend"), SURFACE_CELLS)
-def test_s17_1_5_5_task_tables_are_mdformat_clean(
+def test_task_tables_are_mdformat_clean(
     tmp_path: Path, archetype: str, frontend: str
 ) -> None:
     root = _surface_root(tmp_path / "repo", archetype, frontend)
@@ -882,12 +867,12 @@ def test_s17_1_5_5_task_tables_are_mdformat_clean(
     assert result.returncode == 0, result.stdout + result.stderr
 
 
-def test_s16_9_6_3_the_standard_names_it(tmp_path: Path) -> None:
+def test_the_standard_names_it(tmp_path: Path) -> None:
     root = _root(tmp_path)
     assert "metadata.scaffolded" in _rendered(root)[STANDARD]
 
 
-def test_s16_10_2_4_the_block_lands_beneath_the_agents_body(tmp_path: Path) -> None:
+def test_the_block_lands_beneath_the_agents_body(tmp_path: Path) -> None:
     from tests.modules.instructions.test_scaffold import AGENTS, CLAUDE
 
     root = _new(tmp_path)
@@ -897,29 +882,27 @@ def test_s16_10_2_4_the_block_lands_beneath_the_agents_body(tmp_path: Path) -> N
     assert (root / "CLAUDE.md").read_text(encoding="utf-8") == CLAUDE
 
 
-def test_s16_10_6_1_standard_puts_the_block_in_agents_md(tmp_path: Path) -> None:
+def test_standard_puts_the_block_in_agents_md(tmp_path: Path) -> None:
     text = _squash(_rendered(_root(tmp_path))[STANDARD])
     assert "region in `AGENTS.md`" in text
     assert "`.gitignore`, `AGENTS.md` and `mkdocs.yml`" in text
     assert "region in `CLAUDE.md`" not in text
 
 
-def test_s16_10_6_2_standard_states_the_split_by_audience(tmp_path: Path) -> None:
+def test_standard_states_the_split_by_audience(tmp_path: Path) -> None:
     text = _squash(_rendered(_root(tmp_path))[STANDARD])
     for phrase in ("split by audience", "`@AGENTS.md`", "does not own the file"):
         assert phrase in text, phrase
 
 
 @pytest.mark.parametrize("archetype", ["python-tool", "node-lib"])
-def test_s16_9_5_3_the_standard_names_the_scratch_root(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_the_standard_names_the_scratch_root(tmp_path: Path, archetype: str) -> None:
     standard = _rendered(_root(tmp_path, archetype))[STANDARD]
     assert ".tmp/" in standard
     assert "scratch root" in standard
 
 
-def test_s9_4_5_12_the_section_says_how_a_library_declares_its_matrix(
+def test_the_section_says_how_a_library_declares_its_matrix(
     tmp_path: Path,
 ) -> None:
     section = _squash(_declares(_node_lib(tmp_path)))
@@ -932,7 +915,7 @@ def test_s9_4_5_12_the_section_says_how_a_library_declares_its_matrix(
         assert phrase in section, phrase
 
 
-def test_s18_12_2_1_a_custom_web_dir_names_the_web_project_everywhere(
+def test_a_custom_web_dir_names_the_web_project_everywhere(
     tmp_path: Path,
 ) -> None:
     from rn_forge.kiln.modules.cicd import CICD

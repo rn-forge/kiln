@@ -1,4 +1,4 @@
-"""S16.4.7 — `config.toml` explains every option."""
+"""`config.toml` explains every option."""
 
 from __future__ import annotations
 
@@ -29,14 +29,14 @@ def _written(tmp_path: Path, config: KilnConfig) -> str:
 
 
 @pytest.mark.parametrize("name", archetypes.shipped())
-def test_s16_4_7_1_every_field_described(name: str) -> None:
+def test_every_field_described(name: str) -> None:
     specs = catalog.for_archetype(name)
 
     assert specs
     assert [spec.path for spec in specs if not spec.description.strip()] == []
 
 
-def test_s16_4_7_2_choices_and_defaults() -> None:
+def test_choices_and_defaults() -> None:
     index = {spec.path: spec for spec in catalog.for_archetype("python-tool")}
 
     doctor_full = index["ci.doctor_full"]
@@ -52,7 +52,7 @@ def test_s16_4_7_2_choices_and_defaults() -> None:
     assert "lifecycle" in index
 
 
-def test_s16_4_7_3_commented_render(tmp_path: Path) -> None:
+def test_commented_render(tmp_path: Path) -> None:
     text = _written(tmp_path, _config())
 
     spec = {s.path: s for s in catalog.for_archetype("python-tool")}["ci.doctor_full"]
@@ -67,7 +67,7 @@ def test_s16_4_7_3_commented_render(tmp_path: Path) -> None:
     assert lines[at - len(expected) + 1 : at + 1] == expected
 
 
-def test_s16_4_7_4_none_default_commented(tmp_path: Path) -> None:
+def test_none_default_commented(tmp_path: Path) -> None:
     text = _written(tmp_path, _config())
 
     assert '# release = "tag-exists"' in text.splitlines()
@@ -77,7 +77,7 @@ def test_s16_4_7_4_none_default_commented(tmp_path: Path) -> None:
     assert 'release = "pypi"' in pinned.splitlines()
 
 
-def test_s16_4_7_5_round_trip(tmp_path: Path) -> None:
+def test_catalog_config_round_trips_through_load(tmp_path: Path) -> None:
     config = _config(
         "python-lib",
         ci={
@@ -99,7 +99,7 @@ def test_s16_4_7_5_round_trip(tmp_path: Path) -> None:
     assert _written(again, loaded) == first
 
 
-def test_s16_6_2_1_name_comment() -> None:
+def test_repository_name_description_says_which_files_follow_it() -> None:
     specs = {spec.path: spec for spec in catalog.for_archetype("python-tool")}
 
     description = specs["repository.name"].description

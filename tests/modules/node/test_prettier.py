@@ -1,4 +1,4 @@
-"""S16.7.3 — Prettier for the node archetypes: `.prettierrc` and the `.prettierignore` block."""
+"""Prettier for the node archetypes: `.prettierrc` and the `.prettierignore` block."""
 
 from __future__ import annotations
 
@@ -90,7 +90,7 @@ def _patterns(artifact: Artifact) -> list[str]:
 
 
 @pytest.mark.parametrize("archetype", NODE_ARCHETYPES)
-def test_s16_7_3_1_prettierrc_is_managed_yaml_with_a_header(
+def test_prettierrc_is_managed_yaml_with_a_header(
     tmp_path: Path, archetype: str
 ) -> None:
     artifact = _artifacts(_root(tmp_path, archetype))[".prettierrc"]
@@ -105,9 +105,7 @@ def test_s16_7_3_1_prettierrc_is_managed_yaml_with_a_header(
 
 
 @pytest.mark.parametrize("archetype", PYTHON_ARCHETYPES)
-def test_s16_7_3_2_python_archetypes_render_neither_file(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_python_archetypes_render_neither_file(tmp_path: Path, archetype: str) -> None:
     paths = _artifacts(_root(tmp_path, archetype))
 
     assert ".prettierrc" not in paths
@@ -115,7 +113,7 @@ def test_s16_7_3_2_python_archetypes_render_neither_file(
 
 
 @pytest.mark.parametrize("archetype", NODE_ARCHETYPES)
-def test_s16_7_3_3_prettierignore_is_a_block(tmp_path: Path, archetype: str) -> None:
+def test_prettierignore_is_a_block(tmp_path: Path, archetype: str) -> None:
     artifact = _artifacts(_root(tmp_path, archetype))[".prettierignore"]
 
     assert artifact.kind is ArtifactKind.BLOCK
@@ -124,7 +122,7 @@ def test_s16_7_3_3_prettierignore_is_a_block(tmp_path: Path, archetype: str) -> 
     assert _patterns(artifact) == PATTERNS
 
 
-def test_s16_7_3_3_the_site_line_follows_site_dir_and_the_profile(
+def test_the_site_line_follows_site_dir_and_the_profile(
     tmp_path: Path,
 ) -> None:
     custom = _artifacts(_root(tmp_path / "a", "node-lib", site_dir="out/site"))
@@ -137,7 +135,7 @@ def test_s16_7_3_3_the_site_line_follows_site_dir_and_the_profile(
 
 
 @pytest.mark.parametrize("archetype", NODE_ARCHETYPES)
-def test_s16_7_3_4_every_kiln_owned_file_prettier_parses_is_ignored(
+def test_every_kiln_owned_file_prettier_parses_is_ignored(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _root(tmp_path, archetype)
@@ -176,7 +174,7 @@ def _node_tasks(root: Path) -> dict[str, dict]:
 
 
 @pytest.mark.parametrize("archetype", NODE_ARCHETYPES)
-def test_s16_7_3_5_tasks(tmp_path: Path, archetype: str) -> None:
+def test_prettier_tasks_are_wired(tmp_path: Path, archetype: str) -> None:
     tasks = _node_tasks(_root(tmp_path, archetype))
 
     assert tasks["node"]["format"]["internal"] is True
@@ -198,14 +196,14 @@ def test_s16_7_3_5_tasks(tmp_path: Path, archetype: str) -> None:
 
 
 @pytest.mark.parametrize("archetype", NODE_ARCHETYPES)
-def test_s19_1_3_9_prettier_leaves_yaml_to_the_other_formatter(
+def test_prettier_leaves_yaml_to_the_other_formatter(
     tmp_path: Path, archetype: str
 ) -> None:
     tasks = _node_tasks(_root(tmp_path, archetype))
     assert "YAML" not in tasks["node"]["format"]["desc"]
 
 
-def test_s16_7_3_5_python_archetypes_are_unchanged(tmp_path: Path) -> None:
+def test_python_archetypes_are_unchanged(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-tool")
     rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
     root_tasks = YamlUtils.load(rendered["Taskfile.yml"])["tasks"]
@@ -216,7 +214,7 @@ def test_s16_7_3_5_python_archetypes_are_unchanged(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("name", ["node:format", "node:lint:format"])
-def test_s16_7_3_5_overrides(tmp_path: Path, name: str) -> None:
+def test_command_overrides_replace_prettier(tmp_path: Path, name: str) -> None:
     extra = f'\n[tasks]\n[tasks.command_overrides]\n"{name}" = "echo hi"\n'
     root = _root(tmp_path / "node", "node-lib")
     config = root / ".rn-forge/kiln/config.toml"
@@ -231,7 +229,7 @@ def test_s16_7_3_5_overrides(tmp_path: Path, name: str) -> None:
         TASKS.artifacts(KilnConfig.load(py), py)
 
 
-def test_s16_7_3_6_the_scaffold_adds_prettier(tmp_path: Path) -> None:
+def test_the_scaffold_adds_prettier(tmp_path: Path) -> None:
     raw = tmp_path / "raw"
     raw.mkdir()
     with mock.patch("rn_forge.commons.runtime.subprocess.Process.execute") as run:
@@ -246,7 +244,7 @@ def test_s16_7_3_6_the_scaffold_adds_prettier(tmp_path: Path) -> None:
     assert call.kwargs["cwd"] == str(raw / "workspace")
 
 
-def test_s16_7_3_7_format_node(tmp_path: Path) -> None:
+def test_format_node_runs_the_pinned_prettier(tmp_path: Path) -> None:
     assert PRETTIER_VERSION == "3.9.10"
     with (
         mock.patch.dict("os.environ", {"CLAUDECODE": "1"}),

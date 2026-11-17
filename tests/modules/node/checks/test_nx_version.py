@@ -1,4 +1,4 @@
-"""S16.6.13 — doctor reports a node-lib behind kiln's Nx."""
+"""Doctor reports a node-lib behind kiln's Nx."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ def _findings(root: Path) -> list[Finding]:
     return run_check(nx_version.NAME, root)
 
 
-def test_s16_6_13_1_behind_is_an_error(tmp_path: Path) -> None:
+def test_behind_is_an_error(tmp_path: Path) -> None:
     (finding,) = _findings(_repo(tmp_path, "23.1.0"))
     assert finding.code == "node.nx-behind"
     assert finding.path == "package.json"
@@ -50,21 +50,21 @@ def test_s16_6_13_1_behind_is_an_error(tmp_path: Path) -> None:
         ("latest", False),
     ],
 )
-def test_s16_6_13_2_ranges_are_read(tmp_path: Path, nx: str, behind: bool) -> None:
+def test_ranges_are_read(tmp_path: Path, nx: str, behind: bool) -> None:
     assert bool(_findings(_repo(tmp_path, nx))) is behind
 
 
-def test_s16_6_13_2_dependencies_are_read_too(tmp_path: Path) -> None:
+def test_dependencies_are_read_too(tmp_path: Path) -> None:
     root = _repo(tmp_path, "23.1.0", section="dependencies")
     assert [f.code for f in _findings(root)] == ["node.nx-behind"]
 
 
-def test_s16_6_13_3_other_archetypes_and_missing_nx_pass(tmp_path: Path) -> None:
+def test_other_archetypes_and_missing_nx_pass(tmp_path: Path) -> None:
     assert _findings(_repo(tmp_path / "a", "23.1.0", archetype="python-app")) == []
     assert _findings(_repo(tmp_path / "b", None)) == []
 
 
-def test_s16_6_13_4_registry() -> None:
+def test_nx_version_check_is_registered() -> None:
     from rn_forge.kiln import checks
 
     assert "nx-version" in checks.names()

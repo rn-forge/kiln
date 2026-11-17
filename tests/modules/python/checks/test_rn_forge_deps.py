@@ -183,11 +183,11 @@ def _web_root(tmp_path: Path, pyproject: str) -> Path:
     return tmp_path
 
 
-def test_s5_1_1_2_a_compliant_web_member_passes(tmp_path: Path) -> None:
+def test_a_compliant_web_member_passes(tmp_path: Path) -> None:
     assert run(_web_root(tmp_path, WEB_COMPLIANT)) == []
 
 
-def test_s7_5_6_3_a_web_root_may_declare_auth(tmp_path: Path) -> None:
+def test_a_web_root_may_declare_auth(tmp_path: Path) -> None:
     pyproject = WEB_COMPLIANT.rstrip("\n")[:-1] + ', "rn-forge-auth>=0.1.0,<0.2"]\n'
     codes = [
         f.code for f in run_check(rn_forge_deps.NAME, _web_root(tmp_path, pyproject))
@@ -195,12 +195,12 @@ def test_s7_5_6_3_a_web_root_may_declare_auth(tmp_path: Path) -> None:
     assert f"{rn_forge_deps.CODE}.not-allowed" not in codes
 
 
-def test_s5_1_1_2_a_member_lacking_rn_forge_web_is_refused(tmp_path: Path) -> None:
+def test_a_member_lacking_rn_forge_web_is_refused(tmp_path: Path) -> None:
     reported = run(_web_root(tmp_path, WEB_MISSING_WEB))
     assert any("rn-forge-web" in line for line in reported)
 
 
-def test_s5_1_1_2_a_member_naming_the_other_framework_is_refused(
+def test_a_member_naming_the_other_framework_is_refused(
     tmp_path: Path,
 ) -> None:
     reported = run(_web_root(tmp_path, WEB_OTHER_FRAMEWORK))
@@ -210,14 +210,14 @@ def test_s5_1_1_2_a_member_naming_the_other_framework_is_refused(
     )
 
 
-def test_s5_1_1_2_codegen_extra_in_runtime_dependencies_is_refused(
+def test_codegen_extra_in_runtime_dependencies_is_refused(
     tmp_path: Path,
 ) -> None:
     reported = run(_web_root(tmp_path, WEB_CODEGEN_RUNTIME))
     assert any("[codegen]" in line for line in reported)
 
 
-def test_s5_1_1_2_codegen_extra_in_a_dev_group_is_accepted(tmp_path: Path) -> None:
+def test_codegen_extra_in_a_dev_group_is_accepted(tmp_path: Path) -> None:
     assert run(_web_root(tmp_path, WEB_CODEGEN_DEV_GROUP)) == []
 
 
@@ -264,7 +264,7 @@ def test_an_app_may_not_take_the_tooling_layer(repo) -> None:
     assert any("rn-forge-tooling" in line for line in reported)
 
 
-def test_s7_4_2_2_kiln_in_a_group_is_an_error(repo) -> None:
+def test_kiln_in_a_group_is_an_error(repo) -> None:
     root = repo(lifecycle=True, **{"pyproject.toml": KILN_FROM_PATH})
     found = [
         f for f in run_check(rn_forge_deps.NAME, root) if f.code == "deps.kiln-in-lock"
@@ -273,7 +273,7 @@ def test_s7_4_2_2_kiln_in_a_group_is_an_error(repo) -> None:
     assert "dependency-groups.dev" in found[0].message
 
 
-def test_s7_4_2_3_kilns_own_project_is_not_a_dependency() -> None:
+def test_kilns_own_project_is_not_a_dependency() -> None:
     root = Path(__file__).resolve().parents[4]
     findings = run_check(rn_forge_deps.NAME, root)
     assert [f for f in findings if f.code == "deps.kiln-in-lock"] == []
@@ -293,13 +293,13 @@ def _lib_root(tmp_path: Path, packages: str) -> Path:
     return tmp_path
 
 
-def test_s11_2_2_4_a_python_lib_with_no_packages_has_no_required_dependency(
+def test_a_python_lib_with_no_packages_has_no_required_dependency(
     tmp_path: Path,
 ) -> None:
     assert run(_lib_root(tmp_path, "")) == []
 
 
-def test_s11_2_2_4_a_python_lib_package_must_still_declare_the_required_set(
+def test_a_python_lib_package_must_still_declare_the_required_set(
     tmp_path: Path,
 ) -> None:
     root = _lib_root(tmp_path, '"packages/a"')
@@ -372,11 +372,11 @@ def _workspace_root(
     return root
 
 
-def test_s6_1_2_1_a_pykit_shaped_workspace_passes(tmp_path: Path) -> None:
+def test_a_pykit_shaped_workspace_passes(tmp_path: Path) -> None:
     assert run(_workspace_root(tmp_path)) == []
 
 
-def test_s6_1_2_2_a_sibling_in_runtime_dependencies_still_needs_a_pinned_url(
+def test_a_sibling_in_runtime_dependencies_still_needs_a_pinned_url(
     tmp_path: Path,
 ) -> None:
     reported = run(_workspace_root(tmp_path, tooling_cli="rn-forge-cli"))
@@ -385,19 +385,19 @@ def test_s6_1_2_2_a_sibling_in_runtime_dependencies_still_needs_a_pinned_url(
     )
 
 
-def test_s6_1_2_3_a_non_workspace_source_for_a_member_is_still_refused(
+def test_a_non_workspace_source_for_a_member_is_still_refused(
     tmp_path: Path,
 ) -> None:
     root = _workspace_root(tmp_path, cli_source='{ path = "../commons" }')
     assert any("overrides an rn-forge dependency" in line for line in run(root))
 
 
-def test_s6_1_2_4_membership_is_by_name_not_prefix(tmp_path: Path) -> None:
+def test_membership_is_by_name_not_prefix(tmp_path: Path) -> None:
     root = _workspace_root(tmp_path, members=("commons", "tooling"))
     assert any("not in this archetype's allowed set" in line for line in run(root))
 
 
-def test_s6_1_2_5_an_extra_on_a_member_in_a_group_may_be_bare(tmp_path: Path) -> None:
+def test_an_extra_on_a_member_in_a_group_may_be_bare(tmp_path: Path) -> None:
     assert run(_workspace_root(tmp_path, tooling_group=False)) == []
 
 
@@ -419,12 +419,12 @@ def _findings(root: Path) -> list[tuple[str, str, str | None]]:
     return [(f.code, f.message, f.path) for f in run_check(rn_forge_deps.NAME, root)]
 
 
-def test_s7_3_7_1_a_range_with_a_ceiling_passes(repo) -> None:
+def test_a_range_with_a_ceiling_passes(repo) -> None:
     root = repo(lifecycle=True, **{"pyproject.toml": _ranged()})
     assert _findings(root) == []
 
 
-def test_s7_3_7_2_an_exact_version_passes(repo) -> None:
+def test_an_exact_version_passes(repo) -> None:
     root = repo(
         lifecycle=True,
         **{"pyproject.toml": _ranged(commons="rn-forge-commons==0.7.0")},
@@ -432,7 +432,7 @@ def test_s7_3_7_2_an_exact_version_passes(repo) -> None:
     assert _findings(root) == []
 
 
-def test_s7_3_7_3_a_range_with_no_ceiling_is_refused(repo) -> None:
+def test_a_range_with_no_ceiling_is_refused(repo) -> None:
     root = repo(
         lifecycle=True,
         **{"pyproject.toml": _ranged(commons="rn-forge-commons>=0.7.0")},
@@ -442,19 +442,19 @@ def test_s7_3_7_3_a_range_with_no_ceiling_is_refused(repo) -> None:
     assert "rn-forge-commons" in found[0][1]
 
 
-def test_s7_3_7_4_a_bare_name_is_still_refused(repo) -> None:
+def test_a_bare_name_is_still_refused(repo) -> None:
     root = repo(
         lifecycle=True, **{"pyproject.toml": _ranged(commons="rn-forge-commons")}
     )
     assert [code for code, _, _ in _findings(root)] == ["deps.not-direct"]
 
 
-def test_s7_5_3_1_a_range_with_no_index_passes(repo) -> None:
+def test_a_range_with_no_index_passes(repo) -> None:
     root = repo(lifecycle=True, **{"pyproject.toml": _ranged()})
     assert _findings(root) == []
 
 
-def test_s7_5_3_2_the_pykit_index_is_refused(repo) -> None:
+def test_the_pykit_index_is_refused(repo) -> None:
     root = repo(lifecycle=True, **{"pyproject.toml": _ranged(index=True)})
     found = run_check(rn_forge_deps.NAME, root)
     assert [(f.code, f.severity, f.path) for f in found] == [
@@ -462,7 +462,7 @@ def test_s7_5_3_2_the_pykit_index_is_refused(repo) -> None:
     ]
 
 
-def test_s7_5_3_3_another_index_is_not_refused(repo) -> None:
+def test_another_index_is_not_refused(repo) -> None:
     other = '\n[[tool.uv.index]]\nname = "other"\nurl = "https://example.org/simple/"\n'
     root = repo(lifecycle=True, **{"pyproject.toml": _ranged() + other})
     assert _findings(root) == []

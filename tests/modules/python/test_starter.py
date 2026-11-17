@@ -1,4 +1,4 @@
-"""S4.9.1 — the `python` module's seeded starter source."""
+"""The `python` module's seeded starter source."""
 
 from __future__ import annotations
 
@@ -45,7 +45,7 @@ def _tool(root: Path, archetype: str = "python-tool") -> KilnConfig:
     return _config(root, archetype, name="python-tool")
 
 
-def test_s4_9_1_1_tool_starter_artifacts(tmp_path: Path) -> None:
+def test_tool_starter_artifacts(tmp_path: Path) -> None:
     config = _tool(tmp_path)
     _fresh(tmp_path, "python_tool")
     artifacts = starter.render(config, tmp_path)
@@ -59,7 +59,7 @@ def test_s4_9_1_1_tool_starter_artifacts(tmp_path: Path) -> None:
     assert "build_tool_app" in by_path["src/python_tool/main.py"]
 
 
-def test_s4_9_1_2_app_starter_has_no_product(tmp_path: Path) -> None:
+def test_app_starter_has_no_product(tmp_path: Path) -> None:
     config = _tool(tmp_path, "python-app")
     _fresh(tmp_path, "python_tool")
     artifacts = starter.render(config, tmp_path)
@@ -73,7 +73,7 @@ def test_s4_9_1_2_app_starter_has_no_product(tmp_path: Path) -> None:
     assert "rn_forge.tooling" not in main
 
 
-def test_s4_9_1_3_lib_starter_is_per_package(tmp_path: Path) -> None:
+def test_lib_starter_is_per_package(tmp_path: Path) -> None:
     config = _lib(tmp_path, ["packages/alpha-lib"])
     member = tmp_path / "packages" / "alpha-lib" / "src" / "alpha_lib"
     member.mkdir(parents=True)
@@ -92,7 +92,7 @@ def test_s4_9_1_3_lib_starter_is_per_package(tmp_path: Path) -> None:
     assert starter.render(_lib(empty, []), empty) == []
 
 
-def test_s4_9_1_4_gate(tmp_path: Path) -> None:
+def test_tool_starter_renders_only_into_a_fresh_package(tmp_path: Path) -> None:
     config = _tool(tmp_path)
     assert starter.render(config, tmp_path) == []
 
@@ -139,7 +139,7 @@ def _api_paths(api_dir: str) -> set[str]:
     }
 
 
-def test_s4_9_2_1_fastapi_starter_artifacts(tmp_path: Path) -> None:
+def test_fastapi_starter_artifacts(tmp_path: Path) -> None:
     api = tmp_path / "api"
     api.mkdir()
     config = _web(api, "python-web-api")
@@ -169,7 +169,7 @@ def test_s4_9_2_1_fastapi_starter_artifacts(tmp_path: Path) -> None:
     assert starter.render(config, django) == []
 
 
-def test_s4_9_2_2_gate(tmp_path: Path) -> None:
+def test_web_api_starter_renders_only_into_a_fresh_package(tmp_path: Path) -> None:
     config = _web(tmp_path, "python-web-api")
     assert starter.render(config, tmp_path) == []
     _fresh_api(tmp_path, "apps/api", "other.py")
@@ -180,7 +180,7 @@ def test_s4_9_2_2_gate(tmp_path: Path) -> None:
     assert len(starter.render(config, tmp_path)) == 4
 
 
-def test_s4_9_2_3_httpx_is_a_dev_dependency(tmp_path: Path) -> None:
+def test_httpx_is_a_dev_dependency(tmp_path: Path) -> None:
     from rn_forge.kiln.modules.python import scaffold
 
     config = _web(tmp_path, "python-web-api")
@@ -197,9 +197,7 @@ def test_s4_9_2_3_httpx_is_a_dev_dependency(tmp_path: Path) -> None:
     assert dev.index("httpx>=0.28.1") < dev.index("uvicorn>=0.30")
 
 
-def test_s4_9_2_4_new_records_seeded(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_new_records_seeded(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.chdir(tmp_path)
     directory = tmp_path / "demo"
     new_repo(
@@ -246,7 +244,7 @@ def _assert_formatter_stable(root: Path, artifacts: list[Artifact]) -> None:
 
 @pytest.mark.parametrize("name", ["t", "tool", "python-tool", LONG_NAME])
 @pytest.mark.parametrize("archetype", ["python-tool", "python-app", "python-lib"])
-def test_s4_9_5_1_starter_is_formatter_stable_at_any_name(
+def test_starter_is_formatter_stable_at_any_name(
     tmp_path: Path, name: str, archetype: str
 ) -> None:
     if archetype == "python-lib":
@@ -261,9 +259,7 @@ def test_s4_9_5_1_starter_is_formatter_stable_at_any_name(
 
 
 @pytest.mark.parametrize("name", ["demo", LONG_NAME])
-def test_s4_9_5_2_web_api_starter_is_formatter_stable(
-    tmp_path: Path, name: str
-) -> None:
+def test_web_api_starter_is_formatter_stable(tmp_path: Path, name: str) -> None:
     config = _config(tmp_path, "python-web-api", name=name, backend="fastapi")
     _fresh_api(tmp_path, "apps/api", module=module_name(f"{name}-api"))
     artifacts = starter.render(config, tmp_path)
@@ -271,7 +267,7 @@ def test_s4_9_5_2_web_api_starter_is_formatter_stable(
     _assert_formatter_stable(tmp_path, artifacts)
 
 
-def test_s6_9_1_4_python_starters_are_its_starter_paths(tmp_path: Path) -> None:
+def test_python_starters_are_its_starter_paths(tmp_path: Path) -> None:
     assert isinstance(PYTHON, StarterModule)
     config = _tool(tmp_path)
     _fresh(tmp_path, "python_tool")
@@ -283,7 +279,7 @@ def test_s6_9_1_4_python_starters_are_its_starter_paths(tmp_path: Path) -> None:
     assert not PYTHON.starters(config, tmp_path)
 
 
-def test_s18_6_3_2_starter_flags_seed_cli_and_lifecycle() -> None:
+def test_starter_flags_seed_cli_and_lifecycle() -> None:
     cli = {
         "name": "demo",
         "help": "The demo command line.",

@@ -1,6 +1,6 @@
-"""S5.2.1 — the reconcile, tested offline against the captured frontend scaffold.
+"""The reconcile, tested offline against the captured frontend scaffold.
 
-No test here runs `pnpm`: `tests/fixtures/scaffold/nx-angular/` (S5.2.2) stands
+No test here runs `pnpm`: `tests/fixtures/scaffold/nx-angular/` stands
 in for a live `create-nx-workspace` + `@nx/angular:application` run, copied
 into a temporary workspace directory and folded into a temporary root that
 already holds a `python-web-app` scaffold.
@@ -98,7 +98,7 @@ def test_angular_scaffold_has_its_own_git_boundary(tmp_path: Path) -> None:
     assert not (workspace / ".git").exists()
 
 
-def test_s5_2_1_reconcile_moves_fixture_into_root(tmp_path: Path) -> None:
+def test_reconcile_moves_fixture_into_root(tmp_path: Path) -> None:
     root = _root(tmp_path)
     workspace = _workspace(tmp_path)
     config = KilnConfig.load(root)
@@ -111,7 +111,7 @@ def test_s5_2_1_reconcile_moves_fixture_into_root(tmp_path: Path) -> None:
     assert not (root / "workspace").exists()
 
 
-def test_s4_4_1_reconcile_drops_scaffolder_readme(tmp_path: Path) -> None:
+def test_reconcile_drops_scaffolder_readme(tmp_path: Path) -> None:
     root = _root(tmp_path)
     workspace = _workspace(tmp_path)
     assert (workspace / "README.md").is_file()
@@ -121,7 +121,7 @@ def test_s4_4_1_reconcile_drops_scaffolder_readme(tmp_path: Path) -> None:
     assert not (root / "README.md").exists()
 
 
-def test_s5_2_1_reconcile_appends_scaffolder_gitignore(tmp_path: Path) -> None:
+def test_reconcile_appends_scaffolder_gitignore(tmp_path: Path) -> None:
     root = _root(tmp_path)
     workspace = _workspace(tmp_path)
     fixture_gitignore = (workspace / ".gitignore").read_text(encoding="utf-8")
@@ -135,7 +135,7 @@ def test_s5_2_1_reconcile_appends_scaffolder_gitignore(tmp_path: Path) -> None:
             assert line in body
 
 
-def test_s5_3_6_1_reconcile_composes_uv_then_nx_once(tmp_path: Path) -> None:
+def test_reconcile_composes_uv_then_nx_once(tmp_path: Path) -> None:
     root = _root(tmp_path)
     uv_body = (root / ".gitignore").read_text(encoding="utf-8")
     workspace = _workspace(tmp_path)
@@ -149,7 +149,7 @@ def test_s5_3_6_1_reconcile_composes_uv_then_nx_once(tmp_path: Path) -> None:
     )
 
 
-def test_s5_2_1_reconcile_renames_web_dir_and_rewrites_project_json(
+def test_reconcile_renames_web_dir_and_rewrites_project_json(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path, extra='web_dir = "apps/frontend"')
@@ -164,7 +164,7 @@ def test_s5_2_1_reconcile_renames_web_dir_and_rewrites_project_json(
     assert project["sourceRoot"] == "apps/frontend/src"
 
 
-def test_s18_12_2_2_a_custom_web_dir_leaves_no_scaffold_path(tmp_path: Path) -> None:
+def test_a_custom_web_dir_leaves_no_scaffold_path(tmp_path: Path) -> None:
     root = _root(tmp_path, extra='web_dir = "apps/portal"')
     workspace = _workspace(tmp_path)
 
@@ -177,7 +177,7 @@ def test_s18_12_2_2_a_custom_web_dir_leaves_no_scaffold_path(tmp_path: Path) -> 
     assert project["targets"]["build"]["options"]["outputPath"] == "dist/apps/portal"
 
 
-def test_s5_2_1_reconcile_refuses_a_root_that_already_holds_readme(
+def test_reconcile_refuses_a_root_that_already_holds_readme(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path)
@@ -189,7 +189,7 @@ def test_s5_2_1_reconcile_refuses_a_root_that_already_holds_readme(
         reconcile_node(root, workspace, config)
 
 
-def test_s5_2_1_no_kiln_artifact_lies_under_web_dir(tmp_path: Path) -> None:
+def test_no_kiln_artifact_lies_under_web_dir(tmp_path: Path) -> None:
     root = _root(tmp_path)
     config = KilnConfig.load(root)
 
@@ -197,7 +197,7 @@ def test_s5_2_1_no_kiln_artifact_lies_under_web_dir(tmp_path: Path) -> None:
         assert not artifact.key.startswith("apps/web")
 
 
-def test_s5_2_4_dispatch_rejects_a_frontend_with_no_scaffolder(
+def test_dispatch_rejects_a_frontend_with_no_scaffolder(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path, frontend="react")
@@ -210,7 +210,7 @@ def test_s5_2_4_dispatch_rejects_a_frontend_with_no_scaffolder(
     run.assert_not_called()
 
 
-def test_s5_2_4_frontend_module_owns_the_frontend_option() -> None:
+def test_frontend_module_owns_the_frontend_option() -> None:
     registry = builtin()
     owners = [
         m.name
@@ -220,7 +220,7 @@ def test_s5_2_4_frontend_module_owns_the_frontend_option() -> None:
     assert owners == ["node"]
 
 
-def test_s4_5_9_reconcile_node_leaves_the_raw_tree_untouched(
+def test_reconcile_node_leaves_the_raw_tree_untouched(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path, extra='web_dir = "apps/frontend"')
@@ -258,7 +258,7 @@ def _lib_root(tmp_path: Path) -> Path:
     return root
 
 
-def test_s9_1_8_1_node_lib_is_shipped_and_loads() -> None:
+def test_node_lib_is_shipped_and_loads() -> None:
     assert "node-lib" in archetypes.shipped()
     manifest = archetypes.load("node-lib")
     assert manifest.name == "node-lib"
@@ -294,7 +294,7 @@ _SHARED_STEPS = [
 ]
 
 
-def test_s9_2_2_1_node_lib_scaffolds_the_app_then_removes_it(tmp_path: Path) -> None:
+def test_node_lib_scaffolds_the_app_then_removes_it(tmp_path: Path) -> None:
     root = _lib_root(tmp_path)
     raw = tmp_path / "frontend"
     raw.mkdir()
@@ -305,7 +305,7 @@ def test_s9_2_2_1_node_lib_scaffolds_the_app_then_removes_it(tmp_path: Path) -> 
     assert [c.args[0] for c in calls] == [*_SHARED_STEPS, "nx-remove-app"]
 
 
-def test_s9_2_2_2_web_app_adds_ngkit_after_install_and_keeps_the_app(
+def test_web_app_adds_ngkit_after_install_and_keeps_the_app(
     tmp_path: Path,
 ) -> None:
     root = _root(tmp_path)
@@ -317,7 +317,7 @@ def test_s9_2_2_2_web_app_adds_ngkit_after_install_and_keeps_the_app(
     assert [c.args[0] for c in calls] == [*_SHARED_STEPS, "ngkit-core"]
 
 
-def test_s9_2_2_3_nx_remove_app_removes_web_in_the_workspace(tmp_path: Path) -> None:
+def test_nx_remove_app_removes_web_in_the_workspace(tmp_path: Path) -> None:
     root = _lib_root(tmp_path)
     raw = tmp_path / "frontend"
     raw.mkdir()
@@ -338,7 +338,7 @@ def test_s9_2_2_3_nx_remove_app_removes_web_in_the_workspace(tmp_path: Path) -> 
     assert remove.kwargs["cwd"] == str(workspace)
 
 
-def test_s9_2_2_4_python_web_api_has_no_node_scaffold(tmp_path: Path) -> None:
+def test_python_web_api_has_no_node_scaffold(tmp_path: Path) -> None:
     root = tmp_path / "root"
     config = root / ".rn-forge" / "kiln" / "config.toml"
     config.parent.mkdir(parents=True)
@@ -368,18 +368,14 @@ def _reconciled(tmp_path: Path, *, lib: bool) -> tuple[Path, KilnConfig]:
 
 
 @pytest.mark.parametrize("lib", [True, False])
-def test_s9_2_3_1_reconcile_node_writes_nvmrc_for_both(
-    tmp_path: Path, lib: bool
-) -> None:
+def test_reconcile_node_writes_nvmrc_for_both(tmp_path: Path, lib: bool) -> None:
     root, _ = _reconciled(tmp_path, lib=lib)
 
     assert (root / ".nvmrc").read_text(encoding="utf-8") == "24\n"
 
 
 @pytest.mark.parametrize("lib", [True, False])
-def test_s9_2_3_2_reconcile_node_pins_pnpm_in_package_json(
-    tmp_path: Path, lib: bool
-) -> None:
+def test_reconcile_node_pins_pnpm_in_package_json(tmp_path: Path, lib: bool) -> None:
     root, _ = _reconciled(tmp_path, lib=lib)
 
     package = DocumentUtils.read(root / "package.json")
@@ -388,7 +384,7 @@ def test_s9_2_3_2_reconcile_node_pins_pnpm_in_package_json(
 
 
 @pytest.mark.parametrize("lib", [True, False])
-def test_s9_2_3_3_neither_pin_is_a_managed_artifact(tmp_path: Path, lib: bool) -> None:
+def test_neither_pin_is_a_managed_artifact(tmp_path: Path, lib: bool) -> None:
     _, config = _reconciled(tmp_path, lib=lib)
 
     keys = [a.key for a in render(config)]
@@ -396,7 +392,7 @@ def test_s9_2_3_3_neither_pin_is_a_managed_artifact(tmp_path: Path, lib: bool) -
 
 
 @pytest.mark.parametrize("lib", [True, False])
-def test_s9_2_3_4_scaffold_node_pins_pnpm_before_the_last_lockfile_write(
+def test_scaffold_node_pins_pnpm_before_the_last_lockfile_write(
     tmp_path: Path, lib: bool
 ) -> None:
     root = _lib_root(tmp_path) if lib else _root(tmp_path)
@@ -420,7 +416,7 @@ def test_s9_2_3_4_scaffold_node_pins_pnpm_before_the_last_lockfile_write(
 
 
 @pytest.mark.parametrize("lib", [True, False])
-def test_s9_2_7_1_reconcile_node_keeps_empty_libs_and_apps_for_node_lib_only(
+def test_reconcile_node_keeps_empty_libs_and_apps_for_node_lib_only(
     tmp_path: Path, lib: bool
 ) -> None:
     root, _ = _reconciled(tmp_path, lib=lib)
@@ -432,7 +428,7 @@ def test_s9_2_7_1_reconcile_node_keeps_empty_libs_and_apps_for_node_lib_only(
             assert keep.read_text(encoding="utf-8") == ""
 
 
-def test_s9_1_8_3_reconcile_node_folds_the_workspace_and_writes_nvmrc(
+def test_reconcile_node_folds_the_workspace_and_writes_nvmrc(
     tmp_path: Path,
 ) -> None:
     root = _lib_root(tmp_path)
@@ -449,7 +445,7 @@ def test_s9_1_8_3_reconcile_node_folds_the_workspace_and_writes_nvmrc(
     assert not any(a.key.endswith(".nvmrc") for a in render(config))
 
 
-def test_s9_1_8_3_reconcile_node_writes_no_angular_starter(tmp_path: Path) -> None:
+def test_reconcile_node_writes_no_angular_starter(tmp_path: Path) -> None:
     root = _lib_root(tmp_path)
     workspace = _workspace(tmp_path)
     config = KilnConfig.load(root)
@@ -462,7 +458,7 @@ def test_s9_1_8_3_reconcile_node_writes_no_angular_starter(tmp_path: Path) -> No
     assert (root / "apps" / "web" / "project.json").read_bytes() == before
 
 
-def test_s9_1_8_4_root_pyproject_is_bare_with_docs_tooling(tmp_path: Path) -> None:
+def test_root_pyproject_is_bare_with_docs_tooling(tmp_path: Path) -> None:
     root = _lib_root(tmp_path)
     config = KilnConfig.load(root)
 
@@ -475,7 +471,7 @@ def test_s9_1_8_4_root_pyproject_is_bare_with_docs_tooling(tmp_path: Path) -> No
     assert "mdformat" in " ".join(document["dependency-groups"]["docs"])
 
 
-def test_s9_2_6_1_coverage_v8_installs_after_the_app_and_before_the_install(
+def test_coverage_v8_installs_after_the_app_and_before_the_install(
     tmp_path: Path,
 ) -> None:
     raw = tmp_path / "raw"
@@ -497,7 +493,7 @@ def test_s9_2_6_1_coverage_v8_installs_after_the_app_and_before_the_install(
     assert call.kwargs["cwd"] == str(raw / "workspace")
 
 
-def test_s9_2_6_1_vitest_coverage_names_the_pinned_package() -> None:
+def test_vitest_coverage_names_the_pinned_package() -> None:
     assert VITEST_COVERAGE == "@vitest/coverage-v8@^4.0.8"
 
 
@@ -505,9 +501,7 @@ _COVERAGE_OPTIONS = {"coverage": True, "coverageReporters": ["text-summary", "lc
 
 
 @pytest.mark.parametrize("lib", [True, False])
-def test_s9_2_6_2_reconcile_node_turns_coverage_on_in_nx_json(
-    tmp_path: Path, lib: bool
-) -> None:
+def test_reconcile_node_turns_coverage_on_in_nx_json(tmp_path: Path, lib: bool) -> None:
     root, _ = _reconciled(tmp_path, lib=lib)
 
     defaults = DocumentUtils.read(root / "nx.json")["targetDefaults"]
@@ -518,7 +512,7 @@ def test_s9_2_6_2_reconcile_node_turns_coverage_on_in_nx_json(
 
 
 @pytest.mark.parametrize("lib", [True, False])
-def test_s9_2_6_2_reconcile_node_keeps_what_nx_json_already_holds(
+def test_reconcile_node_keeps_what_nx_json_already_holds(
     tmp_path: Path, lib: bool
 ) -> None:
     root = _lib_root(tmp_path) if lib else _root(tmp_path)
@@ -585,16 +579,14 @@ PACK_DEFAULTS = {
 
 
 @pytest.mark.parametrize("lib", [True, False])
-def test_s9_3_5_1_reconcile_node_declares_the_release_block(
-    tmp_path: Path, lib: bool
-) -> None:
+def test_reconcile_node_declares_the_release_block(tmp_path: Path, lib: bool) -> None:
     root, _ = _reconciled(tmp_path, lib=lib)
 
     assert DocumentUtils.read(root / "nx.json")["release"] == RELEASE
 
 
 @pytest.mark.parametrize("lib", [True, False])
-def test_s9_3_5_2_reconcile_node_declares_pack_and_verify_dist(
+def test_reconcile_node_declares_pack_and_verify_dist(
     tmp_path: Path, lib: bool
 ) -> None:
     root, _ = _reconciled(tmp_path, lib=lib)
@@ -605,7 +597,7 @@ def test_s9_3_5_2_reconcile_node_declares_pack_and_verify_dist(
 
 
 @pytest.mark.parametrize("lib", [True, False])
-def test_s9_3_5_3_reconcile_node_keeps_a_release_nx_json_already_holds(
+def test_reconcile_node_keeps_a_release_nx_json_already_holds(
     tmp_path: Path, lib: bool
 ) -> None:
     root = _lib_root(tmp_path) if lib else _root(tmp_path)
@@ -626,11 +618,11 @@ def test_s9_3_5_3_reconcile_node_keeps_a_release_nx_json_already_holds(
     assert written["release"] == mine
     assert written["targetDefaults"]["pack"] == {"cache": False}
     assert written["targetDefaults"]["verify-dist"] == {"cache": True}
-    assert written["targetDefaults"]["verify-consumer"] == {"cache": True}  # S9.4.5.10
+    assert written["targetDefaults"]["verify-consumer"] == {"cache": True}
 
 
-def test_s9_3_5_4_release_values_are_ngkits() -> None:
-    pytest.skip("ngkit's nx.json changes in its cutover (F9.4)")
+def test_release_values_are_ngkits() -> None:
+    pytest.skip("ngkit's nx.json changes in its cutover")
     ngkit = Path(__file__).resolve().parents[3].parent / "ngkit"
     if not (ngkit / ".git").exists():
         pytest.skip("no ngkit checkout beside this repository")
@@ -646,7 +638,7 @@ def test_s9_3_5_4_release_values_are_ngkits() -> None:
     assert PACK_DEFAULTS["verify-dist"] == theirs["targetDefaults"]["verify-dist"]
 
 
-def test_s9_4_4_3_pack_and_verify_call_the_ci_dist_tasks() -> None:
+def test_pack_and_verify_call_the_ci_dist_tasks() -> None:
     assert PACK_DEFAULTS["pack"]["options"]["command"] == (
         "task ci:dist:resolve -- dist/{projectRoot} && mkdir -p dist/tarballs"
         " && npm pack ./dist/{projectRoot} --pack-destination dist/tarballs"
@@ -657,7 +649,7 @@ def test_s9_4_4_3_pack_and_verify_call_the_ci_dist_tasks() -> None:
     assert _RELEASE_TARGET_DEFAULTS == PACK_DEFAULTS
 
 
-def test_s9_2_6_2_nx_json_is_identical_in_both_cells(tmp_path: Path) -> None:
+def test_nx_json_is_identical_in_both_cells(tmp_path: Path) -> None:
     lib, _ = _reconciled(tmp_path / "lib", lib=True)
     app, _ = _reconciled(tmp_path / "app", lib=False)
 
@@ -668,11 +660,11 @@ def _version_tuple(spec: str) -> tuple[int, ...]:
     return tuple(int(part) for part in spec.lstrip("~^").split("."))
 
 
-def test_s15_2_5_1_nx_version() -> None:
+def test_nx_version_is_pinned() -> None:
     assert angular.NX_VERSION == "24.0.4"
 
 
-def test_s15_2_5_2_fixture_matches_the_pin() -> None:
+def test_fixture_matches_the_pin() -> None:
     package = json.loads((FIXTURE / "package.json").read_text(encoding="utf-8"))
     deps = {**package["dependencies"], **package["devDependencies"]}
     assert deps["nx"] == angular.NX_VERSION
@@ -683,13 +675,13 @@ def test_s15_2_5_2_fixture_matches_the_pin() -> None:
     assert all(_version_tuple(v) >= (22, 2, 1) for v in resolved)
 
 
-def test_s15_2_5_3_command_md_names_the_pin() -> None:
+def test_command_md_names_the_pin() -> None:
     text = (FIXTURE / "COMMAND.md").read_text(encoding="utf-8")
     assert angular.NX_VERSION in text.split("\n\n")[1]
 
 
 @pytest.mark.parametrize("lib", [True, False])
-def test_s16_7_8_1_reconcile_names_the_package_after_the_repository(
+def test_reconcile_names_the_package_after_the_repository(
     tmp_path: Path, lib: bool
 ) -> None:
     root, _ = _reconciled(tmp_path, lib=lib)
@@ -698,9 +690,7 @@ def test_s16_7_8_1_reconcile_names_the_package_after_the_repository(
 
 
 @pytest.mark.parametrize("lib", [True, False])
-def test_s16_7_8_2_the_rest_of_package_json_is_unchanged(
-    tmp_path: Path, lib: bool
-) -> None:
+def test_the_rest_of_package_json_is_unchanged(tmp_path: Path, lib: bool) -> None:
     root, _ = _reconciled(tmp_path, lib=lib)
 
     expected = json.loads((FIXTURE / "package.json").read_text(encoding="utf-8"))
@@ -709,7 +699,7 @@ def test_s16_7_8_2_the_rest_of_package_json_is_unchanged(
     assert DocumentUtils.read(root / "package.json") == expected
 
 
-def test_s16_7_8_3_scaffold_command_is_unchanged(tmp_path: Path) -> None:
+def test_scaffold_command_is_unchanged(tmp_path: Path) -> None:
     root = _lib_root(tmp_path)
     raw = tmp_path / "frontend"
     raw.mkdir()
@@ -723,9 +713,7 @@ def test_s16_7_8_3_scaffold_command_is_unchanged(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("lib", [True, False])
-def test_s9_4_5_10_verify_consumer_default_is_written(
-    tmp_path: Path, lib: bool
-) -> None:
+def test_verify_consumer_default_is_written(tmp_path: Path, lib: bool) -> None:
     root, _ = _reconciled(tmp_path, lib=lib)
     written = DocumentUtils.read(root / "nx.json")
     assert written["targetDefaults"]["verify-consumer"] == {

@@ -1,7 +1,6 @@
-"""S4.3.2 — the `docs` module's artifacts: the seeded tree.
+"""The `docs` module's artifacts: the seeded tree.
 
-Also proves the five properties every F4.3 story owes its module
-(`docs/specs/epics/E4-generator/F4.3-concern-modules.md`).
+Also proves the five properties every concern module owes.
 """
 
 from __future__ import annotations
@@ -97,7 +96,7 @@ def _codes(root: Path) -> list[str]:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_2_property1_renders_exactly_the_module_s_template_inventory_row(
+def test_renders_exactly_the_module_s_template_inventory_row(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _root(tmp_path, archetype)
@@ -109,9 +108,7 @@ def test_s4_3_2_property1_renders_exactly_the_module_s_template_inventory_row(
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_2_property2_into_an_empty_directory_only_creates(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_into_an_empty_directory_only_creates(tmp_path: Path, archetype: str) -> None:
     actions = _actions(_root(tmp_path, archetype), tmp_path)
     assert set(actions.values()) <= {Action.CREATE, Action.INSERT, Action.SKIP}
     assert all(
@@ -120,9 +117,7 @@ def test_s4_3_2_property2_into_an_empty_directory_only_creates(
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_2_property3_a_second_apply_changes_nothing(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_a_second_apply_changes_nothing(tmp_path: Path, archetype: str) -> None:
     """Seeds report `SKIP` once present — the engine never inspects them."""
     root = _new(tmp_path, archetype)
     actions = _actions(root, tmp_path)
@@ -161,11 +156,11 @@ def _is_subsequence(needle: list[str], haystack: list[str]) -> bool:
     return all(line in remaining for line in needle)
 
 
-def test_s4_3_2_property5_checks_pass_on_the_rendered_output(tmp_path: Path) -> None:
+def test_checks_pass_on_the_rendered_output(tmp_path: Path) -> None:
     assert _codes(_new(tmp_path)) == []
 
 
-def test_s4_3_2_property5_structure_fails_on_a_missing_area(tmp_path: Path) -> None:
+def test_structure_fails_on_a_missing_area(tmp_path: Path) -> None:
     root = _new(tmp_path)
     for page in (root / "docs" / "guides").iterdir():
         page.unlink()
@@ -173,13 +168,13 @@ def test_s4_3_2_property5_structure_fails_on_a_missing_area(tmp_path: Path) -> N
     assert "docs.missing-area" in _codes(root)
 
 
-def test_s4_3_2_property5_nav_fails_on_an_unnavigated_page(tmp_path: Path) -> None:
+def test_nav_fails_on_an_unnavigated_page(tmp_path: Path) -> None:
     root = _new(tmp_path)
     (root / "docs" / "guides" / "setup.md").write_text("# Setup\n", encoding="utf-8")
     assert "docs.nav-stale" in _codes(root)
 
 
-def test_s4_3_2_property5_site_fails_on_a_broken_link(tmp_path: Path) -> None:
+def test_site_fails_on_a_broken_link(tmp_path: Path) -> None:
     root = _new(tmp_path)
     (root / "docs" / "guides" / "index.md").write_text(
         "# Guides\n\n- [Gone](gone.md)\n", encoding="utf-8"
@@ -188,7 +183,7 @@ def test_s4_3_2_property5_site_fails_on_a_broken_link(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("profile", ["none", "external"])
-def test_s4_3_2_1_non_mkdocs_profiles_render_no_docs_artifacts(
+def test_non_mkdocs_profiles_render_no_docs_artifacts(
     tmp_path: Path, profile: str
 ) -> None:
     root = _root(tmp_path, profile=profile)
@@ -199,7 +194,7 @@ def test_s4_3_2_1_non_mkdocs_profiles_render_no_docs_artifacts(
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s4_3_2_1_mkdocs_build_strict_passes_on_the_rendered_tree(
+def test_mkdocs_build_strict_passes_on_the_rendered_tree(
     tmp_path: Path, archetype: str
 ) -> None:
     from mkdocs.commands.build import build
@@ -234,7 +229,7 @@ def test_s4_3_2_1_mkdocs_build_strict_passes_on_the_rendered_tree(
     assert (tmp_path / "site" / "index.html").is_file()
 
 
-def test_s4_3_2_2_an_edited_areas_yml_survives_and_is_what_the_check_reads(
+def test_an_edited_areas_yml_survives_and_is_what_the_check_reads(
     tmp_path: Path,
 ) -> None:
     root = _new(tmp_path)
@@ -252,7 +247,7 @@ def test_s4_3_2_2_an_edited_areas_yml_survives_and_is_what_the_check_reads(
     )
 
 
-def test_s4_3_2_3_a_new_page_updates_only_the_nav_block(tmp_path: Path) -> None:
+def test_a_new_page_updates_only_the_nav_block(tmp_path: Path) -> None:
     root = _new(tmp_path)
     mkdocs = root / "mkdocs.yml"
     before = mkdocs.read_text(encoding="utf-8")
@@ -272,14 +267,14 @@ def test_s4_3_2_3_a_new_page_updates_only_the_nav_block(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s13_1_1_2_no_docs_artifact_is_a_block(tmp_path: Path, archetype: str) -> None:
+def test_no_docs_artifact_is_a_block(tmp_path: Path, archetype: str) -> None:
     root = _root(tmp_path, archetype)
     kinds = {a.kind for a in DOCS.artifacts(KilnConfig.load(root), root)}
     assert ArtifactKind.BLOCK not in kinds
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s11_4_2_structure_files_are_managed_and_indexes_and_areas_are_seeded(
+def test_structure_files_are_managed_and_indexes_and_areas_are_seeded(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _root(tmp_path, archetype)
@@ -294,7 +289,7 @@ def test_s11_4_2_structure_files_are_managed_and_indexes_and_areas_are_seeded(
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s11_4_2_structure_files_carry_kiln_s_provenance_header(
+def test_structure_files_carry_kiln_s_provenance_header(
     tmp_path: Path, archetype: str
 ) -> None:
     root = _root(tmp_path, archetype)
@@ -316,7 +311,7 @@ def test_s11_4_2_structure_files_carry_kiln_s_provenance_header(
             assert "Generated by kiln" not in first, artifact.key
 
 
-def test_s11_4_2_an_edited_structure_file_is_drift_and_an_edited_index_is_not(
+def test_an_edited_structure_file_is_drift_and_an_edited_index_is_not(
     tmp_path: Path,
 ) -> None:
     root = _new(tmp_path)
@@ -344,7 +339,7 @@ def _rendered_mkdocs(root: Path) -> str:
     return artifacts["mkdocs.yml"].content
 
 
-def test_s11_2_2_2_a_python_lib_root_body_has_monorepo_glob_paths_and_snippets(
+def test_a_python_lib_root_body_has_monorepo_glob_paths_and_snippets(
     tmp_path: Path,
 ) -> None:
     body = _rendered_mkdocs(_config_root(tmp_path, "python-lib"))
@@ -365,7 +360,7 @@ def test_s11_2_2_2_a_python_lib_root_body_has_monorepo_glob_paths_and_snippets(
         ),
     ],
 )
-def test_s11_2_2_3_other_archetypes_list_src_and_each_package_src(
+def test_other_archetypes_list_src_and_each_package_src(
     tmp_path: Path, archetype: str, extra: str, paths: str
 ) -> None:
     body = _rendered_mkdocs(_config_root(tmp_path, archetype, extra))
@@ -374,7 +369,7 @@ def test_s11_2_2_3_other_archetypes_list_src_and_each_package_src(
     assert "snippets" not in body
 
 
-def test_s11_2_2_4_python_lib_adds_the_packages_area_and_the_package_docs_section(
+def test_python_lib_adds_the_packages_area_and_the_package_docs_section(
     tmp_path: Path,
 ) -> None:
     def rendered(archetype: str) -> dict[str, str]:
@@ -388,7 +383,7 @@ def test_s11_2_2_4_python_lib_adds_the_packages_area_and_the_package_docs_sectio
     assert "## Package docs" not in tool["docs/_structure.md"]
 
 
-def test_s16_10_4_5_structure_names_the_instruction_files_by_audience(
+def test_structure_names_the_instruction_files_by_audience(
     tmp_path: Path,
 ) -> None:
     root = _config_root(tmp_path, "python-lib")
@@ -404,9 +399,7 @@ def test_s16_10_4_5_structure_names_the_instruction_files_by_audience(
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s18_13_1_1_specs_structure_defines_briefs(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_specs_structure_defines_briefs(tmp_path: Path, archetype: str) -> None:
     root = _config_root(tmp_path, archetype)
     rendered = {a.key: a.content for a in DOCS.artifacts(KilnConfig.load(root), root)}
     text = " ".join(rendered["docs/specs/_structure.md"].split())
@@ -419,7 +412,7 @@ def test_s18_13_1_1_specs_structure_defines_briefs(
     assert "deletes the brief" in text
 
 
-def test_s11_2_2_5_python_lib_seeds_no_reference_area_and_the_others_keep_it(
+def test_python_lib_seeds_no_reference_area_and_the_others_keep_it(
     tmp_path: Path,
 ) -> None:
     def keys(archetype: str) -> set[str]:
@@ -452,9 +445,7 @@ def _rendered(tmp_path: Path, archetype: str) -> dict[str, str]:
 
 
 @pytest.mark.parametrize("archetype", ["python-app", "python-tool"])
-def test_s4_4_7_1_app_and_tool_seed_the_three_pages(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_app_and_tool_seed_the_three_pages(tmp_path: Path, archetype: str) -> None:
     root = _seed_root(tmp_path, archetype)
     artifacts = {a.key: a for a in DOCS.artifacts(KilnConfig.load(root), root)}
     for path in (DEV, DRIFT, PY_API):
@@ -462,14 +453,14 @@ def test_s4_4_7_1_app_and_tool_seed_the_three_pages(
     assert artifacts[PY_API].content == "# Python API\n\n::: demo\n"
 
 
-def test_s4_4_7_1_the_module_is_the_name_with_underscores(tmp_path: Path) -> None:
+def test_the_module_is_the_name_with_underscores(tmp_path: Path) -> None:
     root = write_config(tmp_path, "python-tool", name="my-demo-tool", docs="mkdocs")
     artifacts = {a.key: a for a in DOCS.artifacts(KilnConfig.load(root), root)}
     assert artifacts[PY_API].content == "# Python API\n\n::: my_demo_tool\n"
 
 
 @pytest.mark.parametrize("archetype", ["python-lib", "python-web-api"])
-def test_s4_4_7_2_lib_and_web_seed_two_pages(tmp_path: Path, archetype: str) -> None:
+def test_lib_and_web_seed_two_pages(tmp_path: Path, archetype: str) -> None:
     root = _seed_root(tmp_path, archetype)
     artifacts = {a.key: a for a in DOCS.artifacts(KilnConfig.load(root), root)}
     for path in (DEV, DRIFT):
@@ -480,7 +471,7 @@ def test_s4_4_7_2_lib_and_web_seed_two_pages(tmp_path: Path, archetype: str) -> 
 
 
 @pytest.mark.parametrize("archetype", [*ARCHETYPES, "python-web-api"])
-def test_s4_4_7_3_indexes_link_the_pages(tmp_path: Path, archetype: str) -> None:
+def test_indexes_link_the_pages(tmp_path: Path, archetype: str) -> None:
     pages = _rendered(tmp_path, archetype)
     lib = archetype == "python-lib"
     assert "[Development](development.md)" in pages["docs/guides/index.md"]
@@ -514,16 +505,14 @@ epic or feature and deletes both; a dropped idea's row and page are deleted too.
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s13_4_1_5_seeds_the_ideas_index_not_ideas_md(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_seeds_the_ideas_index_not_ideas_md(tmp_path: Path, archetype: str) -> None:
     root = _root(tmp_path, archetype)
     kinds = {a.key: a.kind for a in DOCS.artifacts(KilnConfig.load(root), root)}
     assert kinds["docs/specs/ideas/index.md"] is ArtifactKind.SEEDED
     assert "docs/specs/ideas.md" not in kinds
 
 
-def test_s13_4_1_5_seeded_ideas_index_is_the_template(tmp_path: Path) -> None:
+def test_seeded_ideas_index_is_the_template(tmp_path: Path) -> None:
     rendered = _rendered(tmp_path, "python-tool")
     assert rendered["docs/specs/ideas/index.md"] == IDEAS_INDEX
 
@@ -562,7 +551,7 @@ def _with_nav_body(text: str, body: str) -> str:
     return NAV_BLOCK.render(text, body)
 
 
-def test_s16_2_2_1_provenance_header(tmp_path: Path) -> None:
+def test_provenance_header(tmp_path: Path) -> None:
     root = _new(tmp_path)
     text = _mkdocs_text(root)
 
@@ -585,7 +574,7 @@ def test_s16_2_2_1_provenance_header(tmp_path: Path) -> None:
     assert _generated(root) == ["artifact.drift"]
 
 
-def test_s16_2_2_1b_nav_edit_is_not_drift(tmp_path: Path) -> None:
+def test_nav_edit_is_not_drift(tmp_path: Path) -> None:
     root = _new(tmp_path)
     text = _mkdocs_text(root)
 
@@ -603,7 +592,7 @@ def test_s16_2_2_1b_nav_edit_is_not_drift(tmp_path: Path) -> None:
         assert _generated(root) == ["artifact.drift"]
 
 
-def test_s16_2_2_2_site_dir(tmp_path: Path) -> None:
+def test_site_dir_is_set_or_omitted(tmp_path: Path) -> None:
     root = _new_with(tmp_path / "set", 'site_dir = ".docs-site"\n')
     assert "\nsite_dir: .docs-site\n" in _mkdocs_text(root)
 
@@ -611,7 +600,7 @@ def test_s16_2_2_2_site_dir(tmp_path: Path) -> None:
     assert "site_dir" not in _mkdocs_text(root)
 
 
-def test_s16_2_2_3_docs_mkdocs_table(tmp_path: Path) -> None:
+def test_docs_mkdocs_table(tmp_path: Path) -> None:
     root = _new_with(
         tmp_path,
         "\n[docs.mkdocs]\n"
@@ -637,7 +626,7 @@ def test_s16_2_2_3_docs_mkdocs_table(tmp_path: Path) -> None:
     assert _generated(root) == []
 
 
-def test_s16_2_2_4_unknown_key(tmp_path: Path) -> None:
+def test_unknown_mkdocs_key_is_refused(tmp_path: Path) -> None:
     for key in ("nav = []", 'repo_url = "x"', "theme = { palette = [] }"):
         root = _config_root(
             tmp_path / key[:3], "python-tool", f"\n[docs.mkdocs]\n{key}\n"
@@ -654,7 +643,7 @@ def test_s16_2_2_4_unknown_key(tmp_path: Path) -> None:
     KilnConfig.load(root)
 
 
-def test_s16_2_2_5_site_dir_only_when_given(tmp_path: Path) -> None:
+def test_site_dir_only_when_given(tmp_path: Path) -> None:
     root = _config_root(tmp_path, "python-lib", packages=LIB_PACKAGES)
     rendered = {a.key: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
     docs = rendered["tasks/docs.yml"]
@@ -667,7 +656,7 @@ def test_s16_2_2_5_site_dir_only_when_given(tmp_path: Path) -> None:
     assert docs.count('--site-dir "$site"') == 2
 
 
-def test_s16_2_2_6_nav_still_derived(tmp_path: Path) -> None:
+def test_nav_still_derived(tmp_path: Path) -> None:
     root = _new(tmp_path)
     (root / "docs" / "guides" / "setup.md").write_text("# Setup\n", encoding="utf-8")
 
@@ -685,7 +674,7 @@ def test_s16_2_2_6_nav_still_derived(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s16_2_2_7_add_page_cycle(tmp_path: Path, archetype: str) -> None:
+def test_add_page_cycle(tmp_path: Path, archetype: str) -> None:
     root = _new(tmp_path, archetype)
     (root / "docs" / "guides" / "new.md").write_text("# New\n", encoding="utf-8")
     index = root / "docs" / "guides" / "index.md"
@@ -730,14 +719,14 @@ def _mkdocs_origin(tmp_path: Path, origin: str, archetype: str = "python-tool") 
 @pytest.mark.parametrize(
     "origin", ["", GITHUB, "git@github.com:other/pykit.git", "https://gitlab.com/x/y"]
 )
-def test_s16_6_8_7_mkdocs_urls_come_from_config(tmp_path: Path, origin: str) -> None:
+def test_mkdocs_urls_come_from_config(tmp_path: Path, origin: str) -> None:
     text = _mkdocs_origin(tmp_path, origin)
 
     assert "\nsite_url: https://rn-forge.github.io/demo/\n" in text
     assert "\nrepo_url: https://github.com/rn-forge/demo\n" in text
 
 
-def test_s16_6_8_8_mkdocs_urls_need_no_git(tmp_path: Path) -> None:
+def test_mkdocs_urls_need_no_git(tmp_path: Path) -> None:
     root = _config_root(tmp_path, "python-tool", "")
     assert not (root / ".git").exists()
 
@@ -746,7 +735,7 @@ def test_s16_6_8_8_mkdocs_urls_need_no_git(tmp_path: Path) -> None:
     assert "site_url: https://rn-forge.github.io/demo/\n" in _mkdocs_text(root)
 
 
-def test_s16_6_8_9_owner_is_the_configured_one(tmp_path: Path) -> None:
+def test_owner_is_the_configured_one(tmp_path: Path) -> None:
     root = _config_root(tmp_path, "python-tool", "")
     config = root / ".rn-forge" / "kiln" / "config.toml"
     config.write_text(
@@ -762,7 +751,7 @@ def test_s16_6_8_9_owner_is_the_configured_one(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s16_6_7_4_mermaid_fence(tmp_path: Path, archetype: str) -> None:
+def test_mermaid_fence(tmp_path: Path, archetype: str) -> None:
     text = _mkdocs_origin(tmp_path, "", archetype)
 
     assert text.count("- pymdownx.superfences") == 1
@@ -775,7 +764,7 @@ def test_s16_6_7_4_mermaid_fence(tmp_path: Path, archetype: str) -> None:
     ) in text
 
 
-def test_s16_6_7_5_builds(tmp_path: Path) -> None:
+def test_rendered_site_builds_strictly(tmp_path: Path) -> None:
     from mkdocs.commands.build import build
     from mkdocs.config import load_config
 
@@ -807,7 +796,7 @@ MKDOCSTRINGS_OPTIONS = {
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s16_6_7_6_mkdocstrings_options(tmp_path: Path, archetype: str) -> None:
+def test_mkdocstrings_options(tmp_path: Path, archetype: str) -> None:
     text = _mkdocs_origin(tmp_path, "", archetype)
 
     # The safe loader has no `!!python/name` constructor; the fence is not under test here.

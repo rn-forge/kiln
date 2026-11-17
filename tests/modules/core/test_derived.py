@@ -1,4 +1,4 @@
-"""S16.2.2 — files with a derived region: the digest, the adapter and the one classifier."""
+"""Files with a derived region: the digest, the adapter and the one classifier."""
 
 from __future__ import annotations
 
@@ -83,7 +83,7 @@ def _write(root: Path, text: str) -> None:
     (root / "mkdocs.yml").write_text(text, encoding="utf-8")
 
 
-def test_s16_2_2_8_managed_digest() -> None:
+def test_managed_digest() -> None:
     plain = "a: 1\n"
     assert managed_digest("pyproject.toml", plain) == ContentHash.of(plain)
 
@@ -103,7 +103,7 @@ def test_s16_2_2_8_managed_digest() -> None:
         managed_digest("mkdocs.yml", f"nav:\n{NAV_BLOCK.begin}\n")
 
 
-def test_s16_2_2_9_apply_classifies_derived(root: Path, home: Path) -> None:
+def test_apply_classifies_derived(root: Path, home: Path) -> None:
     rendered = _read(root)
     assert _docs(root, home).action is Action.UNCHANGED
 
@@ -124,7 +124,7 @@ def test_s16_2_2_9_apply_classifies_derived(root: Path, home: Path) -> None:
     assert _docs(root, home).action is Action.DRIFT
 
 
-def test_s16_2_2_10_stale_derived_entry(root: Path, home: Path) -> None:
+def test_stale_derived_entry(root: Path, home: Path) -> None:
     rendered = _read(root)
     config = root / ".rn-forge" / "kiln" / "config.toml"
     config.write_text(BARE, encoding="utf-8")
@@ -145,7 +145,7 @@ def test_s16_2_2_10_stale_derived_entry(root: Path, home: Path) -> None:
     assert (change.action, change.intent) == (Action.DRIFT, Action.DELETE)
 
 
-def test_s16_2_2_11_first_managed_apply(tmp_path: Path, home: Path) -> None:
+def test_first_managed_apply(tmp_path: Path, home: Path) -> None:
     repo = tmp_path / "repo"
     config = repo / ".rn-forge" / "kiln" / "config.toml"
     config.parent.mkdir(parents=True)
@@ -180,7 +180,7 @@ def _calls(path: Path) -> list[tuple[str, int]]:
     return found
 
 
-def test_s16_2_2_12_one_classifier() -> None:
+def test_one_classifier() -> None:
     cycle_py = SRC / "rn_forge" / "kiln" / "modules" / "core" / "cycle.py"
     callers = {
         path: calls
@@ -208,31 +208,31 @@ def test_s16_2_2_12_one_classifier() -> None:
 _NAV_ROOT = Path(__file__).resolve().parents[3]
 
 
-def test_s19_2_1_1_nav_block_is_a_plain_managed_block() -> None:
+def test_nav_block_is_a_plain_managed_block() -> None:
     assert type(NAV_BLOCK) is ManagedBlock
     assert NAV_BLOCK.name == "derived nav"
     assert NAV_BLOCK.indent == "  "
     assert NAV_BLOCK.end_indent == ""
 
 
-def test_s19_2_1_2_the_markers_are_unchanged() -> None:
+def test_the_markers_are_unchanged() -> None:
     assert NAV_BLOCK.begin == "  # BEGIN derived nav"
     assert NAV_BLOCK.end == "# END derived nav"
 
 
-def test_s19_2_1_3_there_is_no_subclass() -> None:
+def test_there_is_no_subclass() -> None:
     text = Path(derived.__file__).read_text(encoding="utf-8")
     assert "_NavBlock" not in text
     assert "_marker" not in text
 
 
 @pytest.mark.parametrize("end", ["# END derived nav", "  # END derived nav"])
-def test_s19_2_1_4_the_nav_block_renders_either_end_form(end: str) -> None:
+def test_the_nav_block_renders_either_end_form(end: str) -> None:
     text = f"nav:\n  # BEGIN derived nav\n- a\n{end}\n"
     assert NAV_BLOCK.extract(text) == "- a\n"
 
 
-def test_s19_2_1_5_the_commons_floor_admits_end_indent() -> None:
+def test_the_commons_floor_admits_end_indent() -> None:
     project = tomllib.loads((_NAV_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     (dep,) = (
         d
