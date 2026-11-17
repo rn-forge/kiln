@@ -17,35 +17,35 @@ from rn_forge.kiln.devops.github import ReleaseStatus
         ("workflow_dispatch", "main", "main"),
     ],
 )
-def test_s6_7_2_branch_targets_exact_ref_name(
+def test_branch_targets_exact_ref_name(
     event: str, ref_name: str, expected: str
 ) -> None:
     assert github.sonar_branch(event, "branch", ref_name) == expected
 
 
 @pytest.mark.parametrize("ref_name", ["12/merge", "feature/x"])
-def test_s6_7_2_pull_request_passes_no_branch(ref_name: str) -> None:
+def test_pull_request_passes_no_branch(ref_name: str) -> None:
     # Fork PRs are skipped by the job's `if:`; the event alone decides here.
     assert github.sonar_branch("pull_request", "branch", ref_name) == ""
 
 
 @pytest.mark.parametrize("event", ["workflow_dispatch", "push"])
-def test_s6_7_2_tag_ref_is_unsupported(event: str) -> None:
+def test_tag_ref_is_unsupported(event: str) -> None:
     with pytest.raises(ValueError, match="unsupported ref"):
         github.sonar_branch(event, "tag", "v1.0")
 
 
-def test_s6_7_2_unsupported_event() -> None:
+def test_unsupported_event_raises() -> None:
     with pytest.raises(ValueError, match="unsupported event"):
         github.sonar_branch("schedule", "branch", "main")
 
 
-def test_s6_7_4_3_a_schedule_trigger_raises() -> None:
+def test_a_schedule_trigger_raises() -> None:
     with pytest.raises(ValueError):
         github.sonar_branch("schedule", "branch", "main")
 
 
-def test_s6_7_5_1_release_state_covers_every_case() -> None:
+def test_release_state_covers_every_case() -> None:
     cases = [
         (ReleaseStatus.NONE, False, ("true", "false", "false")),
         (ReleaseStatus.DRAFT, True, ("true", "true", "true")),
@@ -63,7 +63,7 @@ def test_s6_7_5_1_release_state_covers_every_case() -> None:
         }
 
 
-def test_s6_7_5_2_publish_commands_covers_every_case() -> None:
+def test_publish_commands_covers_every_case() -> None:
     files = ["dist/b.whl", "dist/a.tar.gz"]
 
     def call(status: ReleaseStatus, tagged: bool) -> list[list[str]]:
@@ -86,7 +86,7 @@ def test_s6_7_5_2_publish_commands_covers_every_case() -> None:
     assert call(ReleaseStatus.DRAFT, False)[0][:3] == ["gh", "release", "delete"]
 
 
-def test_s7_6_3_1_publish_commands_with_notes_are_not_latest() -> None:
+def test_publish_commands_with_notes_are_not_latest() -> None:
     files = ["dist/a.whl"]
     notes = ["--title", "T", "--notes-file", "n.md", "--latest=false"]
     for tagged, where in ((True, ["--verify-tag"]), (False, ["--target", "abc"])):
@@ -99,7 +99,7 @@ def test_s7_6_3_1_publish_commands_with_notes_are_not_latest() -> None:
 PYPI_FILES = ["dist/a/a.whl", "dist/a/a.cdx.json", "dist/a/a.tar.gz"]
 
 
-def test_s7_6_4_7_upload_to_pypi_when_not_on_the_index() -> None:
+def test_upload_to_pypi_when_not_on_the_index() -> None:
     assert github.upload_commands("pypi", "a", "1.0", PYPI_FILES, False) == [
         [
             "uv", "publish", "--trusted-publishing", "always",
@@ -108,7 +108,7 @@ def test_s7_6_4_7_upload_to_pypi_when_not_on_the_index() -> None:
     ]  # fmt: skip
 
 
-def test_s7_6_4_8_upload_to_testpypi_names_the_index() -> None:
+def test_upload_to_testpypi_names_the_index() -> None:
     assert github.upload_commands("testpypi", "a", "1.0", PYPI_FILES, False) == [
         [
             "uv", "publish", "--trusted-publishing", "always",
@@ -119,13 +119,13 @@ def test_s7_6_4_8_upload_to_testpypi_names_the_index() -> None:
 
 
 @pytest.mark.parametrize("index", ["pypi", "testpypi"])
-def test_s7_6_4_9_nothing_is_uploaded_when_the_index_has_the_version(
+def test_nothing_is_uploaded_when_the_index_has_the_version(
     index: str,
 ) -> None:
     assert github.upload_commands(index, "a", "1.0", PYPI_FILES, True) == []
 
 
-def test_s7_6_4_10_only_wheels_and_sdists_are_uploaded() -> None:
+def test_only_wheels_and_sdists_are_uploaded() -> None:
     (command,) = github.upload_commands(
         "pypi", "a", "1.0", ["x.cdx.json", "x.whl", "notes.md"], False
     )
@@ -133,7 +133,7 @@ def test_s7_6_4_10_only_wheels_and_sdists_are_uploaded() -> None:
     assert not any(part.endswith((".cdx.json", ".md")) for part in command)
 
 
-def test_s6_8_3_3_upload_includes_attestations() -> None:
+def test_upload_includes_attestations() -> None:
     files = [
         "x.cdx.json", "x.whl", "x.whl.publish.attestation",
         "x.tar.gz", "x.tar.gz.publish.attestation",
@@ -156,7 +156,7 @@ class _Response:
         return None
 
 
-def test_s7_6_4_11_on_index_reads_the_json_endpoint(
+def test_on_index_reads_the_json_endpoint(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     urls: list[str] = []
@@ -171,7 +171,7 @@ def test_s7_6_4_11_on_index_reads_the_json_endpoint(
 
 
 @pytest.mark.parametrize(("code", "expected"), [(404, False), (500, None)])
-def test_s7_6_4_12_on_index_is_false_on_404_and_raises_otherwise(
+def test_on_index_is_false_on_404_and_raises_otherwise(
     monkeypatch: pytest.MonkeyPatch, code: int, expected: bool | None
 ) -> None:
     def urlopen(url: str, **kwargs: object) -> _Response:

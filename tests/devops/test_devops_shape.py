@@ -34,13 +34,13 @@ ARGV = {
 }
 
 
-def test_s18_9_4_1_ci_is_pure() -> None:
+def test_ci_is_pure() -> None:
     text = CI.read_text(encoding="utf-8")
     assert "import subprocess" not in text
     assert "print(" not in text
 
 
-def test_s18_9_4_2_every_subcommand_dispatches_by_func() -> None:
+def test_every_subcommand_dispatches_by_func() -> None:
     parser = cli._parser()
     action = next(
         a
@@ -60,7 +60,7 @@ PAGES = {
 }
 
 
-def test_s18_9_4_3_umbrella_and_work_read_pages_alike(tmp_path: Path) -> None:
+def test_umbrella_and_work_read_pages_alike(tmp_path: Path) -> None:
     for number, text in PAGES.items():
         page = tmp_path / "releases" / f"release-{number}" / "index.md"
         page.parent.mkdir(parents=True)

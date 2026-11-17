@@ -15,7 +15,7 @@ from tests.conftest import write_config
 SRC = Path(__file__).resolve().parents[1] / "src" / "rn_forge" / "kiln"
 
 
-def test_s18_7_1_1_only_config_reads_the_document_by_getattr() -> None:
+def test_only_config_reads_the_document_by_getattr() -> None:
     offenders = sorted(
         path.relative_to(SRC).as_posix()
         for path in SRC.rglob("*.py")
@@ -28,7 +28,7 @@ def test_s18_7_1_1_only_config_reads_the_document_by_getattr() -> None:
     assert offenders == []
 
 
-def test_s18_7_1_2_sections_default_as_today(tmp_path: Path) -> None:
+def test_sections_default_as_today(tmp_path: Path) -> None:
     write_config(tmp_path, "python-tool", tail='\n[kiln]\nref = "v1.2.3"\n')
     config = KilnConfig.load(tmp_path)
     assert config.ci == CiConfig()
@@ -60,7 +60,7 @@ CELLS = [
 
 
 @pytest.mark.parametrize(("archetype", "extra", "expected"), CELLS)
-def test_s18_7_1_3_archetype_answers(
+def test_archetype_properties_answer_per_archetype(
     tmp_path: Path,
     archetype: str,
     extra: dict[str, object],
@@ -79,7 +79,7 @@ def test_s18_7_1_3_archetype_answers(
     ) == expected
 
 
-def test_s18_7_1_4_module_name_is_the_one_conversion() -> None:
+def test_module_name_is_the_one_conversion() -> None:
     from rn_forge.kiln.modules.core.names import module_name
     from rn_forge.kiln.modules.python import artifacts
 
@@ -87,7 +87,7 @@ def test_s18_7_1_4_module_name_is_the_one_conversion() -> None:
     assert not hasattr(artifacts, "root_package")
 
 
-def test_s18_7_1_5_web_project_is_the_nx_project(tmp_path: Path) -> None:
+def test_web_project_is_the_nx_project(tmp_path: Path) -> None:
     write_config(
         tmp_path,
         "python-web-app",

@@ -236,7 +236,7 @@ def _render(parent: Path, archetype: str) -> Path:
             subprocess.run(["git", *args], cwd=root, check=True, capture_output=True)
         for package in ("lib-alpha", "lib-beta"):
             commands.generate_package(package, path=root)
-        # generate_package writes a bare skeleton (S16.6.11), so the library's
+        # generate_package writes a bare skeleton, so the library's
         # packages carry their starter.
         cycle.apply(root, starters="packages/")
     return root
@@ -272,7 +272,7 @@ def rendered(
 def new_repo(directory: Path, **kwargs: Any) -> None:
     """`commands.new` with `owner="rn-forge"` unless the call gives one.
 
-    S16.6.8 made the owner required; a test about the owner itself calls
+    The owner is required; a test about the owner itself calls
     `commands.new` directly.
     """
     from rn_forge.kiln import commands

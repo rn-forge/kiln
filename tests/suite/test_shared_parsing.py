@@ -1,4 +1,4 @@
-"""S18.7.3 — shared parsing has one implementation."""
+"""Shared parsing has one implementation."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ def _defined_names(path: Path) -> set[str]:
     return names
 
 
-def test_s18_7_3_1_subprocess_only_in_the_process_helper() -> None:
+def test_subprocess_only_in_the_process_helper() -> None:
     helper = MODULES / "core" / "process.py"
     importers: list[str] = []
     executors: list[str] = []
@@ -49,7 +49,7 @@ def test_s18_7_3_1_subprocess_only_in_the_process_helper() -> None:
     assert helper.is_file()
 
 
-def test_s18_7_3_2_one_step_scanner() -> None:
+def test_one_step_scanner() -> None:
     from rn_forge.kiln.modules.core.steps import step_commands
 
     lines = ["- run: task a", "  run: |", "    task b", "    task c", "- name: x"]
@@ -67,7 +67,7 @@ def test_s18_7_3_2_one_step_scanner() -> None:
         )
 
 
-def test_s18_7_3_3_one_docs_helper_each() -> None:
+def test_one_docs_helper_each() -> None:
     from rn_forge.kiln.modules.docs import packages, pages, parsed, work
     from rn_forge.kiln.modules.docs.findings import error
 
@@ -85,6 +85,6 @@ def test_s18_7_3_3_one_docs_helper_each() -> None:
         assert not (gone & _defined_names(path) - allowed.get(path.name, set())), path
 
 
-def test_s18_7_3_4_devops_names_follow_packaging() -> None:
+def test_devops_names_follow_packaging() -> None:
     assert normalize("Foo_Bar.baz") == "foo-bar-baz"
     assert requirement_name("Foo_Bar[x]>=1; python_version>'3'") == "foo-bar"

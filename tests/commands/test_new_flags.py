@@ -33,24 +33,24 @@ def _reset_console_mode() -> Any:
     console.set_mode(OutputMode.PLAIN)
 
 
-def test_s4_5_1_flags_match_module_union() -> None:
+def test_flags_match_module_union() -> None:
     """`new`'s config-setting flags are exactly backed by a registered module's `Option`.
 
-    `framework`/`frontend` join both the signature and this set once F5.1/F5.2
-    register a module that declares them — see `FLAG_NAMES` in commands/new.py
+    `framework`/`frontend` join both the signature and this set once
+    a module that declares them is registered — see `FLAG_NAMES` in commands/new.py
     comment.
     """
     union = {option.flag for module in builtin().modules for option in module.options()}
     assert set(FLAG_NAMES) == union
 
 
-def test_s4_5_1_preview_without_yes_writes_nothing(tmp_path: Path) -> None:
+def test_preview_without_yes_writes_nothing(tmp_path: Path) -> None:
     directory = tmp_path / "preview"
     new_repo(directory, archetype="python-app", docs="none")
     assert not (directory / ".rn-forge").exists()
 
 
-def test_s4_5_1_preview_json_lists_artifacts_without_writing(
+def test_preview_json_lists_artifacts_without_writing(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     directory = tmp_path / "preview"
@@ -64,7 +64,7 @@ def test_s4_5_1_preview_json_lists_artifacts_without_writing(
     assert not (directory / ".rn-forge").exists()
 
 
-def test_s4_5_1_nonempty_directory_is_refused_and_writes_nothing(
+def test_nonempty_directory_is_refused_and_writes_nothing(
     tmp_path: Path,
 ) -> None:
     directory = tmp_path / "full"
@@ -76,7 +76,7 @@ def test_s4_5_1_nonempty_directory_is_refused_and_writes_nothing(
     assert not (directory / ".rn-forge").exists()
 
 
-def test_s4_5_1_untested_flag_value_is_refused_without_allow_untested() -> None:
+def test_untested_flag_value_is_refused_without_allow_untested() -> None:
     manifest = archetypes.Archetype.parse(
         tomllib.loads(
             """
@@ -111,7 +111,7 @@ def test_s4_5_1_untested_flag_value_is_refused_without_allow_untested() -> None:
 
 
 @pytest.mark.parametrize("value", [None, ""])
-def test_s4_5_1_missing_archetype_is_refused(tmp_path: Path, value: str | None) -> None:
+def test_missing_archetype_is_refused(tmp_path: Path, value: str | None) -> None:
     kwargs: dict[str, Any] = {"docs": "none"}
     if value is not None:
         kwargs["archetype"] = value
@@ -153,7 +153,7 @@ def test_s4_5_1_missing_archetype_is_refused(tmp_path: Path, value: str | None) 
         ),
     ],
 )
-def test_s5_1_1_4_a_refused_selector_is_rejected_before_writing(
+def test_a_refused_selector_is_rejected_before_writing(
     tmp_path: Path, match: str, kwargs: dict[str, Any]
 ) -> None:
     directory = tmp_path / "repo"
@@ -163,7 +163,7 @@ def test_s5_1_1_4_a_refused_selector_is_rejected_before_writing(
 
 
 @pytest.mark.parametrize("archetype", ["python-web-api", "python-web-app"])
-def test_s5_3_1_web_defaults_select_fastapi(archetype: str) -> None:
+def test_web_defaults_select_fastapi(archetype: str) -> None:
     manifest = archetypes.load(archetype)
     flags = flag_layer(
         archetype=archetype,
@@ -185,7 +185,7 @@ def test_s5_3_1_web_defaults_select_fastapi(archetype: str) -> None:
         ("python-web-app", "frontend", "svelte"),
     ],
 )
-def test_s5_3_1_explicit_selectors_override_web_defaults(
+def test_explicit_selectors_override_web_defaults(
     archetype: str, selector: str, value: str
 ) -> None:
     manifest = archetypes.load(archetype)
@@ -203,7 +203,7 @@ def test_s5_3_1_explicit_selectors_override_web_defaults(
 
 
 @pytest.mark.parametrize("archetype", ["python-web-api", "python-web-app"])
-def test_s5_3_1_django_remains_untested_for_both_web_archetypes(
+def test_django_remains_untested_for_both_web_archetypes(
     tmp_path: Path, archetype: str
 ) -> None:
     with pytest.raises(AppException, match="django"):
@@ -218,7 +218,7 @@ def test_s5_3_1_django_remains_untested_for_both_web_archetypes(
 
 
 @requires("uv")
-def test_s4_5_1_yes_creates_and_passes_every_check(tmp_path: Path) -> None:
+def test_yes_creates_and_passes_every_check(tmp_path: Path) -> None:
     """The slow path: `uv init` through the python scaffold, then a full apply."""
     directory = tmp_path / "demo"
     new_repo(directory, archetype="python-tool", docs="none", yes=True)
@@ -228,7 +228,7 @@ def test_s4_5_1_yes_creates_and_passes_every_check(tmp_path: Path) -> None:
     assert checks.run(directory) == []
 
 
-def test_s4_5_1_yes_json_artifacts_actions_only_create_insert_or_skip(
+def test_yes_json_artifacts_actions_only_create_insert_or_skip(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     directory = tmp_path / "demo-json"
@@ -241,7 +241,7 @@ def test_s4_5_1_yes_json_artifacts_actions_only_create_insert_or_skip(
     )
 
 
-def test_s4_5_1_config_layer_merges_beneath_flags(tmp_path: Path) -> None:
+def test_config_layer_merges_beneath_flags(tmp_path: Path) -> None:
     layer_dir = tmp_path / "layer"
     layer_dir.mkdir()
     (layer_dir / "config.toml").write_text("[ci]\nsonar = false\n", encoding="utf-8")
@@ -261,7 +261,7 @@ def test_s4_5_1_config_layer_merges_beneath_flags(tmp_path: Path) -> None:
     assert written["ci"]["sonar"] is False
 
 
-def test_s16_9_1_2_new_with_a_local_config_records_no_source(tmp_path: Path) -> None:
+def test_new_with_a_local_config_records_no_source(tmp_path: Path) -> None:
     layer_dir = tmp_path / "layer"
     layer_dir.mkdir()
     (layer_dir / "config.toml").write_text("[ci]\nsonar = false\n", encoding="utf-8")
@@ -282,7 +282,7 @@ def test_s16_9_1_2_new_with_a_local_config_records_no_source(tmp_path: Path) -> 
     assert str(tmp_path) not in text
 
 
-def test_s7_4_1_5_new_pins_kiln(tmp_path: Path, kiln_remote_sha: str) -> None:
+def test_new_pins_kiln(tmp_path: Path, kiln_remote_sha: str) -> None:
     directory = tmp_path / "demo-pinned"
     new_repo(directory, archetype="python-tool", docs="none", yes=True)
     written = tomllib.loads(
@@ -291,7 +291,7 @@ def test_s7_4_1_5_new_pins_kiln(tmp_path: Path, kiln_remote_sha: str) -> None:
     assert written["kiln"] == {"ref": kiln_remote_sha, "track": archetypes.KILN_REF}
 
 
-def test_s7_4_1_6_a_config_layer_pin_wins(tmp_path: Path) -> None:
+def test_a_config_layer_pin_wins(tmp_path: Path) -> None:
     layer_dir = tmp_path / "layer"
     layer_dir.mkdir()
     (layer_dir / "config.toml").write_text('[kiln]\nref = "v1.2.3"\n', encoding="utf-8")
@@ -309,7 +309,7 @@ def test_s7_4_1_6_a_config_layer_pin_wins(tmp_path: Path) -> None:
     assert written["kiln"]["ref"] == "v1.2.3"
 
 
-def test_s6_1_16_3_new_takes_the_name_from_config(tmp_path: Path) -> None:
+def test_new_takes_the_name_from_config(tmp_path: Path) -> None:
     layer_dir = tmp_path / "layer"
     layer_dir.mkdir()
     (layer_dir / "config.toml").write_text(
@@ -353,7 +353,7 @@ def _bare_layer_repo(tmp_path: Path, layer: str) -> tuple[str, str]:
     return f"git+file://{bare}", sha
 
 
-def test_s4_5_7_1_git_config_merges_beneath_flags_and_records_source(
+def test_git_config_merges_beneath_flags_and_records_source(
     tmp_path: Path,
 ) -> None:
     location, sha = _bare_layer_repo(
@@ -380,7 +380,7 @@ def test_s4_5_7_1_git_config_merges_beneath_flags_and_records_source(
     assert len(sha) == 40
 
 
-def test_s4_5_7_2_unreachable_url_and_missing_ref_name_the_url(
+def test_unreachable_url_and_missing_ref_name_the_url(
     tmp_path: Path,
 ) -> None:
     missing = f"git+file://{tmp_path / 'nope.git'}"
@@ -406,9 +406,7 @@ def test_s4_5_7_2_unreachable_url_and_missing_ref_name_the_url(
     assert not (tmp_path / "b").exists()
 
 
-def test_s18_14_1_5_new_pins_the_branch_head(
-    tmp_path: Path, kiln_remote_sha: str
-) -> None:
+def test_new_pins_the_branch_head(tmp_path: Path, kiln_remote_sha: str) -> None:
     directory = tmp_path / "demo-head"
     new_repo(directory, archetype="python-tool", docs="none", yes=True)
     written = tomllib.loads(

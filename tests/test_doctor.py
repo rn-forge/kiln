@@ -1,4 +1,4 @@
-"""S4.6.1 — `kiln doctor`: one report across modules. S4.6.5 — ownership."""
+"""`kiln doctor`: one report across modules, and ownership."""
 
 from __future__ import annotations
 
@@ -158,12 +158,12 @@ QUALITY = frozenset({"rn-forge-deps", "docs-structure", "docs-site"})
 LIB_ONLY = frozenset({"workspace-ci", "nx-version"})
 
 
-def test_s4_6_1_1_every_registered_check_has_a_break() -> None:
+def test_every_registered_check_has_a_break() -> None:
     assert set(BREAKS) | LIB_ONLY == set(checks.names())
 
 
 @pytest.mark.parametrize("name", [n for n in checks.names() if n not in LIB_ONLY])
-def test_s4_6_1_1_each_check_reports_only_its_own_code(copy: Path, name: str) -> None:
+def test_each_check_reports_only_its_own_code(copy: Path, name: str) -> None:
     breaker, prefix = BREAKS[name]
     assert checks.run(copy) == []
     breaker(copy)
@@ -183,12 +183,12 @@ def test_s4_6_1_1_each_check_reports_only_its_own_code(copy: Path, name: str) ->
             assert errors == [], (other, [str(f) for f in errors])
 
 
-def test_s4_6_1_2_full_on_a_fresh_repo_exits_0(copy: Path) -> None:
+def test_full_on_a_fresh_repo_exits_0(copy: Path) -> None:
     assert doctor_full(copy) == []
     commands.doctor([copy], full=True)
 
 
-def test_s4_6_1_2_full_reports_a_stale_artifact(copy: Path) -> None:
+def test_full_reports_a_stale_artifact(copy: Path) -> None:
     _edit(
         copy,
         ".rn-forge/kiln/config.toml",
@@ -202,7 +202,7 @@ def test_s4_6_1_2_full_reports_a_stale_artifact(copy: Path) -> None:
         commands.doctor([copy], full=True)
 
 
-def test_s4_6_1_2_warnings_alone_exit_0(
+def test_warnings_alone_exit_0_for_one_repo(
     copy: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     def warn(config: object, root: Path) -> list[Finding]:
@@ -212,7 +212,7 @@ def test_s4_6_1_2_warnings_alone_exit_0(
     commands.doctor([copy])
 
 
-def test_s4_6_1_3_json_lists_every_finding_in_module_order(
+def test_json_lists_every_finding_in_module_order(
     copy: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _break_generated(copy)  # core
@@ -232,7 +232,7 @@ def test_s4_6_1_3_json_lists_every_finding_in_module_order(
     assert codes.index("docs.nav-stale") < codes.index("ci.unpinned")
 
 
-def test_s4_6_1_4_apply_fails_on_an_error_finding(
+def test_apply_fails_on_an_error_finding(
     copy: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     def fail(config: object, root: Path) -> list[Finding]:
@@ -243,7 +243,7 @@ def test_s4_6_1_4_apply_fails_on_an_error_finding(
         commands.apply()
 
 
-def test_s4_6_5_1_seeded_edits_and_deletions_are_silent(copy: Path) -> None:
+def test_seeded_edits_and_deletions_are_silent(copy: Path) -> None:
     _edit(copy, "README.md", lambda text: text + "\nmy own words\n")
     (copy / "src" / "python_app" / "commands.py").unlink()
     for findings in (checks.run(copy), doctor_full(copy)):
@@ -255,7 +255,7 @@ def test_s4_6_5_1_seeded_edits_and_deletions_are_silent(copy: Path) -> None:
         assert findings == []
 
 
-def test_s4_6_5_2_repository_owned_pyproject_and_layout_are_silent(
+def test_repository_owned_pyproject_and_layout_are_silent(
     copy: Path,
 ) -> None:
     _edit(
@@ -270,7 +270,7 @@ def test_s4_6_5_2_repository_owned_pyproject_and_layout_are_silent(
     assert checks.run(copy) == []
 
 
-def test_s4_6_5_3_quality_checks_run_by_default(copy: Path) -> None:
+def test_quality_checks_run_by_default(copy: Path) -> None:
     _break_quality(copy)
     assert checks.run(copy, scope="ownership") == []
     assert {"docs.broken-link", "deps.required-missing"} <= {
@@ -280,7 +280,7 @@ def test_s4_6_5_3_quality_checks_run_by_default(copy: Path) -> None:
     assert run_check("rn-forge-deps", copy)
 
 
-def test_s4_6_5_4_a_sibling_under_rn_forge_is_ignored(copy: Path) -> None:
+def test_a_sibling_under_rn_forge_is_ignored(copy: Path) -> None:
     before = ([str(f) for f in checks.run(copy)], [str(f) for f in doctor_full(copy)])
     sibling = copy / ".rn-forge" / "other"
     sibling.mkdir()
@@ -289,7 +289,7 @@ def test_s4_6_5_4_a_sibling_under_rn_forge_is_ignored(copy: Path) -> None:
     assert after == before
 
 
-def test_s4_6_5_5_managed_drift_still_reported(copy: Path) -> None:
+def test_managed_drift_still_reported(copy: Path) -> None:
     _break_generated(copy)
     assert "artifact.drift" in {f.code for f in checks.run(copy)}
     _edit(copy, "Taskfile.yml", lambda text: text.replace("\n# edit\n", ""))
@@ -298,7 +298,7 @@ def test_s4_6_5_5_managed_drift_still_reported(copy: Path) -> None:
     assert [f.path for f in missing] == ["tasks/quality.yml"]
 
 
-def test_s4_6_5_6_malformed_config_still_errors(copy: Path) -> None:
+def test_malformed_config_still_errors(copy: Path) -> None:
     (copy / ".rn-forge" / "kiln" / "config.toml").write_text(
         "not = [valid", encoding="utf-8"
     )
@@ -331,7 +331,7 @@ def _warn_only(monkeypatch: pytest.MonkeyPatch, repo_name: str) -> None:
     monkeypatch.setattr(checks, "run", run)
 
 
-def test_s4_6_3_1_table_has_one_row_per_repo(
+def test_table_has_one_row_per_repo(
     fleet: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.chdir(fleet)
@@ -346,19 +346,19 @@ def test_s4_6_3_1_table_has_one_row_per_repo(
     assert [("clean" in row) for row in rows] == [True, False]
 
 
-def test_s4_6_3_1_more_than_one_path_needs_all(fleet: Path) -> None:
+def test_more_than_one_path_needs_all(fleet: Path) -> None:
     with pytest.raises(AppException, match="--all"):
         commands.doctor([fleet / "clean", fleet / "warned"])
 
 
-def test_s4_6_3_1_single_path_json_is_unchanged(
+def test_single_path_json_is_unchanged(
     fleet: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     commands.doctor([fleet / "clean"], json=True)
     assert json.loads(capsys.readouterr().out) == {"findings": []}
 
 
-def test_s4_6_3_2_json_attributes_findings(
+def test_json_attributes_findings(
     fleet: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.chdir(fleet)
@@ -377,7 +377,7 @@ def test_s4_6_3_2_json_attributes_findings(
     assert payload["summary"] == {"repos": 2, "errors": errors, "warnings": 0}
 
 
-def test_s4_6_3_3_a_non_kiln_path_is_its_own_error(
+def test_a_non_kiln_path_is_its_own_error(
     fleet: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.chdir(fleet)
@@ -391,19 +391,17 @@ def test_s4_6_3_3_a_non_kiln_path_is_its_own_error(
     assert "artifact.drift" in {i["code"] for i in broken["findings"]}
 
 
-def test_s4_6_3_3_full_runs_per_repo(fleet: Path) -> None:
+def test_full_runs_per_repo(fleet: Path) -> None:
     commands.doctor([fleet / "clean", fleet / "warned"], all=True, full=True)
 
 
 @pytest.mark.parametrize("order", [("clean", "broken"), ("broken", "clean")])
-def test_s4_6_3_4_exit_is_order_independent(
-    fleet: Path, order: tuple[str, str]
-) -> None:
+def test_exit_is_order_independent(fleet: Path, order: tuple[str, str]) -> None:
     with pytest.raises(AppException):
         commands.doctor([fleet / name for name in order], all=True)
 
 
-def test_s4_6_3_5_three_repos_clean_warnings_errors(
+def test_three_repos_clean_warnings_errors(
     fleet: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.chdir(fleet)
@@ -428,14 +426,14 @@ def test_s4_6_3_5_three_repos_clean_warnings_errors(
     assert payload["summary"]["errors"] == counts["broken"][0]
 
 
-def test_s4_6_3_5_warnings_alone_exit_0(
+def test_warnings_alone_exit_0_across_repos(
     fleet: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _warn_only(monkeypatch, "warned")
     commands.doctor([fleet / "clean", fleet / "warned"], all=True)
 
 
-def test_s4_12_5_1_bare_doctor_reports_the_quality_checks(
+def test_bare_doctor_reports_the_quality_checks(
     copy: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _break_quality(copy)
@@ -449,14 +447,14 @@ def test_s4_12_5_1_bare_doctor_reports_the_quality_checks(
     assert {"docs.broken-link", "deps.required-missing"} <= codes
 
 
-def test_s4_12_5_2_the_ownership_scope_skips_them(copy: Path) -> None:
+def test_the_ownership_scope_skips_them(copy: Path) -> None:
     _break_quality(copy)
     assert checks.run(copy, scope="ownership") == []
     _break_generated(copy)
     assert "artifact.drift" in {f.code for f in checks.run(copy, scope="ownership")}
 
 
-def test_s4_12_5_3_apply_does_not_fail_on_them(copy: Path) -> None:
+def test_apply_does_not_fail_on_them(copy: Path) -> None:
     _break_quality(copy)
     output.fail_on_errors(copy)
     commands.apply()
@@ -465,7 +463,7 @@ def test_s4_12_5_3_apply_does_not_fail_on_them(copy: Path) -> None:
         output.fail_on_errors(copy)
 
 
-def test_s4_12_5_4_full_includes_them_and_the_render_findings(
+def test_full_includes_them_and_the_render_findings(
     copy: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _edit(
@@ -481,9 +479,7 @@ def test_s4_12_5_4_full_includes_them_and_the_render_findings(
     assert {"artifact.stale", "docs.broken-link", "deps.required-missing"} <= codes
 
 
-def test_s4_12_5_5_all_includes_them(
-    fleet: Path, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_all_includes_them(fleet: Path, capsys: pytest.CaptureFixture[str]) -> None:
     _break_site(fleet / "clean")
     with pytest.raises(AppException):
         commands.doctor([fleet / "clean", fleet / "warned"], all=True, json=True)
@@ -493,14 +489,14 @@ def test_s4_12_5_5_all_includes_them(
     assert second["findings"] == []
 
 
-def test_s7_3_2_1_invalid_state_is_an_app_exception(copy: Path) -> None:
+def test_invalid_state_is_an_app_exception(copy: Path) -> None:
     (copy / ".rn-forge" / "kiln" / "state.json").write_text("{", encoding="utf-8")
     with pytest.raises(AppException, match=r"state\.json") as raised:
         checks.run(copy)
     assert not isinstance(raised.value, json.JSONDecodeError)
 
 
-def test_s7_3_3_1_doctor_needs_no_pyyaml(copy: Path) -> None:
+def test_doctor_needs_no_pyyaml(copy: Path) -> None:
     def run(prelude: str) -> subprocess.CompletedProcess[str]:
         code = f"import sys; {prelude}from rn_forge.kiln.main import app; app()"
         return subprocess.run(
@@ -518,7 +514,7 @@ def test_s7_3_3_1_doctor_needs_no_pyyaml(copy: Path) -> None:
     assert "yaml" not in blocked.stderr
 
 
-def test_s18_12_1_2_doctor_reports_an_unpinned_kiln(
+def test_doctor_reports_an_unpinned_kiln(
     repo, capsys: pytest.CaptureFixture[str]
 ) -> None:
     root = repo()

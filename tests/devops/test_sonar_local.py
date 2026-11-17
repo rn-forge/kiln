@@ -56,7 +56,7 @@ def _main(*args: str) -> int:
     return cli.main(["sonar-local", *args])
 
 
-def test_s6_10_2_1_dry_run_prints_target_and_commands_and_runs_nothing(
+def test_dry_run_prints_target_and_commands_and_runs_nothing(
     fake: Fake, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.delenv("SONAR_TOKEN")
@@ -70,7 +70,7 @@ def test_s6_10_2_1_dry_run_prints_target_and_commands_and_runs_nothing(
     assert not fake.ran("task") and not fake.ran("sonar-scanner")
 
 
-def test_s6_10_2_2_full_run_runs_coverage_then_scanner(fake: Fake) -> None:
+def test_full_run_runs_coverage_then_scanner(fake: Fake) -> None:
     assert _main() == 0
     names = [c[0][0] for c in fake.calls if c[0][0] in ("task", "sonar-scanner")]
     assert names == ["task", "sonar-scanner"]
@@ -82,7 +82,7 @@ def test_s6_10_2_2_full_run_runs_coverage_then_scanner(fake: Fake) -> None:
     ]
 
 
-def test_s6_10_2_3_missing_token_exits_2(
+def test_missing_token_exits_2(
     fake: Fake, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.delenv("SONAR_TOKEN")
@@ -91,7 +91,7 @@ def test_s6_10_2_3_missing_token_exits_2(
     assert not fake.ran("task")
 
 
-def test_s6_10_2_4_missing_scanner_exits_2(
+def test_missing_scanner_exits_2(
     fake: Fake, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     monkeypatch.setattr(sonar.shutil, "which", lambda _name: None)
@@ -104,7 +104,7 @@ def test_s6_10_2_4_missing_scanner_exits_2(
     ("branch", "argv"),
     [("main", []), ("main", ["--branch", "main"]), ("", ["--branch", "main"])],
 )
-def test_s6_10_2_5_main_is_refused(
+def test_main_is_refused(
     fake: Fake, branch: str, argv: list[str], capsys: pytest.CaptureFixture[str]
 ) -> None:
     fake.branch = branch
@@ -113,7 +113,7 @@ def test_s6_10_2_5_main_is_refused(
     assert not fake.ran("task") and not fake.ran("sonar-scanner")
 
 
-def test_s6_10_2_6_detached_head_needs_branch(
+def test_detached_head_needs_branch(
     fake: Fake, capsys: pytest.CaptureFixture[str]
 ) -> None:
     fake.branch = ""
@@ -123,7 +123,7 @@ def test_s6_10_2_6_detached_head_needs_branch(
     assert "-Dsonar.branch.name=feature/y" in fake.ran("sonar-scanner")[0][0]
 
 
-def test_s6_10_2_7_branch_must_match_checked_out(
+def test_branch_must_match_checked_out(
     fake: Fake, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert _main("--branch", "feature/other") == 2
@@ -132,7 +132,7 @@ def test_s6_10_2_7_branch_must_match_checked_out(
     assert _main("--branch", "feature/x") == 0
 
 
-def test_s6_10_2_8_dirty_tree_is_scanned_with_a_note(
+def test_dirty_tree_is_scanned_with_a_note(
     fake: Fake, capsys: pytest.CaptureFixture[str]
 ) -> None:
     fake.dirty = " M file.py\n"
@@ -141,7 +141,7 @@ def test_s6_10_2_8_dirty_tree_is_scanned_with_a_note(
     assert fake.ran("sonar-scanner")
 
 
-def test_s6_10_2_9_scanner_environment_drops_ci_metadata(
+def test_scanner_environment_drops_ci_metadata(
     fake: Fake, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("CI", "true")
@@ -155,7 +155,7 @@ def test_s6_10_2_9_scanner_environment_drops_ci_metadata(
     assert env["SONAR_TOKEN"] == TOKEN
 
 
-def test_s6_10_2_10_token_is_never_in_arguments_or_output(
+def test_token_is_never_in_arguments_or_output(
     fake: Fake, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert _main() == 0
@@ -165,18 +165,18 @@ def test_s6_10_2_10_token_is_never_in_arguments_or_output(
     assert all(TOKEN not in part for cmd, _ in fake.calls for part in cmd)
 
 
-def test_s6_10_2_11_failing_tests_stop_before_the_scan(fake: Fake) -> None:
+def test_failing_tests_stop_before_the_scan(fake: Fake) -> None:
     fake.test_status = 3
     assert _main() == 3
     assert not fake.ran("sonar-scanner")
 
 
-def test_s6_10_2_12_scanner_status_propagates(fake: Fake) -> None:
+def test_scanner_status_propagates(fake: Fake) -> None:
     fake.scan_status = 4
     assert _main() == 4
 
 
-def test_s6_10_2_13_unknown_option_is_a_usage_error(fake: Fake) -> None:
+def test_unknown_option_is_a_usage_error(fake: Fake) -> None:
     with pytest.raises(SystemExit) as exit_info:
         _main("--nope")
     assert exit_info.value.code == 2

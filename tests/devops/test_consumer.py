@@ -1,4 +1,4 @@
-"""Tests for `kiln-devops consumer` (S9.4.5, S9.4.6)."""
+"""Tests for `kiln-devops consumer`."""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ def _library(**overrides: object) -> dict:
     return {"name": NAME, "version": "0.3.0", "workspace-ci": {"consumer": table}}
 
 
-def test_s9_4_5_1_load_merges_cells_in_declaration_order() -> None:
+def test_load_merges_cells_in_declaration_order() -> None:
     cells, hook = consumer.load(_library())
     assert hook == "tools/consumer/ng-smoke.mjs"
     assert cells == [
@@ -46,7 +46,7 @@ def test_s9_4_5_1_load_merges_cells_in_declaration_order() -> None:
     ]
 
 
-def test_s9_4_5_1_hook_is_optional() -> None:
+def test_hook_is_optional() -> None:
     manifest = _library()
     del manifest["workspace-ci"]["consumer"]["hook"]
     assert consumer.load(manifest)[1] is None
@@ -64,19 +64,19 @@ def test_s9_4_5_1_hook_is_optional() -> None:
         (_library(cells={"bad name": {}}), "bad name"),
     ],
 )
-def test_s9_4_5_1_load_rejects_a_malformed_table(manifest: dict, key: str) -> None:
+def test_load_rejects_a_malformed_table(manifest: dict, key: str) -> None:
     with pytest.raises(ValueError) as info:
         consumer.load(manifest)
     assert NAME in str(info.value)
     assert key in str(info.value)
 
 
-def test_s9_4_5_2_tarball_name_follows_npm_pack() -> None:
+def test_tarball_name_follows_npm_pack() -> None:
     assert consumer.tarball_name("@rn-forge/ng", "0.3.0") == "rn-forge-ng-0.3.0.tgz"
     assert consumer.tarball_name("plain", "1.0.0") == "plain-1.0.0.tgz"
 
 
-def test_s9_4_5_3_entry_points_are_the_javascript_subpaths() -> None:
+def test_entry_points_are_the_javascript_subpaths() -> None:
     exports = {
         "./package.json": {"default": "./package.json"},
         "./core": {"types": "./core/index.d.ts", "default": "./fesm/core.mjs"},
@@ -94,7 +94,7 @@ def test_s9_4_5_3_entry_points_are_the_javascript_subpaths() -> None:
     assert consumer.entry_points(None, NAME) == []
 
 
-def test_s9_4_5_4_smoke_script_snapshot() -> None:
+def test_smoke_script_snapshot() -> None:
     assert consumer.smoke_script(
         NAME, [NAME, f"{NAME}/core"], ("@angular/compiler", "zone.js")
     ) == (
@@ -152,7 +152,7 @@ def _workspace(
         (tarballs / "rn-forge-ng-0.3.0.tgz").write_text("")
 
 
-def test_s9_4_5_5_each_cell_gets_a_fixture_install_smoke_and_hook(
+def test_each_cell_gets_a_fixture_install_smoke_and_hook(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -185,7 +185,7 @@ def test_s9_4_5_5_each_cell_gets_a_fixture_install_smoke_and_hook(
     ]
 
 
-def test_s9_4_5_5_an_existing_fixture_is_deleted_first(
+def test_an_existing_fixture_is_deleted_first(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _stubs(tmp_path, monkeypatch)
@@ -198,7 +198,7 @@ def test_s9_4_5_5_an_existing_fixture_is_deleted_first(
     assert not stale.exists()
 
 
-def test_s9_4_5_5_a_workspace_range_in_the_installed_package_fails_the_cell(
+def test_a_workspace_range_in_the_installed_package_fails_the_cell(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -219,7 +219,7 @@ def test_s9_4_5_5_a_workspace_range_in_the_installed_package_fails_the_cell(
     assert "node" not in log.read_text()
 
 
-def test_s9_4_5_6_a_missing_tarball_fails_before_npm(
+def test_a_missing_tarball_fails_before_npm(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -236,7 +236,7 @@ def test_s9_4_5_6_a_missing_tarball_fails_before_npm(
     assert not log.exists()
 
 
-def test_s9_4_5_6_a_missing_tarball_directory_is_named(
+def test_a_missing_tarball_directory_is_named(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -251,7 +251,7 @@ def test_s9_4_5_6_a_missing_tarball_directory_is_named(
     assert "(found: (missing dir))" in capsys.readouterr().err
 
 
-def test_s9_4_5_7_a_failing_cell_does_not_stop_the_others(
+def test_a_failing_cell_does_not_stop_the_others(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -265,7 +265,7 @@ def test_s9_4_5_7_a_failing_cell_does_not_stop_the_others(
     assert "node b-zoneless smoke.mjs" in log.read_text()
 
 
-def test_s9_4_5_8_cell_runs_one_and_an_unknown_name_exits_2(
+def test_cell_runs_one_and_an_unknown_name_exits_2(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -282,7 +282,7 @@ def test_s9_4_5_8_cell_runs_one_and_an_unknown_name_exits_2(
     assert not log.exists()
 
 
-def test_s9_4_6_1_the_hook_is_copied_into_each_fixture(
+def test_the_hook_is_copied_into_each_fixture(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _stubs(tmp_path, monkeypatch)
@@ -294,12 +294,12 @@ def test_s9_4_6_1_the_hook_is_copied_into_each_fixture(
         assert (base / cell / "hook.mjs").read_text() == "// hook\n"
 
 
-def test_s9_4_6_2_a_hook_that_is_not_mjs_raises() -> None:
+def test_a_hook_that_is_not_mjs_raises() -> None:
     with pytest.raises(ValueError, match=r"@rn-forge/ng.*workspace-ci\.consumer\.hook"):
         consumer.load(_library(hook="tools/consumer/ng-smoke.js"))
 
 
-def test_s9_4_6_2_a_missing_hook_file_exits_1_before_npm(
+def test_a_missing_hook_file_exits_1_before_npm(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -316,7 +316,7 @@ def test_s9_4_6_2_a_missing_hook_file_exits_1_before_npm(
 
 
 @requires("node")
-def test_s9_4_6_3_a_real_hook_resolves_bare_imports_in_the_fixture(
+def test_a_real_hook_resolves_bare_imports_in_the_fixture(
     tmp_path: Path,
 ) -> None:
     for where, value in ((tmp_path, "workspace"), (tmp_path / "fixture", "fixture")):

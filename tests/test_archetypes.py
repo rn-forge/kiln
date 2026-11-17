@@ -1,4 +1,4 @@
-"""S4.2.1 — the archetype manifests."""
+"""The archetype manifests."""
 
 from __future__ import annotations
 
@@ -42,12 +42,12 @@ def _web_root(
     return tmp_path
 
 
-def test_s4_2_1_every_python_archetype_is_shipped() -> None:
+def test_every_python_archetype_is_shipped() -> None:
     assert [n for n in archetypes.shipped() if n != "node-lib"] == PYTHON_ARCHETYPES
 
 
 @pytest.mark.parametrize("name", PYTHON_ARCHETYPES)
-def test_s4_2_1_every_python_archetype_manifest_loads(name: str) -> None:
+def test_every_python_archetype_manifest_loads(name: str) -> None:
     archetype = archetypes.load(name)
     assert archetype.name == name
     expected = ["core", "python"]
@@ -61,7 +61,7 @@ def test_s4_2_1_every_python_archetype_manifest_loads(name: str) -> None:
     assert len(builtin().for_archetype(archetype)) == len(archetype.modules)
 
 
-def test_s4_2_1_a_manifest_naming_an_unregistered_module_is_refused_by_name() -> None:
+def test_a_manifest_naming_an_unregistered_module_is_refused_by_name() -> None:
     archetype = archetypes.load("python-app").model_copy(
         update={"modules": ["core", "conjured"]}
     )
@@ -82,13 +82,13 @@ def test_lifecycle_and_mkdocs_adjust_the_manifest(repo) -> None:
     assert "docs:build" in archetype.required_validate
 
 
-def test_s4_4_6_1_python_tool_implies_lifecycle(repo) -> None:
+def test_python_tool_implies_lifecycle(repo) -> None:
     tool = KilnConfig.load(repo(archetype="python-tool", lifecycle=False))
     assert tool.lifecycle is True
     assert "rn-forge-tooling" in archetypes.for_config(tool).dependencies.required
 
 
-def test_s4_4_6_1_python_app_without_lifecycle_stays_false(repo) -> None:
+def test_python_app_without_lifecycle_stays_false(repo) -> None:
     assert KilnConfig.load(repo(archetype="python-app")).lifecycle is False
 
 
@@ -101,7 +101,7 @@ def test_s4_4_6_1_python_app_without_lifecycle_stays_false(repo) -> None:
         ("python-web-app", "django", "angular"),
     ],
 )
-def test_s5_1_1_1_for_config_required_is_commons_cli_web_then_framework(
+def test_for_config_required_is_commons_cli_web_then_framework(
     tmp_path, archetype: str, backend: str, frontend: str | None
 ) -> None:
     """for_config's required set is commons, cli, web, framework, in order;
@@ -120,7 +120,7 @@ def test_s5_1_1_1_for_config_required_is_commons_cli_web_then_framework(
     }
 
 
-def test_s5_1_1_1_a_web_archetype_without_lifecycle_carries_no_tooling(
+def test_a_web_archetype_without_lifecycle_carries_no_tooling(
     tmp_path,
 ) -> None:
     config = KilnConfig.load(_web_root(tmp_path, "python-web-api", "fastapi"))
@@ -130,7 +130,7 @@ def test_s5_1_1_1_a_web_archetype_without_lifecycle_carries_no_tooling(
 
 
 @pytest.mark.parametrize("archetype", WEB_ARCHETYPES)
-def test_s5_1_1_5_an_unsupported_backend_is_rejected_naming_the_key(
+def test_an_unsupported_backend_is_rejected_naming_the_key(
     tmp_path, archetype: str
 ) -> None:
     from rn_forge.commons.lang.models import ModelValidationError
@@ -140,7 +140,7 @@ def test_s5_1_1_5_an_unsupported_backend_is_rejected_naming_the_key(
         KilnConfig.load(root)
 
 
-def test_s5_1_1_5_an_unsupported_frontend_is_rejected_naming_the_key(tmp_path) -> None:
+def test_an_unsupported_frontend_is_rejected_naming_the_key(tmp_path) -> None:
     from rn_forge.commons.lang.models import ModelValidationError
 
     root = _web_root(tmp_path, "python-web-app", "django", "vue")
@@ -148,7 +148,7 @@ def test_s5_1_1_5_an_unsupported_frontend_is_rejected_naming_the_key(tmp_path) -
         KilnConfig.load(root)
 
 
-def test_s5_1_1_5_an_old_framework_config_key_is_rejected(tmp_path) -> None:
+def test_an_old_framework_config_key_is_rejected(tmp_path) -> None:
     from rn_forge.commons.lang.models import ModelValidationError
 
     root = tmp_path
@@ -168,7 +168,7 @@ def test_s5_1_1_5_an_old_framework_config_key_is_rejected(tmp_path) -> None:
         KilnConfig.load(root)
 
 
-def test_s5_1_1_5_a_web_app_table_under_a_python_app_config_is_rejected(
+def test_a_web_app_table_under_a_python_app_config_is_rejected(
     tmp_path,
 ) -> None:
     root = tmp_path
@@ -188,17 +188,17 @@ def test_s5_1_1_5_a_web_app_table_under_a_python_app_config_is_rejected(
         KilnConfig.load(root)
 
 
-def test_s7_3_6_1_requirement_is_a_range() -> None:
+def test_requirement_is_a_range() -> None:
     assert archetypes.requirement("rn-forge-cli") == "rn-forge-cli>=0.1.3,<0.2"
 
 
-def test_s7_3_6_2_ceiling() -> None:
+def test_ceiling_is_the_next_breaking_version() -> None:
     assert archetypes.ceiling("0.7.0") == "0.8"
     assert archetypes.ceiling("0.1.1") == "0.2"
     assert archetypes.ceiling("1.4.2") == "2"
 
 
-def test_s7_1_1_1_every_tag_is_pinned() -> None:
+def test_every_tag_is_pinned() -> None:
     import re
 
     assert set(archetypes.RN_FORGE_TAGS) == {
@@ -215,7 +215,7 @@ def test_s7_1_1_1_every_tag_is_pinned() -> None:
         assert re.fullmatch(rf"{key}-v\d+\.\d+\.\d+", tag)
 
 
-def test_s16_5_4_1_floors_are_pykit_release_8() -> None:
+def test_floors_are_pykit_release_8() -> None:
     assert archetypes.RN_FORGE_TAGS == {
         "rn-forge-commons": "rn-forge-commons-v0.9.0",
         "rn-forge-cli": "rn-forge-cli-v0.1.3",
@@ -229,19 +229,19 @@ def test_s16_5_4_1_floors_are_pykit_release_8() -> None:
 
 
 @pytest.mark.parametrize("name", ["python-web-api", "python-web-app"])
-def test_s7_5_6_2_web_archetypes_allow_auth(name: str) -> None:
+def test_web_archetypes_allow_auth(name: str) -> None:
     dependencies = archetypes.load(name).dependencies
     assert "rn-forge-auth" in dependencies.allowed
     assert "rn-forge-auth" not in dependencies.required
     assert archetypes.requirement("rn-forge-auth") == "rn-forge-auth>=0.1.1,<0.2"
 
 
-def test_s7_1_1_1_an_unpinned_distribution_is_refused() -> None:
+def test_an_unpinned_distribution_is_refused() -> None:
     with pytest.raises(KeyError):
         archetypes.requirement("rn-forge-nope")
 
 
-def test_s7_5_4_1_kiln_takes_pykit_by_range() -> None:
+def test_kiln_takes_pykit_by_range() -> None:
     import re
     import tomllib
     from pathlib import Path
@@ -259,12 +259,12 @@ def test_s7_5_4_1_kiln_takes_pykit_by_range() -> None:
         )
 
 
-def test_s6_7_3_2_devops_is_not_pinned() -> None:
+def test_devops_is_not_pinned() -> None:
     assert "rn-forge-devops" not in archetypes.RN_FORGE_TAGS
 
 
 @pytest.mark.parametrize("name", PYTHON_ARCHETYPES)
-def test_s4_12_1_6_required_validate_names_the_docs_tasks(tmp_path, name: str) -> None:
+def test_required_validate_names_the_docs_tasks(tmp_path, name: str) -> None:
     lines = [
         "schema_version = 1",
         "",
@@ -305,24 +305,24 @@ def _gate(tmp_path, archetype: str, extra: str = "") -> list[str]:
     return archetypes.for_config(KilnConfig.load(tmp_path)).required_validate
 
 
-def test_s17_1_3_1_licences_in_the_gate(tmp_path) -> None:
+def test_licences_in_the_gate(tmp_path) -> None:
     assert "python:lint:licenses" in _gate(tmp_path / "on", "python-tool")
     off = _gate(tmp_path / "off", "python-tool", "\n[ci.checks]\nlicenses = false\n")
     assert "python:lint:licenses" not in off
 
 
-def test_s17_1_3_2_node_lib_gate(tmp_path) -> None:
+def test_node_lib_gate(tmp_path) -> None:
     required = _gate(tmp_path, "node-lib")
     for task in ("node:lint:audit", "node:typecheck", "node:lint:licenses"):
         assert task in required
     assert "python:lint:licenses" not in required
 
 
-def test_s17_1_3_3_web_app_typecheck(tmp_path) -> None:
+def test_web_app_typecheck(tmp_path) -> None:
     assert "node:typecheck" in _gate(tmp_path, "python-web-app")
 
 
 @pytest.mark.parametrize("name", archetypes.shipped())
-def test_s19_1_3_5_required_validate_holds_the_yaml_check(name: str) -> None:
+def test_required_validate_holds_the_yaml_check(name: str) -> None:
     required = archetypes.load(name).required_validate
     assert required[required.index("quality:lint:toml") + 1] == "quality:lint:yaml"

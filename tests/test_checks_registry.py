@@ -87,7 +87,7 @@ def test_quality_checks_run_by_default(repo) -> None:
     ]
 
 
-def test_s18_12_1_1_every_check_module_is_registered() -> None:
+def test_every_check_module_is_registered() -> None:
     import importlib
 
     import rn_forge.kiln.modules as modules

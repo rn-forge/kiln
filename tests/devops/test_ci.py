@@ -40,20 +40,20 @@ def _group_cycle() -> dict[str, Package]:
     }
 
 
-def test_s6_7_2_normalize_collapses_separators() -> None:
+def test_normalize_collapses_separators() -> None:
     assert normalize("Rn_Forge.Devops") == "rn-forge-devops"
 
 
-def test_s6_7_2_release_order_puts_requirements_first() -> None:
+def test_release_order_puts_requirements_first() -> None:
     assert release_order(_packages(), {"app", "base"}) == ["base", "app"]
 
 
-def test_s6_7_2_missing_marker_blocks_package_and_dependents(tmp_path: Path) -> None:
+def test_missing_marker_blocks_package_and_dependents(tmp_path: Path) -> None:
     ok, blocked = releasable(_packages(), tmp_path, ["app", "base"])
     assert (ok, blocked) == ([], ["base", "app"])
 
 
-def test_s6_7_2_passed_markers_release_in_order(tmp_path: Path) -> None:
+def test_passed_markers_release_in_order(tmp_path: Path) -> None:
     for name in ("base", "app"):
         for check in Package(name, name, name).checks():
             (tmp_path / check["marker"]).touch()
@@ -63,7 +63,7 @@ def test_s6_7_2_passed_markers_release_in_order(tmp_path: Path) -> None:
     )
 
 
-def test_s6_7_2_plan_lists_smoke_checks_per_extra(tmp_path: Path) -> None:
+def test_plan_lists_smoke_checks_per_extra(tmp_path: Path) -> None:
     packages = _packages()
     packages["app"].smoke = Smoke(modules=["app"], extras={"x": ["app.x"]})
     workspace = Workspace(root=tmp_path, packages=packages)
@@ -76,7 +76,7 @@ def test_s6_7_2_plan_lists_smoke_checks_per_extra(tmp_path: Path) -> None:
     ]
 
 
-def test_s6_7_2_plan_lists_one_empty_extra_smoke_entry_without_a_declaration(
+def test_plan_lists_one_empty_extra_smoke_entry_without_a_declaration(
     tmp_path: Path,
 ) -> None:
     outputs = plan(Workspace(root=tmp_path, packages=_packages()), None)
@@ -86,16 +86,16 @@ def test_s6_7_2_plan_lists_one_empty_extra_smoke_entry_without_a_declaration(
     ]
 
 
-def test_s6_7_2_plan_omits_smoke_entries_of_unselected_packages(tmp_path: Path) -> None:
+def test_plan_omits_smoke_entries_of_unselected_packages(tmp_path: Path) -> None:
     outputs = plan(_git_workspace(tmp_path), git_adapter.changed_files(tmp_path, "v1"))
     assert outputs["smoke"] == [{"name": "a", "extra": "", "marker": "a.smoke"}]
 
 
-def test_s6_8_1_1_release_order_ignores_a_cycle_through_a_dependency_group() -> None:
+def test_release_order_ignores_a_cycle_through_a_dependency_group() -> None:
     assert release_order(_group_cycle(), {"auth", "web"}) == ["web", "auth"]
 
 
-def test_s6_8_1_2_release_order_raises_on_a_runtime_cycle() -> None:
+def test_release_order_raises_on_a_runtime_cycle() -> None:
     packages = {
         "a": Package("a", "a", "a", release_requires={"b"}),
         "b": Package("b", "b", "b", release_requires={"a"}),
@@ -104,12 +104,12 @@ def test_s6_8_1_2_release_order_raises_on_a_runtime_cycle() -> None:
         release_order(packages, {"a", "b"})
 
 
-def test_s6_8_1_3_plan_orders_a_group_only_cycle(tmp_path: Path) -> None:
+def test_plan_orders_a_group_only_cycle(tmp_path: Path) -> None:
     workspace = Workspace(root=tmp_path, packages=_group_cycle())
     assert plan(workspace, None)["release-order"] == ["web", "auth"]
 
 
-def test_s6_8_1_4_releasable_gates_on_release_requires_only(tmp_path: Path) -> None:
+def test_releasable_gates_on_release_requires_only(tmp_path: Path) -> None:
     packages = _group_cycle()
     for check in packages["auth"].checks():
         (tmp_path / check["marker"]).touch()
@@ -128,7 +128,9 @@ def _services() -> tuple[Service, ...]:
     )
 
 
-def test_s15_8_2_2_plan(tmp_path: Path) -> None:
+def test_plan_lists_the_integration_run_of_a_package_with_services(
+    tmp_path: Path,
+) -> None:
     packages = _packages()
     packages["app"].services = _services()
     outputs = plan(Workspace(root=tmp_path, packages=packages), None)
@@ -147,7 +149,7 @@ def test_s15_8_2_2_plan(tmp_path: Path) -> None:
     )
 
 
-def test_s15_8_2_3_marker() -> None:
+def test_integration_check_exists_only_for_a_package_with_services() -> None:
     package = Package("app", "packages/app", "app")
     assert not [c for c in package.checks() if c["kind"] == "integration"]
     package.services = _services()
@@ -155,7 +157,7 @@ def test_s15_8_2_3_marker() -> None:
     assert {c["kind"] for c in package.checks()} == {"test", "integration", "smoke"}
 
 
-def test_s15_8_2_3_missing_marker_blocks_a_package(tmp_path: Path) -> None:
+def test_missing_marker_blocks_a_package(tmp_path: Path) -> None:
     packages = _packages()
     packages["base"].services = _services()
     for package in packages.values():
@@ -165,12 +167,12 @@ def test_s15_8_2_3_missing_marker_blocks_a_package(tmp_path: Path) -> None:
     assert releasable(packages, tmp_path, ["base", "app"]) == ([], ["base", "app"])
 
 
-def test_s6_7_2_checks_always_include_the_smoke_marker() -> None:
+def test_checks_always_include_the_smoke_marker() -> None:
     package = Package("base", "packages/base", "base")
     assert {"kind": "smoke", "extra": "", "marker": "base.smoke"} in package.checks()
 
 
-def test_s6_7_2_missing_smoke_marker_blocks_a_package_without_a_declaration(
+def test_missing_smoke_marker_blocks_a_package_without_a_declaration(
     tmp_path: Path,
 ) -> None:
     packages = _packages()
@@ -180,7 +182,7 @@ def test_s6_7_2_missing_smoke_marker_blocks_a_package_without_a_declaration(
     assert releasable(packages, tmp_path, ["base"]) == (["base"], [])
 
 
-def test_s15_8_1_2_marker_kind(tmp_path: Path) -> None:
+def test_release_waits_for_every_check_marker_of_a_package(tmp_path: Path) -> None:
     package = Package("base", "packages/base", "base")
     assert package.checks()[0] == {"kind": "test", "marker": "base.test"}
     packages = {"base": package}
@@ -214,14 +216,14 @@ def _git_workspace(tmp_path: Path) -> Workspace:
     return Workspace(root=tmp_path, packages=packages)
 
 
-def test_s6_7_2_select_uses_valid_base(tmp_path: Path) -> None:
+def test_select_uses_valid_base(tmp_path: Path) -> None:
     workspace = _git_workspace(tmp_path)
     assert git_adapter.usable_base(tmp_path, "v1")
     assert select(workspace, git_adapter.changed_files(tmp_path, "v1")) == {"a"}
     assert select(workspace, None) == {"a", "b"}
 
 
-def test_s6_7_2_option_like_base_is_unusable_without_running_git(
+def test_option_like_base_is_unusable_without_running_git(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     def fail(*args: object, **kwargs: object) -> None:
@@ -231,12 +233,12 @@ def test_s6_7_2_option_like_base_is_unusable_without_running_git(
     assert not git_adapter.usable_base(tmp_path, "--output=x")
 
 
-def test_s6_7_2_changed_files_rejects_option_like_base(tmp_path: Path) -> None:
+def test_changed_files_rejects_option_like_base(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="invalid base"):
         git_adapter.changed_files(tmp_path, "--output=x")
 
 
-def test_s6_7_2_plan_outputs_match_documented_keys(tmp_path: Path) -> None:
+def test_plan_outputs_match_documented_keys(tmp_path: Path) -> None:
     page = Path(__file__).parents[2] / "docs" / "reference" / "kiln-devops.md"
     text = page.read_text(encoding="utf-8")
     table = text.split("<!-- plan-outputs:start -->")[1].split(
@@ -247,7 +249,7 @@ def test_s6_7_2_plan_outputs_match_documented_keys(tmp_path: Path) -> None:
     assert documented == set(plan(workspace, None))
 
 
-def test_s6_10_3_3_plan_has_none_of_the_retired_sonar_outputs(tmp_path: Path) -> None:
+def test_plan_has_none_of_the_retired_sonar_outputs(tmp_path: Path) -> None:
     outputs = plan(Workspace(root=tmp_path, packages=_packages()), None)
     for key in ("cov-args", "test-paths", "sonar-sources", "sonar-tests", "sonar"):
         assert key not in outputs

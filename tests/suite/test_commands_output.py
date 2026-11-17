@@ -1,4 +1,4 @@
-"""S18.6.1 — the output mode is set in one module."""
+"""The output mode is set in one module."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ OUTPUT = SRC / "commands" / "output.py"
 NEEDLES = ("set_" + "mode(", "OutputMode" + ".JSON")
 
 
-def test_s18_6_1_1_output_mode_is_set_only_in_the_output_module() -> None:
+def test_output_mode_is_set_only_in_the_output_module() -> None:
     offenders = sorted(
         str(path.relative_to(ROOT))
         for path in SRC.rglob("*.py")

@@ -1,7 +1,6 @@
-"""S4.5.3 — `kiln diff` and `kiln version`: inspection.
+"""`kiln diff` and `kiln version`: inspection.
 
-Built over the same rendered-repo fixture as `test_apply.py` (the nearest `done`
-story in this feature) — already scaffolded and passing, so no `uv init` is
+Built over the same rendered-repo fixture as `test_apply.py` — already scaffolded and passing, so no `uv init` is
 needed.
 """
 
@@ -50,14 +49,14 @@ def _edit_taskfile(repo: Path) -> None:
     )
 
 
-def test_s4_5_3_1_clean_repo_diff_prints_nothing_and_exits_0(
+def test_clean_repo_diff_prints_nothing_and_exits_0(
     repo: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     commands.diff()
     assert capsys.readouterr().out == ""
 
 
-def test_s4_5_3_1_edited_artifact_diff_names_the_path_and_raises(
+def test_edited_artifact_diff_names_the_path_and_raises(
     repo: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _edit_taskfile(repo)
@@ -68,7 +67,7 @@ def test_s4_5_3_1_edited_artifact_diff_names_the_path_and_raises(
     assert "# edit" in out
 
 
-def test_s4_5_3_1_diff_limits_to_the_named_artifact(
+def test_diff_limits_to_the_named_artifact(
     repo: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _edit_taskfile(repo)
@@ -84,12 +83,12 @@ def test_s4_5_3_1_diff_limits_to_the_named_artifact(
     assert ".editorconfig" not in out
 
 
-def test_s4_5_3_1_unknown_artifact_is_refused_by_name(repo: Path) -> None:
+def test_unknown_artifact_is_refused_by_name(repo: Path) -> None:
     with pytest.raises(AppException, match="nope"):
         commands.diff("nope")
 
 
-def test_s4_5_3_2_version_json_matches_the_installed_distribution(
+def test_version_json_matches_the_installed_distribution(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     commands.version(json=True)
@@ -123,7 +122,7 @@ def old(tmp_path: Path, reference: Path) -> Path:
     return root
 
 
-def test_s16_9_11_1_every_class_is_reported_once(
+def test_every_class_is_reported_once(
     reference: Path, old: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     commands.diff(old=str(old), json=True)
@@ -141,7 +140,7 @@ def test_s16_9_11_1_every_class_is_reported_once(
     } <= got
 
 
-def test_s16_9_11_2_old_only_rows_come_last_in_plain_output(
+def test_old_only_rows_come_last_in_plain_output(
     reference: Path, old: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     commands.diff(old=str(old))
@@ -156,17 +155,17 @@ def test_s16_9_11_2_old_only_rows_come_last_in_plain_output(
     assert summary.endswith("1 old-only")
 
 
-def test_s16_9_11_3_writes_nothing(reference: Path, old: Path) -> None:
+def test_diff_writes_nothing(reference: Path, old: Path) -> None:
     before = snapshot(reference, old)
     commands.diff(old=str(old))
     assert snapshot(reference, old) == before
 
 
-def test_s16_9_11_4_exits_zero_with_differences(reference: Path, old: Path) -> None:
+def test_exits_zero_with_differences(reference: Path, old: Path) -> None:
     commands.diff(old=str(old))
 
 
-def test_s16_9_11_5_config_and_state_are_not_rows(
+def test_config_and_state_are_not_rows(
     reference: Path, old: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     commands.diff(old=str(old), json=True)
@@ -175,7 +174,7 @@ def test_s16_9_11_5_config_and_state_are_not_rows(
     assert not [r for r in rows if r["path"].startswith(".rn-forge/kiln/")]
 
 
-def test_s16_9_11_6_a_directory_that_is_not_a_git_repository_is_refused(
+def test_a_directory_that_is_not_a_git_repository_is_refused(
     reference: Path, tmp_path: Path
 ) -> None:
     plain = tmp_path / "plain"
@@ -184,12 +183,12 @@ def test_s16_9_11_6_a_directory_that_is_not_a_git_repository_is_refused(
         commands.diff(old=str(plain))
 
 
-def test_s16_9_11_7_old_with_artifact_is_refused(reference: Path, old: Path) -> None:
+def test_old_with_artifact_is_refused(reference: Path, old: Path) -> None:
     with pytest.raises(AppException, match="inventory.artifact-with-old"):
         commands.diff("Taskfile.yml", old=str(old))
 
 
-def test_s16_9_11_8_old_is_an_option() -> None:
+def test_old_is_an_option() -> None:
     assert list(inspect.signature(commands.diff).parameters) == [
         "artifact",
         "old",

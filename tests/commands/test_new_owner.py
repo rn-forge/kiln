@@ -27,7 +27,7 @@ def _owner_written(directory: Path) -> str:
     return tomllib.loads(text)["repository"]["owner"]
 
 
-def test_s16_6_8_1_new_without_owner_fails(tmp_path: Path) -> None:
+def test_new_without_owner_fails(tmp_path: Path) -> None:
     directory = tmp_path / "demo"
 
     with pytest.raises(AppException) as raised:
@@ -38,7 +38,7 @@ def test_s16_6_8_1_new_without_owner_fails(tmp_path: Path) -> None:
     assert not directory.exists()
 
 
-def test_s16_6_8_1_new_without_owner_exits_non_zero(tmp_path: Path) -> None:
+def test_new_without_owner_exits_non_zero(tmp_path: Path) -> None:
     from rn_forge.kiln import main
 
     code = main.app(["new", str(tmp_path / "demo"), "--archetype", "python-tool"])
@@ -54,7 +54,7 @@ def test_s16_6_8_1_new_without_owner_exits_non_zero(tmp_path: Path) -> None:
         pytest.param("from-config", "flag", "flag", id="flag-beats-config"),
     ],
 )
-def test_s16_6_8_2_the_strongest_layer_sets_the_owner(
+def test_the_strongest_layer_sets_the_owner(
     tmp_path: Path, layer_owner: str | None, flag_owner: str | None, written: str
 ) -> None:
     kwargs: dict[str, Any] = {}

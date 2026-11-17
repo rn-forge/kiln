@@ -1,4 +1,4 @@
-"""S18.8.2 — `KilnConfig` composes what one module needs from another."""
+"""`KilnConfig` composes what one module needs from another."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ COMPOSITION = [
 ]
 
 
-def test_s18_8_2_1_the_independence_contract_ignores_only_composition() -> None:
+def test_the_independence_contract_ignores_only_composition() -> None:
     parser = configparser.ConfigParser(interpolation=None)
     parser.read(REPO / ".importlinter", encoding="utf-8")
     section = parser["importlinter:contract:concern-modules-are-independent"]
@@ -26,7 +26,7 @@ def test_s18_8_2_1_the_independence_contract_ignores_only_composition() -> None:
     assert ignored == COMPOSITION
 
 
-def test_s18_8_2_2_config_composes_the_ci_facts(tmp_path: Path) -> None:
+def test_config_composes_the_ci_facts(tmp_path: Path) -> None:
     config = KilnConfig.load(write_config(tmp_path, "python-lib"))
     assert config.ci_checks == registry.enabled_names(
         config.ci, config.archetype, len(config.packages)

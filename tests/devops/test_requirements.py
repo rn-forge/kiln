@@ -26,27 +26,27 @@ def _workspace(
     return root
 
 
-def test_s15_4_1_1_range_passes(tmp_path: Path) -> None:
+def test_a_bounded_range_passes(tmp_path: Path) -> None:
     _workspace(tmp_path, '"b>=0.2,<1"')
     assert requirements.check(tmp_path) == []
 
 
-def test_s15_4_1_2_no_lower_bound(tmp_path: Path) -> None:
+def test_no_lower_bound(tmp_path: Path) -> None:
     _workspace(tmp_path, '"b"')
     assert requirements.check(tmp_path) == ["a -> b: no lower bound"]
 
 
-def test_s15_4_1_3_exact_pin(tmp_path: Path) -> None:
+def test_an_exact_pin_is_reported(tmp_path: Path) -> None:
     _workspace(tmp_path, '"b==0.3.0"')
     assert requirements.check(tmp_path) == ["a -> b: exact pin"]
 
 
-def test_s15_4_1_4_floor_above_current(tmp_path: Path) -> None:
+def test_floor_above_current(tmp_path: Path) -> None:
     _workspace(tmp_path, '"b>=0.4"')
     assert requirements.check(tmp_path) == ["a -> b: lower bound 0.4 is above 0.3.0"]
 
 
-def test_s15_4_1_5_extras_and_optional(tmp_path: Path) -> None:
+def test_extras_and_optional(tmp_path: Path) -> None:
     _workspace(
         tmp_path,
         '"b[x]>=0.2"',
@@ -58,12 +58,14 @@ def test_s15_4_1_5_extras_and_optional(tmp_path: Path) -> None:
     assert requirements.check(tmp_path) == ["a -> b: no lower bound"]
 
 
-def test_s15_4_1_6_non_members_ignored(tmp_path: Path) -> None:
+def test_non_members_ignored(tmp_path: Path) -> None:
     _workspace(tmp_path, '"requests", "b>=0.2"')
     assert requirements.check(tmp_path) == []
 
 
-def test_s15_4_1_7_cli(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_exit_code_follows_the_findings(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     _workspace(tmp_path, '"b>=0.2,<1"')
     assert cli.main(["requirements", "--root", str(tmp_path)]) == 0
     assert capsys.readouterr().out == ""

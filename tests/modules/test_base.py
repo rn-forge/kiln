@@ -1,4 +1,4 @@
-"""S4.2.1 — the module contract and its registry."""
+"""The module contract and its registry."""
 
 from __future__ import annotations
 
@@ -77,37 +77,35 @@ def _pyright(tmp_path: Path, source: str) -> subprocess.CompletedProcess[str]:
     )
 
 
-def test_s4_2_1_a_stub_module_that_implements_the_contract_registers() -> None:
+def test_a_stub_module_that_implements_the_contract_registers() -> None:
     registry = ModuleRegistry([Stub("stub", "flag")])
     assert [module.name for module in registry.modules] == ["stub"]
 
 
-def test_s4_2_1_a_complete_stub_typechecks(tmp_path: Path) -> None:
+def test_a_complete_stub_typechecks(tmp_path: Path) -> None:
     result = _pyright(tmp_path, STUB.format(artifacts=ARTIFACTS))
     assert result.returncode == 0, result.stdout
 
 
-def test_s4_2_1_a_stub_missing_a_member_fails_typecheck(tmp_path: Path) -> None:
+def test_a_stub_missing_a_member_fails_typecheck(tmp_path: Path) -> None:
     result = _pyright(tmp_path, STUB.format(artifacts=""))
     assert result.returncode != 0
     assert '"artifacts" is not present' in result.stdout
 
 
-def test_s4_2_1_two_modules_declaring_one_option_fail_naming_both_and_the_option() -> (
-    None
-):
+def test_two_modules_declaring_one_option_fail_naming_both_and_the_option() -> None:
     with pytest.raises(AppException) as caught:
         ModuleRegistry([Stub("left", "shared"), Stub("right", "own", "shared")])
     message = caught.value.message
     assert "'left'" in message and "'right'" in message and "--shared" in message
 
 
-def test_s4_2_1_two_modules_claiming_one_section_fail() -> None:
+def test_two_modules_claiming_one_section_fail() -> None:
     with pytest.raises(AppException, match=r"\[docs\]"):
         ModuleRegistry([Stub("left", section="docs"), Stub("right", section="docs")])
 
 
-def test_s4_2_1_every_shipped_module_registers_without_a_collision() -> None:
+def test_every_shipped_module_registers_without_a_collision() -> None:
     assert [module.name for module in builtin().modules] == [
         "core",
         "python",

@@ -1,4 +1,4 @@
-"""S18.5.1 — tests reach `commands` only through its public names."""
+"""Tests reach `commands` only through its public names."""
 
 from __future__ import annotations
 
@@ -43,5 +43,5 @@ def _offences() -> set[str]:
     return found
 
 
-def test_s18_5_1_1_tests_use_only_public_commands_names() -> None:
+def test_tests_use_only_public_commands_names() -> None:
     assert _offences() - ALLOWED == set()

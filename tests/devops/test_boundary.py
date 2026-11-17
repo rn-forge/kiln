@@ -19,7 +19,7 @@ FORBIDDEN = (
 )
 
 
-def test_s6_7_2_1_cli_loads_no_other_rn_forge_code() -> None:
+def test_cli_loads_no_other_rn_forge_code() -> None:
     result = subprocess.run(
         [
             sys.executable,
@@ -37,7 +37,7 @@ def test_s6_7_2_1_cli_loads_no_other_rn_forge_code() -> None:
     assert [n for n in kiln if not n.startswith("rn_forge.kiln.devops")] == []
 
 
-def test_s6_7_2_2_console_script_is_declared() -> None:
+def test_console_script_is_declared() -> None:
     project = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))[
         "project"
     ]

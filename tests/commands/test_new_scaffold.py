@@ -31,7 +31,7 @@ UV_FIXTURE = (
 )
 
 
-def test_s5_3_6_1_fresh_scaffolds_have_identical_composed_gitignores(
+def test_fresh_scaffolds_have_identical_composed_gitignores(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     texts = []
@@ -53,14 +53,14 @@ def test_s5_3_6_1_fresh_scaffolds_have_identical_composed_gitignores(
     )
 
 
-def test_s5_3_6_5_new_seeds_the_workspace_file(tmp_path: Path) -> None:
+def test_new_seeds_the_workspace_file(tmp_path: Path) -> None:
     target = tmp_path / "demo"
     new_repo(target, archetype="python-tool", docs="none", yes=True)
     workspace = json.loads((target / "demo.code-workspace").read_text("utf-8"))
     assert workspace == {"folders": [{"path": "."}]}
 
 
-def test_s5_3_6_7_docs_none_omits_the_mkdocs_tree_and_site_tasks(
+def test_docs_none_omits_the_mkdocs_tree_and_site_tasks(
     tmp_path: Path,
 ) -> None:
     target = tmp_path / "demo"
@@ -85,7 +85,7 @@ def test_s5_3_6_7_docs_none_omits_the_mkdocs_tree_and_site_tasks(
     assert (target / ".mdformat.toml").is_file()
 
 
-def test_s13_1_1_4_new_writes_a_current_derived_nav(
+def test_new_writes_a_current_derived_nav(
     rendered: Callable[[str], Path],
 ) -> None:
     target = rendered("python-tool")
@@ -98,7 +98,7 @@ def test_s13_1_1_4_new_writes_a_current_derived_nav(
     assert '"mkdocs.yml"' in state
 
 
-def test_s14_1_1_2_new_writes_tabbed_navigation_features(
+def test_new_writes_tabbed_navigation_features(
     rendered: Callable[[str], Path],
 ) -> None:
     target = rendered("python-tool")
@@ -110,7 +110,7 @@ def test_s14_1_1_2_new_writes_tabbed_navigation_features(
     assert "Overview:" not in mkdocs
 
 
-def test_s14_1_2_5_new_writes_a_current_epic_list(
+def test_new_writes_a_current_epic_list(
     rendered: Callable[[str], Path],
 ) -> None:
     target = rendered("python-tool")

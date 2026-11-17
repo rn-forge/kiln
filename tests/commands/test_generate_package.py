@@ -1,4 +1,4 @@
-"""S11.3.1 — `kiln generate package <name>` for `python-lib`.
+"""`kiln generate package <name>` for `python-lib`.
 
 Every repository here comes from `kiln new` run beneath `tmp_path`, which runs
 `uv init` for real, as `tests/modules/python/test_scaffold.py` does; the
@@ -105,7 +105,7 @@ def generated(tmp_path_factory: pytest.TempPathFactory) -> Path:
     return root
 
 
-def test_s11_3_1_0_the_command_is_declared_as_generate_package() -> None:
+def test_the_command_is_declared_as_generate_package() -> None:
     commands_declared = {
         c["name"]: c["target"] for c in main.SURFACE["cli"]["commands"]
     }
@@ -115,12 +115,12 @@ def test_s11_3_1_0_the_command_is_declared_as_generate_package() -> None:
     assert [c.name for c in commands.generate_app.registered_commands] == ["package"]
 
 
-def test_s11_3_1_1_config_keeps_its_comments(generated: Path) -> None:
+def test_config_keeps_its_comments(generated: Path) -> None:
     text = (generated / ".rn-forge/kiln/config.toml").read_text(encoding="utf-8")
     assert text.startswith("# The one hand-authored input kiln reads")
 
 
-def test_s11_3_1_1_root_mkdocs_package_nav_is_pinned(generated: Path) -> None:
+def test_root_mkdocs_package_nav_is_pinned(generated: Path) -> None:
     nav = NAV_BLOCK.extract((generated / "mkdocs.yml").read_text(encoding="utf-8"))
     assert nav is not None
     assert _is_subsequence(
@@ -134,7 +134,7 @@ def test_s11_3_1_1_root_mkdocs_package_nav_is_pinned(generated: Path) -> None:
 
 
 @pytest.mark.parametrize("package", ["golden-alpha", "golden-beta"])
-def test_s11_3_1_1_member_pyproject_where_the_command_writes_is_pinned(
+def test_member_pyproject_where_the_command_writes_is_pinned(
     generated: Path, package: str
 ) -> None:
     ours = _toml(generated / "packages" / package / "pyproject.toml")
@@ -165,7 +165,7 @@ def test_s11_3_1_1_member_pyproject_where_the_command_writes_is_pinned(
     assert "ruff" not in ours["tool"]
 
 
-def test_s11_3_1_1_root_pyproject_workspace_sources_and_groups_are_pinned(
+def test_root_pyproject_workspace_sources_and_groups_are_pinned(
     generated: Path,
 ) -> None:
     packages = ["golden-alpha", "golden-beta"]
@@ -192,7 +192,7 @@ def test_s11_3_1_1_root_pyproject_workspace_sources_and_groups_are_pinned(
     assert groups["dev"][0] == {"include-group": "workspace"}
 
 
-def test_s11_3_1_2_a_second_apply_dry_run_changes_nothing(
+def test_a_second_apply_dry_run_changes_nothing(
     generated: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -208,7 +208,7 @@ def test_s11_3_1_2_a_second_apply_dry_run_changes_nothing(
     ]
 
 
-def test_s11_3_1_2_json_lists_the_paths_written_and_the_apply_result(
+def test_json_lists_the_paths_written_and_the_apply_result(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     root = _lib(tmp_path, HTTPS)
@@ -227,7 +227,7 @@ def test_s11_3_1_2_json_lists_the_paths_written_and_the_apply_result(
     assert {row["action"] for row in payload["artifacts"]} >= {"update"}
 
 
-def test_s11_3_1_3_ssh_and_https_remotes_write_the_same_urls(tmp_path: Path) -> None:
+def test_ssh_and_https_remotes_write_the_same_urls(tmp_path: Path) -> None:
     urls: list[dict[str, str]] = []
     for index, remote in enumerate(
         (
@@ -250,7 +250,7 @@ def test_s11_3_1_3_ssh_and_https_remotes_write_the_same_urls(tmp_path: Path) -> 
     )
 
 
-def test_s16_6_8_5_generate_package_needs_no_remote(tmp_path: Path) -> None:
+def test_generate_package_needs_no_remote(tmp_path: Path) -> None:
     root = _lib(tmp_path, None)
 
     _generate(root, "alpha")
@@ -266,9 +266,7 @@ def test_s16_6_8_5_generate_package_needs_no_remote(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     "remote", [None, "https://gitlab.com/x/y", "https://github.com/other/elsewhere"]
 )
-def test_s16_6_8_6_urls_come_from_config_not_from_git(
-    tmp_path: Path, remote: str | None
-) -> None:
+def test_urls_come_from_config_not_from_git(tmp_path: Path, remote: str | None) -> None:
     root = _lib(tmp_path, remote)
 
     _generate(root, "alpha")
@@ -277,7 +275,7 @@ def test_s16_6_8_6_urls_come_from_config_not_from_git(
     assert urls["Source"] == "https://github.com/rn-forge/golden-lib"
 
 
-def test_s11_3_1_5_a_repeated_name_fails_with_package_exists_and_writes_nothing(
+def test_a_repeated_name_fails_with_package_exists_and_writes_nothing(
     generated: Path, tmp_path: Path
 ) -> None:
     root = tmp_path / "copy"
@@ -288,7 +286,7 @@ def test_s11_3_1_5_a_repeated_name_fails_with_package_exists_and_writes_nothing(
     assert _tree(root) == tree
 
 
-def test_s11_3_1_5_an_existing_directory_fails_with_package_exists(
+def test_an_existing_directory_fails_with_package_exists(
     generated: Path, tmp_path: Path
 ) -> None:
     root = tmp_path / "copy"
@@ -301,7 +299,7 @@ def test_s11_3_1_5_an_existing_directory_fails_with_package_exists(
 
 
 @pytest.mark.parametrize("name", ["Alpha", "a_b", "-a", "a-", "a--b", "1a", "a b"])
-def test_s11_3_1_5_a_name_that_is_not_kebab_case_fails_with_invalid_name(
+def test_a_name_that_is_not_kebab_case_fails_with_invalid_name(
     generated: Path, tmp_path: Path, name: str
 ) -> None:
     root = tmp_path / "copy"
@@ -312,7 +310,7 @@ def test_s11_3_1_5_a_name_that_is_not_kebab_case_fails_with_invalid_name(
     assert _tree(root) == tree
 
 
-def test_s11_3_1_5_a_python_app_fails_with_unsupported_archetype_and_writes_nothing(
+def test_a_python_app_fails_with_unsupported_archetype_and_writes_nothing(
     tmp_path: Path,
 ) -> None:
     root = _new(tmp_path, "app", archetype="python-app")
@@ -323,7 +321,7 @@ def test_s11_3_1_5_a_python_app_fails_with_unsupported_archetype_and_writes_noth
     assert not (root / "packages").exists()
 
 
-def test_s6_1_3_3_generate_package_with_a_module(tmp_path: Path) -> None:
+def test_generate_package_with_a_module(tmp_path: Path) -> None:
     root = _lib(tmp_path, HTTPS)
     commands.generate_package("rn-forge-cli", path=root, module="rn_forge.cli")
     member = root / "packages/rn-forge-cli"
@@ -347,7 +345,7 @@ def test_s6_1_3_3_generate_package_with_a_module(tmp_path: Path) -> None:
     assert "    rn_forge.cli\n" in importlinter
 
 
-def test_s6_1_3_3_generate_package_without_a_module_is_unchanged(
+def test_generate_package_without_a_module_is_unchanged(
     generated: Path,
 ) -> None:
     config = _toml(generated / ".rn-forge/kiln/config.toml")
@@ -355,7 +353,7 @@ def test_s6_1_3_3_generate_package_without_a_module_is_unchanged(
     assert (generated / "packages/golden-alpha/src/golden_alpha/py.typed").is_file()
 
 
-def test_s6_1_3_3_an_invalid_module_is_refused(tmp_path: Path) -> None:
+def test_an_invalid_module_is_refused(tmp_path: Path) -> None:
     root = _lib(tmp_path, HTTPS)
     tree = _tree(root)
     with pytest.raises(AppException):
@@ -363,9 +361,7 @@ def test_s6_1_3_3_an_invalid_module_is_refused(tmp_path: Path) -> None:
     assert _tree(root) == tree
 
 
-def test_s16_6_11_1_a_generated_package_is_a_skeleton(
-    generated: Path, tmp_path: Path
-) -> None:
+def test_a_generated_package_is_a_skeleton(generated: Path, tmp_path: Path) -> None:
     root = tmp_path / "golden-lib"
     shutil.copytree(generated, root)
     _generate(root, "golden-gamma")
@@ -388,7 +384,7 @@ def test_s16_6_11_1_a_generated_package_is_a_skeleton(
     assert not (package / "tests").exists()
 
 
-def test_s16_6_9_3_generate_package_writes_no_self_dependency(tmp_path: Path) -> None:
+def test_generate_package_writes_no_self_dependency(tmp_path: Path) -> None:
     root = _lib(tmp_path, HTTPS)
     commands.generate_package("rn-forge-commons", path=root, module="rn_forge.commons")
     document = _toml(root / "packages/rn-forge-commons/pyproject.toml")
@@ -398,12 +394,12 @@ def test_s16_6_9_3_generate_package_writes_no_self_dependency(tmp_path: Path) ->
     assert "sources" not in document["tool"]["uv"]
 
 
-def test_s16_6_10_2_generate_package_writes_no_ruff_table(generated: Path) -> None:
+def test_generate_package_writes_no_ruff_table(generated: Path) -> None:
     document = _toml(generated / "packages/golden-alpha/pyproject.toml")
     assert "ruff" not in document["tool"]
 
 
-def test_s18_12_3_1_drift_refuses_before_any_write(tmp_path: Path) -> None:
+def test_drift_refuses_before_any_write(tmp_path: Path) -> None:
     root = _lib(tmp_path, None)
     state = json.loads((root / ".rn-forge/kiln/state.json").read_text("utf-8"))
     entries = state.get("entries", state.get("files", state))

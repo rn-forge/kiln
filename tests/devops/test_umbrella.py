@@ -51,7 +51,7 @@ def _umbrella(*extra: str) -> int:
     return cli.main(["umbrella", "--sha", SHA, *extra])
 
 
-def test_s15_5_1_1_shipped_page_makes_a_release(
+def test_shipped_page_makes_a_release(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     NOTES.clear()
@@ -70,7 +70,7 @@ def test_s15_5_1_1_shipped_page_makes_a_release(
 
 
 @pytest.mark.parametrize("status", ["planned", "in progress"])
-def test_s15_5_1_2_planned_page_is_skipped(
+def test_planned_page_is_skipped(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path, status: str
 ) -> None:
     _repo(tmp_path, status)
@@ -80,7 +80,7 @@ def test_s15_5_1_2_planned_page_is_skipped(
     assert [c for c in calls if c[:3] == ["gh", "release", "create"]] == []
 
 
-def test_s15_5_1_3_existing_release_is_skipped(
+def test_existing_release_is_skipped(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     _repo(tmp_path, "shipped")
@@ -90,7 +90,7 @@ def test_s15_5_1_3_existing_release_is_skipped(
     assert calls == [["gh", "release", "view", "release-2"]]
 
 
-def test_s15_5_1_4_dry_run(
+def test_dry_run_creates_no_release(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -138,7 +138,7 @@ def _skipped(err: str) -> list[str]:
     ]
 
 
-def test_s6_12_1_1_old_untagged_releases_are_not_backfilled(
+def test_old_untagged_releases_are_not_backfilled(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -151,7 +151,7 @@ def test_s6_12_1_1_old_untagged_releases_are_not_backfilled(
     assert _skipped(capsys.readouterr().err) == [f"release-{n}" for n in range(1, 6)]
 
 
-def test_s6_12_1_2_only_the_newest_is_created(
+def test_only_the_newest_is_created(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -167,7 +167,7 @@ def test_s6_12_1_2_only_the_newest_is_created(
     assert _skipped(capsys.readouterr().err) == [f"release-{n}" for n in range(1, 6)]
 
 
-def test_s6_12_1_3_latest_is_never_given_to_an_older_release(
+def test_latest_is_never_given_to_an_older_release(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     _many(tmp_path, range(1, 8), range(8, 9))
@@ -182,7 +182,7 @@ def test_s6_12_1_3_latest_is_never_given_to_an_older_release(
     assert all("--latest=false" not in c for c in creates)
 
 
-def test_s6_12_1_4_nothing_to_do_when_newest_exists(
+def test_nothing_to_do_when_newest_exists(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -197,7 +197,7 @@ def test_s6_12_1_4_nothing_to_do_when_newest_exists(
     )
 
 
-def test_s6_12_1_5_dry_run_prints_only_the_newest(
+def test_dry_run_prints_only_the_newest(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

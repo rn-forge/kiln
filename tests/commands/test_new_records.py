@@ -25,7 +25,7 @@ def _reset_console_mode() -> Any:
 
 
 @pytest.mark.parametrize("archetype", ["node-lib", "python-tool"])
-def test_s16_7_3_8_new_formats_after_apply(
+def test_new_formats_after_apply(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, archetype: str
 ) -> None:
     calls: list[tuple[Path, bool]] = []
@@ -64,7 +64,7 @@ def test_s16_7_3_8_new_formats_after_apply(
         ("node-lib", {"package.json", "nx.json"}),
     ],
 )
-def test_s16_9_6_1_new_records_the_scaffolded_files(
+def test_new_records_the_scaffolded_files(
     rendered: Callable[[str], Path], archetype: str, expected: set[str]
 ) -> None:
     root = rendered(archetype)
@@ -79,7 +79,7 @@ def test_s16_9_6_1_new_records_the_scaffolded_files(
 
 
 @pytest.mark.parametrize("archetype", ["python-lib", "node-lib"])
-def test_s16_10_5_1_claude_md_is_recorded_and_agents_md_is_not(
+def test_claude_md_is_recorded_and_agents_md_is_not(
     rendered: Callable[[str], Path], archetype: str
 ) -> None:
     root = rendered(archetype)

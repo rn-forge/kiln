@@ -27,12 +27,12 @@ def _stdin(monkeypatch: pytest.MonkeyPatch, members: list[dict[str, str]]) -> No
     monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(members)))
 
 
-def test_s15_4_3_1_caret_and_tilde_pass(tmp_path: Path) -> None:
+def test_caret_and_tilde_pass(tmp_path: Path) -> None:
     deps = {"@s/b": "workspace:^", "@s/c": "workspace:~"}
     assert requirements.check_node(_workspace(tmp_path, dependencies=deps)) == []
 
 
-def test_s15_4_3_2_star_fails(tmp_path: Path) -> None:
+def test_workspace_star_is_reported_as_an_exact_pin(tmp_path: Path) -> None:
     members = _workspace(tmp_path, dependencies={"@s/b": "workspace:*"})
     assert requirements.check_node(members) == [
         "@s/a -> @s/b: workspace:* publishes as an exact pin"
@@ -40,14 +40,14 @@ def test_s15_4_3_2_star_fails(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("spec", ["^1.0.0", "workspace:1.0.0"])
-def test_s15_4_3_3_literal_version_fails(tmp_path: Path, spec: str) -> None:
+def test_literal_version_fails(tmp_path: Path, spec: str) -> None:
     members = _workspace(tmp_path, dependencies={"@s/b": spec})
     assert requirements.check_node(members) == [
         f"@s/a -> @s/b: use workspace:^ or workspace:~, found {spec}"
     ]
 
 
-def test_s15_4_3_4_fields(tmp_path: Path) -> None:
+def test_every_dependency_field_is_checked(tmp_path: Path) -> None:
     members = _workspace(
         tmp_path,
         dependencies={"@s/b": "^1"},
@@ -58,17 +58,17 @@ def test_s15_4_3_4_fields(tmp_path: Path) -> None:
     assert len(requirements.check_node(members)) == 3
 
 
-def test_s15_4_3_5_non_members_ignored(tmp_path: Path) -> None:
+def test_non_members_ignored(tmp_path: Path) -> None:
     members = _workspace(tmp_path, dependencies={"rxjs": "^7"})
     assert requirements.check_node(members) == []
 
 
-def test_s15_4_3_6_one_member(tmp_path: Path) -> None:
+def test_a_single_member_has_nothing_to_check(tmp_path: Path) -> None:
     members = _workspace(tmp_path, dependencies={"rxjs": "^7"})[:1]
     assert requirements.check_node(members) == []
 
 
-def test_s15_4_3_7_cli(
+def test_cli_exit_code_follows_the_node_findings(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     (tmp_path / "g").mkdir()

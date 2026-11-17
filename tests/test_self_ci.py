@@ -1,4 +1,4 @@
-"""S17.3.7 — kiln's own CI caches the pnpm store the Nx scaffolds install from."""
+"""kiln's own CI caches the pnpm store the Nx scaffolds install from."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ ACTION = ROOT / ".github/actions/setup-node/action.yml"
 PINS = ROOT / "src/rn_forge/kiln/modules/core/pins.toml"
 
 
-def test_s17_3_7_1_setup_node_caches_the_pnpm_store() -> None:
+def test_setup_node_caches_the_pnpm_store() -> None:
     steps = YamlUtils.load(ACTION.read_text(encoding="utf-8"))["runs"]["steps"]
     names = [step["name"] for step in steps]
     assert names == [

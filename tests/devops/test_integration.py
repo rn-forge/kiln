@@ -63,7 +63,7 @@ def _no_sleep(_: float) -> None:
     return None
 
 
-def test_s15_8_2_5_run() -> None:
+def test_run_starts_services_runs_pytest_and_returns_its_code() -> None:
     runner = Runner(pytest_code=3)
     code = integration.run(_package(), runner, ["-m", "x"], sleep=_no_sleep)
     assert code == 3
@@ -94,7 +94,7 @@ def test_s15_8_2_5_run() -> None:
     ]
 
 
-def test_s15_8_2_5_run_waits_for_health() -> None:
+def test_run_waits_for_health() -> None:
     runner = Runner(health=["starting", "starting", "healthy"])
     package = Package("app", "a", "app", services=(_package().services[0],))
     assert integration.run(package, runner, [], sleep=_no_sleep) == 0
@@ -105,7 +105,7 @@ def test_s15_8_2_5_run_waits_for_health() -> None:
     assert verbs == ["run", "inspect", "inspect", "inspect", "uv", "rm"]
 
 
-def test_s15_8_2_5_run_without_health_cmd_waits_for_running() -> None:
+def test_run_without_health_cmd_waits_for_running() -> None:
     runner = Runner(health=["running"])
     package = Package("app", "a", "app", services=(_package().services[1],))
     assert integration.run(package, runner, [], sleep=_no_sleep) == 0
@@ -113,7 +113,7 @@ def test_s15_8_2_5_run_without_health_cmd_waits_for_running() -> None:
     assert "{{.State.Status}}" in inspect
 
 
-def test_s15_8_2_5_run_removes_containers_when_never_healthy() -> None:
+def test_run_removes_containers_when_never_healthy() -> None:
     runner = Runner(health=["unhealthy"])
     package = Package("app", "a", "app", services=(_package().services[0],))
     assert integration.run(package, runner, [], sleep=_no_sleep, attempts=3) == 1
@@ -121,7 +121,9 @@ def test_s15_8_2_5_run_removes_containers_when_never_healthy() -> None:
     assert runner.commands()[-1] == ["docker", "rm", "-f", "kiln-ci-app-postgres"]
 
 
-def test_s15_8_2_6_cli(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cli_runs_the_integration_tests_of_a_member(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     (tmp_path / "pyproject.toml").write_text(
         '[tool.uv.workspace]\nmembers = ["pkgs/*"]\n\n'
         '[tool.workspace-ci]\npytest-args = ["-x"]\n'
@@ -160,7 +162,7 @@ def _keycloak() -> Service:
     )
 
 
-def test_s16_6_5_2_start_command() -> None:
+def test_start_command_mounts_the_declared_volume() -> None:
     package = Package("auth", "packages/auth", "auth", services=(_keycloak(),))
     command = integration.start_command(package, package.services[0])
     absolute = str(Path("packages/auth/realms").resolve())
@@ -171,7 +173,7 @@ def test_s16_6_5_2_start_command() -> None:
     assert command[image + 1 :] == ["start-dev", "--import-realm"]
 
 
-def test_s16_6_5_3_pytest_args() -> None:
+def test_service_pytest_args_select_its_marker() -> None:
     runner = Runner()
     package = Package("auth", "a", "auth", services=(_keycloak(),))
     assert integration.run(package, runner, ["-x"], sleep=_no_sleep) == 0
@@ -179,7 +181,7 @@ def test_s16_6_5_3_pytest_args() -> None:
     assert call[call.index("-q") + 1 :] == ["-x", "-m", "broker", "-p", "no:randomly"]
 
 
-def test_s16_6_5_4_keycloak_declaration(tmp_path: Path) -> None:
+def test_keycloak_declaration_loads_from_the_member_config(tmp_path: Path) -> None:
     (tmp_path / "pyproject.toml").write_text('[tool.uv.workspace]\nmembers = ["p/*"]\n')
     member = tmp_path / "p/auth"
     member.mkdir(parents=True)
@@ -214,7 +216,7 @@ def test_s16_6_5_4_keycloak_declaration(tmp_path: Path) -> None:
     ]  # fmt: skip
 
 
-def test_s16_6_5_5_health_wait(tmp_path: Path) -> None:
+def test_health_wait_sets_the_retries_and_gives_up(tmp_path: Path) -> None:
     slow = Service("pg", "pg:1", health_cmd="x", health_wait=300)
     package = Package("app", "a", "app", services=(slow,))
     command = integration.start_command(package, slow)

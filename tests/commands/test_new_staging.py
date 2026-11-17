@@ -36,7 +36,7 @@ def _hashes(root: Path) -> dict[str, bytes]:
     }
 
 
-def test_s4_5_9_1_success_retains_staging_and_target_equals_workspace(
+def test_success_retains_staging_and_target_equals_workspace(
     tmp_path: Path,
 ) -> None:
     target = tmp_path / "out" / "demo"
@@ -47,7 +47,7 @@ def test_s4_5_9_1_success_retains_staging_and_target_equals_workspace(
     assert (run / "backend" / "pyproject.toml").is_file()
     state = ".rn-forge/kiln/state.json"
     staged, final = _hashes(run / "workspace"), _hashes(target)
-    # `new` records the scaffolded list in the target's state.json last (S16.9.6).
+    # `new` records the scaffolded list in the target's state.json last.
     for hashes in (staged, final):
         document = json.loads(hashes[state])
         document["metadata"].pop("scaffolded", None)
@@ -56,7 +56,7 @@ def test_s4_5_9_1_success_retains_staging_and_target_equals_workspace(
     assert (tmp_path / ".staging" / ".gitignore").read_text(encoding="utf-8") == "/*\n"
 
 
-def test_s4_5_9_2_workspace_holds_only_reconciled_files(tmp_path: Path) -> None:
+def test_workspace_holds_only_reconciled_files(tmp_path: Path) -> None:
     new_repo(tmp_path / "demo", archetype="python-tool", docs="none", yes=True)
 
     run = tmp_path / ".staging" / "demo"
@@ -69,7 +69,7 @@ def test_s4_5_9_2_workspace_holds_only_reconciled_files(tmp_path: Path) -> None:
     assert not (run / "backend" / "README.md").exists()
 
 
-def test_s4_5_9_3_staging_is_ignored_inside_a_git_worktree(tmp_path: Path) -> None:
+def test_staging_is_ignored_inside_a_git_worktree(tmp_path: Path) -> None:
     subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
     new_repo(tmp_path / "demo", archetype="python-tool", docs="none", yes=True)
 
@@ -81,7 +81,7 @@ def test_s4_5_9_3_staging_is_ignored_inside_a_git_worktree(tmp_path: Path) -> No
 
 
 @pytest.mark.parametrize("target_exists", [False, True])
-def test_s4_5_9_4_failure_retains_staging_and_writes_no_target(
+def test_failure_retains_staging_and_writes_no_target(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, target_exists: bool
 ) -> None:
     def boom(*_args: object) -> None:
@@ -100,7 +100,7 @@ def test_s4_5_9_4_failure_retains_staging_and_writes_no_target(
     assert not target_exists or list(target.iterdir()) == []
 
 
-def test_s4_5_9_5_existing_staging_is_refused_untouched(tmp_path: Path) -> None:
+def test_existing_staging_is_refused_untouched(tmp_path: Path) -> None:
     run = tmp_path / ".staging" / "demo"
     run.mkdir(parents=True)
     (run / "keep").write_text("review state", encoding="utf-8")
@@ -112,7 +112,7 @@ def test_s4_5_9_5_existing_staging_is_refused_untouched(tmp_path: Path) -> None:
     assert not (tmp_path / "demo").exists()
 
 
-def test_s4_5_11_1_success_leaves_a_git_repository_without_commits(
+def test_success_leaves_a_git_repository_without_commits(
     tmp_path: Path,
 ) -> None:
     target = tmp_path / "demo"
@@ -137,13 +137,13 @@ def test_s4_5_11_1_success_leaves_a_git_repository_without_commits(
     assert remotes.stdout == ""
 
 
-def test_s4_5_11_2_dry_run_writes_no_git(tmp_path: Path) -> None:
+def test_dry_run_writes_no_git(tmp_path: Path) -> None:
     target = tmp_path / "preview"
     new_repo(target, archetype="python-tool", docs="none", yes=True, dry_run=True)
     assert not target.exists()
 
 
-def test_s4_5_11_3_failure_or_refusal_creates_no_git(
+def test_failure_or_refusal_creates_no_git(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     full = tmp_path / "full"
@@ -163,7 +163,7 @@ def test_s4_5_11_3_failure_or_refusal_creates_no_git(
     assert not (failed / ".git").exists()
 
 
-def test_s4_5_11_4_json_plan_does_not_list_git(
+def test_json_plan_does_not_list_git(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     new_repo(
@@ -174,12 +174,12 @@ def test_s4_5_11_4_json_plan_does_not_list_git(
 
 
 @pytest.mark.parametrize("archetype", ["python-lib", "python-app"])
-def test_s4_5_11_5_other_archetypes_get_git(tmp_path: Path, archetype: str) -> None:
+def test_other_archetypes_get_git(tmp_path: Path, archetype: str) -> None:
     new_repo(tmp_path / "demo", archetype=archetype, docs="none", yes=True)
     assert (tmp_path / "demo" / ".git").is_dir()
 
 
-def test_s4_5_9_6_no_retention_or_cleanup_flag_and_no_rnf_home(
+def test_no_retention_or_cleanup_flag_and_no_rnf_home(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     assert set(inspect.signature(commands.new).parameters) == {

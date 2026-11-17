@@ -1,4 +1,4 @@
-"""S16.3.1 — `docs/runbooks/cutover.md`: the one-time move onto kiln."""
+"""`docs/runbooks/cutover.md`: the one-time move onto kiln."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ def _flat() -> str:
     return " ".join(_text().split())
 
 
-def test_s16_8_2_1_runbook_steps() -> None:
+def test_cutover_runbook_has_its_steps_in_order() -> None:
     text = _text()
 
     assert text.startswith("# Cutting a repository over to kiln")
@@ -40,7 +40,7 @@ def test_s16_8_2_1_runbook_steps() -> None:
         assert heading.replace("`", "").startswith(expected)
 
 
-def test_s16_8_2_2_runbook_has_no_init() -> None:
+def test_runbook_has_no_init() -> None:
     text = _text()
 
     for absent in ("kiln init", "backups/"):
@@ -56,24 +56,24 @@ def test_s16_8_2_2_runbook_has_no_init() -> None:
         assert present in text, present
 
 
-def test_s16_8_2_3_table_format() -> None:
+def test_cutover_runbook_has_the_loss_table() -> None:
     assert "| File | What is lost | Verdict | Where it went |" in _text()
 
 
-def test_s16_8_2_4_listed() -> None:
+def test_cutover_runbook_is_listed_in_the_index() -> None:
     index = (ROOT / "docs/runbooks/index.md").read_text(encoding="utf-8")
 
     assert "](cutover.md)" in index
 
 
-def test_s16_6_13_5_runbook_names_migrate() -> None:
+def test_runbook_names_migrate() -> None:
     text = RUNBOOK.read_text(encoding="utf-8")
     assert "node-lib" in text
     assert "nx migrate" in text
     assert "pnpm audit" in text
 
 
-def test_s16_7_3_10_docs() -> None:
+def test_runbook_pins_prettier_and_the_pages_record_the_revision() -> None:
     assert "prettier@~3.9.10" in _flat()
     for page in (
         "docs/adr/ADR-0012.md",
@@ -89,7 +89,7 @@ def _folded(page: str) -> str:
     return " ".join((ROOT / page).read_text(encoding="utf-8").split())
 
 
-def test_s16_7_9_1_runbook_documents_the_library_step() -> None:
+def test_runbook_documents_the_library_step() -> None:
     text = _folded("docs/runbooks/creating-a-repo.md")
     for needle in (
         "nx g @nx/angular:library",
@@ -102,12 +102,12 @@ def test_s16_7_9_1_runbook_documents_the_library_step() -> None:
     assert not re.search(r"node-lib` \*\(deferred\)\*", text)
 
 
-def test_s16_7_9_2_f9_2_records_the_supersession() -> None:
+def test_the_node_scaffold_page_records_the_supersession() -> None:
     text = _folded("docs/specs/epics/E9-node-archetypes/F9.2-one-node-scaffold.md")
     assert text.count("Revised 2026-11-09 (S16.7.9)") == 1
 
 
-def test_s16_9_3_1_runbook_regenerates_the_nav() -> None:
+def test_runbook_regenerates_the_nav() -> None:
     flat = _flat()
     start = flat.index("**Bring the files over.**")
     end = flat.index("**Read the diff file by file.**")
@@ -118,7 +118,7 @@ def test_s16_9_3_1_runbook_regenerates_the_nav() -> None:
     assert "`nav` is a derived region" in step
 
 
-def test_s17_3_6_1_the_board_says_acceptance_is_tests() -> None:
+def test_the_board_says_acceptance_is_tests() -> None:
     flat = " ".join((ROOT / "docs/specs/index.md").read_text(encoding="utf-8").split())
 
     for needle in (
@@ -134,7 +134,7 @@ def test_s17_3_6_1_the_board_says_acceptance_is_tests() -> None:
         assert needle in flat
 
 
-def test_s16_8_3_4_docs_name_no_adopt_prompt() -> None:
+def test_docs_name_no_adopt_prompt() -> None:
     docs = ROOT / "docs"
     skipped = {docs / d for d in ("specs", "plans", "adr", "releases")}
     for page in docs.rglob("*.md"):
@@ -148,7 +148,7 @@ def test_s16_8_3_4_docs_name_no_adopt_prompt() -> None:
         assert "adopting-a-repo" not in (ROOT / name).read_text(encoding="utf-8")
 
 
-def test_s16_8_3_5_cutover_step_8_keeps_its_gate() -> None:
+def test_cutover_step_8_keeps_its_gate() -> None:
     flat = _flat()
     for present in (
         "Reconcile and gate",
@@ -160,13 +160,13 @@ def test_s16_8_3_5_cutover_step_8_keeps_its_gate() -> None:
     assert "--name adopt" not in flat
 
 
-def test_s16_9_12_4_runbook_drops_the_standard_exclude() -> None:
+def test_runbook_drops_the_standard_exclude() -> None:
     flat = _flat()
     start = flat.index("**Bring the files over.**")
     end = flat.index("**Read the diff file by file.**")
     step = flat[start:end]
 
-    # Since S7.2.4 the file starts from the reference's copy, which has no
-    # `exclude` (S16.9.12), so the step names the file, not the key.
+    # The file starts from the reference's copy, which has no
+    # `exclude`, so the step names the file, not the key.
     assert ".mdformat.toml" in step
     assert "starts from the reference's copy" in step

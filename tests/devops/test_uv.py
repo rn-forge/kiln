@@ -40,7 +40,9 @@ def _workspace(root: Path) -> None:
     )
 
 
-def test_s15_8_2_1_load(tmp_path: Path) -> None:
+def test_load_workspace_reads_integration_services_and_release_requires(
+    tmp_path: Path,
+) -> None:
     _workspace(tmp_path)
     packages = uv.load_workspace(tmp_path).packages
     assert packages["base"].services == ()
@@ -58,7 +60,7 @@ def test_s15_8_2_1_load(tmp_path: Path) -> None:
     assert packages["app-x"].release_requires == {"base"}
 
 
-def test_s15_8_2_1_image_is_required(tmp_path: Path) -> None:
+def test_image_is_required(tmp_path: Path) -> None:
     _workspace(tmp_path)
     _write(
         tmp_path / "pkgs/base/pyproject.toml",
@@ -70,7 +72,7 @@ def test_s15_8_2_1_image_is_required(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("old", ["postgres", "redis"])
-def test_s15_8_2_4_old_table_is_refused(tmp_path: Path, old: str) -> None:
+def test_old_table_is_refused(tmp_path: Path, old: str) -> None:
     _workspace(tmp_path)
     _write(
         tmp_path / "pkgs/base/pyproject.toml",
@@ -87,7 +89,7 @@ def test_s15_8_2_4_old_table_is_refused(tmp_path: Path, old: str) -> None:
         uv.load_workspace(tmp_path)
 
 
-def test_s6_8_1_9_load_workspace_keeps_dependency_groups_out_of_release_requires(
+def test_load_workspace_keeps_dependency_groups_out_of_release_requires(
     tmp_path: Path,
 ) -> None:
     _workspace(tmp_path)
@@ -103,17 +105,17 @@ def test_s6_8_1_9_load_workspace_keeps_dependency_groups_out_of_release_requires
     )
 
 
-def test_s6_7_2_find_root_walks_up_from_a_subdirectory(tmp_path: Path) -> None:
+def test_find_root_walks_up_from_a_subdirectory(tmp_path: Path) -> None:
     _workspace(tmp_path)
     assert uv.find_root(tmp_path / "pkgs" / "app") == tmp_path
 
 
-def test_s6_7_2_find_root_fails_outside_a_workspace(tmp_path: Path) -> None:
+def test_find_root_fails_outside_a_workspace(tmp_path: Path) -> None:
     with pytest.raises(FileNotFoundError):
         uv.find_root(tmp_path)
 
 
-def test_s6_7_2_load_workspace_reads_members_and_settings(tmp_path: Path) -> None:
+def test_load_workspace_reads_members_and_settings(tmp_path: Path) -> None:
     _workspace(tmp_path)
     workspace = uv.load_workspace(tmp_path)
     assert sorted(workspace.packages) == ["app-x", "base"]
@@ -138,7 +140,7 @@ def _adapter_member(root: Path, adapters: str, extras: str, files: list[str]) ->
         _write(root / "pkgs/data/src/data" / file, "")
 
 
-def test_s6_7_2_check_adapters_passes_for_modules_and_subpackages(
+def test_check_adapters_passes_for_modules_and_subpackages(
     tmp_path: Path,
 ) -> None:
     _adapter_member(
@@ -150,21 +152,21 @@ def test_s6_7_2_check_adapters_passes_for_modules_and_subpackages(
     assert uv.check_adapters(uv.load_workspace(tmp_path)) == []
 
 
-def test_s6_7_2_check_adapters_reports_a_missing_module(tmp_path: Path) -> None:
+def test_check_adapters_reports_a_missing_module(tmp_path: Path) -> None:
     _adapter_member(tmp_path, 'adapters = ["pandas"]', "pandas = []", ["core.py"])
     assert uv.check_adapters(uv.load_workspace(tmp_path)) == [
         "data: adapter pandas has no module pandas"
     ]
 
 
-def test_s6_7_2_check_adapters_reports_a_missing_extra(tmp_path: Path) -> None:
+def test_check_adapters_reports_a_missing_extra(tmp_path: Path) -> None:
     _adapter_member(tmp_path, 'adapters = ["pandas"]', "excel = []", ["pandas.py"])
     assert uv.check_adapters(uv.load_workspace(tmp_path)) == [
         "data: adapter pandas has no extra pandas"
     ]
 
 
-def test_s6_7_2_check_adapters_reports_a_duplicate(tmp_path: Path) -> None:
+def test_check_adapters_reports_a_duplicate(tmp_path: Path) -> None:
     _adapter_member(
         tmp_path, 'adapters = ["pandas", "pandas"]', "pandas = []", ["pandas.py"]
     )
@@ -173,7 +175,7 @@ def test_s6_7_2_check_adapters_reports_a_duplicate(tmp_path: Path) -> None:
     ]
 
 
-def test_s6_7_2_check_adapters_skips_a_member_without_the_key(tmp_path: Path) -> None:
+def test_check_adapters_skips_a_member_without_the_key(tmp_path: Path) -> None:
     _workspace(tmp_path)
     assert uv.check_adapters(uv.load_workspace(tmp_path)) == []
 
@@ -196,7 +198,7 @@ def _stub_uv(monkeypatch: pytest.MonkeyPatch) -> list[list[str]]:
     return calls
 
 
-def test_s6_7_2_smoke_without_a_declaration_imports_the_package_module(
+def test_smoke_without_a_declaration_imports_the_package_module(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     calls = _stub_uv(monkeypatch)
@@ -210,7 +212,7 @@ def test_s6_7_2_smoke_without_a_declaration_imports_the_package_module(
     assert calls[-1][-2] == ""
 
 
-def test_s6_7_2_smoke_with_a_declaration_imports_its_modules(
+def test_smoke_with_a_declaration_imports_its_modules(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     calls = _stub_uv(monkeypatch)
@@ -229,7 +231,7 @@ def _single(root: Path) -> None:
     _write(root / "src/my_tool/__init__.py", "")
 
 
-def test_s15_8_3_1_root_is_the_member(tmp_path: Path) -> None:
+def test_root_is_the_member(tmp_path: Path) -> None:
     _single(tmp_path)
     assert uv.find_root(tmp_path / "src") == tmp_path
     packages = uv.load_workspace(tmp_path).packages
@@ -238,7 +240,7 @@ def test_s15_8_3_1_root_is_the_member(tmp_path: Path) -> None:
     assert [s.name for s in packages["my-tool"].services] == ["redis"]
 
 
-def test_s15_8_3_1_declared_module_name_wins(tmp_path: Path) -> None:
+def test_declared_module_name_wins(tmp_path: Path) -> None:
     _write(
         tmp_path / "pyproject.toml",
         '[project]\nname = "ns-pkg"\nversion = "1"\n\n'
@@ -247,7 +249,7 @@ def test_s15_8_3_1_declared_module_name_wins(tmp_path: Path) -> None:
     assert uv.load_workspace(tmp_path).packages["ns-pkg"].module == "ns.pkg"
 
 
-def test_s15_8_3_2_plan_of_one(tmp_path: Path) -> None:
+def test_plan_of_one(tmp_path: Path) -> None:
     _single(tmp_path)
     run = lambda *args: subprocess.run(  # noqa: E731
         ["git", "-c", "user.name=t", "-c", "user.email=t@t", *args],
@@ -283,7 +285,9 @@ def test_s15_8_3_2_plan_of_one(tmp_path: Path) -> None:
     ]
 
 
-def test_s16_6_5_1_load(tmp_path: Path) -> None:
+def test_load_workspace_reads_service_command_volumes_and_pytest_args(
+    tmp_path: Path,
+) -> None:
     _write(
         tmp_path / "pyproject.toml",
         '[tool.uv.workspace]\nmembers = ["pkgs/*"]\n',

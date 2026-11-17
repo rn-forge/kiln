@@ -36,7 +36,7 @@ STARTER = {
 
 
 @pytest.mark.parametrize("archetype", ["python-tool", "python-app"])
-def test_s4_9_1_5_new_wires_cli_and_script(tmp_path: Path, archetype: str) -> None:
+def test_new_wires_cli_and_script(tmp_path: Path, archetype: str) -> None:
     directory = tmp_path / "demo-tool"
     new_repo(directory, archetype=archetype, docs="none", yes=True)
 
@@ -54,7 +54,7 @@ def test_s4_9_1_5_new_wires_cli_and_script(tmp_path: Path, archetype: str) -> No
     assert pyproject["project"]["scripts"] == {"demo-tool": "demo_tool.main:app"}
 
 
-def test_s4_9_1_6_new_records_seeded_and_validates(tmp_path: Path) -> None:
+def test_new_records_seeded_and_validates(tmp_path: Path) -> None:
     """Slow like its neighbours: runs `uv init`; marks none, as the module note says."""
     directory = tmp_path / "demo-tool"
     new_repo(directory, archetype="python-tool", docs="none", yes=True)
@@ -88,7 +88,7 @@ def test_s4_9_1_6_new_records_seeded_and_validates(tmp_path: Path) -> None:
     assert {path: entries()[path] for path in paths} == before_entries
 
 
-def test_s4_8_2_3_new_with_a_module(tmp_path: Path) -> None:
+def test_new_with_a_module(tmp_path: Path) -> None:
     directory = tmp_path / "demo-tool"
     new_repo(
         directory,
@@ -121,7 +121,7 @@ def test_s4_8_2_3_new_with_a_module(tmp_path: Path) -> None:
     assert checks.run(directory) == []
 
 
-def test_s4_8_2_3_new_without_a_module_is_unchanged(
+def test_new_without_a_module_is_unchanged(
     rendered: Callable[[str], Path],
 ) -> None:
     root = rendered("python-tool")
@@ -132,7 +132,7 @@ def test_s4_8_2_3_new_without_a_module_is_unchanged(
     assert (root / "src/python_tool/py.typed").is_file()
 
 
-def test_s4_8_2_3_an_invalid_module_is_refused_before_writing(
+def test_an_invalid_module_is_refused_before_writing(
     tmp_path: Path,
 ) -> None:
     directory = tmp_path / "demo-tool"
@@ -142,7 +142,7 @@ def test_s4_8_2_3_an_invalid_module_is_refused_before_writing(
     assert not (tmp_path / ".staging").exists()
 
 
-def test_s4_8_2_3_module_on_another_archetype_is_refused(tmp_path: Path) -> None:
+def test_module_on_another_archetype_is_refused(tmp_path: Path) -> None:
     directory = tmp_path / "demo-lib"
     with pytest.raises(AppException):
         new_repo(directory, archetype="python-lib", module="rn_forge.demo", yes=True)

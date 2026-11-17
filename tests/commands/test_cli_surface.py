@@ -4,7 +4,7 @@ kiln declares its command line twice — in `.rn-forge/kiln/config.toml`, like
 every rn-forge repo, and in `src/rn_forge/kiln/cli.toml`, which is what an
 installed kiln reads (see that file's header). Two copies with nothing
 comparing them is how a repo ends up with one of them wrong, so this compares
-them. F4.8 makes one render the other, and this test goes away with the copy.
+them. Once one is rendered from the other, this test goes away with the copy.
 """
 
 from __future__ import annotations
@@ -33,13 +33,13 @@ def test_packaged_surface_matches_repo_config() -> None:
     assert packaged == declared
 
 
-def test_s4_5_5_packaged_lifecycle_matches_repo_config() -> None:
+def test_packaged_lifecycle_matches_repo_config() -> None:
     packaged = _table(ROOT / "src" / "rn_forge" / "kiln" / "cli.toml", "lifecycle")
     declared = _table(ROOT / ".rn-forge" / "kiln" / "config.toml", "lifecycle")
     assert packaged == declared
 
 
-def test_s13_1_1_6_the_cli_has_docs_generate_and_no_other_docs_command() -> None:
+def test_the_cli_has_docs_generate_and_no_other_docs_command() -> None:
     names = [
         command["name"]
         for command in _table(ROOT / ".rn-forge" / "kiln" / "config.toml", "cli")[
@@ -56,7 +56,7 @@ def test_s13_1_1_6_the_cli_has_docs_generate_and_no_other_docs_command() -> None
         ROOT / ".rn-forge" / "kiln" / "config.toml",
     ],
 )
-def test_s16_8_1_1_init_is_not_a_command(path: Path) -> None:
+def test_init_is_not_a_command(path: Path) -> None:
     names = [command["name"] for command in _table(path, "cli")["commands"]]
     assert "init" not in names
     assert not hasattr(commands, "init")
@@ -90,14 +90,14 @@ _GONE_FROM_COMMANDS = (
 )
 
 
-def test_s16_8_1_3_adoption_helpers_are_gone() -> None:
+def test_adoption_helpers_are_gone() -> None:
     assert [name for name in _GONE_FROM_COMMANDS if hasattr(commands, name)] == []
     assert importlib.util.find_spec("rn_forge.kiln.modules.core.remote") is None
     assert not hasattr(python_scaffold, "add_task_tools")
     assert not hasattr(python_scaffold, "missing_task_tools")
 
 
-def test_s16_8_1_4_no_source_mentions_init() -> None:
+def test_no_source_mentions_init() -> None:
     source = ROOT / "src" / "rn_forge" / "kiln"
     hits = [
         str(path.relative_to(ROOT))
@@ -108,7 +108,7 @@ def test_s16_8_1_4_no_source_mentions_init() -> None:
     assert hits == []
 
 
-def test_s16_8_3_3_no_source_names_the_adopt_prompt() -> None:
+def test_no_source_names_the_adopt_prompt() -> None:
     pattern = re.compile(r"kiln prompt (--name )?adopt|prompts/adopt")
     source = ROOT / "src" / "rn_forge" / "kiln"
     hits = [
@@ -121,7 +121,7 @@ def test_s16_8_3_3_no_source_names_the_adopt_prompt() -> None:
     assert hits == []
 
 
-def test_s16_9_7_1_the_default_log_level_is_info() -> None:
+def test_the_default_log_level_is_info() -> None:
     from rn_forge.cli import CliSurface
     from rn_forge.cli.options import LogLevel
     from rn_forge.commons.fs.documents import DocumentUtils
@@ -134,7 +134,7 @@ def test_s16_9_7_1_the_default_log_level_is_info() -> None:
     assert surface.default_log_level is LogLevel.INFO
 
 
-def test_s16_9_7_2_apply_prints_no_verbose_lines(
+def test_apply_prints_no_verbose_lines(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     rendered: Callable[[str], Path],

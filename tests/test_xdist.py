@@ -1,4 +1,4 @@
-"""S17.3.1: pytest runs on every core."""
+"""pytest runs on every core."""
 
 import tomllib
 from pathlib import Path
@@ -12,7 +12,7 @@ def _version_key(version: str) -> tuple[int, ...]:
     return tuple(int(part) for part in version.split("."))
 
 
-def test_s17_3_1_1_addopts_run_in_parallel() -> None:
+def test_addopts_run_in_parallel() -> None:
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     tokens = pyproject["tool"]["pytest"]["ini_options"]["addopts"].split()
     for token in ("-n", "auto", "--import-mode=importlib", "-ra"):
@@ -20,7 +20,7 @@ def test_s17_3_1_1_addopts_run_in_parallel() -> None:
     assert tokens[tokens.index("-n") + 1] == "auto"
 
 
-def test_s17_3_1_2_xdist_is_a_locked_dev_dependency() -> None:
+def test_xdist_is_a_locked_dev_dependency() -> None:
     pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     entries = [
         e
@@ -34,7 +34,7 @@ def test_s17_3_1_2_xdist_is_a_locked_dev_dependency() -> None:
     assert _version_key(floor) <= _version_key(locked["pytest-xdist"])
 
 
-def test_s17_3_1_3_the_test_task_is_unchanged() -> None:
+def test_the_test_task_is_unchanged() -> None:
     tasks = YamlUtils.load((ROOT / "tasks" / "python.yml").read_text(encoding="utf-8"))[
         "tasks"
     ]

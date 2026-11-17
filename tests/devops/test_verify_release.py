@@ -48,7 +48,7 @@ def _spec(source: str, directory: str = ".") -> Spec:
     )
 
 
-def test_s15_8_4_1_pypi() -> None:
+def test_pypi_installs_the_published_version() -> None:
     runner = Runner()
     assert verify_release.run(_spec("pypi"), runner, sleep=lambda _: None) == 0
     commands = runner.commands()
@@ -62,7 +62,7 @@ def test_s15_8_4_1_pypi() -> None:
     assert commands[-1] == [f"{venv}/bin/python", "-c", "import pkg_a"]
 
 
-def test_s15_8_4_1_pypi_retries_then_fails() -> None:
+def test_pypi_retries_then_fails() -> None:
     runner = Runner(install_codes=[1])
     waits: list[float] = []
     assert (
@@ -74,12 +74,12 @@ def test_s15_8_4_1_pypi_retries_then_fails() -> None:
     assert not any(c[-2:-1] == ["-c"] for c in runner.commands())
 
 
-def test_s15_8_4_1_pypi_retries_until_published() -> None:
+def test_pypi_retries_until_published() -> None:
     runner = Runner(install_codes=[1, 0])
     assert verify_release.run(_spec("pypi"), runner, sleep=lambda _: None) == 0
 
 
-def test_s15_8_4_2_tag() -> None:
+def test_tag_fetches_the_tag_and_checks_it_out() -> None:
     runner = Runner()
     assert verify_release.run(_spec("git", "packages/a"), runner) == 0
     commands = runner.commands()
@@ -97,7 +97,7 @@ def test_s15_8_4_2_tag() -> None:
     assert "--no-cache" in install
 
 
-def test_s15_8_4_2_tag_of_a_single_package_has_no_subdirectory() -> None:
+def test_tag_of_a_single_package_has_no_subdirectory() -> None:
     runner = Runner()
     spec = Spec("tool", "tool", "1.0.0", "v1.0.0", "git", "https://github.com/o/r", ".")
     assert verify_release.run(spec, runner) == 0
@@ -105,7 +105,7 @@ def test_s15_8_4_2_tag_of_a_single_package_has_no_subdirectory() -> None:
     assert install[-1] == "tool @ git+https://github.com/o/r@v1.0.0"
 
 
-def test_s15_8_4_cli_tag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cli_verifies_a_tag(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / "pyproject.toml").write_text(
         '[project]\nname = "my-tool"\nversion = "1.0.0"\n', encoding="utf-8"
     )

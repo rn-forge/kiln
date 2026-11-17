@@ -1,4 +1,4 @@
-"""Tests for `kiln-devops dist-resolve` and `dist-verify` (S9.4.1)."""
+"""Tests for `kiln-devops dist-resolve` and `dist-verify`."""
 
 from __future__ import annotations
 
@@ -27,13 +27,13 @@ def _manifest(range_: str) -> dict:
         ("workspace:>=1.0.0", ">=1.0.0"),
     ],
 )
-def test_s9_4_1_1_resolve_rewrites_ranges(range_: str, expected: str) -> None:
+def test_resolve_rewrites_ranges(range_: str, expected: str) -> None:
     manifest, changed = dist.resolve(_manifest(range_), lambda: VERSIONS)
     assert changed
     assert manifest["dependencies"] == {"@x/core": expected, "rxjs": "^7"}
 
 
-def test_s9_4_1_1_resolve_covers_every_field_and_skips_other_ranges() -> None:
+def test_resolve_covers_every_field_and_skips_other_ranges() -> None:
     source = {
         "peerDependencies": {"@x/core": "workspace:^"},
         "optionalDependencies": {"@x/core": "workspace:~"},
@@ -45,7 +45,7 @@ def test_s9_4_1_1_resolve_covers_every_field_and_skips_other_ranges() -> None:
     assert manifest["devDependencies"] == {"@x/core": "workspace:*"}
 
 
-def test_s9_4_1_1_resolve_without_workspace_range_is_lazy() -> None:
+def test_resolve_without_workspace_range_is_lazy() -> None:
     def versions() -> dict[str, str]:
         raise AssertionError("called")
 
@@ -54,7 +54,7 @@ def test_s9_4_1_1_resolve_without_workspace_range_is_lazy() -> None:
     assert manifest == {"dependencies": {"a": "^1"}}
 
 
-def test_s9_4_1_2_resolve_unknown_dependency_raises() -> None:
+def test_resolve_unknown_dependency_raises() -> None:
     with pytest.raises(ValueError) as info:
         dist.resolve(_manifest("workspace:*"), lambda: {})
     assert str(info.value) == (
@@ -62,7 +62,7 @@ def test_s9_4_1_2_resolve_unknown_dependency_raises() -> None:
     )
 
 
-def test_s9_4_1_2_versions_called_once() -> None:
+def test_versions_called_once() -> None:
     calls = []
 
     def versions() -> dict[str, str]:
@@ -77,12 +77,12 @@ def test_s9_4_1_2_versions_called_once() -> None:
     assert len(calls) == 1
 
 
-def test_s9_4_1_3_problems_valid_is_empty() -> None:
+def test_problems_valid_is_empty() -> None:
     manifest = {"name": "a", "version": "1", "module": "m.js", "typings": "t.d.ts"}
     assert dist.problems(manifest) == []
 
 
-def test_s9_4_1_3_problems_in_order() -> None:
+def test_problems_in_order() -> None:
     manifest = {
         "dependencies": {"d": "workspace:*"},
         "peerDependencies": {"p": "workspace:^"},
@@ -99,7 +99,7 @@ def test_s9_4_1_3_problems_in_order() -> None:
     ]
 
 
-def test_s9_4_1_3_exports_satisfies_entry_and_types() -> None:
+def test_exports_satisfies_entry_and_types() -> None:
     assert dist.problems({"name": "a", "version": "1", "exports": {}}) != []
     assert dist.problems({"name": "a", "version": "1", "exports": {".": "x"}}) == []
 
@@ -132,7 +132,7 @@ def _workspace(tmp_path: Path) -> None:
     # apps/app has no package.json: skipped
 
 
-def test_s9_4_1_4_dist_resolve_rewrites_file(
+def test_dist_resolve_rewrites_file(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -151,7 +151,7 @@ def test_s9_4_1_4_dist_resolve_rewrites_file(
     assert (out / "package.json").read_text() == json.dumps(expected, indent=2) + "\n"
 
 
-def test_s9_4_1_5_dist_resolve_without_range_leaves_file_and_skips_pnpm(
+def test_dist_resolve_without_range_leaves_file_and_skips_pnpm(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -170,7 +170,7 @@ def test_s9_4_1_5_dist_resolve_without_range_leaves_file_and_skips_pnpm(
     assert not log.exists()
 
 
-def test_s9_4_1_6_dist_verify_passes(
+def test_dist_verify_passes(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -184,7 +184,7 @@ def test_s9_4_1_6_dist_verify_passes(
     assert capsys.readouterr().out == "Dist manifest verification passed for d\n"
 
 
-def test_s9_4_1_6_dist_verify_fails(
+def test_dist_verify_fails(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -205,7 +205,7 @@ def test_s9_4_1_6_dist_verify_fails(
 
 @pytest.mark.parametrize("command", ["dist-resolve", "dist-verify"])
 @pytest.mark.parametrize("content", [None, "not json"])
-def test_s9_4_1_7_unreadable_manifest_exits_one(
+def test_unreadable_manifest_exits_one(
     command: str,
     content: str | None,
     tmp_path: Path,
@@ -222,7 +222,7 @@ def test_s9_4_1_7_unreadable_manifest_exits_one(
     assert "Traceback" not in err
 
 
-def test_s9_4_5_9_resolve_drops_workspace_ci_and_counts_it_as_a_change() -> None:
+def test_resolve_drops_workspace_ci_and_counts_it_as_a_change() -> None:
     source = {"name": "a", "workspace-ci": {"consumer": {}}}
     manifest, changed = dist.resolve(source, lambda: {})
     assert changed

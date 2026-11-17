@@ -1,4 +1,4 @@
-"""Tests for `kiln-devops site-assemble` (S9.4.2)."""
+"""Tests for `kiln-devops site-assemble`."""
 
 from __future__ import annotations
 
@@ -71,7 +71,7 @@ def _existing(root: Path) -> None:
     (root / ".docs-site" / "guide.html").write_text("guide")
 
 
-def test_s9_4_2_1_site_dir_is_the_first_argument(
+def test_site_dir_is_the_first_argument(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root = _run(tmp_path, monkeypatch, ".docs-site")
@@ -79,14 +79,14 @@ def test_s9_4_2_1_site_dir_is_the_first_argument(
     assert not (root / "dist" / "site").exists()
 
 
-def test_s9_4_2_1_the_default_site_dir_is_dist_site(
+def test_the_default_site_dir_is_dist_site(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root = _run(tmp_path, monkeypatch)
     assert (root / "dist" / "site" / "index.html").is_file()
 
 
-def test_s9_4_2_1_existing_content_and_index_are_kept(
+def test_existing_content_and_index_are_kept(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root = _workspace(tmp_path)
@@ -100,7 +100,7 @@ def test_s9_4_2_1_existing_content_and_index_are_kept(
     assert (site / ".nojekyll").is_file()
 
 
-def test_s9_4_2_1_no_doc_target_keeps_index_and_makes_no_subsites(
+def test_no_doc_target_keeps_index_and_makes_no_subsites(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root = _workspace(tmp_path)
@@ -115,14 +115,14 @@ def test_s9_4_2_1_no_doc_target_keeps_index_and_makes_no_subsites(
     assert not (site / "storybook").exists()
 
 
-def test_s9_4_2_2_a_relative_site_dir_resolves_against_the_working_directory(
+def test_a_relative_site_dir_resolves_against_the_working_directory(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root = _run(tmp_path, monkeypatch, "out/site")
     assert (root / "out" / "site" / ".nojekyll").is_file()
 
 
-def test_s9_4_2_3_a_project_without_output_is_skipped(
+def test_a_project_without_output_is_skipped(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root = _run(tmp_path, monkeypatch, compodoc='["core"]', storybook='["ui"]')
@@ -132,7 +132,7 @@ def test_s9_4_2_3_a_project_without_output_is_skipped(
     assert not (site / "api" / "ui").exists()
 
 
-def test_s9_4_2_3_a_project_with_declared_target_but_no_output_fails(
+def test_a_project_with_declared_target_but_no_output_fails(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -151,7 +151,7 @@ def test_s9_4_2_3_a_project_with_declared_target_but_no_output_fails(
     assert not (root / "dist" / "site" / "index.html").exists()
 
 
-def test_s9_4_2_4_index_html_is_the_javascripts(
+def test_index_html_is_the_javascripts(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("GITHUB_REPOSITORY", "rn-forge/demo")

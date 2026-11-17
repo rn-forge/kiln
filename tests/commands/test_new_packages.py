@@ -55,7 +55,7 @@ def _new_lib(directory: Path, layer: str, **kwargs: Any) -> None:
     )
 
 
-def test_s16_7_10_1_new_with_two_packages_makes_both_members(tmp_path: Path) -> None:
+def test_new_with_two_packages_makes_both_members(tmp_path: Path) -> None:
     target = tmp_path / "lib"
     _new_lib(target, _lib_layer(tmp_path, TWO_PACKAGES))
 
@@ -72,7 +72,7 @@ def test_s16_7_10_1_new_with_two_packages_makes_both_members(tmp_path: Path) -> 
     assert KilnConfig.load(target).packages == ("packages/alpha", "packages/beta")
 
 
-def test_s16_7_10_2_modules_come_from_the_config(tmp_path: Path) -> None:
+def test_modules_come_from_the_config(tmp_path: Path) -> None:
     target = tmp_path / "lib"
     _new_lib(target, _lib_layer(tmp_path, TWO_PACKAGES + MODULES))
 
@@ -86,7 +86,7 @@ def test_s16_7_10_2_modules_come_from_the_config(tmp_path: Path) -> None:
     }
 
 
-def test_s16_7_10_3_same_result_as_generate_package(
+def test_same_result_as_generate_package(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     layer = _lib_layer(tmp_path, TWO_PACKAGES + MODULES)
@@ -127,7 +127,7 @@ def _commented_form(root: Path) -> tuple[str, str]:
     return written, catalog.render(KilnConfig.load(root), header=catalog.CONFIG_HEADER)
 
 
-def test_s16_9_2_1_generate_package_writes_the_commented_form(
+def test_generate_package_writes_the_commented_form(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "lib"
@@ -141,7 +141,7 @@ def test_s16_9_2_1_generate_package_writes_the_commented_form(
     assert written == rendered
 
 
-def test_s16_9_2_2_new_with_packages_writes_the_commented_form(
+def test_new_with_packages_writes_the_commented_form(
     tmp_path: Path,
 ) -> None:
     root = tmp_path / "lib"
@@ -153,9 +153,7 @@ def test_s16_9_2_2_new_with_packages_writes_the_commented_form(
 
 @requires("taplo")
 @pytest.mark.parametrize("archetype", ["python-app", "python-lib"])
-def test_s16_9_2_3_new_output_toml_is_taplo_clean(
-    tmp_path: Path, archetype: str
-) -> None:
+def test_new_output_toml_is_taplo_clean(tmp_path: Path, archetype: str) -> None:
     root = tmp_path / "out"
     if archetype == "python-lib":
         _new_lib(root, _lib_layer(tmp_path, TWO_PACKAGES + MODULES))
@@ -183,7 +181,7 @@ def test_s16_9_2_3_new_output_toml_is_taplo_clean(
     assert run.returncode == 0, run.stdout + run.stderr
 
 
-def test_s16_7_10_4_a_failing_second_package_leaves_no_directory(
+def test_a_failing_second_package_leaves_no_directory(
     tmp_path: Path,
 ) -> None:
     layer = _lib_layer(
@@ -199,7 +197,7 @@ def test_s16_7_10_4_a_failing_second_package_leaves_no_directory(
     assert (tmp_path / ".staging" / "lib" / "workspace" / "packages" / "alpha").is_dir()
 
 
-def test_s16_7_10_5_a_failing_member_step_leaves_no_directory(
+def test_a_failing_member_step_leaves_no_directory(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     real = python_scaffold.add_package
@@ -220,7 +218,7 @@ def test_s16_7_10_5_a_failing_member_step_leaves_no_directory(
     assert not target.exists()
 
 
-def test_s16_7_10_6_new_with_no_packages_is_unchanged(tmp_path: Path) -> None:
+def test_new_with_no_packages_is_unchanged(tmp_path: Path) -> None:
     bare = tmp_path / "bare"
     commands.new(
         bare, archetype="python-lib", docs="mkdocs", owner="rn-forge", yes=True
@@ -237,7 +235,7 @@ def test_s16_7_10_6_new_with_no_packages_is_unchanged(tmp_path: Path) -> None:
     assert not target.exists()
 
 
-def test_s16_7_10_7_preview_with_packages_writes_nothing(
+def test_preview_with_packages_writes_nothing(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     layer = _lib_layer(tmp_path, TWO_PACKAGES)
@@ -257,7 +255,7 @@ def test_s16_7_10_7_preview_with_packages_writes_nothing(
         assert not (tmp_path / ".staging").exists()
 
 
-def test_s11_2_2_4_new_python_lib_writes_no_member_and_passes_every_check(
+def test_new_python_lib_writes_no_member_and_passes_every_check(
     tmp_path: Path,
 ) -> None:
     directory = tmp_path / "lib"
@@ -270,7 +268,7 @@ def test_s11_2_2_4_new_python_lib_writes_no_member_and_passes_every_check(
     assert checks.run(directory) == []
 
 
-def test_s16_4_7_6_new_writes_the_commented_form(tmp_path: Path) -> None:
+def test_new_writes_the_commented_form(tmp_path: Path) -> None:
     new_repo(tmp_path / "demo", archetype="python-tool", docs="none", yes=True)
 
     text = (tmp_path / "demo" / ".rn-forge/kiln/config.toml").read_text(

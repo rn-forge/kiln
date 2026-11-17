@@ -23,7 +23,7 @@ def _pip(name: str, licence: str) -> str:
     return f'[{{"Name":"{name}","Version":"1","License":"{licence}"}}]'
 
 
-def test_s15_2_1_1_pip_licenses_json() -> None:
+def test_pip_licenses_json() -> None:
     assert licenses.run(PIP, "pip-licenses", ["GPL-*"], []) == [f"b 2 {GPL3}"]
 
 
@@ -55,11 +55,13 @@ def test_s15_2_1_1_pip_licenses_json() -> None:
         ("", "UNKNOWN"),
     ],
 )
-def test_s15_2_1_1b_normalise(value: str, identifier: str) -> None:
+def test_normalise_maps_licence_text_to_an_identifier(
+    value: str, identifier: str
+) -> None:
     assert licenses.normalise(value) == identifier
 
 
-def test_s15_2_1_2_pnpm_json() -> None:
+def test_pnpm_json_is_checked_against_the_deny_list() -> None:
     text = (
         '{"MIT":[{"name":"a","versions":["1.0.0"]}],'
         '"Unknown":[{"name":"c","versions":["3.0.0"]}]}'
@@ -67,7 +69,7 @@ def test_s15_2_1_2_pnpm_json() -> None:
     assert licenses.run(text, "pnpm", ["UNKNOWN"], []) == ["c 3.0.0 Unknown"]
 
 
-def test_s15_2_1_2b_pnpm_one_line_per_version() -> None:
+def test_pnpm_one_line_per_version() -> None:
     text = '{"GPL-3.0":[{"name":"d","versions":["1.0.0","2.0.0"]}]}'
     assert licenses.run(text, "pnpm", ["GPL-*"], []) == [
         "d 1.0.0 GPL-3.0",
@@ -79,7 +81,7 @@ def _hit(licence: str, deny: list[str]) -> bool:
     return bool(licenses.run(_pip("x", licence), "pip-licenses", deny, []))
 
 
-def test_s15_2_1_3_matching_is_case_insensitive_and_whole_string() -> None:
+def test_matching_is_case_insensitive_and_whole_string() -> None:
     assert not _hit("LGPL-3.0", ["GPL-*"])
     assert not _hit("GNU Lesser General Public License v3 (LGPLv3)", ["GPL-*"])
     assert _hit("gpl-2.0-only", ["GPL-*"])
@@ -88,7 +90,7 @@ def test_s15_2_1_3_matching_is_case_insensitive_and_whole_string() -> None:
     assert _hit("GPL", licenses.DEFAULT_DENY)
 
 
-def test_s15_2_1_4_multiple_licences() -> None:
+def test_a_multi_licence_value_is_denied_when_any_part_matches() -> None:
     value = f"MIT License; {GPL3}"
     assert licenses.run(_pip("m", value), "pip-licenses", ["GPL-*"], []) == [
         f"m 1 {value}"
@@ -96,11 +98,11 @@ def test_s15_2_1_4_multiple_licences() -> None:
     assert not _hit("MIT License; BSD License", ["GPL-*"])
 
 
-def test_s15_2_1_5_ignore() -> None:
+def test_ignored_packages_are_not_reported() -> None:
     assert licenses.run(PIP, "pip-licenses", ["GPL-*"], ["b"]) == []
 
 
-def test_s15_2_1_6_cli(
+def test_cli_exits_1_and_prints_the_denied_licences(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     argv = ["licenses", "--format", "pip-licenses", "--deny", "GPL-*"]
@@ -121,7 +123,7 @@ def _dist(root: Path, name: str, *fields: str) -> None:
     (info / "METADATA").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
-def test_s15_2_1_7_real_pip_licenses_output(
+def test_real_pip_licenses_output(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     pytest.importorskip("piplicenses")

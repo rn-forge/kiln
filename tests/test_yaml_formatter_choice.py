@@ -1,4 +1,4 @@
-"""S19.1.1: the YAML formatter is chosen, and the choice is recorded."""
+"""The YAML formatter is chosen, and the choice is recorded."""
 
 import re
 from pathlib import Path
@@ -35,7 +35,7 @@ def _settled() -> tuple[dict[str, str], str]:
     return rows, "\n".join(lines[end:]).lstrip()
 
 
-def test_s19_1_1_1_the_adr_is_accepted():
+def test_the_adr_is_accepted():
     adr = ADR.read_text(encoding="utf-8")
     assert re.search(r"^\*\*Status:\*\* accepted \(", adr, re.MULTILINE)
     assert "stays proposed" not in adr
@@ -43,14 +43,14 @@ def test_s19_1_1_1_the_adr_is_accepted():
     assert "(proposed)" not in row
 
 
-def test_s19_1_1_2_the_settled_table_is_filled():
+def test_the_settled_table_is_filled():
     rows, after = _settled()
     assert list(rows) == KEYS
     assert all(v and "(S19.1.1)" not in v for v in rows.values())
     assert after.startswith("```yaml")
 
 
-def test_s19_1_1_3_the_adr_names_the_settled_tool():
+def test_the_adr_names_the_settled_tool():
     rows, _ = _settled()
     assert rows["Package"].strip("`") in ADR.read_text(encoding="utf-8")
     assert "pnpm-lock.yaml" in rows["Excluded files"]

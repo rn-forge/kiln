@@ -1,4 +1,4 @@
-"""S7.2.5 — `kiln pin`: move a repository's `[kiln] ref`, and nothing else."""
+"""`kiln pin`: move a repository's `[kiln] ref`, and nothing else."""
 
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ def _files(root: Path) -> dict[str, bytes]:
     }
 
 
-def test_s7_2_5_1_writes_only_the_ref(
+def test_writes_only_the_ref(
     repo: Path, capsys: pytest.CaptureFixture[str], kiln_remote_sha: str
 ) -> None:
     commands.pin("v0.0.1")  # a tag pin carries no `track`
@@ -56,7 +56,7 @@ def test_s7_2_5_1_writes_only_the_ref(
 
 
 @pytest.mark.parametrize("ref", ["", "   "])
-def test_s7_2_5_2_empty_ref(repo: Path, ref: str) -> None:
+def test_a_blank_ref_is_refused_and_writes_nothing(repo: Path, ref: str) -> None:
     commands.pin("v0.0.1")
     before = _files(repo)
     with pytest.raises(AppException):
@@ -76,14 +76,12 @@ def _kiln(root: Path) -> dict:
     return tomllib.loads((root / CONFIG).read_text(encoding="utf-8")).get("kiln", {})
 
 
-def test_s18_14_2_1_a_branch_pins_its_newest_commit(
-    root: Path, kiln_remote_sha: str
-) -> None:
+def test_a_branch_pins_its_newest_commit(root: Path, kiln_remote_sha: str) -> None:
     commands.pin("feature/v1")
     assert _kiln(root) == {"ref": kiln_remote_sha, "track": "feature/v1"}
 
 
-def test_s18_14_2_2_a_tag_or_sha_drops_track(root: Path, kiln_remote_sha: str) -> None:
+def test_a_tag_or_sha_drops_track(root: Path, kiln_remote_sha: str) -> None:
     commands.pin("feature/v1")
     commands.pin("v0.0.1")
     assert _kiln(root) == {"ref": "v0.0.1"}
@@ -92,7 +90,7 @@ def test_s18_14_2_2_a_tag_or_sha_drops_track(root: Path, kiln_remote_sha: str) -
     assert _kiln(root) == {"ref": "a" * 40}
 
 
-def test_s18_14_2_3_no_argument_follows_track(
+def test_no_argument_follows_track(
     root: Path,
     kiln_remote: tuple[str, str],
     tmp_path_factory: pytest.TempPathFactory,
@@ -115,16 +113,14 @@ def test_s18_14_2_3_no_argument_follows_track(
 
 
 @pytest.mark.parametrize("ref", ["", "no-such-branch", "v9.9.9"])
-def test_s18_14_2_4_errors_write_nothing(root: Path, ref: str) -> None:
+def test_errors_write_nothing(root: Path, ref: str) -> None:
     before = (root / CONFIG).read_bytes()
     with pytest.raises(AppException):
         commands.pin(ref)
     assert (root / CONFIG).read_bytes() == before
 
 
-def test_s18_14_2_5_a_branch_ref_repository_migrates(
-    root: Path, kiln_remote_sha: str
-) -> None:
+def test_a_branch_ref_repository_migrates(root: Path, kiln_remote_sha: str) -> None:
     path = root / CONFIG
     path.write_text(path.read_text() + '\n[kiln]\nref = "feature/v1"\n')
     with pytest.raises(AppException):
@@ -134,7 +130,7 @@ def test_s18_14_2_5_a_branch_ref_repository_migrates(
     KilnConfig.load(root)
 
 
-def test_s18_14_2_6_show_prints_the_ref(
+def test_show_prints_the_ref(
     root: Path, capsys: pytest.CaptureFixture[str], kiln_remote_sha: str
 ) -> None:
     commands.pin("feature/v1")

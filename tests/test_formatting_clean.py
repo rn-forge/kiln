@@ -1,4 +1,4 @@
-"""S19.1.2, S19.1.4: formatters leave renders and this repository clean."""
+"""Formatters leave renders and this repository clean."""
 
 import os
 import subprocess
@@ -77,7 +77,7 @@ def _run(root: Path, argv: list[str]) -> subprocess.CompletedProcess[str]:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s19_1_2_1_rendered_markdown_is_mdformat_clean(
+def test_rendered_markdown_is_mdformat_clean(
     archetype: str, rendered: Callable[[str], Path]
 ) -> None:
     root = rendered(archetype)
@@ -88,7 +88,7 @@ def test_s19_1_2_1_rendered_markdown_is_mdformat_clean(
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s19_1_2_2_rendered_toml_is_taplo_clean(
+def test_rendered_toml_is_taplo_clean(
     archetype: str, rendered: Callable[[str], Path]
 ) -> None:
     root = rendered(archetype)
@@ -100,7 +100,7 @@ def test_s19_1_2_2_rendered_toml_is_taplo_clean(
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s19_1_3_10_rendered_yaml_is_clean_under_its_own_config(
+def test_rendered_yaml_is_clean_under_its_own_config(
     archetype: str, rendered: Callable[[str], Path]
 ) -> None:
     root = rendered(archetype)
@@ -112,7 +112,7 @@ def test_s19_1_3_10_rendered_yaml_is_clean_under_its_own_config(
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_s19_1_2_4_the_lists_are_not_empty(
+def test_the_lists_are_not_empty(
     archetype: str, rendered: Callable[[str], Path]
 ) -> None:
     root = rendered(archetype)
@@ -127,7 +127,7 @@ def _version_key(version: str) -> tuple[int, ...]:
     return tuple(int(part) for part in version.split("."))
 
 
-def test_s19_1_2_5_the_tools_are_locked() -> None:
+def test_the_tools_are_locked() -> None:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     entries = [
         e
@@ -141,7 +141,7 @@ def test_s19_1_2_5_the_tools_are_locked() -> None:
     assert _version_key(floor) <= _version_key(locked[YAML_PACKAGE])
 
 
-def test_s19_1_4_1_this_repository_runs_the_yaml_check() -> None:
+def test_this_repository_runs_the_yaml_check() -> None:
     quality = YamlUtils.load((ROOT / "tasks/quality.yml").read_text(encoding="utf-8"))
     assert {"lint:yaml", "format:yaml"} <= set(quality["tasks"])
     root = YamlUtils.load((ROOT / "Taskfile.yml").read_text(encoding="utf-8"))["tasks"]
@@ -150,7 +150,7 @@ def test_s19_1_4_1_this_repository_runs_the_yaml_check() -> None:
     assert (ROOT / ".yamlfmt.yaml").is_file()
 
 
-def test_s19_1_4_2_this_repositorys_yaml_is_clean() -> None:
+def test_this_repositorys_yaml_is_clean() -> None:
     config = YamlUtils.load((ROOT / ".yamlfmt.yaml").read_text(encoding="utf-8"))
     excluded = {Path(p).name for p in config["exclude"]}
     listed = _run(ROOT, ["git", "ls-files", "*.yml", "*.yaml"]).stdout.split()
@@ -166,7 +166,7 @@ def test_s19_1_4_2_this_repositorys_yaml_is_clean() -> None:
     assert done.returncode == 0, done.stdout + done.stderr
 
 
-def test_s19_1_4_3_the_formatter_runs_on_a_dirty_file(tmp_path: Path) -> None:
+def test_the_formatter_runs_on_a_dirty_file(tmp_path: Path) -> None:
     (tmp_path / ".yamlfmt.yaml").write_text(
         (ROOT / ".yamlfmt.yaml").read_text(encoding="utf-8"), encoding="utf-8"
     )

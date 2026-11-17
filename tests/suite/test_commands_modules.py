@@ -1,4 +1,4 @@
-"""S18.6.2 — one module per command."""
+"""One module per command."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ KILN = ROOT / "src" / "rn_forge" / "kiln"
 PACKAGE = "rn_forge.kiln.commands"
 
 
-def test_s18_6_2_1_every_cli_target_resolves_to_a_command_module() -> None:
+def test_every_cli_target_resolves_to_a_command_module() -> None:
     document = tomllib.loads((KILN / "cli.toml").read_text(encoding="utf-8"))
     targets = [command["target"] for command in document["cli"]["commands"]]
     assert targets
@@ -36,7 +36,7 @@ def _command_imports(path: Path) -> set[str]:
     return found
 
 
-def test_s18_6_2_2_command_modules_import_no_other_command_module() -> None:
+def test_command_modules_import_no_other_command_module() -> None:
     for path in sorted((KILN / "commands").glob("*.py")):
         if path.name == "__init__.py":
             continue
@@ -46,14 +46,14 @@ def test_s18_6_2_2_command_modules_import_no_other_command_module() -> None:
         assert _command_imports(path) - allowed == set(), path.name
 
 
-def test_s18_6_2_3_the_old_modules_are_gone_and_none_is_large() -> None:
+def test_the_old_modules_are_gone_and_none_is_large() -> None:
     assert not (KILN / "commands.py").exists()
     assert not (KILN / "doctor.py").exists()
     for path in sorted((KILN / "commands").glob("*.py")):
         assert len(path.read_text(encoding="utf-8").splitlines()) <= 350, path.name
 
 
-def test_s18_6_3_1_commands_import_neither_subprocess_nor_state_store() -> None:
+def test_commands_import_neither_subprocess_nor_state_store() -> None:
     for path in sorted((KILN / "commands").glob("*.py")):
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
             if isinstance(node, ast.Import):

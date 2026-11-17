@@ -18,7 +18,7 @@ def _env(monkeypatch: pytest.MonkeyPatch, event: str, ref_type: str, name: str) 
     monkeypatch.setenv("REF_NAME", name)
 
 
-def test_s6_7_2_cli_prints_branch_argument(
+def test_cli_prints_branch_argument(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _env(monkeypatch, "workflow_dispatch", "branch", "feature/release-2")
@@ -29,7 +29,7 @@ def test_s6_7_2_cli_prints_branch_argument(
     )
 
 
-def test_s6_7_2_cli_prints_empty_argument_for_pull_request(
+def test_cli_prints_empty_argument_for_pull_request(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _env(monkeypatch, "pull_request", "branch", "12/merge")
@@ -38,7 +38,7 @@ def test_s6_7_2_cli_prints_empty_argument_for_pull_request(
     assert capsys.readouterr().out == "branch-arg=\n"
 
 
-def test_s6_7_2_cli_exits_with_message_for_tag(
+def test_cli_exits_with_message_for_tag(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _env(monkeypatch, "workflow_dispatch", "tag", "v1.0")
@@ -75,7 +75,7 @@ def _adapter_workspace(root: Path, extras: str) -> None:
     )
 
 
-def test_s6_7_2_cli_adapters_is_silent_when_they_are_declared_correctly(
+def test_cli_adapters_is_silent_when_they_are_declared_correctly(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -87,7 +87,7 @@ def test_s6_7_2_cli_adapters_is_silent_when_they_are_declared_correctly(
     assert (captured.out, captured.err) == ("", "")
 
 
-def test_s6_7_2_cli_adapters_prints_each_problem_to_stderr(
+def test_cli_adapters_prints_each_problem_to_stderr(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -100,7 +100,7 @@ def test_s6_7_2_cli_adapters_prints_each_problem_to_stderr(
     assert captured.err == "data: adapter pandas has no extra pandas\n"
 
 
-def test_s6_7_2_3_prog_is_kiln_devops(capsys: pytest.CaptureFixture[str]) -> None:
+def test_prog_is_kiln_devops(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit) as raised:
         cli.main(["--help"])
     assert raised.value.code == 0
@@ -126,7 +126,7 @@ def _release_stubs(
     return calls
 
 
-def test_s6_7_5_3_release_state_prints_the_four_lines(
+def test_release_state_prints_the_four_lines(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     calls = _release_stubs(monkeypatch, ReleaseStatus.DRAFT, True)
@@ -137,7 +137,7 @@ def test_s6_7_5_3_release_state_prints_the_four_lines(
     assert calls == []
 
 
-def test_s6_7_5_3_release_state_of_a_published_release_says_so_on_stderr(
+def test_release_state_of_a_published_release_says_so_on_stderr(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _release_stubs(monkeypatch, ReleaseStatus.PUBLISHED, True)
@@ -147,7 +147,7 @@ def test_s6_7_5_3_release_state_of_a_published_release_says_so_on_stderr(
     assert captured.err == "Release v1 already published; nothing to do.\n"
 
 
-def test_s6_7_5_3_release_source_checks_out_an_existing_tag(
+def test_release_source_checks_out_an_existing_tag(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     calls = _release_stubs(monkeypatch, None, True)
@@ -160,7 +160,7 @@ def test_s6_7_5_3_release_source_checks_out_an_existing_tag(
     ]
 
 
-def test_s6_7_5_3_release_source_without_a_tag_only_reports_head(
+def test_release_source_without_a_tag_only_reports_head(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     calls = _release_stubs(monkeypatch, ReleaseStatus.NONE, False)
@@ -169,7 +169,7 @@ def test_s6_7_5_3_release_source_without_a_tag_only_reports_head(
     assert calls == [["git", "rev-parse", "HEAD"]]
 
 
-def test_s6_7_5_3_release_publish_replaces_a_draft_and_prints_nothing(
+def test_release_publish_replaces_a_draft_and_prints_nothing(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     calls = _release_stubs(monkeypatch, ReleaseStatus.DRAFT, False)
@@ -195,7 +195,7 @@ def test_s6_7_5_3_release_publish_replaces_a_draft_and_prints_nothing(
     ]  # fmt: skip
 
 
-def test_s7_6_3_2_release_publish_passes_notes_file_through(
+def test_release_publish_passes_notes_file_through(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls = _release_stubs(monkeypatch, ReleaseStatus.NONE, False)
@@ -209,7 +209,7 @@ def test_s7_6_3_2_release_publish_passes_notes_file_through(
     ]  # fmt: skip
 
 
-def test_s6_7_5_3_release_publish_of_a_published_release_runs_nothing(
+def test_release_publish_of_a_published_release_runs_nothing(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     calls = _release_stubs(monkeypatch, ReleaseStatus.PUBLISHED, True)
@@ -220,7 +220,7 @@ def test_s6_7_5_3_release_publish_of_a_published_release_runs_nothing(
     assert captured.err == "Release v1 already published; nothing to do.\n"
 
 
-def test_s6_7_5_3_a_failing_command_ends_with_its_exit_status(
+def test_a_failing_command_ends_with_its_exit_status(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def run(command: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
@@ -235,7 +235,7 @@ def test_s6_7_5_3_a_failing_command_ends_with_its_exit_status(
     assert exit_info.value.code == 7
 
 
-def test_s7_6_2_7_cli_notes_prints_section(
+def test_cli_notes_prints_section(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -247,7 +247,7 @@ def test_s7_6_2_7_cli_notes_prints_section(
     assert capsys.readouterr().out == "- Done.\n"
 
 
-def test_s7_6_2_8_cli_notes_exits_1_on_missing_version(
+def test_cli_notes_exits_1_on_missing_version(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -297,7 +297,7 @@ def _upload_stubs(
 PUBLISH = ["release-publish", "pkg-a-v1.2.0", "--title", "T", "--target", "abc1234"]
 
 
-def test_s7_6_4_13_upload_pypi_runs_before_gh_release_create(
+def test_upload_pypi_runs_before_gh_release_create(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls = _upload_stubs(monkeypatch, ReleaseStatus.NONE, False, False)
@@ -311,7 +311,7 @@ def test_s7_6_4_13_upload_pypi_runs_before_gh_release_create(
     assert len(commands) == 2
 
 
-def test_s6_8_3_4_release_assets_leave_out_attestations(
+def test_release_assets_leave_out_attestations(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls = _upload_stubs(monkeypatch, ReleaseStatus.NONE, False, False)
@@ -327,7 +327,7 @@ def test_s6_8_3_4_release_assets_leave_out_attestations(
     assert _real("a.cdx.json") in commands[1]
 
 
-def test_s7_6_4_14_upload_pypi_skips_a_version_already_on_the_index(
+def test_upload_pypi_skips_a_version_already_on_the_index(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls = _upload_stubs(monkeypatch, ReleaseStatus.NONE, False, True)
@@ -335,7 +335,7 @@ def test_s7_6_4_14_upload_pypi_skips_a_version_already_on_the_index(
     assert [c[0] for c in calls if c[0] in ("uv", "gh")] == ["gh"]
 
 
-def test_s7_6_4_15_upload_pypi_leaves_a_published_release_alone(
+def test_upload_pypi_leaves_a_published_release_alone(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls = _upload_stubs(monkeypatch, ReleaseStatus.PUBLISHED, True, False)
@@ -343,7 +343,7 @@ def test_s7_6_4_15_upload_pypi_leaves_a_published_release_alone(
     assert [c for c in calls if c[0] in ("uv", "gh", "on_index")] == []
 
 
-def test_s7_6_4_16_upload_testpypi_runs_no_gh_and_no_release_check(
+def test_upload_testpypi_runs_no_gh_and_no_release_check(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls = _upload_stubs(monkeypatch, ReleaseStatus.PUBLISHED, True, False)
@@ -353,7 +353,7 @@ def test_s7_6_4_16_upload_testpypi_runs_no_gh_and_no_release_check(
     assert "--publish-url" in calls[-1]
 
 
-def test_s7_6_4_17_a_failed_upload_exits_before_any_gh_command(
+def test_a_failed_upload_exits_before_any_gh_command(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls = _upload_stubs(
@@ -383,7 +383,7 @@ def _rejected(
 
 @pytest.mark.parametrize("command", ["release-state", "release-source"])
 @pytest.mark.parametrize("tag", ["--repo=x", "-v1", "a b", ""])
-def test_s6_7_7_1_a_bad_tag_exits_2_before_any_command(
+def test_a_bad_tag_exits_2_before_any_command(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
     command: str,
@@ -392,7 +392,7 @@ def test_s6_7_7_1_a_bad_tag_exits_2_before_any_command(
     _rejected(monkeypatch, capsys, [command, "--", tag], f"invalid tag '{tag}'")
 
 
-def test_s6_7_7_1_a_bad_publish_tag_exits_2(
+def test_a_bad_publish_tag_exits_2(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
     argv = ["release-publish", "--title", "T", "--target", "abc1234", "--"]
@@ -400,7 +400,7 @@ def test_s6_7_7_1_a_bad_publish_tag_exits_2(
 
 
 @pytest.mark.parametrize("tag", ["v0.1.0", "rn-forge-commons-v1.2.3"])
-def test_s6_7_7_1_good_tags_pass(monkeypatch: pytest.MonkeyPatch, tag: str) -> None:
+def test_good_tags_pass(monkeypatch: pytest.MonkeyPatch, tag: str) -> None:
     _release_stubs(monkeypatch, ReleaseStatus.DRAFT, True)
     assert cli.main(["release-state", tag]) == 0
 
@@ -408,7 +408,7 @@ def test_s6_7_7_1_good_tags_pass(monkeypatch: pytest.MonkeyPatch, tag: str) -> N
 @pytest.mark.parametrize(
     "target", ["abc", "ABC1234", "abc123g", "--x=1234567", "a" * 41]
 )
-def test_s6_7_7_2_a_bad_target_exits_2(
+def test_a_bad_target_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
     target: str,
@@ -418,7 +418,7 @@ def test_s6_7_7_2_a_bad_target_exits_2(
 
 
 @pytest.mark.parametrize("title", ["-x", "a\nb", "", "a\x7fb"])
-def test_s6_7_7_3_a_bad_title_exits_2(
+def test_a_bad_title_exits_2(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
     title: str,
@@ -427,7 +427,7 @@ def test_s6_7_7_3_a_bad_title_exits_2(
     _rejected(monkeypatch, capsys, argv, f"invalid title '{title}'")
 
 
-def test_s6_7_7_3_a_title_with_spaces_and_dots_passes(
+def test_a_title_with_spaces_and_dots_passes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls = _release_stubs(monkeypatch, ReleaseStatus.NONE, False)
@@ -436,7 +436,7 @@ def test_s6_7_7_3_a_title_with_spaces_and_dots_passes(
     assert "rn-forge-commons v1.2.3" in calls[0]
 
 
-def test_s6_7_7_4_a_release_file_outside_the_working_directory_exits_2(
+def test_a_release_file_outside_the_working_directory_exits_2(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -453,7 +453,7 @@ def test_s6_7_7_4_a_release_file_outside_the_working_directory_exits_2(
     )
 
 
-def test_s6_7_7_4_a_sibling_directory_with_the_same_prefix_is_outside(
+def test_a_sibling_directory_with_the_same_prefix_is_outside(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -467,7 +467,7 @@ def test_s6_7_7_4_a_sibling_directory_with_the_same_prefix_is_outside(
     )
 
 
-def test_s6_7_7_4_a_symlink_out_of_the_working_directory_is_outside(
+def test_a_symlink_out_of_the_working_directory_is_outside(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -485,7 +485,7 @@ def test_s6_7_7_4_a_symlink_out_of_the_working_directory_is_outside(
     )
 
 
-def test_s6_7_7_4_a_file_below_the_working_directory_is_passed_on_resolved(
+def test_a_file_below_the_working_directory_is_passed_on_resolved(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.chdir(tmp_path)
@@ -495,7 +495,7 @@ def test_s6_7_7_4_a_file_below_the_working_directory_is_passed_on_resolved(
     assert os.path.realpath(tmp_path / "dist" / "a.whl") in calls[0]
 
 
-def test_s6_7_7_4_notes_changelog_outside_the_working_directory_exits_2(
+def test_notes_changelog_outside_the_working_directory_exits_2(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -510,7 +510,7 @@ def test_s6_7_7_4_notes_changelog_outside_the_working_directory_exits_2(
     assert captured.out == ""
 
 
-def test_s6_7_7_5_notes_file_may_be_below_the_temp_directory(
+def test_notes_file_may_be_below_the_temp_directory(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     work = tmp_path / "work"
@@ -525,7 +525,7 @@ def test_s6_7_7_5_notes_file_may_be_below_the_temp_directory(
     assert os.path.realpath(temp / "n.md") in calls[0]
 
 
-def test_s6_7_7_5_notes_file_elsewhere_exits_2(
+def test_notes_file_elsewhere_exits_2(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
@@ -544,7 +544,7 @@ def test_s6_7_7_5_notes_file_elsewhere_exits_2(
     )
 
 
-def test_s18_9_4_plan_warns_on_an_unusable_base_and_selects_all(
+def test_plan_warns_on_an_unusable_base_and_selects_all(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],

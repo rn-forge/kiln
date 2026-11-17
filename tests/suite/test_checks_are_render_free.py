@@ -42,6 +42,6 @@ def test_importing_the_checks_loads_no_renderer() -> None:
     assert loaded == "", f"`kiln doctor` pulled in a renderer: {loaded}"
 
 
-def test_s7_3_1_1_probe_sees_the_engine() -> None:
+def test_probe_sees_the_engine() -> None:
     loaded = _run("import rn_forge.commons.generation")
     assert "rn_forge.commons.generation" in loaded.split(",")

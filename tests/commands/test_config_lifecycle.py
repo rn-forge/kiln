@@ -1,4 +1,4 @@
-"""S4.5.4 — `kiln config update` and `kiln config upgrade`.
+"""`kiln config update` and `kiln config upgrade`.
 
 Two repo shapes:
 
@@ -127,7 +127,7 @@ def _stale_schema(root: Path) -> None:
     )
 
 
-def test_s4_5_4_update_dry_run_on_a_clean_repo_reports_nothing_and_writes_nothing(
+def test_update_dry_run_on_a_clean_repo_reports_nothing_and_writes_nothing(
     resolved_repo: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     before = (resolved_repo / CONFIG_PATH).read_text(encoding="utf-8")
@@ -140,7 +140,7 @@ def test_s4_5_4_update_dry_run_on_a_clean_repo_reports_nothing_and_writes_nothin
     assert (resolved_repo / CONFIG_PATH).read_text(encoding="utf-8") == before
 
 
-def test_s4_5_4_update_dry_run_reports_the_artifacts_a_source_change_would_change(
+def test_update_dry_run_reports_the_artifacts_a_source_change_would_change(
     resolved_repo: Path, layer: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _write_layer(layer, {"docs": {"profile": "none"}, "ci": {"sonar": True}})
@@ -152,7 +152,7 @@ def test_s4_5_4_update_dry_run_reports_the_artifacts_a_source_change_would_chang
     assert payload["overrides"] == []
 
 
-def test_s4_5_4_a_repo_override_survives_update_and_is_listed(
+def test_a_repo_override_survives_update_and_is_listed(
     repo: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _flip_sonar(repo)
@@ -163,7 +163,7 @@ def test_s4_5_4_a_repo_override_survives_update_and_is_listed(
     assert payload["overrides"] == ["ci.sonar"]
 
 
-def test_s4_5_4_a_repo_override_survives_upgrade_and_is_listed(
+def test_a_repo_override_survives_upgrade_and_is_listed(
     repo: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _flip_sonar(repo)
@@ -175,7 +175,7 @@ def test_s4_5_4_a_repo_override_survives_upgrade_and_is_listed(
     assert payload["overrides"] == ["ci.sonar"]
 
 
-def test_s4_5_4_apply_writes_the_remerged_config_then_apply_dry_run_is_clean(
+def test_apply_writes_the_remerged_config_then_apply_dry_run_is_clean(
     repo: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _flip_sonar(repo)
@@ -198,7 +198,7 @@ def _delete_source(root: Path) -> None:
     )
 
 
-def test_s6_9_2_1_deleting_source_keeps_its_values(
+def test_deleting_source_keeps_its_values(
     resolved_repo: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _delete_source(resolved_repo)
@@ -213,7 +213,7 @@ def test_s6_9_2_1_deleting_source_keeps_its_values(
     assert _last_json(capsys)["artifacts"] == []
 
 
-def test_s6_9_2_2_deleted_source_values_become_overrides(
+def test_deleted_source_values_become_overrides(
     resolved_repo: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _delete_source(resolved_repo)
@@ -225,16 +225,14 @@ def test_s6_9_2_2_deleted_source_values_become_overrides(
     assert "ci.sonar" in overrides
 
 
-def test_s6_9_2_3_a_missing_source_file_still_refuses(
-    resolved_repo: Path, layer: Path
-) -> None:
+def test_a_missing_source_file_still_refuses(resolved_repo: Path, layer: Path) -> None:
     layer.unlink()
 
     with pytest.raises(AppException):
         commands.config_update(dry_run=True)
 
 
-def test_s4_5_4_update_refuses_a_stale_schema_naming_config_upgrade(
+def test_update_refuses_a_stale_schema_naming_config_upgrade(
     resolved_repo: Path,
 ) -> None:
     _stale_schema(resolved_repo)
@@ -243,7 +241,7 @@ def test_s4_5_4_update_refuses_a_stale_schema_naming_config_upgrade(
         commands.config_update(dry_run=True)
 
 
-def test_s4_5_4_upgrade_migrates_a_config_from_the_previous_schema_version(
+def test_upgrade_migrates_a_config_from_the_previous_schema_version(
     repo: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _stale_schema(repo)
@@ -257,14 +255,14 @@ def test_s4_5_4_upgrade_migrates_a_config_from_the_previous_schema_version(
     assert all(row["action"] in ("unchanged", "skip") for row in payload["artifacts"])
 
 
-def test_s16_4_7_6_config_update_writes_the_commented_form(repo: Path) -> None:
+def test_config_update_writes_the_commented_form(repo: Path) -> None:
     commands.config_update(apply=True, json=True)
 
     text = (repo / CONFIG_PATH).read_text(encoding="utf-8")
     assert '# One of: "default-branch", "every-run".' in text
 
 
-def test_s16_4_7_6_config_upgrade_writes_the_commented_form(repo: Path) -> None:
+def test_config_upgrade_writes_the_commented_form(repo: Path) -> None:
     _stale_schema(repo)
 
     commands.config_upgrade(apply=True, json=True)

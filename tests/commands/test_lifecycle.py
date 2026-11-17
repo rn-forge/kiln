@@ -1,4 +1,4 @@
-"""S4.5.5 — Lifecycle wiring.
+"""Lifecycle wiring.
 
 `[lifecycle]` in kiln's own declaration (`src/rn_forge/kiln/cli.toml`, held
 equal to `.rn-forge/kiln/config.toml` by `tests/commands/test_cli_surface.py`) names
@@ -55,14 +55,12 @@ def repo(
 _VERBS = ("install", "upgrade", "uninstall", "cleanup", "status", "doctor")
 
 
-def test_s4_5_5_1_help_lists_self(
-    kiln_cli: CliApp, capsys: pytest.CaptureFixture[str]
-) -> None:
+def test_help_lists_self(kiln_cli: CliApp, capsys: pytest.CaptureFixture[str]) -> None:
     assert kiln_cli.run(["--help"]) == 0
     assert "self" in capsys.readouterr().out
 
 
-def test_s4_5_5_1_self_help_lists_every_verb(
+def test_self_help_lists_every_verb(
     kiln_cli: CliApp, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert kiln_cli.run(["self", "--help"]) == 0
@@ -71,12 +69,12 @@ def test_s4_5_5_1_self_help_lists_every_verb(
         assert verb in out
 
 
-def test_s4_5_5_1_bare_verbs_are_not_root_commands(kiln_cli: CliApp) -> None:
+def test_bare_verbs_are_not_root_commands(kiln_cli: CliApp) -> None:
     for verb in ("install", "upgrade", "uninstall", "cleanup", "status"):
         assert kiln_cli.run([verb]) == ExitCode.USAGE
 
 
-def test_s4_5_5_2_self_status_json_has_a_version(
+def test_self_status_json_has_a_version(
     kiln_cli: CliApp, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert kiln_cli.run(["--json", "self", "status"]) == 0
@@ -84,14 +82,14 @@ def test_s4_5_5_2_self_status_json_has_a_version(
     assert payload["version"]
 
 
-def test_s4_5_5_4_self_doctor_checks_the_install(
+def test_self_doctor_checks_the_install(
     kiln_cli: CliApp, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert kiln_cli.run(["self", "doctor"]) == 0
     assert "kiln.home" in capsys.readouterr().out
 
 
-def test_s4_5_5_4_doctor_checks_the_repository(
+def test_doctor_checks_the_repository(
     kiln_cli: CliApp, repo: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert kiln_cli.run(["doctor", str(repo)]) == 0
@@ -99,18 +97,18 @@ def test_s4_5_5_4_doctor_checks_the_repository(
     assert "kiln.home" not in captured.out + captured.err
 
 
-def test_s4_12_7_1_only_is_not_a_doctor_option(kiln_cli: CliApp, repo: Path) -> None:
+def test_only_is_not_a_doctor_option(kiln_cli: CliApp, repo: Path) -> None:
     assert kiln_cli.run(["doctor", str(repo), "--only", "generated"]) != 0
 
 
-def test_s4_12_7_2_doctor_help_lists_no_only(
+def test_doctor_help_lists_no_only(
     kiln_cli: CliApp, capsys: pytest.CaptureFixture[str]
 ) -> None:
     assert kiln_cli.run(["doctor", "--help"]) == 0
     assert "--only" not in capsys.readouterr().out
 
 
-def test_s4_5_5_root_config_carries_the_lifecycle_table() -> None:
+def test_root_config_carries_the_lifecycle_table() -> None:
     config = RootConfig.model_validate(
         {
             "schema_version": 1,
@@ -125,7 +123,7 @@ def test_s4_5_5_root_config_carries_the_lifecycle_table() -> None:
     assert config.lifecycle == {"product": "a:B", "namespace": "self"}
 
 
-def test_s4_5_5_load_warns_on_a_stale_but_still_valid_schema(
+def test_load_warns_on_a_stale_but_still_valid_schema(
     repo: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _set_schema_version(repo, 0)
@@ -135,7 +133,7 @@ def test_s4_5_5_load_warns_on_a_stale_but_still_valid_schema(
     assert "kiln config-upgrade" in capsys.readouterr().err
 
 
-def test_s4_5_5_load_errors_on_a_stale_schema_that_no_longer_validates(
+def test_load_errors_on_a_stale_schema_that_no_longer_validates(
     repo: Path,
 ) -> None:
     _set_schema_version(repo, 0)
