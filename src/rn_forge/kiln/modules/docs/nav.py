@@ -19,13 +19,8 @@ from rn_forge.kiln.modules.core.derived import NAV_BLOCK
 from rn_forge.kiln.modules.docs import parsed
 from rn_forge.kiln.modules.docs.areas import Area, load_areas
 from rn_forge.kiln.modules.docs.pages import content_pages
-from rn_forge.kiln.modules.docs.work import (
-    FEATURE_FILE,
-    epic_range,
-    feature_sort_key,
-    range_label,
-    title_markup,
-)
+from rn_forge.kiln.modules.docs.parsed import epic_range, range_label, title_markup
+from rn_forge.kiln.modules.docs.work import FEATURE_FILE, feature_sort_key
 
 __all__ = [
     "NAV_BLOCK",

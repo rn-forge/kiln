@@ -10,7 +10,7 @@ from rn_forge.commons.text.markdown import MarkdownUtils
 
 from rn_forge.kiln.modules.docs import parsed
 from rn_forge.kiln.modules.docs.findings import error
-from rn_forge.kiln.modules.docs.packages import (
+from rn_forge.kiln.modules.docs.mkdocs import (
     excluded_docs,
     package_mounts,
     read_mkdocs,
@@ -154,6 +154,57 @@ class Site:
     def _within_docs(self, path: Path) -> bool:
         return path == self.docs_dir or self.docs_dir in path.parents
 
+    def _escape_finding(self, path: Path, link: str, resolved: Path) -> Finding | None:
+        """The finding for a link out of its docs tree, or `None` when it stays in."""
+        if self._within_docs(resolved):
+            return None
+        if self.package is not None:
+            return error(
+                "package-link-escapes",
+                path,
+                f"links outside {self.package}/"
+                f"{self.docs_dir.relative_to(self.root)}: {link}",
+            )
+        if any(
+            mount == resolved or mount in resolved.parents
+            for mount in self.mounts.values()
+        ):
+            return None
+        return error(
+            "link-leaves-docs",
+            path,
+            f"links outside {self.docs_dir.name}/: {link}; use an absolute URL",
+        )
+
+    def _link_finding(self, path: Path, link: str) -> Finding | None:
+        """The first problem with *link* in *path*, or `None`."""
+        target, _, anchor = link.partition("#")
+        resolved = (
+            path
+            if not target
+            else resolve_link(path, target, self.docs_dir, self.mounts)
+        )
+        escape = self._escape_finding(path, link, resolved)
+        if escape is not None:
+            return escape
+        if resolved.suffix and resolved.suffix != ".md":
+            return None  # a non-Markdown asset is not this check's job
+        if resolved.suffix == ".md" and self.is_excluded(resolved):
+            return error(
+                "broken-link", path, f"links to a page excluded from the site: {link}"
+            )
+        if not resolved.exists():
+            if self.is_generated(resolved):
+                return None
+            return error("broken-link", path, f"broken link to {link!r}")
+        if (
+            anchor
+            and not self.is_generated(resolved)
+            and anchor not in self.anchors_in(resolved)
+        ):
+            return error("broken-anchor", path, f"broken anchor in {link!r}")
+        return None
+
     def check_links(self) -> list[Finding]:
         """Every relative link and anchor in a shipping page resolves."""
         findings: list[Finding] = []
@@ -161,64 +212,9 @@ class Site:
             for link in parsed.links(path.read_text(encoding="utf-8")):
                 if MarkdownUtils.is_external(link):
                     continue
-                target, _, anchor = link.partition("#")
-                resolved = (
-                    path
-                    if not target
-                    else resolve_link(path, target, self.docs_dir, self.mounts)
-                )
-                if self.package is not None and not self._within_docs(resolved):
-                    findings.append(
-                        error(
-                            "package-link-escapes",
-                            path,
-                            f"links outside {self.package}/"
-                            f"{self.docs_dir.relative_to(self.root)}: {link}",
-                        )
-                    )
-                    continue
-                if (
-                    self.package is None
-                    and not self._within_docs(resolved)
-                    and not any(
-                        mount == resolved or mount in resolved.parents
-                        for mount in self.mounts.values()
-                    )
-                ):
-                    findings.append(
-                        error(
-                            "link-leaves-docs",
-                            path,
-                            f"links outside {self.docs_dir.name}/: {link}; "
-                            "use an absolute URL",
-                        )
-                    )
-                    continue
-                if resolved.suffix and resolved.suffix != ".md":
-                    continue  # a non-Markdown asset is not this check's job
-                if resolved.suffix == ".md" and self.is_excluded(resolved):
-                    findings.append(
-                        error(
-                            "broken-link",
-                            path,
-                            f"links to a page excluded from the site: {link}",
-                        )
-                    )
-                    continue
-                if not resolved.exists():
-                    if not self.is_generated(resolved):
-                        findings.append(
-                            error("broken-link", path, f"broken link to {link!r}")
-                        )
-                    continue
-                if (
-                    anchor
-                    and not self.is_generated(resolved)
-                    and anchor not in self.anchors_in(resolved)
-                ):
-                    findings.append(
-                        error("broken-anchor", path, f"broken anchor in {link!r}")
-                    )
+                finding = self._link_finding(path, link)
+                if finding is not None:
+                    findings.append(finding)
         return findings
 
     def check(self) -> list[Finding]:

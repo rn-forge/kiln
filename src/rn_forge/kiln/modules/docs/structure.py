@@ -14,7 +14,7 @@ from rn_forge.commons.text.markdown import MarkdownUtils
 from rn_forge.kiln.modules.docs import parsed
 from rn_forge.kiln.modules.docs.areas import Area, load_areas
 from rn_forge.kiln.modules.docs.findings import error
-from rn_forge.kiln.modules.docs.packages import (
+from rn_forge.kiln.modules.docs.mkdocs import (
     excluded_docs,
     package_mounts,
     resolve_link,

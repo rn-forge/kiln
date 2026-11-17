@@ -47,17 +47,16 @@ SEEDS = (
 )
 """Every docs path, each rendered from `templates/<path>.j2`; `_structure.md` is managed."""
 
-_PACKAGE_SITE_SKIPS = ("docs/reference/",)
-"""Seeds a `python-lib` repository does not carry: each package's reference
-lives in its own site."""
+_ADD_PACKAGE = "docs/runbooks/adding-a-package.md"
+_PYTHON_API = "docs/reference/python-api.md"
 
-
-_PYTHON_LIB_ONLY = ("docs/runbooks/adding-a-package.md",)
-"""Seeds only a `python-lib` repository carries."""
-
-
-_APP_TOOL_ONLY = ("docs/reference/python-api.md",)
-"""Seeds only a `python-app` or `python-tool` repository carries."""
+_EXCLUDED = {
+    "python-lib": ("docs/reference/",),
+    "python-app": (_ADD_PACKAGE,),
+    "python-tool": (_ADD_PACKAGE,),
+}
+"""The seed prefixes each archetype does not carry; any other skips both
+the add-a-package runbook and the Python API reference."""
 
 
 def render(config: KilnConfig, root: Path) -> list[Artifact]:
@@ -71,9 +70,7 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
         "module": config.module,
         "kiln_version": __version__,
     }
-    skipped = _PACKAGE_SITE_SKIPS if config.is_workspace else _PYTHON_LIB_ONLY
-    if config.archetype not in ("python-app", "python-tool"):
-        skipped += _APP_TOOL_ONLY
+    skipped = _EXCLUDED.get(config.archetype, (_ADD_PACKAGE, _PYTHON_API))
     rendered = render_artifacts(
         engine,
         context,

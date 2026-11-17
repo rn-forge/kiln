@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
@@ -19,6 +20,7 @@ from rn_forge.kiln.modules.docs.work import (
     SCOPE_BLOCK,
     STORIES_BLOCK,
     Page,
+    Work,
     load_work,
     metadata_end,
     render_board,
@@ -37,6 +39,8 @@ CI_MATRIX_BLOCK = ManagedBlock("derived ci-matrix", comment=HTML_COMMENT)
 """The checks matrix in `docs/architecture/ci.md`, filled from the check registry."""
 
 _CI_PAGE = Path("docs") / "architecture" / "ci.md"
+
+_Row = tuple[Path, ManagedBlock, Callable[[], str], str, Page | None]
 
 
 def _fenced(block: ManagedBlock, text: str) -> bool:
@@ -91,6 +95,111 @@ def _ci_matrix(root: Path, matrix: str | None) -> tuple[dict[Path, str], list[Fi
     ]
 
 
+@dataclass(frozen=True)
+class Region:
+    """One derived region of one page: its new text, and what it reports."""
+
+    path: Path
+    text: str | None
+    stale: Finding | None = None
+    markers: Finding | None = None
+
+
+def _region(
+    root: Path,
+    path: Path,
+    block: ManagedBlock,
+    body: str,
+    name: str,
+    current: str | None = None,
+) -> Region:
+    on_disk = path.read_text(encoding="utf-8")
+    updated = block.render(on_disk if current is None else current, body)
+    if updated == on_disk:
+        return Region(path, None)
+    return Region(
+        path,
+        updated,
+        stale=error(
+            f"{name}-stale",
+            path.relative_to(root).as_posix(),
+            f"the derived {block.name.removeprefix('derived ')} is stale {_RERUN}",
+        ),
+    )
+
+
+def _page_region(
+    root: Path,
+    path: Path,
+    block: ManagedBlock,
+    render: Callable[[], str],
+    name: str,
+    page: Page | None,
+) -> Region:
+    """The region of *path*; a *page* means a missing fence is added, not reported."""
+    text = path.read_text(encoding="utf-8")
+    rel = path.relative_to(root).as_posix()
+    if page is None:
+        if not _fenced(block, text):
+            return Region(
+                path,
+                None,
+                markers=error(
+                    f"{name}-markers", rel, f"has no complete derived {name} fence"
+                ),
+            )
+        return _region(root, path, block, render(), name)
+    fenced = _with_fence(text, block)
+    if fenced is None:
+        marker = (
+            error(f"{name}-markers", rel, f"has an incomplete derived {name} fence")
+            if page.meta
+            else None
+        )
+        return Region(path, None, markers=marker)
+    return _region(root, path, block, render(), name, fenced)
+
+
+def _rows(work: Work, docs: Path, index: Path) -> list[_Row]:
+    """The derived regions of the work pages, in the order they are reported."""
+    epics = docs / POLICY.nested[0].path / "index.md"
+    rows: list[_Row] = [(index, BOARD_BLOCK, lambda: render_board(work), "board", None)]
+    if epics.exists():
+        rows.append((epics, EPICS_BLOCK, lambda: render_epics(work), "epics", None))
+    rows += [
+        (
+            release.page.path,
+            SCOPE_BLOCK,
+            lambda release=release: render_scope(work, release),
+            "scope",
+            None,
+        )
+        for release in work.releases
+    ]
+    rows += [
+        (
+            epic.page.path,
+            FEATURES_BLOCK,
+            lambda epic=epic: render_features(work, epic),
+            "features",
+            epic.page,
+        )
+        for epic in work.epics
+        if any(f.epic_dir == epic.dir for f in work.features)
+    ]
+    rows += [
+        (
+            feature.page.path,
+            STORIES_BLOCK,
+            lambda feature=feature: render_stories(feature),
+            "stories",
+            feature.page,
+        )
+        for feature in work.features
+    ]
+    return rows
+
+
 def _work_regions(
     root: Path,
 ) -> tuple[dict[Path, str], list[Finding], list[Finding]] | None:
@@ -108,87 +217,19 @@ def _work_regions(
     if BOARD_BLOCK.begin not in text and BOARD_BLOCK.end not in text:
         return None
     if not _fenced(BOARD_BLOCK, text):
-        return (
-            {},
-            [
-                error(
-                    "board-markers",
-                    index.relative_to(root).as_posix(),
-                    "has an incomplete derived board fence",
-                )
-            ],
-            [],
+        marker = error(
+            "board-markers",
+            index.relative_to(root).as_posix(),
+            "has an incomplete derived board fence",
         )
+        return {}, [marker], []
 
     work = load_work(docs)
-    writes: dict[Path, str] = {}
-    markers: list[Finding] = []
-    stale_findings: list[Finding] = []
-
-    def region(
-        path: Path,
-        block: ManagedBlock,
-        body: str,
-        code: str,
-        current: str | None = None,
-    ) -> None:
-        on_disk = path.read_text(encoding="utf-8")
-        updated = block.render(on_disk if current is None else current, body)
-        if updated != on_disk:
-            writes[path] = updated
-            stale_findings.append(
-                error(
-                    code,
-                    path.relative_to(root).as_posix(),
-                    f"the derived {block.name.removeprefix('derived ')} is stale {_RERUN}",
-                )
-            )
-
-    def summary(page: Page, block: ManagedBlock, body: str, name: str) -> None:
-        path = page.path
-        fenced = _with_fence(path.read_text(encoding="utf-8"), block)
-        if fenced is None:
-            if page.meta:
-                markers.append(
-                    error(
-                        f"{name}-markers",
-                        path.relative_to(root).as_posix(),
-                        f"has an incomplete derived {name} fence",
-                    )
-                )
-            return
-        region(path, block, body, f"{name}-stale", fenced)
-
-    region(index, BOARD_BLOCK, render_board(work), "board-stale")
-    epics = docs / POLICY.nested[0].path / "index.md"
-    if epics.exists():
-        if not _fenced(EPICS_BLOCK, epics.read_text(encoding="utf-8")):
-            markers.append(
-                error(
-                    "epics-markers",
-                    epics.relative_to(root).as_posix(),
-                    "has no complete derived epics fence",
-                )
-            )
-        else:
-            region(epics, EPICS_BLOCK, render_epics(work), "epics-stale")
-    for release in work.releases:
-        path = release.page.path
-        if not _fenced(SCOPE_BLOCK, path.read_text(encoding="utf-8")):
-            markers.append(
-                error(
-                    "scope-markers",
-                    path.relative_to(root).as_posix(),
-                    "has no complete derived scope fence",
-                )
-            )
-            continue
-        region(path, SCOPE_BLOCK, render_scope(work, release), "scope-stale")
-    for epic in work.epics:
-        if any(f.epic_dir == epic.dir for f in work.features):
-            summary(epic.page, FEATURES_BLOCK, render_features(work, epic), "features")
-    for feature in work.features:
-        summary(feature.page, STORIES_BLOCK, render_stories(feature), "stories")
+    rows = _rows(work, docs, index)
+    regions = [_page_region(root, *row) for row in rows]
+    writes = {r.path: r.text for r in regions if r.text is not None}
+    markers = [r.markers for r in regions if r.markers is not None]
+    stale_findings = [r.stale for r in regions if r.stale is not None]
     return writes, [*markers, *validate(work, root)], stale_findings
 
 

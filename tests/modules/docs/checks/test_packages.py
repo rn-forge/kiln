@@ -11,7 +11,8 @@ from tests.conftest import run_check
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs.checks import site, structure
-from rn_forge.kiln.modules.docs.packages import check_packages, read_mkdocs
+from rn_forge.kiln.modules.docs.mkdocs import read_mkdocs
+from rn_forge.kiln.modules.docs.packages import check_packages
 from rn_forge.kiln.modules.docs.pages import nav_pages
 
 PKG = "packages/alpha"

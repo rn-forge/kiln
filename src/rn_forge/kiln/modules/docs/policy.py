@@ -3,10 +3,6 @@
 The shape of a policy — numbered series, sequence areas, nested areas — and
 kiln's own instance of it, `POLICY`: what an ADR is named, what an epic
 directory looks like, which instruction files count.
-
-The area *keys* are deliberately not here. `docs/_areas.yml` is seeded by kiln
-and then owned by the repo, so a repo can declare an area kiln has never heard
-of (D44) and the checks validate the tree against whatever it declares.
 """
 
 from __future__ import annotations

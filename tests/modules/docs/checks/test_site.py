@@ -179,7 +179,7 @@ def test_s11_1_3_4_the_seeded_underscore_exclusion_keeps_todays_behaviour(
 def test_s11_1_3_excluded_docs_is_empty_without_the_key_or_the_file(
     tmp_path: Path,
 ) -> None:
-    from rn_forge.kiln.modules.docs.packages import excluded_docs
+    from rn_forge.kiln.modules.docs.mkdocs import excluded_docs
 
     assert not excluded_docs(tmp_path / "mkdocs.yml").match_file("a.md")
     (tmp_path / "mkdocs.yml").write_text("site_name: x\n", encoding="utf-8")
