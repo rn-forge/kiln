@@ -7,6 +7,7 @@ looks at.
 
 from __future__ import annotations
 
+import ast
 import fcntl
 import json
 import os
@@ -397,3 +398,25 @@ def module_findings(module: str, config: KilnConfig, root: Path) -> list[Finding
         if entry.module == module
         for finding in entry.run(config, root)
     ]
+
+
+SRC = Path(__file__).resolve().parents[1] / "src" / "rn_forge" / "kiln"
+
+
+def oversized(
+    *directories: str, max_lines: int | None = None, max_function: int = 60
+) -> list[str]:
+    """Every file over *max_lines* and function over *max_function* lines under SRC's *directories*."""
+    found: list[str] = []
+    for directory in directories:
+        for path in sorted((SRC / directory).rglob("*.py")):
+            text = path.read_text(encoding="utf-8")
+            label = path.relative_to(SRC).as_posix()
+            if max_lines is not None and len(text.splitlines()) > max_lines:
+                found.append(f"{label} ({len(text.splitlines())} lines)")
+            for node in ast.walk(ast.parse(text)):
+                if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+                    length = (node.end_lineno or node.lineno) - node.lineno + 1
+                    if length > max_function:
+                        found.append(f"{label}:{node.lineno} {node.name} ({length})")
+    return found
