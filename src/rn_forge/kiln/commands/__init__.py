@@ -29,11 +29,12 @@ from rn_forge.commons.fs.documents import ConfigFormat, DocumentUtils
 from rn_forge.commons.fs.state import StateStore
 from rn_forge.commons.generation import ApplyResult, StateEntry
 from rn_forge.commons.lang.collections import DictUtils
-from rn_forge.commons.runtime.console import OutputMode, console
+from rn_forge.commons.runtime.console import console
 from rn_forge.commons.runtime.subprocess import Process
 
 from rn_forge.kiln import archetypes, checks
 from rn_forge.kiln import doctor as doctor_module
+from rn_forge.kiln.commands import output
 from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
 from rn_forge.kiln.modules.core import cycle, umbrella
 from rn_forge.kiln.modules.core.config import catalog
@@ -99,15 +100,6 @@ def _findings(path: Path, full: bool) -> list[Finding]:
     return findings
 
 
-def _finding_json(finding: Finding) -> dict[str, str | None]:
-    return {
-        "code": finding.code,
-        "severity": finding.severity.value,
-        "message": finding.message,
-        "path": finding.path,
-    }
-
-
 def doctor(
     paths: list[Path],
     full: bool = False,
@@ -129,19 +121,14 @@ def doctor(
     """
     if len(paths) > 1 and not all:
         raise AppException("several paths need --all")
-    if json:
-        console.set_mode(OutputMode.JSON)
+    output.use_json(json)
 
     if not all:
         findings = _findings(paths[0], full)
-        if console.mode is OutputMode.JSON:
-            console.json({"findings": [_finding_json(f) for f in findings]})
-        else:
-            for finding in findings:
-                console.error("{}", finding)
-        errors = [finding for finding in findings if finding.is_error]
-        if errors:
-            raise AppException("{} check(s) failed in {}", len(errors), paths[0])
+        output.emit(
+            {"findings": [output.finding_json(f) for f in findings]}, lambda: None
+        )
+        output.report_findings(findings, paths[0])
         return
 
     reports: list[tuple[Path, list[Finding]]] = []
@@ -154,21 +141,8 @@ def doctor(
             )
     error_counts = [sum(f.is_error for f in found) for _, found in reports]
     warning_counts = [len(found) - n for (_, found), n in zip(reports, error_counts)]
-    if console.mode is OutputMode.JSON:
-        console.json(
-            {
-                "repos": [
-                    {"path": str(path), "findings": [_finding_json(f) for f in found]}
-                    for path, found in reports
-                ],
-                "summary": {
-                    "repos": len(reports),
-                    "errors": sum(error_counts),
-                    "warnings": sum(warning_counts),
-                },
-            }
-        )
-    else:
+
+    def text() -> None:
         console.table(
             "repo",
             "errors",
@@ -185,6 +159,21 @@ def doctor(
                 console.print("{}", path, markup=False)
             for finding in found:
                 console.error("{}", finding)
+
+    output.emit(
+        {
+            "repos": [
+                {"path": str(path), "findings": [output.finding_json(f) for f in found]}
+                for path, found in reports
+            ],
+            "summary": {
+                "repos": len(reports),
+                "errors": sum(error_counts),
+                "warnings": sum(warning_counts),
+            },
+        },
+        text,
+    )
     if sum(error_counts):
         raise AppException(
             "{} check(s) failed across {} repo(s)",
@@ -205,11 +194,7 @@ def docs_generate(path: Path) -> None:
         console.info("no change")
     for file in written:
         console.success("updated {}", file)
-    for finding in findings:
-        console.error("{}", finding)
-    errors = [finding for finding in findings if finding.is_error]
-    if errors:
-        raise AppException("{} finding(s) in {}", len(errors), path)
+    output.report_findings(findings, path, "finding(s) in")
 
 
 def new(
@@ -252,8 +237,7 @@ def new(
             or the config, scaffold, apply or check step fails, including a
             `generate.*` error from one of a `python-lib` config's packages.
     """
-    if json:
-        console.set_mode(OutputMode.JSON)
+    output.use_json(json)
     if not archetype:
         raise AppException("--archetype is required")
 
@@ -316,7 +300,7 @@ def new(
     # Last, so a failed run leaves no repository; the file linters need a root.
     Process.execute("git-init", "git", "init", "-q", cwd=str(directory))
     _record_scaffolded(directory)
-    rows = _change_rows(result.changes)
+    rows = output.change_rows(result.changes)
     _report(directory, resolved, rows)
 
 
@@ -441,8 +425,7 @@ def apply(
             non-blocking one, an unforced change is blocking, or a check
             after the apply reports an error.
     """
-    if json:
-        console.set_mode(OutputMode.JSON)
+    output.use_json(json)
     root = umbrella.find_root(Path.cwd())
     force_values = tuple(force or ())
 
@@ -450,8 +433,8 @@ def apply(
     _validate_force(planned, force_values)
 
     result = cycle.apply(root, force=force_values, dry_run=dry_run)
-    rows = _change_rows(result.changes)
-    _emit({"root": str(root), "artifacts": rows}, rows)
+    rows = output.change_rows(result.changes)
+    output.emit_rows({"root": str(root), "artifacts": rows}, rows)
 
     if not dry_run:
         _fail_on_errors(root)
@@ -479,8 +462,7 @@ def generate_package(
             package or `packages/NAME` exists (`generate.package-exists`),
             or a step or the apply fails.
     """
-    if json:
-        console.set_mode(OutputMode.JSON)
+    output.use_json(json)
     root = umbrella.find_root(path.resolve())
     result = _add_package(root, name, module)
     relative = f"packages/{name}"
@@ -490,8 +472,8 @@ def generate_package(
         for file in (root / relative).rglob("*")
         if file.is_file() and "__pycache__" not in file.parts
     )
-    rows = _change_rows(result.changes)
-    _emit(
+    rows = output.change_rows(result.changes)
+    output.emit_rows(
         {
             "root": str(root),
             "written": [CONFIG_PATH.as_posix(), "pyproject.toml", *written],
@@ -620,22 +602,28 @@ def diff(
             found — `diff(1)`'s own exit-1 convention — or `--old` is not a git
             repository or is given with `--artifact`.
     """
-    if json:
-        console.set_mode(OutputMode.JSON)
+    output.use_json(json)
     if old is not None:
         if artifact is not None:
             raise AppException(
                 "inventory.artifact-with-old: --artifact and --old exclude each other"
             )
         rows = inventory(umbrella.find_root(Path.cwd()), Path(old))
-        if console.mode is OutputMode.JSON:
-            console.json({"inventory": [dataclasses.asdict(row) for row in rows]})
-            return
-        for row in rows:
-            console.print(f"{row.kind:<11} {row.status:<15} {row.path}", markup=False)
-        console.print(
-            ", ".join(f"{sum(r.kind == kind for r in rows)} {kind}" for kind in KINDS),
-            markup=False,
+
+        def inventory_text() -> None:
+            for row in rows:
+                console.print(
+                    f"{row.kind:<11} {row.status:<15} {row.path}", markup=False
+                )
+            console.print(
+                ", ".join(
+                    f"{sum(r.kind == kind for r in rows)} {kind}" for kind in KINDS
+                ),
+                markup=False,
+            )
+
+        output.emit(
+            {"inventory": [dataclasses.asdict(row) for row in rows]}, inventory_text
         )
         return
     root = umbrella.find_root(Path.cwd())
@@ -647,11 +635,14 @@ def diff(
             raise AppException("{} is not a known artifact", artifact)
 
     diffs = _diffs(root, changes)
-    if console.mode is OutputMode.JSON:
-        console.json({"diffs": [{"path": path, "diff": text} for path, text in diffs]})
-    else:
+
+    def diff_text() -> None:
         for _, text in diffs:
             console.print(text, markup=False)
+
+    output.emit(
+        {"diffs": [{"path": path, "diff": text} for path, text in diffs]}, diff_text
+    )
 
     if diffs:
         raise AppException("{} artifact(s) differ from disk", len(diffs))
@@ -668,8 +659,7 @@ def prompt(name: str = "", json: bool = False) -> None:
     Raises:
         AppException: NAME is not a shipped prompt.
     """
-    if json:
-        console.set_mode(OutputMode.JSON)
+    output.use_json(json)
     directory = files("rn_forge.kiln").joinpath("prompts")
     available = {
         entry.name.removesuffix(".md"): entry.read_text(encoding="utf-8")
@@ -681,20 +671,21 @@ def prompt(name: str = "", json: bool = False) -> None:
             {"name": key, "summary": _prompt_summary(text)}
             for key, text in sorted(available.items())
         ]
-        if console.mode is OutputMode.JSON:
-            console.json({"prompts": rows})
-        else:
+
+        def listing() -> None:
             for row in rows:
                 console.print(f"{row['name']}: {row['summary']}", markup=False)
+
+        output.emit({"prompts": rows}, listing)
         return
     if name not in available:
         raise AppException(
             "no prompt named {}; available: {}", name, ", ".join(sorted(available))
         )
-    if console.mode is OutputMode.JSON:
-        console.json({"name": name, "text": available[name]})
-    else:
-        console.print(available[name], markup=False)
+    output.emit(
+        {"name": name, "text": available[name]},
+        lambda: console.print(available[name], markup=False),
+    )
 
 
 def _prompt_summary(text: str) -> str:
@@ -706,12 +697,8 @@ def _prompt_summary(text: str) -> str:
 def version(json: bool = False) -> None:
     """Print kiln's installed distribution version."""
     installed = metadata.version(_DISTRIBUTION)
-    if json:
-        console.set_mode(OutputMode.JSON)
-    if console.mode is OutputMode.JSON:
-        console.json({"version": installed})
-    else:
-        console.print(installed)
+    output.use_json(json)
+    output.emit({"version": installed}, lambda: console.print(installed))
 
 
 def _diffs(root: Path, changes: Sequence[generation.Change]) -> list[tuple[str, str]]:
@@ -777,32 +764,14 @@ def _preview_rows(
     directory: Path, config: KilnConfig, manager: ConfigManager
 ) -> list[dict[str, str]]:
     """One row per artifact `kiln new` would render, classified against nothing."""
-    rows: list[dict[str, str]] = []
-    for module in manager.modules_for(config):
-        for artifact in module.artifacts(config, directory):
-            action = generation.classify(directory, artifact, None)
-            rows.append(
-                {
-                    "key": artifact.key,
-                    "path": artifact.path,
-                    "kind": artifact.kind.value,
-                    "action": action.value,
-                }
-            )
-    return rows
-
-
-def _change_rows(changes: Sequence[generation.Change]) -> list[dict[str, str]]:
-    """`ApplyResult.changes` (or a `Plan`'s), as `{key, path, kind, action}` rows."""
-    return [
-        {
-            "key": change.key,
-            "path": change.path,
-            "kind": change.kind.value,
-            "action": change.action.value,
-        }
-        for change in changes
-    ]
+    return output.artifact_rows(
+        directory,
+        [
+            artifact
+            for module in manager.modules_for(config)
+            for artifact in module.artifacts(config, directory)
+        ],
+    )
 
 
 STAGING = ".staging"
@@ -861,8 +830,7 @@ def _config_reresolve(
     *, allow_schema_upgrade: bool, dry_run: bool, run_apply: bool, json: bool
 ) -> None:
     """Shared body of `config-update` and `config-upgrade` (kiln ADR-0004)."""
-    if json:
-        console.set_mode(OutputMode.JSON)
+    output.use_json(json)
     root = umbrella.find_root(Path.cwd())
     manager = ConfigManager()
     resolution = manager.reresolve(root, allow_schema_upgrade=allow_schema_upgrade)
@@ -872,21 +840,22 @@ def _config_reresolve(
         "overrides": list(resolution.overrides),
         "artifacts": rows,
     }
-    if console.mode is OutputMode.JSON:
-        console.json(payload)
-    else:
+
+    def text() -> None:
         for path in resolution.overrides:
             console.info("override {}", path)
         for row in rows:
             console.info("{} {} {}", row["key"], row["kind"], row["action"])
+
+    output.emit(payload, text)
 
     if dry_run or not run_apply:
         return
 
     _write_config(root, resolution.config)
     result = cycle.apply(root, provenance=resolution.provenance_metadata())
-    change_rows = _change_rows(result.changes)
-    _emit({"root": str(root), "artifacts": change_rows}, change_rows)
+    change_rows = output.change_rows(result.changes)
+    output.emit_rows({"root": str(root), "artifacts": change_rows}, change_rows)
     _fail_on_errors(root)
 
 
@@ -907,7 +876,7 @@ def _config_change_rows(
     planned = cycle.classify(root, artifacts, store.load())
     settled = (generation.Action.UNCHANGED, generation.Action.SKIP)
     changed = [c for c in planned.changes if c.action not in settled]
-    return _change_rows(changed)
+    return output.change_rows(changed)
 
 
 def _report(directory: Path, config: KilnConfig, rows: list[dict[str, str]]) -> None:
@@ -917,21 +886,13 @@ def _report(directory: Path, config: KilnConfig, rows: list[dict[str, str]]) -> 
         "config": config.to_document(),
         "artifacts": rows,
     }
-    if console.mode is OutputMode.JSON:
-        console.json(payload)
-        return
-    console.print(DocumentUtils.dumps(config.to_document(), ConfigFormat.TOML))
-    for row in rows:
-        console.info("{} {} {}", row["key"], row["kind"], row["action"])
 
+    def text() -> None:
+        console.print(DocumentUtils.dumps(config.to_document(), ConfigFormat.TOML))
+        for row in rows:
+            console.info("{} {} {}", row["key"], row["kind"], row["action"])
 
-def _emit(payload: dict[str, object], rows: list[dict[str, str]]) -> None:
-    """Print or emit `apply`'s result: JSON in JSON mode, else a line per artifact."""
-    if console.mode is OutputMode.JSON:
-        console.json(payload)
-        return
-    for row in rows:
-        console.info("{} {} {}", row["key"], row["kind"], row["action"])
+    output.emit(payload, text)
 
 
 def _validate_force(planned: generation.Plan, force_values: tuple[str, ...]) -> None:
@@ -966,12 +927,7 @@ def _validate_force(planned: generation.Plan, force_values: tuple[str, ...]) -> 
 
 def _fail_on_errors(root: Path) -> None:
     """Run `kiln doctor`'s ownership checks over *root*, raising if any is an error."""
-    findings = checks.run(root, scope="ownership")
-    for finding in findings:
-        console.error("{}", finding)
-    errors = [finding for finding in findings if finding.is_error]
-    if errors:
-        raise AppException("{} check(s) failed in {}", len(errors), root)
+    output.report_findings(checks.run(root, scope="ownership"), root)
 
 
 generate_app = CliApp("kiln", "Generate parts of a repository.")
