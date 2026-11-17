@@ -22,6 +22,7 @@ __all__ = [
     "PRETTIER_VERSION",
     "SCAFFOLD_APP_DIR",
     "VITEST_COVERAGE",
+    "WEB_PROJECT",
     "add_ngkit",
     "remove_scaffold_app",
     "scaffold_angular",
@@ -36,6 +37,9 @@ NGKIT_URL = (
     "https://github.com/rn-forge/ngkit/releases/download/v0.4.0/rn-forge-ng-0.4.0.tgz"
 )
 """`@rn-forge/ng`'s release tarball (npm publishing is disabled)."""
+
+WEB_PROJECT = "web"
+"""The Nx project the scaffold creates, wherever its directory ends up."""
 
 SCAFFOLD_APP_DIR = "apps/web"
 """Where the pinned command always creates the app; renamed to `web_dir` by
@@ -115,7 +119,7 @@ def scaffold_angular(raw: Path) -> Path:
         "g",
         "@nx/angular:application",
         SCAFFOLD_APP_DIR,
-        "--name=web",
+        f"--name={WEB_PROJECT}",
         "--style=scss",
         "--bundler=esbuild",
         "--ssr=false",
@@ -164,7 +168,7 @@ def remove_scaffold_app(workspace: Path) -> None:
         "nx",
         "g",
         "@nx/workspace:remove",
-        "web",
+        WEB_PROJECT,
         "--forceRemove",
         "--interactive=false",
         cwd=workspace,

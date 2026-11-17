@@ -930,3 +930,30 @@ def test_s9_4_5_12_the_section_says_how_a_library_declares_its_matrix(
         "s945-kiln-devops-consumer",
     ):
         assert phrase in section, phrase
+
+
+def test_s18_12_2_1_a_custom_web_dir_names_the_web_project_everywhere(
+    tmp_path: Path,
+) -> None:
+    from rn_forge.kiln.modules.cicd import CICD
+    from rn_forge.kiln.modules.tasks import TASKS
+
+    write_config(
+        tmp_path,
+        "python-web-app",
+        name="demo",
+        backend="fastapi",
+        frontend="angular",
+        sonar=True,
+        tail='web_dir = "apps/portal"\n',
+    )
+    config = KilnConfig.load(tmp_path)
+
+    def by_path(module: object) -> dict[str, str]:
+        return {a.path: a.content for a in module.artifacts(config, tmp_path)}  # type: ignore[attr-defined]
+
+    assert "nx serve web" in by_path(TASKS)["tasks/web.yml"]
+    assert "coverage/web/lcov.info" in by_path(CICD)["sonar-project.properties"]
+    standard = by_path(INSTRUCTIONS)[STANDARD]
+    assert "project `web`" in standard
+    assert "project `portal`" not in standard

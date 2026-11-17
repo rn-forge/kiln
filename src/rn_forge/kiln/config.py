@@ -16,6 +16,7 @@ from rn_forge.kiln.modules.cicd.config import CiConfig, resolve_release
 from rn_forge.kiln.modules.core.config.schema import KilnPin, RootConfig
 from rn_forge.kiln.modules.core.names import module_name
 from rn_forge.kiln.modules.docs.config import DocsConfig
+from rn_forge.kiln.modules.node.angular import WEB_PROJECT
 from rn_forge.kiln.modules.python.config import ArchetypeConfig, WebAppConfig
 from rn_forge.kiln.modules.tasks.config import TasksConfig
 
@@ -245,9 +246,8 @@ class KilnConfig:
 
     @property
     def web_project(self) -> str | None:
-        """The frontend's Nx project name: its directory's name. `None` without one."""
-        web_dir = self.web_dir
-        return Path(web_dir).name if web_dir else None
+        """The frontend's Nx project name, for `python-web-app`. `None` otherwise."""
+        return WEB_PROJECT if self.web_dir else None
 
     def to_document(self) -> dict[str, Any]:
         """The config as a TOML-ready mapping, defaults included."""

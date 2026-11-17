@@ -87,9 +87,7 @@ def test_s18_7_1_4_module_name_is_the_one_conversion() -> None:
     assert not hasattr(artifacts, "root_package")
 
 
-def test_s18_7_1_5_web_project_keeps_both_answers(tmp_path: Path) -> None:
-    from rn_forge.kiln.modules.cicd import artifacts
-
+def test_s18_7_1_5_web_project_is_the_nx_project(tmp_path: Path) -> None:
     write_config(
         tmp_path,
         "python-web-app",
@@ -98,6 +96,4 @@ def test_s18_7_1_5_web_project_keeps_both_answers(tmp_path: Path) -> None:
         frontend="angular",
         tail='web_dir = "apps/portal"\n',
     )
-    # F18.10 makes the tasks and cicd Nx project names one.
-    assert KilnConfig.load(tmp_path).web_project == "portal"
-    assert artifacts._WEB_PROJECT == "web"  # noqa: SLF001
+    assert KilnConfig.load(tmp_path).web_project == "web"

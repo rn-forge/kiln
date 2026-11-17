@@ -164,6 +164,19 @@ def test_s5_2_1_reconcile_renames_web_dir_and_rewrites_project_json(
     assert project["sourceRoot"] == "apps/frontend/src"
 
 
+def test_s18_12_2_2_a_custom_web_dir_leaves_no_scaffold_path(tmp_path: Path) -> None:
+    root = _root(tmp_path, extra='web_dir = "apps/portal"')
+    workspace = _workspace(tmp_path)
+
+    reconcile_node(root, workspace, KilnConfig.load(root))
+
+    text = (root / "apps" / "portal" / "project.json").read_text(encoding="utf-8")
+    project = DocumentUtils.read(root / "apps" / "portal" / "project.json")
+    assert "apps/web" not in text
+    assert project["name"] == "web"
+    assert project["targets"]["build"]["options"]["outputPath"] == "dist/apps/portal"
+
+
 def test_s5_2_1_reconcile_refuses_a_root_that_already_holds_readme(
     tmp_path: Path,
 ) -> None:

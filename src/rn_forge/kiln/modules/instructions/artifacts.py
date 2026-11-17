@@ -194,7 +194,7 @@ def _frontend_bullet(config: KilnConfig) -> str:
     web_dir = config.web_dir
     return _bullet(
         f"**Frontend:** `{config.frontend}`, managed by pnpm + Nx at "
-        f"`{web_dir}` (project `{Path(web_dir).name if web_dir else ''}`). "
+        f"`{web_dir}` (project `{config.web_project}`). "
         "Every file the frontend scaffold wrote is repo-owned; kiln renders "
         f"nothing under `{web_dir}`, and seeded a starter page that calls the "
         "API (`src/app/app.ts`, `app.html`, their specs, `app.config.ts` and "
@@ -240,7 +240,7 @@ def context(config: KilnConfig) -> dict[str, object]:
         "frontend": config.frontend,
         "api_dir": config.api_dir,
         "web_dir": web_dir,
-        "web_project": Path(web_dir).name if web_dir else None,
+        "web_project": config.web_project,
     }
 
 

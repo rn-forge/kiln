@@ -13,8 +13,10 @@ A `--frontend` other than `angular` is rejected before any subprocess runs.
 from __future__ import annotations
 
 import copy
+import re
 import shutil
 from pathlib import Path
+from typing import Any, cast
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import DocumentUtils
@@ -276,9 +278,24 @@ def _copy_or_merge(src: Path, dst: Path) -> None:
     shutil.copy2(src, dst, follow_symlinks=False)
 
 
+_SCAFFOLD_PATH = re.compile(rf"(?<![\w.-]){re.escape(SCAFFOLD_APP_DIR)}(?![\w-])")
+
+
+def _retarget(value: Any, web_dir: str) -> Any:
+    """*value* with the scaffold directory, as a path component, renamed."""
+    if isinstance(value, str):
+        return _SCAFFOLD_PATH.sub(lambda _: web_dir, value)
+    if isinstance(value, dict):
+        mapping = cast("dict[str, Any]", value)
+        return {key: _retarget(item, web_dir) for key, item in mapping.items()}
+    if isinstance(value, list):
+        return [_retarget(item, web_dir) for item in cast("list[Any]", value)]
+    return value
+
+
 def _rewrite_app_dir(root: Path, web_dir: str) -> None:
     project_path = root / web_dir / "project.json"
-    project = DocumentUtils.read(project_path)
+    project = _retarget(DocumentUtils.read(project_path), web_dir)
     project["sourceRoot"] = f"{web_dir}/src"
     project["root"] = web_dir
     DocumentUtils.write(project_path, project)
