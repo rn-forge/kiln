@@ -14,21 +14,15 @@ are [release-2](../release-2/index.md).
 
 ## Entry criteria
 
-- [Release 0](../release-0/index.md) ships before this one does — **met**
-  2026-09-12.
-- Before
-  [F3.3](../../specs/epics/E3-realign-goldens-and-canon/F3.3-python-tool-is-a-tool.md):
-  pykit's lifecycle surface has landed
-  ([upstream work](../../specs/index.md#upstream-pins)).
-- Order inside the release follows each feature's **Depends on** line.
-  [S4.1.4](../../specs/epics/E4-generator/F4.1-checks-by-module.md#s414-the-ci-shape-is-decided)
-  — the checks-shape decision — came first and is done
-  ([ADR-0006](../../adr/ADR-0006.md)).
+- [Release 0](../release-0/index.md) shipped — **met** 2026-09-12.
+- pykit's lifecycle surface has landed
+  ([upstream work](../../specs/index.md#upstream-pins)) — before
+  [F3.3](../../specs/epics/E3-realign-goldens-and-canon/F3.3-python-tool-is-a-tool.md).
+- The CI shape is decided ([ADR-0006](../../adr/ADR-0006.md)).
 - `rn-forge-fastapi` is implemented in pykit, and the web packages resolve from
-  outside the pykit workspace (2026-10-04,
-  [board](../../specs/index.md#upstream-pins)).
-- Django is deferred for both web archetypes; FastAPI is the default and the
-  only shipped backend ([ADR-0005](../../adr/ADR-0005.md)).
+  outside the pykit workspace.
+- Django is deferred; FastAPI is the only shipped backend
+  ([ADR-0005](../../adr/ADR-0005.md)).
 
 ## Scope
 
@@ -128,83 +122,39 @@ are [release-2](../release-2/index.md).
 
 ## Decisions
 
-- [ADR-0001–ADR-0007](../../adr/index.md) — added 2026-09-13 to 2026-09-15: the
-  decision log renumbered and consolidated (`9d96478`). ADR-0006 records
-  S4.1.4's CI shape.
-- [ADR-0005](../../adr/ADR-0005.md) — updated 2026-09-17: the web selectors are
-  `--backend` and `--frontend`, and the shipped web cells are FastAPI and
-  FastAPI + Angular, with Django untested (F5.1, F5.3).
-- [ADR-0008](../../adr/ADR-0008.md) — added 2026-09-26: only published packages
-  get their own docs site (E11).
-- [ADR-0009](../../adr/ADR-0009.md) — added 2026-09-26: a repository's specs are
-  accepted inside that repository (E11, F11.4).
-- [ADR-0003](../../adr/ADR-0003.md) — revision proposed 2026-10-01: generated
-  regions, derived from the repository's inputs and never hashed (E13).
-- [ADR-0011](../../adr/ADR-0011.md) — accepted 2026-10-01: work is tracked as
-  Azure DevOps-shaped work items (E13).
-- [ADR-0012](../../adr/ADR-0012.md) — accepted 2026-10-01: every repository
-  publishes one MkDocs site, whatever its language (E13).
-- [ADR-0013](../../adr/ADR-0013.md) — accepted 2026-10-14: the docs site
-  navigates by area tabs, and work pages open with derived summaries (F14.1,
-  F14.2).
-- [ADR-0014](../../adr/ADR-0014.md) — added 2026-10-14, revised 2026-10-16: a
-  library workspace's CI is planned by rn-forge-devops, and its own members
-  are exempt from the rn-forge dependency contract (F6.1, F6.4).
-- [ADR-0015](../../adr/ADR-0015.md) — added 2026-10-14: `node-lib` renders
-  ngkit's CI (E9).
-- [ADR-0017](../../adr/ADR-0017.md) — added 2026-10-22, revised 2026-10-26: the
-  CI planner ships inside kiln as `kiln-devops`, reached through the
-  `[kiln] ref` pin and not the repository's lock (F6.7, F7.4).
-- [ADR-0018](../../adr/ADR-0018.md) — accepted 2026-10-25, revised 2026-10-31:
-  rn-forge dependencies are version ranges from PyPI (F7.3, F7.5).
+- [ADR-0001–ADR-0007](../../adr/index.md) — 2026-09-13 to 2026-09-15: the
+  decision log renumbered and consolidated.
+- [ADR-0005](../../adr/ADR-0005.md) — 2026-09-17: the web selectors are
+  `--backend` and `--frontend`; the shipped cells are FastAPI and FastAPI +
+  Angular.
+- [ADR-0008](../../adr/ADR-0008.md) — 2026-09-26: only published packages get
+  their own docs site.
+- [ADR-0009](../../adr/ADR-0009.md) — 2026-09-26: a repository's specs are
+  accepted inside that repository.
+- [ADR-0003](../../adr/ADR-0003.md) — 2026-10-01: generated regions, derived
+  from the repository's inputs and never hashed.
+- [ADR-0011](../../adr/ADR-0011.md) — 2026-10-01: work is tracked as Azure
+  DevOps-shaped work items.
+- [ADR-0012](../../adr/ADR-0012.md) — 2026-10-01: every repository publishes one
+  MkDocs site.
+- [ADR-0013](../../adr/ADR-0013.md) — 2026-10-14: the docs site navigates by
+  area tabs, and work pages open with derived summaries.
+- [ADR-0014](../../adr/ADR-0014.md) — 2026-10-14, revised 2026-10-16: a library
+  workspace's CI is planned by rn-forge-devops.
+- [ADR-0015](../../adr/ADR-0015.md) — 2026-10-14: `node-lib` renders ngkit's CI.
+- [ADR-0017](../../adr/ADR-0017.md) — 2026-10-22, revised 2026-10-26: the CI
+  planner ships inside kiln as `kiln-devops`.
+- [ADR-0018](../../adr/ADR-0018.md) — 2026-10-25, revised 2026-10-31: rn-forge
+  dependencies are version ranges from PyPI.
 - [ADR-0016](../../adr/ADR-0016.md) — revised 2026-11-04: one CI standard for
-  every archetype, with a check registry and `[ci.checks]` (E15).
-- Owner decisions, 2026-11-04: E15 and E16 are release-1 scope; the tag stays
-  held until they land and S7.2.4's cutover runs on them.
-- Owner decisions, 2026-10-31, after pykit's Release 7: F7.5 moves here from
-  release 2, and F6.8 is added; pykit keeps its security jobs as `[[ci.jobs]]`
-  entries; the web archetypes allow `rn-forge-auth`; F7.6's two run checks
-  follow the cut; the tag is `v0.1.0`, distributed by git.
+  every archetype, with a check registry.
 
 ## Progress
 
-As of 2026-11-07, F16.6 (what the cutover rehearsals found) has 8 stories closed
-and 5 new, S16.6.9 to S16.6.13, from S7.2.4's rehearsal run 4 on pykit and
-ngkit. Owner decision: pykit and ngkit cut over on `feature/v1` before the tag,
-so that kiln keeps being refined from their findings; the `v0.1.0` tag follows.
-E18 is not yet re-sequenced; the owner question, whether to move E18 after the
-tag, is open.
-
-As of 2026-11-04, E15 (one CI standard) and E16 (`init` adopts by overwrite)
-joined the scope; the tag waits for both and for S7.2.4 run on them. As of
-2026-11-03, every in-scope feature was closed except F7.2: S7.2.1 is done
-([Shipped](#shipped)), and S7.2.4's cutover rehearsals hold the tag (S7.2.2).
-E4, E9 and E11 closed the same day. The rest of this section is the record as of
-2026-10-16.
-
-As of 2026-10-16. E3 shipped 2026-09-15; F4.1–F4.7, F5.1, F5.2, F6.3, F7.1,
-F11.1–F11.4, F13.1–F13.3 and F14.1–F14.2 are closed, the last eight on
-2026-10-16 when their acceptance blocks passed. F6.3's and F11.2's blocks were
-corrected for goldens that now render into `.goldens/working`, and F14.1's
-sidebar check found E1 missing from its range until S14.1.3 was corrected. F4.9
-closed on 2026-10-24, when its acceptance block passed. F4.8 closed on
-2026-10-25, when its pull-request CI run passed, and F4.11, F6.3 and F11.5 the
-same day, when their acceptance blocks passed. F7.3 and F7.4 closed on
-2026-10-26, when their acceptance blocks passed. F6.1 has S6.1.1 open: its fifth
-run, after the script was corrected and pykit landed its F16.4, fails only
-because pykit's `rn-forge-devops` has no `docs/guides/`; it stays open for
-in-place adoption. S6.1.5 is closed, and run 1 of adopting pykit in place, on an
-unmerged pykit branch, wrote S6.1.6–S6.1.13: `init` fixes, the shipped `adopt`
-prompt proved by a second pykit run, a decision on kiln's area rules, and
-S6.1.14's rules taken from pykit's. Rebuilding a far-off repository and porting
-it is F16.5 (was F6.5), not yet scheduled. F6.4's planner pin was met 2026-10-16
-(`rn-forge-devops-v0.1.0`); S6.4.6 and S11.5.1 were added 2026-10-18 to retire
-pykit's `main.yml`. S6.4.7 was added the same day, to bring `python-lib`'s
-release to [ADR-0016](../../adr/ADR-0016.md)'s rule (default branch only, after
-Sonar); it waits on a pykit change to `rn-forge-devops`. F5.3 closed 2026-10-21
-on its two shipped cells, approved at kiln `c62d4e2`; its real-application proof
-moved to F16.5 (was F6.5; S16.5.3, apollo), which is not in this release. F9.1
-has no stories written ([board](../../specs/index.md#order)).
+As of 2026-11-17, every feature in scope is closed except F7.2 (the tagged
+release), F16.5 and the open E18 features. The `v0.1.0` tag is held until pykit
+and ngkit have cut over on `feature/v1` and the E18 features land. Next: the
+remaining E18 features, then the cutover and the tag.
 
 ## Commits
 
@@ -214,67 +164,35 @@ Commits whose subject names a scope ID, newest first:
 git log --format='%h %ad %s' --date=short -E --grep='[FS](3\.[1-4]|4\.[1-9]|5\.[1-3]|6\.[134]|7\.1|9\.1|11\.[1-5]|13\.[1-3]|14\.[12])'
 ```
 
-- `6feaf37` 2026-09-26 S4.5.9 kiln new assembles in persistent staging
-- `c337851` 2026-09-26 E11 package docs sites, ADR-0008/0009, pykit alignment
-- `1b31e64` 2026-09-26 F4.5
-- `bddc88b` 2026-09-24 release-0 F4.5 - cli
-- `a33a795` 2026-09-16 S4.3.2 + Docs refined
-- `894bcf8` 2026-09-16 Merge E4 F4.3 S4.3.1: the python module
-- `fa876c1` 2026-09-16 E4 (F4.3 S4.3.1): the python module — uv init scaffold,
-  .importlinter, check 8a
-- `6b2a643` 2026-09-16 E1, E2, E3, E4 (F4.2)
-
-Earlier release-1 work also landed in commits whose subjects name no ID:
-`8a64762` and `9d96478` (E3 and the decision log), `873ad47` and `a4a3541`.
-
 ## Exit criteria
 
-- E3's acceptance block passes.
-- E4's acceptance block passes.
-- F11.1–F11.5's acceptance blocks pass. F11.5 was moved here 2026-10-18: it is
-  the last blocker to retiring pykit's hand-written `main.yml`.
-- E5's acceptance block passes: the FastAPI cells are proved and shipped.
-- F6.3's acceptance block passes.
-- F7.1's acceptance block passes: kiln pins pykit by release tag.
-- F13.1–F13.3's acceptance blocks pass. E12 (F12.1, F12.2) is release-2.
-- F14.1–F14.2's acceptance blocks pass.
-- F6.1's acceptance block passes: a pykit-shaped repository passes its own gate.
-  Nothing in this release is checked inside pykit
+- E3, E4 and E5 acceptance blocks pass: the FastAPI cells are proved and
+  shipped.
+- F11.1–F11.5, F13.1–F13.3 and F14.1–F14.2 acceptance blocks pass.
+- F6.1's acceptance block passes: a pykit-shaped repository passes its own gate
   ([ADR-0009](../../adr/ADR-0009.md)).
-- F6.4's acceptance block passes: the pykit-shaped repository runs pykit's
-  workspace pipeline, and `python-lib` publishes only from the default branch
-  after the quality gate (S6.4.7, [ADR-0016](../../adr/ADR-0016.md)). Added
-  2026-10-14, when the owner chose to have pykit and ngkit able to adopt kiln
-  before release-1 ships.
+- F6.3, F6.4, F6.7, F6.8 and F6.9 acceptance blocks pass: the generated CI is
+  pykit's workspace pipeline, and `init` and `apply` write no starter source
+  into an adopted repository.
+- F7.1, F7.5 and F7.6 acceptance blocks pass, F7.6's two run checks excepted:
+  they follow the cut.
 - E9's `node-lib` features pass their acceptance blocks: an ngkit-shaped
-  repository passes its own gate and renders ngkit's CI. Added 2026-10-14.
-- F6.7, F6.8, F7.5 and F7.6's acceptance blocks pass, F7.6's two run checks
-  excepted: they need pykit's cutover and follow the cut. Added 2026-10-31.
-- F6.9's acceptance block passes: `init` and `apply` write no starter source
-  into a repository kiln adopts, which pykit's cutover requires of the tag.
-  Added 2026-11-01.
+  repository passes its own gate and renders ngkit's CI.
 - Every open question on an in-scope feature is answered, as an ADR or as a
   rejected option recorded on the feature.
-- [S7.2.4](../../specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md#s724-run-the-cutover-sop-on-pykit-then-ngkit):
-  the cutover SOP, run on pykit and then ngkit, leaves no open absorb row. The
-  owner holds the tag until then. Added 2026-11-02, rewritten 2026-11-04.
-- [E15](../../specs/epics/E15-ci-standard/index.md)'s acceptance blocks pass,
-  F15.8's included: every archetype runs the one stage vocabulary from
-  `ci.yml`. Added 2026-11-04: pykit's cutover declares no `[[ci.jobs]]` for a
-  check E15 covers.
+- The cutover SOP, run on pykit and then ngkit, leaves no open absorb row. The
+  owner holds the tag until then.
+- [E15](../../specs/epics/E15-ci-standard/index.md)'s acceptance blocks pass:
+  every archetype runs the one stage vocabulary from `ci.yml`.
 - [E16](../../specs/epics/E16-init-adopts-by-overwrite/index.md)'s acceptance
-  blocks pass: `init` adopts by overwrite and the cutover SOP exists. Added
-  2026-11-04. Revised 2026-11-09: `init` is retired and the SOP is the overlay
-  ([ADR-0019](../../adr/ADR-0019.md),
-  [F16.8](../../specs/epics/E16-init-adopts-by-overwrite/F16.8-retire-kiln-init.md)).
+  blocks pass: `init` is retired and the cutover SOP is the overlay
+  ([ADR-0019](../../adr/ADR-0019.md)).
 
 ## Shipped
 
-Proved 2026-11-03 at `be9429e` on `feature/v1`
-([S7.2.1](../../specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md#s721-the-release-1-exit-criteria-hold)).
-kiln's CI at that commit:
+Proved 2026-11-03 at `be9429e` on `feature/v1`. kiln's CI at that commit:
 [run 41590472355](https://github.com/rn-forge/kiln/actions/runs/41590472355),
-green with Sonar's quality gate. The tag is held for S7.2.4.
+green with Sonar's quality gate. The tag is held for the cutover.
 
 Each block ran locally in a clean worktree after `task setup`. F6.1 and F6.7 ran
 with pykit's `feature/release-8`, which carries the rn-forge-devops guides page.
@@ -292,31 +210,20 @@ Exit `0` for every block:
 | F13.1–F13.3 | F13.1, F13.2, F13.3 |
 | F14.1–F14.2 | F14.1, F14.2 |
 
-These blocks first failed on a line that later work had made stale: E3, E4,
-F4.3, F4.5, F5.2, F6.1, and earlier in the run F4.4, F4.7, F4.12, F5.1, F6.3,
-F11.1, F11.4, F13.1–F13.3, F14.1, F14.2. Each line was corrected with an
-*Updated (S7.2.1)* note on its page, and the block re-run to exit `0`. The real
-defects the runs found became stories and closed before the final run:
-[S4.5.11](../../specs/epics/E4-generator/F4.5-cli.md) (`kiln new` runs
-`git init`), [S4.5.12](../../specs/epics/E4-generator/F4.5-cli.md) (no `main()`
-stub in app packages) and
-[S6.7.7](../../specs/epics/E6-rebuild-the-repos/F6.7-kiln-devops.md)
-(`kiln-devops` checks its arguments, which cleared Sonar's security gate).
-
 **Not re-run, superseded:** F3.1–F3.4 by E3's block; F4.1 by E4's block; F7.3 by
 F7.5's. F4.10, F7.2 and F13.4 have no block.
 
 **GitHub runs the shaped repositories ask for:**
 
-- S6.4.5, pykit-shape:
+- pykit-shape:
   [run 41549190853](https://github.com/rn-forge/pykit-shape/actions/runs/41549190853).
-- S9.1.6, ngkit-shape:
+- ngkit-shape:
   [run 41564051289](https://github.com/rn-forge/ngkit-shape/actions/runs/41564051289),
   attempt 2.
 
 **Checked after the cut:**
 
-- F6.7, S6.7.5: on kiln's first default-branch push after the merge, the
-  `release` job's `release-state` step reports the version's state.
-- F7.6: pykit's cutover dispatches a `testpypi` run, and its next push to `main`
-  uploads to pypi.org (owner decision, 2026-10-31).
+- On kiln's first default-branch push after the merge, the `release` job's
+  `release-state` step reports the version's state.
+- pykit's cutover dispatches a `testpypi` run, and its next push to `main`
+  uploads to pypi.org.

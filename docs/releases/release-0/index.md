@@ -43,10 +43,8 @@ released tags, was deferred out of this release and is now
 
 ## Decisions
 
-The decision log this release wrote was renumbered on 2026-09-15 (`9d96478`),
-after it shipped: its records became today's
-[ADR-0001–ADR-0007](../../adr/index.md), which release-1 lists. The original
-records are in git history before that commit.
+- [ADR-0001–ADR-0007](../../adr/index.md) — the decision log this release wrote,
+  renumbered 2026-09-15 (`9d96478`); release-1 lists them.
 
 ## Progress
 
@@ -60,8 +58,7 @@ Commits whose subject names a scope ID, newest first:
 git log --format='%h %ad %s' --date=short -E --grep='[FS](1|2)\.[0-9]'
 ```
 
-None: this release's commits predate subjects that name IDs. They are `6c3f70f`
-to `afcfa07`, 2026-09-09 to 2026-09-12 (`initial commit` through `Phase C.2`).
+None: this release's commits predate subjects that name IDs.
 
 ## Exit criteria
 

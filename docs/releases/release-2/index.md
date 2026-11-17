@@ -33,7 +33,8 @@ taskkit is retired (F6.2). Package-site deploys (F11.5) moved to
 
 ## Progress
 
-Nothing started. F12.1's S12.1.1 is an owner decision and comes first in E12.
+As of 2026-11-17, E12 has not started; its first step is an owner decision. F6.2
+is new, and so are F18.10 and F18.11.
 
 ## Commits
 
@@ -43,13 +44,6 @@ Commits whose subject names a scope ID, newest first:
 git log --format='%h %ad %s' --date=short -E --grep='[FS](6\.2|12\.[1-2])'
 ```
 
-- `a31d739` 2026-09-27 S5.3.6 complete the repository setup experience
-- `863963f` 2026-09-27 S5.3.5
-- `376b1ff` 2026-09-26 S5.2.4 frontend scaffolding has its own module
-- `e143f37` 2026-09-17 F5.3 Story Split + S5.3.1 Implemented
-- `e605ed4` 2026-09-17 F5.2
-- `6d13d06` 2026-09-17 F5.1
-
 ## Exit criteria
 
 - E5's acceptance block passes.
@@ -57,9 +51,9 @@ git log --format='%h %ad %s' --date=short -E --grep='[FS](6\.2|12\.[1-2])'
 - taskkit is archived.
 
 intellibuild is not in this release; it is built on its own schedule from the
-[intellibuild plan](../../plans/intellibuild.md) once this release has shipped.
+intellibuild plan once this release has shipped.
 
 ## Shipped
 
 Filled at the cut: the kiln commit each exit criterion was proved at, and the
-kiln and Nx refs S5.3.2–S5.3.3 record.
+kiln and Nx refs the release records.
