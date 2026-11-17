@@ -406,7 +406,7 @@ declared), `patch-package-exports`, and, for the Pages site, `compodoc` (output
   token.
 {% endif %}
 **Action pins.** The `uses:` SHAs in generated files are kiln's. They move when
-kiln's `cicd/pins.toml` changes and the repository moves `[kiln] ref` and runs
+kiln's `core/pins.toml` changes and the repository moves `[kiln] ref` and runs
 `kiln apply`. Editing one is drift: `kiln doctor` fails, `kiln apply` refuses,
 and `kiln apply --force <path>` restores kiln's SHA, keeping a backup under
 `.rn-forge/kiln/backups`. Dependabot's `npm` and `uv` pull requests edit

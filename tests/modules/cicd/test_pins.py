@@ -24,3 +24,17 @@ def test_s15_6_1_4_pins() -> None:
         pin = pins[key]
         assert re.fullmatch(r"[0-9a-f]{40}", pin["sha"]), key
         assert pin["uses"] and pin["version"], key
+
+
+def test_s18_8_3_1_no_template_names_the_old_pins_path() -> None:
+    from pathlib import Path
+
+    modules = (
+        Path(__file__).resolve().parents[3] / "src" / "rn_forge" / "kiln" / "modules"
+    )
+    offenders = [
+        str(path.relative_to(modules))
+        for path in sorted(modules.glob("*/templates/**/*.j2"))
+        if "cicd/pins.toml" in path.read_text(encoding="utf-8")
+    ]
+    assert offenders == []
