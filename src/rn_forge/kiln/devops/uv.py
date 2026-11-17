@@ -184,6 +184,7 @@ def load_workspace(root: Path) -> Workspace:
                 else None
             ),
             adapters=ci.get("adapters"),
+            release_requirements=tuple(release_requirements),
         )
     settings = manifest.get("tool", {}).get(TOOL, {})
     return Workspace(

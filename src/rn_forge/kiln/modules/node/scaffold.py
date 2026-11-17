@@ -24,10 +24,10 @@ from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import DocumentUtils
-from rn_forge.commons.runtime.subprocess import Process
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import gitignore
+from rn_forge.kiln.modules.core.process import run
 from rn_forge.kiln.modules.node import starter
 from rn_forge.kiln.modules.node.angular import (
     PRETTIER_VERSION,
@@ -221,14 +221,14 @@ def format_node(workspace: Path) -> None:
     Raises:
         AppException: `pnpm dlx prettier` fails.
     """
-    Process.execute(
+    run(
         "prettier-write",
         "pnpm",
         "dlx",
         f"prettier@{PRETTIER_VERSION}",
         "--write",
         ".",
-        cwd=str(workspace),
+        cwd=workspace,
         env=scaffold_env(),
     )
 

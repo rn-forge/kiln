@@ -10,7 +10,7 @@ from rn_forge.commons.lang.collections import DictUtils
 
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.tasks import artifacts
-from rn_forge.kiln.modules.tasks.checks.layout import include_map, task_specs
+from rn_forge.kiln.modules.tasks.taskfile import include_map, task_specs
 
 __all__ = ["PublicTask", "public_tasks"]
 

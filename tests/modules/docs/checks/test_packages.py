@@ -11,7 +11,8 @@ from tests.conftest import run_check
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.docs.checks import site, structure
-from rn_forge.kiln.modules.docs.packages import _nav_names, check_packages, read_mkdocs
+from rn_forge.kiln.modules.docs.packages import check_packages, read_mkdocs
+from rn_forge.kiln.modules.docs.pages import nav_pages
 
 PKG = "packages/alpha"
 TABLE = '\n[archetype.python-lib]\npackages = ["packages/alpha"]\n'
@@ -185,8 +186,8 @@ def test_s6_1_10_3_a_tagged_scalar_in_the_nav_is_not_a_page(tmp_path: Path) -> N
     nav = read_mkdocs(path)["nav"]
     assert not isinstance(nav[1]["Tagged"], str)
     assert not isinstance(nav[2]["Name"], str)
-    assert not _nav_names(nav, "PAGE")
-    assert _nav_names(nav, "index.md")
+    assert "PAGE" not in nav_pages(nav)
+    assert "index.md" in nav_pages(nav)
 
 
 def test_s16_2_3_4_checker_agrees(repo) -> None:

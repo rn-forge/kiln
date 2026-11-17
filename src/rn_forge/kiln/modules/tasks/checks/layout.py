@@ -28,7 +28,9 @@ from rn_forge.commons.lang.collections import DictUtils, ListUtils
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import umbrella
+from rn_forge.kiln.modules.core.steps import step_commands
 from rn_forge.kiln.modules.tasks.config import ROOT_VERBS, TasksConfig
+from rn_forge.kiln.modules.tasks.taskfile import include_map, task_refs, task_specs
 
 __all__ = ["CODE", "NAME", "check"]
 
@@ -44,13 +46,6 @@ PUBLIC_KILN_TASKS = frozenset({"diff", "apply", "pin"})
 """The `kiln:` tasks that are public: the rest of the namespace stays internal."""
 
 _TASK_CALL = re.compile(r"(?:^|[;&|(]\s*|\s)task\s+([A-Za-z][\w:-]*)")
-_RUN_LINE = re.compile(r"^(\s*)(?:- )?run:\s*(.*)$")
-_BLOCK_SCALAR = re.compile(r"^[|>][+-]?\d*$")
-
-
-def task_specs(document: object) -> dict[str, object]:
-    """The `tasks:` mapping of a Taskfile, or empty if there isn't one."""
-    return DictUtils.get_mapping(DictUtils.as_mapping(document), "tasks")
 
 
 def _check_desc(label: str, name: str, spec: object) -> list[Finding]:
@@ -97,32 +92,6 @@ def _check_wrapper_only(label: str, name: str, spec: object) -> list[Finding]:
             )
         )
     return findings
-
-
-def task_refs(spec: object) -> list[str]:
-    """The `task:` targets a task calls, in order."""
-    refs: list[str] = []
-    for entry in ListUtils.as_list(DictUtils.as_mapping(spec).get("cmds")):
-        target = DictUtils.as_mapping(entry).get("task")
-        if isinstance(target, str):
-            refs.append(target)
-    return refs
-
-
-def include_map(document: object) -> dict[str, str]:
-    """The root file's `includes:`, namespace to path (posix, no `./`)."""
-    includes: dict[str, str] = {}
-    for namespace, value in DictUtils.get_mapping(
-        DictUtils.as_mapping(document), "includes"
-    ).items():
-        path = (
-            value
-            if isinstance(value, str)
-            else DictUtils.as_mapping(value).get("taskfile")
-        )
-        if isinstance(path, str):
-            includes[namespace] = Path(path).as_posix()
-    return includes
 
 
 def _load_yaml(path: Path) -> object:
@@ -366,28 +335,6 @@ def _unresolved_in(
     return findings
 
 
-def _run_values(lines: list[str]) -> list[tuple[int, str]]:
-    """Every `run:` value as (1-indexed line, text), block scalars line by line."""
-    values: list[tuple[int, str]] = []
-    index = 0
-    while index < len(lines):
-        match = _RUN_LINE.match(lines[index])
-        index += 1
-        if not match:
-            continue
-        indent, remainder = match.groups()
-        if remainder and not _BLOCK_SCALAR.match(remainder.strip()):
-            values.append((index, remainder))
-            continue
-        while index < len(lines):
-            line = lines[index]
-            if line.strip() and len(line) - len(line.lstrip()) <= len(indent):
-                break
-            values.append((index + 1, line))
-            index += 1
-    return values
-
-
 def _check_owned_text(root: Path, graph: dict[str, object]) -> list[Finding]:
     """`task <name>` in managed workflows and managed blocks must resolve."""
     state_path = root / umbrella.STATE_PATH
@@ -404,7 +351,7 @@ def _check_owned_text(root: Path, graph: dict[str, object]) -> list[Finding]:
         lines = path.read_text(encoding="utf-8").splitlines()
         kind = entry.get("kind")
         if kind == "managed" and relative.startswith(".github/"):
-            for number, text in _run_values(lines):
+            for number, text in step_commands(lines, ("run",)):
                 findings.extend(_unresolved_in(relative, [text], number, graph))
         elif kind == "block" and entry.get("begin_marker") and entry.get("end_marker"):
             begin = str(entry["begin_marker"]).strip()

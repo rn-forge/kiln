@@ -4,26 +4,21 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
 
-from rn_forge.commons.findings import Finding, Severity
+from rn_forge.commons.findings import Finding
 from rn_forge.commons.text.markdown import MarkdownUtils
 
 from rn_forge.kiln.modules.docs import parsed
+from rn_forge.kiln.modules.docs.findings import error
 from rn_forge.kiln.modules.docs.packages import (
     excluded_docs,
     package_mounts,
     read_mkdocs,
     resolve_link,
 )
+from rn_forge.kiln.modules.docs.pages import nav_pages
 
 __all__ = ["Site", "check_site"]
-
-
-def _error(code: str, path: Path | str, message: str) -> Finding:
-    return Finding(
-        code=f"docs.{code}", severity=Severity.ERROR, message=message, path=str(path)
-    )
 
 
 class Site:
@@ -95,21 +90,11 @@ class Site:
 
     def nav_paths(self) -> list[str]:
         """Every ``.md`` path named by `mkdocs.yml`'s nav, in nav order."""
-        paths: list[str] = []
-
-        def walk(node: Any) -> None:
-            if isinstance(node, str):
-                if node.endswith(".md"):
-                    paths.append(node)
-            elif isinstance(node, dict):
-                for value in node.values():  # pyright: ignore[reportUnknownVariableType]
-                    walk(value)
-            elif isinstance(node, list):
-                for item in node:  # pyright: ignore[reportUnknownVariableType]
-                    walk(item)
-
-        walk(read_mkdocs(self.mkdocs_yml).get("nav", []))
-        return paths
+        return [
+            page
+            for page in nav_pages(read_mkdocs(self.mkdocs_yml).get("nav", []))
+            if page.endswith(".md")
+        ]
 
     def anchors_in(self, path: Path) -> set[str]:
         """Every heading anchor in *path*, or an empty set if it does not exist."""
@@ -120,9 +105,7 @@ class Site:
     def linked_pages(self, path: Path) -> set[Path]:
         """Every existing Markdown page *path* links to."""
         targets: set[Path] = set()
-        for link in parsed.links(path.read_text(encoding="utf-8")):
-            if MarkdownUtils.is_external(link):
-                continue
+        for link in parsed.local_links(path.read_text(encoding="utf-8")):
             target, _, _anchor = link.partition("#")
             if not target.endswith(".md"):
                 continue
@@ -134,7 +117,7 @@ class Site:
     def check_nav_targets_exist(self) -> list[Finding]:
         """Every page the nav names exists."""
         return [
-            _error(
+            error(
                 "nav-missing-page",
                 self.mkdocs_yml,
                 f"mkdocs.yml nav references missing page: {nav_path!r}",
@@ -159,7 +142,7 @@ class Site:
                     frontier.append(linked)
 
         return [
-            _error(
+            error(
                 "orphan-page",
                 path,
                 f"not reachable from mkdocs.yml nav: {path.relative_to(self.root)}",
@@ -186,7 +169,7 @@ class Site:
                 )
                 if self.package is not None and not self._within_docs(resolved):
                     findings.append(
-                        _error(
+                        error(
                             "package-link-escapes",
                             path,
                             f"links outside {self.package}/"
@@ -203,7 +186,7 @@ class Site:
                     )
                 ):
                     findings.append(
-                        _error(
+                        error(
                             "link-leaves-docs",
                             path,
                             f"links outside {self.docs_dir.name}/: {link}; "
@@ -215,7 +198,7 @@ class Site:
                     continue  # a non-Markdown asset is not this check's job
                 if resolved.suffix == ".md" and self.is_excluded(resolved):
                     findings.append(
-                        _error(
+                        error(
                             "broken-link",
                             path,
                             f"links to a page excluded from the site: {link}",
@@ -225,7 +208,7 @@ class Site:
                 if not resolved.exists():
                     if not self.is_generated(resolved):
                         findings.append(
-                            _error("broken-link", path, f"broken link to {link!r}")
+                            error("broken-link", path, f"broken link to {link!r}")
                         )
                     continue
                 if (
@@ -234,14 +217,14 @@ class Site:
                     and anchor not in self.anchors_in(resolved)
                 ):
                     findings.append(
-                        _error("broken-anchor", path, f"broken anchor in {link!r}")
+                        error("broken-anchor", path, f"broken anchor in {link!r}")
                     )
         return findings
 
     def check(self) -> list[Finding]:
         """Run every site check, in reporting order."""
         if not self.mkdocs_yml.is_file():
-            return [_error("missing-config", self.mkdocs_yml, "mkdocs.yml is missing")]
+            return [error("missing-config", self.mkdocs_yml, "mkdocs.yml is missing")]
         return [
             *self.check_nav_targets_exist(),
             *self.check_orphans(),

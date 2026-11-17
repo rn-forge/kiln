@@ -215,7 +215,7 @@ def test_s4_9_3_3_add_ngkit_adds_the_ngkit_dependency(tmp_path: Path) -> None:
         calls.append((name, args, kwargs.get("cwd")))
 
     with mock.patch(
-        "rn_forge.kiln.modules.node.angular.Process.execute", side_effect=run
+        "rn_forge.commons.runtime.subprocess.Process.execute", side_effect=run
     ):
         add_ngkit(tmp_path)
 

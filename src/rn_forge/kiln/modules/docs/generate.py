@@ -6,11 +6,13 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
-from rn_forge.commons.findings import Finding, Severity
+from rn_forge.commons.findings import Finding
 from rn_forge.commons.fs.blocks import HTML_COMMENT, ManagedBlock
 
 from rn_forge.kiln.modules.cicd import registry
+from rn_forge.kiln.modules.docs.findings import error
 from rn_forge.kiln.modules.docs.nav import update_nav
+from rn_forge.kiln.modules.docs.policy import POLICY
 from rn_forge.kiln.modules.docs.work import (
     BOARD_BLOCK,
     EPICS_BLOCK,
@@ -36,10 +38,6 @@ CI_MATRIX_BLOCK = ManagedBlock("derived ci-matrix", comment=HTML_COMMENT)
 """The checks matrix in `docs/architecture/ci.md`, filled from the check registry."""
 
 _CI_PAGE = Path("docs") / "architecture" / "ci.md"
-
-
-def _error(code: str, message: str, path: str) -> Finding:
-    return Finding(code, Severity.ERROR, message, path=path)
 
 
 def _fenced(block: ManagedBlock, text: str) -> bool:
@@ -84,10 +82,10 @@ def _ci_matrix(root: Path) -> tuple[dict[Path, str], list[Finding]]:
     if updated == on_disk:
         return {}, []
     return {path: updated}, [
-        _error(
-            "docs.ci-matrix-stale",
-            f"the derived ci-matrix is stale {_RERUN}",
+        error(
+            "ci-matrix-stale",
             _CI_PAGE.as_posix(),
+            f"the derived ci-matrix is stale {_RERUN}",
         )
     ]
 
@@ -112,10 +110,10 @@ def _work_regions(
         return (
             {},
             [
-                _error(
-                    "docs.board-markers",
-                    "has an incomplete derived board fence",
+                error(
+                    "board-markers",
                     index.relative_to(root).as_posix(),
+                    "has an incomplete derived board fence",
                 )
             ],
             [],
@@ -138,10 +136,10 @@ def _work_regions(
         if updated != on_disk:
             writes[path] = updated
             stale_findings.append(
-                _error(
+                error(
                     code,
-                    f"the derived {block.name.removeprefix('derived ')} is stale {_RERUN}",
                     path.relative_to(root).as_posix(),
+                    f"the derived {block.name.removeprefix('derived ')} is stale {_RERUN}",
                 )
             )
 
@@ -151,40 +149,40 @@ def _work_regions(
         if fenced is None:
             if page.meta:
                 markers.append(
-                    _error(
-                        f"docs.{name}-markers",
-                        f"has an incomplete derived {name} fence",
+                    error(
+                        f"{name}-markers",
                         path.relative_to(root).as_posix(),
+                        f"has an incomplete derived {name} fence",
                     )
                 )
             return
-        region(path, block, body, f"docs.{name}-stale", fenced)
+        region(path, block, body, f"{name}-stale", fenced)
 
-    region(index, BOARD_BLOCK, render_board(work), "docs.board-stale")
-    epics = docs / "specs" / "epics" / "index.md"
+    region(index, BOARD_BLOCK, render_board(work), "board-stale")
+    epics = docs / POLICY.nested[0].path / "index.md"
     if epics.exists():
         if not _fenced(EPICS_BLOCK, epics.read_text(encoding="utf-8")):
             markers.append(
-                _error(
-                    "docs.epics-markers",
-                    "has no complete derived epics fence",
+                error(
+                    "epics-markers",
                     epics.relative_to(root).as_posix(),
+                    "has no complete derived epics fence",
                 )
             )
         else:
-            region(epics, EPICS_BLOCK, render_epics(work), "docs.epics-stale")
+            region(epics, EPICS_BLOCK, render_epics(work), "epics-stale")
     for release in work.releases:
         path = release.page.path
         if not _fenced(SCOPE_BLOCK, path.read_text(encoding="utf-8")):
             markers.append(
-                _error(
-                    "docs.scope-markers",
-                    "has no complete derived scope fence",
+                error(
+                    "scope-markers",
                     path.relative_to(root).as_posix(),
+                    "has no complete derived scope fence",
                 )
             )
             continue
-        region(path, SCOPE_BLOCK, render_scope(work, release), "docs.scope-stale")
+        region(path, SCOPE_BLOCK, render_scope(work, release), "scope-stale")
     for epic in work.epics:
         if any(f.epic_dir == epic.dir for f in work.features):
             summary(epic.page, FEATURES_BLOCK, render_features(work, epic), "features")
@@ -228,11 +226,7 @@ def stale(root: Path, packages: Sequence[str] = ()) -> list[Finding]:
     mkdocs = root / "mkdocs.yml"
     if mkdocs.exists() and update_nav(mkdocs, root / "docs", packages)[1]:
         findings.append(
-            _error(
-                "docs.nav-stale",
-                f"the derived nav is stale {_RERUN}",
-                "mkdocs.yml",
-            )
+            error("nav-stale", "mkdocs.yml", f"the derived nav is stale {_RERUN}")
         )
     findings.extend(_ci_matrix(root)[1])
     regions = _work_regions(root)

@@ -41,24 +41,24 @@ def check(root: Path) -> list[str]:
     Args:
         root: The workspace root.
     """
-    members = {
-        canonicalize_name(package.name): root / package.dir
+    packages = {
+        canonicalize_name(package.name): package
         for package in uv.load_workspace(root).packages.values()
     }
-    projects = {
-        name: tomllib.loads((path / uv.MANIFEST).read_text(encoding="utf-8"))["project"]
-        for name, path in members.items()
+    versions = {
+        name: Version(
+            tomllib.loads(
+                (root / package.dir / uv.MANIFEST).read_text(encoding="utf-8")
+            )["project"]["version"]
+        )
+        for name, package in packages.items()
     }
-    versions = {name: Version(p["version"]) for name, p in projects.items()}
     problems: list[str] = []
-    for name, project in sorted(projects.items()):
-        entries: list[str] = list(project.get("dependencies", []))
-        for extra in project.get("optional-dependencies", {}).values():
-            entries += extra
-        for entry in entries:
+    for name in sorted(packages):
+        for entry in packages[name].release_requirements:
             requirement = Requirement(entry)
             target = canonicalize_name(requirement.name)
-            if target == name or target not in members:
+            if target == name or target not in packages:
                 continue
             problem = _problem(requirement, versions[target])
             if problem:

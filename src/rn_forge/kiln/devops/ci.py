@@ -14,6 +14,9 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
+
 # Changes under these paths select no package.
 UNSCOPED = ("docs/",)
 
@@ -23,12 +26,12 @@ REVISION = r"[A-Za-z0-9_][A-Za-z0-9_./@-]*"
 
 def normalize(name: str) -> str:
     """Return `name` in its canonical form: lowercase, runs of `-_.` as one `-`."""
-    return re.sub(r"[-_.]+", "-", name).lower()
+    return canonicalize_name(name)
 
 
 def requirement_name(requirement: str) -> str:
     """Return the normalized package name of a requirement string."""
-    return normalize(re.split(r"[\s\[<>=!~;@]", requirement.strip(), maxsplit=1)[0])
+    return canonicalize_name(Requirement(requirement).name)
 
 
 @dataclass
@@ -91,6 +94,8 @@ class Package:
         services: The service containers the package's integration tests need.
         smoke: The smoke-test declaration, or `None` when the package declares none.
         adapters: Names of the package's adapters, or `None` when it declares none.
+        release_requirements: The raw requirement strings of its dependencies and
+            optional dependencies.
     """
 
     name: str
@@ -101,6 +106,7 @@ class Package:
     services: tuple[Service, ...] = ()
     smoke: Smoke | None = None
     adapters: list[str] | None = None
+    release_requirements: tuple[str, ...] = ()
 
     def checks(self) -> list[dict[str, str]]:
         """Every check that must pass before this package may be released.

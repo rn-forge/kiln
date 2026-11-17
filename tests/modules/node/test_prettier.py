@@ -234,7 +234,7 @@ def test_s16_7_3_5_overrides(tmp_path: Path, name: str) -> None:
 def test_s16_7_3_6_the_scaffold_adds_prettier(tmp_path: Path) -> None:
     raw = tmp_path / "raw"
     raw.mkdir()
-    with mock.patch("rn_forge.kiln.modules.node.angular.Process.execute") as run:
+    with mock.patch("rn_forge.commons.runtime.subprocess.Process.execute") as run:
         scaffold_angular(raw)
 
     names = [c.args[0] for c in run.call_args_list]
@@ -250,7 +250,7 @@ def test_s16_7_3_7_format_node(tmp_path: Path) -> None:
     assert PRETTIER_VERSION == "3.9.10"
     with (
         mock.patch.dict("os.environ", {"CLAUDECODE": "1"}),
-        mock.patch("rn_forge.kiln.modules.node.scaffold.Process.execute") as run,
+        mock.patch("rn_forge.commons.runtime.subprocess.Process.execute") as run,
     ):
         format_node(tmp_path)
 

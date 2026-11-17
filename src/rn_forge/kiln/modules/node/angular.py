@@ -12,7 +12,8 @@ import os
 from pathlib import Path
 
 from rn_forge.commons.fs.documents import DocumentUtils
-from rn_forge.commons.runtime.subprocess import Process
+
+from rn_forge.kiln.modules.core.process import run
 
 __all__ = [
     "NGKIT_URL",
@@ -63,8 +64,8 @@ def scaffold_nx_workspace(raw: Path) -> Path:
     """Run `create-nx-workspace` with the `apps` preset inside *raw*; return the workspace."""
     env = scaffold_env()
     # Keep Nx's native scanner from inheriting staging and checkout ignore rules.
-    Process.execute("nx-git-boundary", "git", "init", "-q", cwd=str(raw), env=env)
-    Process.execute(
+    run("nx-git-boundary", "git", "init", "-q", cwd=raw, env=env)
+    run(
         "nx-workspace",
         "pnpm",
         "dlx",
@@ -76,7 +77,7 @@ def scaffold_nx_workspace(raw: Path) -> Path:
         "--ci=skip",
         "--interactive=false",
         "--skipGit",
-        cwd=str(raw),
+        cwd=raw,
         env=env,
     )
     return raw / "workspace"
@@ -94,20 +95,20 @@ def scaffold_angular(raw: Path) -> Path:
     """
     env = scaffold_env()
     workspace = scaffold_nx_workspace(raw)
-    Process.execute(
+    run(
         "nx-angular-plugin",
         "pnpm",
         "add",
         "-D",
         f"@nx/angular@{NX_VERSION}",
-        cwd=str(workspace),
+        cwd=workspace,
         env=env,
     )
     # This step's own `pnpm install` is expected to fail here: it is the
     # first time pnpm sees the native builds below, and it stamps
     # `pnpm-workspace.yaml` with the `allowBuilds` stub this approves
     # before installing for real (COMMAND.md).
-    Process.execute(
+    run(
         "nx-angular-app",
         "pnpm",
         "nx",
@@ -124,42 +125,40 @@ def scaffold_angular(raw: Path) -> Path:
         "--routing=true",
         "--linter=eslint",
         "--interactive=false",
-        cwd=str(workspace),
+        cwd=workspace,
         env=env,
-        fail_on_error=False,
+        check=False,
     )
     _approve_pnpm_builds(workspace / "pnpm-workspace.yaml")
-    Process.execute(
+    run(
         "coverage-v8",
         "pnpm",
         "add",
         "-D",
         VITEST_COVERAGE,
-        cwd=str(workspace),
+        cwd=workspace,
         env=env,
     )
-    Process.execute(
-        "prettier", "pnpm", "add", "-D", PRETTIER, cwd=str(workspace), env=env
-    )
-    Process.execute("nx-install", "pnpm", "install", cwd=str(workspace), env=env)
+    run("prettier", "pnpm", "add", "-D", PRETTIER, cwd=workspace, env=env)
+    run("nx-install", "pnpm", "install", cwd=workspace, env=env)
     return workspace
 
 
 def add_ngkit(workspace: Path) -> None:
     """Add the `@rn-forge/ng` package to *workspace*'s root `package.json`."""
-    Process.execute(
+    run(
         "ngkit-core",
         "pnpm",
         "add",
         NGKIT_URL,
-        cwd=str(workspace),
+        cwd=workspace,
         env=scaffold_env(),
     )
 
 
 def remove_scaffold_app(workspace: Path) -> None:
     """Remove the scaffolded application from *workspace*, keeping its root files."""
-    Process.execute(
+    run(
         "nx-remove-app",
         "pnpm",
         "nx",
@@ -168,7 +167,7 @@ def remove_scaffold_app(workspace: Path) -> None:
         "web",
         "--forceRemove",
         "--interactive=false",
-        cwd=str(workspace),
+        cwd=workspace,
         env=scaffold_env(),
     )
 

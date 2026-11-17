@@ -22,12 +22,12 @@ from typing import Any, cast
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.lang.collections import DictUtils
-from rn_forge.commons.runtime.subprocess import Process
 
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import gitignore
 from rn_forge.kiln.modules.core.names import module_name
+from rn_forge.kiln.modules.core.process import run
 from rn_forge.kiln.modules.core.versions import PYTHON_VERSION
 from rn_forge.kiln.modules.python.checks.rn_forge_deps import distribution
 from rn_forge.kiln.modules.python.config import MODULE_PATTERN
@@ -353,7 +353,7 @@ def uv_gitignore() -> str:
         AppException: `uv` is not on `PATH`, or exits non-zero.
     """
     with tempfile.TemporaryDirectory(prefix="kiln-uv-") as scratch:
-        Process.execute(
+        run(
             "uv-init[gitignore]",
             "uv",
             "init",
@@ -363,7 +363,7 @@ def uv_gitignore() -> str:
             "git",
             "--no-readme",
             "--bare",
-            cwd=scratch,
+            cwd=Path(scratch),
         )
         return (Path(scratch) / gitignore.GITIGNORE).read_text(encoding="utf-8")
 
@@ -469,7 +469,7 @@ def _uv_init(
     # A root must not join a uv project above `.staging/`; a member joins its
     # root, and its Python pin comes from the root's `.python-version`.
     args += ["--no-pin-python"] if member else ["--no-workspace"]
-    Process.execute(f"uv-init[{name}]", *args, cwd=str(target))
+    run(f"uv-init[{name}]", *args, cwd=target)
     if not bare:
         derived = target / "src" / module_name(name)
         package_dir = target / "src" / (module or derived.name).replace(".", "/")

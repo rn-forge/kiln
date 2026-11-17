@@ -5,10 +5,10 @@ from __future__ import annotations
 import textwrap
 from pathlib import Path
 
-from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.docs.packages import project_urls
 
 __all__ = ["PACKAGE_SEEDS", "add_package"]
 
@@ -44,9 +44,9 @@ def add_package(root: Path, config: KilnConfig, name: str) -> list[Path]:
     if config.docs_profile != "mkdocs":
         return []
     package = f"packages/{name}"
-    urls = _project_urls(root / package / "pyproject.toml")
+    urls = project_urls(root / package / "pyproject.toml")
     links = " · ".join(
-        f"[{key}]({urls[key]})" for key in ("Documentation", "Changelog", "Source")
+        f"[{key}]({urls[key]!s})" for key in ("Documentation", "Changelog", "Source")
     )
     context = {
         "name": name,
@@ -68,10 +68,3 @@ def add_package(root: Path, config: KilnConfig, name: str) -> list[Path]:
         )
         written.append(target)
     return written
-
-
-def _project_urls(pyproject: Path) -> dict[str, str]:
-    document = DocumentUtils.read(pyproject)
-    return {
-        key: str(value) for key, value in document["project"].get("urls", {}).items()
-    }

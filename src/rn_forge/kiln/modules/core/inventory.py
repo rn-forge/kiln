@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -11,6 +10,7 @@ from rn_forge.commons.fs.documents import DocumentUtils
 
 from rn_forge.kiln.modules.core import umbrella
 from rn_forge.kiln.modules.core.cycle import SCAFFOLDED_KEY
+from rn_forge.kiln.modules.core.process import run
 
 __all__ = ["KINDS", "Row", "inventory"]
 
@@ -43,17 +43,14 @@ def inventory(reference: Path, old: Path) -> list[Row]:
     known = {entry["path"]: entry["kind"] for entry in state["entries"].values()}
     for path in state["metadata"].get(SCAFFOLDED_KEY, []):
         known.setdefault(path, "scaffolded")
-    listed = subprocess.run(
-        ["git", "-C", str(old), "ls-files", "-z"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if listed.returncode != 0:
+    listed = run("git-ls-files", "git", "-C", old, "ls-files", "-z", check=False)
+    if listed.return_code != 0:
         raise AppException("inventory.not-a-git-repo: {}", old)
 
     prefix = f"{umbrella.UMBRELLA}/"
-    in_old = {p for p in listed.stdout.split("\0") if p and not p.startswith(prefix)}
+    in_old = {
+        p for p in (listed.stdout or "").split("\0") if p and not p.startswith(prefix)
+    }
     in_reference = {p for p in known if not p.startswith(prefix)}
 
     rows: list[Row] = []

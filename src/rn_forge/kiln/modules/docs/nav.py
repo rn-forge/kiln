@@ -14,12 +14,18 @@ from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import YamlUtils
-from rn_forge.commons.text.markdown import MarkdownUtils
 
 from rn_forge.kiln.modules.core.derived import NAV_BLOCK
 from rn_forge.kiln.modules.docs import parsed
 from rn_forge.kiln.modules.docs.areas import Area, load_areas
-from rn_forge.kiln.modules.docs.work import epic_range, range_label, title_markup
+from rn_forge.kiln.modules.docs.pages import content_pages
+from rn_forge.kiln.modules.docs.work import (
+    FEATURE_FILE,
+    epic_range,
+    feature_sort_key,
+    range_label,
+    title_markup,
+)
 
 __all__ = [
     "ACRONYMS",
@@ -55,9 +61,8 @@ def _linked_order(index_path: Path) -> list[str]:
         return []
     return [
         link.partition("#")[0]
-        for link in parsed.links(index_path.read_text(encoding="utf-8"))
-        if not MarkdownUtils.is_external(link)
-        and link.partition("#")[0].endswith(".md")
+        for link in parsed.local_links(index_path.read_text(encoding="utf-8"))
+        if link.partition("#")[0].endswith(".md")
     ]
 
 
@@ -94,11 +99,6 @@ PACKAGES_AREA = Area(key="packages", title="Packages", nav="include")
 
 
 _EPIC_DIR_RE = re.compile(r"^E(\d+)-")
-_FEATURE_FILE_RE = re.compile(r"^F(\d+)\.(\d+)-.*\.md$")
-
-
-def _is_page(page: Path) -> bool:
-    return page.name != "index.md" and not page.name.startswith("_")
 
 
 def _epic_entry(docs_root: Path, epic_dir: Path) -> NavEntry:
@@ -107,10 +107,9 @@ def _epic_entry(docs_root: Path, epic_dir: Path) -> NavEntry:
 
     index = epic_dir / "index.md"
     title = page_title(index)
-    others = [p for p in epic_dir.glob("*.md") if _is_page(p)]
+    others = content_pages(epic_dir)
     features = sorted(
-        (p for p in others if _FEATURE_FILE_RE.match(p.name)),
-        key=lambda p: tuple(int(n) for n in re.findall(r"\d+", p.name.split("-")[0])),
+        (p for p in others if FEATURE_FILE.match(p.name)), key=feature_sort_key
     )
     rest = sorted((p for p in others if p not in features), key=lambda p: p.name)
     children: list[str | NavEntry] = [rel(index)]
@@ -141,16 +140,13 @@ def _work_entry(docs_root: Path, area: Area) -> NavEntry:
         ranges.setdefault(epic_range(number), []).append(_epic_entry(docs_root, path))
     items.extend({range_label(*span): ranges[span]} for span in sorted(ranges))
     items.extend(
-        {page_title(p): f"{area.key}/{p.name}"}
-        for p in sorted(area_dir.glob("*.md"), key=lambda p: p.name)
-        if _is_page(p)
+        {page_title(p): f"{area.key}/{p.name}"} for p in content_pages(area_dir)
     )
     ideas_index = area_dir / "ideas" / "index.md"
     if ideas_index.exists():
         pages: list[str | NavEntry] = [
             {page_title(p): f"{area.key}/ideas/{p.name}"}
-            for p in sorted((area_dir / "ideas").glob("*.md"), key=lambda p: p.name)
-            if _is_page(p)
+            for p in content_pages(area_dir / "ideas")
         ]
         items.append({page_title(ideas_index): [f"{area.key}/ideas/index.md", *pages]})
     return {area.title: items}

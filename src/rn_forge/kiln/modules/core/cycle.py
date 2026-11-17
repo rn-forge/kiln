@@ -23,7 +23,6 @@ from rn_forge.commons.generation import (
     StateEntry,
 )
 from rn_forge.commons.lang.types import JsonValue
-from rn_forge.commons.runtime.subprocess import Process
 from rn_forge.tooling.install.home import rnf_home
 
 from rn_forge.kiln import __version__
@@ -31,6 +30,7 @@ from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
 from rn_forge.kiln.modules.base import ModuleRegistry, StarterModule
 from rn_forge.kiln.modules.core import settle, umbrella
 from rn_forge.kiln.modules.core.config.manager import PROVENANCE_KEY, ConfigManager
+from rn_forge.kiln.modules.core.process import run
 
 __all__ = [
     "SCAFFOLDED_KEY",
@@ -275,11 +275,11 @@ def record_scaffolded(directory: Path) -> None:
     Args:
         directory: The new repository, already `git init`-ed.
     """
-    listed = Process.execute(
+    listed = run(
         "git-ls-files",
         "git",
         "-C",
-        str(directory),
+        directory,
         "ls-files",
         "--others",
         "--exclude-standard",

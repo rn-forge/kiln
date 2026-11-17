@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,6 +11,7 @@ from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import DocumentError, DocumentUtils
 
 from rn_forge.kiln.modules.core.config.schema import SourceConfig
+from rn_forge.kiln.modules.core.process import run
 
 __all__ = ["Fetched", "Source", "fetch"]
 
@@ -97,11 +97,11 @@ def _read_layer(path: Path) -> dict[str, Any]:
 
 
 def _git(*args: str) -> str:
-    result = subprocess.run(["git", *args], capture_output=True, text=True, check=False)
-    if result.returncode != 0:
+    result = run("git", "git", *args, check=False)
+    if result.return_code != 0:
         raise AppException(
             "git {} failed: {}",
             " ".join(args),
-            result.stderr.strip() or result.stdout.strip(),
+            (result.stderr or "").strip() or (result.stdout or "").strip(),
         )
-    return result.stdout.strip()
+    return (result.stdout or "").strip()

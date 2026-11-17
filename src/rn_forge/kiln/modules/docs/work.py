@@ -14,6 +14,7 @@ from rn_forge.commons.fs.blocks import HTML_COMMENT, ManagedBlock
 from rn_forge.commons.text.markdown import MarkdownUtils
 
 from rn_forge.kiln.modules.docs import parsed
+from rn_forge.kiln.modules.docs.policy import POLICY
 
 __all__ = [
     "BOARD_BLOCK",
@@ -21,6 +22,7 @@ __all__ = [
     "EPIC_KEYS",
     "EPIC_RANGE",
     "FEATURES_BLOCK",
+    "FEATURE_FILE",
     "FEATURE_KEYS",
     "RELEASE_KEYS",
     "RELEASE_STATUSES",
@@ -36,6 +38,7 @@ __all__ = [
     "Story",
     "Work",
     "epic_range",
+    "feature_sort_key",
     "load_work",
     "metadata_end",
     "range_label",
@@ -84,6 +87,9 @@ FEATURES_BLOCK = ManagedBlock("derived features", comment=HTML_COMMENT)
 STORIES_BLOCK = ManagedBlock("derived stories", comment=HTML_COMMENT)
 """The fenced stories region of a feature page."""
 
+FEATURE_FILE = re.compile(r"^F(\d+)\.(\d+)-.*\.md$")
+"""A feature page's file name: `F<epic>.<n>-<name>.md`."""
+
 STORY_HEADING_RE = re.compile(r"^## (S\d+\.\d+\.\d+) — (.+?)\s*$")
 
 _COUNT_ORDER = ("Active", "New", "Closed", "Removed")
@@ -92,7 +98,6 @@ _PER_FEATURE = "Per feature; see the epic."
 
 _BOLD_KEY_RE = re.compile(r"^\*\*(.+?)\*\*$")
 _FEATURE_ID_RE = re.compile(r"F\d+\.\d+")
-_FEATURE_FILE_RE = re.compile(r"^F\d+\.\d+-.*\.md$")
 _RELEASE_RE = re.compile(r"release-(\d+)")
 _NUMBER_RE = re.compile(r"\d+")
 
@@ -263,7 +268,7 @@ def _feature_rows(lines: list[str]) -> tuple[tuple[FeatureRow, ...], bool]:
             rows.append(
                 FeatureRow(
                     found.group(0),
-                    target if _FEATURE_FILE_RE.match(target) else None,
+                    target if FEATURE_FILE.match(target) else None,
                     row[state] if state is not None else "",
                     row[tags] if tags is not None else "",
                 )
@@ -306,6 +311,14 @@ def read_stories(text: str) -> tuple[Story, ...]:
     return tuple(stories)
 
 
+def feature_sort_key(path: Path) -> tuple[int, int]:
+    """The (epic, feature) numbers of a feature page's file name."""
+    match = FEATURE_FILE.match(path.name)
+    if match is None:
+        raise ValueError(f"not a feature page name: {path.name}")
+    return int(match.group(1)), int(match.group(2))
+
+
 def _number(name: str) -> int:
     match = _NUMBER_RE.search(name)
     return int(match.group(0)) if match else 0
@@ -316,7 +329,7 @@ def load_work(docs_root: Path) -> Work:
     epics: list[Epic] = []
     features: list[Feature] = []
     for index in sorted(
-        (docs_root / "specs" / "epics").glob("*/index.md"),
+        (docs_root / POLICY.nested[0].path).glob("*/index.md"),
         key=lambda p: _number(p.parent.name),
     ):
         page, lines, end = _page(index)

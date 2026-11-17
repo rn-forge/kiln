@@ -77,7 +77,7 @@ def test_angular_scaffold_has_its_own_git_boundary(tmp_path: Path) -> None:
             shutil.copytree(FIXTURE, raw / "workspace")
 
     with mock.patch(
-        "rn_forge.kiln.modules.node.angular.Process.execute", side_effect=run
+        "rn_forge.commons.runtime.subprocess.Process.execute", side_effect=run
     ):
         workspace = scaffold_angular(raw)
 
@@ -256,7 +256,7 @@ def test_s9_1_8_1_node_lib_is_shipped_and_loads() -> None:
 def _scaffold_calls(root: Path, raw: Path) -> tuple[Path | None, list[mock.call]]:
     (raw / "workspace").mkdir()
     (raw / "workspace" / "package.json").write_text("{}\n", encoding="utf-8")
-    with mock.patch("rn_forge.kiln.modules.node.angular.Process.execute") as run:
+    with mock.patch("rn_forge.commons.runtime.subprocess.Process.execute") as run:
         workspace = scaffold_node(raw, KilnConfig.load(root))
     return workspace, run.call_args_list
 
@@ -390,7 +390,7 @@ def test_s9_2_3_4_scaffold_node_pins_pnpm_before_the_last_lockfile_write(
     workspace.mkdir()
     (workspace / "package.json").write_text("{}\n", encoding="utf-8")
     with mock.patch(
-        "rn_forge.kiln.modules.node.angular.Process.execute", side_effect=run
+        "rn_forge.commons.runtime.subprocess.Process.execute", side_effect=run
     ):
         scaffold_node(raw, KilnConfig.load(root))
 
@@ -458,7 +458,7 @@ def test_s9_2_6_1_coverage_v8_installs_after_the_app_and_before_the_install(
 ) -> None:
     raw = tmp_path / "raw"
     raw.mkdir()
-    with mock.patch("rn_forge.kiln.modules.node.angular.Process.execute") as run:
+    with mock.patch("rn_forge.commons.runtime.subprocess.Process.execute") as run:
         scaffold_angular(raw)
 
     names = [c.args[0] for c in run.call_args_list]

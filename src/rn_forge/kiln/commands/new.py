@@ -9,7 +9,6 @@ from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import ConfigFormat, DocumentUtils
 from rn_forge.commons.lang.collections import DictUtils
 from rn_forge.commons.runtime.console import console
-from rn_forge.commons.runtime.subprocess import Process
 
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.commands import output
@@ -20,6 +19,7 @@ from rn_forge.kiln.modules.core.config import catalog
 from rn_forge.kiln.modules.core.config.manager import ConfigManager, Resolution
 from rn_forge.kiln.modules.core.config.sources import Source, fetch
 from rn_forge.kiln.modules.core.names import module_name
+from rn_forge.kiln.modules.core.process import run
 from rn_forge.kiln.modules.docs import generate as docs_generator
 from rn_forge.kiln.modules.instructions import scaffold as instructions_scaffold
 from rn_forge.kiln.modules.node import scaffold as node_scaffold
@@ -125,7 +125,7 @@ def new(
     directory.mkdir(parents=True, exist_ok=True)
     shutil.copytree(workspace, directory, symlinks=True, dirs_exist_ok=True)
     # Last, so a failed run leaves no repository; the file linters need a root.
-    Process.execute("git-init", "git", "init", "-q", cwd=str(directory))
+    run("git-init", "git", "init", "-q", cwd=directory)
     cycle.record_scaffolded(directory)
     rows = output.change_rows(result.changes)
     _report(directory, resolved, rows)

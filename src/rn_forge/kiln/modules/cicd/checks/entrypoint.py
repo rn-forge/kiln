@@ -17,6 +17,7 @@ from rn_forge.commons.findings import Finding, Severity
 
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.core.steps import step_commands
 
 __all__ = ["CODE", "NAME", "check"]
 
@@ -26,11 +27,6 @@ CODE = "ci.entrypoint"
 _CI_DIRS = {"github": (Path(".github/workflows"),), "ado": (Path(".azure-pipelines"),)}
 
 STEP_KEYS = ("run", "bash", "script", "pwsh", "powershell")
-
-# A step's command line — single-line `key: cmd` or the first line of a
-# `key: |` block scalar.
-STEP_LINE = re.compile(r"^(\s*)(?:- )?(?:" + "|".join(STEP_KEYS) + r"):\s*(.*)$")
-BLOCK_SCALAR = re.compile(r"^[|>][+-]?\d*$")
 
 
 def _invocation_pattern(forbidden: tuple[str, ...]) -> re.Pattern[str]:
@@ -67,33 +63,12 @@ def _check_command_line(
 def _check_file(
     path: Path, label: str, pattern: re.Pattern[str], exempt: frozenset[str]
 ) -> list[Finding]:
-    findings: list[Finding] = []
     lines = path.read_text(encoding="utf-8").splitlines()
-    index = 0
-    while index < len(lines):
-        match = STEP_LINE.match(lines[index])
-        if not match:
-            index += 1
-            continue
-        indent, remainder = match.groups()
-        if remainder and not BLOCK_SCALAR.match(remainder.strip()):
-            findings.extend(
-                _check_command_line(label, index + 1, remainder, pattern, exempt)
-            )
-            index += 1
-            continue
-        # Block scalar: consume subsequent, more-indented lines as the body.
-        base_indent = len(indent)
-        index += 1
-        while index < len(lines):
-            line = lines[index]
-            if line.strip() and (len(line) - len(line.lstrip())) <= base_indent:
-                break
-            findings.extend(
-                _check_command_line(label, index + 1, line, pattern, exempt)
-            )
-            index += 1
-    return findings
+    return [
+        finding
+        for number, command in step_commands(lines, STEP_KEYS)
+        for finding in _check_command_line(label, number, command, pattern, exempt)
+    ]
 
 
 def check(config: KilnConfig, root: Path) -> list[Finding]:

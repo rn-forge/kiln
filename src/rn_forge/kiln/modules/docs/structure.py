@@ -8,16 +8,18 @@ from pathlib import Path
 
 from pathspec.gitignore import GitIgnoreSpec
 from rn_forge.commons.exceptions import AppException
-from rn_forge.commons.findings import Finding, Severity
+from rn_forge.commons.findings import Finding
 from rn_forge.commons.text.markdown import MarkdownUtils
 
 from rn_forge.kiln.modules.docs import parsed
 from rn_forge.kiln.modules.docs.areas import Area, load_areas
+from rn_forge.kiln.modules.docs.findings import error
 from rn_forge.kiln.modules.docs.packages import (
     excluded_docs,
     package_mounts,
     resolve_link,
 )
+from rn_forge.kiln.modules.docs.pages import content_pages
 from rn_forge.kiln.modules.docs.policy import (
     STATUS_LINE,
     DocsPolicy,
@@ -32,23 +34,9 @@ __all__ = ["check_structure"]
 _IMPORT = re.compile(r"^@(\S+)[ \t]*$", re.MULTILINE)
 
 
-def _error(code: str, path: Path, message: str) -> Finding:
-    return Finding(
-        code=f"docs.{code}", severity=Severity.ERROR, message=message, path=str(path)
-    )
-
-
 def _clean_status(value: str) -> str:
     """Strip a trailing Markdown hard-line-break backslash (``accepted \\``)."""
     return value.strip().rstrip("\\").strip()
-
-
-def _content_pages(directory: Path) -> list[Path]:
-    return sorted(
-        path
-        for path in directory.glob("*.md")
-        if path.name != "index.md" and not path.name.startswith("_")
-    )
 
 
 def _check_areas(areas: list[Area], docs_root: Path) -> list[Finding]:
@@ -60,7 +48,7 @@ def _check_areas(areas: list[Area], docs_root: Path) -> list[Finding]:
         if not target.is_dir():
             if not area.optional:
                 findings.append(
-                    _error("missing-area", target, f"{area.key}/ does not exist")
+                    error("missing-area", target, f"{area.key}/ does not exist")
                 )
             continue
         for required, code in (
@@ -68,7 +56,7 @@ def _check_areas(areas: list[Area], docs_root: Path) -> list[Finding]:
             ("index.md", "missing-index"),
         ):
             if not (target / required).exists():
-                findings.append(_error(code, target, f"{area.key}/ has no {required}"))
+                findings.append(error(code, target, f"{area.key}/ has no {required}"))
     return findings
 
 
@@ -87,8 +75,8 @@ def _check_naming(
         if area.generated or area.key in policy_areas or not area_dir.is_dir():
             continue
         findings.extend(
-            _error("kebab-case", path, "not kebab-case")
-            for path in _content_pages(area_dir)
+            error("kebab-case", path, "not kebab-case")
+            for path in content_pages(area_dir)
             if not policy.page_name.match(path.name)
         )
 
@@ -108,15 +96,15 @@ def _check_numbered_naming(docs_root: Path, series: NumberedArea) -> list[Findin
         return []
     findings: list[Finding] = []
     numbers: list[int] = []
-    for path in _content_pages(directory):
+    for path in content_pages(directory):
         match = series.filename.match(path.name)
         if not match:
-            findings.append(_error("naming", path, f"does not match {series.shape}"))
+            findings.append(error("naming", path, f"does not match {series.shape}"))
             continue
         numbers.append(int(match.group(1)))
     if len(numbers) != len(set(numbers)):
         findings.append(
-            _error(
+            error(
                 "duplicate-number",
                 directory,
                 f"duplicate {series.label} numbers",
@@ -126,7 +114,7 @@ def _check_numbered_naming(docs_root: Path, series: NumberedArea) -> list[Findin
     for expected, actual in enumerate(sorted(set(numbers)), start=1):
         if expected != actual:
             findings.append(
-                _error(
+                error(
                     "number-gap",
                     directory,
                     f"expected {expected:0{width}d}, found {actual:0{width}d}",
@@ -143,10 +131,10 @@ def _check_sequence_naming(directory: Path, sequence: SequenceArea) -> list[Find
     findings: list[Finding] = []
     for path in sorted(p for p in directory.iterdir() if p.is_dir()):
         if not sequence.dirname.match(path.name):
-            findings.append(_error("naming", path, f"does not match {sequence.shape}"))
+            findings.append(error("naming", path, f"does not match {sequence.shape}"))
         elif not (path / "index.md").exists():
             findings.append(
-                _error("missing-index", path, f"{sequence.shape} has no index.md")
+                error("missing-index", path, f"{sequence.shape} has no index.md")
             )
     return findings
 
@@ -158,11 +146,9 @@ def _check_nested_naming(directory: Path, nested: NestedArea) -> list[Finding]:
     findings: list[Finding] = []
     for path in sorted(p for p in directory.iterdir() if p.is_dir()):
         if not nested.dirname.match(path.name):
-            findings.append(
-                _error("naming", path, f"does not match {nested.dir_shape}")
-            )
+            findings.append(error("naming", path, f"does not match {nested.dir_shape}"))
         findings.extend(
-            _error("naming", page, f"does not match {nested.page_shape}")
+            error("naming", page, f"does not match {nested.page_shape}")
             for page in sorted(path.glob(nested.page_glob))
             if not nested.page_name.match(page.name)
         )
@@ -178,17 +164,17 @@ def _check_ideas(docs_root: Path, policy: DocsPolicy) -> list[Finding]:
     moved = folder.with_suffix(".md")
     if moved.exists():
         findings.append(
-            _error("ideas-moved", moved, f"move it to {policy.ideas}/index.md")
+            error("ideas-moved", moved, f"move it to {policy.ideas}/index.md")
         )
     if folder.is_dir():
         index = folder / "index.md"
         listed = _resolved_links(index) if index.exists() else set[Path]()
-        for page in _content_pages(folder):
+        for page in content_pages(folder):
             if not policy.page_name.match(page.name):
-                findings.append(_error("kebab-case", page, "not kebab-case"))
+                findings.append(error("kebab-case", page, "not kebab-case"))
             if page.resolve() not in listed:
                 findings.append(
-                    _error(
+                    error(
                         "idea-unlisted",
                         page,
                         f"is not linked from {policy.ideas}/index.md",
@@ -203,13 +189,13 @@ def _check_status(docs_root: Path, series: NumberedArea) -> list[Finding]:
     if not directory.is_dir():
         return []
     findings: list[Finding] = []
-    for path in _content_pages(directory):
+    for path in content_pages(directory):
         match = STATUS_LINE.search(path.read_text(encoding="utf-8"))
         if not match or not series.statuses.match(
             _clean_status(match.group(1)).lower()
         ):
             findings.append(
-                _error("status", path, "missing or invalid **Status:** line")
+                error("status", path, "missing or invalid **Status:** line")
             )
     return findings
 
@@ -235,14 +221,14 @@ def _check_links(
             if not target:
                 if anchor and anchor not in parsed.anchors(text):
                     findings.append(
-                        _error(
+                        error(
                             "broken-anchor", path, f"#{anchor} not found in same page"
                         )
                     )
                 continue
             resolved = resolve_link(path, target, docs_root, mounts)
             if not resolved.exists():
-                findings.append(_error("broken-link", path, f"{link} does not resolve"))
+                findings.append(error("broken-link", path, f"{link} does not resolve"))
                 continue
             if (
                 anchor
@@ -250,7 +236,7 @@ def _check_links(
                 and anchor not in parsed.anchors(resolved.read_text(encoding="utf-8"))
             ):
                 findings.append(
-                    _error("broken-anchor", path, f"{link} anchor not found")
+                    error("broken-anchor", path, f"{link} anchor not found")
                 )
     return findings
 
@@ -263,7 +249,7 @@ def _check_no_underscore_refs(
         if path.name.startswith("_"):
             continue
         findings.extend(
-            _error("underscore-referenced", path, f"links to {link}")
+            error("underscore-referenced", path, f"links to {link}")
             for link in parsed.links(path.read_text(encoding="utf-8"))
             if (name := Path(link.partition("#")[0]).name).startswith("_")
             and not name.startswith("__")
@@ -275,8 +261,7 @@ def _resolved_links(path: Path) -> set[Path]:
     text = path.read_text(encoding="utf-8")
     links = {
         (path.parent / link.partition("#")[0]).resolve()
-        for link in parsed.links(text)
-        if not MarkdownUtils.is_external(link)
+        for link in parsed.local_links(text)
     }
     return links | {
         (path.parent / target).resolve() for target in _IMPORT.findall(text)
@@ -296,7 +281,7 @@ def _check_instruction_pointer(
     ]
     if not present:
         return [
-            _error(
+            error(
                 "missing-instruction-file",
                 repo_root,
                 f"no instruction file: expected one of {', '.join(instruction_files)}",
@@ -307,7 +292,7 @@ def _check_instruction_pointer(
     carriers = [path for path in present if wanted <= _resolved_links(path)]
     if not carriers:
         return [
-            _error(
+            error(
                 "missing-docs-pointer",
                 path,
                 f"no instruction file links both {docs_root.name}/_structure.md "
@@ -318,7 +303,7 @@ def _check_instruction_pointer(
 
     carrier_paths = {path.resolve() for path in carriers}
     return [
-        _error(
+        error(
             "missing-docs-pointer",
             path,
             "neither links the docs rules nor points at "
@@ -350,7 +335,7 @@ def check_structure(
     try:
         areas = load_areas(docs_root)
     except AppException as exc:
-        return [_error("areas-manifest", docs_root, str(exc))]
+        return [error("areas-manifest", docs_root, str(exc))]
 
     excluded = excluded_docs(repo_root / "mkdocs.yml")
     return [

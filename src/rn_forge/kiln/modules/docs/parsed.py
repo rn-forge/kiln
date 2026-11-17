@@ -6,7 +6,7 @@ import functools
 
 from rn_forge.commons.text.markdown import MarkdownHeading, MarkdownUtils
 
-__all__ = ["anchors", "headings", "links"]
+__all__ = ["anchors", "headings", "links", "local_links"]
 
 
 @functools.lru_cache(maxsize=2048)
@@ -19,6 +19,11 @@ def headings(text: str) -> tuple[MarkdownHeading, ...]:
 def links(text: str) -> tuple[str, ...]:
     """Return the link targets of *text*."""
     return tuple(MarkdownUtils.links(text))
+
+
+def local_links(text: str) -> tuple[str, ...]:
+    """Return the link targets of *text* that are not external."""
+    return tuple(link for link in links(text) if not MarkdownUtils.is_external(link))
 
 
 def anchors(text: str) -> frozenset[str]:
