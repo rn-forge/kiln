@@ -99,6 +99,7 @@ source_modules =
 forbidden_modules =
     rn_forge.kiln.devops.uv
     rn_forge.kiln.devops.github
+    rn_forge.kiln.devops.git
 
 [importlinter:contract:kiln-never-imports-devops]
 name = kiln reaches the planner only as a command line

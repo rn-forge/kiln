@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from rn_forge.kiln.devops import uv
+from rn_forge.kiln.devops import git, uv
 from rn_forge.kiln.devops.ci import Package, Service, Smoke, Workspace
 from rn_forge.kiln.devops.ci import plan, select
 
@@ -265,14 +265,14 @@ def test_s15_8_3_2_plan_of_one(tmp_path: Path) -> None:
     _write(tmp_path / "docs/index.md", "x")
     run("add", ".")
     run("commit", "-q", "-m", "docs")
-    assert select(workspace, base) == set()
+    assert select(workspace, git.changed_files(tmp_path, base)) == set()
 
     _write(tmp_path / "src/my_tool/more.py", "x = 1")
     run("add", ".")
     run("commit", "-q", "-m", "src")
-    assert select(workspace, base) == {"my-tool"}
-    assert select(workspace, "") == {"my-tool"}
-    outputs = plan(workspace, base)
+    assert select(workspace, git.changed_files(tmp_path, base)) == {"my-tool"}
+    assert select(workspace, None) == {"my-tool"}
+    outputs = plan(workspace, git.changed_files(tmp_path, base))
     assert outputs["integration"] == [
         {
             "name": "my-tool",

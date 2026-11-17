@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from rn_forge.kiln.devops import github
+from rn_forge.kiln.devops.github import ReleaseStatus
 
 
 @pytest.mark.parametrize(
@@ -46,10 +47,10 @@ def test_s6_7_4_3_a_schedule_trigger_raises() -> None:
 
 def test_s6_7_5_1_release_state_covers_every_case() -> None:
     cases = [
-        (None, False, ("true", "false", "false")),
-        ("true", True, ("true", "true", "true")),
-        ("true", False, ("true", "true", "false")),
-        ("false", True, ("false", "false", "true")),
+        (ReleaseStatus.NONE, False, ("true", "false", "false")),
+        (ReleaseStatus.DRAFT, True, ("true", "true", "true")),
+        (ReleaseStatus.DRAFT, False, ("true", "true", "false")),
+        (ReleaseStatus.PUBLISHED, True, ("false", "false", "true")),
     ]
     for draft, tagged, (should, is_draft, is_tagged) in cases:
         state = github.release_state("v1.2.3", draft, tagged)
@@ -65,24 +66,24 @@ def test_s6_7_5_1_release_state_covers_every_case() -> None:
 def test_s6_7_5_2_publish_commands_covers_every_case() -> None:
     files = ["dist/b.whl", "dist/a.tar.gz"]
 
-    def call(draft: str | None, tagged: bool) -> list[list[str]]:
-        return github.publish_commands("v1", "Title", "abc123", files, draft, tagged)
+    def call(status: ReleaseStatus, tagged: bool) -> list[list[str]]:
+        return github.publish_commands("v1", "Title", "abc123", files, status, tagged)
 
-    assert call("false", True) == []
-    assert call("true", True) == [
+    assert call(ReleaseStatus.PUBLISHED, True) == []
+    assert call(ReleaseStatus.DRAFT, True) == [
         ["gh", "release", "delete", "v1", "--yes"],
         [
             "gh", "release", "create", "v1", *files, "--verify-tag",
             "--title", "Title", "--generate-notes",
         ],
     ]  # fmt: skip
-    assert call(None, False) == [
+    assert call(ReleaseStatus.NONE, False) == [
         [
             "gh", "release", "create", "v1", *files, "--target", "abc123",
             "--title", "Title", "--generate-notes",
         ]
     ]  # fmt: skip
-    assert call("true", False)[0][:3] == ["gh", "release", "delete"]
+    assert call(ReleaseStatus.DRAFT, False)[0][:3] == ["gh", "release", "delete"]
 
 
 def test_s7_6_3_1_publish_commands_with_notes_are_not_latest() -> None:
@@ -90,7 +91,7 @@ def test_s7_6_3_1_publish_commands_with_notes_are_not_latest() -> None:
     notes = ["--title", "T", "--notes-file", "n.md", "--latest=false"]
     for tagged, where in ((True, ["--verify-tag"]), (False, ["--target", "abc"])):
         commands = github.publish_commands(
-            "v1", "T", "abc", files, None, tagged, notes="n.md"
+            "v1", "T", "abc", files, ReleaseStatus.NONE, tagged, notes="n.md"
         )
         assert commands == [["gh", "release", "create", "v1", *files, *where, *notes]]
 

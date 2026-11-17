@@ -9,6 +9,7 @@ import sys
 import urllib.error
 import urllib.request
 from collections.abc import Mapping, Sequence
+from enum import Enum
 from typing import Literal
 
 
@@ -65,8 +66,16 @@ def run(command: list[str]) -> None:
         raise SystemExit(result.returncode)
 
 
-def release_draft(tag: str) -> str | None:
-    """Return `"true"` or `"false"` for the release `tag`'s draft flag, or None when there is no release.
+class ReleaseStatus(Enum):
+    """Where a release stands: absent, a draft, or published."""
+
+    NONE = "none"
+    DRAFT = "draft"
+    PUBLISHED = "published"
+
+
+def release_status(tag: str) -> ReleaseStatus:
+    """Return the status of the release `tag`.
 
     The release, not the tag, is the record of what shipped. Checking the tag
     instead would make a half-finished publish permanent: the tag would exist,
@@ -76,7 +85,9 @@ def release_draft(tag: str) -> str | None:
         ["gh", "release", "view", tag, "--json", "isDraft", "--jq", ".isDraft"]
     )
     draft = result.stdout.strip() if result.returncode == 0 else ""
-    return draft if draft in ("true", "false") else None
+    return {"true": ReleaseStatus.DRAFT, "false": ReleaseStatus.PUBLISHED}.get(
+        draft, ReleaseStatus.NONE
+    )
 
 
 def release_exists(tag: str) -> bool:
@@ -100,18 +111,18 @@ def remote_tag_exists(tag: str) -> bool:
     return bool(result.stdout.strip())
 
 
-def release_state(tag: str, draft: str | None, tagged: bool) -> dict[str, str]:
+def release_state(tag: str, status: ReleaseStatus, tagged: bool) -> dict[str, str]:
     """Return the `release-state` outputs: `tag`, `should-release`, `draft` and `tagged`.
 
     Args:
         tag: The release tag.
-        draft: The result of `release_draft(tag)`.
+        status: The result of `release_status(tag)`.
         tagged: The result of `remote_tag_exists(tag)`.
     """
     return {
         "tag": tag,
-        "should-release": _flag(draft != "false"),
-        "draft": _flag(draft == "true"),
+        "should-release": _flag(status is not ReleaseStatus.PUBLISHED),
+        "draft": _flag(status is ReleaseStatus.DRAFT),
         "tagged": _flag(tagged),
     }
 
@@ -121,7 +132,7 @@ def publish_commands(
     title: str,
     target: str,
     files: Sequence[str],
-    draft: str | None,
+    status: ReleaseStatus,
     tagged: bool,
     notes: str | None = None,
 ) -> list[list[str]]:
@@ -137,15 +148,15 @@ def publish_commands(
         title: The release title.
         target: The commit a new tag is made at.
         files: The assets to upload, in order.
-        draft: The result of `release_draft(tag)`.
+        status: The result of `release_status(tag)`.
         tagged: The result of `remote_tag_exists(tag)`.
         notes: A file holding the release notes. The release is then not marked
             "Latest"; without it, GitHub generates the notes.
     """
-    if draft == "false":
+    if status is ReleaseStatus.PUBLISHED:
         return []
     commands: list[list[str]] = []
-    if draft == "true":
+    if status is ReleaseStatus.DRAFT:
         commands.append(["gh", "release", "delete", tag, "--yes"])
     where = ["--verify-tag"] if tagged else ["--target", target]
     text = (

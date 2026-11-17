@@ -8,12 +8,12 @@ from pathlib import Path
 
 import pytest
 
+from rn_forge.kiln.devops import git as git_adapter
 from rn_forge.kiln.devops.ci import (
     Package,
     Service,
     Smoke,
     Workspace,
-    changed_files,
     normalize,
     plan,
     releasable,
@@ -67,7 +67,7 @@ def test_s6_7_2_plan_lists_smoke_checks_per_extra(tmp_path: Path) -> None:
     packages = _packages()
     packages["app"].smoke = Smoke(modules=["app"], extras={"x": ["app.x"]})
     workspace = Workspace(root=tmp_path, packages=packages)
-    outputs = plan(workspace, "")
+    outputs = plan(workspace, None)
     assert outputs["release-order"] == ["base", "app"]
     assert outputs["smoke"] == [
         {"name": "base", "extra": "", "marker": "base.smoke"},
@@ -79,7 +79,7 @@ def test_s6_7_2_plan_lists_smoke_checks_per_extra(tmp_path: Path) -> None:
 def test_s6_7_2_plan_lists_one_empty_extra_smoke_entry_without_a_declaration(
     tmp_path: Path,
 ) -> None:
-    outputs = plan(Workspace(root=tmp_path, packages=_packages()), "")
+    outputs = plan(Workspace(root=tmp_path, packages=_packages()), None)
     assert outputs["smoke"] == [
         {"name": "base", "extra": "", "marker": "base.smoke"},
         {"name": "app", "extra": "", "marker": "app.smoke"},
@@ -87,7 +87,7 @@ def test_s6_7_2_plan_lists_one_empty_extra_smoke_entry_without_a_declaration(
 
 
 def test_s6_7_2_plan_omits_smoke_entries_of_unselected_packages(tmp_path: Path) -> None:
-    outputs = plan(_git_workspace(tmp_path), "v1")
+    outputs = plan(_git_workspace(tmp_path), git_adapter.changed_files(tmp_path, "v1"))
     assert outputs["smoke"] == [{"name": "a", "extra": "", "marker": "a.smoke"}]
 
 
@@ -106,7 +106,7 @@ def test_s6_8_1_2_release_order_raises_on_a_runtime_cycle() -> None:
 
 def test_s6_8_1_3_plan_orders_a_group_only_cycle(tmp_path: Path) -> None:
     workspace = Workspace(root=tmp_path, packages=_group_cycle())
-    assert plan(workspace, "")["release-order"] == ["web", "auth"]
+    assert plan(workspace, None)["release-order"] == ["web", "auth"]
 
 
 def test_s6_8_1_4_releasable_gates_on_release_requires_only(tmp_path: Path) -> None:
@@ -131,7 +131,7 @@ def _services() -> tuple[Service, ...]:
 def test_s15_8_2_2_plan(tmp_path: Path) -> None:
     packages = _packages()
     packages["app"].services = _services()
-    outputs = plan(Workspace(root=tmp_path, packages=packages), "")
+    outputs = plan(Workspace(root=tmp_path, packages=packages), None)
     assert outputs["integration"] == [
         {
             "name": "app",
@@ -142,7 +142,9 @@ def test_s15_8_2_2_plan(tmp_path: Path) -> None:
     ]
     assert "postgres" not in outputs
     assert "redis" not in outputs
-    assert plan(Workspace(root=tmp_path, packages=_packages()), "")["integration"] == []
+    assert (
+        plan(Workspace(root=tmp_path, packages=_packages()), None)["integration"] == []
+    )
 
 
 def test_s15_8_2_3_marker() -> None:
@@ -213,27 +215,25 @@ def _git_workspace(tmp_path: Path) -> Workspace:
 
 
 def test_s6_7_2_select_uses_valid_base(tmp_path: Path) -> None:
-    assert select(_git_workspace(tmp_path), "v1") == {"a"}
-
-
-def test_s6_7_2_select_rejects_option_like_base_without_running_git(
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
-) -> None:
     workspace = _git_workspace(tmp_path)
+    assert git_adapter.usable_base(tmp_path, "v1")
+    assert select(workspace, git_adapter.changed_files(tmp_path, "v1")) == {"a"}
+    assert select(workspace, None) == {"a", "b"}
 
+
+def test_s6_7_2_option_like_base_is_unusable_without_running_git(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     def fail(*args: object, **kwargs: object) -> None:
         raise AssertionError("git must not run for an invalid base")
 
-    monkeypatch.setattr(subprocess, "run", fail)
-    assert select(workspace, "--output=x") == {"a", "b"}
-    assert "selecting all packages" in capsys.readouterr().err
+    monkeypatch.setattr(git_adapter.subprocess, "run", fail)
+    assert not git_adapter.usable_base(tmp_path, "--output=x")
 
 
 def test_s6_7_2_changed_files_rejects_option_like_base(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="invalid base"):
-        changed_files(tmp_path, "--output=x")
+        git_adapter.changed_files(tmp_path, "--output=x")
 
 
 def test_s6_7_2_plan_outputs_match_documented_keys(tmp_path: Path) -> None:
@@ -244,10 +244,10 @@ def test_s6_7_2_plan_outputs_match_documented_keys(tmp_path: Path) -> None:
     )[0]
     documented = set(re.findall(r"^\| `([^`]+)` \|", table, flags=re.MULTILINE))
     workspace = Workspace(tmp_path, _packages())
-    assert documented == set(plan(workspace, ""))
+    assert documented == set(plan(workspace, None))
 
 
 def test_s6_10_3_3_plan_has_none_of_the_retired_sonar_outputs(tmp_path: Path) -> None:
-    outputs = plan(Workspace(root=tmp_path, packages=_packages()), "")
+    outputs = plan(Workspace(root=tmp_path, packages=_packages()), None)
     for key in ("cov-args", "test-paths", "sonar-sources", "sonar-tests", "sonar"):
         assert key not in outputs

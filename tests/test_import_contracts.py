@@ -87,6 +87,7 @@ def test_s6_7_2_4_devops_contracts_exist() -> None:
     assert _lines("devops-core-has-no-adapter", "forbidden_modules") == [
         "rn_forge.kiln.devops.uv",
         "rn_forge.kiln.devops.github",
+        "rn_forge.kiln.devops.git",
     ]
     assert _lines("kiln-never-imports-devops", "source_modules") == [
         f"rn_forge.kiln.{m}"
