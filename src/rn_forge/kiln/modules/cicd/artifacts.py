@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-from importlib.resources import files
 from pathlib import Path
-from typing import cast
 
 from rn_forge.commons.exceptions import AppException
-from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.generation import Artifact
 from rn_forge.commons.generation.templated import TemplateArtifact, render_artifacts
 from rn_forge.commons.text.templates import TemplateEngine
@@ -15,6 +12,7 @@ from rn_forge.commons.text.templates import TemplateEngine
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd import registry
+from rn_forge.kiln.modules.core.pins import load_pins
 from rn_forge.kiln.modules.core.versions import PYTHON_VERSION
 
 __all__ = ["SONAR_ORGANIZATION", "load_pins", "render"]
@@ -48,14 +46,6 @@ _PLAN_KEYS = (
     "pytest-args",
     "docs",
 )
-
-
-def load_pins() -> dict[str, dict[str, str]]:
-    """The pinned action set, one table per action, from `pins.toml`."""
-    return cast(
-        "dict[str, dict[str, str]]",
-        DocumentUtils.read(files(_PACKAGE).joinpath("pins.toml")),
-    )
 
 
 def pinned_actions() -> list[str]:

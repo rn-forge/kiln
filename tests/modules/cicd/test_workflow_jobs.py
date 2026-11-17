@@ -7,6 +7,7 @@ from collections.abc import Callable
 from pathlib import Path
 from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.kiln.modules.cicd import CICD
+from rn_forge.kiln.modules.core import pins as pins_module
 from tests.modules.cicd import workflows
 from tests.modules.cicd.support import (
     ARCHETYPES,
@@ -273,7 +274,7 @@ def test_s7_4_4_1_uv_cache_follows_the_kiln_pin(tmp_path: Path) -> None:
 
 
 def test_s6_3_5_pins_match_the_upstream_versions() -> None:
-    pins_file = Path(sys.modules[CICD.__module__].__file__ or "").parent / "pins.toml"
+    pins_file = Path(pins_module.__file__ or "").parent / "pins.toml"
     pins = tomllib.loads(pins_file.read_text(encoding="utf-8"))
     for key, (sha, version) in UPSTREAM_PINS.items():
         assert (pins[key]["sha"], pins[key]["version"]) == (sha, version), key

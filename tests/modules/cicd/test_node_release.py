@@ -6,7 +6,7 @@ from pathlib import Path
 from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
-from rn_forge.kiln.modules.cicd.artifacts import load_pins
+from rn_forge.kiln.modules.core.pins import load_pins
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.tasks import TASKS
 from tests.modules.cicd.support import (

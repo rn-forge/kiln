@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from rn_forge.kiln.modules.cicd import registry
 from rn_forge.kiln.modules.cicd.config import CiConfig, resolve_release
@@ -18,6 +18,9 @@ from rn_forge.kiln.modules.core.names import module_name
 from rn_forge.kiln.modules.docs.config import DocsConfig
 from rn_forge.kiln.modules.python.config import ArchetypeConfig, WebAppConfig
 from rn_forge.kiln.modules.tasks.config import TasksConfig
+
+if TYPE_CHECKING:
+    from rn_forge.kiln.modules.tasks.surface import PublicTask
 
 __all__ = ["CONFIG_PATH", "KilnConfig"]
 
@@ -120,8 +123,23 @@ class KilnConfig:
     @property
     def licenses_enabled(self) -> bool:
         """Whether the registry's licences check runs for this repository."""
-        names = registry.enabled_names(self.ci, self.archetype, len(self.packages))
-        return "licenses" in names
+        return "licenses" in self.ci_checks
+
+    @property
+    def ci_checks(self) -> frozenset[str]:
+        """The names of the registry's CI checks that run for this repository."""
+        return registry.enabled_names(self.ci, self.archetype, len(self.packages))
+
+    def ci_matrix(self, *, every_archetype: bool = False) -> str:
+        """The CI checks matrix: this archetype's column, or every archetype's."""
+        return registry.render_matrix(None if every_archetype else self.archetype)
+
+    def public_tasks(self) -> list[PublicTask]:
+        """Every task the repository's task files expose."""
+        # tasks.surface imports this class, so a module-level import cycles.
+        from rn_forge.kiln.modules.tasks.surface import public_tasks
+
+        return public_tasks(self)
 
     @property
     def is_workspace(self) -> bool:

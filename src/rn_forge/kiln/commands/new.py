@@ -117,7 +117,11 @@ def new(
         add_package(workspace, Path(member).name, declared.get(member))
     if resolved.docs_profile == "mkdocs":
         packages = KilnConfig.load(workspace).packages if resolved.is_workspace else ()
-        docs_generator.generate(workspace, packages)
+        docs_generator.generate(
+            workspace,
+            packages,
+            ci_matrix=resolved.ci_matrix(every_archetype=True),
+        )
     if frontend_workspace is not None:
         node_scaffold.format_node(workspace)
     output.fail_on_errors(workspace)

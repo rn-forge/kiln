@@ -16,7 +16,7 @@ from tests.modules.tasks.support import (
 
 
 def _gitleaks_pin() -> dict[str, dict[str, str]]:
-    from rn_forge.kiln.modules.cicd.artifacts import load_pins
+    from rn_forge.kiln.modules.core.pins import load_pins
 
     return cast("dict[str, dict[str, str]]", load_pins()["gitleaks"])
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 import subprocess
 from pathlib import Path
-from rn_forge.kiln.modules.cicd.artifacts import load_pins
+from rn_forge.kiln.modules.core.pins import load_pins
 from rn_forge.kiln.modules.core import cycle
 from tests.conftest import requires
 from tests.modules.cicd.support import (

@@ -487,7 +487,7 @@ The rules:
   declares least-privilege `permissions:`; the workflow declares
   `concurrency:` per ref. Dependabot watches only the repository's own hook
   actions and its `uv` dependencies; generated files are pinned by kiln.
-- Action SHAs in generated files are kiln's. They move when `cicd/pins.toml`
+- Action SHAs in generated files are kiln's. They move when `core/pins.toml`
   changes and a repository moves `[kiln] ref` and runs `kiln apply`; an edit
   in place is drift, so `kiln doctor` fails, `kiln apply` refuses and
   `kiln apply --force <path>` restores kiln's SHA, keeping a backup under

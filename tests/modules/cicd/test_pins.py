@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 from typing import Any, cast
 
-from rn_forge.kiln.modules.cicd.artifacts import load_pins
+from rn_forge.kiln.modules.core.pins import load_pins
 
 
 def test_s15_3_1_1_gitleaks_pin_shape() -> None:

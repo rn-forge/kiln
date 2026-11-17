@@ -13,8 +13,7 @@ from rn_forge.commons.text.templates import TemplateEngine
 from rn_forge.kiln import __version__
 from rn_forge.kiln.archetypes import KILN_GIT, KILN_REF, kiln_command
 from rn_forge.kiln.config import KilnConfig
-from rn_forge.kiln.modules.cicd import registry
-from rn_forge.kiln.modules.cicd.artifacts import load_pins
+from rn_forge.kiln.modules.core.pins import load_pins
 
 __all__ = ["render"]
 
@@ -72,7 +71,7 @@ def render(config: KilnConfig) -> list[Artifact]:
     docs = config.docs_profile == "mkdocs"
     tasks_config = config.tasks
     ci = config.ci
-    checks = registry.enabled_names(ci, config.archetype, len(packages))
+    checks = config.ci_checks
     policy = ci.licenses_policy()
     gitleaks = cast("dict[str, Any]", load_pins()["gitleaks"])
 

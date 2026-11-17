@@ -9,7 +9,6 @@ from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding
 from rn_forge.commons.fs.blocks import HTML_COMMENT, ManagedBlock
 
-from rn_forge.kiln.modules.cicd import registry
 from rn_forge.kiln.modules.docs.findings import error
 from rn_forge.kiln.modules.docs.nav import update_nav
 from rn_forge.kiln.modules.docs.policy import POLICY
@@ -70,15 +69,17 @@ def _with_fence(text: str, block: ManagedBlock) -> str | None:
     return f"{head}\n\n{block.render('', '')}" + (f"\n{tail}" if tail else "")
 
 
-def _ci_matrix(root: Path) -> tuple[dict[Path, str], list[Finding]]:
+def _ci_matrix(root: Path, matrix: str | None) -> tuple[dict[Path, str], list[Finding]]:
     """The new text of the CI page and its stale finding, when it carries the fence."""
+    if matrix is None:
+        return {}, []
     path = root / _CI_PAGE
     if not path.exists():
         return {}, []
     on_disk = path.read_text(encoding="utf-8")
     if not _fenced(CI_MATRIX_BLOCK, on_disk):
         return {}, []
-    updated = CI_MATRIX_BLOCK.render(on_disk, f"\n{registry.render_matrix(None)}\n\n")
+    updated = CI_MATRIX_BLOCK.render(on_disk, f"\n{matrix}\n\n")
     if updated == on_disk:
         return {}, []
     return {path: updated}, [
@@ -192,12 +193,13 @@ def _work_regions(
 
 
 def generate(
-    root: Path, packages: Sequence[str] = ()
+    root: Path, packages: Sequence[str] = (), *, ci_matrix: str | None = None
 ) -> tuple[list[Path], list[Finding]]:
     """Rewrite every stale derived region under *root*.
 
     Returns the files written, and the findings that remain after writing: the
-    work-model metadata findings and any fence-marker findings.
+    work-model metadata findings and any fence-marker findings. A `None`
+    *ci_matrix* leaves the CI page's matrix region alone.
     """
     written: list[Path] = []
     mkdocs = root / "mkdocs.yml"
@@ -206,7 +208,7 @@ def generate(
         if changed:
             mkdocs.write_text(updated, encoding="utf-8")
             written.append(mkdocs)
-    matrix, _ = _ci_matrix(root)
+    matrix, _ = _ci_matrix(root, ci_matrix)
     for path, text in matrix.items():
         path.write_text(text, encoding="utf-8")
         written.append(path)
@@ -220,15 +222,20 @@ def generate(
     return written, remaining
 
 
-def stale(root: Path, packages: Sequence[str] = ()) -> list[Finding]:
-    """A finding for each derived region under *root* that regenerating would change."""
+def stale(
+    root: Path, packages: Sequence[str] = (), *, ci_matrix: str | None = None
+) -> list[Finding]:
+    """A finding for each derived region under *root* that regenerating would change.
+
+    A `None` *ci_matrix* skips the CI page's matrix region.
+    """
     findings: list[Finding] = []
     mkdocs = root / "mkdocs.yml"
     if mkdocs.exists() and update_nav(mkdocs, root / "docs", packages)[1]:
         findings.append(
             error("nav-stale", "mkdocs.yml", f"the derived nav is stale {_RERUN}")
         )
-    findings.extend(_ci_matrix(root)[1])
+    findings.extend(_ci_matrix(root, ci_matrix)[1])
     regions = _work_regions(root)
     if regions is None:
         return findings

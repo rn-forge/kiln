@@ -80,7 +80,9 @@ def add_package(root: Path, name: str, module: str | None) -> ApplyResult:
     python_scaffold.add_package(root, config, name, config.owner, config.name)
     docs_scaffold.add_package(root, config, name)
     result = cycle.apply(root)
-    docs_generator.generate(root, config.packages)
+    docs_generator.generate(
+        root, config.packages, ci_matrix=config.ci_matrix(every_archetype=True)
+    )
     return result
 
 
@@ -91,7 +93,9 @@ def docs_generate(path: Path) -> None:
     """
     config = ConfigManager().load(path)
     packages = config.docs_packages
-    written, findings = docs_generator.generate(path, packages)
+    written, findings = docs_generator.generate(
+        path, packages, ci_matrix=config.ci_matrix(every_archetype=True)
+    )
     if not written:
         console.info("no change")
     for file in written:

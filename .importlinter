@@ -53,10 +53,8 @@ allow_indirect_imports = False
 ; `core` and kiln's composition layer, never another concern module.
 ; `rn_forge.kiln.config` and `rn_forge.kiln.modules.registry` import every
 ; module, so their edges into the modules are ignored — a path through the
-; composer is not a sibling dependency. The four direct edges ignored after
-; them existed when the contract landed (kiln S4.7.1); each reads a sibling's
-; config section or a helper. Add no fifth: have the composer pass the value
-; in instead.
+; composer is not a sibling dependency. Those two are the only ignores: when a
+; module needs a fact from a sibling, make it a `KilnConfig` member instead.
 
 [importlinter:contract:render-free-checks]
 name = the render-free checks import no rendering
@@ -87,11 +85,6 @@ modules =
 ignore_imports =
     rn_forge.kiln.config -> rn_forge.kiln.modules.**
     rn_forge.kiln.modules.registry -> rn_forge.kiln.modules.**
-    rn_forge.kiln.modules.tasks.artifacts -> rn_forge.kiln.modules.cicd.artifacts
-    rn_forge.kiln.modules.tasks.artifacts -> rn_forge.kiln.modules.cicd.registry
-    rn_forge.kiln.modules.docs.generate -> rn_forge.kiln.modules.cicd.registry
-    rn_forge.kiln.modules.instructions.artifacts -> rn_forge.kiln.modules.cicd.registry
-    rn_forge.kiln.modules.instructions.artifacts -> rn_forge.kiln.modules.tasks.surface
 
 ; The fifth and sixth contracts are kiln ADR-0017's: the CI planner,
 ; `rn_forge.kiln.devops`, keeps its core (`ci`) free of the uv and GitHub

@@ -9,7 +9,7 @@ from rn_forge.commons.fs.documents import YamlUtils
 
 ROOT = Path(__file__).resolve().parents[1]
 ACTION = ROOT / ".github/actions/setup-node/action.yml"
-PINS = ROOT / "src/rn_forge/kiln/modules/cicd/pins.toml"
+PINS = ROOT / "src/rn_forge/kiln/modules/core/pins.toml"
 
 
 def test_s17_3_7_1_setup_node_caches_the_pnpm_store() -> None:

@@ -11,7 +11,7 @@ from rn_forge.commons.generation import Action, ArtifactKind
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd import CICD
-from rn_forge.kiln.modules.cicd.artifacts import load_pins
+from rn_forge.kiln.modules.core.pins import load_pins
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.docs import generate
 from tests.conftest import actions as _actions, requires

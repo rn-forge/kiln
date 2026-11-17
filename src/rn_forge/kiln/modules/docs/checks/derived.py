@@ -22,4 +22,6 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
     if config.docs_profile != "mkdocs":
         return []
     packages = config.docs_packages
-    return generate.stale(root, packages)
+    return generate.stale(
+        root, packages, ci_matrix=config.ci_matrix(every_archetype=True)
+    )

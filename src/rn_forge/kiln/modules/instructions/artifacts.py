@@ -13,8 +13,6 @@ from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
-from rn_forge.kiln.modules.cicd import registry
-from rn_forge.kiln.modules.tasks.surface import public_tasks
 
 __all__ = ["KILN_BLOCK", "context", "md_cell", "render"]
 
@@ -198,12 +196,12 @@ def context(config: KilnConfig) -> dict[str, object]:
         "api_paragraph": _paragraph(api_text),
         "docs_bullet": _bullet(f"**Docs:** external, at [docs]({docs.external_url})."),
     }
-    public = public_tasks(config)
+    public = config.public_tasks()
     return {
         **bullets,
         "developer_tasks": [t for t in public if not t.name.startswith("ci:")],
         "ci_tasks": [t for t in public if t.name.startswith("ci:")],
-        "ci_matrix": registry.render_matrix(config.archetype),
+        "ci_matrix": config.ci_matrix(),
         "kiln_version": __version__,
         "name": config.name,
         "display_archetype": display,
