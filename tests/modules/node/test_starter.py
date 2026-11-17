@@ -230,3 +230,7 @@ def test_s4_9_3_4_new_records_seeded(rendered) -> None:
     )["entries"]
     for path in _paths("apps/web"):
         assert entries[path]["kind"] == "seeded"
+
+
+def test_s16_5_5_1_ngkit_pin_is_v0_4_0() -> None:
+    assert NGKIT_URL.endswith("/v0.4.0/rn-forge-ng-0.4.0.tgz")

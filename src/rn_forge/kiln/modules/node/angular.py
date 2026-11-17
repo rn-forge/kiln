@@ -32,7 +32,7 @@ NX_VERSION = "24.0.4"
 `tests/fixtures/scaffold/nx-angular/COMMAND.md`)."""
 
 NGKIT_URL = (
-    "https://github.com/rn-forge/ngkit/releases/download/v0.3.0/rn-forge-ng-0.3.0.tgz"
+    "https://github.com/rn-forge/ngkit/releases/download/v0.4.0/rn-forge-ng-0.4.0.tgz"
 )
 """`@rn-forge/ng`'s release tarball (npm publishing is disabled)."""
 
