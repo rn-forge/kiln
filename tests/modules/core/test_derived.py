@@ -198,12 +198,10 @@ def test_s16_2_2_12_one_classifier() -> None:
     inside = {getattr(n, "lineno", 0) for n in ast.walk(classify)}
     assert {line for _, line in callers[cycle_py]} <= inside
 
-    commands = (SRC / "rn_forge" / "kiln" / "commands" / "config.py").read_text(
-        encoding="utf-8"
-    )
-    rows = re.search(r"def _config_change_rows.*?\n\n\ndef ", commands, re.DOTALL)
+    cycle_text = cycle_py.read_text(encoding="utf-8")
+    rows = re.search(r"def preview.*?(\n\n\ndef |\Z)", cycle_text, re.DOTALL)
     assert rows is not None
-    assert "cycle.classify(" in rows.group(0)
+    assert "classify(" in rows.group(0)
     assert build_nav  # the nav the settle compares against comes from the tree
 
 

@@ -496,7 +496,7 @@ def _scaffolded(tmp_path: Path, archetype: str) -> tuple[Path, KilnConfig]:
 
 
 def _add_package(root: Path, config: KilnConfig, name: str) -> Path:
-    add_package(root, config, name, "https://github.com/acme/demo-lib")
+    add_package(root, config, name, "acme", "demo-lib")
     return root / "packages" / name
 
 
@@ -814,3 +814,9 @@ backend = "{backend}"
     assert "scripts" not in document["project"]
     [init] = (member / "src").glob("*/__init__.py")
     assert init.read_text(encoding="utf-8") == ""
+
+
+def test_s18_6_3_3_package_preflight_refuses_a_bad_name(tmp_path: Path) -> None:
+    root = _root(tmp_path, "python-lib")
+    with pytest.raises(AppException, match="generate.invalid-name"):
+        python_scaffold.package_preflight(root, KilnConfig.load(root), "Bad_Name")

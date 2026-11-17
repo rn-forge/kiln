@@ -51,3 +51,12 @@ def test_s18_6_2_3_the_old_modules_are_gone_and_none_is_large() -> None:
     assert not (KILN / "doctor.py").exists()
     for path in sorted((KILN / "commands").glob("*.py")):
         assert len(path.read_text(encoding="utf-8").splitlines()) <= 350, path.name
+
+
+def test_s18_6_3_1_commands_import_neither_subprocess_nor_state_store() -> None:
+    for path in sorted((KILN / "commands").glob("*.py")):
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if isinstance(node, ast.Import):
+                assert "subprocess" not in {a.name for a in node.names}, path.name
+            elif isinstance(node, ast.ImportFrom):
+                assert "StateStore" not in {a.name for a in node.names}, path.name

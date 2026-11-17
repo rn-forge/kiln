@@ -12,7 +12,7 @@ from rn_forge.commons.text.templates import TemplateEngine
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.python.artifacts import root_package
 
-__all__ = ["render", "seedable"]
+__all__ = ["render", "seedable", "starter_flags"]
 
 _TOOL_SRC = {
     "main.py": "main_tool.py.j2",
@@ -119,3 +119,17 @@ def _render(
             for path, template in files.items()
         ],
     )
+
+
+def starter_flags(archetype: str, name: str, package: str) -> dict[str, object]:
+    """The `cli` and `lifecycle` config a new *archetype* repository starts with."""
+    flags: dict[str, object] = {}
+    if archetype in {"python-tool", "python-app"}:
+        flags["cli"] = {
+            "name": name,
+            "help": f"The {name} command line.",
+            "commands": [{"name": "hello", "target": f"{package}.commands:hello"}],
+        }
+    if archetype == "python-tool":
+        flags["lifecycle"] = {"product": f"{package}.product:PRODUCT"}
+    return flags

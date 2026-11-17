@@ -278,3 +278,17 @@ def test_s6_9_1_4_python_starters_are_its_starter_paths(tmp_path: Path) -> None:
 
     (tmp_path / "src" / "python_tool" / "service.py").write_text("", encoding="utf-8")
     assert not PYTHON.starters(config, tmp_path)
+
+
+def test_s18_6_3_2_starter_flags_seed_cli_and_lifecycle() -> None:
+    cli = {
+        "name": "demo",
+        "help": "The demo command line.",
+        "commands": [{"name": "hello", "target": "demo.commands:hello"}],
+    }
+    assert starter.starter_flags("python-tool", "demo", "demo") == {
+        "cli": cli,
+        "lifecycle": {"product": "demo.product:PRODUCT"},
+    }
+    assert starter.starter_flags("python-app", "demo", "demo") == {"cli": cli}
+    assert starter.starter_flags("python-lib", "demo", "demo") == {}

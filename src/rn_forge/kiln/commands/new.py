@@ -23,6 +23,7 @@ from rn_forge.kiln.modules.docs import generate as docs_generator
 from rn_forge.kiln.modules.instructions import scaffold as instructions_scaffold
 from rn_forge.kiln.modules.node import scaffold as node_scaffold
 from rn_forge.kiln.modules.python import scaffold as python_scaffold
+from rn_forge.kiln.modules.python import starter as python_starter
 from rn_forge.kiln.modules.python.artifacts import root_package
 from rn_forge.kiln.modules.registry import builtin
 
@@ -73,7 +74,7 @@ def new(
     if not archetype:
         raise AppException("--archetype is required")
 
-    manager, resolution = _resolve_config(
+    resolution = _resolve_config(
         directory.name,
         archetype=archetype,
         docs=docs,
@@ -82,8 +83,6 @@ def new(
         module=module,
         config=config,
         owner=owner,
-        owner_error="new.owner-required: pass --owner <owner> or set "
-        "repository.owner in --config",
         allow_untested=allow_untested,
     )
     resolved = resolution.config
@@ -92,7 +91,7 @@ def new(
     bare = python_scaffold.without_members(resolved)
 
     if not yes or dry_run:
-        rows = _preview_rows(directory, resolved, manager)
+        rows = output.change_rows(cycle.preview(directory, resolved))
         _report(directory, resolved, rows)
         return
 
@@ -146,22 +145,22 @@ def _resolve_config(
     module: str | None,
     config: str | None,
     owner: str | None,
-    owner_error: str,
     allow_untested: bool,
-) -> tuple[ConfigManager, Resolution]:
+) -> Resolution:
     """Merge defaults, the `--config` layer and the flags for a repository called *name*.
 
-    The owner is *owner* (`--owner`), else the `--config` layer's; with neither,
-    *owner_error* is raised.
+    The owner is *owner* (`--owner`), else the `--config` layer's.
 
     Raises:
-        AppException: The archetype is unknown, a flag names an untested value,
-            or the config is invalid.
+        AppException: The archetype is unknown, no owner is given
+            (`new.owner-required`), a flag names an untested value, or the
+            config is invalid.
     """
     layer_pins_kiln = False
     layer_owner: object = None
-    if config:
-        fetched = fetch(Source.parse(config), Path.cwd())
+    source = Source.parse(config) if config else None
+    if source is not None:
+        fetched = fetch(source, Path.cwd())
         layer_pins_kiln = bool(DictUtils.get(fetched.document, "kiln.ref"))
         layer_owner = DictUtils.get(fetched.document, "repository.owner")
         configured = DictUtils.get(fetched.document, "repository.name")
@@ -185,7 +184,10 @@ def _resolve_config(
     DictUtils.set(flags, "repository.name", name)
     chosen = owner
     if not chosen and not layer_owner:
-        raise AppException(owner_error)
+        raise AppException(
+            "new.owner-required: pass --owner <owner> or set "
+            "repository.owner in --config"
+        )
     if chosen:
         DictUtils.set(flags, "repository.owner", chosen)
     if not layer_pins_kiln:
@@ -193,36 +195,10 @@ def _resolve_config(
     if module is not None:
         DictUtils.set(flags, f"archetype.{archetype}.module", module)
     package = module or root_package(name)
-    if archetype in {"python-tool", "python-app"}:
-        DictUtils.set(
-            flags,
-            "cli",
-            {
-                "name": name,
-                "help": f"The {name} command line.",
-                "commands": [{"name": "hello", "target": f"{package}.commands:hello"}],
-            },
-        )
-    if archetype == "python-tool":
-        DictUtils.set(flags, "lifecycle", {"product": f"{package}.product:PRODUCT"})
+    for key, value in python_starter.starter_flags(archetype, name, package).items():
+        DictUtils.set(flags, key, value)
 
-    manager = ConfigManager()
-    source = Source.parse(config) if config else None
-    return manager, manager.resolve(flags=flags, source=source)
-
-
-def _preview_rows(
-    directory: Path, config: KilnConfig, manager: ConfigManager
-) -> list[dict[str, str]]:
-    """One row per artifact `kiln new` would render, classified against nothing."""
-    return output.artifact_rows(
-        directory,
-        [
-            artifact
-            for module in manager.modules_for(config)
-            for artifact in module.artifacts(config, directory)
-        ],
-    )
+    return ConfigManager().resolve(flags=flags, source=source)
 
 
 def _report(directory: Path, config: KilnConfig, rows: list[dict[str, str]]) -> None:

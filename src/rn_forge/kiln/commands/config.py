@@ -7,13 +7,10 @@ from pathlib import Path
 
 from rn_forge.commons import generation
 from rn_forge.commons.exceptions import AppException
-from rn_forge.commons.fs.state import StateStore
-from rn_forge.commons.generation import StateEntry
 from rn_forge.commons.runtime.console import console
 
 from rn_forge.kiln import archetypes
 from rn_forge.kiln.commands import output
-from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle, umbrella
 from rn_forge.kiln.modules.core.config import catalog
 from rn_forge.kiln.modules.core.config.manager import ConfigManager
@@ -64,7 +61,14 @@ def _config_reresolve(
     root = umbrella.find_root(Path.cwd())
     manager = ConfigManager()
     resolution = manager.reresolve(root, allow_schema_upgrade=allow_schema_upgrade)
-    rows = _config_change_rows(root, manager, resolution.config)
+    settled = (generation.Action.UNCHANGED, generation.Action.SKIP)
+    rows = output.change_rows(
+        [
+            change
+            for change in cycle.preview(root, resolution.config)
+            if change.action not in settled
+        ]
+    )
     payload = {
         "root": str(root),
         "overrides": list(resolution.overrides),
@@ -87,26 +91,6 @@ def _config_reresolve(
     change_rows = output.change_rows(result.changes)
     output.emit_rows({"root": str(root), "artifacts": change_rows}, change_rows)
     output.fail_on_errors(root)
-
-
-def _config_change_rows(
-    root: Path, manager: ConfigManager, config: KilnConfig
-) -> list[dict[str, str]]:
-    """The artifacts a fresh `config.toml` matching *config* would change on apply."""
-    artifacts = [
-        artifact
-        for module in manager.modules_for(config)
-        for artifact in module.artifacts(config, root)
-    ]
-    store = StateStore(
-        root / umbrella.STATE_PATH,
-        entry_type=StateEntry,
-        schema_version=cycle.STATE_SCHEMA_VERSION,
-    )
-    planned = cycle.classify(root, artifacts, store.load())
-    settled = (generation.Action.UNCHANGED, generation.Action.SKIP)
-    changed = [c for c in planned.changes if c.action not in settled]
-    return output.change_rows(changed)
 
 
 def pin(ref: str) -> None:

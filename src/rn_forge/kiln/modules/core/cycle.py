@@ -7,7 +7,6 @@ engine then stages, backs up and swaps them in, and writes `state.json` last.
 from __future__ import annotations
 
 import json
-import subprocess
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 
@@ -24,6 +23,7 @@ from rn_forge.commons.generation import (
     StateEntry,
 )
 from rn_forge.commons.lang.types import JsonValue
+from rn_forge.commons.runtime.subprocess import Process
 from rn_forge.tooling.install.home import rnf_home
 
 from rn_forge.kiln import __version__
@@ -38,6 +38,7 @@ __all__ = [
     "apply",
     "classify",
     "plan",
+    "preview",
     "record_scaffolded",
 ]
 
@@ -274,28 +275,39 @@ def record_scaffolded(directory: Path) -> None:
     Args:
         directory: The new repository, already `git init`-ed.
     """
-    listed = subprocess.run(
-        [
-            "git",
-            "-C",
-            str(directory),
-            "ls-files",
-            "--others",
-            "--exclude-standard",
-            "-z",
-        ],
-        capture_output=True,
-        text=True,
-        check=True,
+    listed = Process.execute(
+        "git-ls-files",
+        "git",
+        "-C",
+        str(directory),
+        "ls-files",
+        "--others",
+        "--exclude-standard",
+        "-z",
     ).stdout
-    state_path = directory / ".rn-forge" / "kiln" / "state.json"
+    state_path = directory / umbrella.STATE_PATH
     state = DocumentUtils.read(state_path)
     owned = {entry["path"] for entry in state["entries"].values()}
-    state["metadata"]["scaffolded"] = sorted(
+    state["metadata"][SCAFFOLDED_KEY] = sorted(
         path
-        for path in listed.split("\0")
+        for path in (listed or "").split("\0")
         if path and path not in owned and not path.startswith(".rn-forge/")
     )
     state_path.write_text(
         DocumentUtils.dumps(state, ConfigFormat.JSON), encoding="utf-8"
     )
+
+
+def preview(root: Path, config: KilnConfig) -> list[generation.Change]:
+    """Every artifact of *config*'s modules, classified against *root*'s `state.json`."""
+    artifacts = [
+        artifact
+        for module in ConfigManager().modules_for(config)
+        for artifact in module.artifacts(config, root)
+    ]
+    store = StateStore(
+        root / umbrella.STATE_PATH,
+        entry_type=StateEntry,
+        schema_version=STATE_SCHEMA_VERSION,
+    )
+    return list(classify(root, artifacts, store.load()).changes)

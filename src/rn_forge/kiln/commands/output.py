@@ -13,7 +13,6 @@ from rn_forge.commons.runtime.console import OutputMode, console
 from rn_forge.kiln import checks
 
 __all__ = [
-    "artifact_rows",
     "change_rows",
     "emit",
     "emit_rows",
@@ -82,21 +81,6 @@ def change_rows(changes: Sequence[generation.Change]) -> list[dict[str, str]]:
     return [
         _row(change.key, change.path, change.kind.value, change.action.value)
         for change in changes
-    ]
-
-
-def artifact_rows(
-    directory: Path, artifacts: Sequence[generation.Artifact]
-) -> list[dict[str, str]]:
-    """*artifacts* as `{key, path, kind, action}` rows, classified against no state."""
-    return [
-        _row(
-            artifact.key,
-            artifact.path,
-            artifact.kind.value,
-            generation.classify(directory, artifact, None).value,
-        )
-        for artifact in artifacts
     ]
 
 

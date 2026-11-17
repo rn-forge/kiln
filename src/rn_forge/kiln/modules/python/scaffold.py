@@ -19,6 +19,7 @@ from functools import cache
 from pathlib import Path
 from typing import Any, cast
 
+from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.lang.collections import DictUtils
 from rn_forge.commons.runtime.subprocess import Process
@@ -28,7 +29,7 @@ from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import gitignore
 from rn_forge.kiln.modules.core.versions import PYTHON_VERSION
 from rn_forge.kiln.modules.python.checks.rn_forge_deps import distribution
-from rn_forge.kiln.modules.python.config import ArchetypeConfig
+from rn_forge.kiln.modules.python.config import MODULE_PATTERN, ArchetypeConfig
 
 __all__ = [
     "SAMPLE_TEST",
@@ -36,6 +37,7 @@ __all__ = [
     "add_package",
     "declared_modules",
     "docs_group",
+    "package_preflight",
     "reconcile_backend",
     "sample_test",
     "scaffold",
@@ -175,19 +177,56 @@ def scaffold_backend(raw: Path, config: KilnConfig) -> None:
     (raw / gitignore.GITIGNORE).write_text(uv_gitignore(), encoding="utf-8")
 
 
-def add_package(root: Path, config: KilnConfig, name: str, remote: str) -> None:
+_PACKAGE_NAME = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
+
+
+def package_preflight(
+    root: Path, config: KilnConfig, name: str, module: str | None = None
+) -> None:
+    """Refuse every case `generate package` cannot write.
+
+    Raises:
+        AppException: The archetype is not `python-lib`
+            (`generate.unsupported-archetype`), *name* is not a kebab-case
+            distribution name (`generate.invalid-name`), *module* is not a
+            dotted import module (`generate.invalid-module`), or the package
+            already exists (`generate.package-exists`).
+    """
+    if config.archetype != "python-lib":
+        raise AppException(
+            "generate.unsupported-archetype: kiln generate package supports "
+            "python-lib only, not {}",
+            config.archetype,
+        )
+    if not _PACKAGE_NAME.match(name):
+        raise AppException(
+            "generate.invalid-name: {!r} is not a kebab-case distribution name", name
+        )
+    if module is not None and not MODULE_PATTERN.match(module):
+        raise AppException(
+            "generate.invalid-module: {!r} is not a dotted import module name",
+            module,
+        )
+    relative = f"packages/{name}"
+    if relative in config.packages or (root / relative).exists():
+        raise AppException("generate.package-exists: {} already exists", relative)
+
+
+def add_package(
+    root: Path, config: KilnConfig, name: str, owner: str, repo: str
+) -> None:
     """Add the `python-lib` member `packages/<name>` to the repository at *root*.
 
     Runs `uv init` and the reconcile for the member alone, then lists it in the
     root's workspace members, sources and `workspace` dependency group, and
-    writes its `[project.urls]` from *remote*.
+    writes its `[project.urls]` from *owner* and *repo*.
 
     Args:
         root: The repository root.
         config: The config, already listing the package.
         name: The package's distribution name.
-        remote: The GitHub repository, as `https://github.com/<owner>/<repo>`,
-            built from the config's `repository.owner` and name.
+        owner: The GitHub owner, the config's `repository.owner`.
+        repo: The GitHub repository, the config's name.
 
     Raises:
         AppException: `uv` is not on `PATH`, or exits non-zero.
@@ -199,8 +238,7 @@ def add_package(root: Path, config: KilnConfig, name: str, remote: str) -> None:
     _uv_init(member, name=name, bare=False, member=True, lib=True, module=module)
     _reconcile_pyproject(root, config, Path(relative) / "pyproject.toml")
     _join_workspace(root / "pyproject.toml", relative, name)
-    slug = remote.removeprefix("https://github.com/")
-    owner, repo = slug.split("/")
+    remote = f"https://github.com/{owner}/{repo}"
     DocumentUtils.update(
         member / "pyproject.toml",
         {

@@ -2,17 +2,15 @@
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 from rn_forge.cli import CliApp
-from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.generation import ApplyResult
 from rn_forge.commons.runtime.console import console
 
 from rn_forge.kiln.commands import output
-from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
+from rn_forge.kiln.config import CONFIG_PATH
 from rn_forge.kiln.modules.core import cycle, umbrella
 from rn_forge.kiln.modules.core.config import catalog
 from rn_forge.kiln.modules.core.config.manager import ConfigManager
@@ -20,7 +18,6 @@ from rn_forge.kiln.modules.docs import generate as docs_generator
 from rn_forge.kiln.modules.docs import scaffold as docs_scaffold
 from rn_forge.kiln.modules.python import scaffold as python_scaffold
 from rn_forge.kiln.modules.python.artifacts import root_package
-from rn_forge.kiln.modules.python.config import MODULE_PATTERN
 
 __all__ = ["add_package", "docs_generate", "generate_app", "generate_package"]
 
@@ -71,7 +68,7 @@ def generate_package(
 def add_package(root: Path, name: str, module: str | None) -> ApplyResult:
     """Add the package NAME to the `python-lib` repository at *root*; see `generate_package`."""
     config = ConfigManager().load(root)
-    remote = _package_preflight(root, config, name, module)
+    python_scaffold.package_preflight(root, config, name, module)
     relative = f"packages/{name}"
 
     section: dict[str, object] = {"packages": [*config.packages, relative]}
@@ -80,39 +77,11 @@ def add_package(root: Path, name: str, module: str | None) -> ApplyResult:
     DocumentUtils.update(root / CONFIG_PATH, {"archetype": {"python-lib": section}})
     config = ConfigManager().load(root)
     catalog.write(root, config)
-    python_scaffold.add_package(root, config, name, remote)
+    python_scaffold.add_package(root, config, name, config.owner, config.name)
     docs_scaffold.add_package(root, config, name)
     result = cycle.apply(root)
     docs_generator.generate(root, config.packages)
     return result
-
-
-def _package_preflight(
-    root: Path, config: KilnConfig, name: str, module: str | None = None
-) -> str:
-    """The repository's GitHub URL, after refusing every case `generate package` cannot write."""
-    if config.archetype != "python-lib":
-        raise AppException(
-            "generate.unsupported-archetype: kiln generate package supports "
-            "python-lib only, not {}",
-            config.archetype,
-        )
-    if not _PACKAGE_NAME.match(name):
-        raise AppException(
-            "generate.invalid-name: {!r} is not a kebab-case distribution name", name
-        )
-    if module is not None and not MODULE_PATTERN.match(module):
-        raise AppException(
-            "generate.invalid-module: {!r} is not a dotted import module name",
-            module,
-        )
-    relative = f"packages/{name}"
-    if relative in config.packages or (root / relative).exists():
-        raise AppException("generate.package-exists: {} already exists", relative)
-    return f"https://github.com/{config.owner}/{config.name}"
-
-
-_PACKAGE_NAME = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")
 
 
 def docs_generate(path: Path) -> None:
