@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from tests.conftest import snapshot
+from tests.conftest import INSTALLED_COMMIT, snapshot
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.runtime.console import OutputMode, console
@@ -94,6 +94,32 @@ def test_version_json_matches_the_installed_distribution(
     commands.version(json=True)
     payload = _last_json(capsys)
     assert payload["version"] == metadata.version("rn-forge-kiln")
+
+
+def test_version_names_the_installed_ref_and_commit(
+    fake_install: Callable[..., Path], capsys: pytest.CaptureFixture[str]
+) -> None:
+    fake_install()
+    console.set_mode(OutputMode.PLAIN)
+    commands.version()
+    assert capsys.readouterr().out.strip() == (
+        f"0.1.0 (feature/v1 @ {INSTALLED_COMMIT[:12]})"
+    )
+    commands.version(json=True)
+    payload = _last_json(capsys)
+    assert payload["ref"] == "feature/v1"
+    assert payload["commit"] == INSTALLED_COMMIT
+
+
+def test_version_outside_an_install_is_the_version_alone(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setenv("RNF_HOME", str(tmp_path / "home"))
+    console.set_mode(OutputMode.PLAIN)
+    commands.version()
+    assert capsys.readouterr().out.strip() == metadata.version("rn-forge-kiln")
 
 
 @pytest.fixture

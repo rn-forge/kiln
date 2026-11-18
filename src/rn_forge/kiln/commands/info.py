@@ -9,6 +9,7 @@ from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.runtime.console import console
 
 from rn_forge.kiln.commands import output
+from rn_forge.kiln.product import running_install
 
 __all__ = ["prompt", "version"]
 
@@ -61,7 +62,15 @@ def _prompt_summary(text: str) -> str:
 
 
 def version(json: bool = False) -> None:
-    """Print kiln's installed distribution version."""
-    installed = metadata.version(_DISTRIBUTION)
+    """Print kiln's installed distribution version, and the ref and commit of its install."""
+    number = metadata.version(_DISTRIBUTION)
+    installed = running_install()
     output.use_json(json)
-    output.emit({"version": installed}, lambda: console.print(installed))
+    if installed is None or installed.commit is None:
+        output.emit({"version": number}, lambda: console.print(number))
+        return
+    text = f"{number} ({installed.ref} @ {installed.commit[:12]})"
+    output.emit(
+        {"version": number, "ref": installed.ref, "commit": installed.commit},
+        lambda: console.print(text, markup=False),
+    )

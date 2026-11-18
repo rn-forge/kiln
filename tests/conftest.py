@@ -453,3 +453,38 @@ def oversized(
                     if length > max_function:
                         found.append(f"{label}:{node.lineno} {node.name} ({length})")
     return found
+
+
+INSTALLED_COMMIT = "0123456789abcdef0123456789abcdef01234567"
+"""The commit `fake_install` records as the active install."""
+
+
+@pytest.fixture
+def fake_install(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> Callable[..., Path]:
+    """Make the running kiln look installed under `$RNF_HOME`; returns the version directory."""
+
+    def install(commit: str = INSTALLED_COMMIT, *, active: bool = True) -> Path:
+        home = tmp_path / "home"
+        monkeypatch.setenv("RNF_HOME", str(home))
+        product = home / "kiln"
+        version = product / "versions" / commit[:12]
+        (version / "tool").mkdir(parents=True)
+        if active:
+            (product / "current").symlink_to(Path("versions") / commit[:12])
+        (product / "state.json").write_text(
+            json.dumps(
+                {
+                    "version": "0.1.0",
+                    "ref": "feature/v1",
+                    "commit": commit,
+                    "schema_version": 1,
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.setattr("sys.prefix", str(version / "tool"))
+        return version
+
+    return install

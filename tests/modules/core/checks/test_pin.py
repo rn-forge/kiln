@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from rn_forge.commons.findings import Severity
 
-from tests.conftest import run_check
+from tests.conftest import INSTALLED_COMMIT, run_check
 
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
@@ -36,6 +36,32 @@ def test_other_tag_is_a_mismatch(repo) -> None:
 
 def test_sha_ref_is_not_checked(repo, kiln_remote_sha: str) -> None:
     assert run(repo(), f'\n[kiln]\nref = "{kiln_remote_sha}"\n') == []
+
+
+def test_sha_pin_other_than_the_installed_commit_is_a_mismatch(
+    repo, fake_install, kiln_remote_sha: str
+) -> None:
+    fake_install()
+    findings = run(repo(), f'\n[kiln]\nref = "{kiln_remote_sha}"\n')
+    assert [(f.code, f.severity) for f in findings] == [(pin.MISMATCH, Severity.ERROR)]
+    message = findings[0].message
+    assert kiln_remote_sha[:12] in message
+    assert INSTALLED_COMMIT[:12] in message
+    assert "task" in message
+    assert "[kiln] ref" in message
+
+
+def test_sha_pin_matching_the_installed_commit_is_clean(
+    repo, fake_install, kiln_remote_sha: str
+) -> None:
+    fake_install(kiln_remote_sha)
+    assert run(repo(), f'\n[kiln]\nref = "{kiln_remote_sha}"\n') == []
+
+
+def test_other_tag_is_a_mismatch_from_an_install(repo, fake_install) -> None:
+    fake_install()
+    findings = run(repo(), '\n[kiln]\nref = "v0.0.1"\n')
+    assert [(f.code, f.severity) for f in findings] == [(pin.MISMATCH, Severity.ERROR)]
 
 
 def test_missing_pin_is_a_warning(repo) -> None:
