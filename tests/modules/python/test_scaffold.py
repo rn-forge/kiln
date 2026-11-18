@@ -657,6 +657,18 @@ def test_floors_match_the_lock() -> None:
         assert _version_key(floor) <= _version_key(locked[name]), entry
 
 
+def test_addopts_runs_on_every_core() -> None:
+    assert python_scaffold.PYTEST_ADDOPTS == "-ra --import-mode=importlib -n auto"
+
+
+def test_dev_group_names_pytest_xdist() -> None:
+    assert any(e.startswith("pytest-xdist>=") for e in python_pyproject._DEV_GROUP)
+
+
+def test_pytest_xdist_is_not_a_task_tool() -> None:
+    assert "pytest-xdist" not in TASK_TOOLS
+
+
 def test_pip_licenses_is_a_task_tool() -> None:
     assert "pip-licenses" in TASK_TOOLS
     assert any(e.startswith("pip-licenses") for e in python_pyproject._DEV_GROUP)

@@ -155,7 +155,7 @@ def test_member_pyproject_where_the_command_writes_is_pinned(
         }
     }
     assert ours["tool"]["pytest"] == {
-        "ini_options": {"addopts": "-ra --import-mode=importlib"}
+        "ini_options": {"addopts": "-ra --import-mode=importlib -n auto"}
     }
     pyright = ours["tool"]["pyright"]
     assert pyright["typeCheckingMode"] == "strict"

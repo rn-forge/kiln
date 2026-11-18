@@ -36,7 +36,7 @@ __all__ = [
 ]
 
 REQUIRES_PYTHON = f">={PYTHON_VERSION}"
-PYTEST_ADDOPTS = "-ra --import-mode=importlib"
+PYTEST_ADDOPTS = "-ra --import-mode=importlib -n auto"
 PYRIGHT_EXPECTED = {"typeCheckingMode": "strict", "reportMissingTypeStubs": False}
 RUFF_TEST_IGNORES = {"S101", "D", "ANN", "PLR2004"}
 
@@ -49,6 +49,7 @@ _DEV_GROUP = [
     "pyright>=1.1",
     "pytest>=9.1",
     "pytest-cov>=7.1",
+    "pytest-xdist>=3.8",
     "ruff>=0.16",
     "taplo>=0.9",
     "zizmor>=1.31",
@@ -72,7 +73,9 @@ _DOCS_GROUP_MKDOCS_LIB = [
 """`_DOCS_GROUP_MKDOCS` plus the monorepo plugin, for `python-lib`, which
 includes each package's site."""
 
-TASK_TOOLS = tuple(distribution(entry) for entry in _DEV_GROUP)
+TASK_TOOLS = tuple(
+    distribution(entry) for entry in _DEV_GROUP if not entry.startswith("pytest-xdist")
+)
 """The tools `task lint`, `task typecheck` and `task test` invoke through `uv run`.
 
 kiln is not listed: `{{.KILN}}` runs the pinned release with `uvx`, outside the
