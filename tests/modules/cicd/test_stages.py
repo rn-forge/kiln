@@ -297,6 +297,7 @@ RELEASE_TASKS = (
     "author",
     "tag",
     "verify",
+    "sbom",
     "push",
     "github",
     "publish",
@@ -328,7 +329,11 @@ def test_release_job(tmp_path: Path) -> None:
         "github.event_name == 'push' && github.ref == 'refs/heads/main' }}"
     )
     assert job["concurrency"] == {"group": "release", "cancel-in-progress": False}
-    assert job["permissions"] == {"contents": "write", "id-token": "write"}
+    assert job["permissions"] == {
+        "contents": "write",
+        "attestations": "write",
+        "id-token": "write",
+    }
     assert "tag" in job["outputs"]
     runs = [s.get("run", "") for s in job["steps"]]
     assert [r for r in runs if r.startswith("task ")] == [

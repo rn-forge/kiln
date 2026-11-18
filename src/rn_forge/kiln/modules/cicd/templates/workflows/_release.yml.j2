@@ -35,7 +35,9 @@ jobs:{% if node_lib %}
       cancel-in-progress: false # never cancel a running release
     permissions:
       contents: write # create GitHub Releases
-{% if npm_publish %}      id-token: write # npm OIDC trusted publishing
+      attestations: write # attest the tarballs and SBOMs
+{% if npm_publish %}      id-token: write # npm OIDC trusted publishing and attest build provenance
+{% else %}      id-token: write # attest build provenance
 {% endif %}    # The tag this run published; empty when the version was already released.
     outputs:
 {% if release_group == "independent" %}      tag: ${{ steps.state.outputs.tag }}
@@ -86,6 +88,22 @@ jobs:{% if node_lib %}
       - name: Rebuild and verify
         if: [[ "${{ steps.state.outputs.tags != '' }}" if ind else "${{ steps.state.outputs.mode != 'released' }}" ]]
         run: task ci:release:verify
+
+      - name: Generate SBOMs
+        if: [[ "${{ steps.state.outputs.tags != '' }}" if ind else "${{ steps.state.outputs.mode != 'released' }}" ]]
+        run: task ci:release:sbom
+{% if ind %}        env:
+          TAGS: ${{ steps.state.outputs.tags }}
+{% endif %}
+      # Attested before anything is published, because the release, not the
+      # tag, is the record: a failure here leaves nothing published.
+      - name: Attest the tarballs and SBOMs
+        if: [[ "${{ steps.state.outputs.tags != '' }}" if ind else "${{ steps.state.outputs.mode != 'released' }}" ]]
+        uses: [[ pins["attest"].uses ]]@[[ pins["attest"].sha ]] # [[ pins["attest"].version ]]
+        with:
+          subject-path: |
+            dist/tarballs/*.tgz
+            dist/tarballs/*.cdx.json
 
       - name: Push the tag
         if: [[ "${{ steps.state.outputs.new != '' }}" if ind else "${{ steps.state.outputs.mode == 'new' }}" ]]

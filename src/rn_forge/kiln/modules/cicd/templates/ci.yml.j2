@@ -285,7 +285,9 @@ jobs:
     if: ${{ !cancelled() && needs.checks-ok.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     permissions:
       contents: write # create GitHub Releases
-{% if npm_publish %}      id-token: write # npm OIDC trusted publishing
+      attestations: write # attest the tarballs and SBOMs
+{% if npm_publish %}      id-token: write # npm OIDC trusted publishing and attest build provenance
+{% else %}      id-token: write # attest build provenance
 {% endif %}    uses: ./.github/workflows/_release.yml # zizmor: ignore[self-repository] actionlint rejects the $/ form
     secrets:
       RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}

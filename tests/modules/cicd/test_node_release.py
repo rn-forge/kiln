@@ -169,11 +169,8 @@ def test_nx_dispatch_release_never_calls_npm(tmp_path: Path, group: str) -> None
     job = _release_job(files)
     assert "Publish" not in [s.get("name") for s in job["steps"]]
     assert "task ci:release:publish" not in files[".github/workflows/_release.yml"]
-    assert "id-token" not in job["permissions"]
     assert "environment" not in job
     assert "registry-url" not in files[".github/workflows/_release.yml"]
-    ci_release = YamlUtils.load(files[CI_YML])["jobs"]["release"]
-    assert "id-token" not in ci_release["permissions"]
 
 
 @pytest.mark.parametrize("group", ["fixed", "independent"])
@@ -206,3 +203,28 @@ def test_npm_release_needs_node_lib(tmp_path: Path, group: str) -> None:
     )
     with pytest.raises(ValueError, match="needs the node-lib archetype"):
         _rendered(root)
+
+
+@pytest.mark.parametrize("release", ["nx-dispatch", "npm"])
+@pytest.mark.parametrize("group", ["fixed", "independent"])
+def test_node_release_attests_before_pushing(
+    tmp_path: Path, release: str, group: str
+) -> None:
+    files = _node_release(tmp_path, release, group)
+    job = _release_job(files)
+    names = [s.get("name") for s in job["steps"]]
+    order = [
+        "Rebuild and verify",
+        "Generate SBOMs",
+        "Attest the tarballs and SBOMs",
+        "Push the tag",
+    ]
+    assert [names.index(n) for n in order] == sorted(names.index(n) for n in order)
+    attest = job["steps"][names.index("Attest the tarballs and SBOMs")]
+    subjects = attest["with"]["subject-path"]
+    assert "dist/tarballs/*.tgz" in subjects
+    assert "dist/tarballs/*.cdx.json" in subjects
+    ci_release = YamlUtils.load(files[CI_YML])["jobs"]["release"]
+    for permissions in (job["permissions"], ci_release["permissions"]):
+        assert permissions["attestations"] == "write"
+        assert permissions["id-token"] == "write"

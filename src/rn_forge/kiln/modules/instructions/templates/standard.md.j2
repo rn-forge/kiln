@@ -373,7 +373,8 @@ yet released is tagged `<project>-v<version>` and released on its own: the
 release {% if npm_publish %}publishes to npm under the dist-tag the version names (`latest` for
 `x.y.z`, the prerelease identifier for `x.y.z-<id>.<n>`) and then publishes the
 GitHub Release{% else %}creates the GitHub Release with the tarball and publishes it, and does not
-publish to npm{% endif %}. CI never commits.
+publish to npm{% endif %}. Each released package's GitHub Release carries its
+tarball and a CycloneDX SBOM, both attested before anything is published. CI never commits.
 {% else %}**Releasing.** A release follows a version bump made in a pull request: run
 `task version -- <patch|minor|major|x.y.z>` (`nx release version`, no commit or
 tag), commit the changed `package.json` files and the new `CHANGELOG.md`
@@ -381,7 +382,8 @@ section, and merge. `task version` with no argument prints the version. On the
 push to the default branch, `release` tags
 `v<version>`, {% if npm_publish %}publishes to npm under the dist-tag the version names (`latest`
 for `x.y.z`, the prerelease identifier for `x.y.z-<id>.<n>`), and publishes the
-GitHub Release last{% else %}creates the GitHub Release with the tarballs and publishes it; it does not publish to npm{% endif %}. CI never commits. A version whose GitHub Release is
+GitHub Release last{% else %}creates the GitHub Release with the tarballs and publishes it; it does not publish to npm{% endif %}. Each released package's GitHub Release carries its
+tarball and a CycloneDX SBOM, both attested before anything is published. CI never commits. A version whose GitHub Release is
 published is skipped.
 {% endif %}
 **For a publishable library's consumer check.** Add `"verify-consumer": {}` to

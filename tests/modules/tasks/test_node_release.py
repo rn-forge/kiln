@@ -360,9 +360,52 @@ def test_no_argument_has_no_side_effects(run: Run, tmp_path: Path) -> None:
     assert _calls(tmp_path) == []
 
 
+def test_sbom_runs_pnpm_per_publishable_project(run: Run, tmp_path: Path) -> None:
+    done = run("ci:release:sbom")
+    assert done.returncode == 0, done.stdout + done.stderr
+    stem = (
+        "pnpm --filter {0} sbom --sbom-format cyclonedx --sbom-spec-version 1.5"
+        " --prod --lockfile-only --out dist/tarballs/{0}-1.2.3.cdx.json"
+    )
+    assert _calls(tmp_path) == [stem.format("a"), stem.format("b")]
+
+
+def test_independent_sbom_runs_per_tag(independent_run: Run, tmp_path: Path) -> None:
+    done = independent_run("ci:release:sbom", env={"TAGS": "b-v2.0.0"})
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert _calls(tmp_path) == [
+        "pnpm --filter b sbom --sbom-format cyclonedx --sbom-spec-version 1.5"
+        " --prod --lockfile-only --out dist/tarballs/b-2.0.0.cdx.json"
+    ]
+
+
+def test_github_release_attaches_the_sboms(
+    run: Run, repo: Path, tmp_path: Path
+) -> None:
+    (repo / "dist" / "tarballs").mkdir(parents=True)
+    for name in ("a-1.2.3", "b-1.2.3"):
+        (repo / "dist" / "tarballs" / f"{name}.tgz").write_text("")
+        (repo / "dist" / "tarballs" / f"{name}.cdx.json").write_text("")
+    assert run("ci:release:github", env={"TAG": "v1.2.3"}).returncode == 0
+    creates = [c for c in _calls(tmp_path) if c.startswith("gh release create")]
+    assert "dist/tarballs/a-1.2.3.cdx.json dist/tarballs/b-1.2.3.cdx.json" in creates[0]
+
+
+def test_github_release_refuses_a_tarball_without_its_sbom(
+    run: Run, repo: Path, tmp_path: Path
+) -> None:
+    (repo / "dist" / "tarballs").mkdir(parents=True)
+    (repo / "dist" / "tarballs" / "a-1.2.3.tgz").write_text("")
+    done = run("ci:release:github", env={"TAG": "v1.2.3"})
+    assert done.returncode != 0
+    assert "No SBOM for" in done.stdout + done.stderr
+    assert not [c for c in _calls(tmp_path) if c.startswith("gh release create")]
+
+
 def test_notes_come_from_kiln_devops(run: Run, repo: Path, tmp_path: Path) -> None:
     (repo / "dist" / "tarballs").mkdir(parents=True)
     (repo / "dist" / "tarballs" / "x.tgz").write_text("")
+    (repo / "dist" / "tarballs" / "x.cdx.json").write_text("")
     assert run("ci:release:github", env={"TAG": "v1.2.3"}).returncode == 0
     notes = [c for c in _calls(tmp_path) if c.startswith("uvx ")]
     assert len(notes) == 1
@@ -389,6 +432,7 @@ def test_descriptions(cell: Path) -> None:
 def test_draft_until_published(run: Run, tmp_path: Path, repo: Path) -> None:
     (repo / "dist" / "tarballs").mkdir(parents=True)
     (repo / "dist" / "tarballs" / "x.tgz").write_text("")
+    (repo / "dist" / "tarballs" / "x.cdx.json").write_text("")
     assert run("ci:release:github", env={"TAG": "v1.2.3"}).returncode == 0
     creates = [c for c in _calls(tmp_path) if c.startswith("gh release create")]
     assert len(creates) == 1
@@ -414,6 +458,7 @@ def test_resume_after_a_partial_publish(run: Run, repo: Path, tmp_path: Path) ->
     git(repo, "tag", "v1.2.3")
     (repo / "dist" / "tarballs").mkdir(parents=True)
     (repo / "dist" / "tarballs" / "x.tgz").write_text("")
+    (repo / "dist" / "tarballs" / "x.cdx.json").write_text("")
     assert run("ci:release:state", view="draft").returncode == 0
     outputs = _outputs(tmp_path)
     assert (outputs["mode"], outputs["first-release"]) == ("resume", "true")
@@ -613,6 +658,9 @@ def _tarballs(repo: Path, *names: str) -> None:
     (repo / "dist" / "tarballs").mkdir(parents=True, exist_ok=True)
     for name in names:
         (repo / "dist" / "tarballs" / name).write_text("")
+        if name.endswith(".tgz"):
+            sbom = name.removesuffix(".tgz") + ".cdx.json"
+            (repo / "dist" / "tarballs" / sbom).write_text("")
 
 
 def test_independent_github_release_carries_only_its_tarball(
@@ -625,7 +673,8 @@ def test_independent_github_release_carries_only_its_tarball(
     creates = [c for c in calls if c.startswith("gh release create")]
     assert len(creates) == 1
     assert creates[0].startswith(
-        "gh release create a-v1.2.3 dist/tarballs/a-1.2.3.tgz --verify-tag "
+        "gh release create a-v1.2.3 dist/tarballs/a-1.2.3.tgz"
+        " dist/tarballs/a-1.2.3.cdx.json --verify-tag "
     )
     assert creates[0].endswith(" --draft")
     notes = [c for c in calls if c.startswith("uvx ")]
@@ -646,6 +695,30 @@ def test_independent_github_release_names_a_scoped_tarball(
     assert creates[0].startswith(
         "gh release create a-v1.2.3 dist/tarballs/s-a-1.2.3.tgz "
     )
+
+
+def test_independent_github_release_attaches_the_sbom(
+    independent_run: Run, independent_repo: Path, tmp_path: Path
+) -> None:
+    _tarballs(independent_repo, "a-1.2.3.tgz", "b-2.0.0.tgz")
+    done = independent_run("ci:release:github", env={"TAGS": "a-v1.2.3"})
+    assert done.returncode == 0, done.stdout + done.stderr
+    creates = [c for c in _calls(tmp_path) if c.startswith("gh release create")]
+    assert creates[0].startswith(
+        "gh release create a-v1.2.3 dist/tarballs/a-1.2.3.tgz"
+        " dist/tarballs/a-1.2.3.cdx.json --verify-tag "
+    )
+
+
+def test_independent_github_release_refuses_a_tarball_without_its_sbom(
+    independent_run: Run, independent_repo: Path, tmp_path: Path
+) -> None:
+    _tarballs(independent_repo, "a-1.2.3.tgz")
+    (independent_repo / "dist" / "tarballs" / "a-1.2.3.cdx.json").unlink()
+    done = independent_run("ci:release:github", env={"TAGS": "a-v1.2.3"})
+    assert done.returncode != 0
+    assert "No SBOM for" in done.stdout + done.stderr
+    assert not [c for c in _calls(tmp_path) if c.startswith("gh release create")]
 
 
 def test_independent_github_release_fails_without_its_tarball(
