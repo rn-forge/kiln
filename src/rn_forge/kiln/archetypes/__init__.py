@@ -41,17 +41,17 @@ RN_FORGE_PREFIX = "rn-forge-"
 PYKIT_GIT = "git+https://github.com/rn-forge/pykit"
 """pykit's git source, without a ref."""
 RN_FORGE_TAGS = {
-    "rn-forge-commons": "rn-forge-commons-v0.9.0",
-    "rn-forge-cli": "rn-forge-cli-v0.1.3",
-    "rn-forge-tooling": "rn-forge-tooling-v0.3.2",
-    "rn-forge-web": "rn-forge-web-v0.3.1",
-    "rn-forge-auth": "rn-forge-auth-v0.1.1",
-    "rn-forge-django": "rn-forge-django-v0.6.1",
-    "rn-forge-fastapi": "rn-forge-fastapi-v0.4.1",
-    "rn-forge-sqlalchemy": "rn-forge-sqlalchemy-v0.2.3",
+    "rn-forge-commons": "rn-forge-commons-v0.10.0",
+    "rn-forge-cli": "rn-forge-cli-v0.2.0",
+    "rn-forge-tooling": "rn-forge-tooling-v0.3.3",
+    "rn-forge-web": "rn-forge-web-v0.3.2",
+    "rn-forge-auth": "rn-forge-auth-v0.2.0",
+    "rn-forge-django": "rn-forge-django-v0.7.0",
+    "rn-forge-fastapi": "rn-forge-fastapi-v0.5.0",
+    "rn-forge-sqlalchemy": "rn-forge-sqlalchemy-v0.2.4",
 }
-"""pykit's release tags, read from pykit on 2026-11-15
-(`release-8`). A requirement's floor is its tag's version
+"""pykit's release tags, read from pykit on 2026-11-18
+(`release-9`). A requirement's floor is its tag's version
 ([ADR-0018](https://github.com/rn-forge/kiln/blob/main/docs/adr/ADR-0018.md))."""
 KILN_GIT = "git+https://github.com/rn-forge/kiln"
 KILN_REF = "feature/v1"

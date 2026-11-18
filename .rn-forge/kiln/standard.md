@@ -150,9 +150,9 @@ release:
 
 ```toml
 dependencies = [
-  "rn-forge-commons>=0.9.0,<0.10",
-  "rn-forge-cli>=0.1.3,<0.2",
-  "rn-forge-tooling>=0.3.2,<0.4",
+  "rn-forge-commons>=0.10.0,<0.11",
+  "rn-forge-cli>=0.2.0,<0.3",
+  "rn-forge-tooling>=0.3.3,<0.4",
 ]
 ```
 
