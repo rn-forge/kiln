@@ -79,7 +79,7 @@ tasks:
       - '{{.DEVOPS}} release-publish "$TAG" --title "$TAG" --target "$SOURCE_SHA" dist/*.whl dist/*.tar.gz dist/*.cdx.json'
 {% endif %}{% if node_lib %}
   internal-ranges:
-    desc: "CI only: Check that members depend on each other by workspace:^ or workspace:~."
+    desc: "CI only: Check that members depend on each other by workspace:^ or workspace:~, or also workspace:* in a fixed release group."
     silent: true
     cmds:
       - "set -o pipefail; pnpm ls -r --depth -1 --json | {{.DEVOPS}} requirements --stack node"

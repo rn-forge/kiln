@@ -152,7 +152,8 @@ def _parser() -> argparse.ArgumentParser:
         "--stack",
         choices=["python", "node"],
         default="python",
-        help="node reads `pnpm ls -r --depth -1 --json` from stdin",
+        help="node reads `pnpm ls -r --depth -1 --json` from stdin"
+        " and `nx.json` under --root",
     )
     release_all = commands.add_parser(
         "umbrella", help="create a GitHub release for the newest shipped release page"
@@ -357,7 +358,10 @@ def _licenses(args: argparse.Namespace) -> int:
 def _requirements(args: argparse.Namespace) -> int:
     try:
         if args.stack == "node":
-            problems = requirements.check_node(json.load(sys.stdin))
+            problems = requirements.check_node(
+                json.load(sys.stdin),
+                fixed=requirements.release_is_fixed(Path(args.root)),
+            )
         else:
             problems = requirements.check(Path(args.root))
     except (FileNotFoundError, ValueError) as error:

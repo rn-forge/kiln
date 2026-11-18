@@ -69,17 +69,37 @@ def check(root: Path) -> list[str]:
 _NODE_FIELDS = ("dependencies", "peerDependencies", "optionalDependencies")
 
 
-def _node_problem(spec: str) -> str | None:
+def _node_problem(spec: str, *, fixed: bool) -> str | None:
     """Return what is wrong with how `spec` points at a member, if anything."""
     if spec in ("workspace:^", "workspace:~"):
+        return None
+    if spec == "workspace:*" and fixed:
         return None
     if spec == "workspace:*":
         return "workspace:* publishes as an exact pin"
     return f"use workspace:^ or workspace:~, found {spec}"
 
 
-def check_node(members: list[dict[str, str]]) -> list[str]:
+def release_is_fixed(root: Path) -> bool:
+    """Return whether the workspace at `root` releases as one fixed group.
+
+    Reads `release.projectsRelationship` in `root/nx.json`; only `"independent"`
+    is not fixed. A missing file or key is fixed.
+
+    Args:
+        root: The workspace root.
+    """
+    path = root / "nx.json"
+    if not path.is_file():
+        return True
+    nx = json.loads(path.read_text(encoding="utf-8"))
+    return nx.get("release", {}).get("projectsRelationship") != "independent"
+
+
+def check_node(members: list[dict[str, str]], *, fixed: bool = False) -> list[str]:
     """Return one `a -> b: problem` line per internal dependency not on `workspace:^` or `~`.
+
+    `workspace:*` is also accepted when `fixed` is true.
 
     Checks `dependencies`, `peerDependencies` and `optionalDependencies` of each
     member; `devDependencies` are not published, so they are not checked.
@@ -87,6 +107,7 @@ def check_node(members: list[dict[str, str]]) -> list[str]:
     Args:
         members: The parsed output of `pnpm ls -r --depth -1 --json`, each entry
             with a `name` and the `path` of the member's directory.
+        fixed: Whether the workspace releases as one fixed group.
     """
     paths = {m["name"]: Path(m["path"]) for m in members if "name" in m}
     problems: list[str] = []
@@ -96,7 +117,7 @@ def check_node(members: list[dict[str, str]]) -> list[str]:
             for target, spec in manifest.get(field, {}).items():
                 if target == name or target not in paths:
                     continue
-                problem = _node_problem(spec)
+                problem = _node_problem(spec, fixed=fixed)
                 if problem:
                     problems.append(f"{name} -> {target}: {problem}")
     return problems
