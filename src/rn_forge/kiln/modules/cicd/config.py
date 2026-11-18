@@ -195,9 +195,10 @@ class CiConfig(ConfigModel):
     sonar: bool = True
     """Whether CI runs a Sonar analysis. Turning it off removes the Sonar job and
     its properties file on `kiln apply`."""
-    release: Literal["tag-exists", "pypi", "nx-dispatch", "none"] | None = None
+    release: Literal["tag-exists", "pypi", "nx-dispatch", "npm", "none"] | None = None
     """How a release is published: `tag-exists` tags the default branch, `pypi`
-    publishes a library to PyPI, `nx-dispatch` is the `node-lib` flow, and
+    publishes a library to PyPI, `nx-dispatch` is the `node-lib` flow, `npm` is
+    the `node-lib` flow that also publishes to npm by trusted publishing, and
     `none` has no release job. Changing it rewrites the release workflow on
     `kiln apply`. Default: `tag-exists`; `nx-dispatch` for `node-lib`."""
     doctor_full: Literal["default-branch", "every-run"] = "default-branch"
@@ -280,14 +281,14 @@ def resolve_release(ci: CiConfig, archetype: str) -> str:
 
     Raises:
         ValueError: the mode does not fit the archetype. `pypi` needs `python-lib`;
-            `nx-dispatch` needs `node-lib`, which takes neither `tag-exists` nor `pypi`.
+            `nx-dispatch` and `npm` need `node-lib`, which takes neither `tag-exists` nor `pypi`.
     """
     node_lib = archetype == "node-lib"
     release = ci.release or ("nx-dispatch" if node_lib else "tag-exists")
     if release == "pypi" and archetype != "python-lib":
         raise ValueError("ci.release = 'pypi' needs a library workspace")
-    if release == "nx-dispatch" and not node_lib:
-        raise ValueError("ci.release = 'nx-dispatch' needs the node-lib archetype")
+    if release in ("nx-dispatch", "npm") and not node_lib:
+        raise ValueError(f"ci.release = '{release}' needs the node-lib archetype")
     if release == "tag-exists" and node_lib:
         raise ValueError("ci.release = 'tag-exists' is not available for node-lib")
     return release

@@ -984,3 +984,44 @@ def test_independent_standard_describes_per_project_releases(tmp_path: Path) -> 
     ):
         assert text in independent
         assert text not in fixed
+
+
+_INDEPENDENT = '\n[archetype.node-lib]\nrelease_group = "independent"\n'
+
+
+def _node_standards(tmp_path: Path, release: str) -> list[str]:
+    standards = []
+    for name, tail in (("fixed", ""), ("independent", _INDEPENDENT)):
+        write_config(
+            tmp_path / name,
+            "node-lib",
+            name="demo",
+            docs="mkdocs",
+            release=release,
+            tail=tail,
+        )
+        standards.append(_rendered(tmp_path / name)[STANDARD])
+    return standards
+
+
+@pytest.mark.parametrize("release", ["nx-dispatch", "npm"])
+def test_node_lib_standard_drops_the_dry_run_advice(
+    tmp_path: Path, release: str
+) -> None:
+    for standard in _node_standards(tmp_path, release):
+        assert "dryRun" not in standard
+
+
+def test_npm_standard_names_the_trusted_publisher(tmp_path: Path) -> None:
+    for standard in _node_standards(tmp_path / "npm", "npm"):
+        text = _squash(standard)
+        assert "the workflow `ci.yml`" in text
+        assert "environment `npm`" in text
+        assert "release to npm by trusted publishing" in text
+        assert "publishes to npm under the dist-tag" in text
+    for standard in _node_standards(tmp_path / "dispatch", "nx-dispatch"):
+        text = _squash(standard)
+        assert "the workflow `ci.yml`" not in text
+        assert "environment `npm`" not in text
+        assert "publishes to npm" not in text
+        assert "does not publish to npm" in text

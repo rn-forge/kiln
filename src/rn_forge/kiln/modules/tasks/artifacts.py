@@ -98,6 +98,7 @@ def _context(config: KilnConfig, *, docs: bool, node: bool) -> dict[str, object]
         "package_dirs": list(config.packages),
         "docs": docs,
         "release": config.release,
+        "npm_publish": config.release == "npm",
         "site_dir": config.docs_site_dir,
         "includes": tasks_config.includes,
         "extra_refs": tasks_config.extra_refs,

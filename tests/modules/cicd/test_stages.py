@@ -305,7 +305,7 @@ RELEASE_TASKS = (
 )
 
 
-def _node(tmp_path: Path, release: str = "nx-dispatch") -> dict[str, str]:
+def _node(tmp_path: Path, release: str = "npm") -> dict[str, str]:
     root = tmp_path / f"node-{release}"
     _config(root, "node-lib", release)
     loaded = KilnConfig.load(root)

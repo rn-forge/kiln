@@ -28,8 +28,10 @@ pytestmark = requires("task", "git", "bash", "node")
 Run = Callable[..., subprocess.CompletedProcess[str]]
 
 
-def _render_cell(root: Path, tail: str = "") -> Path:
-    write_config(root, "node-lib", name="demo", docs="mkdocs", tail=tail)
+def _render_cell(root: Path, tail: str = "", release: str = "npm") -> Path:
+    write_config(
+        root, "node-lib", name="demo", docs="mkdocs", release=release, tail=tail
+    )
     cycle.apply(root, home=root / "home")
     shutil.rmtree(root / "home", ignore_errors=True)
     return root
@@ -38,6 +40,20 @@ def _render_cell(root: Path, tail: str = "") -> Path:
 @pytest.fixture(scope="module")
 def cell(tmp_path_factory: pytest.TempPathFactory) -> Path:
     return _render_cell(tmp_path_factory.mktemp("cell"))
+
+
+@pytest.fixture(scope="module")
+def dispatch_cell(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    return _render_cell(tmp_path_factory.mktemp("dispatch"), release="nx-dispatch")
+
+
+@pytest.fixture(scope="module")
+def independent_dispatch_cell(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    return _render_cell(
+        tmp_path_factory.mktemp("independent-dispatch"),
+        '\n[archetype.node-lib]\nrelease_group = "independent"\n',
+        release="nx-dispatch",
+    )
 
 
 @pytest.fixture(scope="module")
@@ -160,6 +176,20 @@ def _outputs(tmp_path: Path) -> dict[str, str]:
 def _tasks(cell: Path) -> dict[str, dict[str, object]]:
     rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(cell), cell)}
     return YamlUtils.load(rendered["tasks/ci.yml"])["tasks"]
+
+
+def test_nx_dispatch_has_no_publish_task(
+    dispatch_cell: Path,
+    independent_dispatch_cell: Path,
+    cell: Path,
+    independent_cell: Path,
+) -> None:
+    for plain in (dispatch_cell, independent_dispatch_cell):
+        tasks = _tasks(plain)
+        assert "release:publish" not in tasks
+        assert "release:github" in tasks and "release:finalize" in tasks
+    for npm in (cell, independent_cell):
+        assert "release:publish" in _tasks(npm)
 
 
 def _retag(repo: Path, version: str) -> None:

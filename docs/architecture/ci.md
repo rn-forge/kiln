@@ -200,7 +200,7 @@ cut to the repository's archetype, is under "CI checks" in
 | Docs strict build | `task docs:build` | yes | yes | yes | yes | yes | yes | D: `[docs] profile = "mkdocs"` |
 | `dependency-review` | action | yes | yes | yes | yes | yes | yes | S |
 | Sonar | `sonar` job | yes | yes | yes | yes | yes | yes | C: `[ci] sonar`, default `true` |
-| Release | `release` job | yes | yes | yes | yes | yes | yes | C: `[ci] release`, default `tag-exists`; `pypi` for `python-lib`; `nx-dispatch` for `node-lib`; `none` |
+| Release | `release` job | yes | yes | yes | yes | yes | yes | C: `[ci] release`, default `tag-exists`; `pypi` for `python-lib`; `nx-dispatch` or `npm` for `node-lib`; `none` |
 | `verify-release` | `task ci:verify-release` | yes | yes | yes | yes | yes | yes | D: a release mode other than `none` |
 | Docs deploy | `docs` job | yes | yes | yes | yes | yes | yes | D: `[docs] profile = "mkdocs"` |
 | Package tarballs | `task ci:smoke` |  |  |  |  |  | yes | S |

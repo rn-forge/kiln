@@ -13,7 +13,7 @@
 | [F9.2 — One node scaffold](F9.2-one-node-scaffold.md) | Closed | release-1 | 10 Closed |
 | [F9.3 — Node CI holds for ngkit and for every `node-lib`](F9.3-node-ci-holds-for-every-node-lib.md) | Closed | release-1 | 8 Closed |
 | [F9.4 — The node CI helpers run from `kiln-devops`](F9.4-node-helpers-in-kiln-devops.md) | Closed | release-1 | 6 Closed |
-| [F9.5 — What ngkit's cutover found about node-lib releases](F9.5-node-lib-release-findings.md) | Active | release-1 | 2 New · 4 Closed |
+| [F9.5 — What ngkit's cutover found about node-lib releases](F9.5-node-lib-release-findings.md) | Active | release-1 | 1 New · 5 Closed |
 | [F9.6 — Nx Cloud agents can run `task`](F9.6-nx-cloud-agents-run-task.md) | Closed | release-1 | 1 Closed |
 
 <!-- END derived features -->

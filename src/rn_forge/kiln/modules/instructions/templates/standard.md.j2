@@ -30,7 +30,7 @@ is a kiln ADR; this file states the rule.
   and no local state: that is `python-tool`.
 {% endif %}{% if docs %}- **Docs profile:** `mkdocs` — the full area model, a derived nav, and a
   strict site build inside `task validate`.
-{% endif %}- **CI:** GitHub Actions, Sonar {% if sonar %}on{% else %}off{% endif %}{% if release == "pypi" %}, release to PyPI by trusted publishing, per package{% elif release == "nx-dispatch" %}, release on a push to the default branch, tagged `v<version>`{% elif release == "tag-exists" %}, release by tag-exists check{% if workspace %}, per package{% endif %}{% endif %}.
+{% endif %}- **CI:** GitHub Actions, Sonar {% if sonar %}on{% else %}off{% endif %}{% if release == "pypi" %}, release to PyPI by trusted publishing, per package{% elif release == "nx-dispatch" or release == "npm" %}, release on a push to the default branch, tagged `v<version>`{% if npm_publish %}, release to npm by trusted publishing{% endif %}{% elif release == "tag-exists" %}, release by tag-exists check{% if workspace %}, per package{% endif %}{% endif %}.
 
 ## 1. One entrypoint
 
@@ -362,25 +362,26 @@ targets `"pack": {}` and `"verify-dist": {}`, which take their commands from
 `release.projects`, and it can stay there. Without the tag, `task version` finds no
 publishable project and a release fails in its state step, before anything is
 pushed. With the tag but without `pack`, a release fails in its verify step,
-before anything is pushed, with `No tarball in dist/tarballs`. Until npm publishing is set up, add
-`"dryRun": true` to the `nx-release-publish` options: the project generator does
-not write it, and without it the release's Publish step publishes to npm.
+before anything is pushed, with `No tarball in dist/tarballs`.
 
 {% if release_group == "independent" %}**Releasing.** A release follows a version bump made in a pull request: run
 `task version -- <patch|minor|major|x.y.z> <project>` (`nx release version` for
 that project, no commit or tag), which writes the `CHANGELOG.md` in its folder;
 commit those and merge. `task version` with no argument prints each project's
 version. On the push to the default branch, each project whose version is not
-yet released is tagged `<project>-v<version>` and released on its own. CI never
-commits.
+yet released is tagged `<project>-v<version>` and released on its own: the
+release {% if npm_publish %}publishes to npm under the dist-tag the version names (`latest` for
+`x.y.z`, the prerelease identifier for `x.y.z-<id>.<n>`) and then publishes the
+GitHub Release{% else %}creates the GitHub Release with the tarball and publishes it, and does not
+publish to npm{% endif %}. CI never commits.
 {% else %}**Releasing.** A release follows a version bump made in a pull request: run
 `task version -- <patch|minor|major|x.y.z>` (`nx release version`, no commit or
 tag), commit the changed `package.json` files and the new `CHANGELOG.md`
 section, and merge. `task version` with no argument prints the version. On the
 push to the default branch, `release` tags
-`v<version>`, publishes to npm under the dist-tag the version names (`latest`
+`v<version>`, {% if npm_publish %}publishes to npm under the dist-tag the version names (`latest`
 for `x.y.z`, the prerelease identifier for `x.y.z-<id>.<n>`), and publishes the
-GitHub Release last. CI never commits. A version whose GitHub Release is
+GitHub Release last{% else %}creates the GitHub Release with the tarballs and publishes it; it does not publish to npm{% endif %}. CI never commits. A version whose GitHub Release is
 published is skipped.
 {% endif %}
 **For a publishable library's consumer check.** Add `"verify-consumer": {}` to
@@ -409,7 +410,7 @@ declared), `patch-package-exports`, and, for the Pages site, `compodoc` (output
 | `NX_CLOUD_AGENTS` | variable | `test-cloud` | agent count; optional, default 3 |
 | `NX_CLOUD_ACCESS_TOKEN` | secret | `test-cloud` | the Nx Cloud access token |
 {% if sonar %}| `SONAR_TOKEN` | secret | `sonar` | the SonarCloud token |
-{% endif %}{% if release == "nx-dispatch" %}| `RELEASE_APP_CLIENT_ID` | variable | `release` | the release GitHub App's client ID |
+{% endif %}{% if release == "nx-dispatch" or release == "npm" %}| `RELEASE_APP_CLIENT_ID` | variable | `release` | the release GitHub App's client ID |
 | `RELEASE_APP_PRIVATE_KEY` | secret | `release` | the release GitHub App's private key |
 {% endif %}
 **Once per repository.**
@@ -418,10 +419,15 @@ declared), `patch-package-exports`, and, for the Pages site, `compodoc` (output
   deploys from `main`.
 {% endif %}- Branch protection or a ruleset on `main` requires the `ci-ok` check and
   nothing else.
-{% if release == "nx-dispatch" %}- The release pushes its tag as a GitHub App with Contents read and
+{% if release == "nx-dispatch" or release == "npm" %}- The release pushes its tag as a GitHub App with Contents read and
   write. Install it on the repository and make it an `Always` bypass actor on
   any ruleset that blocks direct pushes. Use no deploy key or personal access
   token.
+{% endif %}{% if npm_publish %}- npm trusted publishing: create a GitHub environment `npm` with deployment
+  branch `main`, and on npmjs.com add a trusted publisher to each package
+  naming this repository, the workflow `ci.yml` (npm checks the calling
+  workflow, not `_release.yml`) and the environment `npm`. No npm token is
+  stored.
 {% endif %}
 **Action pins.** The `uses:` SHAs in generated files are kiln's. They move when
 kiln's `core/pins.toml` changes and the repository moves `[kiln] ref` and runs

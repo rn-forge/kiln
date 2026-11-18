@@ -6,7 +6,7 @@ import pytest
 import subprocess
 from pathlib import Path
 from rn_forge.kiln.modules.core import cycle
-from tests.conftest import git, requires
+from tests.conftest import git, requires, write_config
 from tests.modules.tasks.support import (
     ARCHETYPES,
     _ci_tasks,
@@ -69,7 +69,8 @@ def _release_run(
 
 
 def test_release_tasks_are_described_and_public(tmp_path: Path) -> None:
-    tasks = _ci_tasks(_node_lib_root(tmp_path))["tasks"]
+    root = write_config(tmp_path, "node-lib", name="demo", docs="mkdocs", release="npm")
+    tasks = _ci_tasks(root)["tasks"]
     for name in RELEASE_TASKS:
         assert tasks[name]["desc"].startswith("CI only"), name  # type: ignore[index]
         assert "internal" not in tasks[name], name  # type: ignore[operator]

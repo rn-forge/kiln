@@ -164,7 +164,7 @@ tasks:
     desc: "CI only: Pack the publishable projects and verify their tarballs."
     cmds:
       - pnpm exec nx run-many -t pack verify-dist verify-consumer
-{% if release == "nx-dispatch" %}
+{% if release in ("nx-dispatch", "npm") %}
 {% macro projects_fn() %}        projects() {
           node -e '
           const fs = require("node:fs");
@@ -347,7 +347,7 @@ tasks:
         {{.DEVOPS}} notes CHANGELOG.md "${tag#v}" > "$RUNNER_TEMP/notes.md"
         gh release create "$tag" dist/tarballs/*.tgz --verify-tag --title "$tag" --notes-file "$RUNNER_TEMP/notes.md" --draft
 
-{% endif %}{% if release_group == "independent" %}  release:publish:
+{% endif %}{% if npm_publish and release_group == "independent" %}  release:publish:
     desc: "CI only: Publish each project in TAGS to npm, under its own dist-tag."
     cmds:
       - |
@@ -366,18 +366,18 @@ tasks:
           pnpm exec nx release publish --projects="$project" --tag="$dist" --excludeTaskDependencies$first
         done
 
-{% else %}  release:publish:
+{% elif npm_publish %}  release:publish:
     desc: "CI only: Publish to npm under DIST_TAG; FIRST_RELEASE_FLAG holds the flag, or nothing."
     cmds:
       - pnpm exec nx release publish --tag="$DIST_TAG" --excludeTaskDependencies $FIRST_RELEASE_FLAG
 
 {% endif %}{% if release_group == "independent" %}  release:finalize:
-    desc: "CI only: Publish the draft GitHub Release of each tag in TAGS, once npm has the version."
+    desc: "CI only: Publish the draft GitHub Release of each tag in TAGS{% if npm_publish %}, once npm has the version{% endif %}."
     cmds:
       - for t in $TAGS; do gh release edit "$t" --draft=false; done
 
 {% else %}  release:finalize:
-    desc: "CI only: Publish the draft GitHub Release for TAG, once npm has the version."
+    desc: "CI only: Publish the draft GitHub Release for TAG{% if npm_publish %}, once npm has the version{% endif %}."
     cmds:
       - gh release edit "$TAG" --draft=false
 

@@ -151,7 +151,7 @@ CHECKS: tuple[CiCheck, ...] = (
         _ALL,
         Switch.STANDARD,
         "C: `[ci] release`, default `tag-exists`; `pypi` for `python-lib`; "
-        "`nx-dispatch` for `node-lib`; `none`",
+        "`nx-dispatch` or `npm` for `node-lib`; `none`",
     ),
     CiCheck(
         "verify-release",

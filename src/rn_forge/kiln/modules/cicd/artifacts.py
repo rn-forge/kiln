@@ -103,6 +103,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         ],
         "sonar_coverage_exclusions": list(ci.sonar_coverage_exclusions),
         "release": release,
+        "npm_publish": release == "npm",
         "doctor_full": ci.doctor_full,
         "checks": checks,
         "plan_keys": _PLAN_KEYS,

@@ -240,6 +240,7 @@ def context(config: KilnConfig) -> dict[str, object]:
         "external_url": docs.external_url,
         "sonar": config.ci.sonar,
         "release": config.release,
+        "npm_publish": config.release == "npm",
         "web": config.is_web,
         "web_app": config.is_web_app,
         "node_lib": config.is_node_lib,

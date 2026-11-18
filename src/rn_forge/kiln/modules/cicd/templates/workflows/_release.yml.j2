@@ -29,13 +29,14 @@ jobs:{% if node_lib %}
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    concurrency:
+{% if npm_publish %}    environment: npm
+{% endif %}    concurrency:
       group: release
       cancel-in-progress: false # never cancel a running release
     permissions:
       contents: write # create GitHub Releases
-      id-token: write # npm OIDC trusted publishing
-    # The tag this run published; empty when the version was already released.
+{% if npm_publish %}      id-token: write # npm OIDC trusted publishing
+{% endif %}    # The tag this run published; empty when the version was already released.
     outputs:
 {% if release_group == "independent" %}      tag: ${{ steps.state.outputs.tag }}
       tags: ${{ steps.state.outputs.tags }}
@@ -57,12 +58,12 @@ jobs:{% if node_lib %}
           filter: tree:0
           persist-credentials: true # the tag is pushed with this token
 
-      # npm >= 11.5.1 is required for OIDC publishing (Node version from .nvmrc)
-      - uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
+{% if npm_publish %}      # npm >= 11.5.1 is required for OIDC publishing (Node version from .nvmrc)
+{% endif %}      - uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          registry-url: 'https://registry.npmjs.org'
-
+{% if npm_publish %}          registry-url: 'https://registry.npmjs.org'
+{% endif %}
       # A version counts as shipped only when its GitHub Release is published.
       - name: Detect release state
         id: state
@@ -92,7 +93,7 @@ jobs:{% if node_lib %}
         env:
           [[ "NEW_TAGS: ${{ steps.state.outputs.new }}" if ind else "TAG: ${{ steps.state.outputs.tag }}" ]]
 
-      # A draft until npm has the version, so a published release is a finished one.
+      # A draft until {% if npm_publish %}npm has the version{% else %}every step before it has passed{% endif %}, so a published release is a finished one.
       - name: Create the draft GitHub Release
         if: [[ "${{ steps.state.outputs.tags != '' }}" if ind else "${{ steps.state.outputs.mode != 'released' }}" ]]
         run: task ci:release:github
@@ -100,7 +101,7 @@ jobs:{% if node_lib %}
           [[ "TAGS: ${{ steps.state.outputs.tags }}" if ind else "TAG: ${{ steps.state.outputs.tag }}" ]]
           GH_TOKEN: ${{ github.token }}
 
-      # --excludeTaskDependencies to not invalidate cache and use the dist/ the
+{% if npm_publish %}      # --excludeTaskDependencies to not invalidate cache and use the dist/ the
       # verify step built. nx skips a version npm already has.
       - name: Publish
         if: [[ "${{ steps.state.outputs.tags != '' }}" if ind else "${{ steps.state.outputs.mode != 'released' }}" ]]
@@ -111,7 +112,7 @@ jobs:{% if node_lib %}
           DIST_TAG: ${{ steps.state.outputs.dist-tag }}
           FIRST_RELEASE_FLAG: ${{ steps.state.outputs.first-release == 'true' && '--first-release' || '' }}
 {% endif %}
-      - name: Publish the GitHub Release
+{% endif %}      - name: Publish the GitHub Release
         if: [[ "${{ steps.state.outputs.tags != '' }}" if ind else "${{ steps.state.outputs.mode != 'released' }}" ]]
         run: task ci:release:finalize
         env:
