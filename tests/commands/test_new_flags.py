@@ -413,5 +413,5 @@ def test_new_pins_the_branch_head(tmp_path: Path, kiln_remote_sha: str) -> None:
         (directory / ".rn-forge" / "kiln" / "config.toml").read_text(encoding="utf-8")
     )
     assert written["kiln"] == {"ref": kiln_remote_sha, "track": archetypes.KILN_REF}
-    kiln_yml = (directory / "tasks" / "kiln.yml").read_text(encoding="utf-8")
-    assert f"@{kiln_remote_sha}" in kiln_yml
+    taskfile = (directory / "Taskfile.yml").read_text(encoding="utf-8")
+    assert f"@{kiln_remote_sha}" in taskfile

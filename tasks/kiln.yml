@@ -6,9 +6,6 @@ version: "3"
 # `diff` and `apply` are public, reached as `kiln:diff` and `kiln:apply`, and
 # pass their arguments through (`task kiln:diff -- --artifact Taskfile.yml`).
 
-vars:
-  KILN: 'uv run kiln'
-
 tasks:
   doctor:
     desc: Run kiln's checks on this repository — generated files, task layout, CI, dependencies, docs.

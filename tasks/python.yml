@@ -5,9 +5,6 @@ version: "3"
 # compose. Everything here is `internal: true` — it exists to be called from a
 # wrapper, not run directly.
 
-vars:
-  DEVOPS: 'uv run kiln-devops'
-
 tasks:
   install:
     desc: Sync the virtualenv with the dev and docs dependency groups.

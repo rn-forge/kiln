@@ -83,9 +83,8 @@ def test_node_lint_licenses_task(tmp_path: Path) -> None:
         "| {{.DEVOPS}} licenses --format pnpm "
         f"{LICENSES_DENY}"
     )
-    assert (
-        "DEVOPS"
-        in YamlUtils.load((root / "tasks/node.yml").read_text(encoding="utf-8"))["vars"]
+    assert "vars" not in YamlUtils.load(
+        (root / "tasks/node.yml").read_text(encoding="utf-8")
     )
 
 
@@ -142,14 +141,13 @@ def test_web_app_audits_its_frontend(tmp_path: Path) -> None:
     assert audit["internal"] is True
     assert audit["cmds"] == ["pnpm audit --prod --audit-level moderate"]
     assert node["lint:licenses"]["internal"] is True
-    app_vars = YamlUtils.load((app / "tasks/node.yml").read_text(encoding="utf-8"))[
+    app_vars = YamlUtils.load((app / "Taskfile.yml").read_text(encoding="utf-8"))[
         "vars"
     ]
-    lib_vars = YamlUtils.load((lib / "tasks/node.yml").read_text(encoding="utf-8"))[
+    lib_vars = YamlUtils.load((lib / "Taskfile.yml").read_text(encoding="utf-8"))[
         "vars"
     ]
-    assert set(app_vars) == {"DEVOPS"}
-    assert app_vars == lib_vars
+    assert app_vars["DEVOPS"] == lib_vars["DEVOPS"]
     cmds = _unmarked(root_tasks["lint"]["cmds"])
     assert cmds[-len(WEB_LINT_TAIL) :] == WEB_LINT_TAIL
 

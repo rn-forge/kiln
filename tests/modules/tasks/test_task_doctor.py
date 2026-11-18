@@ -16,6 +16,7 @@ from tests.modules.tasks.support import (
     _codes,
     _load,
     _root,
+    _root_vars,
     _run_task,
     _ci_root,
     _unmarked,
@@ -114,7 +115,7 @@ def test_doctor_runs_once(tmp_path: Path, archetype: str, extra: str) -> None:
 def test_kiln_yml_runs_the_pinned_kiln(tmp_path: Path) -> None:
     root = _root(tmp_path, extra='\n[kiln]\nref = "v9.9.9"\n')
     cycle.apply(root, home=tmp_path / "home")
-    assert _load(root, "tasks/kiln.yml")["vars"]["KILN"] == (
+    assert _root_vars(root)["KILN"] == (
         'uvx --from "rn-forge-kiln @ git+https://github.com/rn-forge/kiln@v9.9.9" kiln'
     )
 
@@ -124,7 +125,7 @@ def test_kiln_itself_runs_its_working_tree(tmp_path: Path) -> None:
         tmp_path, extra='\n[archetype."python-tool"]\nmodule = "rn_forge.kiln"\n'
     )
     cycle.apply(root, home=tmp_path / "home")
-    assert _load(root, "tasks/kiln.yml")["vars"]["KILN"] == "uv run kiln"
+    assert _root_vars(root)["KILN"] == "uv run kiln"
 
 
 def test_task_order(tmp_path: Path) -> None:
@@ -147,6 +148,28 @@ def test_the_pin_task_passes_the_ref_as_an_option(tmp_path: Path) -> None:
     run = _run_task(root, "--dry", "kiln:pin", "--", sha)
     assert run.returncode == 0, run.stderr
     assert f"pin --ref {sha}" in run.stdout + run.stderr
+
+
+def test_namespace_tasks_inherit_the_pinned_kiln_from_the_root(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path, extra='\n[kiln]\nref = "v9.9.9"\n')
+    cycle.apply(root, home=tmp_path / "home")
+    run = _run_task(root, "--dry", "kiln:diff")
+    assert run.returncode == 0, run.stderr
+    assert archetypes.kiln_command("v9.9.9") + " diff" in run.stdout + run.stderr
+
+
+@pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
+def test_only_the_root_names_the_kiln_commands(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _ci_root(tmp_path, archetype, extra)
+    cycle.apply(root, home=tmp_path / "home")
+    assert {"KILN", "DEVOPS"} <= set(_load(root, "Taskfile.yml")["vars"])
+    for path in sorted((root / "tasks").glob("*.yml")):
+        declared = set(_load(root, f"tasks/{path.name}").get("vars") or {})
+        assert not declared & {"KILN", "DEVOPS"}, path.name
 
 
 def test_the_pin_task_with_no_ref_runs_bare_pin(tmp_path: Path) -> None:
@@ -180,17 +203,14 @@ def test_not_in_kiln(tmp_path: Path) -> None:
 def test_an_unpinned_config_runs_kilns_own_ref(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
-    assert _load(root, "tasks/kiln.yml")["vars"]["KILN"] == archetypes.kiln_command(
-        archetypes.KILN_REF
-    )
-    assert archetypes.KILN_REF in _load(root, "tasks/kiln.yml")["vars"]["KILN"]
+    assert _root_vars(root)["KILN"] == archetypes.kiln_command(archetypes.KILN_REF)
 
 
 def test_docs_generate_runs_the_pinned_kiln(tmp_path: Path) -> None:
     root = _root(tmp_path, extra='\n[kiln]\nref = "v9.9.9"\n')
     cycle.apply(root, home=tmp_path / "home")
     docs = _load(root, "tasks/docs.yml")
-    assert docs["vars"]["KILN"] == _load(root, "tasks/kiln.yml")["vars"]["KILN"]
+    assert "vars" not in docs
     assert docs["tasks"]["generate"]["cmds"] == ["{{.KILN}} docs-generate ."]
 
 

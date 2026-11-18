@@ -22,7 +22,7 @@
 | [F18.11 — Checks police the repository, not kiln's output](F18.11-checks-police-repository-content.md) | New | release-2 | 2 New |
 | [F18.12 — The review defects release 1 takes](F18.12-release-1-review-defects.md) | Closed | release-1 | 3 Closed |
 | [F18.13 — Build briefs outside the record](F18.13-build-briefs-outside-the-record.md) | Closed | release-1 | 4 Closed |
-| [F18.14 — A kiln pin is a commit](F18.14-a-pin-is-a-commit.md) | Closed | release-1 | 3 Closed |
+| [F18.14 — A kiln pin is a commit](F18.14-a-pin-is-a-commit.md) | Closed | release-1 | 4 Closed |
 
 <!-- END derived features -->
 

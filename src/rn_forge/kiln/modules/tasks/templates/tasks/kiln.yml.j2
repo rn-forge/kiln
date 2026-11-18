@@ -7,9 +7,6 @@ version: "3"
 # pass their arguments through (`task kiln:diff -- --artifact Taskfile.yml`).
 {% if not kiln_own %}# `pin` pins a branch's newest commit, a tag or a SHA (`task kiln:pin -- <ref>`); with no argument it follows `track`.
 {% endif %}
-vars:
-  KILN: '[[ kiln ]]'
-
 tasks:
   doctor:
     desc: Run kiln's checks on this repository — generated files, task layout, CI, dependencies, docs.

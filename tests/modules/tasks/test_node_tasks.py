@@ -200,7 +200,6 @@ def test_python_lib_vars_move_with_the_tasks(tmp_path: Path) -> None:
     assert set(_load(root, "tasks/python.yml")["vars"]) == {
         "PACKAGE_DIRS",
         "PACKAGES",
-        "DEVOPS",
     }
 
 

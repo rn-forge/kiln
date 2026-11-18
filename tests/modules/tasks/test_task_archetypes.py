@@ -23,6 +23,7 @@ from tests.modules.tasks.support import (
     _codes,
     _rendered_yaml,
     _root,
+    _root_vars,
     _run_task,
     _unmarked,
     _web_root,
@@ -397,9 +398,9 @@ def test_devops_is_kiln_devops(tmp_path: Path) -> None:
     assert expected.endswith("@" + archetypes.KILN_REF + '" kiln-devops')
     for archetype in ARCHETYPES:
         root = _root(tmp_path / archetype, archetype)
-        assert _ci_tasks(root)["vars"]["DEVOPS"] == expected, archetype  # type: ignore[index]
+        assert _root_vars(root)["DEVOPS"] == expected, archetype
     pinned = _root(tmp_path / "pinned", extra='\n[kiln]\nref = "v9.9.9"\n')
-    assert _ci_tasks(pinned)["vars"]["DEVOPS"] == (  # type: ignore[index]
+    assert _root_vars(pinned)["DEVOPS"] == (
         'uvx --from "rn-forge-kiln @ git+https://github.com/rn-forge/kiln@v9.9.9" '
         "kiln-devops"
     )
@@ -407,7 +408,7 @@ def test_devops_is_kiln_devops(tmp_path: Path) -> None:
         tmp_path / "own",
         extra='\n[archetype."python-tool"]\nmodule = "rn_forge.kiln"\n',
     )
-    assert _ci_tasks(own)["vars"]["DEVOPS"] == "uv run kiln-devops"  # type: ignore[index]
+    assert _root_vars(own)["DEVOPS"] == "uv run kiln-devops"
     member = _root(tmp_path / "member", "python-lib")
     config = member / ".rn-forge" / "kiln" / "config.toml"
     config.write_text(
@@ -417,7 +418,7 @@ def test_devops_is_kiln_devops(tmp_path: Path) -> None:
         ),
         encoding="utf-8",
     )
-    assert _ci_tasks(member)["vars"]["DEVOPS"] == expected  # type: ignore[index]
+    assert _root_vars(member)["DEVOPS"] == expected
 
 
 def test_sonar_target_is_a_public_task_everywhere(tmp_path: Path) -> None:

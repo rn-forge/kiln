@@ -3,10 +3,7 @@ version: "3"
 
 # The pnpm-managed Nx toolchain the frontend scaffold owns. Internal — reached
 # through the root wrappers, as `python`'s is.
-{% if "licenses" in checks %}
-vars:
-  DEVOPS: '[[ devops ]]'
-{% endif %}
+
 tasks:
   install:
     desc: Install the frontend workspace's locked dependencies.

@@ -18,10 +18,6 @@ version: "3"
 vars:
   PACKAGE_DIRS: [[ package_dirs | join(" ") ]]
   PACKAGES: [[ packages | join(" ") ]]
-{% if "licenses" in checks and not node_lib %}  DEVOPS: '[[ devops ]]'
-{% endif %}{% elif "licenses" in checks and not node_lib %}
-vars:
-  DEVOPS: '[[ devops ]]'
 {% endif %}
 tasks:
   install:

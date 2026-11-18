@@ -10,6 +10,10 @@ model is [ADR-0007](../adr/ADR-0007.md); the rules it must meet are in
   the same `task` verbs, never `uv`, `pytest`, `pnpm` or another wrapped tool.
 - **The root `Taskfile.yml` holds wrappers only.** Each `cmds:` entry is a
   `task:` call into a namespace file; the commands live in `tasks/<ns>.yml`.
+- **The root file names the pinned kiln once.** Its `vars:` hold `KILN` and
+  `DEVOPS`, which go-task passes to every included file, so a pin changes the
+  root file alone. No namespace file declares them; one that did would shadow
+  the root's.
 - **A file belongs to whatever owns its tasks.** A toolchain (`python`, `node`,
   `kiln`) holds all of its primitives; a concern (`docs`, `ci`) holds the
   checks that are not kiln's; a service (`api`, `web`) holds how to run it.

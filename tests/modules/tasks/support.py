@@ -94,6 +94,12 @@ def _ci_tasks(root: Path) -> dict[str, object]:
     return YamlUtils.load(rendered["tasks/ci.yml"])
 
 
+def _root_vars(root: Path) -> dict[str, str]:
+    """The root Taskfile's `vars:`, which every included file inherits."""
+    rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
+    return YamlUtils.load(rendered["Taskfile.yml"])["vars"]
+
+
 WEB_CELLS = (
     ("python-web-api", ""),
     ("python-web-app", 'frontend = "angular"'),

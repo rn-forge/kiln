@@ -120,7 +120,7 @@ def test_only_python_lib_has_the_pipeline_tasks(
             else set()
         )
         assert others == SINGLE_PIPELINE_TASKS | dist
-    assert "DEVOPS" in document["vars"]
+    assert "vars" not in document
 
 
 @pytest.mark.parametrize("key", [f"ci:{name}" for name in CI_LINT_CHECKS])
