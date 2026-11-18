@@ -966,3 +966,21 @@ def test_a_custom_web_dir_names_the_web_project_everywhere(
     standard = by_path(INSTRUCTIONS)[STANDARD]
     assert "project `web`" in standard
     assert "project `portal`" not in standard
+
+
+def test_independent_standard_describes_per_project_releases(tmp_path: Path) -> None:
+    fixed = _rendered(_node_lib(tmp_path / "fixed"))[STANDARD]
+    write_config(
+        tmp_path / "ind",
+        "node-lib",
+        name="demo",
+        docs="mkdocs",
+        tail='\n[archetype.node-lib]\nrelease_group = "independent"\n',
+    )
+    independent = _rendered(tmp_path / "ind")[STANDARD]
+    for text in (
+        "task version -- <patch|minor|major|x.y.z> <project>",
+        "<project>-v<version>",
+    ):
+        assert text in independent
+        assert text not in fixed

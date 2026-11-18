@@ -124,6 +124,7 @@ def _context(config: KilnConfig, *, docs: bool, node: bool) -> dict[str, object]
         "web_app": config.is_web_app,
         "node": node,
         "node_lib": config.is_node_lib,
+        "release_group": config.release_group,
         "backend": config.backend,
         "api_dir": config.api_dir,
         "api_package": api_package,

@@ -17,7 +17,11 @@ from rn_forge.kiln.modules.core.config.schema import KilnPin, RootConfig
 from rn_forge.kiln.modules.core.names import module_name
 from rn_forge.kiln.modules.docs.config import DocsConfig
 from rn_forge.kiln.modules.node.angular import WEB_PROJECT
-from rn_forge.kiln.modules.python.config import ArchetypeConfig, WebAppConfig
+from rn_forge.kiln.modules.python.config import (
+    ArchetypeConfig,
+    NodeLibConfig,
+    WebAppConfig,
+)
 from rn_forge.kiln.modules.tasks.config import TasksConfig
 
 if TYPE_CHECKING:
@@ -220,6 +224,15 @@ class KilnConfig:
         """The chosen frontend, for `python-web-app`. `None` otherwise."""
         section = self._web_section()
         return section.frontend if isinstance(section, WebAppConfig) else None
+
+    @property
+    def release_group(self) -> str:
+        """`independent` when a `node-lib` releases each project on its own, else `fixed`."""
+        section = self.archetype_section
+        node_lib = section.node_lib if section is not None else None
+        if self.is_node_lib and isinstance(node_lib, NodeLibConfig):
+            return node_lib.release_group
+        return "fixed"
 
     @property
     def api_dir(self) -> str | None:

@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from rn_forge.commons.exceptions import AppException
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd.config import CiConfig
 from rn_forge.kiln.modules.core.config.schema import KilnPin
@@ -97,3 +98,26 @@ def test_web_project_is_the_nx_project(tmp_path: Path) -> None:
         tail='web_dir = "apps/portal"\n',
     )
     assert KilnConfig.load(tmp_path).web_project == "web"
+
+
+INDEPENDENT = '\n[archetype.node-lib]\nrelease_group = "independent"\n'
+
+
+def test_release_group_defaults_to_fixed(tmp_path: Path) -> None:
+    write_config(tmp_path / "lib", "node-lib", name="demo")
+    write_config(tmp_path / "app", "python-app", name="demo")
+    assert KilnConfig.load(tmp_path / "lib").release_group == "fixed"
+    assert KilnConfig.load(tmp_path / "app").release_group == "fixed"
+
+
+def test_release_group_reads_the_node_lib_table(tmp_path: Path) -> None:
+    write_config(tmp_path / "ok", "node-lib", name="demo", tail=INDEPENDENT)
+    assert KilnConfig.load(tmp_path / "ok").release_group == "independent"
+    write_config(
+        tmp_path / "bad",
+        "node-lib",
+        name="demo",
+        tail=INDEPENDENT.replace("independent", "loose"),
+    )
+    with pytest.raises(AppException):
+        KilnConfig.load(tmp_path / "bad")

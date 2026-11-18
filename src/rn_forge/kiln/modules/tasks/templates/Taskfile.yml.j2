@@ -96,6 +96,7 @@ tasks:
 {% endfor %}
   version:
 {% if workspace %}    desc: Print one package's version (pass -- <package>), or every package's.
+{% elif node_lib and release_group == "independent" %}    desc: Print each publishable project's version, or bump one, write its CHANGELOG.md section and format it (pass -- patch|minor|major|x.y.z <project>).
 {% elif node_lib %}    desc: Print the publishable projects' version, or bump it, write its CHANGELOG.md section and format it (pass -- patch|minor|major|x.y.z).
 {% else %}    desc: Print the package version from pyproject.toml.
 {% endif %}    cmds:

@@ -16,6 +16,7 @@ __all__ = [
     "AppConfig",
     "ArchetypeConfig",
     "LibConfig",
+    "NodeLibConfig",
     "PackagesConfig",
     "WebApiConfig",
     "WebAppConfig",
@@ -106,6 +107,18 @@ class WebAppConfig(ConfigModel):
     renders the member's files; it does not move existing code."""
 
 
+class NodeLibConfig(ConfigModel):
+    """The `node-lib` archetype's settings."""
+
+    release_group: Literal["fixed", "independent"] = "fixed"
+    """How the publishable projects release. `fixed` releases them together
+    under one `v<version>` tag; `independent` versions, tags and releases each
+    project on its own, as `<project>-v<version>`. `kiln new` seeds `nx.json`
+    for it; changing it later re-renders the tasks, CI and standard on
+    `kiln apply`, and `nx.json`, which the repository owns, is edited by
+    hand."""
+
+
 class ArchetypeConfig(ConfigModel):
     """Settings of the repository's archetype, in one table named for it."""
 
@@ -119,6 +132,8 @@ class ArchetypeConfig(ConfigModel):
     """The `python-web-api` archetype's settings."""
     python_web_app: WebAppConfig | None = Field(default=None, alias="python-web-app")
     """The `python-web-app` archetype's settings."""
+    node_lib: NodeLibConfig | None = Field(default=None, alias="node-lib")
+    """The `node-lib` archetype's settings."""
 
     def _section(self, archetype: str) -> ConfigModel | None:
         for field_name, field in type(self).model_fields.items():

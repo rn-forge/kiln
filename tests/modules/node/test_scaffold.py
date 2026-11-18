@@ -585,6 +585,33 @@ def test_reconcile_node_declares_the_release_block(tmp_path: Path, lib: bool) ->
     assert DocumentUtils.read(root / "nx.json")["release"] == RELEASE
 
 
+RELEASE_INDEPENDENT = {
+    "projects": ["tag:publishable"],
+    "projectsRelationship": "independent",
+    "releaseTag": {"pattern": "{projectName}-v{version}"},
+    "version": RELEASE["version"],
+    "changelog": {"projectChangelogs": {"createRelease": False}},
+}
+
+
+def test_an_independent_lib_seeds_the_independent_release_block(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "root"
+    config_path = root / ".rn-forge" / "kiln" / "config.toml"
+    config_path.parent.mkdir(parents=True)
+    config_path.write_text(
+        LIB_CONFIG + '\n[archetype.node-lib]\nrelease_group = "independent"\n',
+        encoding="utf-8",
+    )
+    scaffold(root, KilnConfig.load(root))
+    workspace = _workspace(tmp_path)
+    shutil.rmtree(workspace / "apps")
+    reconcile_node(root, workspace, KilnConfig.load(root))
+
+    assert DocumentUtils.read(root / "nx.json")["release"] == RELEASE_INDEPENDENT
+
+
 @pytest.mark.parametrize("lib", [True, False])
 def test_reconcile_node_declares_pack_and_verify_dist(
     tmp_path: Path, lib: bool

@@ -75,7 +75,60 @@ tasks:
     cmds:
 {% if overrides.get("node:typecheck") %}      - [[ overrides["node:typecheck"] ]]
 {% else %}      - pnpm nx run-many -t build
-{% endif %}{% if node_lib %}
+{% endif %}{% if node_lib and release_group == "independent" %}
+  version:
+    desc: Print each publishable project's version, or bump one, write its CHANGELOG.md section and format it (pass -- patch|minor|major|x.y.z <project>); the root version task runs it.
+    internal: true
+    silent: true
+    cmds:
+      - |
+        publishable() {
+          node -e '
+          const fs = require("node:fs");
+          const path = require("node:path");
+          const skip = new Set(["node_modules", "dist", ".git", ".nx"]);
+          const projects = [];
+          const walk = (dir) => {
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const file = path.join(dir, entry.name);
+              if (entry.isDirectory()) {
+                if (!skip.has(entry.name)) walk(file);
+              } else if (entry.name === "project.json") {
+                const project = JSON.parse(fs.readFileSync(file, "utf8"));
+                if ((project.tags ?? []).includes("publishable")) {
+                  const version = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8")).version;
+                  projects.push([project.name, version]);
+                }
+              }
+            }
+          };
+          walk(".");
+          projects.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+          for (const [name, version] of projects) console.log(name + " " + version);
+          '
+        }
+        if [ -n "{{.CLI_ARGS}}" ]; then
+          set -- {{.CLI_ARGS}}
+          if [ "$#" -ne 2 ]; then
+            echo "::error::pass a bump and a project: task version -- <patch|minor|major|x.y.z> <project>" >&2
+            exit 1
+          fi
+          bump=$1
+          project=$2
+          if ! publishable | grep -q "^$project "; then
+            echo "::error::$project is not a publishable project" >&2
+            exit 1
+          fi
+          pnpm exec nx release version "$bump" --projects="$project" --git-commit=false --git-tag=false --stage-changes=false
+          version="$(publishable | grep "^$project " | cut -d' ' -f2)"
+          first=""; [ -z "$(git tag --list "$project-v*")" ] && first=" --first-release"
+          pnpm exec nx release changelog "$version" --projects="$project" --git-commit=false --git-tag=false --stage-changes=false$first
+        else
+          publishable
+        fi
+      - task: :quality:format:markdown
+        if: '[ -n "{{.CLI_ARGS}}" ]'
+{% elif node_lib %}
   version:
     desc: Print the publishable projects' version, or bump it, write its CHANGELOG.md section and format it (pass -- patch|minor|major|x.y.z); the root version task runs it.
     internal: true

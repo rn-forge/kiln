@@ -52,6 +52,14 @@ _RELEASE = {
     "changelog": {"workspaceChangelog": {"createRelease": False}},
 }
 """`nx.json`'s `release` block: the projects tagged `publishable` release."""
+_RELEASE_INDEPENDENT = {
+    "projects": ["tag:publishable"],
+    "projectsRelationship": "independent",
+    "releaseTag": {"pattern": "{projectName}-v{version}"},
+    "version": _RELEASE["version"],
+    "changelog": {"projectChangelogs": {"createRelease": False}},
+}
+"""`nx.json`'s `release` block when each publishable project releases on its own."""
 _RELEASE_TARGET_DEFAULTS = {
     "pack": {
         "executor": "nx:run-commands",
@@ -186,7 +194,7 @@ def _fold_workspace(root: Path, workspace: Path) -> None:
 def _stamp_root(root: Path, config: KilnConfig) -> None:
     (root / _NVMRC).write_text(f"{NODE_MAJOR}\n", encoding="utf-8")
     _pin_and_name_package(root / "package.json", config.name)
-    _configure_nx(root)
+    _configure_nx(root, config)
 
 
 def _place_app(root: Path, config: KilnConfig) -> None:
@@ -233,7 +241,7 @@ def _pin_and_name_package(package_path: Path, repository: str) -> None:
     DocumentUtils.write(package_path, package)
 
 
-def _configure_nx(root: Path) -> None:
+def _configure_nx(root: Path, config: KilnConfig) -> None:
     path = root / "nx.json"
     nx = DocumentUtils.read(path)
     defaults = nx.setdefault("targetDefaults", {})
@@ -244,7 +252,10 @@ def _configure_nx(root: Path) -> None:
     unit_test = defaults["@nx/angular:unit-test"]
     unit_test["cache"] = True
     unit_test["inputs"] = ["default", "^production"]
-    nx.setdefault("release", copy.deepcopy(_RELEASE))
+    release = (
+        _RELEASE_INDEPENDENT if config.release_group == "independent" else _RELEASE
+    )
+    nx.setdefault("release", copy.deepcopy(release))
     for target, value in _RELEASE_TARGET_DEFAULTS.items():
         defaults.setdefault(target, copy.deepcopy(value))
     DocumentUtils.write(path, nx)

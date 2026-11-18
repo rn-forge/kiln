@@ -342,10 +342,15 @@ generated after `kiln new`, and `kiln doctor` reads none of it.
 
 **In `nx.json`.** `kiln new` writes these once; keep them.
 
-- `release`: `projects` holds `tag:publishable`, `version.preVersionCommand`
+{% if release_group == "independent" %}- `release`: `projects` holds `tag:publishable`, `projectsRelationship` is
+  `"independent"`, `releaseTag.pattern` is `{projectName}-v{version}`,
+  `version.preVersionCommand` builds those projects (and runs
+  `patch-package-exports` for any that declare it), and the changelog is per
+  project (`changelog.projectChangelogs.createRelease` is `false`).
+{% else %}- `release`: `projects` holds `tag:publishable`, `version.preVersionCommand`
   builds those projects (and runs `patch-package-exports` for any that declare
   it), and `changelog.workspaceChangelog.createRelease` is `false`.
-- `targetDefaults.pack` depends on `build` and packs `dist/<project>` into
+{% endif %}- `targetDefaults.pack` depends on `build` and packs `dist/<project>` into
   `dist/tarballs/`. `targetDefaults.verify-dist` depends on `pack`, is not
   cached, and checks the packed manifest.
 
@@ -361,7 +366,14 @@ before anything is pushed, with `No tarball in dist/tarballs`. Until npm publish
 `"dryRun": true` to the `nx-release-publish` options: the project generator does
 not write it, and without it the release's Publish step publishes to npm.
 
-**Releasing.** A release follows a version bump made in a pull request: run
+{% if release_group == "independent" %}**Releasing.** A release follows a version bump made in a pull request: run
+`task version -- <patch|minor|major|x.y.z> <project>` (`nx release version` for
+that project, no commit or tag), which writes the `CHANGELOG.md` in its folder;
+commit those and merge. `task version` with no argument prints each project's
+version. On the push to the default branch, each project whose version is not
+yet released is tagged `<project>-v<version>` and released on its own. CI never
+commits.
+{% else %}**Releasing.** A release follows a version bump made in a pull request: run
 `task version -- <patch|minor|major|x.y.z>` (`nx release version`, no commit or
 tag), commit the changed `package.json` files and the new `CHANGELOG.md`
 section, and merge. `task version` with no argument prints the version. On the
@@ -370,7 +382,7 @@ push to the default branch, `release` tags
 for `x.y.z`, the prerelease identifier for `x.y.z-<id>.<n>`), and publishes the
 GitHub Release last. CI never commits. A version whose GitHub Release is
 published is skipped.
-
+{% endif %}
 **For a publishable library's consumer check.** Add `"verify-consumer": {}` to
 its `project.json`, which takes its command from `targetDefaults`, and declare
 the peer matrix under `workspace-ci.consumer` in its `package.json`: the

@@ -28,13 +28,24 @@ pytestmark = requires("task", "git", "bash", "node")
 Run = Callable[..., subprocess.CompletedProcess[str]]
 
 
-@pytest.fixture(scope="module")
-def cell(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    root = tmp_path_factory.mktemp("cell")
-    write_config(root, "node-lib", name="demo", docs="mkdocs")
+def _render_cell(root: Path, tail: str = "") -> Path:
+    write_config(root, "node-lib", name="demo", docs="mkdocs", tail=tail)
     cycle.apply(root, home=root / "home")
     shutil.rmtree(root / "home", ignore_errors=True)
     return root
+
+
+@pytest.fixture(scope="module")
+def cell(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    return _render_cell(tmp_path_factory.mktemp("cell"))
+
+
+@pytest.fixture(scope="module")
+def independent_cell(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    return _render_cell(
+        tmp_path_factory.mktemp("independent"),
+        '\n[archetype.node-lib]\nrelease_group = "independent"\n',
+    )
 
 
 def _project(repo: Path, name: str, version: str, tags: str = "publishable") -> None:
@@ -54,13 +65,12 @@ def _stub(bin_dir: Path, name: str, body: str) -> None:
     path.chmod(path.stat().st_mode | stat.S_IXUSR)
 
 
-@pytest.fixture
-def repo(cell: Path, tmp_path: Path) -> Path:
+def _repo(cell: Path, tmp_path: Path, versions: dict[str, str]) -> Path:
     work = tmp_path / "work"
     shutil.copytree(cell, work)
     git(work, "init", "-q", "-b", "main")
-    _project(work, "a", "1.2.3")
-    _project(work, "b", "1.2.3")
+    for name, version in versions.items():
+        _project(work, name, version)
     git(work, "add", "-A")
     git(work, "commit", "-qm", "c")
     remote = tmp_path / "origin.git"
@@ -70,7 +80,16 @@ def repo(cell: Path, tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def run(repo: Path, tmp_path: Path) -> Run:
+def repo(cell: Path, tmp_path: Path) -> Path:
+    return _repo(cell, tmp_path, {"a": "1.2.3", "b": "1.2.3"})
+
+
+@pytest.fixture
+def independent_repo(independent_cell: Path, tmp_path: Path) -> Path:
+    return _repo(independent_cell, tmp_path, {"a": "1.2.3", "b": "2.0.0"})
+
+
+def _runner(repo: Path, tmp_path: Path) -> Run:
     """Run `task <name>` in `repo`, with fake gh, pnpm, uv and uvx first on PATH.
 
     `view` is what `gh release view <tag> --json isDraft` reports: `none` (no
@@ -116,6 +135,16 @@ def run(repo: Path, tmp_path: Path) -> Run:
         )
 
     return go
+
+
+@pytest.fixture
+def run(repo: Path, tmp_path: Path) -> Run:
+    return _runner(repo, tmp_path)
+
+
+@pytest.fixture
+def independent_run(independent_repo: Path, tmp_path: Path) -> Run:
+    return _runner(independent_repo, tmp_path)
 
 
 def _calls(tmp_path: Path) -> list[str]:
@@ -316,6 +345,15 @@ def test_descriptions(cell: Path) -> None:
     root = YamlUtils.load(rendered["Taskfile.yml"])["tasks"]["version"]["desc"]
     assert "CHANGELOG.md" in node
     assert "CHANGELOG.md" in root
+    assert node == (
+        "Print the publishable projects' version, or bump it, write its CHANGELOG.md"
+        " section and format it (pass -- patch|minor|major|x.y.z); the root version"
+        " task runs it."
+    )
+    assert root == (
+        "Print the publishable projects' version, or bump it, write its CHANGELOG.md"
+        " section and format it (pass -- patch|minor|major|x.y.z)."
+    )
 
 
 def test_draft_until_published(run: Run, tmp_path: Path, repo: Path) -> None:
@@ -367,3 +405,59 @@ def test_resume_after_a_partial_publish(run: Run, repo: Path, tmp_path: Path) ->
 
     assert run("ci:release:state", view="published").returncode == 0
     assert _outputs(tmp_path)["mode"] == "released"
+
+
+INDEPENDENT_BUMP = (
+    "pnpm exec nx release version minor --projects=a --git-commit=false"
+    " --git-tag=false --stage-changes=false"
+)
+INDEPENDENT_CHANGELOG = (
+    "pnpm exec nx release changelog 1.2.3 --projects=a --git-commit=false"
+    " --git-tag=false --stage-changes=false"
+)
+
+
+def test_independent_version_prints_each_project(
+    independent_run: Run, tmp_path: Path
+) -> None:
+    done = independent_run("version")
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert done.stdout.strip() == "a 1.2.3\nb 2.0.0"
+    assert _calls(tmp_path) == []
+
+
+def test_independent_bump_versions_one_project(
+    independent_run: Run, tmp_path: Path
+) -> None:
+    done = independent_run("version", "--", "minor", "a")
+    assert done.returncode == 0, done.stdout + done.stderr
+    calls = _calls(tmp_path)
+    assert calls[0] == INDEPENDENT_BUMP
+    assert calls[1] == INDEPENDENT_CHANGELOG + " --first-release"
+    assert len(calls) >= 3
+    assert all(c.startswith("uv run --group docs mdformat") for c in calls[2:])
+
+
+@pytest.mark.parametrize(
+    ("tag", "first"), [("a-v1.0.0", ""), ("b-v1.0.0", " --first-release")]
+)
+def test_independent_bump_drops_first_release_once_the_project_is_tagged(
+    independent_run: Run, independent_repo: Path, tmp_path: Path, tag: str, first: str
+) -> None:
+    git(independent_repo, "tag", tag)
+    done = independent_run("version", "--", "minor", "a")
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert _calls(tmp_path)[1] == INDEPENDENT_CHANGELOG + first
+
+
+def test_independent_bump_needs_a_project(independent_run: Run, tmp_path: Path) -> None:
+    done = independent_run("version", "--", "minor")
+    assert done.returncode != 0
+    assert "pass a bump and a project" in done.stdout + done.stderr
+    assert _calls(tmp_path) == []
+
+
+def test_independent_bump_refuses_an_unknown_project(independent_run: Run) -> None:
+    done = independent_run("version", "--", "minor", "zzz")
+    assert done.returncode != 0
+    assert "zzz is not a publishable project" in done.stdout + done.stderr
