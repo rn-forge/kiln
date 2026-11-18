@@ -13,6 +13,7 @@ from rn_forge.commons.runtime.console import OutputMode, console
 
 from rn_forge.kiln import commands
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.main import app
 from rn_forge.kiln.modules.core import cycle, kiln_ref
 
 from tests.conftest import git, write_config
@@ -53,6 +54,19 @@ def test_writes_only_the_ref(
     new = after[str(CONFIG)].decode()
     assert old.replace('ref = "v0.0.1"', f'ref = "{kiln_remote_sha}"') == new
     assert f"kiln ref v0.0.1 \u2192 {kiln_remote_sha}" in capsys.readouterr().out
+
+
+def test_the_cli_takes_the_ref_as_an_option(repo: Path, kiln_remote_sha: str) -> None:
+    assert app(["pin", "--ref", kiln_remote_sha]) == 0
+    assert (
+        tomllib.loads((repo / CONFIG).read_text(encoding="utf-8"))["kiln"]["ref"]
+        == kiln_remote_sha
+    )
+    try:
+        code = app(["pin", kiln_remote_sha])
+    except SystemExit as exc:
+        code = exc.code
+    assert code != 0
 
 
 @pytest.mark.parametrize("ref", ["", "   "])

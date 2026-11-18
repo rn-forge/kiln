@@ -33,6 +33,6 @@ tasks:
   pin:
     desc: Pin kiln to a branch's newest commit, a tag or a SHA and re-render with it. Pass it after `--`; with none, follow `track`.
     cmds:
-      - '{{.KILN}} pin {{.CLI_ARGS}}'
+      - '{{.KILN}} pin{{if .CLI_ARGS}} --ref {{.CLI_ARGS}}{{end}}'
       - 'uvx --from "rn-forge-kiln @ [[ kiln_git ]]@$({{.KILN}} pin --show)" kiln apply'
 {% endif %}

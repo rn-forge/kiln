@@ -134,10 +134,31 @@ def test_task_order(tmp_path: Path) -> None:
     assert "internal" not in pin
     assert pin["desc"].strip()
     assert pin["cmds"] == [
-        "{{.KILN}} pin {{.CLI_ARGS}}",
+        "{{.KILN}} pin{{if .CLI_ARGS}} --ref {{.CLI_ARGS}}{{end}}",
         'uvx --from "rn-forge-kiln @ git+https://github.com/rn-forge/kiln'
         '@$({{.KILN}} pin --show)" kiln apply',
     ]
+
+
+def test_the_pin_task_passes_the_ref_as_an_option(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    sha = "0123456789abcdef0123456789abcdef01234567"
+    run = _run_task(root, "--dry", "kiln:pin", "--", sha)
+    assert run.returncode == 0, run.stderr
+    assert f"pin --ref {sha}" in run.stdout + run.stderr
+
+
+def test_the_pin_task_with_no_ref_runs_bare_pin(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    run = _run_task(root, "--dry", "kiln:pin")
+    assert run.returncode == 0, run.stderr
+    first = next(
+        line for line in (run.stdout + run.stderr).splitlines() if " pin" in line
+    )
+    assert first.rstrip().endswith(" pin")
+    assert "--ref" not in first
 
 
 def test_the_pin_task_takes_no_argument(tmp_path: Path) -> None:

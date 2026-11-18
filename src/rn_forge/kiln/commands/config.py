@@ -98,13 +98,13 @@ def pin(ref: str = "", show: bool = False) -> None:
     """Pin the repository's `[kiln]` table to a commit, and write nothing else.
 
     A branch pins its newest commit and is recorded as `track`. A tag or SHA
-    pins itself and drops `track`. With no REF, follows `track`. `--show`
+    pins itself and drops `track`. Without `--ref`, follows `track`. `--show`
     prints the current `ref` and writes nothing. Reads only the `[kiln]` table,
     so a repository whose `ref` is still a branch can migrate. Does not apply;
     `task kiln:pin` does.
 
     Raises:
-        AppException: `kiln.track-missing`, no REF and no `track`; or REF is
+        AppException: `kiln.track-missing`, no `--ref` and no `track`; or the ref is
             not a branch or tag at kiln's remote.
     """
     path = umbrella.find_root(Path.cwd()) / CONFIG_PATH
