@@ -138,6 +138,7 @@ nav:
               - F7.5 — kiln takes pykit from PyPI: specs/epics/E7-pykit-release-pin-flip/F7.5-pykit-from-pypi.md
               - F7.6 — The `python-lib` release job publishes to PyPI: specs/epics/E7-pykit-release-pin-flip/F7.6-release-to-pypi.md
               - F7.7 — kiln installs as a standalone tool, from any ref: specs/epics/E7-pykit-release-pin-flip/F7.7-kiln-installs-as-a-tool.md
+              - F7.8 — An existing repository takes a new kiln's pykit floors: specs/epics/E7-pykit-release-pin-flip/F7.8-existing-repos-take-the-pin-table.md
           - E8 — The Azure DevOps CI provider:
               - specs/epics/E8-ado-provider/index.md
           - E9 — The node archetypes:
