@@ -32,3 +32,9 @@ launch-templates:
             echo "PATH=$HOME/.local/bin:$PATH" >> $NX_CLOUD_ENV
             "$HOME/.local/bin/uv" --version
           fi
+      - name: Install go-task
+        script: |
+          # Tracks the 3.x that the setup action's setup-task step resolves; every node-lib packs with task
+          sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b "$HOME/.local/bin" v3.54.0
+          echo "PATH=$HOME/.local/bin:$PATH" >> $NX_CLOUD_ENV
+          "$HOME/.local/bin/task" --version

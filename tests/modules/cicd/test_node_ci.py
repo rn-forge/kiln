@@ -273,7 +273,28 @@ def test_agents_yaml_is_ngkits_under_t1(tmp_path: Path) -> None:
         check=True,
     ).stdout.splitlines()
     assert golden[0].startswith("# ci-template:")
-    assert golden[1:] == lines[1:]
+    step = lines.index("      - name: Install go-task")
+    assert golden[1:] == lines[1:step]
+
+
+def _agent_steps(tmp_path: Path) -> list[dict[str, str]]:
+    doc = YamlUtils.load(_rendered(_root(tmp_path, "node-lib"))[AGENTS])
+    return doc["launch-templates"]["linux-medium"]["init-steps"]
+
+
+def test_agents_install_go_task_after_uv(tmp_path: Path) -> None:
+    names = [step["name"] for step in _agent_steps(tmp_path)]
+    assert names[names.index("Install uv") + 1] == "Install go-task"
+    assert names[-1] == "Install go-task"
+
+
+def test_agents_go_task_is_an_exact_version_on_the_path(tmp_path: Path) -> None:
+    step = next(s for s in _agent_steps(tmp_path) if s["name"] == "Install go-task")
+    script = step["script"]
+    assert '-b "$HOME/.local/bin" v3.54.0' in script
+    assert 'echo "PATH=$HOME/.local/bin:$PATH" >> $NX_CLOUD_ENV' in script
+    assert 'task" --version' in script
+    assert "if [" not in script
 
 
 @pytest.mark.parametrize(

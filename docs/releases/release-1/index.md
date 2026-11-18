@@ -71,7 +71,7 @@ are [release-2](../release-2/index.md).
 | [F9.3 — Node CI holds for ngkit and for every `node-lib`](../../specs/epics/E9-node-archetypes/F9.3-node-ci-holds-for-every-node-lib.md) | E9 | Closed |
 | [F9.4 — The node CI helpers run from `kiln-devops`](../../specs/epics/E9-node-archetypes/F9.4-node-helpers-in-kiln-devops.md) | E9 | Closed |
 | [F9.5 — What ngkit's cutover found about node-lib releases](../../specs/epics/E9-node-archetypes/F9.5-node-lib-release-findings.md) | E9 | New |
-| [F9.6 — Nx Cloud agents can run `task`](../../specs/epics/E9-node-archetypes/F9.6-nx-cloud-agents-run-task.md) | E9 | New |
+| [F9.6 — Nx Cloud agents can run `task`](../../specs/epics/E9-node-archetypes/F9.6-nx-cloud-agents-run-task.md) | E9 | Closed |
 | [F11.1 — The docs checks learn package sites](../../specs/epics/E11-package-docs/F11.1-checks-learn-package-sites.md) | E11 | Closed |
 | [F11.2 — `python-lib` repositories carry package docs sites](../../specs/epics/E11-package-docs/F11.2-python-lib-package-sites.md) | E11 | Closed |
 | [F11.3 — `kiln generate package`](../../specs/epics/E11-package-docs/F11.3-generate-package.md) | E11 | Closed |
