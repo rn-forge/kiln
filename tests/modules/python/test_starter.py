@@ -291,3 +291,15 @@ def test_starter_flags_seed_cli_and_lifecycle() -> None:
     }
     assert starter.starter_flags("python-app", "demo", "demo") == {"cli": cli}
     assert starter.starter_flags("python-lib", "demo", "demo") == {}
+
+
+def test_tool_main_reads_the_packaged_declaration(tmp_path: Path) -> None:
+    config = _tool(tmp_path)
+    _fresh(tmp_path, "python_tool")
+
+    main = {a.path: a.content for a in starter.render(config, tmp_path)}[
+        "src/python_tool/main.py"
+    ]
+
+    assert 'files("python_tool").joinpath("cli.toml")' in main
+    assert ".rn-forge" not in main

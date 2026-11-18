@@ -72,7 +72,12 @@ def test_new_records_seeded_and_validates(tmp_path: Path) -> None:
         for path, entry in recorded.items()
         if path.startswith(("src/", "tests/"))
         and entry["kind"] != "seeded"
-        and path not in {"src/demo_tool/__init__.py", "tests/test_package.py"}
+        and path
+        not in {
+            "src/demo_tool/__init__.py",
+            "src/demo_tool/cli.toml",
+            "tests/test_package.py",
+        }
     ]
     assert checks.run(directory) == []
 
@@ -109,7 +114,9 @@ def test_new_with_a_module(tmp_path: Path) -> None:
     def read(path: str) -> str:
         return (directory / path).read_text(encoding="utf-8")
 
-    assert ".parents[3] / " in read("src/rn_forge/demo/main.py")
+    assert 'files("rn_forge.demo").joinpath("cli.toml")' in read(
+        "src/rn_forge/demo/main.py"
+    )
     assert "import rn_forge.demo\n" in read("tests/test_package.py")
     assert "from rn_forge.demo.main import app" in read("tests/test_cli.py")
     assert "--cov=rn_forge.demo " in read("tasks/python.yml")

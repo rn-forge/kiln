@@ -301,6 +301,13 @@
       "kind": "managed",
       "path": "sonar-project.properties"
     },
+    "src/rn_forge/kiln/cli.toml": {
+      "begin_marker": null,
+      "content_hash": "f8c520158231d0037090c8ff59734a06e553609336cb851b400665e962ba3562",
+      "end_marker": null,
+      "kind": "managed",
+      "path": "src/rn_forge/kiln/cli.toml"
+    },
     "tasks/ci.yml": {
       "begin_marker": null,
       "content_hash": "c7dfbe54ceb5eb90eab726ebb252f9ce36b9ae47c04f808074c04b471aab713b",

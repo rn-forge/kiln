@@ -3,7 +3,7 @@
 A command function is all a repository writes. The application around it —
 the root callback, the standard `--log-level`/`--json` flags, the
 error-to-exit-code mapping — is built from the `[cli]` table in
-`.rn-forge/kiln/config.toml`.
+`.rn-forge/kiln/config.toml`, rendered into the packaged `cli.toml`.
 """
 
 from __future__ import annotations

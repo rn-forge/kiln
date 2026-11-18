@@ -1,17 +1,19 @@
 """The console-script entry point.
 
-The command line is declared in `.rn-forge/kiln/config.toml` under `[cli]`
-and `[lifecycle]` and built by `build_tool_app`. `[project.scripts]`
-points at `app` itself; there is no `main()`. `CliApp.__call__` returns the
-mapped exit code.
+The command line is read from the packaged `cli.toml`, which kiln renders from
+the `[cli]` and `[lifecycle]` tables of the repository's kiln config, and built
+by `build_tool_app`. `[project.scripts]` points at `app` itself; there is no
+`main()`. `CliApp.__call__` returns the mapped exit code.
 """
 
 from __future__ import annotations
 
-from pathlib import Path
+from importlib.resources import files
 
+from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.tooling.cli.lifecycle import build_tool_app
 
-CONFIG = Path(__file__).resolve().parents[{{ package.count(".") + 2 }}] / ".rn-forge" / "kiln" / "config.toml"
+DECLARATION = files("{{ package }}").joinpath("cli.toml")
+SURFACE = DocumentUtils.read(DECLARATION)
 
-app = build_tool_app(CONFIG)
+app = build_tool_app(SURFACE)

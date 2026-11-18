@@ -39,10 +39,13 @@ def _root(tmp_path: Path, archetype: str) -> Path:
 def test_renders_exactly_the_module_s_template_inventory_row(
     tmp_path: Path, archetype: str
 ) -> None:
-    """The template inventory lists only `.importlinter` for `python`."""
+    """The template inventory lists `.importlinter`, and `cli.toml` for a lifecycle repo."""
     config = KilnConfig.load(_root(tmp_path, archetype))
     artifacts = PYTHON.artifacts(config, tmp_path)
-    assert [a.path for a in artifacts] == [".importlinter"]
+    expected = [".importlinter"]
+    if archetype == "python-tool":
+        expected.append("src/demo/cli.toml")
+    assert [a.path for a in artifacts] == expected
     assert artifacts[0].kind is ArtifactKind.BLOCK
 
 

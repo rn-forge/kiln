@@ -203,7 +203,7 @@ def test_mkdocs_build_strict_passes_on_the_rendered_tree(
     root = _new(tmp_path / "repo", archetype)
     if archetype != "python-lib":
         # `python-api.md` documents the product's module, which `_new` leaves out.
-        (root / "src" / "demo").mkdir(parents=True)
+        (root / "src" / "demo").mkdir(parents=True, exist_ok=True)
         (root / "src" / "demo" / "__init__.py").write_text(
             '"""Demo."""\n', encoding="utf-8"
         )
@@ -769,7 +769,7 @@ def test_rendered_site_builds_strictly(tmp_path: Path) -> None:
     from mkdocs.config import load_config
 
     root = _new(tmp_path / "repo", "python-tool", origin=GITHUB)
-    (root / "src" / "demo").mkdir(parents=True)
+    (root / "src" / "demo").mkdir(parents=True, exist_ok=True)
     (root / "src" / "demo" / "__init__.py").write_text(
         '"""Demo."""\n', encoding="utf-8"
     )
