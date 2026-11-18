@@ -112,6 +112,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "web": web,
         "web_app": web_app,
         "node_lib": node_lib,
+        "release_group": config.release_group,
         "node": web_app or node_lib,
         "nx_cloud_image": _NX_CLOUD_IMAGE,
         "hooks": ci.hooks,

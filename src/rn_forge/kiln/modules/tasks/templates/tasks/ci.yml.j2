@@ -165,7 +165,84 @@ tasks:
     cmds:
       - pnpm exec nx run-many -t pack verify-dist verify-consumer
 {% if release == "nx-dispatch" %}
-  release:state:
+{% macro projects_fn() %}        projects() {
+          node -e '
+          const fs = require("node:fs");
+          const path = require("node:path");
+          const skip = new Set(["node_modules", "dist", ".git", ".nx"]);
+          const projects = [];
+          const walk = (dir) => {
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const file = path.join(dir, entry.name);
+              if (entry.isDirectory()) {
+                if (!skip.has(entry.name)) walk(file);
+              } else if (entry.name === "project.json") {
+                const project = JSON.parse(fs.readFileSync(file, "utf8"));
+                if ((project.tags ?? []).includes("publishable")) {
+                  const pkg = JSON.parse(fs.readFileSync(path.join(dir, "package.json"), "utf8"));
+                  const deps = Object.keys({ ...pkg.dependencies, ...pkg.peerDependencies, ...pkg.optionalDependencies });
+                  projects.push({ name: project.name, version: pkg.version, dir, pkg: pkg.name, deps });
+                }
+              }
+            }
+          };
+          walk(".");
+          projects.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
+          const byPackage = new Map(projects.map((p) => [p.pkg, p]));
+          const done = new Set();
+          const ordered = [];
+          while (ordered.length < projects.length) {
+            const next = projects.find((p) => !done.has(p) && p.deps.every((d) => !byPackage.has(d) || byPackage.get(d) === p || done.has(byPackage.get(d))));
+            if (!next) {
+              console.error("::error::dependency cycle among publishable projects");
+              process.exit(1);
+            }
+            done.add(next);
+            ordered.push(next);
+          }
+          for (const p of ordered) console.log(p.name + " " + p.version + " " + p.dir + " " + p.pkg);
+          '
+        }
+{% endmacro %}{% if release_group == "independent" %}  release:state:
+    desc: "CI only: Write tags, new and tag for every publishable project whose version is not yet released to $GITHUB_OUTPUT."
+    cmds:
+      - |
+        set -eu
+[[ projects_fn() ]]        list=$(projects) || exit 1
+        tags=""
+        new=""
+        while read -r project version dir pkg; do
+          [ -n "$project" ] || continue
+          tag="$project-v$version"
+          if ! git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            mode=new
+          elif [ "$(gh release view "$tag" --json isDraft --jq .isDraft 2>/dev/null)" = false ]; then
+            mode=released
+          elif [ "$(git rev-parse "$tag^{commit}")" != "$(git rev-parse HEAD)" ]; then
+            echo "::error::$tag exists but is not at HEAD; a failed release resumes only from its own commit"
+            exit 1
+          else
+            mode=resume
+          fi
+          case "$version" in
+            *-*) pre=${version#*-}; dist=${pre%%.*} ;;
+            *) dist=latest ;;
+          esac
+          echo "::notice::$project: $mode ($tag, npm tag $dist)"
+          if [ "$mode" != released ]; then tags="$tags $tag"; fi
+          if [ "$mode" = new ]; then new="$new $tag"; fi
+        done <<EOF
+        $list
+        EOF
+        tags=${tags# }
+        new=${new# }
+        {
+          echo "tags=$tags"
+          echo "new=$new"
+          echo "tag=${tags%% *}"
+        } >> "$GITHUB_OUTPUT"
+
+{% else %}  release:state:
     desc: "CI only: Write tag, mode=new|resume|released, first-release and dist-tag for the version in the pull request to $GITHUB_OUTPUT."
     cmds:
       - |
@@ -197,19 +274,24 @@ tasks:
           echo "dist-tag=$dist"
         } >> "$GITHUB_OUTPUT"
 
-  release:author:
+{% endif %}  release:author:
     desc: "CI only: Set the git author to the github-actions bot."
     cmds:
       - |
         git config user.name "github-actions[bot]"
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-  release:tag:
+{% if release_group == "independent" %}  release:tag:
+    desc: "CI only: Tag HEAD with each tag in NEW_TAGS."
+    cmds:
+      - for t in $NEW_TAGS; do git tag "$t"; done
+
+{% else %}  release:tag:
     desc: "CI only: Tag HEAD with TAG."
     cmds:
       - git tag "$TAG"
 
-  release:verify:
+{% endif %}  release:verify:
     desc: "CI only: Rebuild dist/ from the tagged source, then pack and verify the publishable projects; fails when no tarball was written."
     cmds:
       - |
@@ -219,12 +301,41 @@ tasks:
           exit 1
         fi
 
-  release:push:
+{% if release_group == "independent" %}  release:push:
+    desc: "CI only: Push each tag in NEW_TAGS, and nothing else."
+    cmds:
+      - for t in $NEW_TAGS; do git push origin "refs/tags/$t"; done
+
+{% else %}  release:push:
     desc: "CI only: Push the tag TAG, and nothing else."
     cmds:
       - git push origin "refs/tags/$TAG"
 
-  release:github:
+{% endif %}{% if release_group == "independent" %}  release:github:
+    desc: "CI only: Create the GitHub Release for each tag in TAGS as a draft, from its own tarball and kiln-devops notes."
+    cmds:
+      - |
+        set -eu
+[[ projects_fn() ]]        for t in $TAGS; do
+          project=${t%-v*}
+          version=${t##*-v}
+          set -- $(projects | awk -v p="$project" '$1 == p')
+          dir=$3
+          pack=$(echo "$4" | sed 's/^@//; s|/|-|')
+          tarball="dist/tarballs/$pack-$version.tgz"
+          if [ ! -f "$tarball" ]; then
+            echo "::error::$tarball is missing: $project has no packed tarball"
+            exit 1
+          fi
+          # A draft is what an earlier run left behind (published means released); keeps the tag.
+          if gh release view "$t" --json isDraft --jq .isDraft >/dev/null 2>&1; then
+            gh release delete "$t" --yes
+          fi
+          {{.DEVOPS}} notes "$dir/CHANGELOG.md" "$version" > "$RUNNER_TEMP/notes.md"
+          gh release create "$t" "$tarball" --verify-tag --title "$t" --notes-file "$RUNNER_TEMP/notes.md" --draft
+        done
+
+{% else %}  release:github:
     desc: "CI only: Create the GitHub Release for TAG as a draft, from the tarballs and kiln-devops notes."
     cmds:
       - |
@@ -236,17 +347,41 @@ tasks:
         {{.DEVOPS}} notes CHANGELOG.md "${tag#v}" > "$RUNNER_TEMP/notes.md"
         gh release create "$tag" dist/tarballs/*.tgz --verify-tag --title "$tag" --notes-file "$RUNNER_TEMP/notes.md" --draft
 
-  release:publish:
+{% endif %}{% if release_group == "independent" %}  release:publish:
+    desc: "CI only: Publish each project in TAGS to npm, under its own dist-tag."
+    cmds:
+      - |
+        set -eu
+        for t in $TAGS; do
+          project=${t%-v*}
+          version=${t##*-v}
+          case "$version" in
+            *-*) pre=${version#*-}; dist=${pre%%.*} ;;
+            *) dist=latest ;;
+          esac
+          first=" --first-release"
+          for other in $(git tag --list "$project-v*"); do
+            if [ "$other" != "$t" ]; then first=""; fi
+          done
+          pnpm exec nx release publish --projects="$project" --tag="$dist" --excludeTaskDependencies$first
+        done
+
+{% else %}  release:publish:
     desc: "CI only: Publish to npm under DIST_TAG; FIRST_RELEASE_FLAG holds the flag, or nothing."
     cmds:
       - pnpm exec nx release publish --tag="$DIST_TAG" --excludeTaskDependencies $FIRST_RELEASE_FLAG
 
-  release:finalize:
+{% endif %}{% if release_group == "independent" %}  release:finalize:
+    desc: "CI only: Publish the draft GitHub Release of each tag in TAGS, once npm has the version."
+    cmds:
+      - for t in $TAGS; do gh release edit "$t" --draft=false; done
+
+{% else %}  release:finalize:
     desc: "CI only: Publish the draft GitHub Release for TAG, once npm has the version."
     cmds:
       - gh release edit "$TAG" --draft=false
 
-  release:latest:
+{% endif %}{% if release_group != "independent" %}  release:latest:
     desc: "CI only: Move the rolling latest release to TAG."
     cmds:
       - |
@@ -271,13 +406,21 @@ tasks:
         git push origin latest --force
         gh release create latest dist/tarballs/*.tgz --title "Latest" --notes "Rolling pointer to $TAG"
 
-  verify-release:
+{% endif %}{% if release_group == "independent" %}  verify-release:
+    desc: "CI only: Install what consumers download, the tarballs of every release in TAGS."
+    cmds:
+      - |
+        for t in $TAGS; do
+          gh release download "$t" --dir dist/tarballs --pattern '*.tgz'
+        done
+        pnpm exec nx run-many -t verify-consumer --excludeTaskDependencies
+{% else %}  verify-release:
     desc: "CI only: Install what consumers download, the tarballs of the release TAG."
     cmds:
       - |
         gh release download "$TAG" --dir dist/tarballs --pattern '*.tgz'
         pnpm exec nx run-many -t verify-consumer --excludeTaskDependencies
-{% endif %}{% if docs %}
+{% endif %}{% endif %}{% if docs %}
   docs:site:
     desc: "CI only: Build Compodoc and Storybook and assemble them under the MkDocs site in [[ site_dir ]]."
     cmds:

@@ -8,6 +8,10 @@ on:
         description: The tag the release published
         type: string
         required: true
+{% endif %}{% if node_lib and release_group == "independent" %}      tags:
+        description: Every tag the release published, space-separated
+        type: string
+        required: true
 {% endif %}
 permissions:
   contents: read
@@ -33,7 +37,8 @@ jobs:{% if node_lib %}
         run: task ci:verify-release
         env:
           TAG: ${{ inputs.tag }}
-          GH_TOKEN: ${{ github.token }}{% elif workspace %}
+{% if release_group == "independent" %}          TAGS: ${{ inputs.tags }}
+{% endif %}          GH_TOKEN: ${{ github.token }}{% elif workspace %}
   # Package checks resolve internal dependencies from the workspace, which
   # never proves a tag installs on its own.
   verify-release:

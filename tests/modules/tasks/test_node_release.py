@@ -461,3 +461,202 @@ def test_independent_bump_refuses_an_unknown_project(independent_run: Run) -> No
     done = independent_run("version", "--", "minor", "zzz")
     assert done.returncode != 0
     assert "zzz is not a publishable project" in done.stdout + done.stderr
+
+
+def _tag_all(repo: Path, *tags: str) -> None:
+    for tag in tags:
+        git(repo, "tag", tag)
+
+
+def test_independent_state_lists_every_new_project(
+    independent_run: Run, tmp_path: Path
+) -> None:
+    done = independent_run("ci:release:state")
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert _outputs(tmp_path) == {
+        "tags": "a-v1.2.3 b-v2.0.0",
+        "new": "a-v1.2.3 b-v2.0.0",
+        "tag": "a-v1.2.3",
+    }
+    assert "::notice::a: new (a-v1.2.3, npm tag latest)" in done.stdout + done.stderr
+
+
+def test_independent_state_orders_dependencies_first(
+    independent_run: Run, independent_repo: Path, tmp_path: Path
+) -> None:
+    (independent_repo / "libs" / "a" / "package.json").write_text(
+        json.dumps({"name": "a", "version": "1.2.3", "dependencies": {"b": "^2"}}),
+        encoding="utf-8",
+    )
+    done = independent_run("ci:release:state")
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert _outputs(tmp_path)["tags"] == "b-v2.0.0 a-v1.2.3"
+    assert _outputs(tmp_path)["tag"] == "b-v2.0.0"
+
+
+def test_independent_state_refuses_a_dependency_cycle(
+    independent_run: Run, independent_repo: Path
+) -> None:
+    for name, other in (("a", "b"), ("b", "a")):
+        (independent_repo / "libs" / name / "package.json").write_text(
+            json.dumps(
+                {"name": name, "version": "1.0.0", "peerDependencies": {other: "*"}}
+            ),
+            encoding="utf-8",
+        )
+    done = independent_run("ci:release:state")
+    assert done.returncode != 0
+    assert "dependency cycle among publishable projects" in done.stdout + done.stderr
+
+
+def test_independent_state_skips_released_projects(
+    independent_run: Run, independent_repo: Path, tmp_path: Path
+) -> None:
+    _tag_all(independent_repo, "a-v1.2.3")
+    done = independent_run("ci:release:state", view="published")
+    assert done.returncode == 0, done.stdout + done.stderr
+    # `b` has no tag, so the same fake answer cannot make it released.
+    assert _outputs(tmp_path) == {
+        "tags": "b-v2.0.0",
+        "new": "b-v2.0.0",
+        "tag": "b-v2.0.0",
+    }
+
+
+def test_independent_state_resumes_a_draft(
+    independent_run: Run, independent_repo: Path, tmp_path: Path
+) -> None:
+    _tag_all(independent_repo, "a-v1.2.3")
+    done = independent_run("ci:release:state", view="draft")
+    assert done.returncode == 0, done.stdout + done.stderr
+    outputs = _outputs(tmp_path)
+    assert outputs["tags"] == "a-v1.2.3 b-v2.0.0"
+    assert outputs["new"] == "b-v2.0.0"
+
+
+def test_independent_state_refuses_a_tag_not_at_head(
+    independent_run: Run, independent_repo: Path
+) -> None:
+    _tag_all(independent_repo, "a-v1.2.3")
+    git(independent_repo, "commit", "-q", "--allow-empty", "-m", "later")
+    done = independent_run("ci:release:state", view="draft")
+    assert done.returncode != 0
+    assert "is not at HEAD" in done.stdout + done.stderr
+
+
+def test_independent_state_with_nothing_to_release(
+    independent_run: Run, independent_repo: Path, tmp_path: Path
+) -> None:
+    _tag_all(independent_repo, "a-v1.2.3", "b-v2.0.0")
+    done = independent_run("ci:release:state", view="published")
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert _outputs(tmp_path) == {"tags": "", "new": "", "tag": ""}
+
+
+def test_independent_state_with_no_publishable_project(
+    independent_run: Run, independent_repo: Path, tmp_path: Path
+) -> None:
+    for name in ("a", "b"):
+        shutil.rmtree(independent_repo / "libs" / name)
+    done = independent_run("ci:release:state")
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert _outputs(tmp_path) == {"tags": "", "new": "", "tag": ""}
+
+
+def test_independent_tag_and_push_handle_every_new_tag(
+    independent_run: Run, independent_repo: Path
+) -> None:
+    env = {"NEW_TAGS": "a-v1.2.3 b-v2.0.0"}
+    assert independent_run("ci:release:tag", env=env).returncode == 0
+    head = git(independent_repo, "rev-parse", "HEAD")
+    for tag in ("a-v1.2.3", "b-v2.0.0"):
+        assert git(independent_repo, "rev-parse", f"{tag}^{{commit}}") == head
+    done = independent_run("ci:release:push", env=env)
+    assert done.returncode == 0, done.stdout + done.stderr
+    remote = git(independent_repo, "ls-remote", "origin")
+    assert "refs/tags/a-v1.2.3" in remote
+    assert "refs/tags/b-v2.0.0" in remote
+    assert git(independent_repo, "ls-remote", "--heads", "origin") == ""
+
+
+def _tarballs(repo: Path, *names: str) -> None:
+    (repo / "dist" / "tarballs").mkdir(parents=True, exist_ok=True)
+    for name in names:
+        (repo / "dist" / "tarballs" / name).write_text("")
+
+
+def test_independent_github_release_carries_only_its_tarball(
+    independent_run: Run, independent_repo: Path, tmp_path: Path
+) -> None:
+    _tarballs(independent_repo, "a-1.2.3.tgz", "b-2.0.0.tgz")
+    done = independent_run("ci:release:github", env={"TAGS": "a-v1.2.3"})
+    assert done.returncode == 0, done.stdout + done.stderr
+    calls = _calls(tmp_path)
+    creates = [c for c in calls if c.startswith("gh release create")]
+    assert len(creates) == 1
+    assert creates[0].startswith(
+        "gh release create a-v1.2.3 dist/tarballs/a-1.2.3.tgz --verify-tag "
+    )
+    assert creates[0].endswith(" --draft")
+    notes = [c for c in calls if c.startswith("uvx ")]
+    assert len(notes) == 1
+    assert notes[0].endswith(" notes libs/a/CHANGELOG.md 1.2.3")
+
+
+def test_independent_github_release_names_a_scoped_tarball(
+    independent_run: Run, independent_repo: Path, tmp_path: Path
+) -> None:
+    (independent_repo / "libs" / "a" / "package.json").write_text(
+        json.dumps({"name": "@s/a", "version": "1.2.3"}), encoding="utf-8"
+    )
+    _tarballs(independent_repo, "s-a-1.2.3.tgz")
+    done = independent_run("ci:release:github", env={"TAGS": "a-v1.2.3"})
+    assert done.returncode == 0, done.stdout + done.stderr
+    creates = [c for c in _calls(tmp_path) if c.startswith("gh release create")]
+    assert creates[0].startswith(
+        "gh release create a-v1.2.3 dist/tarballs/s-a-1.2.3.tgz "
+    )
+
+
+def test_independent_github_release_fails_without_its_tarball(
+    independent_run: Run, independent_repo: Path
+) -> None:
+    _tarballs(independent_repo, "b-2.0.0.tgz")
+    done = independent_run("ci:release:github", env={"TAGS": "a-v1.2.3"})
+    assert done.returncode != 0
+    assert "dist/tarballs/a-1.2.3.tgz" in done.stdout + done.stderr
+
+
+def test_independent_publish_runs_per_project(
+    independent_run: Run, independent_repo: Path, tmp_path: Path
+) -> None:
+    env = {"TAGS": "a-v1.2.3 b-v2.0.0"}
+    done = independent_run("ci:release:publish", env=env)
+    assert done.returncode == 0, done.stdout + done.stderr
+    stem = "pnpm exec nx release publish --projects={} --tag=latest --excludeTaskDependencies"
+    assert _calls(tmp_path) == [
+        stem.format("a") + " --first-release",
+        stem.format("b") + " --first-release",
+    ]
+    (tmp_path / "calls.log").unlink()
+    _tag_all(independent_repo, "a-v1.0.0")
+    assert independent_run("ci:release:publish", env=env).returncode == 0
+    assert _calls(tmp_path) == [stem.format("a"), stem.format("b") + " --first-release"]
+
+
+def test_independent_finalize_publishes_each_draft(
+    independent_run: Run, tmp_path: Path
+) -> None:
+    done = independent_run("ci:release:finalize", env={"TAGS": "a-v1.2.3 b-v2.0.0"})
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert _calls(tmp_path) == [
+        "gh release edit a-v1.2.3 --draft=false",
+        "gh release edit b-v2.0.0 --draft=false",
+    ]
+
+
+def test_independent_cell_has_no_latest_task(
+    cell: Path, independent_cell: Path
+) -> None:
+    assert "release:latest" in _tasks(cell)
+    assert "release:latest" not in _tasks(independent_cell)

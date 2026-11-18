@@ -299,7 +299,8 @@ jobs:
     uses: ./.github/workflows/_verify-release.yml # zizmor: ignore[self-repository] actionlint rejects the $/ form
     with:
       tag: ${{ needs.release.outputs.tag }}
-{% endif %}{% if docs %}
+{% if release_group == "independent" %}      tags: ${{ needs.release.outputs.tags }}
+{% endif %}{% endif %}{% if docs %}
   # Publishes the one Pages site from main after the checks pass: MkDocs, with
   # Compodoc and Storybook assembled under it. deploy-pages replaces the whole
   # site, so every deploy builds all three.

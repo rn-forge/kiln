@@ -9,6 +9,7 @@ from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core.pins import load_pins
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.tasks import TASKS
+from tests.conftest import write_config
 from tests.modules.cicd.support import (
     ARCHETYPES,
     CI_YML,
@@ -106,3 +107,40 @@ def test_the_rendered_run_lines_name_no_forbidden_tool(
     cycle.apply(root, home=tmp_path / "home")
     codes = [f.code for f in checks.run(root)]
     assert not [c for c in codes if c.startswith("ci.entrypoint")], codes
+
+
+def _independent_files(tmp_path: Path) -> dict[str, str]:
+    root = write_config(
+        tmp_path,
+        "node-lib",
+        name="demo",
+        docs="mkdocs",
+        tail='\n[archetype.node-lib]\nrelease_group = "independent"\n',
+    )
+    return _rendered(root)
+
+
+def test_independent_release_job_keys_on_tags(tmp_path: Path) -> None:
+    files = _independent_files(tmp_path)
+    release = YamlUtils.load(files[".github/workflows/_release.yml"])
+    steps = {s.get("name"): s for s in release["jobs"]["release"]["steps"]}
+    assert 'Update rolling "latest" release' not in steps
+    tags = "${{ steps.state.outputs.tags != '' }}"
+    new = "${{ steps.state.outputs.new != '' }}"
+    for name in (
+        "Publish",
+        "Create the draft GitHub Release",
+        "Publish the GitHub Release",
+    ):
+        assert steps[name]["if"] == tags, name
+    for name in ("Tag the release", "Push the tag"):
+        assert steps[name]["if"] == new, name
+    assert "tags" in release["on"]["workflow_call"]["outputs"]
+
+
+def test_independent_verify_release_takes_the_tags(tmp_path: Path) -> None:
+    files = _independent_files(tmp_path)
+    job = YamlUtils.load(files[CI_YML])["jobs"]["verify-release"]
+    assert job["with"]["tags"] == "${{ needs.release.outputs.tags }}"
+    verify = YamlUtils.load(files[".github/workflows/_verify-release.yml"])
+    assert verify["on"]["workflow_call"]["inputs"]["tags"]["required"] is True

@@ -7,7 +7,10 @@ on:
       tag:
         description: The tag this run published; empty when the version was already released
         value: ${{ jobs.release.outputs.tag }}
-    secrets:
+{% if release_group == "independent" %}      tags:
+        description: Every tag this run released, space-separated; empty when every version was already released
+        value: ${{ jobs.release.outputs.tags }}
+{% endif %}    secrets:
       RELEASE_APP_PRIVATE_KEY:
         description: The release GitHub App's private key
         required: true
@@ -34,8 +37,10 @@ jobs:{% if node_lib %}
       id-token: write # npm OIDC trusted publishing
     # The tag this run published; empty when the version was already released.
     outputs:
-      tag: ${{ steps.state.outputs.mode != 'released' && steps.state.outputs.tag || '' }}
-    steps:
+{% if release_group == "independent" %}      tag: ${{ steps.state.outputs.tag }}
+      tags: ${{ steps.state.outputs.tags }}
+{% else %}      tag: ${{ steps.state.outputs.mode != 'released' && steps.state.outputs.tag || '' }}
+{% endif %}    steps:
       # The tag is pushed to a protected ref, so git runs as the release GitHub
       # App (a bypass actor on the tag ruleset); GITHUB_TOKEN cannot bypass it.
       - uses: [[ pins["create-github-app-token"].uses ]]@[[ pins["create-github-app-token"].sha ]] # [[ pins["create-github-app-token"].version ]]
@@ -65,52 +70,54 @@ jobs:{% if node_lib %}
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: Configure git author
-        if: ${{ steps.state.outputs.mode != 'released' }}
+{% set ind = release_group == "independent" %}      - name: Configure git author
+        if: [[ "${{ steps.state.outputs.tags != '' }}" if ind else "${{ steps.state.outputs.mode != 'released' }}" ]]
         run: task ci:release:author
 
       - name: Tag the release
-        if: ${{ steps.state.outputs.mode == 'new' }}
+        if: [[ "${{ steps.state.outputs.new != '' }}" if ind else "${{ steps.state.outputs.mode == 'new' }}" ]]
         run: task ci:release:tag
         env:
-          TAG: ${{ steps.state.outputs.tag }}
+          [[ "NEW_TAGS: ${{ steps.state.outputs.new }}" if ind else "TAG: ${{ steps.state.outputs.tag }}" ]]
 
       # dist/ is rebuilt from the tagged source, with task dependencies, and pack
       # stamps the exact internal pins.
       - name: Rebuild and verify
-        if: ${{ steps.state.outputs.mode != 'released' }}
+        if: [[ "${{ steps.state.outputs.tags != '' }}" if ind else "${{ steps.state.outputs.mode != 'released' }}" ]]
         run: task ci:release:verify
 
       - name: Push the tag
-        if: ${{ steps.state.outputs.mode == 'new' }}
+        if: [[ "${{ steps.state.outputs.new != '' }}" if ind else "${{ steps.state.outputs.mode == 'new' }}" ]]
         run: task ci:release:push
         env:
-          TAG: ${{ steps.state.outputs.tag }}
+          [[ "NEW_TAGS: ${{ steps.state.outputs.new }}" if ind else "TAG: ${{ steps.state.outputs.tag }}" ]]
 
       # A draft until npm has the version, so a published release is a finished one.
       - name: Create the draft GitHub Release
-        if: ${{ steps.state.outputs.mode != 'released' }}
+        if: [[ "${{ steps.state.outputs.tags != '' }}" if ind else "${{ steps.state.outputs.mode != 'released' }}" ]]
         run: task ci:release:github
         env:
-          TAG: ${{ steps.state.outputs.tag }}
+          [[ "TAGS: ${{ steps.state.outputs.tags }}" if ind else "TAG: ${{ steps.state.outputs.tag }}" ]]
           GH_TOKEN: ${{ github.token }}
 
       # --excludeTaskDependencies to not invalidate cache and use the dist/ the
       # verify step built. nx skips a version npm already has.
       - name: Publish
-        if: ${{ steps.state.outputs.mode != 'released' }}
+        if: [[ "${{ steps.state.outputs.tags != '' }}" if ind else "${{ steps.state.outputs.mode != 'released' }}" ]]
         run: task ci:release:publish
-        env:
+{% if ind %}        env:
+          TAGS: ${{ steps.state.outputs.tags }}
+{% else %}        env:
           DIST_TAG: ${{ steps.state.outputs.dist-tag }}
           FIRST_RELEASE_FLAG: ${{ steps.state.outputs.first-release == 'true' && '--first-release' || '' }}
-
+{% endif %}
       - name: Publish the GitHub Release
-        if: ${{ steps.state.outputs.mode != 'released' }}
+        if: [[ "${{ steps.state.outputs.tags != '' }}" if ind else "${{ steps.state.outputs.mode != 'released' }}" ]]
         run: task ci:release:finalize
         env:
-          TAG: ${{ steps.state.outputs.tag }}
+          [[ "TAGS: ${{ steps.state.outputs.tags }}" if ind else "TAG: ${{ steps.state.outputs.tag }}" ]]
           GH_TOKEN: ${{ github.token }}
-
+{% if not ind %}
       # Rolling pointer so consumers can depend on a stable, version-less URL
       # (.../releases/download/latest/<pkg>.tgz) instead of tracking exact tags.
       - name: Update rolling "latest" release
@@ -119,12 +126,13 @@ jobs:{% if node_lib %}
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.state.outputs.tag }}
-
+{% endif %}
       - name: Already released
-        if: ${{ steps.state.outputs.mode == 'released' }}
+{% if ind %}        if: ${{ steps.state.outputs.tags == '' }}
+        run: echo "::notice::every publishable project's version is already released"{% else %}        if: ${{ steps.state.outputs.mode == 'released' }}
         run: echo "::notice::$TAG is already released"
         env:
-          TAG: ${{ steps.state.outputs.tag }}{% else %}
+          TAG: ${{ steps.state.outputs.tag }}{% endif %}{% else %}
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 15
