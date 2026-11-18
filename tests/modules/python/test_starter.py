@@ -303,3 +303,12 @@ def test_tool_main_reads_the_packaged_declaration(tmp_path: Path) -> None:
 
     assert 'files("python_tool").joinpath("cli.toml")' in main
     assert ".rn-forge" not in main
+
+
+def test_tool_product_is_a_python_tool(tmp_path: Path) -> None:
+    config = _tool(tmp_path)
+    _fresh(tmp_path, "python_tool")
+    by_path = {a.path: a.content for a in starter.render(config, tmp_path)}
+    product = by_path["src/python_tool/product.py"]
+    assert "class Tool(PythonTool)" in product
+    assert "def artifacts" not in product

@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from importlib.metadata import version
 
 from rn_forge.commons.findings import Finding, Severity
-from rn_forge.tooling.install import Check, Link, ToolHome, ToolProduct
+from rn_forge.tooling.install import Check, PythonTool, ToolHome
 
 
 def check_home(home: ToolHome) -> list[Finding]:
@@ -25,17 +25,8 @@ def check_home(home: ToolHome) -> list[Finding]:
     ]
 
 
-class Tool(ToolProduct):
-    """`{{ name }}`: one command on PATH, one check of its own."""
-
-    def artifacts(self) -> Sequence[Link]:
-        """Put the command on PATH."""
-        return (
-            Link(
-                "bin/{{ name }}",
-                "bin/{{ name }}",
-            ),
-        )
+class Tool(PythonTool):
+    """`{{ name }}`: installed with `uv tool install`, one check of its own."""
 
     def checks(self) -> Sequence[Check]:
         """Check the install's home."""
