@@ -10,6 +10,8 @@ the repository check.
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 from collections.abc import Callable
 import shutil
 from pathlib import Path
@@ -24,6 +26,8 @@ from rn_forge.tooling.cli.lifecycle import build_tool_app
 from rn_forge.kiln import commands
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.core.config.schema import RootConfig
+
+from tests.conftest import requires
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -50,6 +54,26 @@ def repo(
     cycle.apply(root)
     monkeypatch.chdir(root)
     yield root
+
+
+@pytest.fixture
+def installed(
+    kiln_cli: CliApp, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Path:
+    """An install of this checkout's HEAD from an archive."""
+    tarball = tmp_path / "kiln-0.1.0.tar.gz"
+    subprocess.run(
+        ["git", "archive", "--prefix=kiln-0.1.0/", "-o", str(tarball), "HEAD"],
+        cwd=ROOT,
+        check=True,
+    )
+    cache = os.environ.get("UV_CACHE_DIR") or str(ROOT / ".uv-cache")
+    monkeypatch.setenv("UV_CACHE_DIR", str(Path(cache).resolve()))
+    code = kiln_cli.run(
+        ["self", "install", "--archive", str(tarball), "--version", "0.1.0"]
+    )
+    assert code == 0
+    return tmp_path / "home"
 
 
 _VERBS = ("install", "upgrade", "uninstall", "cleanup", "status", "doctor")
@@ -161,3 +185,27 @@ def _corrupt_ci_provider(root: Path) -> None:
         text.replace('provider = "github"', 'provider = "bogus"'),
         encoding="utf-8",
     )
+
+
+@requires("uv", "git")
+def test_self_install_from_an_archive_puts_kiln_on_path(installed: Path) -> None:
+    link = installed / "bin" / "kiln"
+    assert link.is_symlink()
+    assert "kiln/current/" in os.readlink(link)
+    result = subprocess.run(
+        [str(link), "version"], capture_output=True, text=True, check=False
+    )
+    assert result.returncode == 0
+    assert "0.1.0" in result.stdout
+
+
+@requires("uv", "git")
+def test_self_doctor_after_an_install_reports_install_ok(
+    kiln_cli: CliApp, installed: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert installed.is_dir()
+    capsys.readouterr()
+    assert kiln_cli.run(["self", "doctor"]) == 0
+    out = capsys.readouterr().out
+    assert "install.ok" in out
+    assert "ERROR" not in out

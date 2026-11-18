@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from rn_forge.commons.findings import Finding, Severity
-from rn_forge.tooling.install import Check, Link, ToolHome, ToolProduct
+from rn_forge.tooling.install import Check, PythonTool, ToolHome
 
 from rn_forge.kiln import __version__
 
@@ -22,12 +22,8 @@ def check_home(home: ToolHome) -> list[Finding]:
     return [Finding("kiln.home", Severity.INFO, f"home is {home.product_dir}")]
 
 
-class Kiln(ToolProduct):
-    """kiln: one command on PATH, one check of its own."""
-
-    def artifacts(self) -> Sequence[Link]:
-        """Put the command on PATH."""
-        return (Link("bin/kiln", "bin/kiln"),)
+class Kiln(PythonTool):
+    """kiln: installed with `uv tool install`, one check of its own."""
 
     def checks(self) -> Sequence[Check]:
         """Check the install's home."""
