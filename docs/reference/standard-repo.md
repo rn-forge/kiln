@@ -18,6 +18,11 @@ never has to find kiln to read the rules.
 `kiln doctor`'s `ci-entrypoint` check enforces that for every workflow file; the
 forbidden list is the archetype's, read from `.rn-forge/kiln/config.toml`.
 
+For `node-lib` the rule covers workflows and the gate. A document may name a
+native command that is scoped to one project and that no verb covers, such as
+`pnpm exec nx serve <app>`, `pnpm exec nx g …` or
+`pnpm exec nx show project <name>`, where it says what the command is for.
+
 The public surface is ten root verbs:
 
 ```text

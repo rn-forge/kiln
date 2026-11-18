@@ -183,6 +183,13 @@ def _archetype_bullet(config: KilnConfig) -> str:
 
 
 def _entrypoint_bullet(config: KilnConfig) -> str:
+    if config.is_node_lib:
+        return _bullet(
+            f"**Entrypoint:** `task`. Workflows and the gate never invoke "
+            f"{_tools(config)} or `kiln` directly; a document may name a "
+            f"project-scoped native command no verb covers — the ten root "
+            f"verbs are {_ROOT_VERBS}{_verbs(config)}."
+        )
     return _bullet(
         f"**Entrypoint:** `task`. Never invoke {_tools(config)} "
         f"or `kiln` directly, in a workflow or in a document — the ten root "

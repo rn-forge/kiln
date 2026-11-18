@@ -34,9 +34,16 @@ is a kiln ADR; this file states the rule.
 
 ## 1. One entrypoint
 
-`task` is the only entrypoint. Nobody — human, agent, or CI — invokes {% if node_lib %}`uv`,
-`mkdocs`, `pnpm`, `npx`, `nx`, `ng` or `kiln`{% else %}`uv`,
-`pytest`, `ruff`, `pyright`, `mkdocs` or `kiln`{% endif %} directly.
+{% if node_lib %}`task` is the only entrypoint for CI and for the gate. A workflow step, and
+everything `validate`, `lint`, `test` and `build` run, goes through `task`;
+nothing there invokes `uv`, `mkdocs`, `pnpm`, `npx`, `nx`, `ng` or `kiln`
+directly. A document may name a native command that is scoped to one
+project and that no verb covers, such as `pnpm exec nx serve <app>`,
+`pnpm exec nx g …` or `pnpm exec nx show project <name>`, where it says what
+the command is for.
+{% else %}`task` is the only entrypoint. Nobody — human, agent, or CI — invokes `uv`,
+`pytest`, `ruff`, `pyright`, `mkdocs` or `kiln` directly.
+{% endif %}
 
 The developer surface for this repo is exactly:
 

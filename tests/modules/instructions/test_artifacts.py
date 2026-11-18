@@ -565,6 +565,33 @@ def test_node_lib_claude_block_names_the_node_tools(tmp_path: Path) -> None:
         assert named == forbidden
 
 
+def test_node_lib_standard_allows_project_scoped_commands(tmp_path: Path) -> None:
+    standard = _squash(_rendered(_node_lib(tmp_path))[STANDARD])
+    assert "`task` is the only entrypoint for CI and for the gate" in standard
+    assert "`pnpm exec nx serve <app>`" in standard
+    assert "Nobody — human, agent, or CI" not in standard
+
+
+def test_python_standard_keeps_the_whole_entrypoint_rule(tmp_path: Path) -> None:
+    standard = _squash(_rendered(_new(tmp_path, "python-app"))[STANDARD])
+    assert "Nobody — human, agent, or CI — invokes" in standard
+    assert "project-scoped" not in standard
+
+
+def test_node_lib_agents_bullet_allows_project_scoped_commands(
+    tmp_path: Path,
+) -> None:
+    bullet = _squash(_rendered(_node_lib(tmp_path))[BLOCK_KEY])
+    assert "Workflows and the gate never invoke" in bullet
+    assert "project-scoped native command" in bullet
+    assert "in a workflow or in a document" not in bullet
+
+
+def test_python_agents_bullet_is_unchanged(tmp_path: Path) -> None:
+    bullet = _squash(_rendered(_new(tmp_path, "python-app"))[BLOCK_KEY])
+    assert "in a workflow or in a document" in bullet
+
+
 def test_python_web_app_tools_are_unchanged(tmp_path: Path) -> None:
     root = _root(tmp_path, "python-web-app")
     (root / ".rn-forge/kiln/config.toml").write_text(
