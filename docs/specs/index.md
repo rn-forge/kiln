@@ -12,8 +12,8 @@ Backlog sections below are derived from the epic, feature and release pages by
 
 | Release | Status | Features |
 | -- | -- | -- |
-| [Release 2 — the architecture baseline and taskkit retired](../releases/release-2/index.md) | planned | 5 New |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 1 Active · 2 New · 87 Closed |
+| [Release 2 — the architecture baseline, and repositories on kiln's `main`](../releases/release-2/index.md) | planned | 5 New · 1 Removed |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 2 New · 88 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -66,7 +66,7 @@ now:   ADRs accepted ─→ S13.1.1 derived nav ─→ F13.2 board/scope ─→ 
        F4.4 rest (S4.4.3 approval; S4.4.7–S4.4.9 goldens leave git) ──┐
        S5.3.1 + F11.1–F11.3 ─→ S6.1.1 python-lib hosts pykit          │
        S4.5.3–S4.5.7 ─→ F4.6 doctor ──────────────────────────────────┼─→ F4.8 self-host
-       F4.7 contracts ────────────────────────────────────────────────┘   F6.2 retire taskkit (after S4.6.2, S5.2.2)
+       F4.7 contracts ────────────────────────────────────────────────┘
        F7.1 tag pins
        F4.12 task files by owner (after F4.11; before F9.1's stories and the release-1 tag)
        F9.1 node-lib CI ─→ F9.2 one node scaffold ─→ F9.3 node CI holds ─→ S9.1.12 re-label and approval ─→ S9.1.6
@@ -76,7 +76,7 @@ now:   ADRs accepted ─→ S13.1.1 derived nav ─→ F13.2 board/scope ─→ 
        E15 CI standard (F15.1 ─→ F15.2–F15.7 · F15.8 owner decision) ─┐
        E16 init adopts by overwrite (F16.2 · F16.1 ─→ F16.3 · F16.4 ─→ F16.8 retire init ─→ F16.9 ─→ F16.10 agent instructions) ─┤
        E17 task standard (F17.1 · F17.2 · F17.3 a faster gate) ─────────┤
-       E19 formatting standard (F19.1: S19.1.1 spike ─→ S19.1.2 clean templates ─→ S19.1.3 tasks ─→ S19.1.4 self-host) ─┴─→ S7.2.4 cutover SOP on pykit, then ngkit ─→ S7.2.2 the tag
+       E19 formatting standard (F19.1: S19.1.1 spike ─→ S19.1.2 clean templates ─→ S19.1.3 tasks ─→ S19.1.4 self-host) ─┴─→ release 1 ships (owner) ─→ F7.9 repositories follow main
 triggered: E7 pykit tags · E8 ADO · backlog: E10 generators
 ```
 

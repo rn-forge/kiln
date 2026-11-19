@@ -10,7 +10,7 @@
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
 | [F6.1 — `python-lib` can host pykit](F6.1-pykit-skeleton.md) | Closed | release-1 | 19 Closed |
-| [F6.2 — Retire taskkit](F6.2-retire-taskkit.md) | New | release-2 | 1 New |
+| [F6.2 — Retire taskkit](F6.2-retire-taskkit.md) | Removed | release-2 | 1 Removed |
 | [F6.3 — The generated CI matches the hardened upstream CI](F6.3-hardened-ci.md) | Closed | release-1 | 8 Closed |
 | [F6.4 — `python-lib` renders pykit's discovered workspace pipeline](F6.4-workspace-pipeline.md) | Closed | release-1 | 7 Closed |
 | [F6.6 — `kiln init` leaves the gate runnable](F6.6-init-leaves-gate-runnable.md) | Closed | release-1 | 3 Closed |
@@ -34,8 +34,8 @@ pykit-shaped `python-lib` repository built in a scratch directory
 CI already does ([F6.3](F6.3-hardened-ci.md),
 [F6.4](F6.4-workspace-pipeline.md), [F6.8](F6.8-pykit-release-7-ci.md)), so
 adopting kiln takes nothing out of their pipelines. Retiring taskkit
-([F6.2](F6.2-retire-taskkit.md)) is kiln's because taskkit's job moves into
-kiln.
+([F6.2](F6.2-retire-taskkit.md)) was removed on 2026-11-19: taskkit is deleted,
+and kiln does not track it.
 
 ## Features
 

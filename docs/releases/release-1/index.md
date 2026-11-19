@@ -9,8 +9,8 @@ and `python-lib` from authored templates, creates and ships the FastAPI web
 cells (`python-web-api`, and `python-web-app` with an Angular frontend), and
 regenerates its own repo. It proves that `python-lib`, with its package docs
 sites, can host pykit (F6.1): adopting pykit exercises the scaffolding, seeding,
-CI, docs and tasks end to end. The architecture baseline and retiring taskkit
-are [release-2](../release-2/index.md).
+CI, docs and tasks end to end. The architecture baseline is
+[release-2](../release-2/index.md).
 
 ## Entry criteria
 
@@ -60,7 +60,7 @@ are [release-2](../release-2/index.md).
 | [F6.11 — The library-workspace release job runs in `ci.yml`](../../specs/epics/E6-rebuild-the-repos/F6.11-pypi-release-in-ci-yml.md) | E6 | Closed |
 | [F6.12 — `umbrella` releases only the newest shipped release](../../specs/epics/E6-rebuild-the-repos/F6.12-umbrella-releases-only-the-newest.md) | E6 | Closed |
 | [F7.1 — kiln renders and takes pykit by release tag](../../specs/epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md) | E7 | Closed |
-| [F7.2 — A tagged kiln release, taken by each repository](../../specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md) | E7 | Active |
+| [F7.2 — The release-1 exit check, and moving a repository's kiln pin](../../specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md) | E7 | Closed |
 | [F7.3 — kiln takes pykit's document, template and Markdown helpers](../../specs/epics/E7-pykit-release-pin-flip/F7.3-adopt-pykit-extraction.md) | E7 | Closed |
 | [F7.4 — kiln runs beside a repository, not inside its lock](../../specs/epics/E7-pykit-release-pin-flip/F7.4-kiln-runs-beside-the-repository.md) | E7 | Closed |
 | [F7.5 — kiln takes pykit from PyPI](../../specs/epics/E7-pykit-release-pin-flip/F7.5-pykit-from-pypi.md) | E7 | Closed |
@@ -154,10 +154,12 @@ are [release-2](../release-2/index.md).
 
 ## Progress
 
-As of 2026-11-17, every feature in scope is closed except F7.2 (the tagged
-release), F16.5 and the open E18 features. The `v0.1.0` tag is held until pykit
-and ngkit have cut over on `feature/v1` and the E18 features land. Next: the
-remaining E18 features, then the cutover and the tag.
+As of 2026-11-19, every feature in scope is closed except the open E18 features.
+pykit and ngkit have cut over and are pinned to kiln by SHA. There is no tag
+(owner decision, 2026-11-19): release 1 ships when the owner lands `feature/v1`
+on `main`, and repositories then follow `main`
+([F7.9](../../specs/epics/E7-pykit-release-pin-flip/F7.9-repos-follow-main.md),
+release 2).
 
 ## Commits
 
@@ -183,8 +185,8 @@ git log --format='%h %ad %s' --date=short -E --grep='[FS](3\.[1-4]|4\.[1-9]|5\.[
   repository passes its own gate and renders ngkit's CI.
 - Every open question on an in-scope feature is answered, as an ADR or as a
   rejected option recorded on the feature.
-- The cutover SOP, run on pykit and then ngkit, leaves no open absorb row. The
-  owner holds the tag until then.
+- The cutover SOP has run on pykit and then ngkit. The owner decides when
+  release 1 ships.
 - [E15](../../specs/epics/E15-ci-standard/index.md)'s acceptance blocks pass:
   every archetype runs the one stage vocabulary from `ci.yml`.
 - [E16](../../specs/epics/E16-init-adopts-by-overwrite/index.md)'s acceptance
@@ -195,7 +197,7 @@ git log --format='%h %ad %s' --date=short -E --grep='[FS](3\.[1-4]|4\.[1-9]|5\.[
 
 Proved 2026-11-03 at `be9429e` on `feature/v1`. kiln's CI at that commit:
 [run 41590472355](https://github.com/rn-forge/kiln/actions/runs/41590472355),
-green with Sonar's quality gate. The tag is held for the cutover.
+green with Sonar's quality gate.
 
 Each block ran locally in a clean worktree after `task setup`. F6.1 and F6.7 ran
 with pykit's `feature/release-8`, which carries the rn-forge-devops guides page.

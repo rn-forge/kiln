@@ -132,13 +132,14 @@ nav:
           - E7 — pykit releases, and the pin flip:
               - specs/epics/E7-pykit-release-pin-flip/index.md
               - F7.1 — kiln renders and takes pykit by release tag: specs/epics/E7-pykit-release-pin-flip/F7.1-tag-pins.md
-              - F7.2 — A tagged kiln release, taken by each repository: specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md
+              - F7.2 — The release-1 exit check, and moving a repository's kiln pin: specs/epics/E7-pykit-release-pin-flip/F7.2-kiln-release-and-config-upgrade.md
               - F7.3 — kiln takes pykit's document, template and Markdown helpers: specs/epics/E7-pykit-release-pin-flip/F7.3-adopt-pykit-extraction.md
               - F7.4 — kiln runs beside a repository, not inside its lock: specs/epics/E7-pykit-release-pin-flip/F7.4-kiln-runs-beside-the-repository.md
               - F7.5 — kiln takes pykit from PyPI: specs/epics/E7-pykit-release-pin-flip/F7.5-pykit-from-pypi.md
               - F7.6 — The `python-lib` release job publishes to PyPI: specs/epics/E7-pykit-release-pin-flip/F7.6-release-to-pypi.md
               - F7.7 — kiln installs as a standalone tool, from any ref: specs/epics/E7-pykit-release-pin-flip/F7.7-kiln-installs-as-a-tool.md
               - F7.8 — An existing repository takes a new kiln's pykit floors: specs/epics/E7-pykit-release-pin-flip/F7.8-existing-repos-take-the-pin-table.md
+              - F7.9 — Repositories follow kiln's `main` after release 1: specs/epics/E7-pykit-release-pin-flip/F7.9-repos-follow-main.md
           - E8 — The Azure DevOps CI provider:
               - specs/epics/E8-ado-provider/index.md
           - E9 — The node archetypes:
