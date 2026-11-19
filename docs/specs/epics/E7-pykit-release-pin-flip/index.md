@@ -16,7 +16,7 @@
 | [F7.5 — kiln takes pykit from PyPI](F7.5-pykit-from-pypi.md) | Closed | release-1 | 6 Closed |
 | [F7.6 — The `python-lib` release job publishes to PyPI](F7.6-release-to-pypi.md) | Closed | release-1 | 7 Closed |
 | [F7.7 — kiln installs as a standalone tool, from any ref](F7.7-kiln-installs-as-a-tool.md) | Active | release-1 | 1 New · 5 Closed |
-| [F7.8 — An existing repository takes a new kiln's pykit floors](F7.8-existing-repos-take-the-pin-table.md) | Active | release-1 | 3 New |
+| [F7.8 — An existing repository takes a new kiln's pykit floors](F7.8-existing-repos-take-the-pin-table.md) | Active | release-1 | 4 New |
 
 <!-- END derived features -->
 
