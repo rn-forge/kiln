@@ -224,7 +224,7 @@ it owns.
 
 | Tier | Key | What it does |
 | -- | -- | -- |
-| Switch a kiln check | `[ci]`: `sonar`, `release`, `doctor_full`, `sonar_exclusions`, `sonar_coverage_exclusions` | Turns a check on or off, or sets its policy |
+| Switch a kiln check | `[ci]`: `sonar`, `sonar_organization`, `release`, `doctor_full`, `sonar_exclusions`, `sonar_coverage_exclusions` | Turns a check on or off, or sets its policy |
 | Steps inside kiln's jobs | `[ci.hooks] setup` | Local composite actions (`./.github/actions/<name>`) the generated setup action runs last, so every job using it gets them |
 |  | `[ci.hooks] docs` | Local composite actions every Pages-uploading job runs before the upload, with `SITE_DIR` set |
 | A repository's own job | `[[ci.jobs]]` | Renders a reusable-workflow call that needs `validate` and that `ci-ok` needs unless `required = false` |

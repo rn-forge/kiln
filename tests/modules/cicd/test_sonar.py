@@ -266,3 +266,32 @@ def test_standard_names_both_keys_in_its_ci_example() -> None:
     example = standard[standard.index('provider = "github"') :]
     assert "sonar_exclusions = []" in example
     assert "sonar_coverage_exclusions = []" in example
+
+
+def test_the_owner_names_the_sonar_organisation(tmp_path: Path) -> None:
+    root = _sonar_root(tmp_path, "python-app")
+    config = root / ".rn-forge/kiln/config.toml"
+    text = config.read_text(encoding="utf-8")
+    assert 'owner = "rn-forge"' in text
+    config.write_text(
+        text.replace('owner = "rn-forge"', 'owner = "rn-apps"'), encoding="utf-8"
+    )
+    lines = _sonar(root).splitlines()
+    assert "sonar.organization=rn-apps" in lines
+    assert "sonar.projectKey=rn-apps_demo" in lines
+
+
+def test_sonar_organization_overrides_the_owner(tmp_path: Path) -> None:
+    root = _sonar_root(tmp_path, "python-app", 'sonar_organization = "acme"\n')
+    lines = _sonar(root).splitlines()
+    assert "sonar.organization=acme" in lines
+    assert "sonar.projectKey=acme_demo" in lines
+
+
+def test_an_empty_sonar_organization_is_refused(tmp_path: Path) -> None:
+    root = _sonar_root(tmp_path, "python-app", 'sonar_organization = ""\n')
+    with pytest.raises(ModelValidationError) as caught:
+        KilnConfig.load(root)
+    assert {(error.path, error.kind) for error in caught.value.errors} == {
+        ("ci.sonar_organization", "value_error")
+    }

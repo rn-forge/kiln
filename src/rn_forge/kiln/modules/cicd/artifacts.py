@@ -15,10 +15,7 @@ from rn_forge.kiln.modules.cicd import registry
 from rn_forge.kiln.modules.core.pins import load_pins
 from rn_forge.kiln.modules.core.versions import PYTHON_VERSION
 
-__all__ = ["SONAR_ORGANIZATION", "load_pins", "render"]
-
-SONAR_ORGANIZATION = "rn-forge"
-"""The SonarCloud organization every rendered repo reports to."""
+__all__ = ["load_pins", "render"]
 
 _PACKAGE = "rn_forge.kiln.modules.cicd"
 
@@ -109,7 +106,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         "plan_keys": _PLAN_KEYS,
         "pins": load_pins(),
         "pinned_actions": pinned_actions(),
-        "organization": SONAR_ORGANIZATION,
+        "organization": ci.sonar_organization or config.owner,
         "web": web,
         "web_app": web_app,
         "node_lib": node_lib,

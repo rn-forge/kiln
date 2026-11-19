@@ -195,6 +195,9 @@ class CiConfig(ConfigModel):
     sonar: bool = True
     """Whether CI runs a Sonar analysis. Turning it off removes the Sonar job and
     its properties file on `kiln apply`."""
+    sonar_organization: str | None = None
+    """The SonarCloud organisation the analysis reports to. Changing it rewrites
+    the Sonar properties on `kiln apply`. Default: `[repository] owner`."""
     release: Literal["tag-exists", "pypi", "nx-dispatch", "npm", "none"] | None = None
     """How a release is published: `tag-exists` tags the default branch, `pypi`
     publishes a library to PyPI, `nx-dispatch` is the `node-lib` flow, `npm` is
@@ -255,6 +258,13 @@ class CiConfig(ConfigModel):
         """The `pip-audit` check's policy: the `[ci.checks]` table, or an empty one."""
         entry = self.checks.get("pip-audit")
         return AuditPolicy.model_validate(entry if isinstance(entry, dict) else {})
+
+    @field_validator("sonar_organization")
+    @classmethod
+    def _organization_is_non_empty(cls, value: str | None) -> str | None:
+        if value is not None and not value.strip():
+            raise ValueError("ci.sonar_organization must be non-empty")
+        return value
 
     @field_validator("sonar_exclusions", "sonar_coverage_exclusions")
     @classmethod

@@ -19,7 +19,7 @@
 | [F16.8 — Retire `kiln init`](F16.8-retire-kiln-init.md) | Closed | release-1 | 3 Closed |
 | [F16.9 — What the overlay cutovers found](F16.9-overlay-cutover-findings.md) | Closed | release-1 | 12 Closed · 2 Removed |
 | [F16.10 — Agent instructions live in AGENTS.md](F16.10-agent-instructions-in-agents-md.md) | Closed | release-1 | 7 Closed |
-| [F16.11 — A repository's identity follows its config](F16.11-identity-follows-the-config.md) | Active | release-1 | 2 New |
+| [F16.11 — A repository's identity follows its config](F16.11-identity-follows-the-config.md) | Active | release-1 | 1 New · 1 Closed |
 
 <!-- END derived features -->
 
