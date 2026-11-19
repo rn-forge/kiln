@@ -1,6 +1,6 @@
 """`rn-forge-deps` — the archetype's rn-forge dependency contract.
 
-Four rules, all read from `pyproject.toml`:
+Six rules, all read from `pyproject.toml`:
 
 1. **Required.** Every distribution in the archetype's required set is a
    runtime dependency of at least one distributable in this repo.
@@ -16,11 +16,12 @@ Four rules, all read from `pyproject.toml`:
    source and may be named bare in a dependency group, which never reaches a
    wheel; in `dependencies` it still needs the URL or a range.
 4. **No pykit index.** No root declares pykit's Pages index.
-
-A fifth rule keeps kiln out of the lock: `rn-forge-kiln` in any dependency,
-optional dependency or dependency group is an error, because kiln runs from
-`[kiln] ref` in its own environment. The root project's own
-`[project] name` is not a dependency, so kiln's own repository passes.
+5. **At the pin table.** A floor below kiln's pin table is a warning: the
+   repository has not taken this kiln's pykit floors.
+6. **Kiln stays out of the lock.** `rn-forge-kiln` in any dependency,
+   optional dependency or dependency group is an error, because kiln runs from
+   `[kiln] ref` in its own environment. The root project's own
+   `[project] name` is not a dependency, so kiln's own repository passes.
 """
 
 from __future__ import annotations
@@ -333,6 +334,36 @@ def _missing(label: str) -> Finding:
     )
 
 
+def _check_behind(
+    label: str, document: dict[str, object], members: frozenset[str]
+) -> list[Finding]:
+    """Warn when a governed requirement's floor is below the pin table."""
+    findings: list[Finding] = []
+    for requirement in every_dependency(document):
+        name = distribution(requirement)
+        if (
+            not governed(name)
+            or name in members
+            or name not in archetypes.RN_FORGE_TAGS
+        ):
+            continue
+        floor = archetypes.floor(requirement)
+        if floor is None:
+            continue
+        table = archetypes.RN_FORGE_TAGS[name].rpartition("-v")[2]
+        if archetypes.version_key(floor) < archetypes.version_key(table):
+            findings.append(
+                Finding(
+                    f"{CODE}.behind",
+                    Severity.WARNING,
+                    f"`{name}` has floor {floor}, below kiln's pin table ({table}) — "
+                    f"run `task kiln:upgrade` to move it",
+                    path=label,
+                )
+            )
+    return findings
+
+
 def _check_document(
     label: str,
     document: dict[str, object],
@@ -346,6 +377,7 @@ def _check_document(
         *_check_source(label, document, members),
         *_check_no_shadowing_source(label, document, members),
         *_check_no_codegen_in_runtime(label, document),
+        *_check_behind(label, document, members),
     ]
 
 

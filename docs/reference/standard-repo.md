@@ -408,6 +408,7 @@ or a dependency edit fails `task validate` and never a regeneration.
 | `kiln.pin-missing` / `kiln.pin-mismatch` | `[kiln] ref` is set, and a tag ref names the running kiln's version |
 | `deps.no-ceiling` | an rn-forge version range has a ceiling (`<…` or `==…`) |
 | `deps.no-index` | a range on a package outside the workspace has pykit's `[[tool.uv.index]]` declared at the root |
+| `deps.behind` | warning: an rn-forge floor is below kiln's pin table; `task kiln:upgrade` moves it |
 | `ci.unpinned` / `ci.permissions` | every `uses:` SHA-pinned with a version comment; every job has `permissions:` |
 | `ci.hook-missing` / `ci.hook-not-callable` / `ci.hook-reserved` | every `[ci.hooks]` action and declared job's workflow exists; a declared job's workflow has `workflow_call` in its `on:`; no declared job calls a `_<stage>.yml` workflow kiln renders |
 | `docs.nav-stale` | the derived nav (`docs-generate`) differs from what regenerating it from the docs tree would write |

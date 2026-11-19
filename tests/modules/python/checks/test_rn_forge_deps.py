@@ -8,6 +8,7 @@ same, and the check is now called directly (kiln ADR-0006).
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -15,7 +16,7 @@ from tests.conftest import MISSING_REQUIRED, run_check
 
 from rn_forge.commons.findings import Severity
 
-from rn_forge.kiln import archetypes, checks
+from rn_forge.kiln import archetypes, checks, commands
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.python.checks import rn_forge_deps
 
@@ -408,8 +409,12 @@ url = "https://rn-forge.github.io/pykit/simple/"
 """
 
 
-def _ranged(commons: str = "rn-forge-commons>=0.7.0,<0.8", index: bool = False) -> str:
-    deps = [commons, "rn-forge-cli>=0.1.1,<0.2", "rn-forge-tooling>=0.3.0,<0.4"]
+def _ranged(commons: str | None = None, index: bool = False) -> str:
+    deps = [
+        commons or archetypes.requirement("rn-forge-commons"),
+        archetypes.requirement("rn-forge-cli"),
+        archetypes.requirement("rn-forge-tooling"),
+    ]
     block = ", ".join(f'"{d}"' for d in deps)
     text = f'[project]\nname = "example"\nversion = "0.1.0"\ndependencies = [{block}]\n'
     return text + (INDEX_TABLE if index else "")
@@ -425,17 +430,19 @@ def test_a_range_with_a_ceiling_passes(repo) -> None:
 
 
 def test_an_exact_version_passes(repo) -> None:
+    floor, _, _ = archetypes.requirement("rn-forge-commons").partition(",")
     root = repo(
         lifecycle=True,
-        **{"pyproject.toml": _ranged(commons="rn-forge-commons==0.7.0")},
+        **{"pyproject.toml": _ranged(commons=floor.replace(">=", "=="))},
     )
     assert _findings(root) == []
 
 
 def test_a_range_with_no_ceiling_is_refused(repo) -> None:
+    floor, _, _ = archetypes.requirement("rn-forge-commons").partition(",")
     root = repo(
         lifecycle=True,
-        **{"pyproject.toml": _ranged(commons="rn-forge-commons>=0.7.0")},
+        **{"pyproject.toml": _ranged(commons=floor)},
     )
     found = _findings(root)
     assert [code for code, _, _ in found] == ["deps.no-ceiling"]
@@ -466,3 +473,55 @@ def test_another_index_is_not_refused(repo) -> None:
     other = '\n[[tool.uv.index]]\nname = "other"\nurl = "https://example.org/simple/"\n'
     root = repo(lifecycle=True, **{"pyproject.toml": _ranged() + other})
     assert _findings(root) == []
+
+
+def test_a_floor_below_the_pin_table_warns(repo) -> None:
+    pyproject = COMPLIANT.replace(PINNED_URL, "rn-forge-commons>=0.9.0,<0.10")
+    root = repo(lifecycle=True, **{"pyproject.toml": pyproject})
+    found = run_check(rn_forge_deps.NAME, root)
+    assert [(f.code, f.severity, f.path) for f in found] == [
+        ("deps.behind", Severity.WARNING, "pyproject.toml")
+    ]
+    table = archetypes.RN_FORGE_TAGS["rn-forge-commons"].rpartition("-v")[2]
+    assert "0.9.0" in found[0].message
+    assert table in found[0].message
+    assert "task kiln:upgrade" in found[0].message
+
+
+def test_a_git_pin_below_the_pin_table_warns(repo) -> None:
+    tag = archetypes.RN_FORGE_TAGS["rn-forge-commons"]
+    pyproject = COMPLIANT.replace(f"@{tag}", "@rn-forge-commons-v0.7.0")
+    root = repo(lifecycle=True, **{"pyproject.toml": pyproject})
+    found = run_check(rn_forge_deps.NAME, root)
+    assert [(f.code, f.severity) for f in found] == [("deps.behind", Severity.WARNING)]
+    assert "0.7.0" in found[0].message
+
+
+def test_a_floor_at_the_pin_table_is_quiet(repo) -> None:
+    pyproject = COMPLIANT.replace(
+        PINNED_URL, archetypes.requirement("rn-forge-commons")
+    )
+    root = repo(lifecycle=True, **{"pyproject.toml": pyproject})
+    assert all(f.code != "deps.behind" for f in run_check(rn_forge_deps.NAME, root))
+
+
+def test_a_workspace_member_is_never_behind(tmp_path: Path) -> None:
+    root = _workspace_root(tmp_path, tooling_cli="rn-forge-cli>=0.1.1,<0.2")
+    assert all(f.code != "deps.behind" for f in run_check(rn_forge_deps.NAME, root))
+
+
+def test_behind_does_not_fail_doctor(rendered_copy: Callable[..., Path]) -> None:
+    root = rendered_copy("python-app")
+    pyproject = root / "pyproject.toml"
+    text = pyproject.read_text(encoding="utf-8")
+    pyproject.write_text(
+        text.replace(
+            archetypes.requirement("rn-forge-commons"), "rn-forge-commons>=0.9.0,<0.10"
+        ),
+        encoding="utf-8",
+    )
+
+    commands.doctor([root])
+    assert [(f.code, f.severity) for f in checks.run(root)] == [
+        ("deps.behind", Severity.WARNING)
+    ]
