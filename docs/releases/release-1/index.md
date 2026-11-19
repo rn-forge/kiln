@@ -65,8 +65,8 @@ are [release-2](../release-2/index.md).
 | [F7.4 — kiln runs beside a repository, not inside its lock](../../specs/epics/E7-pykit-release-pin-flip/F7.4-kiln-runs-beside-the-repository.md) | E7 | Closed |
 | [F7.5 — kiln takes pykit from PyPI](../../specs/epics/E7-pykit-release-pin-flip/F7.5-pykit-from-pypi.md) | E7 | Closed |
 | [F7.6 — The `python-lib` release job publishes to PyPI](../../specs/epics/E7-pykit-release-pin-flip/F7.6-release-to-pypi.md) | E7 | Closed |
-| [F7.7 — kiln installs as a standalone tool, from any ref](../../specs/epics/E7-pykit-release-pin-flip/F7.7-kiln-installs-as-a-tool.md) | E7 | Active |
-| [F7.8 — An existing repository takes a new kiln's pykit floors](../../specs/epics/E7-pykit-release-pin-flip/F7.8-existing-repos-take-the-pin-table.md) | E7 | Active |
+| [F7.7 — kiln installs as a standalone tool, from any ref](../../specs/epics/E7-pykit-release-pin-flip/F7.7-kiln-installs-as-a-tool.md) | E7 | Closed |
+| [F7.8 — An existing repository takes a new kiln's pykit floors](../../specs/epics/E7-pykit-release-pin-flip/F7.8-existing-repos-take-the-pin-table.md) | E7 | Closed |
 | [F9.1 — `node-lib` renders ngkit's CI](../../specs/epics/E9-node-archetypes/F9.1-node-lib-hosts-ngkit-ci.md) | E9 | Closed |
 | [F9.2 — One node scaffold](../../specs/epics/E9-node-archetypes/F9.2-one-node-scaffold.md) | E9 | Closed |
 | [F9.3 — Node CI holds for ngkit and for every `node-lib`](../../specs/epics/E9-node-archetypes/F9.3-node-ci-holds-for-every-node-lib.md) | E9 | Closed |
@@ -102,6 +102,7 @@ are [release-2](../release-2/index.md).
 | [F16.8 — Retire `kiln init`](../../specs/epics/E16-init-adopts-by-overwrite/F16.8-retire-kiln-init.md) | E16 | Closed |
 | [F16.9 — What the overlay cutovers found](../../specs/epics/E16-init-adopts-by-overwrite/F16.9-overlay-cutover-findings.md) | E16 | Closed |
 | [F16.10 — Agent instructions live in AGENTS.md](../../specs/epics/E16-init-adopts-by-overwrite/F16.10-agent-instructions-in-agents-md.md) | E16 | Closed |
+| [F16.11 — A repository's identity follows its config](../../specs/epics/E16-init-adopts-by-overwrite/F16.11-identity-follows-the-config.md) | E16 | New |
 | [F17.1 — The task surface says what it is](../../specs/epics/E17-task-standard/F17.1-task-surface.md) | E17 | Closed |
 | [F17.2 — One grammar for the CI surface, and one home for check policy](../../specs/epics/E17-task-standard/F17.2-ci-task-grammar.md) | E17 | Closed |
 | [F17.3 — A faster gate](../../specs/epics/E17-task-standard/F17.3-a-faster-gate.md) | E17 | Closed |
