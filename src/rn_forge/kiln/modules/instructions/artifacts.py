@@ -169,7 +169,7 @@ def _verbs(config: KilnConfig) -> str:
         verbs += " and `api:dev`" if mkdocs else ", plus `api:dev`"
         verbs += " `api:migrate`" if config.backend == "django" else ""
     if config.is_web_app:
-        verbs += f", plus {_WEB_VERBS}"
+        verbs += f", plus {_WEB_VERBS}, and `dev` runs both"
     return verbs
 
 

@@ -230,6 +230,8 @@ def test_the_wrappers_call_node(tmp_path: Path) -> None:
     }
     for verb in ("test", "build"):
         assert tasks[verb]["cmds"][-1] == {"task": f"node:{verb}"}
+    # `dev` is the one root verb that serves the frontend: it runs `web:dev`.
+    assert tasks.pop("dev")["deps"] == [{"task": "api:dev"}, {"task": "web:dev"}]
     for task in tasks.values():
         for cmd in task["cmds"]:
             assert not cmd["task"].startswith("web:")

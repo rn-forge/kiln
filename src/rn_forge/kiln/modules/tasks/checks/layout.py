@@ -29,7 +29,11 @@ from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import umbrella
 from rn_forge.kiln.modules.core.steps import step_commands
-from rn_forge.kiln.modules.tasks.config import ROOT_VERBS, TasksConfig
+from rn_forge.kiln.modules.tasks.config import (
+    ROOT_VERBS,
+    WEB_APP_VERBS,
+    TasksConfig,
+)
 from rn_forge.kiln.modules.tasks.taskfile import include_map, task_refs, task_specs
 
 __all__ = ["CODE", "NAME", "check"]
@@ -183,18 +187,19 @@ def _owner_file(name: str, includes: dict[str, str]) -> str:
     return includes[namespace] if namespace else ROOT_TASKFILE.as_posix()
 
 
-def _check_surface(root_tasks: dict[str, object]) -> list[Finding]:
+def _check_surface(
+    root_tasks: dict[str, object], verbs: tuple[str, ...]
+) -> list[Finding]:
     label = ROOT_TASKFILE.as_posix()
     findings = [
         Finding(
             f"{CODE}.surface",
             Severity.ERROR,
-            f"root task `{name}` is not one of the ten root verbs "
-            f"({', '.join(ROOT_VERBS)})",
+            f"root task `{name}` is not one of the root verbs ({', '.join(verbs)})",
             path=label,
         )
         for name in root_tasks
-        if name not in ROOT_VERBS
+        if name not in verbs
     ]
     findings.extend(
         Finding(
@@ -203,7 +208,7 @@ def _check_surface(root_tasks: dict[str, object]) -> list[Finding]:
             f"root verb `{verb}` is missing",
             path=label,
         )
-        for verb in ROOT_VERBS
+        for verb in verbs
         if verb not in root_tasks
     )
     return findings
@@ -390,7 +395,8 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
 
     findings: list[Finding] = []
     label = ROOT_TASKFILE.as_posix()
-    findings.extend(_check_surface(root_tasks))
+    verbs = ROOT_VERBS + (WEB_APP_VERBS if config.is_web_app else ())
+    findings.extend(_check_surface(root_tasks, verbs))
     for name, spec in root_tasks.items():
         findings.extend(_check_desc(label, name, spec))
         findings.extend(_check_wrapper_only(label, name, spec))

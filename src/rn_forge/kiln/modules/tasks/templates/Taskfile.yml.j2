@@ -116,4 +116,12 @@ tasks:
     cmds:
       - task: workspace:clean
 {% for ref in extra_refs.get("clean", []) %}      - task: [[ ref ]]
-{% endfor -%}
+{% endfor %}{% if web_app %}
+  dev:
+    desc: Run the API and the frontend dev servers together; Ctrl-C stops both.
+    # deps run in parallel: each dev server blocks, so cmds could never reach
+    # the second one.
+    deps:
+      - task: api:dev
+      - task: web:dev
+{% endif -%}

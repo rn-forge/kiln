@@ -8,7 +8,7 @@ from pydantic import Field, field_validator, model_validator
 
 from rn_forge.kiln.modules.core.config.schema import ConfigModel
 
-__all__ = ["ROOT_VERBS", "TaskInclude", "TasksConfig"]
+__all__ = ["ROOT_VERBS", "WEB_APP_VERBS", "TaskInclude", "TasksConfig"]
 
 ROOT_VERBS = (
     "setup",
@@ -23,6 +23,10 @@ ROOT_VERBS = (
     "clean",
 )
 """The root Taskfile's fixed vocabulary."""
+
+WEB_APP_VERBS = ("dev",)
+"""The root verbs a `python-web-app` adds: `dev` serves the API and the frontend
+together. They wrap a dev server, so `tasks.extra_refs` cannot extend them."""
 
 
 class TaskInclude(ConfigModel):

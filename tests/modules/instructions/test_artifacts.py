@@ -290,6 +290,7 @@ def test_python_web_app_block_has_frontend_clause_and_web_verbs(
     assert "Frontend:" in block
     assert "pnpm" in block
     assert "`web:dev`" in block
+    assert "`dev` runs both" in block
     assert "web:lint" not in block
     assert "api:migrate" in block
 
@@ -313,6 +314,7 @@ def test_standard_md_web_app_has_web_verb_rows_and_frontend_clause(
     assert "task web:test" not in standard
     assert "task web:build" not in standard
     assert "task web:dev" in standard
+    assert "task dev" in standard
     assert "**Frontend:** `angular`" in standard
 
 

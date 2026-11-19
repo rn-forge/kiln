@@ -212,7 +212,8 @@ def test_the_wrappers_call_python_in_place(
     tasks = _load(root, "Taskfile.yml")["tasks"]
 
     def refs(verb: str) -> list[str]:
-        return [cmd["task"] for cmd in tasks[verb]["cmds"] if cmd["task"] != STEP]
+        calls = tasks[verb].get("cmds", tasks[verb].get("deps"))
+        return [cmd["task"] for cmd in calls if cmd["task"] != STEP]
 
     assert refs("setup")[0] == "python:install"
     if archetype == "python-web-app":

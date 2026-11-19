@@ -128,9 +128,22 @@ def test_task_list_json_shows_api_and_web_verbs(tmp_path: Path) -> None:
     result = _run_task(root, "--list", "--json")
     assert result.returncode == 0, result.stderr
     names = {entry["name"] for entry in json.loads(result.stdout)["tasks"]}
-    assert {"api:dev", "web:dev"} <= names
+    assert {"api:dev", "web:dev", "dev"} <= names
     assert {n for n in names if n.startswith("web:")} == {"web:dev"}
     assert "api:migrate" not in names  # fastapi, not django
+    root_tasks = YamlUtils.load((root / "Taskfile.yml").read_text(encoding="utf-8"))[
+        "tasks"
+    ]
+    assert root_tasks["dev"]["deps"] == [{"task": "api:dev"}, {"task": "web:dev"}]
+
+
+def test_only_a_web_app_has_the_dev_verb(tmp_path: Path) -> None:
+    root = _web_root(tmp_path, "python-web-api", "fastapi")
+    cycle.apply(root, home=tmp_path / "home")
+    result = _run_task(root, "--list", "--json")
+    assert result.returncode == 0, result.stderr
+    names = {entry["name"] for entry in json.loads(result.stdout)["tasks"]}
+    assert "dev" not in names
 
 
 def test_django_backend_also_lists_api_migrate(tmp_path: Path) -> None:
