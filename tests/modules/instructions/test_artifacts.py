@@ -578,6 +578,13 @@ def test_python_standard_keeps_the_whole_entrypoint_rule(tmp_path: Path) -> None
     assert "project-scoped" not in standard
 
 
+def test_python_tool_standard_documents_upgrade_for_consumers(tmp_path: Path) -> None:
+    consumer_standard = _rendered(_root(tmp_path, "python-tool"))[STANDARD]
+    kiln_standard = _rendered(Path(__file__).resolve().parents[3])[STANDARD]
+    assert "`task kiln:upgrade -- <ref>`" in _section(consumer_standard, 3)
+    assert "task kiln:upgrade" not in kiln_standard
+
+
 def test_node_lib_agents_bullet_allows_project_scoped_commands(
     tmp_path: Path,
 ) -> None:

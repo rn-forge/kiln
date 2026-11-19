@@ -42,7 +42,7 @@ ROOT_TASKFILE = Path("Taskfile.yml")
 RESERVED_NAMESPACES = frozenset({"quality", "workspace", "node", "python", "kiln"})
 """Namespaces whose tasks are inner implementation and must be `internal`."""
 
-PUBLIC_KILN_TASKS = frozenset({"diff", "apply", "pin"})
+PUBLIC_KILN_TASKS = frozenset({"diff", "apply", "pin", "upgrade"})
 """The `kiln:` tasks that are public: the rest of the namespace stays internal."""
 
 _TASK_CALL = re.compile(r"(?:^|[;&|(]\s*|\s)task\s+([A-Za-z][\w:-]*)")

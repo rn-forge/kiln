@@ -17,6 +17,7 @@ def run(
     cwd: Path | None = None,
     env: Mapping[str, str] | None = None,
     check: bool = True,
+    capture_output: bool = True,
 ) -> Process:
     """Run a command and return its `Process` record.
 
@@ -26,6 +27,7 @@ def run(
         cwd: The working directory, if not the current one.
         env: The whole environment, if not the inherited one.
         check: Raise when the command exits non-zero.
+        capture_output: Capture stdout and stderr instead of streaming them.
 
     Returns:
         The finished `Process`.
@@ -40,6 +42,7 @@ def run(
         label,
         *(str(a) for a in args),
         fail_on_error=check,
+        capture_output=capture_output,
         cwd=str(cwd) if cwd else None,
         **options,
     )

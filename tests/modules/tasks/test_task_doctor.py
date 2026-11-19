@@ -64,7 +64,7 @@ def test_kiln_yml_holds_one_internal_doctor_task(
     root = _ci_root(tmp_path, archetype, extra)
     cycle.apply(root, home=tmp_path / "home")
     document = _load(root, "tasks/kiln.yml")
-    assert set(document["tasks"]) == {"doctor", "diff", "apply", "pin"}
+    assert set(document["tasks"]) == {"doctor", "diff", "apply", "pin", "upgrade"}
     assert not [n for n in ("diff", "apply") if "internal" in document["tasks"][n]]
     doctor = document["tasks"]["doctor"]
     assert doctor["internal"] is True
@@ -198,6 +198,41 @@ def test_not_in_kiln(tmp_path: Path) -> None:
     )
     cycle.apply(root, home=tmp_path / "home")
     assert "pin" not in _load(root, "tasks/kiln.yml")["tasks"]
+
+
+def test_the_upgrade_task_runs_the_upgrade_command(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    upgrade = _load(root, "tasks/kiln.yml")["tasks"]["upgrade"]
+    assert "internal" not in upgrade
+    assert upgrade["desc"].strip()
+    assert "preconditions" not in upgrade
+    assert upgrade["cmds"] == [
+        "{{.KILN}} repo-upgrade{{if .CLI_ARGS}} --ref {{.CLI_ARGS}}{{end}}"
+        "{{if .FORCE}} --force{{end}}"
+    ]
+
+
+@requires("task")
+def test_the_upgrade_task_passes_the_ref_and_force(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    sha = "0123456789abcdef0123456789abcdef01234567"
+    run = _run_task(root, "--dry", "kiln:upgrade", "FORCE=1", "--", sha)
+    assert run.returncode == 0, run.stderr
+    assert f"repo-upgrade --ref {sha} --force" in run.stdout + run.stderr
+
+
+def test_kiln_itself_has_no_upgrade_task(tmp_path: Path) -> None:
+    consumer = _root(tmp_path / "consumer")
+    kiln = _root(
+        tmp_path / "kiln",
+        extra='\n[archetype."python-tool"]\nmodule = "rn_forge.kiln"\n',
+    )
+    cycle.apply(consumer, home=tmp_path / "home")
+    cycle.apply(kiln, home=tmp_path / "home")
+    assert "upgrade" in _load(consumer, "tasks/kiln.yml")["tasks"]
+    assert "upgrade" not in _load(kiln, "tasks/kiln.yml")["tasks"]
 
 
 def test_an_unpinned_config_runs_kilns_own_ref(tmp_path: Path) -> None:

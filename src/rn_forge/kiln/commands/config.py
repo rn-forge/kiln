@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any
 
 from rn_forge.commons import generation
-from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.runtime.console import console
 
@@ -114,32 +113,9 @@ def pin(ref: str = "", show: bool = False) -> None:
     path = umbrella.find_root(Path.cwd()) / CONFIG_PATH
     document = DocumentUtils.read_document(path)
     table: dict[str, Any] = document.get("kiln") or {}
-    old = table.get("ref", archetypes.KILN_REF)
     if show:
-        console.print(old)
+        console.print(table.get("ref", archetypes.KILN_REF))
         return
-    ref = ref.strip()
-    if not ref:
-        track = table.get("track")
-        if not track:
-            raise AppException(
-                "kiln.track-missing: no [kiln] track to follow "
-                "\u2014 pass a branch, tag or SHA"
-            )
-        ref = str(track)
-    if kiln_ref.SHA.match(ref):
-        new, track = ref, None
-    elif kiln_ref.TAG.match(ref):
-        kiln_ref.resolve(ref)  # an unknown tag is an error
-        new, track = ref, None
-    else:
-        new, track = kiln_ref.resolve(ref), ref
-    if "kiln" not in document:
-        document["kiln"] = {}
-    document["kiln"]["ref"] = new
-    if track is None:
-        document["kiln"].pop("track", None)
-    else:
-        document["kiln"]["track"] = track
-    DocumentUtils.write_document(path, document)
+    new, track = kiln_ref.target(ref, table.get("track"))
+    old = kiln_ref.write_pin(path, new, track)
     console.info("kiln ref {} \u2192 {}", old, new)

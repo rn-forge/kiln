@@ -303,7 +303,7 @@
     },
     "src/rn_forge/kiln/cli.toml": {
       "begin_marker": null,
-      "content_hash": "f8c520158231d0037090c8ff59734a06e553609336cb851b400665e962ba3562",
+      "content_hash": "7d35c436178d98736b63c76527f3eefcee6bd8b865dc7b979cbb33e57f01bb25",
       "end_marker": null,
       "kind": "managed",
       "path": "src/rn_forge/kiln/cli.toml"
@@ -366,7 +366,7 @@
     }
   },
   "metadata": {
-    "config_hash": "94da61094afd27db7e36ebabfe339468415c26de945053e47c5f4cb782165aa4",
+    "config_hash": "3eae5ace7de635230e9122ffa2fa6192aab998ed51704428f33faab659197be6",
     "config_provenance": {
       "archetype.python-app.module": {
         "layer": "repo",

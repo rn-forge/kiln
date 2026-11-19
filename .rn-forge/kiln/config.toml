@@ -71,6 +71,10 @@ name = "pin"
 target = "rn_forge.kiln.commands.config:pin"
 
 [[cli.commands]]
+name = "repo-upgrade"
+target = "rn_forge.kiln.commands.upgrade:upgrade"
+
+[[cli.commands]]
 name = "diff"
 target = "rn_forge.kiln.commands.diff:diff"
 

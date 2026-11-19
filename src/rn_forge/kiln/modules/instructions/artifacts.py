@@ -244,6 +244,7 @@ def context(config: KilnConfig) -> dict[str, object]:
         "web": config.is_web,
         "web_app": config.is_web_app,
         "node_lib": config.is_node_lib,
+        "kiln_own": config.module == "rn_forge.kiln",
         "release_group": config.release_group,
         "backend": config.backend,
         "frontend": config.frontend,

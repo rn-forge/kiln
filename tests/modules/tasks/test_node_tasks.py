@@ -556,6 +556,7 @@ def test_ten_root_verbs(tmp_path: Path, archetype: str) -> None:
         "kiln:diff",
         "kiln:apply",
         "kiln:pin",
+        "kiln:upgrade",
     }
     assert {n for n in names if not n.startswith(("ci:", "kiln:", "sonar:"))} == set(
         ROOT_VERBS

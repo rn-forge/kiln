@@ -13,6 +13,7 @@ from rn_forge.kiln.commands.generate import (
 )
 from rn_forge.kiln.commands.info import prompt, version
 from rn_forge.kiln.commands.new import new
+from rn_forge.kiln.commands.upgrade import upgrade
 
 __all__ = [
     "apply",
@@ -26,5 +27,6 @@ __all__ = [
     "new",
     "pin",
     "prompt",
+    "upgrade",
     "version",
 ]

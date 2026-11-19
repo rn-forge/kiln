@@ -225,7 +225,16 @@ To move the pin to another ref (a tag, a branch or a SHA, higher or lower), run
 re-renders with the kiln at that ref, so the move is one reviewable diff. Do not
 edit the ref by hand: `task kiln:apply` would then run the old kiln.
 
-## 4. The import boundary
+{% if not kiln_own %}A new kiln can raise the rn-forge floors, which `task kiln:pin` does not
+take, because `pyproject.toml` is this repository's own. Run
+`task kiln:upgrade -- <ref>` instead. The kiln at that ref pins itself,
+applies its standard, rewrites every rn-forge range to its pin table, prints
+the release notes in between, and runs `task setup` and `task validate`. It
+needs a clean working tree. A failure restores the previous pin, files and
+locks; `task kiln:upgrade FORCE=1 -- <ref>` keeps an applied upgrade so you
+can fix what `task validate` reports.
+
+{% endif %}## 4. The import boundary
 
 {% if node_lib %}A `node-lib` repository has no `.importlinter`. The boundaries between its
 projects are the repository's own, in the `@nx/enforce-module-boundaries` rule
