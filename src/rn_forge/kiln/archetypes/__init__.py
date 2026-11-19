@@ -7,6 +7,7 @@ profile then adjust what the manifest states.
 
 from __future__ import annotations
 
+import re
 from importlib.resources import files
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -28,11 +29,13 @@ __all__ = [
     "Archetype",
     "Dependencies",
     "ceiling",
+    "floor",
     "for_config",
     "load",
     "pyproject_paths",
     "requirement",
     "shipped",
+    "version_key",
 ]
 
 RN_FORGE_PREFIX = "rn-forge-"
@@ -173,6 +176,26 @@ def requirement(distribution: str) -> str:
     """
     version = RN_FORGE_TAGS[distribution].rpartition("-v")[2]
     return f"{distribution}>={version},<{ceiling(version)}"
+
+
+def floor(requirement: str) -> str | None:
+    """Return the lower bound declared by a requirement or git tag, if any."""
+    specifier, _, url = requirement.partition(";")[0].partition("@")
+    if url:
+        source, _, ref = url.strip().partition("#")[0].rpartition("@")
+        if not source.startswith("git+"):
+            return None
+        match = re.search(r"-v(\d+\.\d+\.\d+)", ref)
+    else:
+        specifier = re.sub(r"^\s*[\w.-]+\s*(?:\[[^\]]*\])?", "", specifier)
+        match = re.search(r"(?:>=|==|~=)\s*(\d+(?:\.\d+)*)", specifier)
+    return match.group(1) if match else None
+
+
+def version_key(version: str) -> tuple[int, ...]:
+    """Return numeric version parts padded to at least three components."""
+    parts = tuple(int(part) for part in version.split("."))
+    return parts + (0,) * (3 - len(parts))
 
 
 def pyproject_paths(config: KilnConfig) -> tuple[Path, ...]:

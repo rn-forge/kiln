@@ -192,6 +192,18 @@ def test_requirement_is_a_range() -> None:
     assert archetypes.requirement("rn-forge-cli") == "rn-forge-cli>=0.2.0,<0.3"
 
 
+def test_floor_reads_a_range_a_pin_and_a_url() -> None:
+    examples = {
+        "rn-forge-commons>=0.9.0,<0.10": "0.9.0",
+        "rn-forge-web[auth]==0.3.1": "0.3.1",
+        "rn-forge-cli @ git+https://github.com/rn-forge/pykit@rn-forge-cli-v0.1.3"
+        "#subdirectory=packages/rn-forge-cli": "0.1.3",
+        "rn-forge-commons": None,
+        "rn-forge-commons<0.10": None,
+    }
+    assert {entry: archetypes.floor(entry) for entry in examples} == examples
+
+
 def test_ceiling_is_the_next_breaking_version() -> None:
     assert archetypes.ceiling("0.7.0") == "0.8"
     assert archetypes.ceiling("0.1.1") == "0.2"
