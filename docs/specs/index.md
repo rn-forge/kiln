@@ -12,8 +12,8 @@ Backlog sections below are derived from the epic, feature and release pages by
 
 | Release | Status | Features |
 | -- | -- | -- |
-| [Release 2 — the architecture baseline, and repositories on kiln's `main`](../releases/release-2/index.md) | planned | 5 New · 1 Removed |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 2 New · 88 Closed |
+| [Release 2 — repositories on kiln's `main`](../releases/release-2/index.md) | planned | 3 New · 1 Removed |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 5 New · 88 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
@@ -62,7 +62,7 @@ done:  S4.4.1 matrix ─→ S5.3.7 README ─→ S5.3.2 ─→ S5.3.3 ─→ F5.
        (Django deferred: F5.4)
 now:   ADRs accepted ─→ S13.1.1 derived nav ─→ F13.2 board/scope ─→ F13.3 adopt the model
        F11.1 checks ─→ F11.2 python-lib package sites ─→ F11.3 generate package   (S11.4.2 after S13.3.1)
-       S12.1.1 accept ─→ S12.1.2–S12.1.4 baseline ─→ F4.4 · F12.1 ─→ F12.2 web records (release-2)
+       S12.1.1 accept ─→ F12.1 baseline ─→ F12.2 web records (F5.5 client before S12.2.5)
        F4.4 rest (S4.4.3 approval; S4.4.7–S4.4.9 goldens leave git) ──┐
        S5.3.1 + F11.1–F11.3 ─→ S6.1.1 python-lib hosts pykit          │
        S4.5.3–S4.5.7 ─→ F4.6 doctor ──────────────────────────────────┼─→ F4.8 self-host

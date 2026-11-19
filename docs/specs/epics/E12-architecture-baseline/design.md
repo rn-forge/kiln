@@ -1,4 +1,4 @@
-# E12 design — the architecture baseline
+# E12 design — kiln's architecture baseline
 
 Shared by [F12.1](F12.1-python-baseline.md) and [F12.2](F12.2-web-baseline.md).
 The decision is [ADR-0010](../../../adr/ADR-0010.md). Everything a builder
@@ -6,70 +6,102 @@ copies — record text, template text, contract text — is on this page verbati
 Once a story is done, its templates are the only home of that text, and the copy
 here is not maintained.
 
+*Rewritten 2026-11-19 (owner decisions).* The records moved from
+`.rn-forge/kiln/baseline/` to `docs/adr/kiln/`, and their IDs from `B-<nnnn>` to
+`ARCH-<nnnn>`. They render with the `mkdocs` profile only, the contracts render
+in kiln's managed `.importlinter` block, and every repository on kiln receives
+both at its next pin. ARCH-0004's error rule follows `rn-forge-web`'s problem
+registry, and ARCH-0005 names the client task of
+[F5.5](../E5-web-archetypes/F5.5-web-app-api-client.md). The earlier text is in
+git history.
+
 ## The catalogue
 
-Each record is one template, rendered when its predicate over `KilnConfig`
-holds.
+Each record is one template, rendered when its predicate over `KilnConfig` holds
+and `config.docs.profile == "mkdocs"`.
 
 | Record | Title | Rendered when | Enforced by |
 | -- | -- | -- | -- |
-| B-0001 | Dependencies point inward; I/O lives at the edges | `config.archetype != "python-lib"` | `dependencies-point-inward` in `.importlinter` |
-| B-0002 | Errors, settings and logs each cross one boundary | `config.archetype != "python-lib"` | review |
-| B-0003 | A library's surface is explicit and inert | `config.archetype == "python-lib"` | pyright strict; `packages-are-independent` |
-| B-0004 | HTTP is an adapter at the edge | `config.backend == "fastapi"` | `framework-stays-at-the-edge` and `dependencies-point-inward` |
-| B-0005 | The API schema is the contract between backend and frontend | `config.archetype == "python-web-app"` | review |
+| ARCH-0001 | Dependencies point inward; I/O lives at the edges | `not config.is_workspace and not config.is_node_lib` | `dependencies-point-inward` in `.importlinter` |
+| ARCH-0002 | Errors, settings and logs each cross one boundary | `not config.is_workspace and not config.is_node_lib` | review |
+| ARCH-0003 | A library's surface is explicit and inert | `config.is_workspace` | pyright strict; `packages-are-independent` |
+| ARCH-0004 | HTTP is an adapter at the edge | `config.backend == "fastapi"` | `framework-stays-at-the-edge` and `dependencies-point-inward` |
+| ARCH-0005 | The API schema is the contract between backend and frontend | `config.is_web_app` | `task web:client` and its CI check |
 
 What each cell gets:
 
 | Cell | Records |
 | -- | -- |
-| `python-app`, `python-app` + `lifecycle` (`python-tool`) | B-0001, B-0002 |
-| `python-lib` | B-0003 |
-| `python-web-api`, FastAPI | B-0001, B-0002, B-0004 |
-| `python-web-app`, FastAPI + Angular | B-0001, B-0002, B-0004, B-0005 |
-| Django cells (deferred) | B-0001, B-0002, and B-0005 for `python-web-app` |
+| `python-app`, `python-tool` | ARCH-0001, ARCH-0002 |
+| `python-lib` | ARCH-0003 |
+| `python-web-api`, FastAPI | ARCH-0001, ARCH-0002, ARCH-0004 |
+| `python-web-app`, FastAPI + Angular | ARCH-0001, ARCH-0002, ARCH-0004, ARCH-0005 |
+| `node-lib` | none |
+| Django cells (deferred) | ARCH-0001, ARCH-0002, and ARCH-0005 for `python-web-app` |
 
-`python-tool` has no predicate of its own: its config says
-`archetype = "python-app"` with `lifecycle = true`, and the records do not
-depend on `lifecycle`.
+A record links only to records that render in every cell it renders in, so no
+cell has a dead link: ARCH-0002 and ARCH-0004 link ARCH-0001, and ARCH-0005
+links none.
+
+## Why `docs/adr/kiln/`, and why `ARCH-`
+
+- **The link a deviation needs.** A repository departs from a record through an
+  ADR of its own in `docs/adr/`, which names the record. mkdocs `--strict`
+  fails a link out of `docs/`, so a record under `.rn-forge/` could be named
+  only as a bare path. Under `docs/adr/kiln/` it is a link, and the record and
+  the ADR that supersedes it sit on the same site.
+- **The split.** Rules about the repository — `standard.md`, `config.toml`,
+  `state.json` — stay in `.rn-forge/kiln/`, read by maintainers and tooling.
+  Decisions about the product's design are ADR-shaped, and live with the ADRs.
+- **`ARCH-<nnnn>`.** Not `ADR-`, which is the repository's own series. Not
+  `KILN-` or `K-`: kiln's own decisions are already cited as "kiln ADR-0005"
+  across rendered files, and "KILN-0005" would read as the same thing. Not
+  `B-`, which says nothing to a reader who has not met the word "baseline".
+  `ARCH-0001` names what it constrains.
+- **No collision with the docs checks.** kiln's ADR naming and status checks
+  read only the pages directly in `docs/adr/`
+  (`modules/docs/pages.py:content_pages`), so `docs/adr/kiln/ARCH-0001.md`
+  needs no exemption. The link and orphan checks do read it: every record must
+  be reachable from the nav, which is why `docs/adr/index.md` carries kiln's
+  block.
 
 ## Where the records live
 
-- **Paths.** `.rn-forge/kiln/baseline/<id>.md` for each record, plus
-  `.rn-forge/kiln/baseline/index.md`. All are **managed**. They are rendered
-  for every docs profile, because they sit in kiln's namespace, not under
-  `docs/`.
-- **Module.** A new module, `baseline` (`src/rn_forge/kiln/modules/baseline/`).
-  It has no config section, no options and no checks of its own. Drift is
-  caught by `core`'s `generated` check, as for every managed file. It is
-  registered between `cicd` and `instructions`, and every archetype manifest
-  lists it in the same place.
-- **Provenance.** The first line of every baseline file is the one the
-  `CLAUDE.md` block uses:
+- **Paths.** `docs/adr/kiln/<id>.md` for each record, plus
+  `docs/adr/kiln/index.md`, all **managed**. Rendered only when
+  `config.docs.profile == "mkdocs"` and at least one record applies. A repo
+  with another profile, or a `node-lib`, renders none of them; its contracts
+  still render.
+- **The catalogue** — IDs, titles and predicates, no text — is
+  `src/rn_forge/kiln/modules/core/architecture.py`, because three concern
+  modules read it (`docs` renders the records, `instructions` points at them,
+  `python` renders the contracts) and a concern module imports `core`, never a
+  sibling (`.importlinter`, "a concern module imports core, never a sibling").
+- **The renderer** is the `docs` module, which already owns `docs/adr/`: the
+  record templates are `modules/docs/templates/docs/adr/kiln/<id>.md.j2` and
+  `index.md.j2`. No new module, so no registry or manifest change.
+- **Provenance.** The first line of every record file and of the index is the
+  one `docs/adr/_structure.md` uses:
   `<!-- Generated by kiln {{ kiln_version }} from .rn-forge/kiln/config.toml — do not edit; run 'kiln apply' -->`,
   followed by one blank line.
-- **Formatting.** The seeded `.mdformat.toml` does not exclude
-  `.rn-forge/kiln/baseline/`, and a repository that already exists would never
-  receive a new exclude, because the file is seeded. So every rendered
-  baseline file must already be mdformat-clean under the goldens'
-  `.mdformat.toml`. The record texts below have been checked with
-  `mdformat --check` under that file. The index's only variable part is its
-  table rows, which mdformat does not wrap.
-- **Who reads them.** `standard.md` gains a section that points at the index,
-  and the `CLAUDE.md` block gains an **Architecture** bullet. Both are static
-  text. `instructions` does not import `baseline`, so the planned
-  [F4.7](../E4-generator/F4.7-import-contracts.md) rule — a concern module
-  imports `core` and not its siblings — still holds.
+- **Formatting.** Every rendered file is mdformat-clean under the seeded
+  `.mdformat.toml`, whose `exclude` a repository that already exists never
+  receives. The texts below were checked with `mdformat --check` under kiln's
+  own `.mdformat.toml`, provenance line in place, on 2026-11-19.
+- **Who reads them.** `docs/adr/index.md` gains kiln's block, which links the
+  index and makes every record reachable from the nav. `standard.md` gains a
+  section, and the `AGENTS.md` block a bullet, both pointing at
+  `docs/adr/kiln/index.md`, both rendered only when records render.
 
 ## The index
 
-`templates/index.md.j2`, where `records` is the list of `(id, title)` pairs this
-config renders, in ID order:
+`modules/docs/templates/docs/adr/kiln/index.md.j2`, where `records` is the list
+of `(id, title)` pairs this config renders, in ID order:
 
 ```markdown
 <!-- Generated by kiln {{ kiln_version }} from .rn-forge/kiln/config.toml — do not edit; run 'kiln apply' -->
 
-# The architecture baseline
+# kiln's architecture baseline
 
 The design decisions kiln's canon makes for this repository's product code. They
 hold whatever the product is, and they bind every change to it. kiln owns these
@@ -81,8 +113,8 @@ files: an edit here is drift, and `task lint` fails on it.
 {% endfor %}
 ## Deviating
 
-A repository that departs from a record writes a decision record of its own —
-under `docs/adr/` where it has one — naming the record, the part of it that it
+A repository that departs from a record writes a decision of its own in
+[the decision log](../index.md), naming the record, the part of it that it
 supersedes, and why. The record here stays unchanged. A record that is wrong for
 every repository is changed in kiln.
 ```
@@ -90,9 +122,25 @@ every repository is changed in kiln.
 The rendered file ends in exactly one newline. There is exactly one blank line
 between the last table row and `## Deviating`.
 
+## kiln's block in `docs/adr/index.md`
+
+`docs/adr/index.md` is seeded, so a link added to its template would reach new
+repositories only, and an existing repository would fail `orphan-page` at its
+next pin. kiln appends a managed block instead, as it does to `AGENTS.md`:
+`ManagedBlock("rn-forge kiln", comment="<!--")`, block template
+`modules/docs/templates/docs/adr/index.block.md.j2`, exactly:
+
+```markdown
+## kiln's architecture baseline
+
+kiln's canon decides part of this repository's product design, in
+[kiln's architecture baseline](kiln/index.md). A decision here that departs from
+one of those records names it, and says which part it supersedes.
+```
+
 ## The tiers and their contracts
 
-B-0001 names the tiers. The `layers` contract encodes them, top to bottom:
+ARCH-0001 names the tiers. The `layers` contract encodes them, top to bottom:
 
 | Line | Layers | Meaning |
 | -- | -- | -- |
@@ -104,42 +152,40 @@ Parentheses make every layer optional, so the contract holds on a package that
 has none of them yet. It was checked against import-linter 2.15: a missing
 optional layer passes, and `services` importing `adapters` breaks the contract.
 
-**Single-package archetypes** (`python-app`, and the web archetypes' API
-member). The rendered `.importlinter` gains this contract after
-`frameworks-come-from-rn-forge`, with one blank line between them. For the
-`python-tool` golden, whose package is `golden_tool`, the text is exactly:
+**Single-package archetypes** (`python-app`, `python-tool`, and the web
+archetypes' API member). The rendered `.importlinter` gains this contract inside
+kiln's block, after `frameworks-come-from-rn-forge`, with one blank line between
+them. It renders whenever `workspace` is false and `own_contracts` is false,
+whatever the docs profile. For a package `demo` the text is exactly:
 
 ```ini
-; The architecture baseline's B-0001 (.rn-forge/kiln/baseline/B-0001.md):
-; imports point inward. Every layer is optional, because a tier exists only once
-; code needs it, so this holds on a fresh repo and fails on the first import
-; that points upward.
+; kiln's architecture baseline, ARCH-0001: imports point inward. Every layer is
+; optional, because a tier exists only once code needs it, so this holds on a
+; fresh repo and fails on the first import that points upward.
 [importlinter:contract:dependencies-point-inward]
-name = Imports in golden_tool point inward (baseline B-0001)
+name = Imports in demo point inward (ARCH-0001)
 type = layers
 containers =
-    golden_tool
+    demo
 layers =
     (main) : (commands) : (product) : (app) : (http)
     (services) | (adapters)
     (domain)
 ```
 
-With this appended, `lint-imports` against the golden's own `src/` reports
-`Contracts: 2 kept, 0 broken`. The workspace archetype, `python-lib`, gets no
-`layers` contract. B-0003 governs it, and its `packages-are-independent`
-contract is unchanged.
+The workspace archetype, `python-lib`, gets no `layers` contract. ARCH-0003
+governs it, and its `packages-are-independent` contract is unchanged.
 
 **FastAPI** (`config.backend == "fastapi"`) also gains this contract, after
 `dependencies-point-inward`, with one blank line between them. For a package
 `demo_api` the text is exactly:
 
 ```ini
-; The architecture baseline's B-0004 (.rn-forge/kiln/baseline/B-0004.md): the
-; web framework stops at the entry points. `.**` matches the modules below each
-; package, so this holds before the package exists.
+; kiln's architecture baseline, ARCH-0004: the web framework stops at the entry
+; points. `.**` matches the modules below each package, so this holds before the
+; package exists.
 [importlinter:contract:framework-stays-at-the-edge]
-name = demo_api's domain and services import no web framework (baseline B-0004)
+name = demo_api's domain and services import no web framework (ARCH-0004)
 type = forbidden
 source_modules =
     demo_api.domain.**
@@ -158,30 +204,45 @@ repository that has not created the package yet. A render cannot know which
 packages exist ([ADR-0004](../../../adr/ADR-0004.md)), so the gap stays open and
 is left to review.
 
+## The starter follows the records
+
+The seeded starter ([F4.9](../E4-generator/F4.9-seeded-starter-source.md)) is
+the first code a repository has, so it must not depart from its own records.
+Checked 2026-11-19:
+
+| Cell | Starter | Against the records |
+| -- | -- | -- |
+| `python-app`, `python-tool` | `main.py`, `commands.py`, `product.py` | holds: entry points only, no I/O, no settings |
+| `python-lib` | `settings.py`: `DEFAULTS` and `merge_settings(**overrides)` | holds: ARCH-0003, values arrive as arguments |
+| FastAPI | `app.py`, `routes.py`, `errors.py`; `ItemNotFound(Exception)` | departs: routers are not in `http` (ARCH-0004), and the error is not an `AppException` (ARCH-0002) |
+
+S12.2.4 moves the FastAPI starter to `http/items.py` and `domain/errors.py`,
+with `ItemNotFound(AppException)`. A repository already scaffolded keeps its
+seeded files.
+
 ## Changing a record
 
 - Record IDs are global and permanent. A retired record stops rendering, and its
   ID is listed on this page as retired, never reused.
-- A record's text changes in a golden first, while goldens are in git; after
-  [F4.4](../E4-generator/F4.4-render-matrix.md), it changes through the render
-  matrix's approval. A changed record changes the architecture of every
-  repository it applies to, so the release that carries it says so.
+- A record's text changes through the render matrix's approval
+  ([F4.4](../E4-generator/F4.4-render-matrix.md)). A changed record changes
+  the architecture of every repository it applies to at its next pin, so the
+  change is noted as breaking.
 - A new record is an owner's story that approves its text, followed by a build
   story, exactly as F12.1 and F12.2 are structured.
 
 ## Record texts
 
-The texts below were checked with `mdformat --check` under the goldens'
-`.mdformat.toml`, with the provenance line in place. Each template is its
-provenance line, one blank line, then the text as shown. The text has no Jinja
-in it. The file ends in exactly one newline.
+Each template is its provenance line, one blank line, then the text as shown,
+with no Jinja in it. The file ends in exactly one newline.
 
-### B-0001
+### ARCH-0001
 
-`templates/B-0001.md.j2`: the provenance line, a blank line, then exactly:
+`modules/docs/templates/docs/adr/kiln/ARCH-0001.md.j2`: the provenance line, a
+blank line, then exactly:
 
 ```markdown
-# B-0001 — Dependencies point inward; I/O lives at the edges
+# ARCH-0001 — Dependencies point inward; I/O lives at the edges
 
 **Status:** accepted · **Scope:** every module under this repository's root
 package
@@ -222,7 +283,7 @@ has only `commands`.
 The `dependencies-point-inward` contract in `.importlinter` enforces the order.
 Each tier in it is optional, so the contract holds on a repository that has not
 created a tier yet and bites the first import that points upward.
-[B-0002](B-0002.md) says what crosses the entry-point boundary.
+[ARCH-0002](ARCH-0002.md) says what crosses the entry-point boundary.
 
 ## Alternatives considered
 
@@ -236,12 +297,13 @@ created a tier yet and bites the first import that points upward.
   and this record has to hold for both.
 ```
 
-### B-0002
+### ARCH-0002
 
-`templates/B-0002.md.j2`: the provenance line, a blank line, then exactly:
+`modules/docs/templates/docs/adr/kiln/ARCH-0002.md.j2`: the provenance line, a
+blank line, then exactly:
 
 ```markdown
-# B-0002 — Errors, settings and logs each cross one boundary
+# ARCH-0002 — Errors, settings and logs each cross one boundary
 
 **Status:** accepted · **Scope:** every module under this repository's root
 package
@@ -274,8 +336,8 @@ package
 
 ## Influences
 
-[B-0001](B-0001.md) defines the entry points. No import contract can see an
-environment read or a stray `print`; this record is enforced by review.
+[ARCH-0001](ARCH-0001.md) defines the entry points. No import contract can see
+an environment read or a stray `print`; this record is enforced by review.
 
 ## Alternatives considered
 
@@ -288,12 +350,13 @@ environment read or a stray `print`; this record is enforced by review.
   could no longer be correlated or filtered by field.
 ```
 
-### B-0003
+### ARCH-0003
 
-`templates/B-0003.md.j2`: the provenance line, a blank line, then exactly:
+`modules/docs/templates/docs/adr/kiln/ARCH-0003.md.j2`: the provenance line, a
+blank line, then exactly:
 
 ```markdown
-# B-0003 — A library's surface is explicit and inert
+# ARCH-0003 — A library's surface is explicit and inert
 
 **Status:** accepted · **Scope:** every package in this workspace
 
@@ -338,20 +401,21 @@ packages from depending on each other silently. The rest is enforced by review.
   depend on the machine they run on.
 ```
 
-### B-0004
+### ARCH-0004
 
-`templates/B-0004.md.j2`: the provenance line, a blank line, then exactly:
+`modules/docs/templates/docs/adr/kiln/ARCH-0004.md.j2`: the provenance line, a
+blank line, then exactly:
 
 ```markdown
-# B-0004 — HTTP is an adapter at the edge
+# ARCH-0004 — HTTP is an adapter at the edge
 
 **Status:** accepted · **Scope:** the API service's root package
 
 ## Decision
 
 - **`app` builds the application.** It loads settings, and registers the
-  routers, the exception handlers and the middleware. Routers live in `http`,
-  one module per resource.
+  routers, the error registry and the middleware. Routers live in `http`, one
+  module per resource.
 - **Handlers are thin.** A route handler parses the request, calls one service
   and maps the result to a response model. No business rule, query or outbound
   call lives in a handler.
@@ -360,9 +424,12 @@ packages from depending on each other silently. The rest is enforced by review.
 - **The framework stops at `http`.** Services and adapters reach handlers
   through FastAPI's `Depends`, declared only in `http`. `domain` and
   `services` never import FastAPI or Starlette.
-- **One error shape.** Exception handlers registered in `app` translate
-  `AppException`, by its `error_code`, into one error response body that every
-  route shares. A handler never builds an error response itself.
+- **One error shape.** `app` builds one `ProblemRegistry` from `rn-forge-web`:
+  `default_registry()`, then `register` for each of the product's own
+  exceptions, or `register_hierarchy` for an `AppException` hierarchy. Every
+  error response is the RFC 9457 problem body that registry gives the
+  exception's type. A handler raises; it never builds an error response
+  itself.
 - **The event loop never blocks.** Handlers are `async def`, and a blocking call
   runs in a worker thread, not on the loop.
 
@@ -371,15 +438,15 @@ packages from depending on each other silently. The rest is enforced by review.
 - A service is tested without the application. An API test drives the real
   application through the test client and checks the wire format.
 - A domain type can be renamed or reshaped without changing the public API.
-- Clients see one error format, whichever route failed.
+- Clients see one error format, the problem body, whichever route failed.
 - The cost is a second set of models, and a conversion in each handler.
 
 ## Influences
 
 The `dependencies-point-inward` contract in `.importlinter` places `app` and
-`http` among the entry points ([B-0001](B-0001.md)). The
+`http` among the entry points ([ARCH-0001](ARCH-0001.md)). The
 `framework-stays-at-the-edge` contract forbids FastAPI and Starlette in `domain`
-and `services`. Errors follow [B-0002](B-0002.md).
+and `services`. Errors follow [ARCH-0002](ARCH-0002.md).
 
 ## Alternatives considered
 
@@ -391,12 +458,13 @@ and `services`. Errors follow [B-0002](B-0002.md).
   status codes drift between routes.
 ```
 
-### B-0005
+### ARCH-0005
 
-`templates/B-0005.md.j2`: the provenance line, a blank line, then exactly:
+`modules/docs/templates/docs/adr/kiln/ARCH-0005.md.j2`: the provenance line, a
+blank line, then exactly:
 
 ```markdown
-# B-0005 — The API schema is the contract between backend and frontend
+# ARCH-0005 — The API schema is the contract between backend and frontend
 
 **Status:** accepted · **Scope:** the API service and the frontend workspace
 
@@ -421,9 +489,9 @@ and `services`. Errors follow [B-0002](B-0002.md).
 
 ## Influences
 
-kiln renders no client-generation task yet. Until it does, the repository adds
-its own, and this record is enforced by review. The API's shape is
-[B-0004](B-0004.md).
+`task web:client` regenerates the client from the API's OpenAPI document, and CI
+fails when the committed client differs from the one the API produces. The API's
+own shape is the backend's records.
 
 ## Alternatives considered
 

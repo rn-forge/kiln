@@ -116,6 +116,7 @@ nav:
               - F5.2 — `kiln new` end to end for the web archetypes: specs/epics/E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md
               - F5.3 — Prove and ship the FastAPI cells: specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md
               - F5.4 — The Django scaffold: specs/epics/E5-web-archetypes/F5.4-django-scaffold.md
+              - F5.5 — The web app generates its API client from the OpenAPI document: specs/epics/E5-web-archetypes/F5.5-web-app-api-client.md
           - E6 — Rebuild the repos, retire the old:
               - specs/epics/E6-rebuild-the-repos/index.md
               - F6.1 — `python-lib` can host pykit: specs/epics/E6-rebuild-the-repos/F6.1-pykit-skeleton.md
@@ -162,9 +163,9 @@ nav:
               - F11.5 — CI deploys versioned package sites: specs/epics/E11-package-docs/F11.5-deploy-package-sites.md
           - E12 — The architecture baseline:
               - specs/epics/E12-architecture-baseline/index.md
-              - F12.1 — The baseline module, and the Python records: specs/epics/E12-architecture-baseline/F12.1-python-baseline.md
-              - F12.2 — The web records: specs/epics/E12-architecture-baseline/F12.2-web-baseline.md
-              - E12 design — the architecture baseline: specs/epics/E12-architecture-baseline/design.md
+              - F12.1 — The catalogue, and the Python records: specs/epics/E12-architecture-baseline/F12.1-python-baseline.md
+              - F12.2 — The web records, and a starter that follows them: specs/epics/E12-architecture-baseline/F12.2-web-baseline.md
+              - E12 design — kiln's architecture baseline: specs/epics/E12-architecture-baseline/design.md
           - E13 — The docs work model and derived regions:
               - specs/epics/E13-docs-work-model/index.md
               - F13.1 — Derived regions, starting with the nav: specs/epics/E13-docs-work-model/F13.1-derived-regions.md

@@ -13,6 +13,7 @@
 | [F5.2 — `kiln new` end to end for the web archetypes](F5.2-kiln-new-web-end-to-end.md) | Closed | release-1 | 3 Closed |
 | [F5.3 — Prove and ship the FastAPI cells](F5.3-shipped-web-cells.md) | Closed | release-1 | 6 Closed · 1 Removed |
 | [F5.4 — The Django scaffold](F5.4-django-scaffold.md) | New | deferred | 1 New |
+| [F5.5 — The web app generates its API client from the OpenAPI document](F5.5-web-app-api-client.md) | New | release-1 | 2 New |
 
 <!-- END derived features -->
 

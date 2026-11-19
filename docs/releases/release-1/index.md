@@ -9,8 +9,9 @@ and `python-lib` from authored templates, creates and ships the FastAPI web
 cells (`python-web-api`, and `python-web-app` with an Angular frontend), and
 regenerates its own repo. It proves that `python-lib`, with its package docs
 sites, can host pykit (F6.1): adopting pykit exercises the scaffolding, seeding,
-CI, docs and tasks end to end. The architecture baseline is
-[release-2](../release-2/index.md).
+CI, docs and tasks end to end. It also carries kiln's architecture baseline
+(E12) and the web app's generated API client (F5.5), moved in from
+[release-2](../release-2/index.md) on 2026-11-19.
 
 ## Entry criteria
 
@@ -49,6 +50,7 @@ CI, docs and tasks end to end. The architecture baseline is
 | [F5.1 — Library sets, and the modules gain the web shapes](../../specs/epics/E5-web-archetypes/F5.1-web-library-sets-and-modules.md) | E5 | Closed |
 | [F5.2 — `kiln new` end to end for the web archetypes](../../specs/epics/E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md) | E5 | Closed |
 | [F5.3 — Prove and ship the FastAPI cells](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) | E5 | Closed |
+| [F5.5 — The web app generates its API client from the OpenAPI document](../../specs/epics/E5-web-archetypes/F5.5-web-app-api-client.md) | E5 | New |
 | [F6.1 — `python-lib` can host pykit](../../specs/epics/E6-rebuild-the-repos/F6.1-pykit-skeleton.md) | E6 | Closed |
 | [F6.3 — The generated CI matches the hardened upstream CI](../../specs/epics/E6-rebuild-the-repos/F6.3-hardened-ci.md) | E6 | Closed |
 | [F6.4 — `python-lib` renders pykit's discovered workspace pipeline](../../specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md) | E6 | Closed |
@@ -78,6 +80,8 @@ CI, docs and tasks end to end. The architecture baseline is
 | [F11.3 — `kiln generate package`](../../specs/epics/E11-package-docs/F11.3-generate-package.md) | E11 | Closed |
 | [F11.4 — The docs rules are one standard, and kiln owns them](../../specs/epics/E11-package-docs/F11.4-cross-repository-rule.md) | E11 | Closed |
 | [F11.5 — CI deploys versioned package sites](../../specs/epics/E11-package-docs/F11.5-deploy-package-sites.md) | E11 | Closed |
+| [F12.1 — The catalogue, and the Python records](../../specs/epics/E12-architecture-baseline/F12.1-python-baseline.md) | E12 | New |
+| [F12.2 — The web records, and a starter that follows them](../../specs/epics/E12-architecture-baseline/F12.2-web-baseline.md) | E12 | New |
 | [F13.1 — Derived regions, starting with the nav](../../specs/epics/E13-docs-work-model/F13.1-derived-regions.md) | E13 | Closed |
 | [F13.2 — The board and Scope regions, and metadata checks](../../specs/epics/E13-docs-work-model/F13.2-board-and-scope.md) | E13 | Closed |
 | [F13.3 — The seeded rules and kiln's own docs adopt the model](../../specs/epics/E13-docs-work-model/F13.3-adopt-the-model.md) | E13 | Closed |
@@ -125,6 +129,9 @@ CI, docs and tasks end to end. The architecture baseline is
 
 ## Decisions
 
+- [ADR-0010](../../adr/ADR-0010.md) — proposed 2026-09-28, revised 2026-11-19:
+  the canon carries an architecture baseline, as managed records under
+  `docs/adr/kiln/` (E12).
 - [ADR-0001–ADR-0007](../../adr/index.md) — 2026-09-13 to 2026-09-15: the
   decision log renumbered and consolidated.
 - [ADR-0005](../../adr/ADR-0005.md) — 2026-09-17: the web selectors are
@@ -166,7 +173,7 @@ release 2).
 Commits whose subject names a scope ID, newest first:
 
 ```bash
-git log --format='%h %ad %s' --date=short -E --grep='[FS](3\.[1-4]|4\.[1-9]|5\.[1-3]|6\.[134]|7\.1|9\.1|11\.[1-5]|13\.[1-3]|14\.[12])'
+git log --format='%h %ad %s' --date=short -E --grep='[FS](3\.[1-4]|4\.[1-9]|5\.[1-35]|6\.[134]|7\.1|9\.1|11\.[1-5]|13\.[1-3]|14\.[12]|12\.[12])'
 ```
 
 ## Exit criteria
@@ -189,6 +196,8 @@ git log --format='%h %ad %s' --date=short -E --grep='[FS](3\.[1-4]|4\.[1-9]|5\.[
   release 1 ships.
 - [E15](../../specs/epics/E15-ci-standard/index.md)'s acceptance blocks pass:
   every archetype runs the one stage vocabulary from `ci.yml`.
+- F12.1, F12.2 and F5.5's acceptance holds: kiln's architecture baseline renders
+  and its contracts bite, and the web app's API client is generated.
 - [E16](../../specs/epics/E16-init-adopts-by-overwrite/index.md)'s acceptance
   blocks pass: `init` is retired and the cutover SOP is the overlay
   ([ADR-0019](../../adr/ADR-0019.md)).
