@@ -123,6 +123,20 @@ def _flip_sonar(root: Path) -> None:
     )
 
 
+def _set_owner(root: Path, owner: str) -> None:
+    config_path = root / CONFIG_PATH
+    text = config_path.read_text(encoding="utf-8")
+    assert 'owner = "rn-forge"' in text
+    config_path.write_text(
+        text.replace('owner = "rn-forge"', f'owner = "{owner}"'), encoding="utf-8"
+    )
+
+
+def _recorded_provenance(root: Path) -> dict[str, Any]:
+    state = json.loads((root / STATE_PATH).read_text(encoding="utf-8"))
+    return state["metadata"]["config_provenance"]
+
+
 def _stale_schema(root: Path) -> None:
     config_path = root / CONFIG_PATH
     text = config_path.read_text(encoding="utf-8")
@@ -352,3 +366,43 @@ def test_config_apply_restores_its_footprint_after_finalization_failure(
 
     assert {path: path.read_bytes() for path in before} == before
     assert not created.exists()
+
+
+def test_apply_records_an_edited_key_under_the_repo_layer(repo: Path) -> None:
+    _set_owner(repo, "rn-apps")
+
+    cycle.apply(repo)
+
+    entry = _recorded_provenance(repo)["repository.owner"]
+    assert entry == {"layer": "repo", "value": "rn-apps"}
+
+
+def test_a_second_apply_leaves_the_state_unchanged(repo: Path) -> None:
+    _set_owner(repo, "rn-apps")
+    cycle.apply(repo)
+    before = (repo / STATE_PATH).read_bytes()
+
+    cycle.apply(repo)
+
+    assert (repo / STATE_PATH).read_bytes() == before
+
+
+def test_an_unedited_key_keeps_its_layer(repo: Path) -> None:
+    seeded = _recorded_provenance(repo)["repository.name"]
+    _set_owner(repo, "rn-apps")
+
+    cycle.apply(repo)
+
+    assert _recorded_provenance(repo)["repository.name"] == seeded
+    assert seeded["layer"] == FLAGS_LAYER
+
+
+def test_an_applied_edit_is_still_an_override(
+    repo: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    _set_owner(repo, "rn-apps")
+    cycle.apply(repo)
+
+    commands.config_update(dry_run=True, json=True)
+
+    assert "repository.owner" in _last_json(capsys)["overrides"]

@@ -390,6 +390,7 @@
         "layer": "repo",
         "value": [
           {
+            "contents": "read",
             "events": [
               "pull_request"
             ],
@@ -423,47 +424,51 @@
         "value": [
           {
             "name": "doctor",
-            "target": "rn_forge.kiln.commands:doctor"
+            "target": "rn_forge.kiln.commands.doctor:doctor"
           },
           {
             "name": "docs-generate",
-            "target": "rn_forge.kiln.commands:docs_generate"
+            "target": "rn_forge.kiln.commands.generate:docs_generate"
           },
           {
             "name": "new",
-            "target": "rn_forge.kiln.commands:new"
-          },
-          {
-            "name": "init",
-            "target": "rn_forge.kiln.commands:init"
+            "target": "rn_forge.kiln.commands.new:new"
           },
           {
             "name": "apply",
-            "target": "rn_forge.kiln.commands:apply"
+            "target": "rn_forge.kiln.commands.apply:apply"
           },
           {
             "name": "generate",
-            "target": "rn_forge.kiln.commands:generate_app"
+            "target": "rn_forge.kiln.commands.generate:generate_app"
           },
           {
             "name": "config-update",
-            "target": "rn_forge.kiln.commands:config_update"
+            "target": "rn_forge.kiln.commands.config:config_update"
           },
           {
             "name": "config-upgrade",
-            "target": "rn_forge.kiln.commands:config_upgrade"
+            "target": "rn_forge.kiln.commands.config:config_upgrade"
+          },
+          {
+            "name": "pin",
+            "target": "rn_forge.kiln.commands.config:pin"
+          },
+          {
+            "name": "repo-upgrade",
+            "target": "rn_forge.kiln.commands.upgrade:upgrade"
           },
           {
             "name": "diff",
-            "target": "rn_forge.kiln.commands:diff"
+            "target": "rn_forge.kiln.commands.diff:diff"
           },
           {
             "name": "version",
-            "target": "rn_forge.kiln.commands:version"
+            "target": "rn_forge.kiln.commands.info:version"
           },
           {
             "name": "prompt",
-            "target": "rn_forge.kiln.commands:prompt"
+            "target": "rn_forge.kiln.commands.info:prompt"
           }
         ]
       },

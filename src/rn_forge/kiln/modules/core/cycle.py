@@ -10,6 +10,7 @@ import json
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from rn_forge.commons import generation
 from rn_forge.commons.exceptions import AppException
@@ -23,6 +24,7 @@ from rn_forge.commons.generation import (
     Plan,
     StateEntry,
 )
+from rn_forge.commons.lang.collections import DictUtils
 from rn_forge.commons.lang.types import JsonValue
 from rn_forge.tooling.install.home import rnf_home
 
@@ -31,7 +33,11 @@ from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
 from rn_forge.kiln.modules.base import ModuleRegistry, StarterModule
 from rn_forge.kiln.modules.core import settle, umbrella
 from rn_forge.kiln.modules.core.config import catalog
-from rn_forge.kiln.modules.core.config.manager import PROVENANCE_KEY, ConfigManager
+from rn_forge.kiln.modules.core.config.manager import (
+    PROVENANCE_KEY,
+    REPO_LAYER,
+    ConfigManager,
+)
 from rn_forge.kiln.modules.core.process import run
 
 __all__ = [
@@ -227,6 +233,24 @@ def execute(
         raise
 
 
+def _refreshed(
+    recorded: Mapping[str, JsonValue], document: Mapping[str, Any]
+) -> dict[str, JsonValue]:
+    """*recorded* provenance, with each key the committed *document* changed re-attributed to the repo."""
+    committed = DictUtils.flatten(document)
+    refreshed: dict[str, JsonValue] = {}
+    for path, entry in recorded.items():
+        if (
+            path in committed
+            and isinstance(entry, Mapping)
+            and entry.get("value") != committed[path]
+        ):
+            refreshed[path] = {"layer": REPO_LAYER, "value": committed[path]}
+        else:
+            refreshed[path] = entry
+    return refreshed
+
+
 def prepare(
     root: Path,
     *,
@@ -237,7 +261,11 @@ def prepare(
     provenance: Mapping[str, JsonValue] | None = None,
     starters: str | None = None,
 ) -> Prepared:
-    """Classify the artifacts of the committed config or a validated candidate."""
+    """Classify the artifacts of the committed config or a validated candidate.
+
+    Carried-forward provenance re-attributes a key whose committed value changed
+    to the `repo` layer.
+    """
     refused = umbrella.legacy(root / umbrella.UMBRELLA, (home or rnf_home()) / "kiln")
     if refused:
         raise CycleRefused(refused)
@@ -276,7 +304,9 @@ def prepare(
             schema_version=umbrella.STATE_SCHEMA_VERSION,
         )
         recorded = previous.metadata.get(PROVENANCE_KEY)
-        if recorded is not None:
+        if isinstance(recorded, Mapping):
+            metadata[PROVENANCE_KEY] = _refreshed(recorded, document)
+        elif recorded is not None:
             metadata[PROVENANCE_KEY] = recorded
         scaffolded = previous.metadata.get(SCAFFOLDED_KEY)
         if scaffolded is not None:
