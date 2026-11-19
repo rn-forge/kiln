@@ -26,6 +26,7 @@ def repo(
     monkeypatch: pytest.MonkeyPatch,
     rendered_copy: Callable[..., Path],
 ) -> Path:
+    console.set_mode(OutputMode.PLAIN)
     root = rendered_copy("python-tool")
     cycle.apply(root)
     monkeypatch.chdir(root)

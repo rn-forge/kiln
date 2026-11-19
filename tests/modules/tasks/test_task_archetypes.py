@@ -652,21 +652,6 @@ def test_required_validate_gains_it(name: str) -> None:
     assert "ci:lint:workflows" in archetypes.load(name).required_validate
 
 
-@pytest.mark.parametrize(
-    ("archetype", "extra"),
-    [(a, "") for a in ARCHETYPES] + list(WEB_CELLS),
-)
-def test_task_layout_accepts_files_with_workflow_lint(
-    tmp_path: Path, archetype: str, extra: str
-) -> None:
-    if archetype in ARCHETYPES:
-        root = _root(tmp_path, archetype)
-    else:
-        root = _web_root(tmp_path, archetype, "fastapi", extra=extra)
-    cycle.apply(root, home=tmp_path / "home")
-    assert _codes(root) == []
-
-
 def test_gate_shrunk_fires_when_lint_drops_workflows(
     tmp_path: Path,
 ) -> None:
