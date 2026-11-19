@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 
 from rn_forge.commons import generation
@@ -29,16 +30,20 @@ from rn_forge.kiln import __version__
 from rn_forge.kiln.config import CONFIG_PATH, KilnConfig
 from rn_forge.kiln.modules.base import ModuleRegistry, StarterModule
 from rn_forge.kiln.modules.core import settle, umbrella
+from rn_forge.kiln.modules.core.config import catalog
 from rn_forge.kiln.modules.core.config.manager import PROVENANCE_KEY, ConfigManager
 from rn_forge.kiln.modules.core.process import run
 
 __all__ = [
     "SCAFFOLDED_KEY",
     "CycleRefused",
+    "Footprint",
+    "Prepared",
     "apply",
     "classify",
+    "execute",
     "plan",
-    "preview",
+    "prepare",
     "record_scaffolded",
 ]
 
@@ -49,6 +54,61 @@ UNFENCED_CODE = "core.block-unfenced"
 _NO_APPEND = frozenset({".importlinter"})
 """Files a block may not be appended to: a second `[importlinter]` section is
 a `configparser` error, so an unfenced file is refused instead."""
+
+
+@dataclass(frozen=True)
+class Prepared:
+    """A classified apply and the config and state store it uses."""
+
+    store: StateStore[StateEntry]
+    plan: Plan
+    config: KilnConfig
+    candidate: bool
+
+    def write_paths(self) -> set[Path]:
+        """Return the repository-relative footprint of this apply."""
+        paths = {Path(change.path) for change in self.plan.changes}
+        paths.add(umbrella.STATE_PATH)
+        if self.candidate:
+            paths.add(CONFIG_PATH)
+        if self.config.docs_profile == "mkdocs":
+            paths.update((Path("docs"), Path("mkdocs.yml")))
+        return paths
+
+
+class Footprint:
+    """Snapshot repository-relative files and directory trees for recovery."""
+
+    def __init__(self, root: Path, paths: Iterable[Path]) -> None:
+        self._paths = tuple(root / path for path in paths)
+        files, self._directories = self._contents()
+        self._files = {path: path.read_bytes() for path in files}
+
+    def _contents(self) -> tuple[set[Path], set[Path]]:
+        files: set[Path] = set()
+        directories: set[Path] = set()
+        for path in self._paths:
+            if path.is_dir():
+                directories.add(path)
+                for child in path.rglob("*"):
+                    (directories if child.is_dir() else files).add(child)
+            elif path.is_file():
+                files.add(path)
+        return files, directories
+
+    def restore(self) -> None:
+        """Restore original bytes and remove files and directories created within the footprint."""
+        files, directories = self._contents()
+        for path in files - self._files.keys():
+            path.unlink()
+        for path in sorted(directories - self._directories, reverse=True):
+            path.rmdir()
+        for path in self._directories:
+            path.mkdir(parents=True, exist_ok=True)
+        for path, content in self._files.items():
+            if not path.is_file() or path.read_bytes() != content:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(content)
 
 
 class CycleRefused(AppException):
@@ -90,7 +150,9 @@ def plan(
         CycleRefused: A legacy kiln tree is present.
         AppException: The config is invalid.
     """
-    return _prepare(root, force, registry, home, provenance)[1]
+    return prepare(
+        root, force=force, registry=registry, home=home, provenance=provenance
+    ).plan
 
 
 def apply(
@@ -119,32 +181,76 @@ def apply(
             conflict, drift or missing artifact, or a write failed (after the
             tree and `state.json` were restored).
     """
-    store, planned = _prepare(root, force, registry, home, provenance, starters)
-    return generation.apply(
+    return execute(
         root,
-        planned,
-        store,
-        staging_dir=root / umbrella.RENDERED,
-        backup_dir=root / umbrella.BACKUPS,
-        verify=verify,
+        prepare(
+            root,
+            force=force,
+            registry=registry,
+            home=home,
+            provenance=provenance,
+            starters=starters,
+        ),
         dry_run=dry_run,
+        finalize=verify,
     )
 
 
-def _prepare(
+def execute(
     root: Path,
-    force: Iterable[str],
-    registry: ModuleRegistry | None,
-    home: Path | None,
+    prepared: Prepared,
+    *,
+    dry_run: bool = False,
+    finalize: Callable[[], None] | None = None,
+    post: Callable[[], None] | None = None,
+) -> ApplyResult:
+    """Execute a prepared plan, with callbacks before and after the state write."""
+    footprint = None if dry_run else Footprint(root, prepared.write_paths())
+    try:
+        if prepared.candidate and not dry_run:
+            catalog.write(root, prepared.config)
+        result = generation.apply(
+            root,
+            prepared.plan,
+            prepared.store,
+            staging_dir=root / umbrella.RENDERED,
+            backup_dir=root / umbrella.BACKUPS,
+            verify=finalize,
+            dry_run=dry_run,
+        )
+        if post is not None and not dry_run:
+            post()
+        return result
+    except BaseException:
+        if footprint is not None:
+            footprint.restore()
+        raise
+
+
+def prepare(
+    root: Path,
+    *,
+    config: KilnConfig | None = None,
+    force: Iterable[str] = (),
+    registry: ModuleRegistry | None = None,
+    home: Path | None = None,
     provenance: Mapping[str, JsonValue] | None = None,
     starters: str | None = None,
-) -> tuple[StateStore[StateEntry], Plan]:
+) -> Prepared:
+    """Classify the artifacts of the committed config or a validated candidate."""
     refused = umbrella.legacy(root / umbrella.UMBRELLA, (home or rnf_home()) / "kiln")
     if refused:
         raise CycleRefused(refused)
 
     manager = ConfigManager(registry)
-    config = manager.load(root)
+    candidate = config is not None
+    if config is None:
+        config = manager.load(root)
+        document = DocumentUtils.read(root / CONFIG_PATH)
+    else:
+        document = DocumentUtils.loads(
+            catalog.render(config, header=catalog.CONFIG_HEADER), ConfigFormat.TOML
+        )
     artifacts = _artifacts(manager, config, root, starters=starters)
     unfenced = _unfenced(root, artifacts)
     if unfenced:
@@ -155,7 +261,7 @@ def _prepare(
         "kiln_version": __version__,
         "config_hash": ContentHash.of(
             json.dumps(
-                DocumentUtils.read(root / CONFIG_PATH),
+                document,
                 sort_keys=True,
                 separators=(",", ":"),
             )
@@ -184,7 +290,7 @@ def _prepare(
     )
     entries = _without_converted(store.load(), artifacts)
     planned = classify(root, artifacts, entries, force=force)
-    return store, planned
+    return Prepared(store, planned, config, candidate)
 
 
 def classify(
@@ -302,18 +408,3 @@ def record_scaffolded(directory: Path) -> None:
     state_path.write_text(
         DocumentUtils.dumps(state, ConfigFormat.JSON), encoding="utf-8"
     )
-
-
-def preview(root: Path, config: KilnConfig) -> list[generation.Change]:
-    """Every artifact of *config*'s modules, classified against *root*'s `state.json`."""
-    artifacts = [
-        artifact
-        for module in ConfigManager().modules_for(config)
-        for artifact in module.artifacts(config, root)
-    ]
-    store = StateStore(
-        root / umbrella.STATE_PATH,
-        entry_type=StateEntry,
-        schema_version=umbrella.STATE_SCHEMA_VERSION,
-    )
-    return list(classify(root, artifacts, store.load()).changes)

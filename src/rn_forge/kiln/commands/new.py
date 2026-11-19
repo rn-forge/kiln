@@ -91,7 +91,8 @@ def new(
     bare = python_scaffold.without_members(resolved)
 
     if not yes or dry_run:
-        rows = output.change_rows(cycle.preview(directory, resolved))
+        prepared = cycle.prepare(directory, config=resolved, starters="")
+        rows = output.change_rows(prepared.plan.changes)
         _report(directory, resolved, rows)
         return
 

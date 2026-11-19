@@ -64,7 +64,7 @@ def _diff_inventory(old: str) -> None:
 
 def _diff_artifacts(artifact: str | None) -> None:
     root = umbrella.find_root(Path.cwd())
-    changes = cycle.plan(root).changes
+    changes = cycle.prepare(root).plan.changes
 
     if artifact is not None:
         changes = [c for c in changes if artifact in (c.key, c.path)]

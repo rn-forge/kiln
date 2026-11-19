@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding
@@ -31,7 +32,10 @@ from rn_forge.kiln.modules.docs.work import (
     validate,
 )
 
-__all__ = ["generate", "stale"]
+if TYPE_CHECKING:
+    from rn_forge.kiln.config import KilnConfig
+
+__all__ = ["finalizer", "generate", "stale"]
 
 _RERUN = "— run `task docs:generate`"
 
@@ -282,3 +286,18 @@ def stale(
         return findings
     _, remaining, stale_findings = regions
     return [*findings, *stale_findings, *remaining]
+
+
+def finalizer(root: Path, config: KilnConfig) -> Callable[[], None] | None:
+    """A callback that regenerates *root*'s derived docs regions, or `None` without MkDocs."""
+    if config.docs_profile != "mkdocs":
+        return None
+
+    def finalize() -> None:
+        generate(
+            root,
+            config.docs_packages,
+            ci_matrix=config.ci_matrix(every_archetype=True),
+        )
+
+    return finalize

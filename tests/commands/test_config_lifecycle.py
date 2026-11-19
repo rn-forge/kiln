@@ -30,10 +30,15 @@ from rn_forge.commons.fs.documents import ConfigFormat, DocumentUtils
 from rn_forge.commons.lang.collections import DictUtils
 from rn_forge.commons.runtime.console import OutputMode, console
 
+from tests.conftest import snapshot
+
 from rn_forge.kiln import commands
+from rn_forge.kiln.commands import output
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.core.config.manager import FLAGS_LAYER, ConfigManager
 from rn_forge.kiln.modules.core.config.sources import Source
+from rn_forge.kiln.modules.docs import generate as docs_generator
+from rn_forge.kiln.modules.docs.work import BOARD_BLOCK
 
 FLAGS = {"repository": {"name": "demo", "owner": "rn-forge", "archetype": "python-app"}}
 CONFIG_PATH = Path(".rn-forge") / "kiln" / "config.toml"
@@ -269,3 +274,81 @@ def test_config_upgrade_writes_the_commented_form(repo: Path) -> None:
 
     text = (repo / CONFIG_PATH).read_text(encoding="utf-8")
     assert '# One of: "default-branch", "every-run".' in text
+
+
+@pytest.mark.parametrize("upgrade", [False, True])
+def test_config_preview_and_dry_run_match_apply_with_a_missing_starter(
+    repo: Path, capsys: pytest.CaptureFixture[str], upgrade: bool
+) -> None:
+    starter = next(repo.glob("src/*/product.py"))
+    relative = starter.relative_to(repo).as_posix()
+    starter.unlink()
+    _flip_sonar(repo)
+    if upgrade:
+        _stale_schema(repo)
+    command = commands.config_upgrade if upgrade else commands.config_update
+    before = snapshot(repo)
+    capsys.readouterr()
+
+    command(json=True)
+    preview = _last_json(capsys)["artifacts"]
+    assert snapshot(repo) == before
+    command(dry_run=True, apply=True, json=True)
+    assert _last_json(capsys)["artifacts"] == preview
+    assert snapshot(repo) == before
+
+    command(apply=True, json=True)
+
+    applied = _last_json(capsys)["artifacts"]
+    assert preview == [
+        row for row in applied if row["action"] not in ("unchanged", "skip")
+    ]
+    assert [row["action"] for row in applied if row["path"] == relative] == ["forget"]
+    assert not starter.exists()
+
+
+@pytest.mark.parametrize("failure", ["docs", "ownership"])
+def test_config_apply_restores_its_footprint_after_finalization_failure(
+    repo: Path, monkeypatch: pytest.MonkeyPatch, failure: str
+) -> None:
+    _stale_schema(repo)
+    _flip_sonar(repo)
+    config = repo / CONFIG_PATH
+    managed = repo / "Taskfile.yml"
+    state = repo / STATE_PATH
+    board = repo / "docs/specs/index.md"
+    board.write_text(
+        BOARD_BLOCK.render(board.read_text(encoding="utf-8"), "\nStale board.\n\n"),
+        encoding="utf-8",
+    )
+    created = repo / "docs/guides/partial.md"
+    before = {path: path.read_bytes() for path in (config, managed, board, state)}
+    generate = docs_generator.generate
+    check_ownership = output.fail_on_errors
+
+    def assert_candidate_applied() -> None:
+        assert b"schema_version = 1" in config.read_bytes()
+        assert managed.read_bytes() != before[managed]
+        assert board.read_bytes() != before[board]
+
+    def fail_generation(*args: Any, **kwargs: Any) -> None:
+        generate(*args, **kwargs)
+        assert_candidate_applied()
+        created.write_bytes(b"partial docs")
+        raise AppException("injected docs failure")
+
+    def fail_ownership(root: Path) -> None:
+        assert state.read_bytes() != before[state]
+        check_ownership(root)
+        raise AppException("injected ownership failure")
+
+    if failure == "docs":
+        monkeypatch.setattr(docs_generator, "generate", fail_generation)
+    else:
+        monkeypatch.setattr(output, "fail_on_errors", fail_ownership)
+
+    with pytest.raises(AppException, match=f"injected {failure} failure"):
+        commands.config_upgrade(apply=True)
+
+    assert {path: path.read_bytes() for path in before} == before
+    assert not created.exists()

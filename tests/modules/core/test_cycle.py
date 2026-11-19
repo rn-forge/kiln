@@ -485,5 +485,5 @@ def test_fenced_file_with_old_state_converts_under_force(
 def test_cycle_has_no_adoption_api() -> None:
     for name in ("adoption_plan", "fence", "unfenced", "_adopted"):
         assert not hasattr(cycle, name)
-    for function in (cycle.plan, cycle.apply, cycle._prepare):
+    for function in (cycle.plan, cycle.apply, cycle.prepare):
         assert "adopt" not in inspect.signature(function).parameters

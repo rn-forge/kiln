@@ -14,8 +14,8 @@ from rn_forge.kiln import archetypes
 from rn_forge.kiln.commands import output
 from rn_forge.kiln.config import CONFIG_PATH
 from rn_forge.kiln.modules.core import cycle, kiln_ref, umbrella
-from rn_forge.kiln.modules.core.config import catalog
 from rn_forge.kiln.modules.core.config.manager import ConfigManager
+from rn_forge.kiln.modules.docs.generate import finalizer
 
 __all__ = ["config_update", "config_upgrade", "pin"]
 
@@ -62,13 +62,14 @@ def _config_reresolve(
     root = umbrella.find_root(Path.cwd())
     manager = ConfigManager()
     resolution = manager.reresolve(root, allow_schema_upgrade=allow_schema_upgrade)
+    prepared = cycle.prepare(
+        root,
+        config=resolution.config,
+        provenance=resolution.provenance_metadata(),
+    )
     settled = (generation.Action.UNCHANGED, generation.Action.SKIP)
     rows = output.change_rows(
-        [
-            change
-            for change in cycle.preview(root, resolution.config)
-            if change.action not in settled
-        ]
+        [change for change in prepared.plan.changes if change.action not in settled]
     )
     payload = {
         "root": str(root),
@@ -87,11 +88,14 @@ def _config_reresolve(
     if dry_run or not run_apply:
         return
 
-    catalog.write(root, resolution.config)
-    result = cycle.apply(root, provenance=resolution.provenance_metadata())
+    result = cycle.execute(
+        root,
+        prepared,
+        finalize=finalizer(root, prepared.config),
+        post=lambda: output.fail_on_errors(root),
+    )
     change_rows = output.change_rows(result.changes)
     output.emit_rows({"root": str(root), "artifacts": change_rows}, change_rows)
-    output.fail_on_errors(root)
 
 
 def pin(ref: str = "", show: bool = False) -> None:

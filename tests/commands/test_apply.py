@@ -24,6 +24,7 @@ from rn_forge.commons.runtime.console import OutputMode, console
 from tests.conftest import new_repo, snapshot
 
 from rn_forge.kiln import commands
+from rn_forge.kiln.config import CONFIG_PATH
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.instructions.artifacts import KILN_BLOCK
 
@@ -115,6 +116,52 @@ def test_force_rewrites_only_the_named_path(repo: Path) -> None:
 
     assert "# edit" not in task_path.read_text(encoding="utf-8")
     assert editorconfig.read_text(encoding="utf-8") == original_editorconfig
+
+
+def test_apply_classifies_once_when_refusing_or_forcing_drift(
+    repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    target = repo / "Taskfile.yml"
+    original = target.read_bytes()
+    target.write_bytes(original + b"\n# edit\n")
+    classify = cycle.classify
+    approved: list[tuple[str, ...]] = []
+
+    def record_classification(*args: Any, **kwargs: Any) -> Any:
+        approved.append(tuple(kwargs["force"]))
+        return classify(*args, **kwargs)
+
+    monkeypatch.setattr(cycle, "classify", record_classification)
+    before = snapshot(repo)
+    with pytest.raises(AppException, match="Taskfile.yml"):
+        commands.apply()
+    assert snapshot(repo) == before
+
+    commands.apply(force=["Taskfile.yml"])
+
+    assert target.read_bytes() == original
+    assert approved == [(), ("Taskfile.yml",)]
+
+
+def test_apply_initializes_mkdocs_before_doctor(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    root = tmp_path / "tool"
+    new_repo(root, archetype="python-tool", docs="none", yes=True)
+    assert not (root / "mkdocs.yml").exists()
+    config = root / CONFIG_PATH
+    config.write_text(
+        config.read_text(encoding="utf-8").replace(
+            'profile = "none"', 'profile = "mkdocs"'
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(root)
+
+    commands.apply()
+
+    commands.doctor([root], full=True)
 
 
 def test_force_naming_an_unreported_path_is_refused(repo: Path) -> None:

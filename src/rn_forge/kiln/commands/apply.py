@@ -9,6 +9,7 @@ from rn_forge.commons.exceptions import AppException
 
 from rn_forge.kiln.commands import output
 from rn_forge.kiln.modules.core import cycle, umbrella
+from rn_forge.kiln.modules.docs.generate import finalizer
 
 __all__ = ["apply"]
 
@@ -30,15 +31,18 @@ def apply(
     root = umbrella.find_root(Path.cwd())
     force_values = tuple(force or ())
 
-    planned = cycle.plan(root, force=force_values)
-    _validate_force(planned, force_values)
+    prepared = cycle.prepare(root, force=force_values)
+    _validate_force(prepared.plan, force_values)
 
-    result = cycle.apply(root, force=force_values, dry_run=dry_run)
+    result = cycle.execute(
+        root,
+        prepared,
+        dry_run=dry_run,
+        finalize=finalizer(root, prepared.config),
+        post=lambda: output.fail_on_errors(root),
+    )
     rows = output.change_rows(result.changes)
     output.emit_rows({"root": str(root), "artifacts": rows}, rows)
-
-    if not dry_run:
-        output.fail_on_errors(root)
 
 
 def _validate_force(planned: generation.Plan, force_values: tuple[str, ...]) -> None:

@@ -199,7 +199,7 @@ def test_one_classifier() -> None:
     assert {line for _, line in callers[cycle_py]} <= inside
 
     cycle_text = cycle_py.read_text(encoding="utf-8")
-    rows = re.search(r"def preview.*?(\n\n\ndef |\Z)", cycle_text, re.DOTALL)
+    rows = re.search(r"def prepare.*?(\n\n\ndef |\Z)", cycle_text, re.DOTALL)
     assert rows is not None
     assert "classify(" in rows.group(0)
     assert build_nav  # the nav the settle compares against comes from the tree
