@@ -141,6 +141,7 @@ nav:
               - F7.7 — kiln installs as a standalone tool, from any ref: specs/epics/E7-pykit-release-pin-flip/F7.7-kiln-installs-as-a-tool.md
               - F7.8 — An existing repository takes a new kiln's pykit floors: specs/epics/E7-pykit-release-pin-flip/F7.8-existing-repos-take-the-pin-table.md
               - F7.9 — Repositories follow kiln's `main` after release 1: specs/epics/E7-pykit-release-pin-flip/F7.9-repos-follow-main.md
+              - F7.10 — An installed kiln, and every `python-tool`, completes on `<TAB>`: specs/epics/E7-pykit-release-pin-flip/F7.10-shell-completion.md
           - E8 — The Azure DevOps CI provider:
               - specs/epics/E8-ado-provider/index.md
           - E9 — The node archetypes:

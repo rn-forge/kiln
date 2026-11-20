@@ -23,6 +23,7 @@ Package-site deploys (F11.5) moved to [release-1](../release-1/index.md) on
 | -- | -- | -- |
 | [F6.2 — Retire taskkit](../../specs/epics/E6-rebuild-the-repos/F6.2-retire-taskkit.md) | E6 | Removed |
 | [F7.9 — Repositories follow kiln's `main` after release 1](../../specs/epics/E7-pykit-release-pin-flip/F7.9-repos-follow-main.md) | E7 | New |
+| [F7.10 — An installed kiln, and every `python-tool`, completes on `<TAB>`](../../specs/epics/E7-pykit-release-pin-flip/F7.10-shell-completion.md) | E7 | New |
 | [F18.10 — The defects the reviews confirmed](../../specs/epics/E18-kiln-simplification/F18.10-review-defects.md) | E18 | New |
 | [F18.11 — Checks police the repository, not kiln's output](../../specs/epics/E18-kiln-simplification/F18.11-checks-police-repository-content.md) | E18 | New |
 

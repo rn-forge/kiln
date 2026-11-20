@@ -12,7 +12,7 @@ Backlog sections below are derived from the epic, feature and release pages by
 
 | Release | Status | Features |
 | -- | -- | -- |
-| [Release 2 — repositories on kiln's `main`](../releases/release-2/index.md) | planned | 3 New · 1 Removed |
+| [Release 2 — repositories on kiln's `main`](../releases/release-2/index.md) | planned | 4 New · 1 Removed |
 | [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 2 Active · 3 New · 88 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
@@ -52,6 +52,7 @@ theirs.
 | pykit tags `rn-forge-commons` 0.9.0, with `ManagedBlock.end_indent` (pykit S18.6.1) and the release prepared by pykit S18.6.2, and it is on pypi.org | [F19.2](epics/E19-formatting-standard/F19.2-nav-block-end-indent.md): S19.2.1 | yes (2026-11-16): `rn-forge-commons` 0.9.0 is pypi.org's current release |
 | pykit's `install` takes `--ref` (a branch, tag or commit, no GitHub release), records `ref` and `commit` in `state.json`, and ships a Python-tool product whose build puts a runnable `bin/<tool>` in the version directory (pykit F23.2), released to pypi.org in `rn-forge-tooling` | [F7.7](epics/E7-pykit-release-pin-flip/F7.7-kiln-installs-as-a-tool.md): S7.7.1 | yes (2026-11-18): `rn-forge-tooling` 0.3.3 is pypi.org's current release, from pykit's Release 9 (PR #36, pykit `dc5336e`) |
 | pykit's `--help` shows `[...]` literally and no docstring `Args:`/`Raises:` sections, and a CLI starts with no logger notice and one millisecond field (pykit F23.1), released to pypi.org | [F7.7](epics/E7-pykit-release-pin-flip/F7.7-kiln-installs-as-a-tool.md): S7.7.4 | yes (2026-11-18): `rn-forge-cli` 0.2.0 (help text) and `rn-forge-commons` 0.10.0 (logger notice, millisecond field) are pypi.org's current releases, from pykit's Release 9 (PR #36, pykit `dc5336e`) |
+| pykit's `install` writes the rn-forge home's `env.sh`, and `PythonTool` links `completions/_<tool>` by default (pykit F28.1, [pykit ADR-0017](https://github.com/rn-forge/pykit/blob/main/docs/adr/ADR-0017.md)), released to pypi.org as `rn-forge-tooling` 0.4.0 | [F7.10](epics/E7-pykit-release-pin-flip/F7.10-shell-completion.md): S7.10.1 | no (2026-11-20): specified, not built |
 
 ## Order
 

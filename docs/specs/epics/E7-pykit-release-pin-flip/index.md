@@ -18,6 +18,7 @@
 | [F7.7 — kiln installs as a standalone tool, from any ref](F7.7-kiln-installs-as-a-tool.md) | Closed | release-1 | 6 Closed |
 | [F7.8 — An existing repository takes a new kiln's pykit floors](F7.8-existing-repos-take-the-pin-table.md) | Closed | release-1 | 4 Closed |
 | [F7.9 — Repositories follow kiln's `main` after release 1](F7.9-repos-follow-main.md) | New | release-2 | 1 New |
+| [F7.10 — An installed kiln, and every `python-tool`, completes on `<TAB>`](F7.10-shell-completion.md) | New | release-2 | 2 New |
 
 <!-- END derived features -->
 
