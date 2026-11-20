@@ -2,13 +2,14 @@
 
 |  |  |
 | -- | -- |
-| **State** | New |
+| **State** | Active |
+| **Start Date** | 2026-11-19 |
 
 <!-- BEGIN derived features -->
 
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
-| [F12.1 — The catalogue, and the Python records](F12.1-python-baseline.md) | New | release-1 | 4 New |
+| [F12.1 — The catalogue, and the Python records](F12.1-python-baseline.md) | Active | release-1 | 3 New · 1 Closed |
 | [F12.2 — The web records, and a starter that follows them](F12.2-web-baseline.md) | New | release-1 | 5 New |
 
 <!-- END derived features -->
