@@ -8,9 +8,11 @@ from pathlib import Path
 from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.core.architecture import records_for
+from rn_forge.kiln.modules.docs.artifacts import ADR_INDEX, seed_context
 from rn_forge.kiln.modules.docs.packages import project_urls
 
-__all__ = ["PACKAGE_SEEDS", "add_package"]
+__all__ = ["PACKAGE_SEEDS", "add_package", "scaffold_adr_index"]
 
 PACKAGE_SEEDS = (
     "mkdocs.yml",
@@ -68,3 +70,19 @@ def add_package(root: Path, config: KilnConfig, name: str) -> list[Path]:
         )
         written.append(target)
     return written
+
+
+def scaffold_adr_index(root: Path, config: KilnConfig) -> None:
+    """Write `docs/adr/index.md` when records render and the file is absent.
+
+    Does nothing unless the docs profile is `mkdocs` and a record applies; kiln's
+    block is then appended by the next apply.
+    """
+    target = root / ADR_INDEX
+    if config.docs_profile != "mkdocs" or not records_for(config) or target.exists():
+        return
+    engine = TemplateEngine.cached(package="rn_forge.kiln.modules.docs")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(
+        engine.render(f"{ADR_INDEX}.j2", seed_context(config)), encoding="utf-8"
+    )

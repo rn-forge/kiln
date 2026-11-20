@@ -14,11 +14,13 @@ from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.core.architecture import records_for
 from rn_forge.kiln.modules.core.derived import NAV_BLOCK
 from rn_forge.kiln.modules.core.settle import DerivedArtifact
+from rn_forge.kiln.modules.docs import architecture
 from rn_forge.kiln.modules.docs.nav import build_nav
 
-__all__ = ["SEEDS", "render"]
+__all__ = ["ADR_INDEX", "SEEDS", "render", "seed_context"]
 
 SEEDS = (
     "docs/_areas.yml",
@@ -47,6 +49,9 @@ SEEDS = (
 )
 """Every docs path, each rendered from `templates/<path>.j2`; `_structure.md` is managed."""
 
+ADR_INDEX = "docs/adr/index.md"
+"""The seeded ADR index; a repo with architecture records scaffolds it instead."""
+
 _ADD_PACKAGE = "docs/runbooks/adding-a-package.md"
 _PYTHON_API = "docs/reference/python-api.md"
 
@@ -64,22 +69,36 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
     if config.docs_profile != "mkdocs":
         return []
     engine = TemplateEngine.cached(package="rn_forge.kiln.modules.docs")
-    context = {
-        "name": config.name,
-        "archetype": config.archetype,
-        "module": config.module,
-        "kiln_version": __version__,
-    }
+    context = seed_context(config)
+    scaffolded = ADR_INDEX if records_for(config) else None
     skipped = _EXCLUDED.get(config.archetype, (_ADD_PACKAGE, _PYTHON_API))
     rendered = render_artifacts(
         engine,
         context,
         [
-            TemplateArtifact(path, _kind(path), enabled=not path.startswith(skipped))
+            TemplateArtifact(
+                path,
+                _kind(path),
+                enabled=not path.startswith(skipped) and path != scaffolded,
+            )
             for path in SEEDS
         ],
     )
-    return [_mkdocs_yml(engine, config, root), *rendered]
+    return [
+        _mkdocs_yml(engine, config, root),
+        *rendered,
+        *architecture.render(config, engine),
+    ]
+
+
+def seed_context(config: KilnConfig) -> dict[str, str]:
+    """The template context every seeded docs page renders with."""
+    return {
+        "name": config.name,
+        "archetype": config.archetype,
+        "module": config.module,
+        "kiln_version": __version__,
+    }
 
 
 def _mkdocs_yml(engine: TemplateEngine, config: KilnConfig, root: Path) -> Artifact:

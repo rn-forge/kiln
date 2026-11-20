@@ -34,3 +34,13 @@ it generates.
 | [0019](ADR-0019.md) | Cutovers overlay a `kiln new` reference; `kiln init` is retired | the cutover of a repository with a pre-kiln lineage, and kiln's command set |
 | [0020](ADR-0020.md) | Agent instructions live in AGENTS.md | the instruction files of every generated repository, and kiln's |
 | [0021](ADR-0021.md) | Each file type has one formatter, run through quality tasks | the formatting of every generated repository, and kiln's |
+
+<!-- BEGIN rn-forge kiln -->
+
+## kiln's architecture baseline
+
+kiln's canon decides part of this repository's product design, in
+[kiln's architecture baseline](kiln/index.md). A decision here that departs from
+one of those records names it, and says which part it supersedes.
+
+<!-- END rn-forge kiln -->

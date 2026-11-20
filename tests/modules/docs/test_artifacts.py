@@ -27,8 +27,9 @@ from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.core.checks import generated
 from rn_forge.kiln.modules.core.derived import managed_digest
 from rn_forge.kiln.modules.docs import DOCS, generate
-from rn_forge.kiln.modules.docs.artifacts import SEEDS
+from rn_forge.kiln.modules.docs.artifacts import ADR_INDEX, SEEDS
 from rn_forge.kiln.modules.docs.nav import NAV_BLOCK, build_nav
+from rn_forge.kiln.modules.docs.scaffold import scaffold_adr_index
 from rn_forge.kiln.modules.tasks import TASKS
 from rn_forge.kiln.modules.instructions.scaffold import (
     scaffold as instructions_scaffold,
@@ -50,10 +51,12 @@ def _seeds(archetype: str) -> tuple[str, ...]:
     """The seeds *archetype* carries.
 
     `python-lib` has no `docs/reference/`; only it has the adding-a-package runbook.
+    The ADR index is scaffolded, not seeded, in every Python cell.
     """
+    seeds = tuple(p for p in SEEDS if p != ADR_INDEX)
     if archetype == "python-lib":
-        return tuple(p for p in SEEDS if not p.startswith("docs/reference/"))
-    return tuple(p for p in SEEDS if p != "docs/runbooks/adding-a-package.md")
+        return tuple(p for p in seeds if not p.startswith("docs/reference/"))
+    return tuple(p for p in seeds if p != "docs/runbooks/adding-a-package.md")
 
 
 def _kind(path: str) -> ArtifactKind:
@@ -86,6 +89,7 @@ def _new(tmp_path: Path, archetype: str = "python-tool", origin: str = "") -> Pa
         _origin(root, origin)
     config = KilnConfig.load(root)
     instructions_scaffold(root, config)
+    scaffold_adr_index(root, config)
     cycle.apply(root, home=tmp_path / "home")
     generate.generate(root, config.packages if archetype == "python-lib" else ())
     return root
@@ -104,6 +108,16 @@ def test_renders_exactly_the_module_s_template_inventory_row(
     assert [(a.key, a.kind) for a in artifacts] == [
         ("mkdocs.yml", ArtifactKind.MANAGED),
         *((path, _kind(path)) for path in _seeds(archetype)),
+        (f"{ADR_INDEX}#rn-forge kiln", ArtifactKind.BLOCK),
+        *(
+            (f"docs/adr/kiln/{name}.md", ArtifactKind.MANAGED)
+            for name in (
+                ("ARCH-0003",)
+                if archetype == "python-lib"
+                else ("ARCH-0001", "ARCH-0002")
+            )
+        ),
+        ("docs/adr/kiln/index.md", ArtifactKind.MANAGED),
     ]
 
 
@@ -267,10 +281,16 @@ def test_a_new_page_updates_only_the_nav_block(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
-def test_no_docs_artifact_is_a_block(tmp_path: Path, archetype: str) -> None:
+def test_the_only_docs_block_is_kiln_s_adr_block(
+    tmp_path: Path, archetype: str
+) -> None:
     root = _root(tmp_path, archetype)
-    kinds = {a.kind for a in DOCS.artifacts(KilnConfig.load(root), root)}
-    assert ArtifactKind.BLOCK not in kinds
+    blocks = [
+        a.key
+        for a in DOCS.artifacts(KilnConfig.load(root), root)
+        if a.kind is ArtifactKind.BLOCK
+    ]
+    assert blocks == [f"{ADR_INDEX}#rn-forge kiln"]
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)

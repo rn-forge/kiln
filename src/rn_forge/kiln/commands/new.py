@@ -21,6 +21,7 @@ from rn_forge.kiln.modules.core.config.sources import Source, fetch
 from rn_forge.kiln.modules.core.names import module_name
 from rn_forge.kiln.modules.core.process import run
 from rn_forge.kiln.modules.docs import generate as docs_generator
+from rn_forge.kiln.modules.docs.scaffold import scaffold_adr_index
 from rn_forge.kiln.modules.instructions import scaffold as instructions_scaffold
 from rn_forge.kiln.modules.node import scaffold as node_scaffold
 from rn_forge.kiln.modules.python import scaffold as python_scaffold
@@ -110,6 +111,7 @@ def new(
     if frontend_workspace is not None:
         node_scaffold.reconcile_node(workspace, frontend_workspace, bare)
     instructions_scaffold.scaffold(workspace, bare)
+    scaffold_adr_index(workspace, bare)
 
     result = cycle.apply(
         workspace, provenance=resolution.provenance_metadata(), starters=""
