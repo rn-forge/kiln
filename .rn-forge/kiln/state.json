@@ -93,7 +93,7 @@
     },
     ".rn-forge/kiln/standard.md": {
       "begin_marker": null,
-      "content_hash": "d8b2278b5968f2a0edfd80e6f1cd61b786a5ae63818928556a656a5b382865cf",
+      "content_hash": "517559a316a6dca92cc2b9e7d450e280e9cd64c43dd9ee88a055982092d2c7a8",
       "end_marker": null,
       "kind": "managed",
       "path": ".rn-forge/kiln/standard.md"
@@ -114,7 +114,7 @@
     },
     "AGENTS.md#rn-forge kiln": {
       "begin_marker": "<!-- BEGIN rn-forge kiln -->",
-      "content_hash": "d3a52f314976c81027e3e6ae1eb523973b6c63063a425254e87cacf6ddf55412",
+      "content_hash": "833954c224cc919f0648543b6de1a67291a80276d744e2d1e52a8e7e1762cff5",
       "end_marker": "<!-- END rn-forge kiln -->",
       "kind": "block",
       "path": "AGENTS.md"

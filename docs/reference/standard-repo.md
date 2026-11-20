@@ -164,6 +164,7 @@ The assignment is normative:
 | `src/**`, `tests/**` | **repo** — scaffolded once; no doctor structure policing | scaffolded |
 | `README.md` | written once by `kiln new`, then repo | scaffolded — for people and developers, with no agent directive; never rewritten |
 | `docs/_structure.md`, `docs/<area>/_structure.md` for each area kiln seeds | kiln | managed — one rule set in every repo; an area a repo adds keeps its rules in its own, repo-owned `_structure.md` |
+| `docs/adr/kiln/`, and kiln's block in `docs/adr/index.md` | kiln | managed — kiln's architecture baseline, with the `mkdocs` profile ([ADR-0010](../adr/ADR-0010.md)) |
 | `docs/_areas.yml` | repo after scaffolding | **seeded** — repos may extend areas |
 | `docs/index.md`, `docs/<area>/index.md` | repo after scaffolding | **seeded** — written once |
 | `docs/specs/ideas/index.md`, `docs/reference/index.md` | repo after scaffolding | **seeded** — written once |
@@ -691,3 +692,14 @@ newer kiln is refused with the version it needs. Local edits survive
 re-resolution: `state.json` records per-key provenance, and a key whose
 committed value differs from what its layer last supplied is a repo override
 that `update` and `upgrade` keep and list.
+
+## 10. kiln's architecture baseline
+
+With the `mkdocs` profile, kiln renders its architecture records under
+`docs/adr/kiln/`, as decided in [ADR-0010](../adr/ADR-0010.md);
+[the catalogue](../specs/epics/E12-architecture-baseline/design.md#the-catalogue)
+says which apply where. ARCH-0001 and ARCH-0002 apply to `python-app`,
+`python-tool` and the API member of the web archetypes, ARCH-0003 applies to
+`python-lib`, and `node-lib` has none. The records render only with the `mkdocs`
+profile, while the `dependencies-point-inward` contract in `.importlinter`
+renders whatever the profile.

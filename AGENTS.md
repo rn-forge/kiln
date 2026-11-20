@@ -74,6 +74,9 @@ changing anything structural.
 - **Docs rules:** [docs/\_structure.md](docs/_structure.md) says what belongs
   where; [docs/index.md](docs/index.md) is the reader's entry point. Run
   `task docs:generate` after adding a page.
+- **Architecture:** product code follows
+  [kiln's architecture baseline](docs/adr/kiln/index.md). A departure from one
+  of its records is an ADR of this repo's own, never an edit there.
 - **Briefs:** a story ready to build gets a brief under its epic's `_briefs/`,
   deleted when the story closes
   ([docs/specs/\_structure.md](docs/specs/_structure.md#briefs)).

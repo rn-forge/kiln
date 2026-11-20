@@ -17,7 +17,10 @@ changing anything structural.
 {% if docs_profile == "mkdocs" %}- **Docs rules:** [docs/\_structure.md](docs/_structure.md) says what belongs
   where; [docs/index.md](docs/index.md) is the reader's entry point. Run
   `task docs:generate` after adding a page.
-- **Briefs:** a story ready to build gets a brief under its epic's `_briefs/`,
+{% if architecture %}- **Architecture:** product code follows
+  [kiln's architecture baseline](docs/adr/kiln/index.md). A departure from one
+  of its records is an ADR of this repo's own, never an edit there.
+{% endif %}- **Briefs:** a story ready to build gets a brief under its epic's `_briefs/`,
   deleted when the story closes
   ([docs/specs/\_structure.md](docs/specs/_structure.md#briefs)).
 {% elif docs_profile == "external" %}{{ docs_bullet }}

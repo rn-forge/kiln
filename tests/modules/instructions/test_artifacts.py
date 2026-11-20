@@ -217,6 +217,46 @@ def test_mkdocs_block_points_at_briefs(tmp_path: Path) -> None:
     assert "docs/specs/_structure.md#briefs" in block
 
 
+_ARCHITECTURE_BULLET = (
+    "- **Architecture:** product code follows\n"
+    "  [kiln's architecture baseline](docs/adr/kiln/index.md). A departure from one\n"
+    "  of its records is an ADR of this repo's own, never an edit there.\n"
+)
+_ARCHITECTURE_HEADING = "## 9. kiln's architecture baseline"
+
+
+@pytest.mark.parametrize("archetype", ["python-tool", "python-lib"])
+def test_the_block_and_standard_point_at_the_records_when_they_render(
+    tmp_path: Path, archetype: str
+) -> None:
+    rendered = _rendered(_root(tmp_path, archetype))
+    block = rendered[BLOCK_KEY]
+    standard = rendered[STANDARD]
+    assert block.count(_ARCHITECTURE_BULLET) == 1
+    assert block.index("**Docs rules:**") < block.index("**Architecture:**")
+    assert block.index("**Architecture:**") < block.index("**Briefs:**")
+    assert standard.count(_ARCHITECTURE_HEADING) == 1
+    assert standard.index(_ARCHITECTURE_HEADING) < standard.index("\n## CI checks")
+
+
+@pytest.mark.parametrize(
+    ("archetype", "profile"),
+    [("node-lib", "mkdocs"), ("python-tool", "external"), ("python-tool", "none")],
+)
+def test_no_records_means_no_pointer(
+    tmp_path: Path, archetype: str, profile: str
+) -> None:
+    extra = (
+        'external_url = "https://docs.example.com/demo"\n'
+        if profile == "external"
+        else ""
+    )
+    root = _root(tmp_path, archetype, profile=profile, docs_extra=extra)
+    rendered = _rendered(root)
+    assert "**Architecture:**" not in rendered[BLOCK_KEY]
+    assert "architecture baseline" not in rendered[STANDARD]
+
+
 @pytest.mark.parametrize("profile", ["external", "none"])
 def test_a_profile_without_specs_has_no_briefs_line(
     tmp_path: Path, profile: str
@@ -757,7 +797,7 @@ def test_other_archetypes_render_no_section_nine(
             encoding="utf-8",
         )
     standard = _rendered(root)[STANDARD]
-    assert "\n## 9." not in standard
+    assert "\n## 9. What a node-lib" not in standard
     for token in ("publishable", "RELEASE_APP", "verify-dist"):
         assert token not in standard, token
 

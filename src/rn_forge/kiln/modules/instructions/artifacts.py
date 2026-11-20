@@ -13,6 +13,7 @@ from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.core.architecture import records_for
 
 __all__ = ["KILN_BLOCK", "context", "md_cell", "render"]
 
@@ -237,6 +238,7 @@ def context(config: KilnConfig) -> dict[str, object]:
         "packages": [Path(package).name for package in config.packages],
         "docs_profile": config.docs_profile,
         "docs": config.docs_profile == "mkdocs",
+        "architecture": config.docs_profile == "mkdocs" and bool(records_for(config)),
         "external_url": docs.external_url,
         "sonar": config.ci.sonar,
         "release": config.release,
