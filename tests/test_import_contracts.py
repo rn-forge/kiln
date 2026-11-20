@@ -46,6 +46,7 @@ def test_the_file_holds_exactly_the_named_contracts() -> None:
     }
     assert sections == {
         "frameworks-come-from-rn-forge",
+        "dependencies-point-inward",
         "render-free-checks",
         "concern-modules-are-independent",
         "documents-come-from-rn-forge",

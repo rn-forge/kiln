@@ -37,6 +37,19 @@ forbidden_modules =
     django
     fastapi
 allow_indirect_imports = False
+
+; kiln's architecture baseline, ARCH-0001: imports point inward. Every layer is
+; optional, because a tier exists only once code needs it, so this holds on a
+; fresh repo and fails on the first import that points upward.
+[importlinter:contract:dependencies-point-inward]
+name = Imports in rn_forge.kiln point inward (ARCH-0001)
+type = layers
+containers =
+    rn_forge.kiln
+layers =
+    (main) : (commands) : (product) : (app) : (http)
+    (services) | (adapters)
+    (domain)
 # END rn-forge kiln
 
 ; The second contract is kiln ADR-0006's: `kiln doctor` runs on every CI run, so

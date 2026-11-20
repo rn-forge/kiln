@@ -347,3 +347,110 @@ def test_importlinter_names_the_declared_tool_module(tmp_path: Path) -> None:
         "name = rn_forge.demo imports no framework or CLI toolkit directly"
         in artifact.content
     )
+
+
+def _lint_demo(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, files: dict[str, str]
+) -> int:
+    """Render `.importlinter` for a `python-app` named `demo`, build the package and lint it."""
+    from importlinter import cli as importlinter_cli
+
+    config_root = tmp_path / "config"
+    write_config(config_root, "python-app", name="demo")
+    config = KilnConfig.load(config_root)
+    [artifact] = _importlinter(config, config_root)
+    assert artifact.block is not None
+    work = tmp_path / "work"
+    work.mkdir()
+    (work / ".importlinter").write_text(
+        artifact.block.render("", artifact.content), encoding="utf-8"
+    )
+    for relative, text in files.items():
+        path = work / "src" / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    monkeypatch.chdir(work)
+    monkeypatch.syspath_prepend(str(work / "src"))
+    return importlinter_cli.lint_imports(config_filename=str(work / ".importlinter"))
+
+
+def test_a_fresh_package_keeps_the_layers_contract(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    result = _lint_demo(
+        tmp_path, monkeypatch, {"demo/__init__.py": "", "demo/commands.py": ""}
+    )
+    assert result == 0
+
+
+def test_services_importing_adapters_breaks_the_layers_contract(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    result = _lint_demo(
+        tmp_path,
+        monkeypatch,
+        {
+            "demo/__init__.py": "",
+            "demo/services/__init__.py": "",
+            "demo/services/use.py": "import demo.adapters.store\n",
+            "demo/adapters/__init__.py": "",
+            "demo/adapters/store.py": "",
+        },
+    )
+    assert result != 0
+
+
+def test_domain_importing_an_entry_point_breaks_the_layers_contract(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    result = _lint_demo(
+        tmp_path,
+        monkeypatch,
+        {
+            "demo/__init__.py": "",
+            "demo/commands.py": "",
+            "demo/domain/__init__.py": "",
+            "demo/domain/rule.py": "import demo.commands\n",
+        },
+    )
+    assert result != 0
+
+
+def test_an_entry_point_importing_domain_keeps_the_layers_contract(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    result = _lint_demo(
+        tmp_path,
+        monkeypatch,
+        {
+            "demo/__init__.py": "",
+            "demo/commands.py": "import demo.domain.rule\n",
+            "demo/domain/__init__.py": "",
+            "demo/domain/rule.py": "",
+        },
+    )
+    assert result == 0
+
+
+def test_python_lib_renders_no_layers_contract(tmp_path: Path) -> None:
+    config = KilnConfig.load(_root(tmp_path, "python-lib"))
+    [artifact] = _importlinter(config, tmp_path)
+    assert "dependencies-point-inward" not in artifact.content
+    assert "type = layers" not in artifact.content
+
+
+def test_the_web_archetypes_render_it_for_their_api_member(tmp_path: Path) -> None:
+    root = _web_root(tmp_path, "python-web-api", "fastapi")
+    [artifact] = PYTHON.artifacts(KilnConfig.load(root), root)
+    assert "[importlinter:contract:dependencies-point-inward]" in artifact.content
+    assert "containers =\n    demo_api\n" in artifact.content
+
+
+def test_the_layers_contract_renders_whatever_the_docs_profile(
+    tmp_path: Path,
+) -> None:
+    write_config(tmp_path, "python-app", name="demo", docs="none")
+    config = KilnConfig.load(tmp_path)
+    [artifact] = _importlinter(config, tmp_path)
+    assert "[importlinter:contract:dependencies-point-inward]" in artifact.content
+    assert "containers =\n    demo\n" in artifact.content

@@ -79,7 +79,7 @@
     },
     ".importlinter#rn-forge kiln": {
       "begin_marker": "# BEGIN rn-forge kiln",
-      "content_hash": "42cfbfbbc0de994ebef27db30c9b86899ec06f614121fd6c7b99ca5468a6afd0",
+      "content_hash": "912acacf482087a1985114f75ee9f9917b6cfdddd83569cc2bc609591a8a974f",
       "end_marker": "# END rn-forge kiln",
       "kind": "block",
       "path": ".importlinter"

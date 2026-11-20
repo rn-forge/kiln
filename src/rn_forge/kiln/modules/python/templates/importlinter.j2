@@ -59,5 +59,18 @@ name = Workspace packages do not import each other
 type = independence
 modules =
 {{ members_block }}
+{% else %}
+; kiln's architecture baseline, ARCH-0001: imports point inward. Every layer is
+; optional, because a tier exists only once code needs it, so this holds on a
+; fresh repo and fails on the first import that points upward.
+[importlinter:contract:dependencies-point-inward]
+name = Imports in {{ package }} point inward (ARCH-0001)
+type = layers
+containers =
+    {{ package }}
+layers =
+    (main) : (commands) : (product) : (app) : (http)
+    (services) | (adapters)
+    (domain)
 {% endif -%}
 {% endif %}
