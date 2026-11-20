@@ -208,11 +208,11 @@ def test_node_yml_holds_the_toolchain(tmp_path: Path) -> None:
     assert _load(root, "Taskfile.yml")["includes"]["node"] == "tasks/node.yml"
 
 
-def test_web_yml_keeps_only_dev(tmp_path: Path) -> None:
+def test_web_yml_holds_the_dev_and_client_tasks(tmp_path: Path) -> None:
     root = _node_root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     tasks = _load(root, "tasks/web.yml")["tasks"]
-    assert set(tasks) == {"dev"}
+    assert set(tasks) == {"dev", "client", "client:check"}
     assert tasks["dev"]["desc"] == "Run the frontend dev server."
     assert tasks["dev"]["cmds"] == ["pnpm nx serve web"]
     assert "internal" not in tasks["dev"]
@@ -234,7 +234,9 @@ def test_the_wrappers_call_node(tmp_path: Path) -> None:
     assert tasks.pop("dev")["deps"] == [{"task": "api:dev"}, {"task": "web:dev"}]
     for task in tasks.values():
         for cmd in task["cmds"]:
-            assert not cmd["task"].startswith("web:")
+            assert not cmd["task"].startswith("web:") or cmd["task"] == (
+                "web:client:check"
+            )
 
 
 def test_workspace_install_has_no_pnpm(tmp_path: Path) -> None:

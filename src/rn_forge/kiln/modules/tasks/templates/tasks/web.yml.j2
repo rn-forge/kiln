@@ -9,3 +9,20 @@ tasks:
     desc: Run the frontend dev server.
     cmds:
       - pnpm nx serve [[ web_project ]]
+{% if backend == "fastapi" %}  client:
+    desc: Regenerate the frontend's API client from the API's OpenAPI document.
+    cmds:
+      - mkdir -p [[ web_dir ]]/src/app/api
+      - uv run --package [[ api_package ]] python -c "import json; from [[ api_module ]].app import app; print(json.dumps(app.openapi(), indent=2, sort_keys=True))" > [[ web_dir ]]/src/app/api/openapi.json
+      - pnpm openapi-ts
+  client:check:
+    desc: Fail when the committed API client differs from what the API produces.
+    internal: true
+    cmds:
+      - task: client
+      - |
+        if git rev-parse -q --verify HEAD >/dev/null 2>&1 && [ -n "$(git status --porcelain -- [[ web_dir ]]/src/app/api/)" ]; then
+          echo "the API client is stale — run task web:client and commit the result" >&2
+          exit 1
+        fi
+{% endif %}

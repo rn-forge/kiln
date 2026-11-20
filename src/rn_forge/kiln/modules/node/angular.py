@@ -18,6 +18,8 @@ from rn_forge.kiln.modules.core.process import run
 __all__ = [
     "NGKIT_URL",
     "NX_VERSION",
+    "OPENAPI_TS",
+    "OPENAPI_TS_VERSION",
     "PRETTIER",
     "PRETTIER_VERSION",
     "SCAFFOLD_APP_DIR",
@@ -53,6 +55,12 @@ PRETTIER_VERSION = "3.9.10"
 
 PRETTIER = f"prettier@~{PRETTIER_VERSION}"
 """The formatter the scaffold adds as a dev dependency (ngkit's range)."""
+
+OPENAPI_TS_VERSION = "0.99.0"
+"""The `@hey-api/openapi-ts` release that generates the Angular API client."""
+
+OPENAPI_TS = f"@hey-api/openapi-ts@{OPENAPI_TS_VERSION}"
+"""The generator the scaffold adds as a dev dependency, pinned exactly."""
 
 _ALLOW_BUILDS = ("@parcel/watcher", "esbuild", "lmdb", "msgpackr-extract")
 """Native build scripts pnpm 12 blocks by default (`ERR_PNPM_IGNORED_BUILDS`);

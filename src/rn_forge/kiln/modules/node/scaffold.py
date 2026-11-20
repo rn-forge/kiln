@@ -26,6 +26,7 @@ from rn_forge.kiln.modules.core import gitignore
 from rn_forge.kiln.modules.core.process import run
 from rn_forge.kiln.modules.node import starter
 from rn_forge.kiln.modules.node.angular import (
+    OPENAPI_TS,
     PRETTIER_VERSION,
     SCAFFOLD_APP_DIR,
     add_ngkit,
@@ -34,7 +35,7 @@ from rn_forge.kiln.modules.node.angular import (
     scaffold_env,
 )
 
-__all__ = ["format_node", "reconcile_node", "scaffold_node"]
+__all__ = ["format_node", "generate_client", "reconcile_node", "scaffold_node"]
 
 NODE_MAJOR = 24
 """The Node major `.nvmrc` pins in every node repository."""
@@ -90,6 +91,10 @@ _RELEASE_TARGET_DEFAULTS = {
 }
 """`nx.json` `targetDefaults` for the `pack`, `verify-dist` and `verify-consumer` targets."""
 
+_ESLINT_ANCHOR = "export default ["
+_ESLINT_IGNORE = "  { ignores: ['**/src/app/api/client'] },"
+"""Nx runs ESLint from the app's directory, so the glob is relative."""
+
 _EXCLUDED_TOP_LEVEL = {".git", "node_modules", ".nx"}
 
 _DROPPED = {".editorconfig", "README.md"}
@@ -133,6 +138,16 @@ def scaffold_node(raw: Path, config: KilnConfig) -> Path | None:
         remove_scaffold_app(workspace)
     else:
         add_ngkit(workspace)
+        if config.backend == "fastapi":
+            run(
+                "openapi-ts",
+                "pnpm",
+                "add",
+                "-D",
+                OPENAPI_TS,
+                cwd=workspace,
+                env=scaffold_env(),
+            )
     return workspace
 
 
@@ -166,6 +181,8 @@ def reconcile_node(root: Path, workspace: Path, config: KilnConfig) -> None:
             (root / directory / ".gitkeep").write_text("", encoding="utf-8")
         return
     _place_app(root, config)
+    if config.backend == "fastapi":
+        _ignore_generated_client(root)
 
 
 def _fold_workspace(root: Path, workspace: Path) -> None:
@@ -208,6 +225,18 @@ def _place_app(root: Path, config: KilnConfig) -> None:
         (root / artifact.path).write_text(artifact.content, encoding="utf-8")
     if artifacts:
         _wire_starter(root, web_dir)
+
+
+def generate_client(workspace: Path, config: KilnConfig) -> None:
+    """Run `task web:client` in *workspace* for a FastAPI `python-web-app`.
+
+    Does nothing for any other archetype or backend.
+
+    Raises:
+        AppException: `task web:client` fails.
+    """
+    if config.archetype == "python-web-app" and config.backend == "fastapi":
+        run("web-client", "task", "web:client", cwd=workspace, env=scaffold_env())
 
 
 def format_node(workspace: Path) -> None:
@@ -259,6 +288,21 @@ def _configure_nx(root: Path, config: KilnConfig) -> None:
     for target, value in _RELEASE_TARGET_DEFAULTS.items():
         defaults.setdefault(target, copy.deepcopy(value))
     DocumentUtils.write(path, nx)
+
+
+def _ignore_generated_client(root: Path) -> None:
+    path = root / "eslint.config.mjs"
+    text = path.read_text(encoding="utf-8")
+    if text.count(_ESLINT_ANCHOR) != 1:
+        raise AppException(
+            "{} must hold {!r} exactly once to ignore the generated API client",
+            path,
+            _ESLINT_ANCHOR,
+        )
+    path.write_text(
+        text.replace(_ESLINT_ANCHOR, f"{_ESLINT_ANCHOR}\n{_ESLINT_IGNORE}"),
+        encoding="utf-8",
+    )
 
 
 def _wire_starter(root: Path, web_dir: str) -> None:

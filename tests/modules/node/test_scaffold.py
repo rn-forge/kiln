@@ -33,6 +33,7 @@ from rn_forge.kiln.modules.registry import builtin
 from rn_forge.kiln.modules.python.artifacts import render
 from rn_forge.kiln.modules.node.scaffold import (
     _RELEASE_TARGET_DEFAULTS,
+    generate_client,
     reconcile_node,
     scaffold_node,
 )
@@ -314,7 +315,11 @@ def test_web_app_adds_ngkit_after_install_and_keeps_the_app(
 
     _, calls = _scaffold_calls(root, raw)
 
-    assert [c.args[0] for c in calls] == [*_SHARED_STEPS, "ngkit-core"]
+    assert [c.args[0] for c in calls] == [
+        *_SHARED_STEPS,
+        "ngkit-core",
+        "openapi-ts",
+    ]
 
 
 def test_nx_remove_app_removes_web_in_the_workspace(tmp_path: Path) -> None:
@@ -752,3 +757,72 @@ def test_verify_consumer_default_is_written(tmp_path: Path, lib: bool) -> None:
             "command": "task ci:consumer -- {projectRoot}",
         },
     }
+
+
+def _django_root(tmp_path: Path) -> Path:
+    root = tmp_path / "django"
+    write_config(
+        root,
+        "python-web-app",
+        name="demo",
+        backend="django",
+        frontend="angular",
+    )
+    return root
+
+
+def test_web_app_adds_the_client_generator_after_ngkit(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    raw = tmp_path / "frontend"
+    raw.mkdir()
+
+    _, calls = _scaffold_calls(root, raw)
+
+    assert [c.args[0] for c in calls][-2:] == ["ngkit-core", "openapi-ts"]
+    assert "@hey-api/openapi-ts@0.99.0" in calls[-1].args
+
+    django_raw = tmp_path / "django-frontend"
+    django_raw.mkdir()
+    _, django_calls = _scaffold_calls(_django_root(tmp_path), django_raw)
+    assert [c.args[0] for c in django_calls] == [*_SHARED_STEPS, "ngkit-core"]
+
+
+def test_reconcile_ignores_the_generated_client_in_eslint(tmp_path: Path) -> None:
+    root, _ = _reconciled(tmp_path, lib=False)
+
+    text = (root / "eslint.config.mjs").read_text(encoding="utf-8")
+    anchor = "export default [\n  { ignores: ['**/src/app/api/client'] },"
+    assert text.count(anchor) == 1
+    assert text.count("export default [") == 1
+
+
+def test_reconcile_refuses_an_eslint_config_without_the_anchor(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path)
+    workspace = _workspace(tmp_path)
+    config_file = workspace / "eslint.config.mjs"
+    config_file.write_text(
+        config_file.read_text(encoding="utf-8").replace(
+            "export default [", "const x = ["
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(AppException, match="eslint.config.mjs"):
+        reconcile_node(root, workspace, KilnConfig.load(root))
+
+
+def test_generate_client_runs_the_client_task(tmp_path: Path) -> None:
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    with mock.patch("rn_forge.kiln.modules.node.scaffold.run") as run:
+        generate_client(workspace, KilnConfig.load(_root(tmp_path)))
+
+    run.assert_called_once()
+    assert run.call_args.args == ("web-client", "task", "web:client")
+    assert run.call_args.kwargs["cwd"] == workspace
+
+    with mock.patch("rn_forge.kiln.modules.node.scaffold.run") as run:
+        generate_client(workspace, KilnConfig.load(_django_root(tmp_path)))
+    run.assert_not_called()

@@ -143,7 +143,7 @@ SONAR_BEFORE = {
         "sonar.sources=apps/api/src,apps/web/src\n"
         "sonar.tests=apps/api/tests\n"
         "sonar.javascript.lcov.reportPaths=coverage/web/lcov.info\n"
-        "sonar.exclusions=**/node_modules/**,**/dist/**,**/*.spec.ts\n"
+        "sonar.exclusions=**/node_modules/**,**/dist/**,**/*.spec.ts,apps/web/src/app/api/**\n"
         "\n"
         "sonar.python.version=3.14\n"
         "sonar.python.coverage.reportPaths=coverage.xml\n"
@@ -255,7 +255,8 @@ def test_exclusions_follow_sonar_tests_in_a_plain_archetype(
 def test_web_app_appends_to_its_own_exclusions(tmp_path: Path) -> None:
     root = _sonar_root(tmp_path, "python-web-app", 'sonar_exclusions = ["docs/**"]\n')
     assert (
-        "sonar.exclusions=**/node_modules/**,**/dist/**,**/*.spec.ts,docs/**\n"
+        "sonar.exclusions=**/node_modules/**,**/dist/**,**/*.spec.ts,"
+        "apps/web/src/app/api/**,docs/**\n"
     ) in _sonar(root)
 
 
@@ -295,3 +296,19 @@ def test_an_empty_sonar_organization_is_refused(tmp_path: Path) -> None:
     assert {(error.path, error.kind) for error in caught.value.errors} == {
         ("ci.sonar_organization", "value_error")
     }
+
+
+def test_web_app_excludes_the_generated_client_from_sonar(tmp_path: Path) -> None:
+    root = _sonar_root(tmp_path / "fastapi", "python-web-app")
+    assert (
+        "sonar.exclusions=**/node_modules/**,**/dist/**,**/*.spec.ts,"
+        "apps/web/src/app/api/**\n"
+    ) in _sonar(root)
+
+    django = _sonar_root(tmp_path / "django", "python-web-app")
+    config = django / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(
+        config.read_text(encoding="utf-8").replace('"fastapi"', '"django"'),
+        encoding="utf-8",
+    )
+    assert "src/app/api" not in _sonar(django)

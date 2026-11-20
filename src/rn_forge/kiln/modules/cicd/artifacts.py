@@ -96,6 +96,11 @@ def render(config: KilnConfig) -> list[Artifact]:
         "sonar_exclusions": [
             *(_NODE_LIB_EXCLUSIONS if node_lib else ()),
             *(_WEB_APP_EXCLUSIONS if web_app else ()),
+            *(
+                (f"{config.web_dir}/src/app/api/**",)
+                if web_app and config.backend == "fastapi"
+                else ()
+            ),
             *ci.sonar_exclusions,
         ],
         "sonar_coverage_exclusions": list(ci.sonar_coverage_exclusions),

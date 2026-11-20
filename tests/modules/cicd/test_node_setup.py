@@ -245,7 +245,10 @@ def test_web_app_sonar_reads_the_web_lcov_report(tmp_path: Path) -> None:
         _web_root(tmp_path, "python-web-app", extra='frontend = "angular"')
     )["sonar-project.properties"].splitlines()
     assert "sonar.javascript.lcov.reportPaths=coverage/web/lcov.info" in properties
-    assert "sonar.exclusions=**/node_modules/**,**/dist/**,**/*.spec.ts" in properties
+    assert (
+        "sonar.exclusions=**/node_modules/**,**/dist/**,**/*.spec.ts,"
+        "apps/web/src/app/api/**"
+    ) in properties
 
 
 def test_sonar_report_path_keeps_the_project_name(tmp_path: Path) -> None:

@@ -1034,3 +1034,38 @@ def test_npm_standard_names_the_trusted_publisher(tmp_path: Path) -> None:
         assert "environment `npm`" not in text
         assert "publishes to npm" not in text
         assert "does not publish to npm" in text
+
+
+def test_standard_describes_the_generated_client_for_fastapi_web_apps(
+    tmp_path: Path,
+) -> None:
+    def standard(root: Path) -> str:
+        return " ".join(_rendered(root)[".rn-forge/kiln/standard.md"].split())
+
+    fastapi = standard(
+        _web_root(
+            tmp_path / "fastapi",
+            "python-web-app",
+            "fastapi",
+            extra='frontend = "angular"',
+        )
+    )
+    assert (
+        "**API client:** generated, never written by hand. `task web:client` "
+        "writes the API's OpenAPI document to `apps/web/src/app/api/openapi.json` "
+        "and regenerates `apps/web/src/app/api/client/` from it with "
+        "`@hey-api/openapi-ts`. Both are committed, and `task lint` fails when "
+        "they differ from what the API produces." in fastapi
+    )
+
+    django = standard(
+        _web_root(
+            tmp_path / "django",
+            "python-web-app",
+            "django",
+            extra='frontend = "angular"',
+        )
+    )
+    api = standard(_web_root(tmp_path / "api", "python-web-api", "fastapi"))
+    assert "**API client:**" not in django
+    assert "**API client:**" not in api

@@ -53,7 +53,7 @@ WEB_APP_DESCS = {
     **PYTHON_DESCS,
     "lint": (
         "Every lint — Python, imports, the frontend's Nx lint, Prettier formatting, "
-        "Markdown, TOML and YAML formatting, kiln's checks (generated files, task layout, "
+        "the generated API client, Markdown, TOML and YAML formatting, kiln's checks (generated files, task layout, "
         "CI, dependencies, docs), workflow security, dependency vulnerabilities, "
         "dependency licences."
     ),
@@ -136,7 +136,7 @@ LINT_PYTHON = (
 
 LINT_WEB_APP = (
     "Every lint — Python, imports, the frontend's Nx lint, Prettier formatting, "
-    "Markdown, TOML and YAML formatting, kiln's checks (generated files, task layout, "
+    "the generated API client, Markdown, TOML and YAML formatting, kiln's checks (generated files, task layout, "
     "CI, dependencies, docs), " + LINT_TAIL
 )
 

@@ -65,7 +65,13 @@ frontend scaffold wrote is repo-owned; kiln renders nothing under
 `{{ web_dir }}`{% if frontend == "angular" %}, and seeded a starter page that calls the API (`src/app/app.ts`,
 `app.html`, their specs, `app.config.ts` and `proxy.conf.json`) once at `kiln new`{% endif %}.
 
-{% endif %}{% if workspace %}`build` and `version` take a package name after `--`
+{% if backend == "fastapi" %}**API client:** generated, never written by hand. `task web:client` writes
+the API's OpenAPI document to `{{ web_dir }}/src/app/api/openapi.json` and
+regenerates `{{ web_dir }}/src/app/api/client/` from it with
+`@hey-api/openapi-ts`. Both are committed, and `task lint` fails when they
+differ from what the API produces.
+
+{% endif %}{% endif %}{% if workspace %}`build` and `version` take a package name after `--`
 (`task version -- {{ packages[0] if packages else "<package>" }}`); given none, they act on every member.
 
 {% endif %}Every other task is `internal: true`. The root `Taskfile.yml` holds wrappers

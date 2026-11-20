@@ -126,6 +126,7 @@ def new(
             ci_matrix=resolved.ci_matrix(every_archetype=True),
         )
     if frontend_workspace is not None:
+        node_scaffold.generate_client(workspace, bare)
         node_scaffold.format_node(workspace)
     output.fail_on_errors(workspace)
 

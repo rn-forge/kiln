@@ -17,15 +17,19 @@ PRETTIERIGNORE_BLOCK = ManagedBlock("rn-forge kiln")
 
 
 def render(config: KilnConfig) -> list[Artifact]:
-    """Render `.prettierrc` and the `.prettierignore` block for a node archetype.
+    """Render `.prettierrc`, the `.prettierignore` block and the generator config.
 
     Returns:
-        The two artifacts for `node-lib` and `python-web-app`; `[]` otherwise.
+        The two artifacts for `node-lib` and `python-web-app`, plus the seeded
+        `openapi-ts.config.ts` for a FastAPI `python-web-app`; `[]` otherwise.
     """
     if config.archetype not in {"node-lib", "python-web-app"}:
         return []
     engine = TemplateEngine.cached(package="rn_forge.kiln.modules.node")
+    client = config.is_web_app and config.backend == "fastapi"
     context = {
+        "client": client,
+        "web_dir": config.web_dir,
         "kiln_version": __version__,
         "docs": config.docs_profile == "mkdocs",
         "site_dir": config.docs_site_dir,
@@ -40,6 +44,12 @@ def render(config: KilnConfig) -> list[Artifact]:
                 ArtifactKind.BLOCK,
                 template="prettierignore.j2",
                 block=PRETTIERIGNORE_BLOCK,
+            ),
+            TemplateArtifact(
+                "openapi-ts.config.ts",
+                ArtifactKind.SEEDED,
+                template="openapi-ts.config.ts.j2",
+                enabled=client,
             ),
         ],
     )

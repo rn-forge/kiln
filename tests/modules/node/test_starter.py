@@ -57,7 +57,7 @@ def _starter(config: KilnConfig, root: Path) -> tuple[Artifact, ...]:
     return tuple(
         a
         for a in NODE.artifacts(config, root)
-        if a.path not in {".prettierrc", ".prettierignore"}
+        if a.path not in {".prettierrc", ".prettierignore", "openapi-ts.config.ts"}
     )
 
 

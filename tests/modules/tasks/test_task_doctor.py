@@ -80,7 +80,7 @@ def test_root_lint_runs_in_the_exact_order(
     root = _ci_root(tmp_path, archetype, extra)
     expected = list(LINT_ORDER)
     if archetype == "python-web-app":
-        expected[2:2] = ["node:lint", "node:lint:format"]
+        expected[2:2] = ["node:lint", "node:lint:format", "web:client:check"]
         expected.insert(expected.index("python:lint:audit") + 1, "node:lint:audit")
         expected.append("node:lint:licenses")
     for profile in ("mkdocs", "none"):

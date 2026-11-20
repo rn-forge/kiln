@@ -13,7 +13,7 @@ from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.tasks import TASKS
-from tests.conftest import module_findings, requires
+from tests.conftest import git, module_findings, requires
 from tests.modules.tasks.support import (
     ARCHETYPES,
     WEB_CELLS,
@@ -129,7 +129,7 @@ def test_task_list_json_shows_api_and_web_verbs(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
     names = {entry["name"] for entry in json.loads(result.stdout)["tasks"]}
     assert {"api:dev", "web:dev", "dev"} <= names
-    assert {n for n in names if n.startswith("web:")} == {"web:dev"}
+    assert {n for n in names if n.startswith("web:")} == {"web:dev", "web:client"}
     assert "api:migrate" not in names  # fastapi, not django
     root_tasks = YamlUtils.load((root / "Taskfile.yml").read_text(encoding="utf-8"))[
         "tasks"
@@ -201,7 +201,7 @@ def test_a_workflow_calling_pnpm_directly_fails_ci_entrypoint(
     assert any(f.code == entrypoint.CODE for f in findings)
 
 
-def test_backend_flag_changes_only_api_yml_and_not_the_task_graph(
+def test_backend_flag_changes_only_api_yml_and_the_client_wiring(
     tmp_path: Path,
 ) -> None:
     django_root = _web_root(
@@ -227,7 +227,7 @@ def test_backend_flag_changes_only_api_yml_and_not_the_task_graph(
         for path in django_artifacts
         if django_artifacts[path] != fastapi_artifacts[path]
     }
-    assert differing == {"tasks/api.yml"}
+    assert differing == {"tasks/api.yml", "tasks/web.yml", "Taskfile.yml"}
 
 
 def test_without_mkdocs_the_rendered_files_carry_no_docs_reference(
@@ -679,3 +679,115 @@ def test_gate_shrunk_fires_when_lint_drops_workflows(
     assert any(
         f.code == "gate.shrunk" and "ci:lint:workflows" in str(f) for f in findings
     )
+
+
+CLIENT_DESC = "Regenerate the frontend's API client from the API's OpenAPI document."
+
+
+def _web_tasks(root: Path) -> dict[str, dict]:
+    rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
+    return YamlUtils.load(rendered["tasks/web.yml"])["tasks"]
+
+
+def _root_lint_steps(root: Path) -> list[str]:
+    rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
+    cmds = YamlUtils.load(rendered["Taskfile.yml"])["tasks"]["lint"]["cmds"]
+    return [c["task"] for c in _unmarked(cmds)]
+
+
+def _fastapi_app(tmp_path: Path, extra: str = "") -> Path:
+    return _web_root(
+        tmp_path,
+        "python-web-app",
+        "fastapi",
+        extra=f'frontend = "angular"\n{extra}',
+    )
+
+
+def test_web_app_renders_the_client_task(tmp_path: Path) -> None:
+    tasks = _web_tasks(_fastapi_app(tmp_path / "fastapi"))
+    assert "internal" not in tasks["client"]
+    assert tasks["client"]["desc"] == CLIENT_DESC
+
+    api = _web_root(tmp_path / "api", "python-web-api", "fastapi")
+    paths = [a.path for a in TASKS.artifacts(KilnConfig.load(api), api)]
+    assert "tasks/web.yml" not in paths
+
+    django = _web_root(
+        tmp_path / "django", "python-web-app", "django", extra='frontend = "angular"'
+    )
+    assert "client" not in _web_tasks(django)
+
+
+def test_the_client_task_writes_the_schema_then_the_client(tmp_path: Path) -> None:
+    root = _fastapi_app(tmp_path)
+    config = KilnConfig.load(root)
+    cmds = _web_tasks(root)["client"]["cmds"]
+    assert len(cmds) == 3
+    assert cmds[0] == f"mkdir -p {config.web_dir}/src/app/api"
+    assert cmds[1].startswith(f"uv run --package {config.api_package} python -c ")
+    assert f"from {config.api_module}.app import app" in cmds[1]
+    assert cmds[1].endswith(f"> {config.web_dir}/src/app/api/openapi.json")
+    assert cmds[2] == "pnpm openapi-ts"
+
+
+def test_validate_checks_the_client_is_current(tmp_path: Path) -> None:
+    root = _fastapi_app(tmp_path / "fastapi")
+    steps = _root_lint_steps(root)
+    assert steps[steps.index("node:lint:format") + 1] == "web:client:check"
+
+    check = _web_tasks(root)["client:check"]
+    assert check["internal"] is True
+    assert check["cmds"][0] == {"task": "client"}
+    shell = check["cmds"][1]
+    web_dir = KilnConfig.load(root).web_dir
+    assert "git rev-parse -q --verify HEAD" in shell
+    assert f"git status --porcelain -- {web_dir}/src/app/api/" in shell
+    assert (
+        "the API client is stale — run task web:client and commit the result" in shell
+    )
+
+    django = _web_root(
+        tmp_path / "django", "python-web-app", "django", extra='frontend = "angular"'
+    )
+    assert "web:client:check" not in _root_lint_steps(django)
+    assert "client:check" not in _web_tasks(django)
+
+
+@requires("git", "bash")
+def test_client_check_fails_on_a_stale_client_and_passes_before_the_first_commit(
+    tmp_path: Path,
+) -> None:
+    root = _fastapi_app(tmp_path / "rendered")
+    web_dir = KilnConfig.load(root).web_dir
+    cmds = _web_tasks(root)["client:check"]["cmds"]
+    assert len(cmds) == 2
+    assert cmds[0] == {"task": "client"}
+    shell = cmds[1]
+    assert isinstance(shell, str)
+
+    repo = tmp_path / "repo"
+    schema = repo / web_dir / "src" / "app" / "api" / "openapi.json"
+    schema.parent.mkdir(parents=True)
+    schema.write_text("{}\n", encoding="utf-8")
+    git(repo, "init", "-q")
+
+    def run_check() -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            ["bash", "-c", shell],
+            cwd=repo,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    assert run_check().returncode == 0
+
+    git(repo, "add", ".")
+    git(repo, "commit", "-q", "-m", "first")
+    assert run_check().returncode == 0
+
+    schema.write_text('{"changed": true}\n', encoding="utf-8")
+    stale = run_check()
+    assert stale.returncode != 0
+    assert "the API client is stale" in stale.stdout + stale.stderr
