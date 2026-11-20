@@ -4,8 +4,8 @@
 ; The import boundary, in the half of it import-linter can enforce (see
 ; .rn-forge/kiln/standard.md, "The import boundary").
 ;
-; The rule that rn-forge-commons and rn-forge-tooling are the *only* rn-forge
-; packages a repo may depend on is NOT here, and cannot be: import-linter
+; The rule that a repo depends only on the rn-forge packages its archetype
+; allows is NOT here, and cannot be: import-linter
 ; rejects subpackages of external packages, so `rn_forge.kiln` is not a legal
 ; forbidden module however the contract is written. That rule is enforced where
 ; it is actually decidable — at the dependency declaration, by

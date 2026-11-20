@@ -105,7 +105,7 @@ def test_for_config_required_is_commons_cli_web_then_framework(
     tmp_path, archetype: str, backend: str, frontend: str | None
 ) -> None:
     """for_config's required set is commons, cli, web, framework, in order;
-    allowed adds only rn-forge-auth."""
+    allowed adds auth, sqlalchemy and data."""
     config = KilnConfig.load(_web_root(tmp_path, archetype, backend, frontend))
     resolved = archetypes.for_config(config)
     assert resolved.dependencies.required == [
@@ -117,6 +117,8 @@ def test_for_config_required_is_commons_cli_web_then_framework(
     assert set(resolved.dependencies.allowed) == {
         *resolved.dependencies.required,
         "rn-forge-auth",
+        "rn-forge-sqlalchemy",
+        "rn-forge-data",
     }
 
 
@@ -222,12 +224,13 @@ def test_every_tag_is_pinned() -> None:
         "rn-forge-django",
         "rn-forge-fastapi",
         "rn-forge-sqlalchemy",
+        "rn-forge-data",
     }
     for key, tag in archetypes.RN_FORGE_TAGS.items():
         assert re.fullmatch(rf"{key}-v\d+\.\d+\.\d+", tag)
 
 
-def test_floors_are_pykit_release_9() -> None:
+def test_floors_are_pykit_release_10() -> None:
     assert archetypes.RN_FORGE_TAGS == {
         "rn-forge-commons": "rn-forge-commons-v0.10.0",
         "rn-forge-cli": "rn-forge-cli-v0.2.0",
@@ -235,17 +238,30 @@ def test_floors_are_pykit_release_9() -> None:
         "rn-forge-web": "rn-forge-web-v0.3.2",
         "rn-forge-auth": "rn-forge-auth-v0.2.0",
         "rn-forge-django": "rn-forge-django-v0.7.0",
-        "rn-forge-fastapi": "rn-forge-fastapi-v0.5.0",
+        "rn-forge-fastapi": "rn-forge-fastapi-v0.5.1",
         "rn-forge-sqlalchemy": "rn-forge-sqlalchemy-v0.2.4",
+        "rn-forge-data": "rn-forge-data-v0.1.5",
     }
 
 
 @pytest.mark.parametrize("name", ["python-web-api", "python-web-app"])
-def test_web_archetypes_allow_auth(name: str) -> None:
+def test_web_archetypes_allow_auth_sqlalchemy_and_data(name: str) -> None:
     dependencies = archetypes.load(name).dependencies
-    assert "rn-forge-auth" in dependencies.allowed
-    assert "rn-forge-auth" not in dependencies.required
+    extras = ["rn-forge-auth", "rn-forge-sqlalchemy", "rn-forge-data"]
+    assert dependencies.allowed == dependencies.required + extras
+    for extra in extras:
+        assert extra not in dependencies.required
     assert archetypes.requirement("rn-forge-auth") == "rn-forge-auth>=0.2.0,<0.3"
+
+
+def test_app_and_tool_allow_data() -> None:
+    for name in ("python-app", "python-tool"):
+        dependencies = archetypes.load(name).dependencies
+        assert "rn-forge-data" in dependencies.allowed
+        assert "rn-forge-data" not in dependencies.required
+    lib = archetypes.load("python-lib").dependencies
+    assert lib.required == ["rn-forge-commons"]
+    assert lib.allowed == ["rn-forge-commons", "rn-forge-tooling"]
 
 
 def test_an_unpinned_distribution_is_refused() -> None:
@@ -273,6 +289,11 @@ def test_kiln_takes_pykit_by_range() -> None:
 
 def test_devops_is_not_pinned() -> None:
     assert "rn-forge-devops" not in archetypes.RN_FORGE_TAGS
+
+
+def test_no_archetype_allows_devops() -> None:
+    for name in archetypes.shipped():
+        assert "rn-forge-devops" not in archetypes.load(name).dependencies.allowed
 
 
 @pytest.mark.parametrize("name", PYTHON_ARCHETYPES)

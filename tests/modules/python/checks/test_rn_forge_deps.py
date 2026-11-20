@@ -196,6 +196,17 @@ def test_a_web_root_may_declare_auth(tmp_path: Path) -> None:
     assert f"{rn_forge_deps.CODE}.not-allowed" not in codes
 
 
+def test_a_web_root_may_declare_sqlalchemy(tmp_path: Path) -> None:
+    pyproject = (
+        WEB_COMPLIANT.rstrip("\n")[:-1]
+        + ', "rn-forge-sqlalchemy[migrations]>=0.2.4,<0.3"]\n'
+    )
+    codes = [
+        f.code for f in run_check(rn_forge_deps.NAME, _web_root(tmp_path, pyproject))
+    ]
+    assert f"{rn_forge_deps.CODE}.not-allowed" not in codes
+
+
 def test_a_member_lacking_rn_forge_web_is_refused(tmp_path: Path) -> None:
     reported = run(_web_root(tmp_path, WEB_MISSING_WEB))
     assert any("rn-forge-web" in line for line in reported)

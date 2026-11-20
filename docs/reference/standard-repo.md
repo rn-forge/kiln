@@ -245,16 +245,25 @@ config lists, and `kiln generate package` adds the rest one at a time. *Revised
 An archetype carries the libraries a repo of that shape is built on
 ([ADR-0005](../adr/ADR-0005.md)):
 
-| Archetype | Runtime | Dev |
-| -- | -- | -- |
-| every python repo | `rn-forge-commons` | — |
-| `python-app` | + `rn-forge-cli` | — |
-| `python-tool` | + `rn-forge-cli`, `rn-forge-tooling` | — |
-| `python-lib` | `rn-forge-commons` in each distributable | — (the `docs` group adds `mkdocs-monorepo-plugin`) |
-| `python-web-api` · `python-web-app`, `backend = "django"` | + `rn-forge-cli`, `rn-forge-web`, `rn-forge-django` | + `rn-forge-django[codegen]` |
-| `python-web-api` · `python-web-app`, `backend = "fastapi"` | + `rn-forge-cli`, `rn-forge-web`, `rn-forge-fastapi`, when that package exists | + `rn-forge-fastapi[codegen]` |
-| `node-lib` | — | kiln, MkDocs and mdformat, through a root `pyproject.toml` with no package |
-| `node-web-app` | — (deferred) | — |
+| Archetype | Required | Allowed | Dev |
+| -- | -- | -- | -- |
+| `python-lib` | `rn-forge-commons`, in each distributable | `rn-forge-commons`, `rn-forge-tooling` | — (the `docs` group adds `mkdocs-monorepo-plugin`) |
+| `python-app` | `rn-forge-commons`, `rn-forge-cli` | the required set, plus `rn-forge-data` | — |
+| `python-tool` | `rn-forge-commons`, `rn-forge-cli`, `rn-forge-tooling` | the required set, plus `rn-forge-data` | — |
+| `python-web-api` · `python-web-app`, `backend = "django"` | `rn-forge-commons`, `rn-forge-cli`, `rn-forge-web`, `rn-forge-django` | the required set, plus `rn-forge-auth`, `rn-forge-sqlalchemy`, `rn-forge-data` | — |
+| `python-web-api` · `python-web-app`, `backend = "fastapi"` | `rn-forge-commons`, `rn-forge-cli`, `rn-forge-web`, `rn-forge-fastapi` | the required set, plus `rn-forge-auth`, `rn-forge-sqlalchemy`, `rn-forge-data` | — |
+| `node-lib` | — | — | kiln, MkDocs and mdformat, through a root `pyproject.toml` with no package |
+
+`lifecycle = true` adds `rn-forge-tooling` to an archetype's required set.
+`rn-forge-devops` is in no set: CI runs it with `uvx`, never as a dependency.
+
+A web application with `frontend = "angular"` takes ngkit's packages from their
+release tarballs, at the release kiln pins:
+
+| Package | Taken |
+| -- | -- |
+| `@rn-forge/ng` | seeded at kiln's pinned release, v0.5.0 |
+| `@rn-forge/ng-tailwind` · `@rn-forge/ng-bootstrap` | the repository's choice, at the same release |
 
 The library roles below describe pykit, not architectural decisions owned by
 kiln (see [workspace architecture](../architecture/workspace.md)):

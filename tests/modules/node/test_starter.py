@@ -239,5 +239,5 @@ def test_new_records_seeded(rendered) -> None:
         assert entries[path]["kind"] == "seeded"
 
 
-def test_ngkit_pin_is_v0_4_0() -> None:
-    assert NGKIT_URL.endswith("/v0.4.0/rn-forge-ng-0.4.0.tgz")
+def test_ngkit_pin_is_v0_5_0() -> None:
+    assert NGKIT_URL.endswith("/v0.5.0/rn-forge-ng-0.5.0.tgz")

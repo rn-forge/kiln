@@ -26,4 +26,9 @@ required_validate = [
 
 [dependencies]
 required = ["rn-forge-commons", "rn-forge-cli", "rn-forge-tooling"]
-allowed = ["rn-forge-commons", "rn-forge-cli", "rn-forge-tooling"]
+allowed = [
+    "rn-forge-commons",
+    "rn-forge-cli",
+    "rn-forge-tooling",
+    "rn-forge-data",
+]
