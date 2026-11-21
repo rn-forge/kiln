@@ -5,8 +5,8 @@ from __future__ import annotations
 from rn_forge.fastapi import AppConfig, FastApiApp
 from rn_forge.web import NOT_FOUND, default_registry
 
-from {{ module }}.errors import ItemNotFound
-from {{ module }}.routes import router
+from {{ module }}.domain.errors import ItemNotFound
+from {{ module }}.http.items import router
 
 registry = default_registry().register(ItemNotFound, NOT_FOUND)
 

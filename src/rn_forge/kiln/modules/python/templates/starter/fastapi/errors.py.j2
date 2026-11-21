@@ -1,7 +1,9 @@
-"""Application errors, mapped to problem responses in `app.py`."""
+"""The product's errors, mapped to problem responses in app.py."""
 
 from __future__ import annotations
 
+from rn_forge.commons import AppException
 
-class ItemNotFound(Exception):
+
+class ItemNotFound(AppException):
     """No item has the requested id."""

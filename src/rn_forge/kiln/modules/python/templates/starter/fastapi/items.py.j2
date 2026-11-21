@@ -1,4 +1,4 @@
-"""The starter routes: a paginated list and a lookup that fails as a problem."""
+"""The items resource: a paginated list and a lookup that fails as a problem."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends
 from rn_forge.fastapi import page_params
 from rn_forge.web import Cursor
 
-from {{ module }}.errors import ItemNotFound
+from {{ module }}.domain.errors import ItemNotFound
 
 router = APIRouter(prefix="/v1", tags=["items"])
 
@@ -27,4 +27,4 @@ async def list_items(
 @router.get("/items/{item_id}")
 async def get_item(item_id: str) -> dict[str, str]:
     """Fail with ``ItemNotFound``: the starter holds no items."""
-    raise ItemNotFound(item_id)
+    raise ItemNotFound("No item {}", item_id, item_id=item_id)

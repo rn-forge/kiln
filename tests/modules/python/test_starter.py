@@ -133,8 +133,10 @@ def _fresh_api(root: Path, api_dir: str, *names: str, module: str = "demo_api") 
 def _api_paths(api_dir: str) -> set[str]:
     return {
         f"{api_dir}/src/demo_api/app.py",
-        f"{api_dir}/src/demo_api/errors.py",
-        f"{api_dir}/src/demo_api/routes.py",
+        f"{api_dir}/src/demo_api/http/__init__.py",
+        f"{api_dir}/src/demo_api/http/items.py",
+        f"{api_dir}/src/demo_api/domain/__init__.py",
+        f"{api_dir}/src/demo_api/domain/errors.py",
         f"{api_dir}/tests/test_app.py",
     }
 
@@ -149,9 +151,9 @@ def test_fastapi_starter_artifacts(tmp_path: Path) -> None:
     assert all(a.kind is ArtifactKind.SEEDED for a in artifacts)
     assert all("{{" not in a.content for a in artifacts)
     by_path = {a.path: a.content for a in artifacts}
-    assert (
-        "from demo_api.routes import router" in by_path["apps/api/src/demo_api/app.py"]
-    )
+    app_source = by_path["apps/api/src/demo_api/app.py"]
+    assert "from demo_api.http.items import router" in app_source
+    assert "from demo_api.domain.errors import ItemNotFound" in app_source
     assert 'title="demo"' in by_path["apps/api/src/demo_api/app.py"]
     assert "from demo_api.app import app" in by_path["apps/api/tests/test_app.py"]
 
@@ -174,10 +176,40 @@ def test_web_api_starter_renders_only_into_a_fresh_package(tmp_path: Path) -> No
     assert starter.render(config, tmp_path) == []
     _fresh_api(tmp_path, "apps/api", "other.py")
     package = tmp_path / "apps/api/src/demo_api"
-    assert not starter.seedable(package, ["app.py", "errors.py", "routes.py"])
+    assert not starter.seedable(package, list(starter._API_SRC))
     assert starter.render(config, tmp_path) == []
     (package / "other.py").unlink()
-    assert len(starter.render(config, tmp_path)) == 4
+    assert len(starter.render(config, tmp_path)) == 6
+
+
+def test_the_fastapi_starter_keeps_kiln_s_contracts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from importlinter import cli as importlinter_cli
+
+    config = _web(tmp_path, "python-web-api")
+    _fresh_api(tmp_path, "apps/api")
+    for artifact in PYTHON.artifacts(config, tmp_path):
+        path = tmp_path / artifact.path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        text = artifact.content
+        if artifact.block is not None:
+            text = artifact.block.render("", artifact.content)
+        path.write_text(text, encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.syspath_prepend(str(tmp_path / "apps/api/src"))
+    result = importlinter_cli.lint_imports(
+        config_filename=str(tmp_path / ".importlinter")
+    )
+    assert result == 0
+
+
+def test_item_not_found_is_an_app_exception(tmp_path: Path) -> None:
+    config = _web(tmp_path, "python-web-api")
+    _fresh_api(tmp_path, "apps/api")
+    by_path = {a.path: a.content for a in starter.render(config, tmp_path)}
+    errors = by_path["apps/api/src/demo_api/domain/errors.py"]
+    assert "class ItemNotFound(AppException)" in errors
 
 
 def test_httpx_is_a_dev_dependency(tmp_path: Path) -> None:

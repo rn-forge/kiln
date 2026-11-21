@@ -28,8 +28,10 @@ _LIB_SRC = {"settings.py": "settings.py.j2"}
 _LIB_TESTS = {"test_settings.py": "test_settings.py.j2"}
 _API_SRC = {
     "app.py": "fastapi/app.py.j2",
-    "errors.py": "fastapi/errors.py.j2",
-    "routes.py": "fastapi/routes.py.j2",
+    "http/__init__.py": "fastapi/http_init.py.j2",
+    "http/items.py": "fastapi/items.py.j2",
+    "domain/__init__.py": "fastapi/domain_init.py.j2",
+    "domain/errors.py": "fastapi/errors.py.j2",
 }
 _API_TESTS = {"test_app.py": "fastapi/test_app.py.j2"}
 
