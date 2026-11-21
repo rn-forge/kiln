@@ -50,8 +50,23 @@ def _artifacts(root: Path) -> dict[str, object]:
     return {a.key: a for a in DOCS.artifacts(KilnConfig.load(root), root)}
 
 
-def _new(tmp_path: Path, archetype: str = "python-tool") -> Path:
-    root = _root(tmp_path, archetype)
+def _new(
+    tmp_path: Path,
+    archetype: str = "python-tool",
+    backend: str | None = None,
+    frontend: str | None = None,
+) -> Path:
+    if backend is None:
+        root = _root(tmp_path, archetype)
+    else:
+        root = write_config(
+            tmp_path,
+            archetype,
+            name="demo",
+            docs="mkdocs",
+            backend=backend,
+            frontend=frontend,
+        )
     config = KilnConfig.load(root)
     instructions_scaffold(root, config)
     scaffold_adr_index(root, config)
@@ -168,6 +183,41 @@ def test_the_rendered_files_are_mdformat_clean(tmp_path: Path, archetype: str) -
 @pytest.mark.parametrize("archetype", sorted(RECORD_PAGES))
 def test_docs_checks_pass_with_the_records(tmp_path: Path, archetype: str) -> None:
     root = _new(tmp_path, archetype)
+    codes = [f.code for f in module_findings("docs", KilnConfig.load(root), root)]
+    assert "docs.orphan-page" not in codes
+    assert "docs.broken-link" not in codes
+
+
+WEB_CELLS = [
+    ("python-web-api", "fastapi", None, 3),
+    ("python-web-app", "fastapi", "angular", 3),
+    ("python-web-api", "django", None, 2),
+]
+
+
+@pytest.mark.parametrize(("archetype", "backend", "frontend", "rows"), WEB_CELLS)
+def test_the_web_records_are_mdformat_clean_and_linked(
+    tmp_path: Path,
+    archetype: str,
+    backend: str,
+    frontend: str | None,
+    rows: int,
+) -> None:
+    root = _new(tmp_path / "repo", archetype, backend, frontend)
+    index = (root / "docs/adr/kiln/index.md").read_text(encoding="utf-8")
+    assert sum(line.startswith("| [ARCH-") for line in index.splitlines()) == rows
+    out = tmp_path / "out"
+    shutil.copytree(root / "docs" / "adr", out / "docs" / "adr")
+    (out / ".mdformat.toml").write_text(
+        (REPO / ".mdformat.toml").read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    result = subprocess.run(
+        [sys.executable, "-m", "mdformat", "--check", str(out)],
+        capture_output=True,
+        text=True,
+        cwd=out,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
     codes = [f.code for f in module_findings("docs", KilnConfig.load(root), root)]
     assert "docs.orphan-page" not in codes
     assert "docs.broken-link" not in codes

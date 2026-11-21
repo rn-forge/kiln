@@ -35,6 +35,11 @@ RECORDS: tuple[Record, ...] = (
         "A library's surface is explicit and inert",
         lambda config: config.is_workspace,
     ),
+    Record(
+        "ARCH-0004",
+        "HTTP is an adapter at the edge",
+        lambda config: config.backend == "fastapi",
+    ),
 )
 
 
