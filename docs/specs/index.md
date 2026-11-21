@@ -12,8 +12,8 @@ Backlog sections below are derived from the epic, feature and release pages by
 
 | Release | Status | Features |
 | -- | -- | -- |
-| [Release 2 — repositories on kiln's `main`](../releases/release-2/index.md) | planned | 1 Active · 3 New · 1 Removed |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 4 Active · 2 New · 87 Closed |
+| [Release 2 — repositories on kiln's `main`](../releases/release-2/index.md) | planned | 3 New · 1 Closed · 1 Removed |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 1 Active · 2 New · 90 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog

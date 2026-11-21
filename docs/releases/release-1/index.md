@@ -50,7 +50,7 @@ CI, docs and tasks end to end. It also carries kiln's architecture baseline
 | [F5.1 — Library sets, and the modules gain the web shapes](../../specs/epics/E5-web-archetypes/F5.1-web-library-sets-and-modules.md) | E5 | Closed |
 | [F5.2 — `kiln new` end to end for the web archetypes](../../specs/epics/E5-web-archetypes/F5.2-kiln-new-web-end-to-end.md) | E5 | Closed |
 | [F5.3 — Prove and ship the FastAPI cells](../../specs/epics/E5-web-archetypes/F5.3-shipped-web-cells.md) | E5 | Closed |
-| [F5.5 — The web app generates its API client from the OpenAPI document](../../specs/epics/E5-web-archetypes/F5.5-web-app-api-client.md) | E5 | Active |
+| [F5.5 — The web app generates its API client from the OpenAPI document](../../specs/epics/E5-web-archetypes/F5.5-web-app-api-client.md) | E5 | Closed |
 | [F6.1 — `python-lib` can host pykit](../../specs/epics/E6-rebuild-the-repos/F6.1-pykit-skeleton.md) | E6 | Closed |
 | [F6.3 — The generated CI matches the hardened upstream CI](../../specs/epics/E6-rebuild-the-repos/F6.3-hardened-ci.md) | E6 | Closed |
 | [F6.4 — `python-lib` renders pykit's discovered workspace pipeline](../../specs/epics/E6-rebuild-the-repos/F6.4-workspace-pipeline.md) | E6 | Closed |
@@ -80,8 +80,8 @@ CI, docs and tasks end to end. It also carries kiln's architecture baseline
 | [F11.3 — `kiln generate package`](../../specs/epics/E11-package-docs/F11.3-generate-package.md) | E11 | Closed |
 | [F11.4 — The docs rules are one standard, and kiln owns them](../../specs/epics/E11-package-docs/F11.4-cross-repository-rule.md) | E11 | Closed |
 | [F11.5 — CI deploys versioned package sites](../../specs/epics/E11-package-docs/F11.5-deploy-package-sites.md) | E11 | Closed |
-| [F12.1 — The catalogue, and the Python records](../../specs/epics/E12-architecture-baseline/F12.1-python-baseline.md) | E12 | Active |
-| [F12.2 — The web records, and a starter that follows them](../../specs/epics/E12-architecture-baseline/F12.2-web-baseline.md) | E12 | Active |
+| [F12.1 — The catalogue, and the Python records](../../specs/epics/E12-architecture-baseline/F12.1-python-baseline.md) | E12 | Closed |
+| [F12.2 — The web records, and a starter that follows them](../../specs/epics/E12-architecture-baseline/F12.2-web-baseline.md) | E12 | Closed |
 | [F13.1 — Derived regions, starting with the nav](../../specs/epics/E13-docs-work-model/F13.1-derived-regions.md) | E13 | Closed |
 | [F13.2 — The board and Scope regions, and metadata checks](../../specs/epics/E13-docs-work-model/F13.2-board-and-scope.md) | E13 | Closed |
 | [F13.3 — The seeded rules and kiln's own docs adopt the model](../../specs/epics/E13-docs-work-model/F13.3-adopt-the-model.md) | E13 | Closed |
@@ -158,6 +158,18 @@ CI, docs and tasks end to end. It also carries kiln's architecture baseline
   dependencies are version ranges from PyPI.
 - [ADR-0016](../../adr/ADR-0016.md) — revised 2026-11-04: one CI standard for
   every archetype, with a check registry.
+
+## Breaking changes
+
+- Every repository on kiln gains kiln's architecture records under
+  `docs/adr/kiln/` and the `dependencies-point-inward` contract in
+  `.importlinter` at its next pin (F12.1). Code that imports upward fixes the
+  import, or records an ADR that supersedes ARCH-0001.
+- A FastAPI repository's `.importlinter` also gains
+  `framework-stays-at-the-edge`: `domain` and `services` may not import
+  FastAPI or Starlette (F12.2).
+- A FastAPI `python-web-app` checks its generated API client in `task lint`;
+  commit the client after `task web:client` (F5.5).
 
 ## Progress
 
