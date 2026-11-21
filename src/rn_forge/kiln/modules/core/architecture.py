@@ -40,6 +40,11 @@ RECORDS: tuple[Record, ...] = (
         "HTTP is an adapter at the edge",
         lambda config: config.backend == "fastapi",
     ),
+    Record(
+        "ARCH-0005",
+        "The API schema is the contract between backend and frontend",
+        lambda config: config.is_web_app and config.backend == "fastapi",
+    ),
 )
 
 

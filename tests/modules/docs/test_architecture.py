@@ -190,7 +190,7 @@ def test_docs_checks_pass_with_the_records(tmp_path: Path, archetype: str) -> No
 
 WEB_CELLS = [
     ("python-web-api", "fastapi", None, 3),
-    ("python-web-app", "fastapi", "angular", 3),
+    ("python-web-app", "fastapi", "angular", 4),
     ("python-web-api", "django", None, 2),
 ]
 

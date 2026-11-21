@@ -51,7 +51,7 @@ def test_each_cell_gets_its_records(
             "python-web-app",
             "fastapi",
             "angular",
-            ["ARCH-0001", "ARCH-0002", "ARCH-0004"],
+            ["ARCH-0001", "ARCH-0002", "ARCH-0004", "ARCH-0005"],
         ),
         ("python-web-api", "django", None, ["ARCH-0001", "ARCH-0002"]),
     ],
@@ -69,4 +69,4 @@ def test_each_web_cell_gets_its_records(
 def test_record_ids_are_unique_and_in_order() -> None:
     ids = [record.id for record in RECORDS]
     assert ids == sorted(set(ids))
-    assert ids == ["ARCH-0001", "ARCH-0002", "ARCH-0003", "ARCH-0004"]
+    assert ids == ["ARCH-0001", "ARCH-0002", "ARCH-0003", "ARCH-0004", "ARCH-0005"]

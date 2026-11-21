@@ -710,7 +710,8 @@ With the `mkdocs` profile, kiln renders its architecture records under
 says which apply where. ARCH-0001 and ARCH-0002 apply to `python-app`,
 `python-tool` and the API member of the web archetypes, ARCH-0003 applies to
 `python-lib`, ARCH-0004 applies to the FastAPI cells (`python-web-api` and
-`python-web-app` with `backend = "fastapi"`), and `node-lib` has none. The
+`python-web-app` with `backend = "fastapi"`), ARCH-0005 applies to
+`python-web-app` with `backend = "fastapi"`, and `node-lib` has none. The
 records render only with the `mkdocs` profile, while the
 `dependencies-point-inward` contract in `.importlinter` renders whatever the
 profile.
