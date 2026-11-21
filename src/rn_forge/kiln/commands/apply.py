@@ -8,7 +8,9 @@ from rn_forge.commons import generation
 from rn_forge.commons.exceptions import AppException
 
 from rn_forge.kiln.commands import output
+from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle, umbrella
+from rn_forge.kiln.modules.core.checks import pin
 from rn_forge.kiln.modules.docs.generate import finalizer
 
 __all__ = ["apply"]
@@ -24,13 +26,15 @@ def apply(
 
     Raises:
         AppException: A `--force` value names no reported change or a
-            non-blocking one, an unforced change is blocking, or a check
+            non-blocking one, an unforced change is blocking, the config's
+            `[kiln] ref` pins a kiln other than the running one, or a check
             after the apply reports an error.
     """
     output.use_json(json)
     root = umbrella.find_root(Path.cwd())
     force_values = tuple(force or ())
 
+    _refuse_other_kiln(root)
     prepared = cycle.prepare(root, force=force_values)
     _validate_force(prepared.plan, force_values)
 
@@ -43,6 +47,20 @@ def apply(
     )
     rows = output.change_rows(result.changes)
     output.emit_rows({"root": str(root), "artifacts": rows}, rows)
+
+
+def _refuse_other_kiln(root: Path) -> None:
+    """Refuse to render when `[kiln] ref` pins a kiln other than the running one."""
+    config = KilnConfig.load(root)
+    for finding in pin.check(config, root):
+        if finding.code == pin.MISMATCH:
+            assert config.kiln_pin is not None
+            raise AppException(
+                "{}: {} — run `task kiln:pin -- {}` to render with the kiln it pins",
+                finding.code,
+                finding.message,
+                config.kiln_pin.ref,
+            )
 
 
 def _validate_force(planned: generation.Plan, force_values: tuple[str, ...]) -> None:

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import re
 from collections.abc import Callable
 import shutil
 from pathlib import Path
@@ -284,3 +285,42 @@ def test_a_missing_agents_md_is_created_with_the_block(repo: Path) -> None:
     (repo / "AGENTS.md").unlink()
     cycle.apply(repo)
     assert KILN_BLOCK.extract((repo / "AGENTS.md").read_text(encoding="utf-8")) == body
+
+
+def _pin(repo: Path, ref: str) -> None:
+    path = repo / CONFIG_PATH
+    text = path.read_text(encoding="utf-8")
+    pinned = f'ref = "{ref}"'
+    if "\n[kiln]\n" in text:
+        text = re.sub(r"(?m)^ref = .*$", pinned, text, count=1)
+    else:
+        text += f"\n[kiln]\n{pinned}\n"
+    path.write_text(text, encoding="utf-8")
+
+
+@pytest.mark.parametrize("dry_run", [False, True])
+def test_apply_refuses_when_the_config_pins_another_kiln(
+    repo: Path,
+    fake_install: Callable[..., Path],
+    kiln_remote_sha: str,
+    dry_run: bool,
+) -> None:
+    fake_install()
+    _pin(repo, kiln_remote_sha)
+    before = snapshot(repo)
+
+    with pytest.raises(AppException) as raised:
+        commands.apply(dry_run=dry_run)
+
+    assert "kiln.pin-mismatch" in str(raised.value)
+    assert f"task kiln:pin -- {kiln_remote_sha}" in str(raised.value)
+    assert snapshot(repo) == before
+
+
+def test_apply_runs_when_the_config_pins_the_running_kiln(
+    repo: Path, fake_install: Callable[..., Path], kiln_remote_sha: str
+) -> None:
+    fake_install(kiln_remote_sha)
+    _pin(repo, kiln_remote_sha)
+
+    commands.apply()
