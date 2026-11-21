@@ -72,5 +72,20 @@ layers =
     (main) : (commands) : (product) : (app) : (http)
     (services) | (adapters)
     (domain)
+{% if framework_edge %}
+; kiln's architecture baseline, ARCH-0004: the web framework stops at the entry
+; points. `.**` matches the modules below each package, so this holds before the
+; package exists.
+[importlinter:contract:framework-stays-at-the-edge]
+name = {{ package }}'s domain and services import no web framework (ARCH-0004)
+type = forbidden
+source_modules =
+    {{ package }}.domain.**
+    {{ package }}.services.**
+forbidden_modules =
+    fastapi
+    starlette
+allow_indirect_imports = False
+{% endif -%}
 {% endif -%}
 {% endif %}

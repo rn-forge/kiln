@@ -65,6 +65,7 @@ def _importlinter(config: KilnConfig) -> list[Artifact]:
         "kiln_version": __version__,
         "workspace": workspace,
         "own_contracts": config.import_contracts == "own",
+        "framework_edge": config.backend == "fastapi",
         "members_block": "\n".join(f"    {member}" for member in members),
         "forbidden_block": "\n".join(f"    {module}" for module in forbidden),
     }

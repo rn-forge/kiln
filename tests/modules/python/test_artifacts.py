@@ -179,7 +179,11 @@ def test_backend_flag_only_changes_the_importlinter_forbidden_list(
     [django_artifact] = PYTHON.artifacts(KilnConfig.load(django_root), django_root)
     [fastapi_artifact] = PYTHON.artifacts(KilnConfig.load(fastapi_root), fastapi_root)
     django_lines = django_artifact.content.splitlines()
-    fastapi_lines = fastapi_artifact.content.splitlines()
+    fastapi_lines = (
+        fastapi_artifact.content.split("; kiln's architecture baseline, ARCH-0004")[0]
+        .rstrip()
+        .splitlines()
+    )
     assert len(django_lines) == len(fastapi_lines)
     diffs = [(a, b) for a, b in zip(django_lines, fastapi_lines, strict=True) if a != b]
     assert diffs == [("    fastapi", "    django")]
@@ -454,3 +458,120 @@ def test_the_layers_contract_renders_whatever_the_docs_profile(
     [artifact] = _importlinter(config, tmp_path)
     assert "[importlinter:contract:dependencies-point-inward]" in artifact.content
     assert "containers =\n    demo\n" in artifact.content
+
+
+FRAMEWORK_CONTRACT = "framework-stays-at-the-edge"
+FRAMEWORK_CONTRACT_NAME = "demo_api's domain and services import no web framework"
+
+
+def _lint_demo_api(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capfd: pytest.CaptureFixture[str],
+    files: dict[str, str],
+) -> tuple[int, str]:
+    """Render `.importlinter` for a FastAPI `demo_api`, build the package and lint it."""
+    from importlinter import cli as importlinter_cli
+
+    config_root = tmp_path / "config"
+    root = _web_root(config_root, "python-web-api", "fastapi")
+    config = KilnConfig.load(root)
+    [artifact] = PYTHON.artifacts(config, root)
+    assert artifact.block is not None
+    work = tmp_path / "work"
+    work.mkdir()
+    (work / ".importlinter").write_text(
+        artifact.block.render("", artifact.content), encoding="utf-8"
+    )
+    for relative, text in files.items():
+        path = work / "src" / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    monkeypatch.chdir(work)
+    monkeypatch.syspath_prepend(str(work / "src"))
+    capfd.readouterr()
+    result = importlinter_cli.lint_imports(config_filename=str(work / ".importlinter"))
+    return result, capfd.readouterr().out
+
+
+def _broken_contracts(output: str) -> list[str]:
+    return [line for line in output.splitlines() if "BROKEN" in line]
+
+
+def test_a_fresh_api_package_keeps_the_framework_contract(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    result, _ = _lint_demo_api(
+        tmp_path,
+        monkeypatch,
+        capfd,
+        {"demo_api/__init__.py": "", "demo_api/app.py": ""},
+    )
+    assert result == 0
+
+
+def test_domain_importing_fastapi_breaks_the_framework_contract(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    result, output = _lint_demo_api(
+        tmp_path,
+        monkeypatch,
+        capfd,
+        {
+            "demo_api/__init__.py": "",
+            "demo_api/domain/__init__.py": "",
+            "demo_api/domain/rule.py": "import fastapi\n",
+        },
+    )
+    assert result != 0
+    [broken] = _broken_contracts(output)
+    assert FRAMEWORK_CONTRACT_NAME in broken
+
+
+def test_services_importing_starlette_breaks_the_framework_contract(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    result, output = _lint_demo_api(
+        tmp_path,
+        monkeypatch,
+        capfd,
+        {
+            "demo_api/__init__.py": "",
+            "demo_api/services/__init__.py": "",
+            "demo_api/services/use.py": "import starlette\n",
+        },
+    )
+    assert result != 0
+    [broken] = _broken_contracts(output)
+    assert FRAMEWORK_CONTRACT_NAME in broken
+
+
+def test_http_importing_fastapi_keeps_the_framework_contract(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    result, _ = _lint_demo_api(
+        tmp_path,
+        monkeypatch,
+        capfd,
+        {
+            "demo_api/__init__.py": "",
+            "demo_api/http/__init__.py": "",
+            "demo_api/http/items.py": "import fastapi\n",
+        },
+    )
+    assert result == 0
+
+
+def test_only_fastapi_cells_carry_the_framework_contract(tmp_path: Path) -> None:
+    marker = f"[importlinter:contract:{FRAMEWORK_CONTRACT}]"
+    api = _web_root(tmp_path / "api", "python-web-api", "fastapi")
+    [artifact] = PYTHON.artifacts(KilnConfig.load(api), api)
+    assert marker in artifact.content
+    django = _web_root(
+        tmp_path / "django", "python-web-app", "django", extra='frontend = "angular"'
+    )
+    [artifact] = PYTHON.artifacts(KilnConfig.load(django), django)
+    assert marker not in artifact.content
+    app = _root(tmp_path / "app", "python-app")
+    [artifact] = _importlinter(KilnConfig.load(app), app)
+    assert marker not in artifact.content
