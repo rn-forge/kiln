@@ -1109,3 +1109,14 @@ def test_standard_describes_the_generated_client_for_fastapi_web_apps(
     api = standard(_web_root(tmp_path / "api", "python-web-api", "fastapi"))
     assert "**API client:**" not in django
     assert "**API client:**" not in api
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_standard_says_dependabot_pull_requests_are_absorbed_by_the_release(
+    tmp_path: Path, archetype: str
+) -> None:
+    text = " ".join(_rendered(_root(tmp_path, archetype))[STANDARD].split())
+    assert (
+        "Dependabot pull requests are not merged into a branch that publishes" in text
+    )
+    assert "Security updates are the exception" in text

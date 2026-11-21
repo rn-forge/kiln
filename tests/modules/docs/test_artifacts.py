@@ -827,3 +827,16 @@ def test_mkdocstrings_options(tmp_path: Path, archetype: str) -> None:
         if isinstance(plugin, dict) and "mkdocstrings" in plugin
     ]
     assert handlers["handlers"]["python"]["options"] == MKDOCSTRINGS_OPTIONS
+
+
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_release_structure_page_states_the_dependabot_exit_criterion(
+    tmp_path: Path, archetype: str
+) -> None:
+    root = _root(tmp_path, archetype)
+    page = {a.key: a.content for a in DOCS.artifacts(KilnConfig.load(root), root)}[
+        "docs/releases/_structure.md"
+    ]
+    assert "no Dependabot pull request is open against the default branch" in " ".join(
+        page.split()
+    )

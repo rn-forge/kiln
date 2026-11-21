@@ -17,7 +17,10 @@
     - **Progress**: a few lines on what is next and what blocks it.
     - **Commits**: the `git log --grep` command that lists commits naming a scope
       ID, and its output, refreshed at least at the cut.
-    - **Exit criteria**: what must hold for the release to ship.
+    - **Exit criteria**: what must hold for the release to ship. One criterion
+      stands on every release: no Dependabot pull request is open against the
+      default branch, or each open one is listed on the release page as
+      deferred, with its reason.
     - **Shipped**: once shipped, the release evidence, as a table with one row per
       deliverable (each package, in a library): its version, tag, commit, and
       what was checked.

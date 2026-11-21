@@ -19,7 +19,7 @@
 | [F7.8 — An existing repository takes a new kiln's pykit floors](F7.8-existing-repos-take-the-pin-table.md) | Closed | release-1 | 4 Closed |
 | [F7.9 — Repositories follow kiln's `main` after release 1](F7.9-repos-follow-main.md) | New | deferred | 1 New |
 | [F7.10 — An installed kiln, and every `python-tool`, completes on `<TAB>`](F7.10-shell-completion.md) | Closed | release-2 | 2 Closed |
-| [F7.11 — Dependabot updates reach `main` through a release, not around it](F7.11-dependabot-and-the-release-cut.md) | New | release-1 | 1 New |
+| [F7.11 — Dependabot updates reach `main` through a release, not around it](F7.11-dependabot-and-the-release-cut.md) | Closed | release-1 | 1 Closed |
 
 <!-- END derived features -->
 

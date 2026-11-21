@@ -106,7 +106,7 @@
     },
     ".rn-forge/kiln/standard.md": {
       "begin_marker": null,
-      "content_hash": "893e0cbc195b121a71e196ba9a02bb15286de6cd807036ffdd2c6e4db9a4ae07",
+      "content_hash": "100b951d4e5ca4230effcfd085ee2f307e4a17560230145b41b4b2c8a0f8de26",
       "end_marker": null,
       "key_paths": null,
       "kind": "managed",
@@ -274,7 +274,7 @@
     },
     "docs/releases/_structure.md": {
       "begin_marker": null,
-      "content_hash": "2daa5bdcf0379a0b34f63e56925961a09d8626cf426f83b52c07bc6356b91722",
+      "content_hash": "883d3cebabadfb99c31b325c027bdfaf71a07c51e3e8a7a3a7081dd719ee320a",
       "end_marker": null,
       "key_paths": null,
       "kind": "managed",

@@ -299,3 +299,12 @@ def test_every_entry_has_a_cooldown(tmp_path: Path) -> None:
     root = _with_ci(_root(tmp_path, "python-tool"), DEPENDABOT_HOOKS)
     for entry in _dependabot(root)["updates"]:  # type: ignore[attr-defined]
         assert entry["cooldown"]["default-days"] >= 7
+
+
+@pytest.mark.parametrize(("archetype", "extra"), SECURITY_CELLS)
+def test_no_dependabot_entry_sets_a_target_branch(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _cell_root(tmp_path, archetype, extra)
+    for entry in _dependabot(root)["updates"]:  # type: ignore[attr-defined]
+        assert "target-branch" not in entry

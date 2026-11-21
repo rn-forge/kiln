@@ -357,6 +357,13 @@ model.
 A repository-owned workflow is allowed only for a scheduled or non-gating run;
 it keeps its own action pins current through Dependabot, which ignores the
 actions kiln pins.
+
+**Dependabot and releases.** Dependabot pull requests are not merged into a
+branch that publishes. A release absorbs the open Dependabot updates on its
+release branch before the cut, and the repository's release runbook says
+how. Security updates are the exception: they ignore `target-branch` and
+open against the default branch, so they ship as an urgent patch release,
+not held for the next cut.
 {% if node_lib %}
 ## 9. What a node-lib repository declares
 
