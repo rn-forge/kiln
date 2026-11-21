@@ -20,6 +20,12 @@ Backlog sections below are derived from the epic, feature and release pages by
 
 Features with no Iteration, by State and epic.
 
+### New
+
+| Epic | Features |
+| -- | -- |
+| [E7 — pykit releases, and the pin flip](epics/E7-pykit-release-pin-flip/index.md) | [F7.11](epics/E7-pykit-release-pin-flip/F7.11-dependabot-and-the-release-cut.md) |
+
 ### Deferred
 
 | Epic | Features | Entry criteria |
