@@ -46,7 +46,7 @@ def test_a_move_keeps_extras_and_marker(root: Path) -> None:
     (move,) = ranges.plan(KilnConfig.load(root), root)
 
     assert move.new == (
-        'rn-forge-commons[pydantic]>=0.10.0,<0.11; python_version >= "3.12"'
+        'rn-forge-commons[pydantic]>=0.10.1,<0.11; python_version >= "3.12"'
     )
 
 
@@ -59,13 +59,13 @@ def test_a_git_pin_becomes_a_range(root: Path) -> None:
 
     (move,) = ranges.plan(KilnConfig.load(root), root)
 
-    assert move.new == "rn-forge-cli>=0.2.0,<0.3"
+    assert move.new == "rn-forge-cli>=0.2.1,<0.3"
     assert move.old_floor == "0.1.3"
     assert move.breaking
 
 
 def test_a_floor_at_or_above_the_table_is_left_alone(root: Path) -> None:
-    _dependencies(root, NEW, NEW.replace("0.10.0", "0.10.1"))
+    _dependencies(root, NEW, NEW.replace("0.10.1", "0.10.2"))
 
     assert ranges.plan(KilnConfig.load(root), root) == []
 
@@ -96,7 +96,7 @@ def test_groups_and_optional_dependencies_move(root: Path) -> None:
 
     moves = ranges.plan(KilnConfig.load(root), root)
 
-    assert [move.new for move in moves] == [NEW, "rn-forge-cli>=0.2.0,<0.3"]
+    assert [move.new for move in moves] == [NEW, "rn-forge-cli>=0.2.1,<0.3"]
 
 
 def test_write_changes_only_the_moved_strings(root: Path) -> None:
@@ -108,7 +108,7 @@ def test_write_changes_only_the_moved_strings(root: Path) -> None:
     ranges.write(root, moves)
 
     assert path.read_text(encoding="utf-8") == before.replace(OLD, NEW).replace(
-        "rn-forge-cli>=0.1.3,<0.2", "rn-forge-cli>=0.2.0,<0.3"
+        "rn-forge-cli>=0.1.3,<0.2", "rn-forge-cli>=0.2.1,<0.3"
     )
 
 

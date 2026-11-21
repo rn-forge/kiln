@@ -239,7 +239,7 @@ def test_the_commons_floor_admits_end_indent() -> None:
         for d in project["project"]["dependencies"]
         if d.startswith("rn-forge-commons[")
     )
-    assert dep.endswith(">=0.10.0,<0.11")
+    assert dep.endswith(">=0.10.1,<0.11")
     lock = tomllib.loads((_NAV_ROOT / "uv.lock").read_text(encoding="utf-8"))
     (pkg,) = (p for p in lock["package"] if p["name"] == "rn-forge-commons")
     assert tuple(int(p) for p in pkg["version"].split(".")) >= (0, 9, 0)

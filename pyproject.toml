@@ -17,9 +17,9 @@ classifiers = [
 ]
 # rn-forge libraries resolve from PyPI by range (ADR-0018).
 dependencies = [
-    "rn-forge-commons[pydantic,markdown,templates]>=0.10.0,<0.11",
-    "rn-forge-cli>=0.2.0,<0.3",
-    "rn-forge-tooling>=0.3.3,<0.4",
+    "rn-forge-commons[pydantic,markdown,templates]>=0.10.1,<0.11",
+    "rn-forge-cli>=0.2.1,<0.3",
+    "rn-forge-tooling>=0.4.0,<0.5",
     "packaging>=24",
     # The docs checks read `exclude_docs` the way MkDocs does, with its matcher.
     "pathspec>=1.1",

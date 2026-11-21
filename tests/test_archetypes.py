@@ -191,7 +191,7 @@ def test_a_web_app_table_under_a_python_app_config_is_rejected(
 
 
 def test_requirement_is_a_range() -> None:
-    assert archetypes.requirement("rn-forge-cli") == "rn-forge-cli>=0.2.0,<0.3"
+    assert archetypes.requirement("rn-forge-cli") == "rn-forge-cli>=0.2.1,<0.3"
 
 
 def test_floor_reads_a_range_a_pin_and_a_url() -> None:
@@ -230,17 +230,17 @@ def test_every_tag_is_pinned() -> None:
         assert re.fullmatch(rf"{key}-v\d+\.\d+\.\d+", tag)
 
 
-def test_floors_are_pykit_release_10() -> None:
+def test_floors_are_pykit_release_11() -> None:
     assert archetypes.RN_FORGE_TAGS == {
-        "rn-forge-commons": "rn-forge-commons-v0.10.0",
-        "rn-forge-cli": "rn-forge-cli-v0.2.0",
-        "rn-forge-tooling": "rn-forge-tooling-v0.3.3",
-        "rn-forge-web": "rn-forge-web-v0.3.2",
-        "rn-forge-auth": "rn-forge-auth-v0.2.0",
+        "rn-forge-commons": "rn-forge-commons-v0.10.1",
+        "rn-forge-cli": "rn-forge-cli-v0.2.1",
+        "rn-forge-tooling": "rn-forge-tooling-v0.4.0",
+        "rn-forge-web": "rn-forge-web-v0.3.3",
+        "rn-forge-auth": "rn-forge-auth-v0.2.1",
         "rn-forge-django": "rn-forge-django-v0.7.0",
-        "rn-forge-fastapi": "rn-forge-fastapi-v0.5.1",
+        "rn-forge-fastapi": "rn-forge-fastapi-v0.5.2",
         "rn-forge-sqlalchemy": "rn-forge-sqlalchemy-v0.2.4",
-        "rn-forge-data": "rn-forge-data-v0.1.5",
+        "rn-forge-data": "rn-forge-data-v0.1.6",
     }
 
 
@@ -251,7 +251,7 @@ def test_web_archetypes_allow_auth_sqlalchemy_and_data(name: str) -> None:
     assert dependencies.allowed == dependencies.required + extras
     for extra in extras:
         assert extra not in dependencies.required
-    assert archetypes.requirement("rn-forge-auth") == "rn-forge-auth>=0.2.0,<0.3"
+    assert archetypes.requirement("rn-forge-auth") == "rn-forge-auth>=0.2.1,<0.3"
 
 
 def test_app_and_tool_allow_data() -> None:

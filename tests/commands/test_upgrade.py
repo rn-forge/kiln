@@ -26,7 +26,7 @@ from tests.conftest import git
 
 STATE = umbrella.STATE_PATH
 OLD_RANGE = "rn-forge-commons>=0.9.0,<0.10"
-NEW_RANGE = "rn-forge-commons>=0.10.0,<0.11"
+NEW_RANGE = "rn-forge-commons>=0.10.1,<0.11"
 LOCK = Path("uv.lock")
 
 

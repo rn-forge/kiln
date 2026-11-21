@@ -4,11 +4,15 @@ from rn_forge.tooling.install import Link, ToolHome
 from {{ package }}.product import PRODUCT
 
 
-def test_the_one_artifact_is_the_command_on_path():
+def test_the_artifacts_are_the_command_and_its_completion():
     assert PRODUCT.artifacts() == (
         Link(
             "bin/{{ name }}",
             "bin/{{ name }}",
+        ),
+        Link(
+            "completions/_{{ name }}",
+            "completions/_{{ name }}",
         ),
     )
 
