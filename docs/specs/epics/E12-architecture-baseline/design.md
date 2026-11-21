@@ -26,7 +26,7 @@ and `config.docs.profile == "mkdocs"`.
 | ARCH-0002 | Errors, settings and logs each cross one boundary | `not config.is_workspace and not config.is_node_lib` | review |
 | ARCH-0003 | A library's surface is explicit and inert | `config.is_workspace` | pyright strict; `packages-are-independent` |
 | ARCH-0004 | HTTP is an adapter at the edge | `config.backend == "fastapi"` | `framework-stays-at-the-edge` and `dependencies-point-inward` |
-| ARCH-0005 | The API schema is the contract between backend and frontend | `config.is_web_app` | `task web:client` and its CI check |
+| ARCH-0005 | The API schema is the contract between backend and frontend | `config.is_web_app and config.backend == "fastapi"` | `task web:client` and its CI check |
 
 What each cell gets:
 
@@ -37,7 +37,7 @@ What each cell gets:
 | `python-web-api`, FastAPI | ARCH-0001, ARCH-0002, ARCH-0004 |
 | `python-web-app`, FastAPI + Angular | ARCH-0001, ARCH-0002, ARCH-0004, ARCH-0005 |
 | `node-lib` | none |
-| Django cells (deferred) | ARCH-0001, ARCH-0002, and ARCH-0005 for `python-web-app` |
+| Django cells (deferred) | ARCH-0001, ARCH-0002 |
 
 A record links only to records that render in every cell it renders in, so no
 cell has a dead link: ARCH-0002 and ARCH-0004 link ARCH-0001, and ARCH-0005

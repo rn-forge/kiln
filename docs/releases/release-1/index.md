@@ -81,7 +81,7 @@ CI, docs and tasks end to end. It also carries kiln's architecture baseline
 | [F11.4 — The docs rules are one standard, and kiln owns them](../../specs/epics/E11-package-docs/F11.4-cross-repository-rule.md) | E11 | Closed |
 | [F11.5 — CI deploys versioned package sites](../../specs/epics/E11-package-docs/F11.5-deploy-package-sites.md) | E11 | Closed |
 | [F12.1 — The catalogue, and the Python records](../../specs/epics/E12-architecture-baseline/F12.1-python-baseline.md) | E12 | Active |
-| [F12.2 — The web records, and a starter that follows them](../../specs/epics/E12-architecture-baseline/F12.2-web-baseline.md) | E12 | New |
+| [F12.2 — The web records, and a starter that follows them](../../specs/epics/E12-architecture-baseline/F12.2-web-baseline.md) | E12 | Active |
 | [F13.1 — Derived regions, starting with the nav](../../specs/epics/E13-docs-work-model/F13.1-derived-regions.md) | E13 | Closed |
 | [F13.2 — The board and Scope regions, and metadata checks](../../specs/epics/E13-docs-work-model/F13.2-board-and-scope.md) | E13 | Closed |
 | [F13.3 — The seeded rules and kiln's own docs adopt the model](../../specs/epics/E13-docs-work-model/F13.3-adopt-the-model.md) | E13 | Closed |
