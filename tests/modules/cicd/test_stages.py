@@ -176,7 +176,7 @@ def test_validate_task(tmp_path: Path, archetype: str) -> None:
         {"task": ":typecheck"},
         {"task": ":docs:build"},
     ]
-    assert tasks["test"]["cmds"] == [{"task": ":test"}]
+    assert tasks["test"]["cmds"] == ["task test"]
     assert {"plan", "integration", "smoke", "suites"} <= set(tasks)
     root = YamlUtils.load(files["Taskfile.yml"])["tasks"]
     assert {"task": "node:test"} in root["test"]["cmds"] or archetype != (

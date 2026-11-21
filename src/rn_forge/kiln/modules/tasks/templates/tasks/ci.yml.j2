@@ -501,7 +501,7 @@ tasks:
   test:
     desc: "CI only: Run the repository's tests (the plan's one member)."
     cmds:
-      - task: :test
+      - task test
 
 {% else %}{% if "internal-ranges" in checks %}  internal-ranges:
     desc: "CI only: Check that members depend on each other by range, not by exact pin."

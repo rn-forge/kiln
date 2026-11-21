@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from tests.conftest import module_findings
+from tests.conftest import module_findings, requires
 import pytest
 import re
+import subprocess
 from pathlib import Path
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.fs.documents import YamlUtils
@@ -469,3 +470,45 @@ def test_workflows_call_the_new_names(tmp_path: Path) -> None:
         for path in files:
             used = set(re.findall(r"ci:[\w:-]+", path.read_text(encoding="utf-8")))
             assert not used & set(CI_OLD_NAMES), (archetype, path.name)
+
+
+@pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
+def test_single_member_ci_test_does_not_forward_cli_args(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _ci_root(tmp_path, archetype, extra)
+    rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
+    test = YamlUtils.load(rendered["tasks/ci.yml"])["tasks"]["test"]
+    if archetype == "python-lib":
+        assert all("vars" not in c for c in test["cmds"] if isinstance(c, dict))
+        return
+    assert test["cmds"] == ["task test"]
+
+
+@requires("task")
+@pytest.mark.parametrize("archetype", ["python-app", "python-web-app"])
+def test_single_member_ci_test_runs_pytest_without_the_member(
+    tmp_path: Path, archetype: str
+) -> None:
+    root = _secrets_root(tmp_path / "cell", archetype)
+    done = subprocess.run(
+        [
+            "task",
+            "-t",
+            str(root / "Taskfile.yml"),
+            "--dry",
+            "ci:test",
+            "--",
+            "apollo-api",
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+        cwd=root,
+    )
+    out = done.stdout + done.stderr
+    # --dry does not expand the nested `task test` process, so it shows the
+    # command CI runs: the root verb, with the member nowhere after it.
+    lines = [line for line in out.splitlines() if line.endswith("task test")]
+    assert lines, out
+    assert "apollo-api" not in out.split("task test", 1)[1], out

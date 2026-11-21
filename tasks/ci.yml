@@ -95,7 +95,7 @@ tasks:
   test:
     desc: "CI only: Run the repository's tests (the plan's one member)."
     cmds:
-      - task: :test
+      - task test
 
   integration:
     desc: "CI only: A member's tests against the service containers it declares (-- <package>)."
