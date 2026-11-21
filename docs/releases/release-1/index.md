@@ -69,6 +69,7 @@ CI, docs and tasks end to end. It also carries kiln's architecture baseline
 | [F7.6 — The `python-lib` release job publishes to PyPI](../../specs/epics/E7-pykit-release-pin-flip/F7.6-release-to-pypi.md) | E7 | Closed |
 | [F7.7 — kiln installs as a standalone tool, from any ref](../../specs/epics/E7-pykit-release-pin-flip/F7.7-kiln-installs-as-a-tool.md) | E7 | Closed |
 | [F7.8 — An existing repository takes a new kiln's pykit floors](../../specs/epics/E7-pykit-release-pin-flip/F7.8-existing-repos-take-the-pin-table.md) | E7 | Closed |
+| [F7.11 — Dependabot updates reach `main` through a release, not around it](../../specs/epics/E7-pykit-release-pin-flip/F7.11-dependabot-and-the-release-cut.md) | E7 | New |
 | [F9.1 — `node-lib` renders ngkit's CI](../../specs/epics/E9-node-archetypes/F9.1-node-lib-hosts-ngkit-ci.md) | E9 | Closed |
 | [F9.2 — One node scaffold](../../specs/epics/E9-node-archetypes/F9.2-one-node-scaffold.md) | E9 | Closed |
 | [F9.3 — Node CI holds for ngkit and for every `node-lib`](../../specs/epics/E9-node-archetypes/F9.3-node-ci-holds-for-every-node-lib.md) | E9 | Closed |
@@ -100,7 +101,7 @@ CI, docs and tasks end to end. It also carries kiln's architecture baseline
 | [F16.2 — kiln owns `mkdocs.yml`](../../specs/epics/E16-init-adopts-by-overwrite/F16.2-kiln-owns-mkdocs.md) | E16 | Closed |
 | [F16.3 — The cutover SOP](../../specs/epics/E16-init-adopts-by-overwrite/F16.3-cutover-sop.md) | E16 | Closed |
 | [F16.4 — Generated-file hygiene](../../specs/epics/E16-init-adopts-by-overwrite/F16.4-generated-file-hygiene.md) | E16 | Closed |
-| [F16.5 — Rebuild an existing repository on kiln, and port it](../../specs/epics/E16-init-adopts-by-overwrite/F16.5-rebuild-and-port.md) | E16 | Active |
+| [F16.5 — Rebuild an existing repository on kiln, and port it](../../specs/epics/E16-init-adopts-by-overwrite/F16.5-rebuild-and-port.md) | E16 | Closed |
 | [F16.6 — What the cutover rehearsals found](../../specs/epics/E16-init-adopts-by-overwrite/F16.6-cutover-rehearsal-findings.md) | E16 | Closed |
 | [F16.7 — What the cutover found](../../specs/epics/E16-init-adopts-by-overwrite/F16.7-cutover-findings.md) | E16 | Closed |
 | [F16.8 — Retire `kiln init`](../../specs/epics/E16-init-adopts-by-overwrite/F16.8-retire-kiln-init.md) | E16 | Closed |
@@ -112,8 +113,6 @@ CI, docs and tasks end to end. It also carries kiln's architecture baseline
 | [F17.3 — A faster gate](../../specs/epics/E17-task-standard/F17.3-a-faster-gate.md) | E17 | Closed |
 | [F18.1 — Tests named by behaviour](../../specs/epics/E18-kiln-simplification/F18.1-tests-named-by-behaviour.md) | E18 | Closed |
 | [F18.2 — Spec IDs out of the code and the docs outside the specs](../../specs/epics/E18-kiln-simplification/F18.2-ids-out-of-code-and-docs.md) | E18 | Closed |
-| [F18.3 — One epic per area](../../specs/epics/E18-kiln-simplification/F18.3-area-epics.md) | E18 | New |
-| [F18.4 — `feature/v1` lands on `main` as one commit](../../specs/epics/E18-kiln-simplification/F18.4-one-commit-on-main.md) | E18 | New |
 | [F18.5 — Tests that survive a refactor](../../specs/epics/E18-kiln-simplification/F18.5-tests-survive-a-refactor.md) | E18 | Closed |
 | [F18.6 — `commands` is a package, one module per command](../../specs/epics/E18-kiln-simplification/F18.6-commands-package.md) | E18 | Closed |
 | [F18.7 — One owner per concept](../../specs/epics/E18-kiln-simplification/F18.7-one-owner-per-concept.md) | E18 | Closed |

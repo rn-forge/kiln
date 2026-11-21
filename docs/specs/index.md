@@ -12,27 +12,23 @@ Backlog sections below are derived from the epic, feature and release pages by
 
 | Release | Status | Features |
 | -- | -- | -- |
-| [Release 2 — repositories on kiln's `main`](../releases/release-2/index.md) | planned | 3 New · 1 Closed · 1 Removed |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 1 Active · 2 New · 90 Closed |
+| [Release 2 — repositories on kiln's `main`](../releases/release-2/index.md) | planned | 2 New · 1 Closed · 1 Removed |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 1 New · 91 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
 
 Features with no Iteration, by State and epic.
 
-### New
-
-| Epic | Features |
-| -- | -- |
-| [E7 — pykit releases, and the pin flip](epics/E7-pykit-release-pin-flip/index.md) | [F7.11](epics/E7-pykit-release-pin-flip/F7.11-dependabot-and-the-release-cut.md) |
-
 ### Deferred
 
 | Epic | Features | Entry criteria |
 | -- | -- | -- |
 | [E5 — The web archetypes](epics/E5-web-archetypes/index.md) | [F5.4](epics/E5-web-archetypes/F5.4-django-scaffold.md) | Per feature; see the epic. |
+| [E7 — pykit releases, and the pin flip](epics/E7-pykit-release-pin-flip/index.md) | [F7.9](epics/E7-pykit-release-pin-flip/F7.9-repos-follow-main.md) | Per feature; see the epic. |
 | [E8 — The Azure DevOps CI provider](epics/E8-ado-provider/index.md) | — | a repo needs `ci.provider = "ado"`. The intellibuild plan holds the question of whether intellibuild is that repo |
 | [E10 — kiln generators](epics/E10-kiln-generators/index.md) | — | release-1 has shipped and the owner picks this up for elaboration |
+| [E18 — kiln simplification](epics/E18-kiln-simplification/index.md) | [F18.3](epics/E18-kiln-simplification/F18.3-area-epics.md), [F18.4](epics/E18-kiln-simplification/F18.4-one-commit-on-main.md) | Per feature; see the epic. |
 
 <!-- END derived board -->
 
