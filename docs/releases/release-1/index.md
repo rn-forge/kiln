@@ -123,7 +123,8 @@ CI, docs and tasks end to end. It also carries kiln's architecture baseline
 | [F18.14 — A kiln pin is a commit](../../specs/epics/E18-kiln-simplification/F18.14-a-pin-is-a-commit.md) | E18 | Closed |
 | [F19.1 — YAML has a formatter, and kiln's own files pass it](../../specs/epics/E19-formatting-standard/F19.1-yaml-formatter.md) | E19 | Closed |
 | [F19.2 — The nav block is a plain `ManagedBlock`](../../specs/epics/E19-formatting-standard/F19.2-nav-block-end-indent.md) | E19 | Closed |
-| [F19.3 — The epic list's jump links survive mdformat at any length](../../specs/epics/E19-formatting-standard/F19.3-epic-list-jump-links.md) | E19 | New |
+| [F19.3 — The epic list's jump links survive mdformat at any length](../../specs/epics/E19-formatting-standard/F19.3-epic-list-jump-links.md) | E19 | Closed |
+| [F19.4 — The FastAPI starter's imports pass ruff at any package name](../../specs/epics/E19-formatting-standard/F19.4-fastapi-starter-imports.md) | E19 | New |
 
 <!-- END derived scope -->
 

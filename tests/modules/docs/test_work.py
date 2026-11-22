@@ -349,7 +349,7 @@ def test_render_epics_puts_each_range_under_its_own_heading(
     )
     body = render_epics(work)
     assert body.startswith(
-        "\nJump to: [E1\u2013E10](#e1e10) \u00b7 [E11\u2013E20](#e11e20)\n\n## E1\u2013E10\n\n"
+        "\nJump to:\n\n- [E1\u2013E10](#e1e10)\n- [E11\u2013E20](#e11e20)\n\n## E1\u2013E10\n\n"
     )
     assert body.index("## E1\u2013E10") < body.index("## E11\u2013E20")
     assert "| [E12 \u2014 Twelve](E12-z/index.md) | New | \u2014 | \u2014 |" in body
@@ -360,8 +360,48 @@ def test_one_epic_gives_one_range_and_one_jump_link(tmp_path: Path) -> None:
     body = render_epics(_tree(tmp_path, VALID))
     assert body.count("## E") == 1
     assert body.count("](#") == 1
-    assert "Jump to: [E1\u2013E10](#e1e10)\n" in body
+    assert "Jump to:\n\n- [E1\u2013E10](#e1e10)\n\n" in body
     _stable(EPICS_BLOCK, body)
+
+
+def test_jump_links_are_one_list_item_per_range(tmp_path: Path) -> None:
+    work = _tree(
+        tmp_path,
+        {
+            **VALID,
+            **{f"specs/epics/E{n}-z/index.md": _epic(n, "New") for n in (12, 25, 31)},
+        },
+    )
+    body = render_epics(work)
+    assert body.startswith(
+        "\nJump to:\n\n- [E1\u2013E10](#e1e10)\n- [E11\u2013E20](#e11e20)\n"
+        "- [E21\u2013E30](#e21e30)\n- [E31\u2013E40](#e31e40)\n\n## E1\u2013E10\n"
+    )
+    _stable(EPICS_BLOCK, body)
+
+
+def test_many_ranges_survive_mdformat_at_any_wrap(tmp_path: Path) -> None:
+    work = _tree(
+        tmp_path,
+        {
+            **VALID,
+            **{
+                f"specs/epics/E{n}-z/index.md": _epic(n, "New")
+                for n in range(11, 100, 10)
+            },
+        },
+    )
+    body = render_epics(work)
+    _stable(EPICS_BLOCK, body)
+    fenced = f"{EPICS_BLOCK.begin}\n{body}{EPICS_BLOCK.end}\n"
+    assert (
+        mdformat.text(
+            fenced,
+            options={"wrap": "keep", "compact_tables": True},
+            extensions={"gfm", "tables", "mkdocs"},
+        )
+        == fenced
+    )
 
 
 def test_features_count_files_or_rows_and_deferred_is_marked(

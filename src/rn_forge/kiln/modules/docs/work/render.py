@@ -233,11 +233,11 @@ def render_epics(work: Work) -> str:
     for epic in work.epics:
         ranges.setdefault(epic_range(epic.number), []).append(epic)
     labels = {span: range_label(*span) for span in ranges}
-    jump = " \u00b7 ".join(
-        f"[{labels[span]}](#{MarkdownUtils.slugify(labels[span])})"
+    items = [
+        f"- [{labels[span]}](#{MarkdownUtils.slugify(labels[span])})"
         for span in sorted(ranges)
-    )
-    lines = ["", f"Jump to: {jump}"]
+    ]
+    lines = ["", "Jump to:", "", *items]
     for span in sorted(ranges):
         lines += [
             "",
