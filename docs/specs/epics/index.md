@@ -35,6 +35,7 @@ Jump to: [E1–E10](#e1e10) · [E11–E20](#e11e20)
 | [E16 — `init` adopts by overwrite](E16-init-adopts-by-overwrite/index.md) | Active | 11 Closed | release-1 |
 | [E17 — One task standard for every archetype](E17-task-standard/index.md) | Active | 3 Closed | release-1 |
 | [E18 — kiln simplification](E18-kiln-simplification/index.md) | Active | 4 New · 10 Closed | release-1, release-2 |
-| [E19 — One formatter for each file type, in every archetype](E19-formatting-standard/index.md) | Closed | 2 Closed | release-1 |
+| [E19 — One formatter for each file type, in every archetype](E19-formatting-standard/index.md) | Active | 1 New · 2 Closed | release-1 |
+| [E20 — Instruction files carry blocks only](E20-blocks-only-instruction-files/index.md) | New | 1 New | — |
 
 <!-- END derived epics -->

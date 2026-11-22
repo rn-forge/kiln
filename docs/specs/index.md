@@ -13,12 +13,18 @@ Backlog sections below are derived from the epic, feature and release pages by
 | Release | Status | Features |
 | -- | -- | -- |
 | [Release 2 — repositories on kiln's `main`](../releases/release-2/index.md) | planned | 2 New · 1 Closed · 1 Removed |
-| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 92 Closed |
+| [Release 1 — kiln generates and self-hosts the Python and web archetypes](../releases/release-1/index.md) | in progress | 1 New · 92 Closed |
 | [Release 0 — the canon and the hand-authored goldens](../releases/release-0/index.md) | shipped (2026-09-12) | — |
 
 ## Backlog
 
 Features with no Iteration, by State and epic.
+
+### New
+
+| Epic | Features |
+| -- | -- |
+| [E20 — Instruction files carry blocks only](epics/E20-blocks-only-instruction-files/index.md) | [F20.1](epics/E20-blocks-only-instruction-files/F20.1-blocks-only.md) |
 
 ### Deferred
 

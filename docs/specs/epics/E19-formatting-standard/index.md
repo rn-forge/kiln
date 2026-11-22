@@ -2,9 +2,8 @@
 
 |  |  |
 | -- | -- |
-| **State** | Closed |
+| **State** | Active |
 | **Start Date** | 2026-11-10 |
-| **Closed Date** | 2026-11-16 |
 
 <!-- BEGIN derived features -->
 
@@ -12,6 +11,7 @@
 | -- | -- | -- | -- |
 | [F19.1 — YAML has a formatter, and kiln's own files pass it](F19.1-yaml-formatter.md) | Closed | release-1 | 4 Closed |
 | [F19.2 — The nav block is a plain `ManagedBlock`](F19.2-nav-block-end-indent.md) | Closed | release-1 | 1 Closed |
+| [F19.3 — The epic list's jump links survive mdformat at any length](F19.3-epic-list-jump-links.md) | New | release-1 | 1 New |
 
 <!-- END derived features -->
 
@@ -30,6 +30,9 @@ every archetype is clean for Markdown, TOML and YAML.
 
 **Scope.** Release 1 (owner, 2026-11-10). It lands before the pykit and ngkit
 cutovers, so they take formatter-clean YAML from the reference.
+
+**Reopened** on 2026-11-21 for [F19.3](F19.3-epic-list-jump-links.md): the epic
+list's jump line is the one derived line that mdformat wraps.
 
 **Not in this epic.** JSON, which stays with Prettier in the Node archetypes and
 has no formatter in the Python ones ([ADR-0021](../../../adr/ADR-0021.md)).
