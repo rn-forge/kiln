@@ -152,10 +152,13 @@ def test_fastapi_starter_artifacts(tmp_path: Path) -> None:
     assert all("{{" not in a.content for a in artifacts)
     by_path = {a.path: a.content for a in artifacts}
     app_source = by_path["apps/api/src/demo_api/app.py"]
-    assert "from demo_api.http.items import router" in app_source
-    assert "from demo_api.domain.errors import ItemNotFound" in app_source
+    assert "from demo_api.http.items import (\n    router,\n)" in app_source
+    assert "from demo_api.domain.errors import (\n    ItemNotFound,\n)" in app_source
     assert 'title="demo"' in by_path["apps/api/src/demo_api/app.py"]
-    assert "from demo_api.app import app" in by_path["apps/api/tests/test_app.py"]
+    assert (
+        "from demo_api.app import (\n    app,\n)"
+        in by_path["apps/api/tests/test_app.py"]
+    )
 
     moved = tmp_path / "moved"
     moved.mkdir()
@@ -344,3 +347,29 @@ def test_tool_product_is_a_python_tool(tmp_path: Path) -> None:
     product = by_path["src/python_tool/product.py"]
     assert "class Tool(PythonTool)" in product
     assert "def artifacts" not in product
+
+
+@pytest.mark.parametrize(
+    "name", ["demo", "python-web-app-backend-fastapi-frontend-angular"]
+)
+def test_fastapi_starter_passes_ruff_at_any_name(tmp_path: Path, name: str) -> None:
+    config = _config(tmp_path, "python-web-app", name=name, backend="fastapi")
+    _fresh_api(tmp_path, "apps/api", module=module_name(f"{name}-api"))
+    artifacts = starter.render(config, tmp_path)
+    assert artifacts
+    for artifact in artifacts:
+        target = tmp_path / artifact.path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(artifact.content, encoding="utf-8")
+    for args in (
+        ["check", "--isolated", "--extend-select", "I"],
+        ["format", "--isolated", "--check", "--diff"],
+    ):
+        result = subprocess.run(
+            [sys.executable, "-m", "ruff", *args, "src", "tests"],
+            cwd=tmp_path / "apps" / "api",
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 0, result.stdout

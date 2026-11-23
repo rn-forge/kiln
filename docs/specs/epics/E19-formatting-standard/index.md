@@ -12,7 +12,7 @@
 | [F19.1 — YAML has a formatter, and kiln's own files pass it](F19.1-yaml-formatter.md) | Closed | release-1 | 4 Closed |
 | [F19.2 — The nav block is a plain `ManagedBlock`](F19.2-nav-block-end-indent.md) | Closed | release-1 | 1 Closed |
 | [F19.3 — The epic list's jump links survive mdformat at any length](F19.3-epic-list-jump-links.md) | Closed | release-1 | 1 Closed |
-| [F19.4 — The FastAPI starter's imports pass ruff at any package name](F19.4-fastapi-starter-imports.md) | New | release-1 | 1 New |
+| [F19.4 — The FastAPI starter's imports pass ruff at any package name](F19.4-fastapi-starter-imports.md) | Closed | release-1 | 1 Closed |
 
 <!-- END derived features -->
 

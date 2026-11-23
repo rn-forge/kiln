@@ -8,7 +8,9 @@ from fastapi import APIRouter, Depends
 from rn_forge.fastapi import page_params
 from rn_forge.web import Cursor
 
-from {{ module }}.domain.errors import ItemNotFound
+from {{ module }}.domain.errors import (
+    ItemNotFound,
+)
 
 router = APIRouter(prefix="/v1", tags=["items"])
 

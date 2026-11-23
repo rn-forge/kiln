@@ -1,7 +1,9 @@
 from fastapi.testclient import TestClient
 from rn_forge.web import PROBLEM_MEDIA_TYPE
 
-from {{ module }}.app import app
+from {{ module }}.app import (
+    app,
+)
 
 client = TestClient(app, raise_server_exceptions=False)
 
