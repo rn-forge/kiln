@@ -57,7 +57,8 @@ says.
 ## Repository standard (kiln)
 
 This repo is generated and checked by [kiln](https://github.com/rn-forge/kiln).
-The standard, rendered for this repo's archetype and docs profile, is
+What it is and how to set it up are in [README.md](README.md). The standard,
+rendered for this repo's archetype and docs profile, is
 [.rn-forge/kiln/standard.md](.rn-forge/kiln/standard.md). Read it before
 changing anything structural.
 

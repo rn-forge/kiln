@@ -212,6 +212,22 @@ def test_external_renders_the_url_into_the_block(tmp_path: Path) -> None:
     assert "Docs rules" not in block
 
 
+@pytest.mark.parametrize("profile", ["mkdocs", "external", "none"])
+def test_the_block_links_the_readme_in_every_docs_profile(
+    tmp_path: Path, profile: str
+) -> None:
+    extra = (
+        'external_url = "https://docs.example.com/demo"\n'
+        if profile == "external"
+        else ""
+    )
+    root = _root(tmp_path, profile=profile, docs_extra=extra)
+    block = _rendered(root)[BLOCK_KEY]
+    assert "What it is and how to set it up are in [README.md](README.md)." in " ".join(
+        block.split()
+    )
+
+
 def test_none_renders_no_docs_bullet(tmp_path: Path) -> None:
     block = _rendered(_root(tmp_path, profile="none"))[BLOCK_KEY]
     assert "**Docs:**" not in block
