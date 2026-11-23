@@ -25,9 +25,6 @@ text.
 
 ## Open questions
 
-- Is the order of kiln's and agentkit's blocks in `AGENTS.md` fixed? The
-  proposal is kiln's block first, because it states the standard agentkit's
-  block builds on. Today the order is whichever tool applied first.
 - Without the seeded body, a fresh `AGENTS.md` has no Rules, Guardrails or Story
   workflow headings to prompt the owner. Should kiln's block link to a short
   page of suggested sections, or is the empty body enough?
