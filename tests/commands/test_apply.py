@@ -37,6 +37,7 @@ def repo(
 ) -> Path:
     """A copy of the rendered `python-tool` repo, applied once more."""
     root = rendered_copy("python-tool")
+    (root / "CLAUDE.md").write_text("@AGENTS.md\n", encoding="utf-8")
     cycle.apply(root)
     monkeypatch.chdir(root)
     yield root

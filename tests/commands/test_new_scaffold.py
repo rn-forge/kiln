@@ -81,7 +81,7 @@ def test_docs_none_omits_the_mkdocs_tree_and_site_tasks(
     assert [name for name in names if name.startswith("docs:")] == []
     assert "mdformat" in (target / "tasks" / "quality.yml").read_text("utf-8")
     assert (target / "README.md").is_file()
-    assert (target / "CLAUDE.md").is_file()
+    assert not (target / "CLAUDE.md").exists()
     assert (target / ".mdformat.toml").is_file()
 
 

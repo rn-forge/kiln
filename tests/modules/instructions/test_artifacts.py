@@ -109,25 +109,33 @@ def test_the_module_has_no_render_free_checks(tmp_path: Path, archetype: str) ->
     assert [c.name for c in checks.CHECKS if c.module == "instructions"] == []
 
 
-def test_edits_to_each_body_survive_and_the_block_is_unchanged(
+def test_old_seeded_bodies_survive_apply_and_only_the_block_is_reconciled(
     tmp_path: Path,
 ) -> None:
     root = _new(tmp_path)
-    for name in ("README.md", "CLAUDE.md", "AGENTS.md"):
-        assert (root / name).is_file(), name
-    edited: dict[str, str] = {}
-    for name in ("README.md", "CLAUDE.md", "AGENTS.md"):
-        path = root / name
-        text = path.read_text(encoding="utf-8")
-        edited[name] = "Hand-written first line.\n\n" + text
-        path.write_text(edited[name], encoding="utf-8")
+    written = {
+        "CLAUDE.md": "@AGENTS.md\n\n## Claude-only\n",
+        "AGENTS.md": "# AGENTS.md\n\n## Rules\n\n- a rule.\n\n"
+        + (root / "AGENTS.md").read_text(encoding="utf-8"),
+        "README.md": "Hand-written first line.\n\n"
+        + (root / "README.md").read_text(encoding="utf-8"),
+    }
+    for name, text in written.items():
+        (root / name).write_text(text, encoding="utf-8")
 
     assert _actions(root, tmp_path)[BLOCK_KEY] is Action.UNCHANGED
-    config = KilnConfig.load(root)
-    scaffold(root, config)
+    scaffold(root, KilnConfig.load(root))
     cycle.apply(root, home=tmp_path / "home")
-    for name, text in edited.items():
+    for name, text in written.items():
         assert (root / name).read_text(encoding="utf-8") == text, name
+
+
+def test_new_agents_md_holds_only_the_block(tmp_path: Path) -> None:
+    root = _new(tmp_path)
+    text = (root / "AGENTS.md").read_text(encoding="utf-8")
+    assert KILN_BLOCK.extract(text) is not None
+    assert not KILN_BLOCK.remove(text).strip()
+    assert not (root / "CLAUDE.md").exists()
 
 
 def test_turning_sonar_off_updates_only_the_block_and_standard(
@@ -175,7 +183,7 @@ def test_apply_puts_the_block_in_agents_md_only(tmp_path: Path) -> None:
     block = KILN_BLOCK.extract((root / "AGENTS.md").read_text(encoding="utf-8"))
     assert block is not None
     assert block.lstrip().startswith("<!--")
-    assert KILN_BLOCK.extract((root / "CLAUDE.md").read_text(encoding="utf-8")) is None
+    assert not (root / "CLAUDE.md").exists()
 
 
 def test_the_block_text_is_unchanged(tmp_path: Path) -> None:
@@ -946,16 +954,6 @@ def test_task_tables_are_mdformat_clean(
 def test_the_standard_names_it(tmp_path: Path) -> None:
     root = _root(tmp_path)
     assert "metadata.scaffolded" in _rendered(root)[STANDARD]
-
-
-def test_the_block_lands_beneath_the_agents_body(tmp_path: Path) -> None:
-    from tests.modules.instructions.test_scaffold import AGENTS, CLAUDE
-
-    root = _new(tmp_path)
-    agents = (root / "AGENTS.md").read_text(encoding="utf-8")
-    assert agents.startswith(AGENTS)
-    assert agents.endswith("<!-- END rn-forge kiln -->\n")
-    assert (root / "CLAUDE.md").read_text(encoding="utf-8") == CLAUDE
 
 
 def test_standard_puts_the_block_in_agents_md(tmp_path: Path) -> None:

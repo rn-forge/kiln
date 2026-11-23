@@ -1,7 +1,7 @@
-"""Scaffolding: the repo-owned bodies of `README.md`, `CLAUDE.md` and `AGENTS.md`.
+"""Scaffolding: the repo-owned body of `README.md`.
 
-Runs once, from `kiln new`, before the first `apply`. `AGENTS.md`'s body carries
-no block markers, so the apply that follows appends the kiln block beneath it.
+Runs once, from `kiln new`, before the first `apply`. The apply that follows
+creates `AGENTS.md` holding only the kiln block.
 """
 
 from __future__ import annotations
@@ -15,12 +15,12 @@ from rn_forge.kiln.modules.instructions.artifacts import context
 
 __all__ = ["BODIES", "scaffold"]
 
-BODIES = ("README.md", "CLAUDE.md", "AGENTS.md")
+BODIES = ("README.md",)
 """Every scaffolded body, each rendered from `templates/<name>.j2`."""
 
 
 def scaffold(root: Path, config: KilnConfig) -> None:
-    """Write each of `README.md`, `CLAUDE.md` and `AGENTS.md` into *root* that is absent."""
+    """Write `README.md` into *root* when it is absent."""
     engine = TemplateEngine.cached(package="rn_forge.kiln.modules.instructions")
     values = context(config)
     for name in BODIES:

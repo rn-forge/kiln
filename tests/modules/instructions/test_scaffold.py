@@ -1,4 +1,4 @@
-"""The scaffolded bodies of `README.md`, `CLAUDE.md` and `AGENTS.md`."""
+"""The scaffolded body of `README.md`."""
 
 from __future__ import annotations
 
@@ -32,43 +32,6 @@ What this repository is, in a paragraph.
 - Python 3.14, `src/` layout, pyright strict, ruff for lint and format.
 """
 
-CLAUDE = """@AGENTS.md
-
-## Claude-only
-
-Instructions that only Claude Code should follow go here. Everything every agent
-should follow is in [AGENTS.md](AGENTS.md).
-"""
-
-AGENTS = """# AGENTS.md
-
-What this repository is, how to set it up and the conventions everyone follows
-are in [README.md](README.md). This file holds what an agent needs beyond that.
-
-## Rules
-
-- Replace this line with a rule every agent must follow in this repository.
-
-## Guardrails
-
-- Replace this line with something an agent must not do without asking.
-
-## Do and don't
-
-- Do: replace this line.
-- Don't: replace this line.
-
-## Examples
-
-Replace this section with one worked example of a change made the way this
-repository wants it.
-
-## Story workflow
-
-Replace this section with how a story is picked up, built, checked and handed
-back in this repository.
-"""
-
 BULLETS = (
     "- Run everything through `task`. `task validate` is the gate.\n",
     "- A file whose first line says it was generated is owned by kiln: edit\n"
@@ -81,11 +44,12 @@ def _root(tmp_path: Path) -> Path:
     return write_config(tmp_path, "python-app", name="demo")
 
 
-def test_scaffold_writes_the_three_bodies(tmp_path: Path) -> None:
+def test_scaffold_writes_only_the_readme(tmp_path: Path) -> None:
     root = _root(tmp_path)
     scaffold(root, KilnConfig.load(root))
     assert (root / "README.md").read_text(encoding="utf-8") == README
-    assert (root / "AGENTS.md").is_file()
+    assert not (root / "AGENTS.md").exists()
+    assert not (root / "CLAUDE.md").exists()
 
 
 def test_scaffold_never_overwrites_a_present_body(tmp_path: Path) -> None:
@@ -239,22 +203,6 @@ def test_non_web_readme_has_no_api_section(tmp_path: Path) -> None:
     root = _root(tmp_path)
     scaffold(root, KilnConfig.load(root))
     assert "api:dev" not in (root / "README.md").read_text(encoding="utf-8")
-
-
-def test_claude_md_is_the_import_and_a_claude_only_stub(
-    tmp_path: Path,
-) -> None:
-    root = _root(tmp_path)
-    scaffold(root, KilnConfig.load(root))
-    assert (root / "CLAUDE.md").read_text(encoding="utf-8") == CLAUDE
-
-
-def test_agents_md_is_a_skeleton_that_links_readme(
-    tmp_path: Path,
-) -> None:
-    root = _root(tmp_path)
-    scaffold(root, KilnConfig.load(root))
-    assert (root / "AGENTS.md").read_text(encoding="utf-8") == AGENTS
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)

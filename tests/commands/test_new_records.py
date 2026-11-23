@@ -71,7 +71,8 @@ def test_new_records_the_scaffolded_files(
     state = json.loads((root / ".rn-forge/kiln/state.json").read_text("utf-8"))
     scaffolded = state["metadata"]["scaffolded"]
     assert scaffolded == sorted(scaffolded)
-    assert {"README.md", "CLAUDE.md"} | expected <= set(scaffolded)
+    assert {"README.md"} | expected <= set(scaffolded)
+    assert "CLAUDE.md" not in scaffolded
     assert "AGENTS.md" not in scaffolded
     assert not set(scaffolded) & {e["path"] for e in state["entries"].values()}
     forbidden = (".rn-forge/", ".git/", "node_modules/", ".venv/")
@@ -79,13 +80,14 @@ def test_new_records_the_scaffolded_files(
 
 
 @pytest.mark.parametrize("archetype", ["python-lib", "node-lib"])
-def test_claude_md_is_recorded_and_agents_md_is_not(
+def test_neither_instruction_file_is_scaffolded(
     rendered: Callable[[str], Path], archetype: str
 ) -> None:
     root = rendered(archetype)
     state = json.loads((root / ".rn-forge/kiln/state.json").read_text("utf-8"))
     paths = {e["path"] for e in state["entries"].values()}
-    assert "CLAUDE.md" in state["metadata"]["scaffolded"]
+    assert "CLAUDE.md" not in state["metadata"]["scaffolded"]
     assert "AGENTS.md" not in state["metadata"]["scaffolded"]
     assert "AGENTS.md" in paths
     assert "CLAUDE.md" not in paths
+    assert not (root / "CLAUDE.md").exists()
