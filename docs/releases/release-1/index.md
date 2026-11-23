@@ -125,6 +125,7 @@ CI, docs and tasks end to end. It also carries kiln's architecture baseline
 | [F19.2 — The nav block is a plain `ManagedBlock`](../../specs/epics/E19-formatting-standard/F19.2-nav-block-end-indent.md) | E19 | Closed |
 | [F19.3 — The epic list's jump links survive mdformat at any length](../../specs/epics/E19-formatting-standard/F19.3-epic-list-jump-links.md) | E19 | Closed |
 | [F19.4 — The FastAPI starter's imports pass ruff at any package name](../../specs/epics/E19-formatting-standard/F19.4-fastapi-starter-imports.md) | E19 | Closed |
+| [F20.1 — kiln writes and checks only its block](../../specs/epics/E20-blocks-only-instruction-files/F20.1-blocks-only.md) | E20 | Active |
 
 <!-- END derived scope -->
 

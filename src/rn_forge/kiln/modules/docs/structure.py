@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import re
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
@@ -29,9 +28,6 @@ from rn_forge.kiln.modules.docs.policy import (
 )
 
 __all__ = ["check_structure"]
-
-# A Claude Code `@path` import line, which counts as a link to `path`.
-_IMPORT = re.compile(r"^@(\S+)[ \t]*$", re.MULTILINE)
 
 
 def _clean_status(value: str) -> str:
@@ -257,25 +253,24 @@ def _check_no_underscore_refs(
     return findings
 
 
+def _links_in(text: str, base: Path) -> set[Path]:
+    return {
+        (base / link.partition("#")[0]).resolve() for link in parsed.local_links(text)
+    }
+
+
 def _resolved_links(path: Path) -> set[Path]:
-    text = path.read_text(encoding="utf-8")
-    links = {
-        (path.parent / link.partition("#")[0]).resolve()
-        for link in parsed.local_links(text)
-    }
-    return links | {
-        (path.parent / target).resolve() for target in _IMPORT.findall(text)
-    }
+    return _links_in(path.read_text(encoding="utf-8"), path.parent)
 
 
 def _check_instruction_pointer(
-    repo_root: Path, docs_root: Path, instruction_files: tuple[str, ...]
+    repo_root: Path, docs_root: Path, policy: DocsPolicy
 ) -> list[Finding]:
-    """Require an instruction file to link the docs index and structure rules.
+    """Require each instruction file to link the docs index and structure rules.
 
-    Other instruction files may link to that file, or import it with an ``@path``
-    line, instead of duplicating the two links.
+    When the policy names a block, only that block's text is read.
     """
+    instruction_files = policy.instruction_files
     present = [
         repo_root / name for name in instruction_files if (repo_root / name).exists()
     ]
@@ -289,30 +284,20 @@ def _check_instruction_pointer(
         ]
 
     wanted = {(docs_root / name).resolve() for name in ("_structure.md", "index.md")}
-    carriers = [path for path in present if wanted <= _resolved_links(path)]
-    if not carriers:
-        return [
-            error(
-                "missing-docs-pointer",
-                path,
-                f"no instruction file links both {docs_root.name}/_structure.md "
-                f"and {docs_root.name}/index.md",
-            )
-            for path in present
-        ]
-
-    carrier_paths = {path.resolve() for path in carriers}
-    return [
-        error(
-            "missing-docs-pointer",
-            path,
-            "neither links the docs rules nor points at "
-            f"{', '.join(sorted(p.name for p in carrier_paths))}",
-        )
-        for path in present
-        if path.resolve() not in carrier_paths
-        and not (_resolved_links(path) & carrier_paths)
-    ]
+    both = f"link both {docs_root.name}/_structure.md and {docs_root.name}/index.md"
+    message = (
+        f"does not {both}"
+        if policy.instruction_block is None
+        else f"kiln's block does not {both}"
+    )
+    findings: list[Finding] = []
+    for path in present:
+        text = path.read_text(encoding="utf-8")
+        if policy.instruction_block is not None:
+            text = policy.instruction_block.extract(text) or ""
+        if not wanted <= _links_in(text, path.parent):
+            findings.append(error("missing-docs-pointer", path, message))
+    return findings
 
 
 def check_structure(
@@ -345,5 +330,5 @@ def check_structure(
         *(_check_status(docs_root, policy.numbered) if policy.numbered else []),
         *_check_links(docs_root, package_mounts(repo_root, packages), excluded),
         *_check_no_underscore_refs(docs_root, excluded),
-        *_check_instruction_pointer(repo_root, docs_root, policy.instruction_files),
+        *_check_instruction_pointer(repo_root, docs_root, policy),
     ]

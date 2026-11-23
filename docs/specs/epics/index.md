@@ -39,6 +39,6 @@ Jump to:
 | [E17 — One task standard for every archetype](E17-task-standard/index.md) | Active | 3 Closed | release-1 |
 | [E18 — kiln simplification](E18-kiln-simplification/index.md) | Active | 4 New · 10 Closed | release-1, release-2 |
 | [E19 — One formatter for each file type, in every archetype](E19-formatting-standard/index.md) | Active | 4 Closed | release-1 |
-| [E20 — Instruction files carry blocks only](E20-blocks-only-instruction-files/index.md) | New | 1 New | — |
+| [E20 — Instruction files carry blocks only](E20-blocks-only-instruction-files/index.md) | Active | 1 Active | release-1 |
 
 <!-- END derived epics -->

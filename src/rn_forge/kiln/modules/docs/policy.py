@@ -10,6 +10,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+from rn_forge.commons.fs.blocks import ManagedBlock
+
 __all__ = [
     "KEBAB_NAME",
     "POLICY",
@@ -93,6 +95,8 @@ class DocsPolicy:
         sequences: Sequence areas, if any.
         nested: Nested areas, if any.
         ideas: The ideas folder, relative to the docs root, when there is one.
+        instruction_block: The fenced block of each instruction file that must
+            carry the docs links; ``None`` reads the whole file.
     """
 
     instruction_files: tuple[str, ...]
@@ -103,6 +107,7 @@ class DocsPolicy:
     )
     nested: tuple[NestedArea, ...] = field(default_factory=tuple[NestedArea, ...])
     ideas: str | None = None
+    instruction_block: ManagedBlock | None = None
 
     def __post_init__(self) -> None:
         if not self.instruction_files:
@@ -110,9 +115,8 @@ class DocsPolicy:
 
 
 POLICY = DocsPolicy(
-    # AGENTS.md carries kiln's block, which links the docs rules; CLAUDE.md
-    # imports it.
-    instruction_files=("AGENTS.md", "CLAUDE.md"),
+    instruction_files=("AGENTS.md",),
+    instruction_block=ManagedBlock("rn-forge kiln", comment="<!--"),
     page_name=KEBAB_NAME,
     numbered=NumberedArea(
         path="adr",

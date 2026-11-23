@@ -9,6 +9,7 @@ import pytest
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Severity
+from rn_forge.commons.fs.blocks import ManagedBlock
 from rn_forge.commons.text.markdown import MarkdownUtils
 
 from rn_forge.kiln.config import KilnConfig
@@ -81,6 +82,12 @@ POLICY = DocsPolicy(
     ideas="specs/ideas",
 )
 
+BLOCK = ManagedBlock("rn-forge kiln", comment="<!--")
+BLOCK_POLICY = dataclasses.replace(
+    POLICY, instruction_files=("AGENTS.md",), instruction_block=BLOCK
+)
+LINKS = "- [rules](docs/_structure.md)\n- [docs](docs/index.md)\n"
+
 
 def write(path, text):
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -104,7 +111,10 @@ def repo(tmp_path):
         tmp_path / "AGENTS.md",
         "# Agents\n\n- [rules](docs/_structure.md)\n- [docs](docs/index.md)\n",
     )
-    write(tmp_path / "CLAUDE.md", "@AGENTS.md\n")
+    write(
+        tmp_path / "CLAUDE.md",
+        "# Claude\n\n- [rules](docs/_structure.md)\n- [docs](docs/index.md)\n",
+    )
     write(tmp_path / "mkdocs.yml", MKDOCS)
     return tmp_path
 
@@ -243,37 +253,6 @@ class TestCheckStructure:
         write(repo / "AGENTS.md", "# Agents\n\nNothing useful here.\n")
         write(repo / "CLAUDE.md", "# Repo\n")
         assert "docs.missing-docs-pointer" in codes(
-            check_structure(repo, repo / "docs", POLICY)
-        )
-
-    def test_an_import_line_counts_as_a_pointer(self, repo):
-        assert "docs.missing-docs-pointer" not in codes(
-            check_structure(repo, repo / "docs", POLICY)
-        )
-
-    def test_a_claude_md_with_neither_import_nor_link_is_flagged(self, repo):
-        write(repo / "CLAUDE.md", "# Repo\n\nRead README.md.\n")
-        found = [
-            f
-            for f in check_structure(repo, repo / "docs", POLICY)
-            if f.code == "docs.missing-docs-pointer"
-        ]
-        assert len(found) == 1
-        assert found[0].path.endswith("CLAUDE.md")
-        assert "AGENTS.md" in found[0].message
-
-    def test_an_import_in_a_code_span_is_not_a_pointer(self, repo):
-        write(repo / "CLAUDE.md", "`@AGENTS.md`\n")
-        found = [
-            f
-            for f in check_structure(repo, repo / "docs", POLICY)
-            if f.code == "docs.missing-docs-pointer"
-        ]
-        assert [f.path.endswith("CLAUDE.md") for f in found] == [True]
-
-    def test_a_relative_import_resolves(self, repo):
-        write(repo / "CLAUDE.md", "@./AGENTS.md\n")
-        assert "docs.missing-docs-pointer" not in codes(
             check_structure(repo, repo / "docs", POLICY)
         )
 
@@ -728,3 +707,59 @@ def test_areas_seed_header_says_kiln_derives_the_nav(tmp_path):
     assert "nav additions go here; kiln derives the rest" in text
     assert "manual" not in text.lower()
     assert "key: packages" not in text
+
+
+def _write_agents(repo, body, links_body):
+    write(repo / "AGENTS.md", body + BLOCK.render("", links_body))
+
+
+def _pointer_findings(repo, policy=BLOCK_POLICY):
+    return [
+        f
+        for f in check_structure(repo, repo / "docs", policy)
+        if f.code == "docs.missing-docs-pointer"
+    ]
+
+
+def test_links_inside_the_block_satisfy_the_pointer(repo):
+    _write_agents(repo, "# Agents\n", LINKS)
+    assert _pointer_findings(repo) == []
+
+
+def test_body_text_is_ignored_with_the_block_intact(repo):
+    write(repo / "CLAUDE.md", "# anything\n")
+    for body in ("", "Unrelated text.\n"):
+        _write_agents(repo, body, LINKS)
+        assert _pointer_findings(repo) == []
+
+
+def test_links_only_in_the_body_do_not_count(repo):
+    _write_agents(repo, "# Agents\n\n" + LINKS, "Nothing here.\n")
+    found = _pointer_findings(repo)
+    assert len(found) == 1
+    assert found[0].path.endswith("AGENTS.md")
+
+
+def test_a_missing_block_is_a_missing_pointer(repo):
+    write(repo / "AGENTS.md", "# Agents\n\n" + LINKS)
+    found = _pointer_findings(repo)
+    assert len(found) == 1
+    assert found[0].path.endswith("AGENTS.md")
+
+
+def test_other_tools_blocks_are_ignored(repo):
+    agentkit = ManagedBlock("rn-forge agentkit", comment="<!--").render(
+        "", "@AGENTS.md\nUnrelated text.\n"
+    )
+    nx = "<!-- nx configuration start -->\nNx text.\n<!-- nx configuration end -->\n"
+    write(repo / "AGENTS.md", BLOCK.render("", LINKS) + agentkit + nx)
+    write(repo / "CLAUDE.md", agentkit + nx)
+    assert _pointer_findings(repo) == []
+
+
+def test_kiln_policy_reads_only_agents_md_block():
+    from rn_forge.kiln.modules.docs.policy import POLICY as KILN_POLICY
+
+    assert KILN_POLICY.instruction_files == ("AGENTS.md",)
+    assert KILN_POLICY.instruction_block is not None
+    assert KILN_POLICY.instruction_block.name == "rn-forge kiln"
