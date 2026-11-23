@@ -122,9 +122,9 @@ Every path kiln writes or reads has exactly one of these kinds:
   `kiln new` and `kiln generate package` write it (`kiln new` generates the
   packages its config lists, and `kiln generate package` adds the rest one at
   a time; *Revised 2026-11-09*), and a later `kiln apply` does not recreate
-  it. A scaffolded file (`pyproject.toml`, `README.md`, `CLAUDE.md`, the
-  bodies of `AGENTS.md` and `mkdocs.yml`, the first `src/` and `tests/`) is
-  written by `kiln new` before its first apply, and never again.
+  it. A scaffolded file (`pyproject.toml`, `README.md`, the body of
+  `mkdocs.yml`, the first `src/` and `tests/`) is written by `kiln new` before
+  its first apply, and never again.
 - `.tmp/` is the repo's scratch root: disposable, gitignored, removed by
   `task clean`. Tests and tools write their output under it, and nothing kiln
   or the repo keeps lives there.
@@ -134,10 +134,11 @@ Every path kiln writes or reads has exactly one of these kinds:
 - Paths kiln neither writes nor reads (`.claude/**`, `.codex/**`, installed
   skills) are not kiln's and have no kind.
 - The instruction files are **split by audience.** `README.md` is for people and
-  carries no agent directive. `AGENTS.md` is the agent instructions: its body
-  is repo-owned and kiln's block is in it, and a tool that adds its own block
-  does not own the file. `CLAUDE.md` is `@AGENTS.md` plus what only Claude
-  should read, and carries no block.
+  carries no agent directive. `AGENTS.md` and `CLAUDE.md` are owner files, and
+  kiln writes neither body. kiln adds one block to `AGENTS.md`, and the first
+  `kiln apply` creates the file holding that block alone. agentkit adds its
+  own blocks. No tool that adds a block owns the file, and kiln's checks read
+  only kiln's block.
 
 Two owners never write the same bytes. After scaffolding, doctor checks
 kiln-owned files and blocks for artifact conformance, and the three rules over
@@ -175,8 +176,8 @@ The assignment is normative:
 | `packages/<pkg>/docs/**` | `python-lib` only; repo, seeded once by `kiln generate package` | **seeded** |
 | `packages/<pkg>/CHANGELOG.md`, `packages/<pkg>/README.md` | `python-lib` only; repo, seeded once by `kiln generate package` | **seeded** |
 | `.github/workflows/ci.yml`; `.github/dependabot.yml`; `.github/actions/setup`; `sonar-project.properties` | kiln (`cicd`) | managed |
-| `AGENTS.md` | body written once by `kiln new`, then repo; the `<!-- BEGIN rn-forge kiln -->` block → kiln; a later agent tool may add its own block, and never owns the file | block |
-| `CLAUDE.md` | written once by `kiln new` as `@AGENTS.md` and a Claude-only section, then repo | scaffolded — carries no block |
+| `AGENTS.md` | repo; the `<!-- BEGIN rn-forge kiln -->` block → kiln, and the first `kiln apply` creates the file holding that block alone; other tools, such as agentkit, add their own blocks and never own the file | block |
+| `CLAUDE.md` | repo; not written by kiln. agentkit adds its blocks to it | repo |
 | `.claude/**`, `.codex/**`, installed skills | not kiln's | — |
 | Repo-specific lints (`check_brand.py`, `check_gate_tags.py`, …) | repo, wired via `[tasks.extra_refs]` | repo |
 

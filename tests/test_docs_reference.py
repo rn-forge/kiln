@@ -18,7 +18,11 @@ def _text() -> str:
 def test_the_reference_matches() -> None:
     text = _text()
     assert "split by audience" in text
-    assert "`@AGENTS.md`" in text
+    assert (
+        "`AGENTS.md` and `CLAUDE.md` are owner files, and kiln writes neither body"
+        in text
+    )
+    assert "the bodies of `AGENTS.md`" not in text
     assert "`AGENTS.md` points at it" not in text
 
 

@@ -9,7 +9,7 @@
 
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
-| [F20.1 — kiln writes and checks only its block](F20.1-blocks-only.md) | Active | release-1 | 1 New · 2 Closed |
+| [F20.1 — kiln writes and checks only its block](F20.1-blocks-only.md) | Active | release-1 | 3 Closed |
 
 <!-- END derived features -->
 

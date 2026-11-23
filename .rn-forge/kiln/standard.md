@@ -87,19 +87,19 @@ Every path kiln writes or reads has exactly one of these kinds:
 - **Seeded** and **scaffolded** differ only in who writes them. A seeded file is
   an apply artifact, so a later `kiln apply` recreates it if it is absent and
   never touches it if present. A scaffolded file (`pyproject.toml`,
-  `README.md`, `CLAUDE.md`, the bodies of `AGENTS.md` and `mkdocs.yml`, the
-  first `src/` and `tests/`) is written by `kiln new` before its first apply,
-  and never again.
+  `README.md`, the body of `mkdocs.yml`, the first `src/` and `tests/`) is
+  written by `kiln new` before its first apply, and never again.
 - `.tmp/` is the repo's scratch root: disposable, gitignored, removed by
   `task clean`. Tests and tools write their output under it, and nothing kiln
   or the repo keeps lives there.
 - Paths kiln neither writes nor reads (`.claude/**`, `.codex/**`, installed
   skills) are not kiln's and have no kind.
 - The instruction files are **split by audience.** `README.md` is for people and
-  carries no agent directive. `AGENTS.md` is the agent instructions: its body
-  is repo-owned and kiln's block is in it, and a tool that adds its own block
-  does not own the file. `CLAUDE.md` is `@AGENTS.md` plus what only Claude
-  should read, and carries no block.
+  carries no agent directive. `AGENTS.md` and `CLAUDE.md` are owner files, and
+  kiln writes neither body. kiln adds one block to `AGENTS.md`, and the first
+  `kiln apply` creates the file holding that block alone. agentkit adds its
+  own blocks. No tool that adds a block owns the file, and kiln's checks read
+  only kiln's block.
 
 Managed here: `Taskfile.yml`, `tasks/*.yml`, `.editorconfig`,
 `.github/workflows/*.yml`, `.github/actions/setup`, `sonar-project.properties`

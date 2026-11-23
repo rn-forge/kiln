@@ -69,9 +69,8 @@ an `index.md`; ADRs are named `ADR-<nnnn>.md`, numbered without gaps, and carry
 a valid `**Status:**` line; every relative link resolves, including anchors; no
 shipped page links to a `_*.md` file; there is no `specs/ideas.md`, and every
 page under `specs/ideas/` is kebab-case and linked from its `index.md`; and one
-instruction file links this file and `docs/index.md` (`AGENTS.md`, through
-kiln's block), while any other links that file or imports it with an
-`@AGENTS.md` line.
+instruction file links this file and `docs/index.md`: `AGENTS.md`, inside kiln's
+block, which is the only part of it the check reads.
 
 `kiln doctor`'s `docs-generate` check confirms that the derived regions — the
 nav, the spec board, the epic list and each release's Scope table — are current,
@@ -96,8 +95,8 @@ fixing it silently — some of it is deliberate:
 - `README.md`, `AGENTS.md` or `CLAUDE.md` describing the tree instead of linking
   to it. `README.md` is for people and links to the specs board and the ADR
   log, saying what each is for. `AGENTS.md` is for agents: it carries kiln's
-  block and links to `README.md` for context. `CLAUDE.md` imports `AGENTS.md`
-  with `@AGENTS.md` and holds only what is Claude-only.
+  block, and its body links to `README.md` for context. `CLAUDE.md`, when
+  present, holds only what is Claude-only.
 - Agent directives in `README.md`, or developer setup prose in `AGENTS.md`.
 - A `README.md` inside `docs/`: MkDocs drops one that sits beside an `index.md`,
   and the strict build fails.

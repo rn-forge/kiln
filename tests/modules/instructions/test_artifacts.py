@@ -965,7 +965,11 @@ def test_standard_puts_the_block_in_agents_md(tmp_path: Path) -> None:
 
 def test_standard_states_the_split_by_audience(tmp_path: Path) -> None:
     text = _squash(_rendered(_root(tmp_path))[STANDARD])
-    for phrase in ("split by audience", "`@AGENTS.md`", "does not own the file"):
+    for phrase in (
+        "split by audience",
+        "`AGENTS.md` and `CLAUDE.md` are owner files, and kiln writes neither body",
+        "No tool that adds a block owns the file",
+    ):
         assert phrase in text, phrase
 
 

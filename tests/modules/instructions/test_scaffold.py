@@ -251,6 +251,20 @@ def _cell(
     return tmp_path / archetype
 
 
+@pytest.mark.parametrize("archetype", ARCHETYPES)
+def test_standard_says_kiln_writes_no_instruction_body(
+    archetype: str, rendered: Callable[[str], Path]
+) -> None:
+    path = rendered(archetype) / ".rn-forge" / "kiln" / "standard.md"
+    text = " ".join(path.read_text(encoding="utf-8").split())
+    assert (
+        "`AGENTS.md` and `CLAUDE.md` are owner files, and kiln writes neither body"
+        in text
+    )
+    assert "the bodies of `AGENTS.md`" not in text
+    assert "`CLAUDE.md` is `@AGENTS.md`" not in text
+
+
 @pytest.mark.parametrize("profile", ["mkdocs", "none"])
 @pytest.mark.parametrize("archetype", STANDARD_ARCHETYPES)
 def test_standard_is_mdformat_clean(

@@ -413,7 +413,8 @@ def test_structure_names_the_instruction_files_by_audience(
         "`README.md` is for people and links to the specs board and the ADR log" in text
     )
     assert "`AGENTS.md` is for agents: it carries kiln's block" in text
-    assert "`CLAUDE.md` imports `AGENTS.md` with `@AGENTS.md`" in text
+    assert "`CLAUDE.md`, when present, holds only what is Claude-only" in text
+    assert "`CLAUDE.md` imports `AGENTS.md` with `@AGENTS.md`" not in text
     assert "one instruction file links this file and `docs/index.md`" in text
     assert "`CLAUDE.md` links to the specs board" not in text
 
