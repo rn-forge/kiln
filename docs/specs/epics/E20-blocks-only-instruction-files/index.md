@@ -2,14 +2,15 @@
 
 |  |  |
 | -- | -- |
-| **State** | Active |
+| **State** | Closed |
 | **Start Date** | 2026-11-23 |
+| **Closed Date** | 2026-11-23 |
 
 <!-- BEGIN derived features -->
 
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
-| [F20.1 — kiln writes and checks only its block](F20.1-blocks-only.md) | Active | release-1 | 3 Closed |
+| [F20.1 — kiln writes and checks only its block](F20.1-blocks-only.md) | Closed | release-1 | 3 Closed |
 
 <!-- END derived features -->
 
