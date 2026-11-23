@@ -232,6 +232,7 @@ nav:
           - E20 — Instruction files carry blocks only:
               - specs/epics/E20-blocks-only-instruction-files/index.md
               - F20.1 — kiln writes and checks only its block: specs/epics/E20-blocks-only-instruction-files/F20.1-blocks-only.md
+              - F20.2 — kiln's block links the README: specs/epics/E20-blocks-only-instruction-files/F20.2-block-links-readme.md
       - Ideas:
           - specs/ideas/index.md
           - kiln simplification: specs/ideas/kiln-simplification.md

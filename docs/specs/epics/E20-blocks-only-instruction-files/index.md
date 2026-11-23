@@ -2,15 +2,15 @@
 
 |  |  |
 | -- | -- |
-| **State** | Closed |
+| **State** | Active |
 | **Start Date** | 2026-11-23 |
-| **Closed Date** | 2026-11-23 |
 
 <!-- BEGIN derived features -->
 
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
 | [F20.1 — kiln writes and checks only its block](F20.1-blocks-only.md) | Closed | release-1 | 3 Closed |
+| [F20.2 — kiln's block links the README](F20.2-block-links-readme.md) | Active | release-1 | 1 New |
 
 <!-- END derived features -->
 
@@ -25,6 +25,6 @@ text.
 
 ## Open questions
 
-- Without the seeded body, a fresh `AGENTS.md` has no Rules, Guardrails or Story
-  workflow headings to prompt the owner. Should kiln's block link to a short
-  page of suggested sections, or is the empty body enough?
+None. The block-order question is settled in ADR-0020 (2026-11-23). The question
+of a fresh `AGENTS.md`'s empty body became [F20.2](F20.2-block-links-readme.md):
+kiln's block links `README.md`, and kiln seeds no body.
