@@ -520,7 +520,9 @@ tasks:
     cmds:
       - uv run --directory "$PACKAGE_DIR" --package {{.CLI_ARGS}} ruff check src $(test -d "$PACKAGE_DIR/tests" && echo tests)
       - uv run --directory "$PACKAGE_DIR" --package {{.CLI_ARGS}} pyright src
-      - uv run --directory "$PACKAGE_DIR" --package {{.CLI_ARGS}} pytest -q $PYTEST_ARGS
+      - |
+        eval "set -- $PYTEST_ARGS"
+        uv run --directory "$PACKAGE_DIR" --package {{.CLI_ARGS}} pytest -q "$@"
 
 {% endif %}  integration:
     desc: "CI only: A member's tests against the service containers it declares (-- <package>)."
@@ -537,7 +539,9 @@ tasks:
   suites:
     desc: "CI only: Run one workspace-wide pytest suite."
     cmds:
-      - uv run pytest $SUITE_ARGS
+      - |
+        eval "set -- $SUITE_ARGS"
+        uv run pytest "$@"
 
   verify-release:
     desc: "CI only: Install the release from {% if release == "pypi" %}PyPI{% else %}its git tag{% endif %}, outside the repository, and import it{% if not workspace %} (-- <tag>){% endif %}."

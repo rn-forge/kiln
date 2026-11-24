@@ -378,7 +378,7 @@
     },
     "tasks/ci.yml": {
       "begin_marker": null,
-      "content_hash": "f068e2366c8c005dc21aad0b5c833e0418152989f722d278fbfedb1033ea6d4e",
+      "content_hash": "34945a1cbbf3e8663fc74aac477b7694957d5e3565b2bb7fcc98df7f63ac043f",
       "end_marker": null,
       "key_paths": null,
       "kind": "managed",

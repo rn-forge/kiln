@@ -112,7 +112,9 @@ tasks:
   suites:
     desc: "CI only: Run one workspace-wide pytest suite."
     cmds:
-      - uv run pytest $SUITE_ARGS
+      - |
+        eval "set -- $SUITE_ARGS"
+        uv run pytest "$@"
 
   verify-release:
     desc: "CI only: Install the release from its git tag, outside the repository, and import it (-- <tag>)."

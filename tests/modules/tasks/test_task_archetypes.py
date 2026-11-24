@@ -465,7 +465,55 @@ def test_integration_smoke_and_suite_are_described_and_not_internal(
 def test_commands_follow_the_story(tmp_path: Path) -> None:
     tasks = _ci_tasks(_root(tmp_path, "python-lib"))["tasks"]
     assert tasks["smoke"]["cmds"] == ['{{.DEVOPS}} smoke {{.CLI_ARGS}} "${EXTRA:-}"']  # type: ignore[index]
-    assert tasks["suites"]["cmds"] == ["uv run pytest $SUITE_ARGS"]  # type: ignore[index]
+    assert tasks["suites"]["cmds"] == [  # type: ignore[index]
+        'eval "set -- $SUITE_ARGS"\nuv run pytest "$@"\n'
+    ]
+
+
+@requires("task")
+@pytest.mark.parametrize(
+    ("name", "var", "cli"),
+    [("suites", "SUITE_ARGS", []), ("test", "PYTEST_ARGS", ["alpha"])],
+)
+def test_ci_tasks_pass_test_arguments_as_separate_words(
+    tmp_path: Path, name: str, var: str, cli: list[str]
+) -> None:
+    root = _root(tmp_path, "python-lib")
+    cycle.apply(root, home=tmp_path / "home")
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    argv = tmp_path / "argv"
+    stub = bin_dir / "uv"
+    stub.write_text(
+        f"#!/bin/sh\nprintf '%s\\n' \"$@\" >> {argv}\nprintf -- '--end\\n' >> {argv}\n",
+        encoding="utf-8",
+    )
+    stub.chmod(0o755)
+    tail = ["pytest"] if name == "suites" else ["pytest", "-q"]
+
+    def last_call(value: str) -> list[str]:
+        argv.unlink(missing_ok=True)
+        env = {
+            **os.environ,
+            "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}",
+            var: value,
+        }
+        if name == "test":
+            env["PACKAGE_DIR"] = "packages/alpha"
+        result = subprocess.run(
+            ["task", f"ci:{name}", *(["--", *cli] if cli else [])],
+            cwd=root,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        assert result.returncode == 0, result.stderr
+        calls = argv.read_text(encoding="utf-8").split("--end\n")[:-1]
+        return calls[-1].splitlines()
+
+    assert last_call("-m 'not slow'")[-len(tail) - 2 :] == [*tail, "-m", "not slow"]
+    assert last_call("")[-len(tail) :] == tail
 
 
 def test_release_sign_task(tmp_path: Path) -> None:
