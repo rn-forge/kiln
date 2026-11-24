@@ -221,16 +221,6 @@ class TestCheckStructure:
         )
         assert "docs.status" not in codes(check_structure(repo, repo / "docs", POLICY))
 
-    def test_broken_link_is_reported(self, repo):
-        write(repo / "docs/guides/setup.md", "# Setup\n\n[gone](missing.md)\n")
-        assert "docs.broken-link" in codes(check_structure(repo, repo / "docs", POLICY))
-
-    def test_broken_anchor_is_reported(self, repo):
-        write(repo / "docs/guides/setup.md", "# Setup\n\n[x](index.md#nope)\n")
-        assert "docs.broken-anchor" in codes(
-            check_structure(repo, repo / "docs", POLICY)
-        )
-
     def test_underscore_page_reference_is_reported(self, repo):
         write(repo / "docs/guides/setup.md", "# Setup\n\n[s](_structure.md)\n")
         assert "docs.underscore-referenced" in codes(
@@ -538,8 +528,12 @@ class TestCheckSite:
         )
         assert "docs.broken-link" in codes(check_site(navved))
 
-    def test_gitignored_generated_subtree_is_skipped(self, navved):
-        write(navved / ".gitignore", "docs/api/\n")
+    @pytest.mark.parametrize(
+        "ignore",
+        ["docs/api/\n", "docs/api/**\n", "/docs/api/*\n", "api/\n", "**/api/\n"],
+    )
+    def test_gitignored_generated_subtree_is_skipped(self, navved, ignore):
+        write(navved / ".gitignore", ignore)
         write(navved / "docs/guides/setup.md", "# Setup\n\n[api](../api/index.md)\n")
         assert check_site(navved) == []
 

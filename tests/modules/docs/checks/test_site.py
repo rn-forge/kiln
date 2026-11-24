@@ -9,7 +9,7 @@ from tests.conftest import run_check
 
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
-from rn_forge.kiln.modules.docs.checks import site
+from rn_forge.kiln.modules.docs.checks import site, structure
 from rn_forge.kiln.modules.docs.site import check_site
 
 PACKAGES = ("packages/alpha", "packages/beta")
@@ -194,3 +194,46 @@ def test_package_mounts_are_not_flagged(repo) -> None:
 def test_a_package_escape_is_not_also_leaves_docs(repo) -> None:
     root = _repo(repo, alpha_page="[out](../../../docs/index.md)\n")
     assert _codes(root) == ["docs.package-link-escapes"]
+
+
+def _link_codes(root: Path) -> list[str]:
+    return [
+        f.code
+        for name in (structure.NAME, site.NAME)
+        for f in run_check(name, root)
+        if f.code.startswith("docs.broken")
+    ]
+
+
+def _ignoring_repo(repo, ignore: str, link: str) -> Path:
+    return repo(
+        archetype="python-app",
+        docs="mkdocs",
+        **{
+            "mkdocs.yml": "site_name: root\nnav:\n  - Home: index.md\n",
+            "docs/_areas.yml": "areas:\n  - key: packages\n    nav: include\n",
+            "docs/index.md": f"# Root\n\n[x]({link})\n",
+            ".gitignore": ignore,
+        },
+    )
+
+
+def test_a_broken_link_is_reported_once(repo) -> None:
+    assert _link_codes(_ignoring_repo(repo, "", "missing.md")) == ["docs.broken-link"]
+
+
+@pytest.mark.parametrize(
+    "ignore", ["docs/api/\n", "docs/api/**\n", "/docs/api/*\n", "api/\n", "**/api/\n"]
+)
+def test_a_link_into_a_gitignored_path_is_generated(repo, ignore: str) -> None:
+    assert _link_codes(_ignoring_repo(repo, ignore, "api/index.md")) == []
+
+
+def test_a_negated_gitignore_line_keeps_a_page_checked(repo) -> None:
+    root = _ignoring_repo(repo, "docs/api/**\n!docs/api/index.md\n", "api/index.md")
+    assert _link_codes(root) == ["docs.broken-link"]
+
+
+def test_without_packages_a_package_name_is_not_a_mount(repo) -> None:
+    root = _repo(repo, "# Root\n\n[x](alpha/index.md)\n")
+    assert [f.code for f in check_site(root)] == ["docs.broken-link"]

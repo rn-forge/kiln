@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from pathlib import Path
 
+from pathspec.gitignore import GitIgnoreSpec
 from rn_forge.commons.findings import Finding
 from rn_forge.commons.text.markdown import MarkdownUtils
 
@@ -48,27 +49,21 @@ class Site:
         self.mounts = package_mounts(self.root, packages)
         self.package = package
         self.mkdocs_yml = self.root / "mkdocs.yml"
-        self.generated = self._generated_prefixes()
+        gitignore = self.root / ".gitignore"
+        self.ignored = GitIgnoreSpec.from_lines(
+            gitignore.read_text(encoding="utf-8").splitlines()
+            if gitignore.is_file()
+            else []
+        )
         self.excluded = excluded_docs(self.mkdocs_yml)
 
-    def _generated_prefixes(self) -> list[Path]:
-        """Directories under docs/ that are gitignored — generator output, not prose."""
-        gitignore = self.root / ".gitignore"
-        if not gitignore.is_file():
-            return []
-        prefixes: list[Path] = []
-        for raw in gitignore.read_text(encoding="utf-8").splitlines():
-            line = raw.strip()
-            if not line or line.startswith("#"):
-                continue
-            candidate = (self.root / line.rstrip("/")).resolve()
-            if candidate == self.docs_dir or self.docs_dir in candidate.parents:
-                prefixes.append(candidate)
-        return prefixes
-
     def is_generated(self, path: Path) -> bool:
-        """Whether *path* is inside a gitignored, generated subtree."""
-        return any(path == p or p in path.parents for p in self.generated)
+        """Whether *path* is under the root and matched by the root ``.gitignore``."""
+        try:
+            relative = path.relative_to(self.root)
+        except ValueError:
+            return False
+        return self.ignored.match_file(relative.as_posix())
 
     def is_excluded(self, path: Path) -> bool:
         """Whether *path* is a page under docs_dir that ``exclude_docs`` drops."""

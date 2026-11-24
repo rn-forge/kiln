@@ -2,22 +2,16 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 from pathspec.gitignore import GitIgnoreSpec
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding
-from rn_forge.commons.text.markdown import MarkdownUtils
 
 from rn_forge.kiln.modules.docs import parsed
 from rn_forge.kiln.modules.docs.areas import Area, load_areas
 from rn_forge.kiln.modules.docs.findings import error
-from rn_forge.kiln.modules.docs.mkdocs import (
-    excluded_docs,
-    package_mounts,
-    resolve_link,
-)
+from rn_forge.kiln.modules.docs.mkdocs import excluded_docs
 from rn_forge.kiln.modules.docs.pages import content_pages
 from rn_forge.kiln.modules.docs.policy import (
     STATUS_LINE,
@@ -204,39 +198,6 @@ def _shipping_pages(docs_root: Path, excluded: GitIgnoreSpec) -> list[Path]:
     )
 
 
-def _check_links(
-    docs_root: Path, mounts: Mapping[str, Path], excluded: GitIgnoreSpec
-) -> list[Finding]:
-    findings: list[Finding] = []
-    for path in _shipping_pages(docs_root, excluded):
-        text = path.read_text(encoding="utf-8")
-        for link in parsed.links(text):
-            if MarkdownUtils.is_external(link):
-                continue
-            target, _, anchor = link.partition("#")
-            if not target:
-                if anchor and anchor not in parsed.anchors(text):
-                    findings.append(
-                        error(
-                            "broken-anchor", path, f"#{anchor} not found in same page"
-                        )
-                    )
-                continue
-            resolved = resolve_link(path, target, docs_root, mounts)
-            if not resolved.exists():
-                findings.append(error("broken-link", path, f"{link} does not resolve"))
-                continue
-            if (
-                anchor
-                and resolved.suffix == ".md"
-                and anchor not in parsed.anchors(resolved.read_text(encoding="utf-8"))
-            ):
-                findings.append(
-                    error("broken-anchor", path, f"{link} anchor not found")
-                )
-    return findings
-
-
 def _check_no_underscore_refs(
     docs_root: Path, excluded: GitIgnoreSpec
 ) -> list[Finding]:
@@ -304,7 +265,6 @@ def check_structure(
     repo_root: str | Path,
     docs_root: str | Path,
     policy: DocsPolicy,
-    packages: Sequence[str] = (),
 ) -> list[Finding]:
     """Run every structure check, returning the findings in reporting order.
 
@@ -312,8 +272,6 @@ def check_structure(
         repo_root: The repository root, where the instruction files live.
         docs_root: The docs tree, normally ``<repo_root>/docs``.
         policy: The repository's documentation conventions.
-        packages: Package site directories, relative to *repo_root*, whose docs
-            root links may name by ``site_name``.
     """
     repo_root = Path(repo_root)
     docs_root = Path(docs_root)
@@ -328,7 +286,6 @@ def check_structure(
         *_check_naming(areas, docs_root, policy),
         *_check_ideas(docs_root, policy),
         *(_check_status(docs_root, policy.numbered) if policy.numbered else []),
-        *_check_links(docs_root, package_mounts(repo_root, packages), excluded),
         *_check_no_underscore_refs(docs_root, excluded),
         *_check_instruction_pointer(repo_root, docs_root, policy),
     ]
