@@ -18,7 +18,7 @@
 | [F18.7 — One owner per concept](F18.7-one-owner-per-concept.md) | Closed | release-1 | 4 Closed |
 | [F18.8 — Modules meet only through composition](F18.8-modules-meet-through-composition.md) | Closed | release-1 | 3 Closed |
 | [F18.9 — Large files split by job](F18.9-large-files-split.md) | Closed | release-1 | 4 Closed |
-| [F18.10 — The defects the reviews confirmed](F18.10-review-defects.md) | Active | release-2 | 6 New · 5 Closed · 4 Removed |
+| [F18.10 — The defects the reviews confirmed](F18.10-review-defects.md) | Active | release-2 | 5 New · 6 Closed · 4 Removed |
 | [F18.11 — Checks police the repository, not kiln's output](F18.11-checks-police-repository-content.md) | New | release-2 | 2 New |
 | [F18.12 — The review defects release 1 takes](F18.12-release-1-review-defects.md) | Closed | release-1 | 3 Closed |
 | [F18.13 — Build briefs outside the record](F18.13-build-briefs-outside-the-record.md) | Closed | release-1 | 4 Closed |

@@ -314,3 +314,33 @@ def test_the_manager_merges_through_dictutils_merge_layers(
     resolution = ConfigManager().resolve(flags=FLAGS)
     assert calls == [("defaults", "flags")]
     assert resolution.config.name == "demo"
+
+
+def test_re_resolution_of_an_untrimmed_audit_reason_lists_no_override(
+    tmp_path: Path,
+) -> None:
+    layer = tmp_path / "profile" / "config.toml"
+    write_layer(
+        layer,
+        {
+            "ci": {
+                "checks": {
+                    "pip-audit": {
+                        "ignore": [
+                            {"id": "GHSA-aaaa-bbbb-cccc", "reason": "accepted  "}
+                        ]
+                    }
+                }
+            }
+        },
+    )
+    repo = tmp_path / "repo"
+    commit(
+        repo,
+        ConfigManager().resolve(flags=FLAGS, source=Source(str(layer)), base=repo),
+        source=str(layer),
+    )
+
+    resolution = ConfigManager().reresolve(repo)
+    assert resolution.overrides == ()
+    assert resolution.config.ci.audit_policy().ignore[0].reason == "accepted"
