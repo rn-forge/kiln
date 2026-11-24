@@ -23,8 +23,8 @@ Package-site deploys (F11.5) moved to [release-1](../release-1/index.md) on
 | -- | -- | -- |
 | [F6.2 — Retire taskkit](../../specs/epics/E6-rebuild-the-repos/F6.2-retire-taskkit.md) | E6 | Removed |
 | [F7.10 — An installed kiln, and every `python-tool`, completes on `<TAB>`](../../specs/epics/E7-pykit-release-pin-flip/F7.10-shell-completion.md) | E7 | Closed |
-| [F18.10 — The defects the reviews confirmed](../../specs/epics/E18-kiln-simplification/F18.10-review-defects.md) | E18 | Active |
-| [F18.11 — Checks police the repository, not kiln's output](../../specs/epics/E18-kiln-simplification/F18.11-checks-police-repository-content.md) | E18 | Active |
+| [F18.10 — The defects the reviews confirmed](../../specs/epics/E18-kiln-simplification/F18.10-review-defects.md) | E18 | Closed |
+| [F18.11 — Checks police the repository, not kiln's output](../../specs/epics/E18-kiln-simplification/F18.11-checks-police-repository-content.md) | E18 | Closed |
 
 <!-- END derived scope -->
 
@@ -36,6 +36,8 @@ None yet.
 
 As of 2026-11-19, F7.9 waits on release 1, and F18.10 and F18.11 are new. On
 2026-11-21 the owner parked F7.9 (deferred, no Iteration).
+
+F18.10 and F18.11 closed on 2026-11-24.
 
 ## Commits
 
