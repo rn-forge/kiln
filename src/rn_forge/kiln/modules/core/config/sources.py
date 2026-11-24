@@ -34,10 +34,15 @@ class Source:
 
     @classmethod
     def parse(cls, value: str) -> Source:
-        """Read `path` or `git+url[@ref]` as a source."""
+        """Read `path` or `git+url[@ref]` as a source.
+
+        The text after the last `@` is a ref when it holds no `:` and the text
+        before it has a `/` after the scheme's `://`, so a `user@` in the URL
+        authority is not a split.
+        """
         if value.startswith(_GIT_PREFIX):
             head, at, ref = value.rpartition("@")
-            if at and "/" not in ref and ":" not in ref:
+            if at and ":" not in ref and "/" in head.partition("://")[2]:
                 return cls(head, ref)
         return cls(value)
 

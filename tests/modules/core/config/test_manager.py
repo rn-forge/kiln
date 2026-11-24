@@ -196,6 +196,66 @@ def test_a_git_source_records_location_ref_and_resolved_commit(
     }
 
 
+def test_a_git_source_ref_may_contain_a_slash(tmp_path: Path) -> None:
+    work = tmp_path / "work"
+    write_layer(work / "config.toml", {"docs": {"profile": "mkdocs"}})
+    git = ["git", "-c", "user.name=kiln", "-c", "user.email=kiln@example.com"]
+    subprocess.run([*git, "init", "--quiet", "-b", "main", str(work)], check=True)
+    subprocess.run([*git, "-C", str(work), "add", "."], check=True)
+    subprocess.run(
+        [*git, "-C", str(work), "commit", "--quiet", "-m", "profile"], check=True
+    )
+    subprocess.run(
+        [*git, "-C", str(work), "switch", "--quiet", "-c", "feature/profile"],
+        check=True,
+    )
+    write_layer(work / "config.toml", {"docs": {"profile": "none"}})
+    subprocess.run([*git, "-C", str(work), "add", "."], check=True)
+    subprocess.run(
+        [*git, "-C", str(work), "commit", "--quiet", "-m", "branch"], check=True
+    )
+    commit_sha = subprocess.run(
+        ["git", "-C", str(work), "rev-parse", "HEAD"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    bare = tmp_path / "profile.git"
+    subprocess.run(
+        ["git", "clone", "--quiet", "--bare", str(work), str(bare)], check=True
+    )
+
+    location = f"git+file://{bare}"
+    resolution = ConfigManager().resolve(
+        flags=FLAGS, source=Source.parse(f"{location}@feature/profile")
+    )
+
+    document = resolution.config.to_document()
+    assert document["docs"]["profile"] == "none"
+    assert document["source"] == {
+        "location": location,
+        "ref": "feature/profile",
+        "commit": commit_sha,
+    }
+
+
+@pytest.mark.parametrize(
+    ("value", "ref"),
+    [
+        ("git+ssh://git@github.com/o/r.git", None),
+        ("git+ssh://git@github.com/o/r.git@v1", "v1"),
+        ("git+https://h/o/r@feature/a", "feature/a"),
+    ],
+)
+def test_a_git_source_url_with_a_user_keeps_its_at_sign(
+    value: str, ref: str | None
+) -> None:
+    source = Source.parse(value)
+    assert source.ref == ref
+    expected = value if ref is None else value[: -len(ref) - 1]
+    assert source.location == expected
+
+
 @pytest.mark.parametrize(
     ("archetype", "lifecycle"), [("python-tool", True), ("python-app", False)]
 )
