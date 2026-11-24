@@ -31,6 +31,26 @@ def test_a_bounded_range_passes(tmp_path: Path) -> None:
     assert requirements.check(tmp_path) == []
 
 
+def test_a_wildcard_equals_is_a_floor(tmp_path: Path) -> None:
+    _workspace(tmp_path, '"b==0.3.*"', b_version="0.3.2")
+    assert requirements.check(tmp_path) == []
+
+
+def test_a_wildcard_floor_above_current(tmp_path: Path) -> None:
+    _workspace(tmp_path, '"b==0.4.*"', b_version="0.3.2")
+    assert requirements.check(tmp_path) == ["a -> b: lower bound 0.4 is above 0.3.2"]
+
+
+def test_a_sibling_outside_a_wildcard_is_reported(tmp_path: Path) -> None:
+    _workspace(tmp_path, '"b==0.3.*"', b_version="0.4.0")
+    assert requirements.check(tmp_path) == ["a -> b: 0.4.0 is not in ==0.3.*"]
+
+
+def test_a_sibling_above_an_upper_bound_is_reported(tmp_path: Path) -> None:
+    _workspace(tmp_path, '"b>=0.2,<1"', b_version="1.2.0")
+    assert requirements.check(tmp_path) == ["a -> b: 1.2.0 is not in <1,>=0.2"]
+
+
 def test_no_lower_bound(tmp_path: Path) -> None:
     _workspace(tmp_path, '"b"')
     assert requirements.check(tmp_path) == ["a -> b: no lower bound"]

@@ -14,20 +14,27 @@ from rn_forge.kiln.devops import uv
 
 
 def _problem(requirement: Requirement, current: Version) -> str | None:
-    """Return what is wrong with how `requirement` bounds a member, if anything."""
+    """Return what is wrong with how `requirement` bounds a member, if anything.
+
+    An exact pin is a problem. A `==` with a trailing `.*` counts as a floor.
+    Otherwise the member needs a lower bound at or below `current`, and `current`
+    must satisfy the whole specifier.
+    """
     specs = list(requirement.specifier)
     if any(s.operator in ("==", "===") and "*" not in s.version for s in specs):
         return "exact pin"
     floors = [
         Version(s.version.rstrip(".*"))
         for s in specs
-        if s.operator in (">=", ">", "~=")
+        if s.operator in (">=", ">", "~=") or (s.operator == "==" and "*" in s.version)
     ]
     if not floors:
         return "no lower bound"
     floor = max(floors)
     if floor > current:
         return f"lower bound {floor} is above {current}"
+    if not requirement.specifier.contains(current, prereleases=True):
+        return f"{current} is not in {requirement.specifier}"
     return None
 
 
