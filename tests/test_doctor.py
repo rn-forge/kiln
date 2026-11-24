@@ -77,10 +77,13 @@ def _break_deps(root: Path) -> None:
 def _break_layout(root: Path) -> None:
     _edit(
         root,
-        "Taskfile.yml",
-        lambda text: text + "  stray:\n    desc: Stray\n    cmds: [uv build]\n",
+        ".rn-forge/kiln/config.toml",
+        lambda text: text.replace(
+            "includes = []",
+            'includes = [{ namespace = "own", taskfile = "tasks/own.yml" }]',
+            1,
+        ),
     )
-    _reseed(root, "Taskfile.yml")
 
 
 def _break_entrypoint(root: Path) -> None:

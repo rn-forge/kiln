@@ -60,8 +60,7 @@ readers to run `pnpm nx …`, which this section forbids. If the block is presen
 delete the block, markers included.
 
 **`required_validate`**, per archetype — the tasks that must stay reachable from
-`validate`, enforced by `kiln doctor`'s `task-layout` check and by
-`kiln doctor`'s `gate.shrunk`:
+`validate`, held by a render test over every archetype and docs cell:
 
 ```text
 python-lib, python-tool, python-app, python-web-api:
@@ -414,10 +413,8 @@ or a dependency edit fails `task validate` and never a regeneration.
 | `config.*` | `config.toml` parses and validates |
 | `artifact.missing` / `.drift` / `.stale` | present; disk == committed; committed == fresh render |
 | `block.missing` / `.stale` | every fenced block present and current |
-| `taskgraph.*` | exact public surface; wrappers only at the root; inner tasks internal except `docs:*`; every task has `desc`; every include exists; every `task:` ref resolves; no cycles; no reserved-namespace collision |
-| `taskgraph.unresolved-ref` | task references in managed workflows and managed instruction blocks resolve |
+| `taskgraph.missing-include` / `.unresolved` / `.cycle` | a `tasks.includes` file exists; an `extra_refs` target into one names a task it defines; the owned tasks and the root verbs' `extra_refs` form no cycle |
 | `ci.entrypoint` | no forbidden tool, `kiln` included, invoked directly in a workflow |
-| `gate.shrunk` | tasks reachable from `validate` ⊇ the archetype's `required_validate` |
 | `kiln.pin-missing` / `kiln.pin-mismatch` | `[kiln] ref` is set, and a tag ref names the running kiln's version |
 | `deps.no-ceiling` | an rn-forge version range has a ceiling (`<…` or `==…`) |
 | `deps.no-index` | a range on a package outside the workspace has pykit's `[[tool.uv.index]]` declared at the root |

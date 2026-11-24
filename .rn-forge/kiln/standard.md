@@ -62,8 +62,9 @@ developer has no reason to call it:
 
 Every other task is `internal: true`. The root `Taskfile.yml` holds wrappers
 only: each of its commands is a `task:` call into a `tasks/*.yml` namespace.
-`kiln doctor`'s `task-layout` check enforces both halves of that, and fails if
-any gate stops being reachable from `validate`.
+kiln's render tests hold both halves of that, and that every gate stays
+reachable from `validate`; `kiln doctor`'s `generated` check fails a hand edit
+of either file.
 
 ## 2. One owner per file, or per block
 

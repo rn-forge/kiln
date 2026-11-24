@@ -19,6 +19,7 @@ from tests.modules.tasks.support import (
     ARCHETYPES,
     NODE_AUDITS,
     NODE_CHECKS,
+    RENDER_CELLS,
     _ci_cells,
     _ci_rendered,
     _codes,
@@ -88,9 +89,6 @@ def _include_namespaces(tmp_path: Path, archetype: str, extra: str) -> set[str]:
         root = _ci_root(tmp_path, archetype, extra)
     rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
     return set(YamlUtils.load(rendered["Taskfile.yml"])["includes"])
-
-
-RENDER_CELLS = [*ALL_CELLS, ("node-lib", "")]
 
 
 @pytest.mark.parametrize(("archetype", "extra"), RENDER_CELLS)
@@ -196,21 +194,6 @@ def test_task_layout_accepts_the_rendered_files(
     assert _codes(root) == []
 
 
-@pytest.mark.parametrize("name", ["workflows"])
-def test_gate_shrunk_fires(tmp_path: Path, name: str) -> None:
-    root = _root(tmp_path)
-    cycle.apply(root, home=tmp_path / "home")
-    taskfile = root / "Taskfile.yml"
-    line = f"      - task: ci:lint:{name}\n"
-    text = taskfile.read_text(encoding="utf-8")
-    assert line in text
-    taskfile.write_text(text.replace(line, ""), encoding="utf-8")
-    findings = list(module_findings("tasks", KilnConfig.load(root), root))
-    assert any(
-        f.code == "gate.shrunk" and f"ci:lint:{name}" in str(f) for f in findings
-    )
-
-
 @pytest.mark.parametrize("namespace", sorted(GENERATED_NAMESPACES))
 def test_an_include_cannot_take_a_generated_namespace(
     tmp_path: Path, namespace: str
@@ -310,19 +293,6 @@ def test_node_lint_is_unknown_on_python_tool(tmp_path: Path) -> None:
     )
     with pytest.raises(AppException, match="node:lint"):
         TASKS.artifacts(KilnConfig.load(root), root)
-
-
-def test_node_tasks_must_be_internal(tmp_path: Path) -> None:
-    root = _node_root(tmp_path)
-    cycle.apply(root, home=tmp_path / "home")
-    node = root / "tasks/node.yml"
-    text = node.read_text(encoding="utf-8")
-    start = text.index("  lint:\n")
-    head, tail = text[:start], text[start:]
-    node.write_text(
-        head + tail.replace("    internal: true\n", "", 1), encoding="utf-8"
-    )
-    assert "taskgraph.not-internal" in _codes(root)
 
 
 def test_node_yml_adds_typecheck_and_e2e_for_node_lib(

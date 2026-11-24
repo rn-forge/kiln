@@ -102,3 +102,19 @@ class TasksConfig(ConfigModel):
                     f"({', '.join(ROOT_VERBS)})"
                 )
         return value
+
+    @model_validator(mode="after")
+    def _targets_name_a_namespace(self) -> TasksConfig:
+        known = GENERATED_NAMESPACES | {i.namespace for i in self.includes}
+        verbs = {*ROOT_VERBS, *WEB_APP_VERBS}
+        for verb, targets in self.extra_refs.items():
+            for target in targets:
+                name = target.removeprefix(":")
+                namespace, sep, _ = name.partition(":")
+                if name in verbs or (sep and namespace in known):
+                    continue
+                raise ValueError(
+                    f"tasks.extra_refs.{verb} target {target!r} names no namespace "
+                    f"kiln generates or tasks.includes declares"
+                )
+        return self

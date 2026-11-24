@@ -1,279 +1,74 @@
-"""`task-layout` — the wrapper/inner split, and the validate gate.
+"""`task-layout` — the repository's own task files, against the config.
 
-Three rules:
+kiln's rendered Taskfiles are held to their shape by the render tests and by
+`generated`; this check reads only what the repository owns: the
+`tasks.includes` files and each root verb's `tasks.extra_refs`.
 
-1. The root `Taskfile.yml` holds wrappers only. Every `cmds:` entry in it must
-   be a `task:` call into a namespace file, never raw shell. Anything that
-   shells out to a real tool belongs in the namespace file that owns it.
-2. Every task, in the root file and in every `tasks/*.yml`, carries a non-empty
-   `desc:`, so `task --list` stays self-documenting.
-3. Every task in the archetype's `required_validate` list is reachable from
-   `validate`.
-
-The graph rules read the root file's `includes:`. Layout rules apply
-to the root file and to *managed* includes; an include that
-`config.tasks.includes` declares is repository-owned, sits in the graph so that
-references into it resolve, and is otherwise left alone.
+1. Every owned include's `taskfile` exists.
+2. Every `extra_refs` target into an owned namespace names a task the owned
+   file defines.
+3. The owned tasks and the root verbs form no reference cycle. A root verb's
+   edges are its `extra_refs`; an owned task's `task:` call to a root verb is an
+   edge to that verb.
 """
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 from rn_forge.commons.findings import Finding, Severity
-from rn_forge.commons.fs.documents import DocumentUtils, YamlUtils
-from rn_forge.commons.lang.collections import DictUtils, ListUtils
+from rn_forge.commons.fs.documents import YamlUtils
 
-from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
-from rn_forge.kiln.modules.core import umbrella
-from rn_forge.kiln.modules.core.steps import step_commands
-from rn_forge.kiln.modules.tasks.config import (
-    ROOT_VERBS,
-    WEB_APP_VERBS,
-)
-from rn_forge.kiln.modules.tasks.taskfile import include_map, task_refs, task_specs
+from rn_forge.kiln.modules.tasks.config import ROOT_VERBS, WEB_APP_VERBS
+from rn_forge.kiln.modules.tasks.taskfile import task_refs, task_specs
 
 __all__ = ["CODE", "NAME", "check"]
 
 NAME = "task-layout"
 CODE = "taskgraph"
 
-ROOT_TASKFILE = Path("Taskfile.yml")
 
-RESERVED_NAMESPACES = frozenset({"quality", "workspace", "node", "python", "kiln"})
-"""Namespaces whose tasks are inner implementation and must be `internal`."""
-
-PUBLIC_KILN_TASKS = frozenset({"diff", "apply", "pin", "upgrade"})
-"""The `kiln:` tasks that are public: the rest of the namespace stays internal."""
-
-_TASK_CALL = re.compile(r"(?:^|[;&|(]\s*|\s)task\s+([A-Za-z][\w:-]*)")
+def _split(target: str) -> tuple[str | None, str]:
+    """The namespace and task of an `extra_refs` target; a bare one has no namespace."""
+    namespace, sep, task = target.removeprefix(":").partition(":")
+    return (namespace, task) if sep else (None, namespace)
 
 
-def _check_desc(label: str, name: str, spec: object) -> list[Finding]:
-    if str(DictUtils.as_mapping(spec).get("desc", "")).strip():
-        return []
-    return [
-        Finding(
-            f"{CODE}.no-desc",
-            Severity.ERROR,
-            f"task `{name}` has no non-empty `desc:`",
-            path=label,
-        )
-    ]
-
-
-def _check_wrapper_only(label: str, name: str, spec: object) -> list[Finding]:
-    """Every cmds entry in the root file must be a `task:` call."""
-    # `name: echo hi` and `name: [a, b]` are go-task shorthand for raw shell.
-    if isinstance(spec, str | list):
-        return [
-            Finding(
-                f"{CODE}.not-a-wrapper",
-                Severity.ERROR,
-                f"task `{name}` is shorthand for a raw shell command — the root "
-                f"file holds wrappers only",
-                path=label,
-            )
-        ]
-    findings: list[Finding] = []
-    for index, entry in enumerate(
-        ListUtils.as_list(DictUtils.as_mapping(spec).get("cmds"))
-    ):
-        if "task" in DictUtils.as_mapping(entry):
-            continue
-        shown = entry if isinstance(entry, str) else type(entry).__name__
-        findings.append(
-            Finding(
-                f"{CODE}.not-a-wrapper",
-                Severity.ERROR,
-                f"task `{name}` cmds[{index}] is not a `task:` call ({shown!r}) "
-                f"— move the command into the namespace file that owns it and "
-                f"call it from here",
-                path=label,
-            )
-        )
-    return findings
-
-
-def _load_yaml(path: Path) -> object:
-    return YamlUtils.read_file(path, encoding="utf-8")
-
-
-def load_graph(root: Path) -> tuple[dict[str, object], set[str]]:
-    """Every task keyed by fully qualified name, and the namespaces in use.
-
-    Read from the root file's `includes:`; an include whose file is absent
-    contributes no tasks.
-    """
-    document = _load_yaml(root / ROOT_TASKFILE)
-    graph: dict[str, object] = dict(task_specs(document))
-    includes = include_map(document)
-    for namespace, path in includes.items():
+def _owned_graph(
+    root: Path, config: KilnConfig
+) -> tuple[dict[str, str], dict[str, object]]:
+    """Each owned namespace's file, and every owned task by qualified name."""
+    files = {i.namespace: Path(i.taskfile).as_posix() for i in config.tasks.includes}
+    graph: dict[str, object] = {}
+    for namespace, path in files.items():
         if (root / path).is_file():
-            for name, spec in task_specs(_load_yaml(root / path)).items():
-                graph[f"{namespace}:{name}"] = spec
-    return graph, set(includes)
+            specs = task_specs(YamlUtils.read_file(root / path, encoding="utf-8"))
+            graph.update({f"{namespace}:{name}": spec for name, spec in specs.items()})
+    return files, graph
 
 
-def resolve(ref: str, namespace: str | None, graph: dict[str, object]) -> str:
-    """Normalise a `task:` reference to a fully qualified name.
-
-    A leading `:` is go-task's "from the root Taskfile" prefix. Inside a
-    namespace file an unprefixed reference means a sibling task first, and only
-    then a root-level one.
-    """
-    if ref.startswith(":"):
-        return ref[1:]
-    if namespace is not None and f"{namespace}:{ref}" in graph:
-        return f"{namespace}:{ref}"
-    return ref
-
-
-def reachable_from(
-    entrypoint: str, graph: dict[str, object], namespaces: set[str]
-) -> set[str]:
-    """Every task reachable from *entrypoint* by following `task:` calls."""
-    seen: set[str] = set()
-    frontier = [entrypoint]
-    while frontier:
-        current = frontier.pop()
-        if current in seen:
-            continue
-        seen.add(current)
-        prefix = current.split(":", 1)[0]
-        namespace = prefix if prefix in namespaces else None
-        frontier.extend(
-            resolve(ref, namespace, graph) for ref in task_refs(graph.get(current))
-        )
-    return seen
-
-
-def _check_gate(
-    graph: dict[str, object], namespaces: set[str], required: tuple[str, ...]
-) -> list[Finding]:
-    label = ROOT_TASKFILE.as_posix()
-    if "validate" not in graph:
-        return [
-            Finding(
-                f"{CODE}.no-gate",
-                Severity.ERROR,
-                "no `validate` task — the aggregate gate is missing",
-                path=label,
-            )
-        ]
-    reachable = reachable_from("validate", graph, namespaces)
-    return [
-        Finding(
-            "gate.shrunk",
-            Severity.ERROR,
-            f"`{name}` is not reachable from `validate` — the gate has shrunk",
-            path=label,
-        )
-        for name in required
-        if name not in reachable
-    ]
-
-
-def _namespace_of(name: str, namespaces: set[str]) -> str | None:
-    prefix = name.split(":", 1)[0]
-    return prefix if prefix in namespaces else None
-
-
-def _owner_file(name: str, includes: dict[str, str]) -> str:
-    namespace = _namespace_of(name, set(includes))
-    return includes[namespace] if namespace else ROOT_TASKFILE.as_posix()
-
-
-def _check_surface(
-    root_tasks: dict[str, object], verbs: tuple[str, ...]
-) -> list[Finding]:
-    label = ROOT_TASKFILE.as_posix()
-    findings = [
-        Finding(
-            f"{CODE}.surface",
-            Severity.ERROR,
-            f"root task `{name}` is not one of the root verbs ({', '.join(verbs)})",
-            path=label,
-        )
-        for name in root_tasks
-        if name not in verbs
-    ]
-    findings.extend(
-        Finding(
-            f"{CODE}.surface",
-            Severity.ERROR,
-            f"root verb `{verb}` is missing",
-            path=label,
-        )
-        for verb in verbs
-        if verb not in root_tasks
-    )
-    return findings
-
-
-def _check_internal(path: str, name: str, spec: object) -> list[Finding]:
-    if DictUtils.as_mapping(spec).get("internal") is True:
-        return []
-    return [
-        Finding(
-            f"{CODE}.not-internal",
-            Severity.ERROR,
-            f"task `{name}` is inner implementation and must be `internal: true`",
-            path=path,
-        )
-    ]
-
-
-def _check_includes(root: Path, includes: dict[str, str]) -> list[Finding]:
-    findings = [
-        Finding(
-            f"{CODE}.missing-include",
-            Severity.ERROR,
-            f"include `{namespace}` points at `{path}`, which does not exist",
-            path=ROOT_TASKFILE.as_posix(),
-        )
-        for namespace, path in includes.items()
-        if not (root / path).is_file()
-    ]
-    return findings
-
-
-def _check_refs(
-    graph: dict[str, object], includes: dict[str, str], owned: set[str]
-) -> list[Finding]:
-    namespaces = set(includes)
-    findings: list[Finding] = []
-    for name, spec in graph.items():
-        namespace = _namespace_of(name, namespaces)
-        if namespace in owned:
-            continue
-        for ref in task_refs(spec):
-            if "{{" in ref or "$" in ref:
-                continue  # dynamic; cannot be verified
-            if resolve(ref, namespace, graph) not in graph:
-                findings.append(
-                    Finding(
-                        f"{CODE}.unresolved",
-                        Severity.ERROR,
-                        f"task `{name}` calls `{ref}`, which does not exist",
-                        path=_owner_file(name, includes),
-                    )
-                )
-    return findings
-
-
-def _check_cycles(
-    graph: dict[str, object], includes: dict[str, str], owned: set[str]
-) -> list[Finding]:
-    namespaces = set(includes)
+def _edges(
+    config: KilnConfig, graph: dict[str, object], verbs: tuple[str, ...]
+) -> dict[str, list[str]]:
+    """The reference graph: owned tasks, and one node per root verb."""
     edges: dict[str, list[str]] = {}
+    for verb in verbs:
+        targets = (t.removeprefix(":") for t in config.tasks.extra_refs.get(verb, []))
+        edges[verb] = [t for t in targets if t in graph or t in verbs]
     for name, spec in graph.items():
-        namespace = _namespace_of(name, namespaces)
-        resolved = (resolve(ref, namespace, graph) for ref in task_refs(spec))
-        edges[name] = [ref for ref in resolved if ref in graph]
+        namespace = name.split(":", 1)[0]
+        resolved = (
+            ref.removeprefix(":")
+            if ref.startswith(":") or f"{namespace}:{ref}" not in graph
+            else f"{namespace}:{ref}"
+            for ref in task_refs(spec)
+        )
+        edges[name] = [ref for ref in resolved if ref in graph or ref in verbs]
+    return edges
 
+
+def _cycles(edges: dict[str, list[str]], files: dict[str, str]) -> list[Finding]:
     findings: list[Finding] = []
     reported: set[frozenset[str]] = set()
     visited: set[str] = set()
@@ -281,17 +76,18 @@ def _check_cycles(
     def visit(node: str, stack: list[str]) -> None:
         if node in stack:
             cycle = [*stack[stack.index(node) :], node]
-            key = frozenset(cycle)
-            if key not in reported and any(
-                _namespace_of(member, namespaces) not in owned for member in cycle
-            ):
-                reported.add(key)
+            if frozenset(cycle) not in reported:
+                reported.add(frozenset(cycle))
+                owned = next(
+                    (m.split(":", 1)[0] for m in cycle if m.split(":", 1)[0] in files),
+                    None,
+                )
                 findings.append(
                     Finding(
                         f"{CODE}.cycle",
                         Severity.ERROR,
                         f"task reference cycle: {' -> '.join(cycle)}",
-                        path=_owner_file(cycle[0], includes),
+                        path=files[owned] if owned else "Taskfile.yml",
                     )
                 )
             return
@@ -306,106 +102,37 @@ def _check_cycles(
     return findings
 
 
-def _unresolved_in(
-    label: str, lines: list[str], first_line: int, graph: dict[str, object]
-) -> list[Finding]:
-    findings: list[Finding] = []
-    for offset, text in enumerate(lines):
-        for match in _TASK_CALL.finditer(text):
-            name = match.group(1)
-            if name not in graph:
+def check(config: KilnConfig, root: Path) -> list[Finding]:
+    """Hold the repository's own includes to the config that declares them."""
+    if not config.tasks.includes:
+        return []
+    files, graph = _owned_graph(root, config)
+    findings = [
+        Finding(
+            f"{CODE}.missing-include",
+            Severity.ERROR,
+            f"include `{namespace}` points at `{path}`, which does not exist",
+            path=path,
+        )
+        for namespace, path in files.items()
+        if not (root / path).is_file()
+    ]
+    for verb, targets in sorted(config.tasks.extra_refs.items()):
+        for target in targets:
+            namespace, task = _split(target)
+            if (
+                namespace in files
+                and (root / files[namespace]).is_file()
+                and f"{namespace}:{task}" not in graph
+            ):
                 findings.append(
                     Finding(
-                        f"{CODE}.unresolved-ref",
+                        f"{CODE}.unresolved",
                         Severity.ERROR,
-                        f"`task {name}` does not exist",
-                        path=label,
-                        line=first_line + offset,
+                        f"`tasks.extra_refs.{verb}` calls `{target}`, which "
+                        f"`{files[namespace]}` does not define",
+                        path=files[namespace],
                     )
                 )
-    return findings
-
-
-def _check_owned_text(root: Path, graph: dict[str, object]) -> list[Finding]:
-    """`task <name>` in managed workflows and managed blocks must resolve."""
-    state_path = root / umbrella.STATE_PATH
-    if not state_path.exists():
-        return []
-    entries = DictUtils.get_mapping(DocumentUtils.read(state_path), "entries")
-    findings: list[Finding] = []
-    for _, raw in sorted(entries.items()):
-        entry = DictUtils.as_mapping(raw)
-        relative = str(entry.get("path", ""))
-        path = root / relative
-        if not path.is_file():
-            continue
-        lines = path.read_text(encoding="utf-8").splitlines()
-        kind = entry.get("kind")
-        if kind == "managed" and relative.startswith(".github/"):
-            for number, text in step_commands(lines, ("run",)):
-                findings.extend(_unresolved_in(relative, [text], number, graph))
-        elif kind == "block" and entry.get("begin_marker") and entry.get("end_marker"):
-            begin = str(entry["begin_marker"]).strip()
-            end = str(entry["end_marker"]).strip()
-            inside = False
-            for number, text in enumerate(lines, start=1):
-                if text.strip() == end:
-                    inside = False
-                elif inside:
-                    findings.extend(_unresolved_in(relative, [text], number, graph))
-                elif text.strip() == begin:
-                    inside = True
-    return findings
-
-
-def check(config: KilnConfig, root: Path) -> list[Finding]:
-    """Hold the task graph to the vocabulary's shape and the archetype's gate."""
-    root_taskfile = root / ROOT_TASKFILE
-    if not root_taskfile.exists():
-        return [
-            Finding(
-                f"{CODE}.missing",
-                Severity.ERROR,
-                "not found",
-                path=ROOT_TASKFILE.as_posix(),
-            )
-        ]
-
-    document = _load_yaml(root_taskfile)
-    root_tasks = task_specs(document)
-    includes = include_map(document)
-    tasks_config = config.tasks
-    owned_paths = {Path(i.taskfile).as_posix() for i in tasks_config.includes}
-    owned = {ns for ns, path in includes.items() if path in owned_paths}
-    managed = set(includes) - owned
-
-    findings: list[Finding] = []
-    label = ROOT_TASKFILE.as_posix()
     verbs = ROOT_VERBS + (WEB_APP_VERBS if config.is_web_app else ())
-    findings.extend(_check_surface(root_tasks, verbs))
-    for name, spec in root_tasks.items():
-        findings.extend(_check_desc(label, name, spec))
-        findings.extend(_check_wrapper_only(label, name, spec))
-
-    findings.extend(_check_includes(root, includes))
-    for namespace in sorted(managed):
-        path = includes[namespace]
-        if not (root / path).is_file():
-            continue
-        for name, spec in task_specs(_load_yaml(root / path)).items():
-            findings.extend(_check_desc(path, name, spec))
-            if namespace in RESERVED_NAMESPACES and not (
-                namespace == "kiln" and name in PUBLIC_KILN_TASKS
-            ):
-                findings.extend(_check_internal(path, name, spec))
-
-    graph, namespaces = load_graph(root)
-    findings.extend(_check_refs(graph, includes, owned))
-    findings.extend(_check_cycles(graph, includes, owned))
-    findings.extend(
-        _check_gate(
-            graph, namespaces, tuple(archetypes.for_config(config).required_validate)
-        )
-    )
-    findings.extend(_check_owned_text(root, graph))
-    return findings
+    return findings + _cycles(_edges(config, graph, verbs), files)

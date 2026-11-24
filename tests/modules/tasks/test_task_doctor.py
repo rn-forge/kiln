@@ -267,31 +267,6 @@ def test_removed_keys_are_refused(tmp_path: Path, key: str) -> None:
         TASKS.artifacts(KilnConfig.load(root), root)
 
 
-def test_kiln_doctor_must_be_internal(tmp_path: Path) -> None:
-    root = _root(tmp_path)
-    cycle.apply(root, home=tmp_path / "home")
-    path = root / "tasks/kiln.yml"
-    text = path.read_text(encoding="utf-8")
-    head, _, tail = text.partition("  doctor:\n")
-    path.write_text(
-        head + "  doctor:\n" + tail.replace("    internal: true\n", "", 1),
-        encoding="utf-8",
-    )
-    assert "taskgraph.not-internal" in _codes(root)
-
-
-def test_gate_shrunk_names_kiln_doctor(tmp_path: Path) -> None:
-    root = _root(tmp_path)
-    cycle.apply(root, home=tmp_path / "home")
-    taskfile = root / "Taskfile.yml"
-    line = "      - task: kiln:doctor\n"
-    text = taskfile.read_text(encoding="utf-8")
-    assert line in text
-    taskfile.write_text(text.replace(line, ""), encoding="utf-8")
-    findings = list(module_findings("tasks", KilnConfig.load(root), root))
-    assert any(f.code == "gate.shrunk" and "kiln:doctor" in str(f) for f in findings)
-
-
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
 def test_task_layout_accepts_the_rendered_files(
     tmp_path: Path, archetype: str, extra: str
@@ -370,3 +345,22 @@ def test_verify_release_from_pypi(tmp_path: Path) -> None:
         "{{.DEVOPS}} verify-release --source git {{.CLI_ARGS}}"
     ]
     assert "PyPI" not in plain_task["desc"]
+
+
+def test_an_extra_ref_to_an_unknown_namespace_is_refused_at_load(
+    tmp_path: Path,
+) -> None:
+    root = _root(tmp_path, extra='\n[tasks.extra_refs]\nvalidate = ["nowhere:build"]\n')
+    with pytest.raises(AppException, match=r"tasks\.extra_refs\.validate"):
+        KilnConfig.load(root)
+
+
+def test_an_extra_ref_to_a_declared_include_loads(tmp_path: Path) -> None:
+    root = _root(
+        tmp_path,
+        extra=(
+            '\n[tasks]\nincludes = [{ namespace = "own", taskfile = "tasks/own.yml" }]\n'
+            '[tasks.extra_refs]\nvalidate = ["own:go"]\n'
+        ),
+    )
+    assert KilnConfig.load(root).tasks.extra_refs == {"validate": ["own:go"]}

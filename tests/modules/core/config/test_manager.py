@@ -92,7 +92,7 @@ def test_a_layer_that_sets_a_list_replaces_it_while_tables_and_scalars_merge(
                     {"namespace": "a", "taskfile": "tasks/a.yml"},
                     {"namespace": "b", "taskfile": "tasks/b.yml"},
                 ],
-                "extra_refs": {"lint": ["a:lint"]},
+                "extra_refs": {"lint": ["c:lint"]},
             },
         },
     )
@@ -107,7 +107,7 @@ def test_a_layer_that_sets_a_list_replaces_it_while_tables_and_scalars_merge(
     assert document["tasks"]["includes"] == [
         {"namespace": "c", "taskfile": "tasks/c.yml"}
     ]
-    assert document["tasks"]["extra_refs"] == {"lint": ["a:lint"]}
+    assert document["tasks"]["extra_refs"] == {"lint": ["c:lint"]}
     assert document["docs"] == {
         "profile": "mkdocs",
         "site_dir": "site",

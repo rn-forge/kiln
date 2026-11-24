@@ -189,20 +189,6 @@ def test_task_layout_accepts_the_rendered_files(
     assert _codes(root) == []
 
 
-def test_gate_shrunk_fires_when_lint_drops_audit(tmp_path: Path) -> None:
-    root = _root(tmp_path)
-    cycle.apply(root, home=tmp_path / "home")
-    taskfile = root / "Taskfile.yml"
-    line = "      - task: python:lint:audit\n"
-    text = taskfile.read_text(encoding="utf-8")
-    assert line in text
-    taskfile.write_text(text.replace(line, ""), encoding="utf-8")
-    findings = [f for f in module_findings("tasks", KilnConfig.load(root), root)]
-    assert any(
-        f.code == "gate.shrunk" and "python:lint:audit" in str(f) for f in findings
-    )
-
-
 def test_audit_override_is_refused(tmp_path: Path) -> None:
     root = _root(
         tmp_path,
@@ -254,17 +240,3 @@ def test_primitives_stay_overridable(tmp_path: Path) -> None:
     cycle.apply(root, home=tmp_path / "home")
     _, python = _rendered_yaml(root)
     assert python["lint:imports"]["cmds"] == ["echo hi"]
-
-
-def test_unreachable_licences_is_a_finding(tmp_path: Path) -> None:
-    root = _root(tmp_path)
-    cycle.apply(root, home=tmp_path / "home")
-    taskfile = root / "Taskfile.yml"
-    line = "      - task: python:lint:licenses\n"
-    text = taskfile.read_text(encoding="utf-8")
-    assert line in text
-    taskfile.write_text(text.replace(line, ""), encoding="utf-8")
-    findings = module_findings("tasks", KilnConfig.load(root), root)
-    assert any(
-        f.code == "gate.shrunk" and "python:lint:licenses" in str(f) for f in findings
-    )

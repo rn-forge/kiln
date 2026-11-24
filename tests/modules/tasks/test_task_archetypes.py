@@ -165,21 +165,6 @@ def test_task_layout_passes_on_both_web_archetypes(tmp_path: Path) -> None:
         assert _codes(root) == [], archetype
 
 
-def test_gate_shrunk_fires_when_node_lint_drops_out_of_lint(
-    tmp_path: Path,
-) -> None:
-    root = _web_root(
-        tmp_path, "python-web-app", "fastapi", extra='frontend = "angular"'
-    )
-    cycle.apply(root, home=tmp_path / "home")
-    taskfile = root / "Taskfile.yml"
-    taskfile.write_text(
-        taskfile.read_text(encoding="utf-8").replace("      - task: node:lint\n", ""),
-        encoding="utf-8",
-    )
-    assert "gate.shrunk" in _codes(root)
-
-
 def test_a_workflow_calling_pnpm_directly_fails_ci_entrypoint(
     tmp_path: Path,
 ) -> None:
@@ -711,22 +696,6 @@ def test_command_override_is_accepted(tmp_path: Path) -> None:
 @pytest.mark.parametrize("name", archetypes.shipped())
 def test_required_validate_gains_it(name: str) -> None:
     assert "ci:lint:workflows" in archetypes.load(name).required_validate
-
-
-def test_gate_shrunk_fires_when_lint_drops_workflows(
-    tmp_path: Path,
-) -> None:
-    root = _root(tmp_path)
-    cycle.apply(root, home=tmp_path / "home")
-    taskfile = root / "Taskfile.yml"
-    line = "      - task: ci:lint:workflows\n"
-    text = taskfile.read_text(encoding="utf-8")
-    assert line in text
-    taskfile.write_text(text.replace(line, ""), encoding="utf-8")
-    findings = [f for f in module_findings("tasks", KilnConfig.load(root), root)]
-    assert any(
-        f.code == "gate.shrunk" and "ci:lint:workflows" in str(f) for f in findings
-    )
 
 
 CLIENT_DESC = "Regenerate the frontend's API client from the API's OpenAPI document."

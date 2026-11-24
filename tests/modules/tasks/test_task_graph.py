@@ -15,8 +15,8 @@ from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.tasks import TASKS
-from rn_forge.kiln.modules.tasks.checks import layout
 from tests.conftest import actions as _actions
+from tests.modules.tasks import graph
 from tests.modules.tasks.support import (
     ARCHETYPES,
     STEP,
@@ -110,17 +110,6 @@ def test_task_layout_passes_on_the_rendered_output(
     root = _root(tmp_path, archetype)
     cycle.apply(root, home=tmp_path / "home")
     assert _codes(root) == []
-
-
-def test_task_layout_fails_on_a_broken_gate(tmp_path: Path) -> None:
-    root = _root(tmp_path)
-    cycle.apply(root, home=tmp_path / "home")
-    taskfile = root / "Taskfile.yml"
-    taskfile.write_text(
-        taskfile.read_text(encoding="utf-8").replace("      - task: python:test\n", ""),
-        encoding="utf-8",
-    )
-    assert "gate.shrunk" in _codes(root)
 
 
 @pytest.mark.parametrize("archetype", ARCHETYPES)
@@ -305,8 +294,8 @@ def test_the_gate_still_passes_the_layout_check(tmp_path: Path) -> None:
     for root in _graph_roots(tmp_path):
         cycle.apply(root, home=tmp_path / "home")
         assert _codes(root) == []
-        graph, namespaces = layout.load_graph(root)
-        assert BANNER in layout.reachable_from("validate", graph, namespaces)
+        tasks_graph, namespaces = graph.load_graph(root)
+        assert BANNER in graph.reachable_from("validate", tasks_graph, namespaces)
 
 
 def test_ci_validate_is_unchanged(tmp_path: Path) -> None:
@@ -392,8 +381,10 @@ def test_an_extra_ref_is_reachable_from_validate(tmp_path: Path) -> None:
         extra='\n[tasks]\n[tasks.extra_refs]\nvalidate = ["workspace:clean"]\n',
     )
     cycle.apply(root, home=tmp_path / "home")
-    graph, namespaces = layout.load_graph(root)
-    assert "workspace:clean" in layout.reachable_from("validate", graph, namespaces)
+    tasks_graph, namespaces = graph.load_graph(root)
+    assert "workspace:clean" in graph.reachable_from(
+        "validate", tasks_graph, namespaces
+    )
     assert _codes(root) == []
 
 

@@ -272,19 +272,6 @@ def test_required_validate_names_the_python_tasks(name: str) -> None:
     assert not [r for r in required if r.startswith("quality:") and r not in allowed]
 
 
-def test_python_tasks_must_be_internal(tmp_path: Path) -> None:
-    root = _root(tmp_path)
-    cycle.apply(root, home=tmp_path / "home")
-    path = root / "tasks/python.yml"
-    text = path.read_text(encoding="utf-8")
-    head, _, tail = text.partition("  lint:\n")
-    path.write_text(
-        head + "  lint:\n" + tail.replace("    internal: true\n", "", 1),
-        encoding="utf-8",
-    )
-    assert "taskgraph.not-internal" in _codes(root)
-
-
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
 def test_task_layout_accepts_the_rendered_files(
     tmp_path: Path, archetype: str, extra: str

@@ -140,6 +140,8 @@ def _load(root: Path, path: str) -> dict:
 
 ALL_CELLS = [(a, "") for a in ARCHETYPES] + list(WEB_CELLS)
 
+RENDER_CELLS = [*ALL_CELLS, ("node-lib", "")]
+
 
 NODE_CHECKS = {
     "install": ["pnpm install --frozen-lockfile"],
