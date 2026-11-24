@@ -396,13 +396,6 @@ def test_no_cycles(repo) -> None:
     assert "other:b -> quality:a -> other:b" in cycle.message
 
 
-def test_reserved_namespace_collision(repo) -> None:
-    root = compliant(repo, **{"tasks__mine.yml": OWNED})
-    declare(root, "quality", "tasks/mine.yml")
-    [collision] = findings(root, "taskgraph.reserved-namespace")
-    assert "quality" in collision.message
-
-
 def test_repository_owned_files_are_not_held_to_layout(repo) -> None:
     root = compliant(
         repo,

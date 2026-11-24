@@ -267,18 +267,6 @@ def test_removed_keys_are_refused(tmp_path: Path, key: str) -> None:
         TASKS.artifacts(KilnConfig.load(root), root)
 
 
-def test_an_include_cannot_take_kiln(tmp_path: Path) -> None:
-    root = _root(tmp_path)
-    cycle.apply(root, home=tmp_path / "home")
-    config = root / ".rn-forge" / "kiln" / "config.toml"
-    config.write_text(
-        config.read_text(encoding="utf-8")
-        + '\n[tasks]\nincludes = [{ namespace = "kiln", taskfile = "tasks/mine.yml" }]\n',
-        encoding="utf-8",
-    )
-    assert "taskgraph.reserved-namespace" in _codes(root)
-
-
 def test_kiln_doctor_must_be_internal(tmp_path: Path) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")

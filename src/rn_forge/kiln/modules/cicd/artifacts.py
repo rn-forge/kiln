@@ -12,6 +12,7 @@ from rn_forge.commons.text.templates import TemplateEngine
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd import registry
+from rn_forge.kiln.modules.cicd.config import STAGES
 from rn_forge.kiln.modules.core.pins import load_pins
 from rn_forge.kiln.modules.core.versions import PYTHON_VERSION
 
@@ -148,8 +149,12 @@ def render(config: KilnConfig) -> list[Artifact]:
         (".github/actions/setup/action.yml", "action.yml.j2", True),
         (".github/workflows/ci.yml", "ci.yml.j2", True),
         *(
-            (f".github/workflows/_{stage}.yml", f"workflows/_{stage}.yml.j2", enabled)
-            for stage, enabled in stages.items()
+            (
+                f".github/workflows/_{stage}.yml",
+                f"workflows/_{stage}.yml.j2",
+                stages[stage],
+            )
+            for stage in STAGES
         ),
         (".github/dependabot.yml", "dependabot.yml.j2", True),
         (

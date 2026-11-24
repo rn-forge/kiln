@@ -8,7 +8,13 @@ from pydantic import Field, field_validator, model_validator
 
 from rn_forge.kiln.modules.core.config.schema import ConfigModel
 
-__all__ = ["ROOT_VERBS", "WEB_APP_VERBS", "TaskInclude", "TasksConfig"]
+__all__ = [
+    "GENERATED_NAMESPACES",
+    "ROOT_VERBS",
+    "WEB_APP_VERBS",
+    "TaskInclude",
+    "TasksConfig",
+]
 
 ROOT_VERBS = (
     "setup",
@@ -28,6 +34,23 @@ WEB_APP_VERBS = ("dev",)
 """The root verbs a `python-web-app` adds: `dev` serves the API and the frontend
 together. They wrap a dev server, so `tasks.extra_refs` cannot extend them."""
 
+GENERATED_NAMESPACES = frozenset(
+    {
+        "quality",
+        "python",
+        "kiln",
+        "docs",
+        "workspace",
+        "ci",
+        "sonar",
+        "api",
+        "web",
+        "node",
+    }
+)
+"""The namespaces the generated `Taskfile.yml` includes, which a repo include
+cannot take."""
+
 
 class TaskInclude(ConfigModel):
     """A repo-owned taskfile the generated `Taskfile.yml` includes."""
@@ -38,6 +61,15 @@ class TaskInclude(ConfigModel):
     taskfile: str
     """The taskfile's path, relative to the repository root. Changing it
     rewrites the include in `Taskfile.yml` on `kiln apply`."""
+
+    @field_validator("namespace")
+    @classmethod
+    def _not_generated(cls, value: str) -> str:
+        if value in GENERATED_NAMESPACES:
+            raise ValueError(
+                f"tasks.includes namespace {value!r} is a namespace kiln generates"
+            )
+        return value
 
 
 class TasksConfig(ConfigModel):

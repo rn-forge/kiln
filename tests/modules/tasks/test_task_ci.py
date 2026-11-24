@@ -13,6 +13,7 @@ from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.tasks import TASKS
+from rn_forge.kiln.modules.tasks.config import GENERATED_NAMESPACES
 from tests.modules.tasks.support import (
     ALL_CELLS,
     ARCHETYPES,
@@ -78,6 +79,33 @@ def test_every_archetype_renders_ci_yml(
     rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
     assert "tasks/ci.yml" in rendered
     assert YamlUtils.load(rendered["Taskfile.yml"])["includes"]["ci"] == "tasks/ci.yml"
+
+
+def _include_namespaces(tmp_path: Path, archetype: str, extra: str) -> set[str]:
+    if archetype == "node-lib":
+        root = _node_lib_root(tmp_path)
+    else:
+        root = _ci_root(tmp_path, archetype, extra)
+    rendered = {a.path: a.content for a in TASKS.artifacts(KilnConfig.load(root), root)}
+    return set(YamlUtils.load(rendered["Taskfile.yml"])["includes"])
+
+
+RENDER_CELLS = [*ALL_CELLS, ("node-lib", "")]
+
+
+@pytest.mark.parametrize(("archetype", "extra"), RENDER_CELLS)
+def test_every_rendered_include_namespace_is_reserved(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    namespaces = _include_namespaces(tmp_path, archetype, extra)
+    assert namespaces <= GENERATED_NAMESPACES, namespaces - GENERATED_NAMESPACES
+
+
+def test_every_reserved_namespace_is_rendered_somewhere(tmp_path: Path) -> None:
+    rendered: set[str] = set()
+    for index, (archetype, extra) in enumerate(RENDER_CELLS):
+        rendered |= _include_namespaces(tmp_path / str(index), archetype, extra)
+    assert rendered == GENERATED_NAMESPACES, rendered ^ GENERATED_NAMESPACES
 
 
 @pytest.mark.parametrize(("archetype", "extra"), ALL_CELLS)
@@ -183,16 +211,20 @@ def test_gate_shrunk_fires(tmp_path: Path, name: str) -> None:
     )
 
 
-def test_an_include_cannot_take_ci(tmp_path: Path) -> None:
+@pytest.mark.parametrize("namespace", sorted(GENERATED_NAMESPACES))
+def test_an_include_cannot_take_a_generated_namespace(
+    tmp_path: Path, namespace: str
+) -> None:
     root = _root(tmp_path)
     cycle.apply(root, home=tmp_path / "home")
     config = root / ".rn-forge" / "kiln" / "config.toml"
     config.write_text(
         config.read_text(encoding="utf-8")
-        + '\n[tasks]\nincludes = [{ namespace = "ci", taskfile = "tasks/mine.yml" }]\n',
+        + f'\n[tasks]\nincludes = [{{ namespace = "{namespace}", taskfile = "tasks/mine.yml" }}]\n',
         encoding="utf-8",
     )
-    assert "taskgraph.reserved-namespace" in _codes(root)
+    with pytest.raises(AppException, match=r"tasks\.includes\.0\.namespace"):
+        KilnConfig.load(root)
 
 
 def test_node_yml_holds_the_toolchain(tmp_path: Path) -> None:

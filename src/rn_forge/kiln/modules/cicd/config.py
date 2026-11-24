@@ -11,6 +11,7 @@ from rn_forge.kiln.modules.core.config.schema import ConfigModel
 
 __all__ = [
     "GENERATED_JOBS",
+    "STAGES",
     "STAGE_WORKFLOWS",
     "AuditIgnore",
     "AuditPolicy",
@@ -21,6 +22,9 @@ __all__ = [
     "resolve_release",
 ]
 
+STAGES = ("integration", "smoke", "sonar", "release", "verify-release", "docs")
+"""The stages kiln renders as reusable workflows, each called by a `ci.yml` job."""
+
 GENERATED_JOBS = frozenset(
     {
         "validate",
@@ -28,31 +32,19 @@ GENERATED_JOBS = frozenset(
         "secret-scan",
         "plan",
         "test",
-        "integration",
-        "smoke",
+        "test-cloud",
+        "test-local",
         "suites",
-        "sonar",
-        "release",
-        "verify-release",
-        "docs",
+        "umbrella",
         "scorecard",
         "checks-ok",
         "ci-ok",
+        *STAGES,
     }
 )
 """The job names `ci.yml` renders itself, which a declared job cannot take."""
 
-STAGE_WORKFLOWS = frozenset(
-    f"./.github/workflows/_{stage}.yml"
-    for stage in (
-        "integration",
-        "smoke",
-        "sonar",
-        "release",
-        "verify-release",
-        "docs",
-    )
-)
+STAGE_WORKFLOWS = frozenset(f"./.github/workflows/_{stage}.yml" for stage in STAGES)
 """The reusable workflows kiln renders, which a declared job cannot call."""
 
 _KEBAB = re.compile(r"^[a-z][a-z0-9]*(-[a-z0-9]+)*$")

@@ -32,7 +32,6 @@ from rn_forge.kiln.modules.core.steps import step_commands
 from rn_forge.kiln.modules.tasks.config import (
     ROOT_VERBS,
     WEB_APP_VERBS,
-    TasksConfig,
 )
 from rn_forge.kiln.modules.tasks.taskfile import include_map, task_refs, task_specs
 
@@ -227,9 +226,7 @@ def _check_internal(path: str, name: str, spec: object) -> list[Finding]:
     ]
 
 
-def _check_includes(
-    root: Path, includes: dict[str, str], tasks_config: TasksConfig, managed: set[str]
-) -> list[Finding]:
+def _check_includes(root: Path, includes: dict[str, str]) -> list[Finding]:
     findings = [
         Finding(
             f"{CODE}.missing-include",
@@ -240,17 +237,6 @@ def _check_includes(
         for namespace, path in includes.items()
         if not (root / path).is_file()
     ]
-    findings.extend(
-        Finding(
-            f"{CODE}.reserved-namespace",
-            Severity.ERROR,
-            f"tasks.includes namespace `{include.namespace}` collides with a "
-            f"namespace kiln owns",
-            path=".rn-forge/kiln/config.toml",
-        )
-        for include in tasks_config.includes
-        if include.namespace in managed | RESERVED_NAMESPACES
-    )
     return findings
 
 
@@ -401,7 +387,7 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
         findings.extend(_check_desc(label, name, spec))
         findings.extend(_check_wrapper_only(label, name, spec))
 
-    findings.extend(_check_includes(root, includes, tasks_config, managed))
+    findings.extend(_check_includes(root, includes))
     for namespace in sorted(managed):
         path = includes[namespace]
         if not (root / path).is_file():

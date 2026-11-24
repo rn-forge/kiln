@@ -24,6 +24,8 @@ from tests.modules.cicd.support import (
 )
 
 
+UMBRELLA = "\n[ci.checks]\numbrella-release = true\n"
+
 GOLDEN_RENDER = (
     '\n[[ci.jobs]]\nname = "golden-render"\n'
     'uses = "./.github/workflows/golden-render.yml"\n'
@@ -45,6 +47,26 @@ def test_web_app_keeps_node(tmp_path: Path) -> None:
     assert "actions/setup-node" in web
     assert "cache: pnpm" in web
     assert "\n\n\n" not in web
+
+
+@pytest.mark.parametrize(
+    ("archetype", "extra"),
+    [
+        ("node-lib", ""),
+        ("python-tool", ""),
+        ("python-lib", ""),
+        ("python-app", ""),
+        ("python-tool", UMBRELLA),
+    ],
+)
+def test_every_rendered_job_is_reserved(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _root(tmp_path, archetype)
+    if extra:
+        root = _with_ci(root, extra)
+    jobs = set(YamlUtils.load(_rendered(root)[".github/workflows/ci.yml"])["jobs"])
+    assert jobs <= GENERATED_JOBS, jobs - GENERATED_JOBS
 
 
 def test_no_declared_jobs_is_unchanged(tmp_path: Path) -> None:
@@ -195,7 +217,18 @@ def test_task_key_is_refused(tmp_path: Path) -> None:
 
 
 @pytest.mark.parametrize(
-    "name", ["sonar", "validate", "ci-ok", "checks-ok", "Golden", "a_b"]
+    "name",
+    [
+        "sonar",
+        "validate",
+        "ci-ok",
+        "checks-ok",
+        "Golden",
+        "a_b",
+        "test-cloud",
+        "test-local",
+        "umbrella",
+    ],
 )
 def test_job_name_collision_is_refused(tmp_path: Path, name: str) -> None:
     extra = f'\n[[ci.jobs]]\nname = "{name}"\nuses = "{CALL}"\n'
