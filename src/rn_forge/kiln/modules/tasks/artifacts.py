@@ -15,18 +15,17 @@ from rn_forge.kiln.archetypes import KILN_GIT, KILN_REF, kiln_command
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.core.pins import load_pins
 
-__all__ = ["render"]
+__all__ = ["OVERRIDABLE", "render"]
 
-_WORKSPACE_TASKS = ("workspace:clean",)
-_QUALITY_TASKS = (
+_KNOWN_NAMESPACES = ("workspace", "quality", "python", "ci")
+OVERRIDABLE = (
+    "workspace:clean",
     "quality:lint:markdown",
     "quality:lint:toml",
     "quality:lint:yaml",
     "quality:format:markdown",
     "quality:format:toml",
     "quality:format:yaml",
-)
-_PYTHON_TASKS = (
     "python:install",
     "python:lint",
     "python:lint:imports",
@@ -36,16 +35,10 @@ _PYTHON_TASKS = (
     "python:test:coverage",
     "python:build",
     "python:version",
-)
-_CI_TASKS = ("ci:lint:workflows",)
-_GITLEAKS_PLATFORMS = (
-    ("Linux-x86_64", "linux_x64"),
-    ("Darwin-arm64", "darwin_arm64"),
-)
-# Dual-licensed Artistic or GPL, taken under Artistic; reached through the
-# rendered docs group (mkdocs-monorepo-plugin -> python-slugify).
-_LICENSES_ALWAYS_IGNORED = ("text-unidecode",)
-_NODE_TASKS = (
+    "ci:lint:workflows",
+    "docs:build",
+    "docs:serve",
+    "docs:generate",
     "node:install",
     "node:lint",
     "node:test",
@@ -55,7 +48,13 @@ _NODE_TASKS = (
     "node:format",
     "node:lint:format",
 )
-_DOCS_TASKS = ("docs:build", "docs:serve", "docs:generate")
+_GITLEAKS_PLATFORMS = (
+    ("Linux-x86_64", "linux_x64"),
+    ("Darwin-arm64", "darwin_arm64"),
+)
+# Dual-licensed Artistic or GPL, taken under Artistic; reached through the
+# rendered docs group (mkdocs-monorepo-plugin -> python-slugify).
+_LICENSES_ALWAYS_IGNORED = ("text-unidecode",)
 
 
 def _validate_overrides(config: KilnConfig, known: set[str]) -> None:
@@ -144,12 +143,11 @@ def render(config: KilnConfig) -> list[Artifact]:
     tasks_config = config.tasks
     ci = config.ci
     known = {
-        *_WORKSPACE_TASKS,
-        *_QUALITY_TASKS,
-        *_PYTHON_TASKS,
-        *_CI_TASKS,
-        *(_DOCS_TASKS if docs else ()),
-        *(_NODE_TASKS if node else ()),
+        name
+        for name in OVERRIDABLE
+        if name.split(":", 1)[0] in _KNOWN_NAMESPACES
+        or (docs and name.startswith("docs:"))
+        or (node and name.startswith("node:"))
     }
     _validate_overrides(config, known)
     context = _context(config, docs=docs, node=node)

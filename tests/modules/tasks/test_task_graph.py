@@ -411,7 +411,7 @@ def test_a_command_override_replaces_only_that_task_s_cmds(
         a.path: a.content
         for a in TASKS.artifacts(KilnConfig.load(overridden), overridden)
     }
-    assert "cmds:\n      - echo hi\n" in after["tasks/python.yml"]
+    assert 'cmds:\n      - "echo hi"\n' in after["tasks/python.yml"]
     for path in (
         "Taskfile.yml",
         "tasks/workspace.yml",
