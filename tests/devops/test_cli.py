@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 from pathlib import Path
@@ -265,7 +266,7 @@ def _upload_stubs(
     monkeypatch: pytest.MonkeyPatch,
     status: ReleaseStatus,
     tagged: bool,
-    on_index: bool,
+    indexed: frozenset[str],
     upload_status: int = 0,
 ) -> list[list[str]]:
     calls: list[list[str]] = []
@@ -283,13 +284,13 @@ def _upload_stubs(
         calls.append(["remote_tag_exists", tag])
         return tagged
 
-    def on_index_stub(host: str, name: str, version: str) -> bool:
-        calls.append(["on_index", host, name, version])
-        return on_index
+    def indexed_files_stub(host: str, name: str, version: str) -> frozenset[str]:
+        calls.append(["indexed_files", host, name, version])
+        return indexed
 
     monkeypatch.setattr(github, "release_status", release_status)
     monkeypatch.setattr(github, "remote_tag_exists", remote_tag_exists)
-    monkeypatch.setattr(github, "on_index", on_index_stub)
+    monkeypatch.setattr(github, "indexed_files", indexed_files_stub)
     monkeypatch.setattr(github.subprocess, "run", run)
     return calls
 
@@ -300,10 +301,10 @@ PUBLISH = ["release-publish", "pkg-a-v1.2.0", "--title", "T", "--target", "abc12
 def test_upload_pypi_runs_before_gh_release_create(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    calls = _upload_stubs(monkeypatch, ReleaseStatus.NONE, False, False)
+    calls = _upload_stubs(monkeypatch, ReleaseStatus.NONE, False, frozenset())
     assert cli.main([*PUBLISH, "--upload", "pypi", "a.whl", "a.cdx.json"]) == 0
     commands = [c for c in calls if c[0] in ("uv", "gh")]
-    assert ["on_index", "pypi.org", "pkg-a", "1.2.0"] in calls
+    assert ["indexed_files", "pypi.org", "pkg-a", "1.2.0"] in calls
     assert commands[0] == [
         "uv", "publish", "--trusted-publishing", "always", _real("a.whl")
     ]  # fmt: skip
@@ -314,7 +315,7 @@ def test_upload_pypi_runs_before_gh_release_create(
 def test_release_assets_leave_out_attestations(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    calls = _upload_stubs(monkeypatch, ReleaseStatus.NONE, False, False)
+    calls = _upload_stubs(monkeypatch, ReleaseStatus.NONE, False, frozenset())
     files = ["a.whl", "a.whl.publish.attestation", "a.cdx.json"]
     assert cli.main([*PUBLISH, "--upload", "pypi", *files]) == 0
     commands = [c for c in calls if c[0] in ("uv", "gh")]
@@ -330,26 +331,76 @@ def test_release_assets_leave_out_attestations(
 def test_upload_pypi_skips_a_version_already_on_the_index(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    calls = _upload_stubs(monkeypatch, ReleaseStatus.NONE, False, True)
+    calls = _upload_stubs(monkeypatch, ReleaseStatus.NONE, False, frozenset({"a.whl"}))
     assert cli.main([*PUBLISH, "--upload", "pypi", "a.whl"]) == 0
     assert [c[0] for c in calls if c[0] in ("uv", "gh")] == ["gh"]
+
+
+class _IndexResponse:
+    status = 200
+
+    def __init__(self, filenames: list[str]) -> None:
+        self._body = json.dumps({"urls": [{"filename": n} for n in filenames]})
+
+    def __enter__(self) -> "_IndexResponse":
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self._body.encode()
+
+
+def _index_lists(monkeypatch: pytest.MonkeyPatch, filenames: list[str]) -> None:
+    monkeypatch.setattr(
+        github.urllib.request,
+        "urlopen",
+        lambda url, **kwargs: _IndexResponse(filenames),
+    )
+
+
+def test_upload_pypi_uploads_only_the_files_the_index_lacks(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    real_indexed_files = github.indexed_files
+    calls = _upload_stubs(monkeypatch, ReleaseStatus.NONE, False, frozenset())
+    monkeypatch.setattr(github, "indexed_files", real_indexed_files)
+    _index_lists(monkeypatch, ["a.whl"])
+    files = ["a.whl", "a.whl.publish.attestation", "a.tar.gz"]
+    assert cli.main([*PUBLISH, "--upload", "pypi", *files]) == 0
+    (uv,) = [c for c in calls if c[0] == "uv"]
+    assert uv[-1:] == [_real("a.tar.gz")]
+    assert _real("a.whl") not in uv
+    assert _real("a.whl.publish.attestation") not in uv
+
+
+def test_upload_pypi_skips_a_version_whose_files_are_all_on_the_index(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    real_indexed_files = github.indexed_files
+    calls = _upload_stubs(monkeypatch, ReleaseStatus.NONE, False, frozenset())
+    monkeypatch.setattr(github, "indexed_files", real_indexed_files)
+    _index_lists(monkeypatch, ["a.whl", "a.tar.gz"])
+    assert cli.main([*PUBLISH, "--upload", "pypi", "a.whl", "a.tar.gz"]) == 0
+    assert [c for c in calls if c[0] == "uv"] == []
 
 
 def test_upload_pypi_leaves_a_published_release_alone(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    calls = _upload_stubs(monkeypatch, ReleaseStatus.PUBLISHED, True, False)
+    calls = _upload_stubs(monkeypatch, ReleaseStatus.PUBLISHED, True, frozenset())
     assert cli.main([*PUBLISH, "--upload", "pypi", "a.whl"]) == 0
-    assert [c for c in calls if c[0] in ("uv", "gh", "on_index")] == []
+    assert [c for c in calls if c[0] in ("uv", "gh", "indexed_files")] == []
 
 
 def test_upload_testpypi_runs_no_gh_and_no_release_check(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    calls = _upload_stubs(monkeypatch, ReleaseStatus.PUBLISHED, True, False)
+    calls = _upload_stubs(monkeypatch, ReleaseStatus.PUBLISHED, True, frozenset())
     assert cli.main([*PUBLISH, "--upload", "testpypi", "a.whl"]) == 0
-    assert ["on_index", "test.pypi.org", "pkg-a", "1.2.0"] in calls
-    assert [c[0] for c in calls if c[0] not in ("on_index",)] == ["uv"]
+    assert ["indexed_files", "test.pypi.org", "pkg-a", "1.2.0"] in calls
+    assert [c[0] for c in calls if c[0] not in ("indexed_files",)] == ["uv"]
     assert "--publish-url" in calls[-1]
 
 
@@ -357,7 +408,7 @@ def test_a_failed_upload_exits_before_any_gh_command(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls = _upload_stubs(
-        monkeypatch, ReleaseStatus.NONE, False, False, upload_status=3
+        monkeypatch, ReleaseStatus.NONE, False, frozenset(), upload_status=3
     )
     with pytest.raises(SystemExit) as exit_info:
         cli.main([*PUBLISH, "--upload", "pypi", "a.whl"])

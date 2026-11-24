@@ -220,9 +220,9 @@ def _validate(args: argparse.Namespace) -> None:
 def _upload(args: argparse.Namespace) -> None:
     name, _, version = args.tag.rpartition("-v")
     host = "test.pypi.org" if args.upload == "testpypi" else "pypi.org"
-    on_index = github.on_index(host, name, version)
+    indexed = github.indexed_files(host, name, version)
     for command in github.upload_commands(
-        args.upload, name, version, args.files, on_index
+        args.upload, name, version, args.files, indexed
     ):
         github.run(command)
 

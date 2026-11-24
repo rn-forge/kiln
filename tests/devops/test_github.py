@@ -100,7 +100,7 @@ PYPI_FILES = ["dist/a/a.whl", "dist/a/a.cdx.json", "dist/a/a.tar.gz"]
 
 
 def test_upload_to_pypi_when_not_on_the_index() -> None:
-    assert github.upload_commands("pypi", "a", "1.0", PYPI_FILES, False) == [
+    assert github.upload_commands("pypi", "a", "1.0", PYPI_FILES, frozenset()) == [
         [
             "uv", "publish", "--trusted-publishing", "always",
             "dist/a/a.whl", "dist/a/a.tar.gz",
@@ -109,7 +109,7 @@ def test_upload_to_pypi_when_not_on_the_index() -> None:
 
 
 def test_upload_to_testpypi_names_the_index() -> None:
-    assert github.upload_commands("testpypi", "a", "1.0", PYPI_FILES, False) == [
+    assert github.upload_commands("testpypi", "a", "1.0", PYPI_FILES, frozenset()) == [
         [
             "uv", "publish", "--trusted-publishing", "always",
             "--publish-url", "https://test.pypi.org/legacy/",
@@ -122,12 +122,17 @@ def test_upload_to_testpypi_names_the_index() -> None:
 def test_nothing_is_uploaded_when_the_index_has_the_version(
     index: str,
 ) -> None:
-    assert github.upload_commands(index, "a", "1.0", PYPI_FILES, True) == []
+    assert (
+        github.upload_commands(
+            index, "a", "1.0", PYPI_FILES, frozenset({"a.whl", "a.tar.gz"})
+        )
+        == []
+    )
 
 
 def test_only_wheels_and_sdists_are_uploaded() -> None:
     (command,) = github.upload_commands(
-        "pypi", "a", "1.0", ["x.cdx.json", "x.whl", "notes.md"], False
+        "pypi", "a", "1.0", ["x.cdx.json", "x.whl", "notes.md"], frozenset()
     )
     assert command[-1:] == ["x.whl"]
     assert not any(part.endswith((".cdx.json", ".md")) for part in command)
@@ -138,7 +143,7 @@ def test_upload_includes_attestations() -> None:
         "x.cdx.json", "x.whl", "x.whl.publish.attestation",
         "x.tar.gz", "x.tar.gz.publish.attestation",
     ]  # fmt: skip
-    (command,) = github.upload_commands("pypi", "a", "1.0", files, False)
+    (command,) = github.upload_commands("pypi", "a", "1.0", files, frozenset())
     assert command[4:] == [
         "x.whl", "x.whl.publish.attestation",
         "x.tar.gz", "x.tar.gz.publish.attestation",
@@ -155,8 +160,11 @@ class _Response:
     def __exit__(self, *exc: object) -> None:
         return None
 
+    def read(self) -> bytes:
+        return b'{"urls": [{"filename": "a.whl"}, {"filename": "a.tar.gz"}]}'
 
-def test_on_index_reads_the_json_endpoint(
+
+def test_indexed_files_reads_the_json_endpoint(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     urls: list[str] = []
@@ -166,13 +174,13 @@ def test_on_index_reads_the_json_endpoint(
         return _Response()
 
     monkeypatch.setattr(github.urllib.request, "urlopen", urlopen)
-    assert github.on_index("pypi.org", "a", "1.0") is True
+    assert github.indexed_files("pypi.org", "a", "1.0") == {"a.whl", "a.tar.gz"}
     assert urls == ["https://pypi.org/pypi/a/1.0/json"]
 
 
-@pytest.mark.parametrize(("code", "expected"), [(404, False), (500, None)])
-def test_on_index_is_false_on_404_and_raises_otherwise(
-    monkeypatch: pytest.MonkeyPatch, code: int, expected: bool | None
+@pytest.mark.parametrize(("code", "expected"), [(404, frozenset()), (500, None)])
+def test_indexed_files_is_empty_on_404_and_raises_otherwise(
+    monkeypatch: pytest.MonkeyPatch, code: int, expected: frozenset[str] | None
 ) -> None:
     def urlopen(url: str, **kwargs: object) -> _Response:
         raise github.urllib.error.HTTPError(url, code, "x", None, None)  # type: ignore[arg-type]
@@ -180,6 +188,15 @@ def test_on_index_is_false_on_404_and_raises_otherwise(
     monkeypatch.setattr(github.urllib.request, "urlopen", urlopen)
     if expected is None:
         with pytest.raises(github.urllib.error.HTTPError):
-            github.on_index("test.pypi.org", "a", "1.0")
+            github.indexed_files("test.pypi.org", "a", "1.0")
     else:
-        assert github.on_index("test.pypi.org", "a", "1.0") is expected
+        assert github.indexed_files("test.pypi.org", "a", "1.0") == expected
+
+
+def test_upload_commands_drop_the_indexed_files_and_their_attestations() -> None:
+    files = [
+        "x.whl", "x.whl.publish.attestation",
+        "x.tar.gz", "x.tar.gz.publish.attestation",
+    ]  # fmt: skip
+    (command,) = github.upload_commands("pypi", "a", "1.0", files, frozenset({"x.whl"}))
+    assert command[4:] == ["x.tar.gz", "x.tar.gz.publish.attestation"]

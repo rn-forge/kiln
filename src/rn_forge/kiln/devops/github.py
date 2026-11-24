@@ -175,32 +175,37 @@ def upload_commands(
     name: str,
     version: str,
     files: Sequence[str],
-    on_index: bool,
+    indexed: frozenset[str],
 ) -> list[list[str]]:
-    """Return the `uv publish` command that uploads `files` to `index`, or `[]` when it already has the version.
+    """Return the `uv publish` command that uploads the files `index` lacks, or `[]` when it has them all.
 
     Only wheels, sdists and their `.publish.attestation` files are uploaded; any other file is ignored.
+    A file whose basename is in `indexed`, and the attestation of such a file, is dropped.
 
     Args:
         index: The index to upload to.
         name: The package name.
         version: The package version.
         files: The built files, in order.
-        on_index: The result of `on_index` for `name` and `version`.
+        indexed: The result of `indexed_files` for `name` and `version`.
     """
-    if on_index:
+    suffix = ".publish.attestation"
+    kept = [
+        f
+        for f in files
+        if f.endswith((".whl", ".tar.gz", suffix))
+        and os.path.basename(f).removesuffix(suffix) not in indexed
+    ]
+    if not any(f.endswith((".whl", ".tar.gz")) for f in kept):
         return []
     command = ["uv", "publish", "--trusted-publishing", "always"]
     if index == "testpypi":
         command += ["--publish-url", "https://test.pypi.org/legacy/"]
-    return [
-        command
-        + [f for f in files if f.endswith((".whl", ".tar.gz", ".publish.attestation"))]
-    ]
+    return [command + kept]
 
 
-def on_index(host: str, name: str, version: str) -> bool:
-    """Return whether the index at `host` (`pypi.org` or `test.pypi.org`) has `name` at `version`.
+def indexed_files(host: str, name: str, version: str) -> frozenset[str]:
+    """Return the filenames the index at `host` (`pypi.org` or `test.pypi.org`) holds for `name` at `version`.
 
     Raises:
         urllib.error.URLError: For any answer other than 200 and 404.
@@ -208,11 +213,12 @@ def on_index(host: str, name: str, version: str) -> bool:
     url = f"https://{host}/pypi/{name}/{version}/json"
     try:
         with urllib.request.urlopen(url, timeout=30) as response:
-            return response.status == 200
+            body = json.loads(response.read())
     except urllib.error.HTTPError as error:
         if error.code == 404:
-            return False
+            return frozenset()
         raise
+    return frozenset(entry["filename"] for entry in body["urls"])
 
 
 def already_published(tag: str) -> None:
