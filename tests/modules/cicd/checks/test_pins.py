@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from tests.conftest import run_check
@@ -9,6 +10,8 @@ from tests.conftest import run_check
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd.checks import pins
+from rn_forge.kiln.modules.core import cycle
+from tests.modules.cicd.support import _root
 
 PINNED = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1"
 
@@ -65,3 +68,25 @@ def test_yml_and_yaml_are_both_read(repo) -> None:
         ".github__workflows__release.yaml": body,
     }
     assert _codes(repo(**files)) == ["ci.unpinned", "ci.unpinned"]
+
+
+def test_a_managed_workflow_is_not_scanned(tmp_path: Path) -> None:
+    root = _root(tmp_path, "python-app")
+    cycle.apply(root, home=tmp_path / "home")
+    ci = root / ".github/workflows/ci.yml"
+    ci.write_text(
+        re.sub(r"@[0-9a-f]{40}", "@v4", ci.read_text(encoding="utf-8"), count=1),
+        encoding="utf-8",
+    )
+    assert _codes(root) == []
+
+
+def test_a_repository_workflow_beside_managed_ones_is_scanned(tmp_path: Path) -> None:
+    root = _root(tmp_path, "python-app")
+    cycle.apply(root, home=tmp_path / "home")
+    extra = root / ".github/workflows/extra.yml"
+    extra.write_text(
+        "jobs:\n  a:\n    permissions: {}\n    steps:\n      - uses: actions/checkout@v4 # v4\n",
+        encoding="utf-8",
+    )
+    assert _codes(root) == ["ci.unpinned"]

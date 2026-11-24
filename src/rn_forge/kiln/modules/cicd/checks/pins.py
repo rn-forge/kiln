@@ -1,7 +1,8 @@
 """`ci-pins` — every action is pinned to a commit, and every job states its permissions.
 
-Two rules, over every `*.yml` and `*.yaml` under `.github/workflows/` and
-`.github/actions/`:
+Two rules, over every repository-owned `*.yml` and `*.yaml` under
+`.github/workflows/` and `.github/actions/` (a file `state.json` records as
+managed is skipped):
 
 1. A `uses:` names a 40-hex-character commit SHA after `@`, with the version in
    a trailing `# <version>` comment. A local action (`uses: ./…`) is exempt.
@@ -14,12 +15,13 @@ import re
 from pathlib import Path
 
 from rn_forge.commons.findings import Finding, Severity
-from rn_forge.commons.fs.documents import YamlUtils
+from rn_forge.commons.fs.documents import DocumentUtils, YamlUtils
 from rn_forge.commons.lang.collections import DictUtils
 
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.kiln.modules.core import umbrella
 
-__all__ = ["NAME", "check"]
+__all__ = ["NAME", "check", "scan"]
 
 NAME = "ci-pins"
 UNPINNED = "ci.unpinned"
@@ -68,9 +70,27 @@ def _check_permissions(label: str, text: str) -> list[Finding]:
     ]
 
 
+def scan(label: str, text: str) -> list[Finding]:
+    """Findings for one workflow or action file: unpinned `uses:`, then missing permissions."""
+    return [*_check_uses(label, text), *_check_permissions(label, text)]
+
+
+def _managed_paths(root: Path) -> set[str]:
+    state_path = root / umbrella.STATE_PATH
+    if not state_path.exists():
+        return set()
+    entries = DictUtils.get_mapping(DocumentUtils.read(state_path), "entries")
+    return {
+        str(entry.get("path", ""))
+        for entry in map(DictUtils.as_mapping, entries.values())
+        if entry.get("kind") == "managed"
+    }
+
+
 def check(config: KilnConfig, root: Path) -> list[Finding]:
-    """Scan every workflow and action for an unpinned `uses:` or a job without permissions."""
+    """Scan each repository-owned workflow and action for an unpinned `uses:` or a job without permissions."""
     del config
+    managed = _managed_paths(root)
     findings: list[Finding] = []
     for directory in _DIRS:
         if not (root / directory).is_dir():
@@ -79,7 +99,7 @@ def check(config: KilnConfig, root: Path) -> list[Finding]:
             if not (path.is_file() and path.suffix in {".yml", ".yaml"}):
                 continue
             label = path.relative_to(root).as_posix()
-            text = path.read_text(encoding="utf-8")
-            findings.extend(_check_uses(label, text))
-            findings.extend(_check_permissions(label, text))
+            if label in managed:
+                continue
+            findings.extend(scan(label, path.read_text(encoding="utf-8")))
     return findings

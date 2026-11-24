@@ -93,12 +93,11 @@ def _break_entrypoint(root: Path) -> None:
 
 
 def _break_pins(root: Path) -> None:
-    _edit(
-        root,
-        ".github/workflows/ci.yml",
-        lambda text: re.sub(r"(uses: [^@\s]+)@[0-9a-f]{40}", r"\1@v4", text, count=1),
+    extra = root / ".github" / "workflows" / "extra.yml"
+    extra.write_text(
+        "jobs:\n  a:\n    permissions: {}\n    steps:\n      - uses: actions/checkout@v4 # v4\n",
+        encoding="utf-8",
     )
-    _reseed(root, ".github/workflows/ci.yml")
 
 
 def _break_hooks(root: Path) -> None:

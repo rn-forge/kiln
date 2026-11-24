@@ -11,6 +11,7 @@ from rn_forge.commons.generation import Action, ArtifactKind
 from rn_forge.kiln import checks
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd import CICD
+from rn_forge.kiln.modules.cicd.checks import pins
 from rn_forge.kiln.modules.core.pins import load_pins
 from rn_forge.kiln.modules.core import cycle
 from rn_forge.kiln.modules.docs import generate
@@ -308,3 +309,21 @@ def test_no_dependabot_entry_sets_a_target_branch(
     root = _cell_root(tmp_path, archetype, extra)
     for entry in _dependabot(root)["updates"]:  # type: ignore[attr-defined]
         assert "target-branch" not in entry
+
+
+@pytest.mark.parametrize(("archetype", "extra"), [*SECURITY_CELLS, ("node-lib", "")])
+def test_every_rendered_workflow_and_action_is_pinned(
+    tmp_path: Path, archetype: str, extra: str
+) -> None:
+    root = _cell_root(tmp_path, archetype, extra)
+    scanned: list[str] = []
+    findings = []
+    for path, content in _rendered(root).items():
+        if path.startswith(
+            (".github/workflows/", ".github/actions/")
+        ) and path.endswith(".yml"):
+            scanned.append(path)
+            findings.extend(pins.scan(path, content))
+    assert ".github/workflows/ci.yml" in scanned
+    assert ".github/actions/setup/action.yml" in scanned
+    assert findings == []
