@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import pytest
+from rn_forge.commons.exceptions import AppException
 from pathlib import Path
 from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.kiln import checks
@@ -74,15 +75,15 @@ def test_nx_dispatch_is_node_libs_default(tmp_path: Path) -> None:
 @pytest.mark.parametrize("archetype", ARCHETYPES)
 def test_nx_dispatch_is_refused_elsewhere(tmp_path: Path, archetype: str) -> None:
     root = _root(tmp_path, archetype, release="nx-dispatch")
-    with pytest.raises(ValueError, match=r"ci\.release"):
-        _rendered(root)
+    with pytest.raises(AppException, match=r"ci\.release"):
+        KilnConfig.load(root)
 
 
 @pytest.mark.parametrize("release", ["tag-exists", "pypi"])
 def test_node_lib_refuses_the_other_modes(tmp_path: Path, release: str) -> None:
     root = _root(tmp_path, "node-lib", release=release)
-    with pytest.raises(ValueError, match=r"ci\.release"):
-        _rendered(root)
+    with pytest.raises(AppException, match=r"ci\.release"):
+        KilnConfig.load(root)
 
 
 def test_release_none_renders_no_release_yml_and_no_release_tasks(
@@ -201,8 +202,10 @@ def test_npm_release_needs_node_lib(tmp_path: Path, group: str) -> None:
         release="npm",
         packages=LIB_PACKAGES,
     )
-    with pytest.raises(ValueError, match="needs the node-lib archetype"):
-        _rendered(root)
+    with pytest.raises(
+        AppException, match=r"ci\.release.*needs the node-lib archetype"
+    ):
+        KilnConfig.load(root)
 
 
 @pytest.mark.parametrize("release", ["nx-dispatch", "npm"])

@@ -118,7 +118,7 @@ def load(name: str) -> Archetype:
         AppException: This kiln ships no such archetype, or its manifest is invalid.
     """
     manifest = files(__name__).joinpath(name.replace("-", "_"), _MANIFEST)
-    if not name or not manifest.is_file():
+    if name not in shipped():
         raise AppException(
             "Unknown archetype {!r} — this kiln ships {}", name, ", ".join(shipped())
         )

@@ -147,7 +147,8 @@ class ConfigManager:
             AppException: *document* declares a schema version other than this
                 kiln's (unless *allow_schema_upgrade* and it is older), names
                 an unknown archetype, carries a section for a module its
-                archetype does not enable, or fails the schema — in which case
+                archetype does not enable, sets a `ci.release` its archetype
+                cannot take, or fails the schema — in which case
                 every failing key is named by its dotted path.
         """
         declared = document.get("schema_version")
@@ -203,7 +204,12 @@ class ConfigManager:
                 foreign[0],
                 name,
             )
-        return KilnConfig(compose(enabled).parse(document, source=source))
+        config = KilnConfig(compose(enabled).parse(document, source=source))
+        try:
+            config.release  # noqa: B018 - reading it is the check
+        except ValueError as error:
+            raise AppException("{}: {}", source, error) from error
+        return config
 
     def resolve(
         self,

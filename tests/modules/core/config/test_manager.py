@@ -344,3 +344,23 @@ def test_re_resolution_of_an_untrimmed_audit_reason_lists_no_override(
     resolution = ConfigManager().reresolve(repo)
     assert resolution.overrides == ()
     assert resolution.config.ci.audit_policy().ignore[0].reason == "accepted"
+
+
+def test_a_release_the_archetype_cannot_take_is_refused_at_load(tmp_path: Path) -> None:
+    root = write_config(
+        tmp_path,
+        """
+schema_version = 1
+
+[repository]
+name = "demo"
+owner = "rn-forge"
+archetype = "python-app"
+
+[ci]
+release = "pypi"
+""",
+    )
+    with pytest.raises(AppException, match=r"ci\.release") as error:
+        ConfigManager().load(root)
+    assert not isinstance(error.value, ValueError)

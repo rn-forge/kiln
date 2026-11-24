@@ -69,6 +69,12 @@ def test_a_manifest_naming_an_unregistered_module_is_refused_by_name() -> None:
         builtin().for_archetype(archetype)
 
 
+@pytest.mark.parametrize("name", ["python_tool", "python_app"])
+def test_an_archetype_name_with_underscores_is_refused(repo, name) -> None:
+    with pytest.raises(AppException, match="Unknown archetype"):
+        KilnConfig.load(repo(archetype=name))
+
+
 def test_an_unknown_archetype_is_refused_naming_what_ships() -> None:
     with pytest.raises(AppException, match="Unknown archetype 'python-hovercraft'"):
         archetypes.load("python-hovercraft")

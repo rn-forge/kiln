@@ -371,8 +371,8 @@ def test_release_steps_pass_testpypi(tmp_path: Path) -> None:
 
 def test_pypi_needs_a_workspace(tmp_path: Path) -> None:
     root = _pypi_root(tmp_path, "python-tool")
-    with pytest.raises(ValueError, match=r"ci\.release"):
-        _rendered(root)
+    with pytest.raises(AppException, match=r"ci\.release"):
+        KilnConfig.load(root)
 
 
 @pytest.mark.parametrize("sonar", [True, False])

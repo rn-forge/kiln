@@ -151,7 +151,7 @@ class TestAreas:
 
     def test_area_round_trips_through_dict(self, repo):
         for area in load_areas(repo / "docs"):
-            assert Area.from_dict(area.as_dict()) == area
+            assert Area.model_validate(area.model_dump()) == area
 
     def test_a_mistyped_field_names_the_manifest_and_the_field(self, tmp_path):
         write(
@@ -162,6 +162,20 @@ class TestAreas:
             load_areas(tmp_path)
         assert "_areas.yml" in str(error.value)
         assert "optional" in str(error.value)
+
+    @pytest.mark.parametrize(
+        "body",
+        [
+            "areas:\n  - just a string\n",
+            "areas: 3\n",
+            "areas:\n  - key: guides\n    bogus: 1\n",
+            "- x\n",
+        ],
+    )
+    def test_a_malformed_manifest_is_refused(self, tmp_path, body):
+        write(tmp_path / "_areas.yml", body)
+        with pytest.raises(AppException):
+            load_areas(tmp_path)
 
     def test_a_missing_key_is_rejected(self, tmp_path):
         write(tmp_path / "_areas.yml", "areas:\n  - title: Guides\n")

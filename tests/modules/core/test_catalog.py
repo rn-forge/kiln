@@ -73,7 +73,9 @@ def test_none_default_commented(tmp_path: Path) -> None:
     assert '# release = "tag-exists"' in text.splitlines()
     assert not [line for line in text.splitlines() if line.startswith("release =")]
 
-    pinned = _written(tmp_path / "pinned", _config(ci={"release": "pypi"}))
+    pinned = _written(
+        tmp_path / "pinned", _config("python-lib", ci={"release": "pypi"})
+    )
     assert 'release = "pypi"' in pinned.splitlines()
 
 

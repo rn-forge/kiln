@@ -59,6 +59,15 @@ def test_tool_starter_artifacts(tmp_path: Path) -> None:
     assert "build_tool_app" in by_path["src/python_tool/main.py"]
 
 
+def test_a_python_app_with_lifecycle_gets_the_tool_starter(tmp_path: Path) -> None:
+    config = _config(tmp_path, "python-app", name="demo", lifecycle=True)
+    _fresh(tmp_path, "demo")
+    artifacts = starter.render(config, tmp_path)
+    assert {a.path for a in artifacts} == {
+        path.replace("python_tool", "demo") for path in TOOL_PATHS
+    }
+
+
 def test_app_starter_has_no_product(tmp_path: Path) -> None:
     config = _tool(tmp_path, "python-app")
     _fresh(tmp_path, "python_tool")
