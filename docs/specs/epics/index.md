@@ -34,7 +34,7 @@ Jump to:
 | [E12 — The architecture baseline](E12-architecture-baseline/index.md) | Active | 2 Closed | release-1 |
 | [E13 — The docs work model and derived regions](E13-docs-work-model/index.md) | Closed | 4 Closed | release-1 |
 | [E14 — Docs site navigation and work summaries](E14-site-navigation/index.md) | Closed | 2 Closed | release-1 |
-| [E15 — One CI standard for every archetype](E15-ci-standard/index.md) | Closed | 8 Closed | release-1 |
+| [E15 — One CI standard for every archetype](E15-ci-standard/index.md) | Active | 1 New · 8 Closed | release-1 |
 | [E16 — `init` adopts by overwrite](E16-init-adopts-by-overwrite/index.md) | Active | 11 Closed | release-1 |
 | [E17 — One task standard for every archetype](E17-task-standard/index.md) | Active | 3 Closed | release-1 |
 | [E18 — kiln simplification](E18-kiln-simplification/index.md) | Active | 4 New · 10 Closed | release-1, release-2 |

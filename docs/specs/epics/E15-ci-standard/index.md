@@ -2,9 +2,8 @@
 
 |  |  |
 | -- | -- |
-| **State** | Closed |
+| **State** | Active |
 | **Start Date** | 2026-11-05 |
-| **Closed Date** | 2026-11-06 |
 
 <!-- BEGIN derived features -->
 
@@ -18,6 +17,7 @@
 | [F15.6 — OpenSSF Scorecard](F15.6-scorecard.md) | Closed | release-1 | 1 Closed |
 | [F15.7 — Repository-owned workflows](F15.7-repo-owned-workflows.md) | Closed | release-1 | 2 Closed |
 | [F15.8 — Every archetype on the one-workflow contract](F15.8-one-workflow-contract.md) | Closed | release-1 | 9 Closed |
+| [F15.9 — A re-run docs job deploys its own Pages artifact](F15.9-pages-artifact-per-attempt.md) | New | release-1 | 1 New |
 
 <!-- END derived features -->
 
