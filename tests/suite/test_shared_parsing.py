@@ -6,7 +6,8 @@ import ast
 from pathlib import Path
 
 import rn_forge.kiln as kiln_package
-from rn_forge.kiln.devops.ci import normalize, requirement_name
+from packaging.utils import canonicalize_name
+from rn_forge.kiln.devops.ci import requirement_name
 
 KILN = Path(kiln_package.__file__).parent
 MODULES = KILN / "modules"
@@ -86,5 +87,5 @@ def test_one_docs_helper_each() -> None:
 
 
 def test_devops_names_follow_packaging() -> None:
-    assert normalize("Foo_Bar.baz") == "foo-bar-baz"
+    assert canonicalize_name("Foo_Bar.baz") == "foo-bar-baz"
     assert requirement_name("Foo_Bar[x]>=1; python_version>'3'") == "foo-bar"

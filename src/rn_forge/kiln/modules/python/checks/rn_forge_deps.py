@@ -30,6 +30,7 @@ import re
 from pathlib import Path
 from typing import cast
 
+from packaging.utils import canonicalize_name
 from rn_forge.commons.findings import Finding, Severity
 from rn_forge.commons.fs.documents import DocumentUtils
 from rn_forge.commons.lang.collections import DictUtils, ListUtils
@@ -66,7 +67,7 @@ KILN = "rn-forge-kiln"
 def distribution(requirement: str) -> str:
     """The normalized distribution name a PEP 508 requirement names."""
     match = REQUIREMENT_NAME.match(requirement)
-    return match.group(1).lower().replace("_", "-") if match else ""
+    return canonicalize_name(match.group(1)) if match else ""
 
 
 def _specifier(requirement: str) -> str:
@@ -84,7 +85,7 @@ def _has_ceiling(specifier: str) -> bool:
 
 def governed(name: str) -> bool:
     """Whether the contract applies to distribution *name*."""
-    name = name.lower()
+    name = canonicalize_name(name)
     return name.startswith(RN_FORGE_PREFIX) and name != KILN
 
 
@@ -167,7 +168,7 @@ def _check_allowed(
     allowed: tuple[str, ...],
     members: frozenset[str],
 ) -> list[Finding]:
-    permitted = {name.lower() for name in allowed} | members
+    permitted = {canonicalize_name(name) for name in allowed} | members
     return [
         Finding(
             f"{CODE}.not-allowed",
@@ -404,5 +405,5 @@ def _required_missing(
             path="pyproject.toml",
         )
         for name in archetype.dependencies.required
-        if name.lower() not in declared and distribution(name) not in members
+        if canonicalize_name(name) not in declared and distribution(name) not in members
     ]

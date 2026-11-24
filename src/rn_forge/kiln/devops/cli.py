@@ -13,6 +13,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from packaging.utils import canonicalize_name
+
 from rn_forge.kiln.devops import (
     ci,
     consumer,
@@ -429,7 +431,7 @@ def _smoke(args: argparse.Namespace) -> int:
 
 def _integration(args: argparse.Namespace) -> int:
     workspace = _workspace()
-    package = workspace.packages[ci.normalize(args.package)]
+    package = workspace.packages[canonicalize_name(args.package)]
     return integration.run(
         package, integration.subprocess_runner, workspace.pytest_args
     )

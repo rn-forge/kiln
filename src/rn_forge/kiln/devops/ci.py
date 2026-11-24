@@ -18,11 +18,6 @@ from packaging.utils import canonicalize_name
 UNSCOPED = ("docs/",)
 
 
-def normalize(name: str) -> str:
-    """Return `name` in its canonical form: lowercase, runs of `-_.` as one `-`."""
-    return canonicalize_name(name)
-
-
 def requirement_name(requirement: str) -> str:
     """Return the normalized package name of a requirement string."""
     return canonicalize_name(Requirement(requirement).name)
@@ -262,7 +257,7 @@ def releasable(
     `ok_dir` and its release requirements among `names` may be released too. Both lists
     are in release order.
     """
-    selected = {normalize(n) for n in names}
+    selected: set[str] = {canonicalize_name(n) for n in names}
     passed: set[str] = set()
     blocked: list[str] = []
     for name in release_order(packages, selected):

@@ -259,6 +259,29 @@ def test_each_rule_rejects_its_violation(repo, pyproject: str, expected: str) ->
     assert all("pyproject.toml" in line for line in reported)
 
 
+@pytest.mark.parametrize(
+    "entry",
+    [
+        "rn-forge-agentkit>=0.6.0",
+        "rn.forge.agentkit>=0.6.0",
+        "RN_Forge.AgentKit>=0.6.0",
+    ],
+    ids=["control", "dotted", "mixed"],
+)
+def test_a_spelling_of_a_forbidden_kit_is_still_governed(repo, entry: str) -> None:
+    pyproject = FORBIDDEN_KIT.replace("rn-forge-agentkit>=0.6.0", entry)
+    reported = run(repo(lifecycle=True, **{"pyproject.toml": pyproject}))
+    assert any(
+        "not in this archetype's allowed set" in line and "rn-forge-agentkit" in line
+        for line in reported
+    )
+
+
+def test_an_allowed_kit_spelled_with_dots_is_allowed(repo) -> None:
+    pyproject = COMPLIANT.replace("rn-forge-commons @", "rn.forge.commons @", 1)
+    assert run(repo(lifecycle=True, **{"pyproject.toml": pyproject})) == []
+
+
 def test_a_missing_pyproject_is_a_finding(repo) -> None:
     reported = run(repo())
     assert any("not found" in line and "pyproject.toml" in line for line in reported)

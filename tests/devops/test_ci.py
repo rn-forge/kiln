@@ -14,7 +14,6 @@ from rn_forge.kiln.devops.ci import (
     Service,
     Smoke,
     Workspace,
-    normalize,
     plan,
     releasable,
     release_order,
@@ -38,10 +37,6 @@ def _group_cycle() -> dict[str, Package]:
         ),
         "web": Package("web", "web", "web", requires={"auth"}),
     }
-
-
-def test_normalize_collapses_separators() -> None:
-    assert normalize("Rn_Forge.Devops") == "rn-forge-devops"
 
 
 def test_release_order_puts_requirements_first() -> None:

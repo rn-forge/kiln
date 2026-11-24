@@ -19,13 +19,13 @@ from pathlib import Path
 from typing import Any
 
 from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
 
 from rn_forge.kiln.devops.ci import (
     Package,
     Service,
     Smoke,
     Workspace,
-    normalize,
     requirement_name,
 )
 
@@ -149,7 +149,7 @@ def load_workspace(root: Path) -> Workspace:
         else [root]
     )
     manifests = {path: tomllib.loads((path / MANIFEST).read_text()) for path in dirs}
-    names = {normalize(m["project"]["name"]) for m in manifests.values()}
+    names = {canonicalize_name(m["project"]["name"]) for m in manifests.values()}
     packages: dict[str, Package] = {}
     for path, member in manifests.items():
         project = member["project"]
@@ -160,7 +160,7 @@ def load_workspace(root: Path) -> Workspace:
         release_requirements = list(requirements)
         for group in member.get("dependency-groups", {}).values():
             requirements += [item for item in group if isinstance(item, str)]
-        name = normalize(project["name"])
+        name = canonicalize_name(project["name"])
         ci = tool.get(TOOL, {})
         smoke = ci.get("smoke")
         packages[name] = Package(
@@ -275,10 +275,10 @@ def _local_extras(
             continue
         local[name] = local.get(name, set()) | extras
         pending += [
-            (normalize(req.name), set(req.extras))
+            (canonicalize_name(req.name), set(req.extras))
             for req in _wheel_requires(wheels[name])
-            if normalize(req.name) in wheels
-            and normalize(req.name) != name
+            if canonicalize_name(req.name) in wheels
+            and canonicalize_name(req.name) != name
             and _active(req, local[name])
         ]
     return local
@@ -290,7 +290,7 @@ def _external_requirements(
     external: set[str] = set()
     for name, extras in local.items():
         for req in _wheel_requires(wheels[name]):
-            if normalize(req.name) not in wheels and _active(req, extras):
+            if canonicalize_name(req.name) not in wheels and _active(req, extras):
                 req.marker = None
                 external.add(str(req))
     return external
@@ -309,7 +309,7 @@ def smoke(workspace: Workspace, package_name: str, extra: str) -> int:
         The exit status of the import step.
     """
     root, packages = workspace.root, workspace.packages
-    package = packages[normalize(package_name)]
+    package = packages[canonicalize_name(package_name)]
     config = package.smoke or Smoke()
     modules = [
         *(config.modules if package.smoke else [package.module]),
@@ -333,7 +333,9 @@ def smoke(workspace: Workspace, package_name: str, extra: str) -> int:
                 cwd=root,
                 check=True,
             )
-        wheels = {normalize(w.name.split("-")[0]): w for w in dist.glob("*.whl")}
+        wheels: dict[str, Path] = {
+            canonicalize_name(w.name.split("-")[0]): w for w in dist.glob("*.whl")
+        }
         local = _local_extras(wheels, package.name, extra)
         external = _external_requirements(wheels, local)
         print(f"extra={extra or '(none)'} local={local}")
