@@ -6,7 +6,7 @@ from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
 from rn_forge.commons.findings import Finding, Severity
-from rn_forge.commons.generation import Action, ArtifactKind
+from rn_forge.commons.generation import BLOCKING_ACTIONS, Action, ArtifactKind
 from rn_forge.commons.runtime.console import console
 
 from rn_forge.kiln import checks
@@ -21,6 +21,9 @@ _CODES = {
     Action.DELETE: "artifact.stale",
     Action.INSERT: "block.stale",
     Action.REMOVE: "block.stale",
+    Action.CONFLICT: "artifact.conflict",
+    Action.DRIFT: "artifact.drift",
+    Action.MISSING: "artifact.missing",
 }
 
 
@@ -114,7 +117,8 @@ def _findings(path: Path, render: bool) -> list[Finding]:
     root = path.resolve()
     findings = checks.run(root)
     if render:
-        findings.extend(full(root))
+        seen = {(f.code, f.path) for f in findings}
+        findings.extend(f for f in full(root) if (f.code, f.path) not in seen)
     return findings
 
 
@@ -129,12 +133,14 @@ def full(root: Path) -> list[Finding]:
         code = _CODES.get(change.action)
         if code is None or change.kind is ArtifactKind.SEEDED:
             continue
-        findings.append(
-            Finding(
-                code,
-                Severity.ERROR,
-                f"would be {change.action.value} by a fresh render — run `kiln apply`",
-                path=change.path,
+        if change.action in BLOCKING_ACTIONS:
+            message = (
+                f"is {change.action.value} against a fresh render; "
+                "resolve it, then run kiln apply"
             )
-        )
+        else:
+            message = (
+                f"would be {change.action.value} by a fresh render — run `kiln apply`"
+            )
+        findings.append(Finding(code, Severity.ERROR, message, path=change.path))
     return findings

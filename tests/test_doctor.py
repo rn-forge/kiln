@@ -54,6 +54,18 @@ def _reseed(root: Path, relative: str) -> None:
     state_path.write_text(json.dumps(state), encoding="utf-8")
 
 
+def _forget(root: Path, relative: str) -> None:
+    """Delete *relative*'s entries from the committed state."""
+    state_path = root / ".rn-forge" / "kiln" / "state.json"
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    state["entries"] = {
+        key: entry
+        for key, entry in state["entries"].items()
+        if entry["path"] != relative
+    }
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+
+
 def _break_generated(root: Path) -> None:
     _edit(root, "Taskfile.yml", lambda text: text + "\n# edit\n")
 
@@ -296,6 +308,30 @@ def test_managed_drift_still_reported(copy: Path) -> None:
     (copy / "tasks" / "quality.yml").unlink()
     missing = [f for f in checks.run(copy) if f.code == "artifact.missing"]
     assert [f.path for f in missing] == ["tasks/quality.yml"]
+
+
+@pytest.mark.parametrize(
+    ("code", "path"),
+    [
+        ("artifact.conflict", ".editorconfig"),
+        ("artifact.drift", "Taskfile.yml"),
+        ("artifact.missing", "tasks/quality.yml"),
+    ],
+)
+def test_full_reports_every_blocking_action(
+    copy: Path, capsys: pytest.CaptureFixture[str], code: str, path: str
+) -> None:
+    if code == "artifact.conflict":
+        _forget(copy, path)
+    elif code == "artifact.drift":
+        _break_generated(copy)
+    else:
+        (copy / path).unlink()
+    with pytest.raises(AppException):
+        commands.doctor([copy], full=True, json=True)
+
+    items = json.loads(capsys.readouterr().out)["findings"]
+    assert [i["path"] for i in items if i["code"] == code] == [path]
 
 
 def test_malformed_config_still_errors(copy: Path) -> None:
