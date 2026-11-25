@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import copy
 import json
+import tempfile
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -253,3 +256,75 @@ def table(record: dict[str, Any]) -> str:
         ]
         rows.append(f"| {' | '.join(cells)} |")
     return "\n".join(rows)
+
+
+_PUSH_PROTECTION = ("security_and_analysis", "secret_scanning_push_protection")
+_FILLED = {"enabled": "passed", "disabled": "failed"}
+_PAGE = """# Release {release} — security evidence
+
+|  |  |
+| -- | -- |
+| **Release** | [Release {release}](index.md) |
+| **Repository** | {repository} |
+| **Commit** | `{commit}` |
+| **Run** | [{run}, attempt {attempt}](https://github.com/{repository}/actions/runs/{run}/attempts/{attempt}) |
+
+Rendered by `task release:evidence` from the run's `security-evidence` record.
+Do not edit it by hand.
+
+Passing this baseline is not a claim that the release is secure.
+
+{table}
+"""
+
+
+def _fill(record: dict[str, Any], today: date) -> dict[str, Any]:
+    filled = copy.deepcopy(record)
+    pending = [c for c in filled["controls"] if c["result"] == "not checked"]
+    if not pending:
+        return filled
+    status, body = github.api(_REPO)
+    try:
+        value = body[_PUSH_PROTECTION[0]][_PUSH_PROTECTION[1]]["status"]
+    except KeyError, TypeError:
+        return filled
+    if status != 200 or value not in _FILLED:
+        return filled
+    detail = (
+        f"GET repos/{record['repository']} security_and_analysis, {today.isoformat()}"
+    )
+    for control in pending:
+        control["result"] = _FILLED[value]
+        control["evidence"] = {"url": None, "detail": detail}
+    return filled
+
+
+def render_page(
+    run: int, release: int, releases: Path, today: date | None = None
+) -> Path:
+    """Write the evidence page of `release` from run `run`'s record; return its path.
+
+    Raises:
+        ValueError: When `releases/release-<release>/index.md` does not exist, or
+            the run has no `security-evidence` artifact.
+    """
+    folder = releases / f"release-{release}"
+    if not (folder / "index.md").is_file():
+        raise ValueError(f"no release page {folder / 'index.md'}")
+    with tempfile.TemporaryDirectory() as scratch:
+        found = github.download_artifact(run, "security-evidence", Path(scratch))
+        source = Path(scratch) / "security-evidence.json"
+        if not found or not source.is_file():
+            raise ValueError(f"run {run} has no security-evidence artifact")
+        record = json.loads(source.read_text(encoding="utf-8"))
+    filled = _fill(record, today or date.today())  # noqa: DTZ011
+    page = folder / "security.md"
+    page.write_text(
+        _PAGE.format(
+            release=release,
+            table=table(filled),
+            **{k: record[k] for k in ("repository", "commit", "run", "attempt")},
+        ),
+        encoding="utf-8",
+    )
+    return page

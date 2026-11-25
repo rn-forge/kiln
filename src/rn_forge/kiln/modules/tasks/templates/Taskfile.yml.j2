@@ -33,6 +33,7 @@ includes:
 {% endif %}  workspace: tasks/workspace.yml
   ci: tasks/ci.yml
 {% if sonar %}  sonar: tasks/sonar.yml
+{% endif %}{% if "release-evidence" in checks %}  release: tasks/release.yml
 {% endif %}{% if web %}  api: tasks/api.yml
 {% endif %}{% if web_app %}  web: tasks/web.yml
 {% endif %}{% if node %}  node: tasks/node.yml

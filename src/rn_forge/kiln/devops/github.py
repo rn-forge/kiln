@@ -11,6 +11,7 @@ import urllib.error
 import urllib.request
 from collections.abc import Mapping, Sequence
 from enum import Enum
+from pathlib import Path
 from typing import Any, Literal
 
 
@@ -63,6 +64,12 @@ def api(path: str) -> tuple[int, Any]:
         return 200, json.loads(result.stdout)
     found = re.search(r"HTTP (\d{3})", result.stderr)
     return (int(found.group(1)) if found else 0), None
+
+
+def download_artifact(run: int, name: str, dest: Path) -> bool:
+    """Download artifact `name` of run `run` into `dest` with `gh run download`; return whether it succeeded."""
+    command = ["gh", "run", "download", str(run), "-n", name, "-D", str(dest)]
+    return _capture(command).returncode == 0
 
 
 def run(command: list[str]) -> None:

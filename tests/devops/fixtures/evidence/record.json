@@ -1,0 +1,96 @@
+{
+  "repository": "rn-forge/kiln",
+  "commit": "abc1234def",
+  "run": 123,
+  "attempt": 1,
+  "packages": [
+    {
+      "name": "rn-forge-kiln",
+      "version": "0.4.0",
+      "tag": "rn-forge-kiln-v0.4.0"
+    }
+  ],
+  "controls": [
+    {
+      "name": "Dependency audit",
+      "effect": "fails the build",
+      "result": "passed",
+      "evidence": {
+        "url": "https://github.com/rn-forge/kiln/actions/runs/123/job/0",
+        "detail": "job validate, step Validate"
+      }
+    },
+    {
+      "name": "Licence inventory",
+      "effect": "fails the build",
+      "result": "passed",
+      "evidence": {
+        "url": "https://github.com/rn-forge/kiln/actions/runs/123/job/1",
+        "detail": "job validate, step Validate"
+      }
+    },
+    {
+      "name": "Source scan",
+      "effect": "fails the build",
+      "result": "passed",
+      "evidence": {
+        "url": "https://github.com/rn-forge/kiln/actions/runs/123/job/2",
+        "detail": "job validate, step Validate"
+      }
+    },
+    {
+      "name": "Secret scan",
+      "effect": "fails the build",
+      "result": "passed",
+      "evidence": {
+        "url": "https://github.com/rn-forge/kiln/actions/runs/123/job/3",
+        "detail": "job secret-scan"
+      }
+    },
+    {
+      "name": "Push protection",
+      "effect": "blocks the push",
+      "result": "not checked",
+      "evidence": {
+        "url": null,
+        "detail": "not read by CI"
+      }
+    },
+    {
+      "name": "SBOM",
+      "effect": "reports only",
+      "result": "passed",
+      "evidence": {
+        "url": "https://github.com/rn-forge/kiln/releases/tag/rn-forge-kiln-v0.4.0",
+        "detail": "rn-forge-kiln-v0.4.0: rn-forge-kiln.cdx.json"
+      }
+    },
+    {
+      "name": "Attestation",
+      "effect": "reports only",
+      "result": "passed",
+      "evidence": {
+        "url": null,
+        "detail": "rn-forge-kiln-0.4.0.tar.gz 200; rn-forge-kiln-0.4.0-py3-none-any.whl 200"
+      }
+    },
+    {
+      "name": "`SECURITY.md`",
+      "effect": "reports only",
+      "result": "passed",
+      "evidence": {
+        "url": "https://github.com/rn-forge/kiln/blob/abc1234def/SECURITY.md",
+        "detail": "SECURITY.md"
+      }
+    },
+    {
+      "name": "Scorecard",
+      "effect": "reports only",
+      "result": "passed",
+      "evidence": {
+        "url": "https://github.com/rn-forge/kiln/actions/runs/99",
+        "detail": "commit abc1234def"
+      }
+    }
+  ]
+}

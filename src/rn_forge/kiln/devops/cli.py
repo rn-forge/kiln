@@ -178,6 +178,13 @@ def _parser() -> argparse.ArgumentParser:
     collect.add_argument("--sha", required=True, metavar="SHA")
     collect.add_argument("--controls", required=True, metavar="FILE")
     collect.add_argument("--out", default="security-evidence.json", metavar="FILE")
+    render = steps.add_parser(
+        "render", help="write a release's evidence page from a run's record"
+    )
+    render.set_defaults(func=_evidence_render, validate=_check_render)
+    render.add_argument("--run", required=True, metavar="ID")
+    render.add_argument("--release", required=True, metavar="N")
+    render.add_argument("--releases", default="docs/releases", metavar="DIR")
     return parser
 
 
@@ -224,6 +231,12 @@ def _check_collect(args: argparse.Namespace) -> None:
     args.run = int(_checked(r"[0-9]+", "run", args.run))
     args.attempt = int(_checked(r"[0-9]+", "attempt", args.attempt))
     args.sha = _checked(r"[0-9a-f]{7,40}", "sha", args.sha)
+
+
+def _check_render(args: argparse.Namespace) -> None:
+    args.run = int(_checked(r"[0-9]+", "run", args.run))
+    args.release = int(_checked(r"[0-9]+", "release", args.release))
+    args.releases = _inside(args.releases, os.getcwd())
 
 
 def _check_notes(args: argparse.Namespace) -> None:
@@ -411,6 +424,16 @@ def _evidence_collect(args: argparse.Namespace) -> int:
         return 2
     Path(args.out).write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
     print(evidence.table(record))
+    return 0
+
+
+def _evidence_render(args: argparse.Namespace) -> int:
+    try:
+        page = evidence.render_page(args.run, args.release, Path(args.releases))
+    except ValueError as error:
+        print(f"kiln-devops: {error}", file=sys.stderr)
+        return 2
+    print(page, file=sys.stderr)
     return 0
 
 

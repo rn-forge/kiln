@@ -171,6 +171,9 @@ def render(config: KilnConfig) -> list[Artifact]:
             TemplateArtifact("tasks/node.yml", enabled=node),
             TemplateArtifact("tasks/ci.yml"),
             TemplateArtifact("tasks/sonar.yml", enabled=ci.sonar),
+            TemplateArtifact(
+                "tasks/release.yml", enabled="release-evidence" in config.ci_checks
+            ),
             *(
                 TemplateArtifact(
                     include.taskfile,

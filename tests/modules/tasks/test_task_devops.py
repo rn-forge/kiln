@@ -5,6 +5,7 @@ import pytest
 from pathlib import Path
 from rn_forge.commons.fs.documents import YamlUtils
 from rn_forge.kiln.config import KilnConfig
+from rn_forge.commons.exceptions import AppException
 from rn_forge.kiln.modules.core import cycle
 from tests.conftest import requires
 from tests.modules.tasks.support import (
@@ -162,3 +163,30 @@ def test_unknown_package_fails_naming_it(tmp_path: Path) -> None:
     assert "unknown package 'nope'" in result.stderr
     assert "alpha" in result.stderr
     assert "beta" in result.stderr
+
+
+def test_release_task_file_only_with_release_evidence(tmp_path: Path) -> None:
+    off = _root(tmp_path / "off")
+    cycle.apply(off, home=tmp_path / "home")
+    assert not (off / "tasks/release.yml").exists()
+    taskfile = YamlUtils.load((off / "Taskfile.yml").read_text(encoding="utf-8"))
+    assert "release" not in taskfile["includes"]
+    on = _root(tmp_path / "on", extra="\n[ci.checks]\nrelease-evidence = true\n")
+    cycle.apply(on, home=tmp_path / "home")
+    task = _load(on, "tasks/release.yml")["tasks"]["evidence"]
+    assert 'evidence render --run "$1" --release "$2"' in task["cmds"][0]
+    taskfile = YamlUtils.load((on / "Taskfile.yml").read_text(encoding="utf-8"))
+    assert taskfile["includes"]["release"] == "tasks/release.yml"
+
+
+def test_release_namespace_is_reserved(tmp_path: Path) -> None:
+    root = _root(tmp_path)
+    cycle.apply(root, home=tmp_path / "home")
+    config = root / ".rn-forge" / "kiln" / "config.toml"
+    config.write_text(
+        config.read_text(encoding="utf-8")
+        + '\n[tasks]\nincludes = [{ namespace = "release", taskfile = "tasks/mine.yml" }]\n',
+        encoding="utf-8",
+    )
+    with pytest.raises(AppException, match=r"tasks\.includes\.0\.namespace"):
+        KilnConfig.load(root)

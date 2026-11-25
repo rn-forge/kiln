@@ -41,6 +41,16 @@ def test_ci_is_pure() -> None:
     assert "print(" not in text
 
 
+def test_every_evidence_step_dispatches_by_func() -> None:
+    parser = cli._parser()
+    steps = {
+        "collect": ["--run", "1", "--sha", "abc1234", "--controls", "c.json"],
+        "render": ["--run", "1", "--release", "1"],
+    }
+    for step, argv in steps.items():
+        assert callable(parser.parse_args(["evidence", step, *argv]).func), step
+
+
 def test_every_subcommand_dispatches_by_func() -> None:
     parser = cli._parser()
     action = next(

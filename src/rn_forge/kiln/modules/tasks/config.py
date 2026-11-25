@@ -43,6 +43,7 @@ GENERATED_NAMESPACES = frozenset(
         "workspace",
         "ci",
         "sonar",
+        "release",
         "api",
         "web",
         "node",

@@ -129,6 +129,7 @@ CI, docs and tasks end to end. It also carries kiln's architecture baseline
 | [F20.1 — kiln writes and checks only its block](../../specs/epics/E20-blocks-only-instruction-files/F20.1-blocks-only.md) | E20 | Closed |
 | [F20.2 — kiln's block links the README](../../specs/epics/E20-blocks-only-instruction-files/F20.2-block-links-readme.md) | E20 | Closed |
 | [F21.1 — The evidence record](../../specs/epics/E21-release-security-evidence/F21.1-evidence-record.md) | E21 | Closed |
+| [F21.2 — The evidence page and the umbrella release](../../specs/epics/E21-release-security-evidence/F21.2-evidence-page.md) | E21 | Active |
 
 <!-- END derived scope -->
 

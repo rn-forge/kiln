@@ -103,6 +103,15 @@ def test_every_reserved_namespace_is_rendered_somewhere(tmp_path: Path) -> None:
     rendered: set[str] = set()
     for index, (archetype, extra) in enumerate(RENDER_CELLS):
         rendered |= _include_namespaces(tmp_path / str(index), archetype, extra)
+    root = _secrets_root(
+        tmp_path / "evidence", "python-tool", "\n[ci.checks]\nrelease-evidence = true\n"
+    )
+    taskfile = TASKS.artifacts(KilnConfig.load(root), root)
+    rendered |= set(
+        YamlUtils.load(next(a.content for a in taskfile if a.path == "Taskfile.yml"))[
+            "includes"
+        ]
+    )
     assert rendered == GENERATED_NAMESPACES, rendered ^ GENERATED_NAMESPACES
 
 
