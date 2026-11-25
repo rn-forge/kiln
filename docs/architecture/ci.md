@@ -209,6 +209,7 @@ cut to the repository's archetype, is under "CI checks" in
 | `secret-scan` | `task ci:secret-scan` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] secret-scan`, default `true` |
 | `internal-ranges` | `task ci:internal-ranges` | yes |  |  |  |  | yes | D: two or more workspace members |
 | `umbrella-release` | `task ci:release:umbrella` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] umbrella-release`, default `false` |
+| `release-evidence` | `task ci:release:evidence` | yes | yes | yes | yes | yes | yes | C: `[ci.checks] release-evidence`, default `false` |
 | `scorecard` | none | yes | yes | yes | yes | yes | yes | C: `[ci.checks] scorecard`, default `false`; public repositories only |
 
 <!-- END derived ci-matrix -->

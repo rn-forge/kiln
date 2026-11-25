@@ -36,6 +36,7 @@ GENERATED_JOBS = frozenset(
         "test-local",
         "suites",
         "umbrella",
+        "evidence",
         "scorecard",
         "checks-ok",
         "ci-ok",

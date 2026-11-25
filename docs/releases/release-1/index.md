@@ -128,7 +128,7 @@ CI, docs and tasks end to end. It also carries kiln's architecture baseline
 | [F19.4 — The FastAPI starter's imports pass ruff at any package name](../../specs/epics/E19-formatting-standard/F19.4-fastapi-starter-imports.md) | E19 | Closed |
 | [F20.1 — kiln writes and checks only its block](../../specs/epics/E20-blocks-only-instruction-files/F20.1-blocks-only.md) | E20 | Closed |
 | [F20.2 — kiln's block links the README](../../specs/epics/E20-blocks-only-instruction-files/F20.2-block-links-readme.md) | E20 | Closed |
-| [F21.1 — The evidence record](../../specs/epics/E21-release-security-evidence/F21.1-evidence-record.md) | E21 | Active |
+| [F21.1 — The evidence record](../../specs/epics/E21-release-security-evidence/F21.1-evidence-record.md) | E21 | Closed |
 
 <!-- END derived scope -->
 

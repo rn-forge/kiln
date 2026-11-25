@@ -206,6 +206,7 @@ CI_CELLS = (
     *((a, "") for a in SIX_ARCHETYPES),
     ("python-lib", '\n[ci]\nrelease = "pypi"\n'),
     *((a, "\n[ci.checks]\numbrella-release = true\n") for a in SIX_ARCHETYPES),
+    *((a, "\n[ci.checks]\nrelease-evidence = true\n") for a in SIX_ARCHETYPES),
 )
 
 

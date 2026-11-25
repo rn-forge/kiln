@@ -35,13 +35,14 @@ def test_names_are_unique() -> None:
 def test_switch_and_default() -> None:
     for name in ("licenses", "secret-scan"):
         assert (_check(name).switch, _check(name).default) == (Switch.CONFIGURED, True)
-    for name in ("umbrella-release", "scorecard"):
+    for name in ("umbrella-release", "release-evidence", "scorecard"):
         assert (_check(name).switch, _check(name).default) == (Switch.CONFIGURED, False)
     assert _check("internal-ranges").switch is Switch.DERIVED
     special = {
         "licenses",
         "secret-scan",
         "umbrella-release",
+        "release-evidence",
         "scorecard",
         "internal-ranges",
     }
@@ -55,6 +56,7 @@ def test_configured_rows_have_keys() -> None:
         "licenses",
         "secret-scan",
         "umbrella-release",
+        "release-evidence",
         "scorecard",
     }
     assert all(
@@ -121,6 +123,7 @@ def test_registry_row() -> None:
         "licenses",
         "secret-scan",
         "umbrella-release",
+        "release-evidence",
         "scorecard",
     }
 

@@ -281,6 +281,7 @@ model.
 | `licenses` | `task python:lint:licenses` | C: `[ci.checks] licenses`, default `true`; a table sets `deny` and `ignore` |
 | `secret-scan` | `task ci:secret-scan` | C: `[ci.checks] secret-scan`, default `true` |
 | `umbrella-release` | `task ci:release:umbrella` | C: `[ci.checks] umbrella-release`, default `false` |
+| `release-evidence` | `task ci:release:evidence` | C: `[ci.checks] release-evidence`, default `false` |
 | `scorecard` | none | C: `[ci.checks] scorecard`, default `false`; public repositories only |
 
 ### Security controls

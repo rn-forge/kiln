@@ -60,6 +60,11 @@ tasks:
     desc: "CI only: Create a GitHub release for each shipped release page that has none."
     cmds:
       - '{{.DEVOPS}} umbrella --sha "$GITHUB_SHA"'
+{% endif %}{% if "release-evidence" in checks %}
+  release:evidence:
+    desc: "CI only: Write security-evidence.json for this run and print its table to the job summary."
+    cmds:
+      - '{{.DEVOPS}} evidence collect --run "$GITHUB_RUN_ID" --attempt "$GITHUB_RUN_ATTEMPT" --sha "$GITHUB_SHA" --controls .rn-forge/kiln/security-controls.json >> "$GITHUB_STEP_SUMMARY"'
 {% endif %}{% if not workspace and not node_lib %}
   release:state:
     desc: "CI only: Print the release's state for this version as $GITHUB_OUTPUT lines."

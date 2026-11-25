@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from rn_forge.commons.exceptions import AppException
-from rn_forge.commons.generation import Artifact
+from rn_forge.commons.generation import Artifact, ArtifactKind
 from rn_forge.commons.generation.templated import TemplateArtifact, render_artifacts
 from rn_forge.commons.text.templates import TemplateEngine
 
 from rn_forge.kiln import __version__
 from rn_forge.kiln.config import KilnConfig
-from rn_forge.kiln.modules.cicd import registry
+from rn_forge.kiln.modules.cicd import controls, registry
 from rn_forge.kiln.modules.cicd.config import STAGES
 from rn_forge.kiln.modules.core.pins import load_pins
 from rn_forge.kiln.modules.core.versions import PYTHON_VERSION
@@ -76,6 +77,10 @@ def render(config: KilnConfig) -> list[Artifact]:
     if "umbrella-release" in checks and ci.release == "none":
         raise AppException(
             "cicd.render: ci.checks.umbrella-release needs [ci] release other than none"
+        )
+    if "release-evidence" in checks and ci.release == "none":
+        raise AppException(
+            "cicd.render: ci.checks.release-evidence needs [ci] release other than none"
         )
     if ci.hooks.docs and not docs:
         raise AppException(
@@ -165,7 +170,7 @@ def render(config: KilnConfig) -> list[Artifact]:
         (".nx/workflows/agents.yaml", "agents.yaml.j2", node_lib),
         ("sonar-project.properties", "sonar-project.properties.j2", ci.sonar),
     ]
-    return render_artifacts(
+    artifacts = render_artifacts(
         engine,
         context,
         [
@@ -173,3 +178,15 @@ def render(config: KilnConfig) -> list[Artifact]:
             for path, template, enabled in rows
         ],
     )
+    if "release-evidence" in checks:
+        text = json.dumps(
+            controls.manifest(checks, release), indent=2, ensure_ascii=False
+        )
+        artifacts.append(
+            Artifact(
+                ".rn-forge/kiln/security-controls.json",
+                ArtifactKind.MANAGED,
+                text + "\n",
+            )
+        )
+    return artifacts

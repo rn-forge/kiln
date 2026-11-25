@@ -228,6 +228,7 @@ def test_task_key_is_refused(tmp_path: Path) -> None:
         "test-cloud",
         "test-local",
         "umbrella",
+        "evidence",
     ],
 )
 def test_job_name_collision_is_refused(tmp_path: Path, name: str) -> None:

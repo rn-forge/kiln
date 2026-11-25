@@ -13,6 +13,7 @@ validate, dependency-review
 {%- macro postrelease_needs() -%}
 {%- if release != "none" %}, release, verify-release{% endif -%}
 {%- if "umbrella-release" in checks %}, umbrella{% endif -%}
+{%- if "release-evidence" in checks %}, evidence{% endif -%}
 {%- if docs %}, docs{% endif -%}
 {%- endmacro %}
 {#- `docs` waits for the barrier and for each release stage that is rendered; a skipped
@@ -603,6 +604,40 @@ jobs:
         run: task ci:release:umbrella
         env:
           GH_TOKEN: ${{ github.token }}
+{% endif %}{% if "release-evidence" in checks %}
+  # The release's security evidence: each control's result on this commit,
+  # read from the run and the registry's API. A failed control does not fail
+  # this job; the job that ran it already failed.
+  evidence:
+    needs: [release, verify-release]
+    if: ${{ !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      attestations: read
+    steps:
+      - name: Checkout
+        uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
+        with:
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup # zizmor: ignore[self-repository] actionlint rejects the $/ form
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Collect the security evidence
+        run: task ci:release:evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Upload the security evidence
+        uses: [[ pins["upload-artifact"].uses ]]@[[ pins["upload-artifact"].sha ]] # [[ pins["upload-artifact"].version ]]
+        with:
+          name: security-evidence
+          path: security-evidence.json
 {% endif %}{% for job in jobs %}
   [[ job.name ]]:
     needs: validate

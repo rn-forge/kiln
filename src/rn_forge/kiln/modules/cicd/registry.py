@@ -75,6 +75,7 @@ _CODE_NAMES = frozenset(
         "secret-scan",
         "internal-ranges",
         "umbrella-release",
+        "release-evidence",
         "scorecard",
     }
 )
@@ -212,6 +213,15 @@ CHECKS: tuple[CiCheck, ...] = (
         Switch.CONFIGURED,
         "C: `[ci.checks] umbrella-release`, default `false`",
         default=False,
+    ),
+    CiCheck(
+        "release-evidence",
+        "ci:release:evidence",
+        _ALL,
+        Switch.CONFIGURED,
+        "C: `[ci.checks] release-evidence`, default `false`",
+        default=False,
+        job="evidence",
     ),
     CiCheck(
         "scorecard",
