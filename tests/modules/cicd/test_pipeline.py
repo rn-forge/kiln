@@ -407,24 +407,29 @@ def test_python_lib_docs_job(tmp_path: Path) -> None:
     assert steps[1]["uses"] == "./.github/actions/setup"  # type: ignore[index]
     publish = next(s for s in steps if s.get("run") == "task ci:docs:publish")  # type: ignore[attr-defined]
     assert publish["env"] == {"SITE_DIR": "${{ runner.temp }}/site"}
-    uses = [str(s.get("uses", "")) for s in steps]  # type: ignore[attr-defined]
-    upload = next(u for u in uses if u.startswith("actions/upload-pages-artifact@"))
-    deploy = next(u for u in uses if u.startswith("actions/deploy-pages@"))
-    assert uses.index(upload) < uses.index(deploy)
-    upload_step = next(
-        s
-        for s in steps
-        if str(s.get("uses", "")).startswith("actions/upload-pages-artifact@")  # type: ignore[attr-defined]
+    upload_step = steps[-4]  # type: ignore[index]
+    assert str(upload_step["uses"]).startswith("actions/upload-pages-artifact@")
+    assert upload_step["with"]["name"] == "github-pages-${{ github.run_attempt }}"
+    deploy, wait, retry = steps[-3:]  # type: ignore[index]
+    failed = "steps.deployment.outcome == 'failure'"
+    artifact = {"artifact_name": "github-pages-${{ github.run_attempt }}"}
+    assert deploy["name"] == "Deploy to GitHub Pages"
+    assert deploy["id"] == "deployment"
+    assert deploy["continue-on-error"] is True
+    assert str(deploy["uses"]).startswith("actions/deploy-pages@")
+    assert deploy["with"] == artifact
+    assert wait["name"] == "Wait for the artifact listing"
+    assert wait["if"] == failed
+    assert wait["run"] == "sleep 30"
+    assert retry["name"] == "Deploy to GitHub Pages again"
+    assert retry["id"] == "deployment-retry"
+    assert retry["if"] == failed
+    assert retry["uses"] == deploy["uses"]
+    assert retry["with"] == artifact
+    assert docs["environment"]["url"] == (  # type: ignore[index]
+        "${{ steps.deployment.outputs.page_url || "
+        "steps.deployment-retry.outputs.page_url }}"
     )
-    deploy_step = next(
-        s
-        for s in steps
-        if str(s.get("uses", "")).startswith("actions/deploy-pages@")  # type: ignore[attr-defined]
-    )
-    assert upload_step["with"]["name"] == "github-pages-${{ github.run_attempt }}"  # type: ignore[index]
-    assert deploy_step["with"] == {
-        "artifact_name": "github-pages-${{ github.run_attempt }}"
-    }  # type: ignore[index]
     assert "docs" in jobs["ci-ok"]["needs"]  # type: ignore[operator]
     assert "docs" not in _lib_jobs(tmp_path / "n", profile="none")
     no_release = _lib_jobs(tmp_path / "r", release="none")

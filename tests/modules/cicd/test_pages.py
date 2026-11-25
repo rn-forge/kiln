@@ -46,7 +46,10 @@ def test_node_lib_renders_no_docs_yml_and_one_docs_job(
     }
     assert job["environment"] == {
         "name": "github-pages",
-        "url": "${{ steps.deployment.outputs.page_url }}",
+        "url": (
+            "${{ steps.deployment.outputs.page_url || "
+            "steps.deployment-retry.outputs.page_url }}"
+        ),
     }
     assert job["concurrency"] == {"group": "pages", "cancel-in-progress": False}
 
@@ -60,7 +63,17 @@ def test_node_lib_without_mkdocs_has_no_docs_job(tmp_path: Path) -> None:
 def test_docs_job_steps_in_order(tmp_path: Path) -> None:
     pins = load_pins()
     steps = _docs_job(tmp_path)["steps"]
-    checkout, setup, mkdocs, site, pages, upload, deploy = steps  # type: ignore[misc]
+    (
+        checkout,
+        setup,
+        mkdocs,
+        site,
+        pages,
+        upload,
+        deploy,
+        wait,
+        retry,
+    ) = steps  # type: ignore[misc]
     assert checkout["with"] == {
         "filter": "tree:0",
         "fetch-depth": 0,
@@ -77,12 +90,21 @@ def test_docs_job_steps_in_order(tmp_path: Path) -> None:
         "path": ".docs-site",
         "include-hidden-files": True,
     }
+    pinned = f"{pins['deploy-pages']['uses']}@{pins['deploy-pages']['sha']}"
+    artifact = {"artifact_name": "github-pages-${{ github.run_attempt }}"}
+    failed = "steps.deployment.outcome == 'failure'"
     assert deploy["id"] == "deployment"
-    assert (
-        deploy["uses"]
-        == f"{pins['deploy-pages']['uses']}@{pins['deploy-pages']['sha']}"
-    )
-    assert deploy["with"] == {"artifact_name": "github-pages-${{ github.run_attempt }}"}
+    assert deploy["continue-on-error"] is True
+    assert deploy["uses"] == pinned
+    assert deploy["with"] == artifact
+    assert wait["if"] == failed
+    assert wait["run"] == "sleep 30"
+    assert retry["id"] == "deployment-retry"
+    assert retry["if"] == failed
+    assert retry["uses"] == pinned
+    assert retry["with"] == artifact
+    assert "name" not in deploy
+    assert "name" not in retry
 
 
 def test_docs_job_steps_have_no_id_env_or_if(tmp_path: Path) -> None:
@@ -92,10 +114,16 @@ def test_docs_job_steps_have_no_id_env_or_if(tmp_path: Path) -> None:
         "task docs:build",
         "task ci:docs:site",
     ]
-    for step in steps:  # type: ignore[attr-defined]
+    for step in steps[:-3]:  # type: ignore[index]
         assert "env" not in step
         assert "if" not in step
-        assert step.get("id") in (None, "deployment")
+        assert "id" not in step
+    last = steps[-3:]  # type: ignore[index]
+    assert all("env" not in step for step in last)
+    assert [step.get("id") for step in last] == ["deployment", None, "deployment-retry"]
+    assert all(
+        step["if"] == "steps.deployment.outcome == 'failure'" for step in last[1:]
+    )
     assert job["permissions"] == {
         "contents": "read",
         "pages": "write",

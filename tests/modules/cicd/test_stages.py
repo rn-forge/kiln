@@ -498,14 +498,28 @@ def test_docs_job_permissions_and_environment(tmp_path: Path, archetype: str) ->
     assert uses[1] == "./.github/actions/setup"
     assert runs[2] == "task setup"
     assert runs[3] == 'task docs:build -- "$RUNNER_TEMP/site"'
-    assert uses[-2].startswith("actions/upload-pages-artifact@")
-    assert uses[-1].startswith("actions/deploy-pages@")
-    assert steps[-2]["with"]["name"] == "github-pages-${{ github.run_attempt }}"
-    assert steps[-1]["with"] == {
-        "artifact_name": "github-pages-${{ github.run_attempt }}"
-    }
-    assert steps[-1]["id"] == "deployment"
-    assert job["environment"]["url"] == "${{ steps.deployment.outputs.page_url }}"
+    assert uses[-4].startswith("actions/upload-pages-artifact@")
+    assert steps[-4]["with"]["name"] == "github-pages-${{ github.run_attempt }}"
+    deploy, wait, retry = steps[-3:]
+    failed = "steps.deployment.outcome == 'failure'"
+    artifact = {"artifact_name": "github-pages-${{ github.run_attempt }}"}
+    assert deploy["name"] == "Deploy to GitHub Pages"
+    assert deploy["id"] == "deployment"
+    assert deploy["continue-on-error"] is True
+    assert deploy["uses"].startswith("actions/deploy-pages@")
+    assert deploy["with"] == artifact
+    assert wait["name"] == "Wait for the artifact listing"
+    assert wait["if"] == failed
+    assert wait["run"] == "sleep 30"
+    assert retry["name"] == "Deploy to GitHub Pages again"
+    assert retry["id"] == "deployment-retry"
+    assert retry["if"] == failed
+    assert retry["uses"] == deploy["uses"]
+    assert retry["with"] == artifact
+    assert job["environment"]["url"] == (
+        "${{ steps.deployment.outputs.page_url || "
+        "steps.deployment-retry.outputs.page_url }}"
+    )
 
 
 @pytest.mark.parametrize("archetype", SINGLE)
@@ -517,7 +531,12 @@ def test_docs_hooks_run_in_order_before_pages_deploy(
         _docs_render(tmp_path, archetype, "tag-exists", extra=extra)
     )["docs"]["steps"]
     names = [s.get("name") for s in steps]
-    assert names[-2:] == ["Upload Pages artifact", "Deploy to GitHub Pages"]
+    assert names[-4:] == [
+        "Upload Pages artifact",
+        "Deploy to GitHub Pages",
+        "Wait for the artifact listing",
+        "Deploy to GitHub Pages again",
+    ]
     assert [s["uses"] for s in steps if "SITE_DIR" in s.get("env", {})] == [
         "./.github/actions/a",
         "./.github/actions/b",

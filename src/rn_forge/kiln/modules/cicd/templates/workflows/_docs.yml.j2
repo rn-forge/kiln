@@ -20,7 +20,7 @@ jobs:{% if node_lib %}
       id-token: write
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment-retry.outputs.page_url }}
     concurrency:
       group: pages
       cancel-in-progress: false
@@ -55,6 +55,17 @@ jobs:{% if node_lib %}
           include-hidden-files: true
 
       - id: deployment
+        continue-on-error: true
+        uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
+
+      - name: Wait for the artifact listing
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 30
+
+      - id: deployment-retry
+        if: steps.deployment.outcome == 'failure'
         uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]
         with:
           artifact_name: github-pages-${{ github.run_attempt }}{% elif workspace %}
@@ -73,7 +84,7 @@ jobs:{% if node_lib %}
       id-token: write
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment-retry.outputs.page_url }}
     steps:
       - name: Checkout
         uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
@@ -107,6 +118,18 @@ jobs:{% if node_lib %}
 
       - name: Deploy to GitHub Pages
         id: deployment
+        continue-on-error: true
+        uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
+
+      - name: Wait for the artifact listing
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 30
+
+      - name: Deploy to GitHub Pages again
+        id: deployment-retry
+        if: steps.deployment.outcome == 'failure'
         uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]
         with:
           artifact_name: github-pages-${{ github.run_attempt }}{% else %}
@@ -123,7 +146,7 @@ jobs:{% if node_lib %}
       id-token: write
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url || steps.deployment-retry.outputs.page_url }}
     steps:
       - name: Checkout
         uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
@@ -154,6 +177,18 @@ jobs:{% if node_lib %}
 
       - name: Deploy to GitHub Pages
         id: deployment
+        continue-on-error: true
+        uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
+
+      - name: Wait for the artifact listing
+        if: steps.deployment.outcome == 'failure'
+        run: sleep 30
+
+      - name: Deploy to GitHub Pages again
+        id: deployment-retry
+        if: steps.deployment.outcome == 'failure'
         uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]
         with:
           artifact_name: github-pages-${{ github.run_attempt }}{% endif %}

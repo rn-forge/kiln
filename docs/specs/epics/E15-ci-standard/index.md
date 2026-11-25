@@ -17,7 +17,7 @@
 | [F15.6 — OpenSSF Scorecard](F15.6-scorecard.md) | Closed | release-1 | 1 Closed |
 | [F15.7 — Repository-owned workflows](F15.7-repo-owned-workflows.md) | Closed | release-1 | 2 Closed |
 | [F15.8 — Every archetype on the one-workflow contract](F15.8-one-workflow-contract.md) | Closed | release-1 | 9 Closed |
-| [F15.9 — The docs job deploys its Pages artifact, first time or on re-run](F15.9-pages-artifact-per-attempt.md) | Active | release-1 | 1 New · 1 Closed |
+| [F15.9 — The docs job deploys its Pages artifact, first time or on re-run](F15.9-pages-artifact-per-attempt.md) | Closed | release-1 | 2 Closed |
 
 <!-- END derived features -->
 
