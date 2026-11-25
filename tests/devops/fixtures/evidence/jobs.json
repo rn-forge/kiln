@@ -1,0 +1,4 @@
+{"jobs": [
+  {"name": "validate", "conclusion": "success", "html_url": "https://github.com/rn-forge/kiln/actions/runs/123/job/9"},
+  {"name": "secret-scan", "conclusion": "success", "html_url": "https://github.com/rn-forge/kiln/actions/runs/123/job/10"}
+]}

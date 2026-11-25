@@ -31,6 +31,7 @@ ARGV = {
     "licenses": ["--format", "pnpm"],
     "requirements": [],
     "umbrella": ["--sha", "abc1234"],
+    "evidence": ["collect", "--run", "1", "--sha", "abc1234", "--controls", "c.json"],
 }
 
 

@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import urllib.error
 import urllib.request
 from collections.abc import Mapping, Sequence
 from enum import Enum
-from typing import Literal
+from typing import Any, Literal
 
 
 def output_lines(outputs: Mapping[str, object]) -> list[str]:
@@ -53,6 +54,15 @@ def sonar_target() -> str:
 
 def _capture(command: list[str]) -> subprocess.CompletedProcess[str]:
     return subprocess.run(command, capture_output=True, text=True, check=False)
+
+
+def api(path: str) -> tuple[int, Any]:
+    """Return the HTTP status and JSON body of `gh api <path>`; the body is None unless 200."""
+    result = _capture(["gh", "api", path])
+    if result.returncode == 0:
+        return 200, json.loads(result.stdout)
+    found = re.search(r"HTTP (\d{3})", result.stderr)
+    return (int(found.group(1)) if found else 0), None
 
 
 def run(command: list[str]) -> None:
@@ -219,6 +229,27 @@ def indexed_files(host: str, name: str, version: str) -> frozenset[str]:
             return frozenset()
         raise
     return frozenset(entry["filename"] for entry in body["urls"])
+
+
+def pypi_provenance_status(name: str, version: str, filename: str) -> int:
+    """Return the HTTP status of PyPI's integrity API for `filename` of `name` at `version`."""
+    url = f"https://pypi.org/integrity/{name}/{version}/{filename}/provenance"
+    try:
+        with urllib.request.urlopen(url, timeout=30) as response:
+            return int(response.status)
+    except urllib.error.HTTPError as error:
+        return error.code
+
+
+def scorecard_result(repository: str) -> dict[str, Any] | None:
+    """Return the Scorecard API's newest result for `repository`, or None for any answer other than 200."""
+    url = f"https://api.securityscorecards.dev/projects/github.com/{repository}"
+    try:
+        with urllib.request.urlopen(url, timeout=30) as response:
+            body: dict[str, Any] = json.loads(response.read())
+    except urllib.error.URLError, ValueError:
+        return None
+    return body
 
 
 def already_published(tag: str) -> None:

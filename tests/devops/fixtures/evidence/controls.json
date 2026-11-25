@@ -1,0 +1,14 @@
+{
+  "release": "tag-exists",
+  "controls": [
+    {"name": "Dependency audit", "effect": "fails the build", "source": "lint-job", "runs": true, "job": "validate", "step": "Validate"},
+    {"name": "Licence inventory", "effect": "fails the build", "source": "lint-job", "runs": true, "job": "validate", "step": "Validate"},
+    {"name": "Source scan", "effect": "fails the build", "source": "lint-job", "runs": true, "job": "validate", "step": "Validate"},
+    {"name": "Secret scan", "effect": "fails the build", "source": "job", "runs": true, "job": "secret-scan"},
+    {"name": "Push protection", "effect": "blocks the push", "source": "not-checked", "runs": true},
+    {"name": "SBOM", "effect": "reports only", "source": "release-asset", "runs": true},
+    {"name": "Attestation", "effect": "reports only", "source": "attestation", "runs": true},
+    {"name": "`SECURITY.md`", "effect": "reports only", "source": "file", "runs": true},
+    {"name": "Scorecard", "effect": "reports only", "source": "scorecard-run", "runs": true}
+  ]
+}

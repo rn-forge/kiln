@@ -19,6 +19,7 @@ from rn_forge.kiln.devops import (
     ci,
     consumer,
     dist,
+    evidence,
     git,
     github,
     integration,
@@ -164,6 +165,19 @@ def _parser() -> argparse.ArgumentParser:
     release_all.add_argument("--releases", default="docs/releases", metavar="DIR")
     release_all.add_argument("--sha", required=True, metavar="SHA")
     release_all.add_argument("--dry-run", action="store_true")
+    proof = commands.add_parser(
+        "evidence", help="read a release run's security controls"
+    )
+    steps = proof.add_subparsers(dest="evidence_command", required=True)
+    collect = steps.add_parser(
+        "collect", help="write security-evidence.json and print its table"
+    )
+    collect.set_defaults(func=_evidence_collect, validate=_check_collect)
+    collect.add_argument("--run", required=True, metavar="ID")
+    collect.add_argument("--attempt", default="1", metavar="N")
+    collect.add_argument("--sha", required=True, metavar="SHA")
+    collect.add_argument("--controls", required=True, metavar="FILE")
+    collect.add_argument("--out", default="security-evidence.json", metavar="FILE")
     return parser
 
 
@@ -204,6 +218,12 @@ def _check_publish(args: argparse.Namespace) -> None:
 def _check_umbrella(args: argparse.Namespace) -> None:
     args.sha = _checked(r"[0-9a-f]{7,40}", "sha", args.sha)
     args.releases = _inside(args.releases, os.getcwd())
+
+
+def _check_collect(args: argparse.Namespace) -> None:
+    args.run = int(_checked(r"[0-9]+", "run", args.run))
+    args.attempt = int(_checked(r"[0-9]+", "attempt", args.attempt))
+    args.sha = _checked(r"[0-9a-f]{7,40}", "sha", args.sha)
 
 
 def _check_notes(args: argparse.Namespace) -> None:
@@ -380,6 +400,18 @@ def _umbrella(args: argparse.Namespace) -> int:
     except FileNotFoundError as error:
         print(f"kiln-devops: {error}", file=sys.stderr)
         return 2
+
+
+def _evidence_collect(args: argparse.Namespace) -> int:
+    try:
+        controls = evidence.load_controls(Path(args.controls))
+        record = evidence.collect(controls, args.run, args.attempt, args.sha)
+    except ValueError as error:
+        print(f"kiln-devops: {error}", file=sys.stderr)
+        return 2
+    Path(args.out).write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    print(evidence.table(record))
+    return 0
 
 
 def _workspace() -> ci.Workspace:

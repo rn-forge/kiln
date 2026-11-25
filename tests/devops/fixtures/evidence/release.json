@@ -1,0 +1,5 @@
+{"html_url": "https://github.com/rn-forge/kiln/releases/tag/rn-forge-kiln-v0.4.0",
+ "assets": [
+  {"name": "rn_forge_kiln-0.4.0-py3-none-any.whl", "digest": "sha256:aaa"},
+  {"name": "rn-forge-kiln.cdx.json", "digest": "sha256:bbb"}
+ ]}
