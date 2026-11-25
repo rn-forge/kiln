@@ -500,6 +500,10 @@ def test_docs_job_permissions_and_environment(tmp_path: Path, archetype: str) ->
     assert runs[3] == 'task docs:build -- "$RUNNER_TEMP/site"'
     assert uses[-2].startswith("actions/upload-pages-artifact@")
     assert uses[-1].startswith("actions/deploy-pages@")
+    assert steps[-2]["with"]["name"] == "github-pages-${{ github.run_attempt }}"
+    assert steps[-1]["with"] == {
+        "artifact_name": "github-pages-${{ github.run_attempt }}"
+    }
     assert steps[-1]["id"] == "deployment"
     assert job["environment"]["url"] == "${{ steps.deployment.outputs.page_url }}"
 

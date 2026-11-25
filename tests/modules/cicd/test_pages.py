@@ -72,12 +72,17 @@ def test_docs_job_steps_in_order(tmp_path: Path) -> None:
     assert site["run"] == "task ci:docs:site"
     for step, name in ((pages, "configure-pages"), (upload, "upload-pages-artifact")):
         assert step["uses"] == f"{pins[name]['uses']}@{pins[name]['sha']}"
-    assert upload["with"] == {"path": ".docs-site", "include-hidden-files": True}
+    assert upload["with"] == {
+        "name": "github-pages-${{ github.run_attempt }}",
+        "path": ".docs-site",
+        "include-hidden-files": True,
+    }
     assert deploy["id"] == "deployment"
     assert (
         deploy["uses"]
         == f"{pins['deploy-pages']['uses']}@{pins['deploy-pages']['sha']}"
     )
+    assert deploy["with"] == {"artifact_name": "github-pages-${{ github.run_attempt }}"}
 
 
 def test_docs_job_steps_have_no_id_env_or_if(tmp_path: Path) -> None:

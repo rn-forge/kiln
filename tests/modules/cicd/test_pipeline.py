@@ -411,6 +411,20 @@ def test_python_lib_docs_job(tmp_path: Path) -> None:
     upload = next(u for u in uses if u.startswith("actions/upload-pages-artifact@"))
     deploy = next(u for u in uses if u.startswith("actions/deploy-pages@"))
     assert uses.index(upload) < uses.index(deploy)
+    upload_step = next(
+        s
+        for s in steps
+        if str(s.get("uses", "")).startswith("actions/upload-pages-artifact@")  # type: ignore[attr-defined]
+    )
+    deploy_step = next(
+        s
+        for s in steps
+        if str(s.get("uses", "")).startswith("actions/deploy-pages@")  # type: ignore[attr-defined]
+    )
+    assert upload_step["with"]["name"] == "github-pages-${{ github.run_attempt }}"  # type: ignore[index]
+    assert deploy_step["with"] == {
+        "artifact_name": "github-pages-${{ github.run_attempt }}"
+    }  # type: ignore[index]
     assert "docs" in jobs["ci-ok"]["needs"]  # type: ignore[operator]
     assert "docs" not in _lib_jobs(tmp_path / "n", profile="none")
     no_release = _lib_jobs(tmp_path / "r", release="none")

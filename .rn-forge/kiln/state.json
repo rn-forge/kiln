@@ -26,7 +26,7 @@
     },
     ".github/workflows/_docs.yml": {
       "begin_marker": null,
-      "content_hash": "a1bea9bba4cb6f25c688f41c4943010457745d0320c81df7b047276d4905c0f3",
+      "content_hash": "12c6cd8c26b9b996eda78c3c14a01f31d490e0cf761859b7be8ec477fbdd8f72",
       "end_marker": null,
       "key_paths": null,
       "kind": "managed",

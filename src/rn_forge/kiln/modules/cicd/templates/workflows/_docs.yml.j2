@@ -50,11 +50,14 @@ jobs:{% if node_lib %}
 
       - uses: [[ pins["upload-pages-artifact"].uses ]]@[[ pins["upload-pages-artifact"].sha ]] # [[ pins["upload-pages-artifact"].version ]]
         with:
+          name: github-pages-${{ github.run_attempt }}
           path: [[ site_dir ]]
           include-hidden-files: true
 
       - id: deployment
-        uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]{% elif workspace %}
+        uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}{% elif workspace %}
   # Runs on a push with no package change too, when `release` is skipped. The one
   # job that deploys Pages for a workspace: a root-only deploy landing after it
   # would remove the package sites, so there is no separate docs.yml.
@@ -99,11 +102,14 @@ jobs:{% if node_lib %}
 {% endfor %}      - name: Upload Pages artifact
         uses: [[ pins["upload-pages-artifact"].uses ]]@[[ pins["upload-pages-artifact"].sha ]] # [[ pins["upload-pages-artifact"].version ]]
         with:
+          name: github-pages-${{ github.run_attempt }}
           path: ${{ runner.temp }}/site
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]{% else %}
+        uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}{% else %}
   # The one Pages deploy, after the barrier and the release stages.
   docs:
     runs-on: ubuntu-latest
@@ -143,8 +149,11 @@ jobs:{% if node_lib %}
 {% endfor %}      - name: Upload Pages artifact
         uses: [[ pins["upload-pages-artifact"].uses ]]@[[ pins["upload-pages-artifact"].sha ]] # [[ pins["upload-pages-artifact"].version ]]
         with:
+          name: github-pages-${{ github.run_attempt }}
           path: ${{ runner.temp }}/site
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]{% endif %}
+        uses: [[ pins["deploy-pages"].uses ]]@[[ pins["deploy-pages"].sha ]] # [[ pins["deploy-pages"].version ]]
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}{% endif %}
