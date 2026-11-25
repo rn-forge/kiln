@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from rn_forge.kiln.modules.cicd import registry
+from rn_forge.kiln.modules.cicd import controls, registry
 from rn_forge.kiln.modules.cicd.config import CiConfig, resolve_release
 from rn_forge.kiln.modules.core.config.schema import KilnPin, RootConfig
 from rn_forge.kiln.modules.core.names import module_name
@@ -138,6 +138,10 @@ class KilnConfig:
     def ci_matrix(self, *, every_archetype: bool = False) -> str:
         """The CI checks matrix: this archetype's column, or every archetype's."""
         return registry.render_matrix(None if every_archetype else self.archetype)
+
+    def security_controls(self) -> str:
+        """The security control catalog for this archetype."""
+        return controls.render_catalog(self.archetype)
 
     def public_tasks(self) -> list[PublicTask]:
         """Every task the repository's task files expose."""

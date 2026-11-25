@@ -356,6 +356,13 @@ model.
 
 {{ ci_matrix }}
 
+### Security controls
+
+What a release's evidence record reports for each security control. A control
+this repository does not run is recorded `not run`.
+
+{{ security_controls }}
+
 A repository-owned workflow is allowed only for a scheduled or non-gating run;
 it keeps its own action pins current through Dependabot, which ignores the
 actions kiln pins.

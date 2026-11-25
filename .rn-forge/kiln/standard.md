@@ -283,6 +283,23 @@ model.
 | `umbrella-release` | `task ci:release:umbrella` | C: `[ci.checks] umbrella-release`, default `false` |
 | `scorecard` | none | C: `[ci.checks] scorecard`, default `false`; public repositories only |
 
+### Security controls
+
+What a release's evidence record reports for each security control. A control
+this repository does not run is recorded `not run`.
+
+| Control | Effect | Result from | Evidence |
+| -- | -- | -- | -- |
+| Dependency audit (`pip-audit`) | fails the build | the conclusion of the job that runs `task lint` | that job's URL and the step name |
+| Licence inventory (`licenses`) | fails the build | the conclusion of the job that runs `task lint` | that job's URL and the step name, with the deny list in force |
+| Source scan (ruff check and format) | fails the build | the conclusion of the job that runs `task lint` | that job's URL and the step name |
+| Secret scan (`secret-scan`) | fails the build | the `secret-scan` job's conclusion | the job's URL |
+| Push protection | blocks the push | not read by CI: recorded `not checked` and filled when the page is rendered | the API call and its date |
+| SBOM | reports only | a `*.cdx.json` asset on each package's GitHub release | the release URL and the asset names |
+| Attestation | reports only | `gh attestation verify` on each released artifact, or the PyPI integrity API for each wheel when `[ci] release = "pypi"` | the HTTP status per file |
+| `SECURITY.md` | reports only | the file exists at the repository root at the pushed commit | its path |
+| Scorecard (`scorecard`) | reports only | the newest `scorecard.yml` run on the default branch | its run URL, score, version and the commit it scored |
+
 A repository-owned workflow is allowed only for a scheduled or non-gating run;
 it keeps its own action pins current through Dependabot, which ignores the
 actions kiln pins.

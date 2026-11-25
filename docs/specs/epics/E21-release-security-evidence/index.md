@@ -2,13 +2,14 @@
 
 |  |  |
 | -- | -- |
-| **State** | New |
+| **State** | Active |
+| **Start Date** | 2026-11-24 |
 
 <!-- BEGIN derived features -->
 
 | Feature | State | Iteration | Stories |
 | -- | -- | -- | -- |
-| [F21.1 — The evidence record](F21.1-evidence-record.md) | New | — | 3 New |
+| [F21.1 — The evidence record](F21.1-evidence-record.md) | Active | release-1 | 2 New · 1 Closed |
 | [F21.2 — The evidence page and the umbrella release](F21.2-evidence-page.md) | New | — | 3 New |
 | [F21.3 — Scorecard on the release commit](F21.3-scorecard-on-the-release-commit.md) | New | deferred | 2 New |
 

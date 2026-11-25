@@ -230,6 +230,7 @@ def context(config: KilnConfig) -> dict[str, object]:
         "developer_tasks": [t for t in public if not t.name.startswith("ci:")],
         "ci_tasks": [t for t in public if t.name.startswith("ci:")],
         "ci_matrix": config.ci_matrix(),
+        "security_controls": config.security_controls(),
         "kiln_version": __version__,
         "name": config.name,
         "display_archetype": _display_archetype(config),

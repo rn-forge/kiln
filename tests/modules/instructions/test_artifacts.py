@@ -853,6 +853,15 @@ def test_standard_lists_this_archetypes_checks(tmp_path: Path) -> None:
     assert "licenses" in lib
 
 
+def test_standard_lists_the_security_controls(tmp_path: Path) -> None:
+    from rn_forge.kiln.modules.cicd import controls
+
+    lib = _rendered(_root(tmp_path / "lib", "python-lib"))[STANDARD]
+    assert "### Security controls" in lib
+    assert controls.render_catalog("python-lib") in lib
+    assert lib.index("### Security controls") > lib.index("## CI checks")
+
+
 @pytest.mark.parametrize(
     "archetype",
     ("python-app", "python-tool", "python-lib", "python-web-api", "python-web-app"),

@@ -19,7 +19,9 @@ __all__ = [
     "enabled",
     "enabled_names",
     "for_archetype",
+    "name_cell",
     "render_matrix",
+    "table",
 ]
 
 
@@ -45,6 +47,7 @@ class CiCheck:
     job: str | None = None
     gates: bool = False
     policy: type[StrictModel] | None = None
+    security: bool = False
 
 
 COLUMNS: tuple[tuple[str, str], ...] = (
@@ -96,7 +99,7 @@ def _std(
 
 
 CHECKS: tuple[CiCheck, ...] = (
-    _std("ruff check and format", "lint", _PY),
+    replace(_std("ruff check and format", "lint", _PY), security=True),
     _std("pyright strict", "typecheck", _PY, lib="test"),
     _std("lint-imports", "lint", _PY),
     _std("Markdown, TOML and YAML formatting", "lint", _ALL),
@@ -110,16 +113,23 @@ CHECKS: tuple[CiCheck, ...] = (
     replace(
         _std("pip-audit", "lint", _PY, "S; ignore list `[ci.checks] pip-audit`"),
         policy=AuditPolicy,
+        security=True,
     ),
-    _std(
-        "pnpm-audit",
-        "`task node:lint:audit`",
-        frozenset({"python-web-app", "node-lib"}),
+    replace(
+        _std(
+            "pnpm-audit",
+            "`task node:lint:audit`",
+            frozenset({"python-web-app", "node-lib"}),
+        ),
+        security=True,
     ),
-    _std(
-        "Nx lint, typecheck, test, build",
-        "`task node:*`, `task ci:test`",
-        frozenset({"python-web-app", "node-lib"}),
+    replace(
+        _std(
+            "Nx lint, typecheck, test, build",
+            "`task node:*`, `task ci:test`",
+            frozenset({"python-web-app", "node-lib"}),
+        ),
+        security=True,
     ),
     _std("pytest", "test", _PY, lib="test"),
     CiCheck(
@@ -176,6 +186,7 @@ CHECKS: tuple[CiCheck, ...] = (
         Switch.CONFIGURED,
         "C: `[ci.checks] licenses`, default `true`; a table sets `deny` and `ignore`",
         policy=LicensePolicy,
+        security=True,
     ),
     CiCheck(
         "secret-scan",
@@ -185,6 +196,7 @@ CHECKS: tuple[CiCheck, ...] = (
         "C: `[ci.checks] secret-scan`, default `true`",
         job="secret-scan",
         gates=True,
+        security=True,
     ),
     CiCheck(
         "internal-ranges",
@@ -209,6 +221,7 @@ CHECKS: tuple[CiCheck, ...] = (
         "C: `[ci.checks] scorecard`, default `false`; public repositories only",
         default=False,
         job="scorecard",
+        security=True,
     ),
 )
 """Every check, in the order the matrix lists them. Only the rows from `licenses`
@@ -242,7 +255,8 @@ def enabled_names(ci: CiConfig, archetype: str, members: int) -> frozenset[str]:
     return frozenset(c.name for c in CHECKS if enabled(c, ci, archetype, members))
 
 
-def _name_cell(name: str) -> str:
+def name_cell(name: str) -> str:
+    """A check name as a matrix cell: code-formatted when it names a code token."""
     return f"`{name}`" if name in _CODE_NAMES else name
 
 
@@ -268,7 +282,8 @@ def _verb_cell_all(check: CiCheck) -> str:
     )
 
 
-def _table(header: list[str], rows: list[list[str]]) -> str:
+def table(header: list[str], rows: list[list[str]]) -> str:
+    """A Markdown table of *header* and *rows*."""
     lines = [
         "| " + " | ".join(header) + " |",
         "| " + " | ".join("--" for _ in header) + " |",
@@ -287,7 +302,7 @@ def render_matrix(archetype: str | None) -> str:
     if archetype is None:
         rows = [
             [
-                _name_cell(c.name),
+                name_cell(c.name),
                 _verb_cell_all(c),
                 *(
                     c.cells.get(a, "yes") if a in c.archetypes else ""
@@ -298,10 +313,10 @@ def render_matrix(archetype: str | None) -> str:
             for c in CHECKS
         ]
         header = ["Check", "Verb", *(h for h, _ in COLUMNS), "Switch and key"]
-        return _table(header, rows)
+        return table(header, rows)
     stack = "node" if archetype == "node-lib" else "python"
     rows = [
-        [_name_cell(c.name), _verb_cell(c.verb, stack), c.key_note]
+        [name_cell(c.name), _verb_cell(c.verb, stack), c.key_note]
         for c in for_archetype(archetype)
     ]
-    return _table(["Check", "Verb", "Switch and key"], rows)
+    return table(["Check", "Verb", "Switch and key"], rows)

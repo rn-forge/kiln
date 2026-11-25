@@ -130,7 +130,7 @@ def test_the_registry() -> None:
 
 
 def _verb_of_row(name: str) -> str:
-    cell = registry._name_cell(name)  # pyright: ignore[reportPrivateUsage]
+    cell = registry.name_cell(name)
     for line in registry.render_matrix(None).splitlines()[2:]:
         cols = [p.strip() for p in line.strip("|").split(" | ")]
         if cols[0] == cell:
