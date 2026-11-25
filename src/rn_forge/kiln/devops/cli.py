@@ -165,6 +165,7 @@ def _parser() -> argparse.ArgumentParser:
     release_all.add_argument("--releases", default="docs/releases", metavar="DIR")
     release_all.add_argument("--sha", required=True, metavar="SHA")
     release_all.add_argument("--dry-run", action="store_true")
+    release_all.add_argument("--evidence", action="store_true")
     proof = commands.add_parser(
         "evidence", help="read a release run's security controls"
     )
@@ -409,7 +410,7 @@ def _requirements(args: argparse.Namespace) -> int:
 
 def _umbrella(args: argparse.Namespace) -> int:
     try:
-        return umbrella.run(Path(args.releases), args.sha, args.dry_run)
+        return umbrella.run(Path(args.releases), args.sha, args.dry_run, args.evidence)
     except FileNotFoundError as error:
         print(f"kiln-devops: {error}", file=sys.stderr)
         return 2

@@ -213,3 +213,122 @@ def test_dry_run_prints_only_the_newest(
     assert lines[0].startswith("gh release create release-3 ")
     assert lines[0].endswith("--latest")
     assert _skipped(captured.err) == ["release-1", "release-2"]
+
+
+EVIDENCE_PAGE = """# Release 2 — Security evidence
+
+|  |  |
+| -- | -- |
+{run}| **Commit** | abc1234 |
+
+Body.
+"""
+RUN_ROW = (
+    "| **Run** | [77, attempt 1](https://github.com/o/r/actions/runs/77/attempts/1) |\n"
+)
+
+
+def _evidence_page(root: Path, run_row: str = RUN_ROW) -> Path:
+    page = root / "docs" / "releases" / "release-2" / "security.md"
+    page.write_text(EVIDENCE_PAGE.format(run=run_row), encoding="utf-8")
+    return page
+
+
+def _download(monkeypatch: pytest.MonkeyPatch, ok: bool) -> list[int]:
+    runs: list[int] = []
+
+    def download(run: int, name: str, dest: Path) -> bool:
+        runs.append(run)
+        if ok:
+            (dest / "security-evidence.json").write_text("{}", encoding="utf-8")
+        return ok
+
+    monkeypatch.setattr(github, "download_artifact", download)
+    return runs
+
+
+def _shipped(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> list[list[str]]:
+    _repo(tmp_path, "shipped")
+    monkeypatch.chdir(tmp_path)
+    return _gh(monkeypatch, exists=False)
+
+
+def test_evidence_is_attached_to_the_release(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    calls = _shipped(monkeypatch, tmp_path)
+    page = _evidence_page(tmp_path)
+    runs = _download(monkeypatch, True)
+    assert _umbrella("--evidence") == 0
+    create = _creates(calls)[0]
+    assert create[3] == "release-2"
+    assert create[4].endswith("security-evidence.json")
+    assert create[5] == str(page)
+    assert runs == [77]
+
+
+def test_release_is_created_without_a_page_and_warns(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    calls = _shipped(monkeypatch, tmp_path)
+    _download(monkeypatch, True)
+    assert _umbrella("--evidence") == 0
+    assert _creates(calls)[0][4] == "--title"
+    assert (
+        "release-2: no security evidence attached (no security.md)"
+        in capsys.readouterr().err
+    )
+
+
+def test_release_is_created_when_the_artifact_is_gone(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    calls = _shipped(monkeypatch, tmp_path)
+    _evidence_page(tmp_path)
+    _download(monkeypatch, False)
+    assert _umbrella("--evidence") == 0
+    assert _creates(calls)[0][4] == "--title"
+    assert "run 77 has no security-evidence artifact" in capsys.readouterr().err
+
+
+def test_page_without_a_run_warns(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    calls = _shipped(monkeypatch, tmp_path)
+    _evidence_page(tmp_path, run_row="")
+    runs = _download(monkeypatch, True)
+    assert _umbrella("--evidence") == 0
+    assert _creates(calls)[0][4] == "--title"
+    assert runs == []
+    assert "security.md names no run" in capsys.readouterr().err
+
+
+def test_dry_run_names_the_evidence_without_downloading(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    _shipped(monkeypatch, tmp_path)
+    page = _evidence_page(tmp_path)
+    runs = _download(monkeypatch, True)
+    assert _umbrella("--dry-run", "--evidence") == 0
+    out = capsys.readouterr().out
+    assert "release-2 security-evidence.json " + str(page) in out
+    assert runs == []
+
+
+def test_no_evidence_flag_attaches_nothing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    calls = _shipped(monkeypatch, tmp_path)
+    _evidence_page(tmp_path)
+    runs = _download(monkeypatch, True)
+    assert _umbrella() == 0
+    assert _creates(calls)[0][4] == "--title"
+    assert runs == []

@@ -589,7 +589,8 @@ jobs:
       cancel-in-progress: false # never cancel a running release
     permissions:
       contents: write
-    steps:
+{% if "release-evidence" in checks %}      actions: read # download the run's security-evidence artifact
+{% endif %}    steps:
       - name: Checkout
         uses: [[ pins["checkout"].uses ]]@[[ pins["checkout"].sha ]] # [[ pins["checkout"].version ]]
         with:

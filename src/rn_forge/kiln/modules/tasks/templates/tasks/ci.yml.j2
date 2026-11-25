@@ -59,7 +59,7 @@ tasks:
   release:umbrella:
     desc: "CI only: Create a GitHub release for each shipped release page that has none."
     cmds:
-      - '{{.DEVOPS}} umbrella --sha "$GITHUB_SHA"'
+      - '{{.DEVOPS}} umbrella --sha "$GITHUB_SHA"{% if "release-evidence" in checks %} --evidence{% endif %}'
 {% endif %}{% if "release-evidence" in checks %}
   release:evidence:
     desc: "CI only: Write security-evidence.json for this run and print its table to the job summary."

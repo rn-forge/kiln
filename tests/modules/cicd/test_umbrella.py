@@ -24,13 +24,16 @@ UMBRELLA_IF = (
 )
 
 
-def _umbrella_root(tmp_path: Path, archetype: str, on: bool) -> Path:
+def _umbrella_root(
+    tmp_path: Path, archetype: str, on: bool, evidence: bool = False
+) -> Path:
     root = _sonar_root(tmp_path, archetype)
     if on:
         config = root / ".rn-forge" / "kiln" / "config.toml"
+        extra = "release-evidence = true\n" if evidence else ""
         config.write_text(
             config.read_text(encoding="utf-8")
-            + "\n[ci.checks]\numbrella-release = true\n",
+            + f"\n[ci.checks]\numbrella-release = true\n{extra}",
             encoding="utf-8",
         )
     return root
@@ -69,6 +72,16 @@ def test_umbrella_job_when_enabled(tmp_path: Path, archetype: str) -> None:
     assert tasks["release:umbrella"]["cmds"] == [  # type: ignore[index]
         '{{.DEVOPS}} umbrella --sha "$GITHUB_SHA"'
     ]
+
+
+@pytest.mark.parametrize("archetype", UMBRELLA_ARCHETYPES)
+def test_umbrella_attaches_evidence_when_both_checks_are_on(
+    tmp_path: Path, archetype: str
+) -> None:
+    jobs, tasks = _umbrella_files(_umbrella_root(tmp_path, archetype, True, True))
+    assert jobs["umbrella"]["permissions"] == {"contents": "write", "actions": "read"}
+    command = tasks["release:umbrella"]["cmds"][0]  # type: ignore[index]
+    assert command.endswith(" --evidence")
 
 
 @pytest.mark.parametrize("archetype", UMBRELLA_ARCHETYPES)
