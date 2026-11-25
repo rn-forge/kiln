@@ -91,13 +91,14 @@ def render(config: KilnConfig, root: Path) -> list[Artifact]:
     ]
 
 
-def seed_context(config: KilnConfig) -> dict[str, str]:
+def seed_context(config: KilnConfig) -> dict[str, object]:
     """The template context every seeded docs page renders with."""
     return {
         "name": config.name,
         "archetype": config.archetype,
         "module": config.module,
         "kiln_version": __version__,
+        "release_evidence": "release-evidence" in config.ci_checks,
     }
 
 

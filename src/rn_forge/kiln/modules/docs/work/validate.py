@@ -29,7 +29,7 @@ FEATURE_KEYS = (
     "Source",
     "Entry criteria",
 )
-RELEASE_KEYS = ("Status", "Start Date", "Finish Date")
+RELEASE_KEYS = ("Status", "Start Date", "Finish Date", "Security Evidence")
 STATES = ("New", "Active", "Closed", "Removed")
 RELEASE_STATUSES = ("planned", "in progress", "shipped")
 

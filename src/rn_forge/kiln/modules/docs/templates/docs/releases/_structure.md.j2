@@ -20,10 +20,19 @@
     - **Exit criteria**: what must hold for the release to ship. One criterion
       stands on every release: no Dependabot pull request is open against the
       default branch, or each open one is listed on the release page as
-      deferred, with its reason.
+      deferred, with its reason.{% if release_evidence %} A second stands when CI records release
+      evidence: the release's `security.md` exists and every row's result is
+      `passed` or `not run`, or the release page says why not.{% endif %}
     - **Shipped**: once shipped, the release evidence, as a table with one row per
       deliverable (each package, in a library): its version, tag, commit, and
       what was checked.
+{%- if release_evidence %}
+- `release-<n>/security.md`: the release's security evidence, one row per
+  control. `task release:evidence -- <run-id> <n>` renders it from the release
+  run's `security-evidence` record, in the pull request that marks the release
+  `shipped`; never write it by hand. The release page's metadata table links
+  it as `**Security Evidence**`.
+{%- endif %}
 - `index.md`, listing every release newest first, each linked, with its status.
 
 ## Does not belong here
@@ -73,6 +82,9 @@ A release page opens like this:
   not on a date, so it keeps its own word rather than a work-item `State`.
 - `Start Date` is optional. `Finish Date` is present exactly when `Status` is
   `shipped`.
+{%- if release_evidence %}
+- `Security Evidence` is optional: a link to `security.md`, once it is rendered.
+{%- endif %}
 - The Scope region lists every feature whose `Iteration` names this release.
   `task docs:generate` writes it; never edit inside its fence.
 - Commit subjects name the story or feature IDs they deliver, so the Commits

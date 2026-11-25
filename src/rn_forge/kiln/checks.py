@@ -18,7 +18,7 @@ from rn_forge.kiln import archetypes
 from rn_forge.kiln.config import KilnConfig
 from rn_forge.kiln.modules.cicd.checks import entrypoint, hooks, pins
 from rn_forge.kiln.modules.core.checks import generated, pin
-from rn_forge.kiln.modules.docs.checks import derived, site, structure
+from rn_forge.kiln.modules.docs.checks import derived, evidence, site, structure
 from rn_forge.kiln.modules.node.checks import nx_version
 from rn_forge.kiln.modules.python.checks import rn_forge_deps, workspace_ci
 from rn_forge.kiln.modules.tasks.checks import layout
@@ -57,6 +57,7 @@ CHECKS: tuple[Check, ...] = (
     Check(structure.NAME, "docs", structure.check, "quality"),
     Check(derived.NAME, "docs", derived.check),
     Check(site.NAME, "docs", site.check, "quality"),
+    Check(evidence.NAME, "docs", evidence.check, "quality"),
 )
 """Every check `kiln doctor` can run, in module apply order."""
 

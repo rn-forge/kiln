@@ -171,12 +171,18 @@ QUALITY = frozenset({"rn-forge-deps", "docs-structure", "docs-site"})
 # test files break them, and this python-app copy never fires it.
 LIB_ONLY = frozenset({"workspace-ci", "nx-version"})
 
+# `release-evidence` reads a repo that turns its switch on, which re-renders
+# CI; its own test file breaks it.
+SWITCHED = frozenset({"release-evidence"})
+
 
 def test_every_registered_check_has_a_break() -> None:
-    assert set(BREAKS) | LIB_ONLY == set(checks.names())
+    assert set(BREAKS) | LIB_ONLY | SWITCHED == set(checks.names())
 
 
-@pytest.mark.parametrize("name", [n for n in checks.names() if n not in LIB_ONLY])
+@pytest.mark.parametrize(
+    "name", [n for n in checks.names() if n not in LIB_ONLY | SWITCHED]
+)
 def test_each_check_reports_only_its_own_code(copy: Path, name: str) -> None:
     breaker, prefix = BREAKS[name]
     assert checks.run(copy) == []

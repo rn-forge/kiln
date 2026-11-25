@@ -841,3 +841,19 @@ def test_release_structure_page_states_the_dependabot_exit_criterion(
     assert "no Dependabot pull request is open against the default branch" in " ".join(
         page.split()
     )
+
+
+@pytest.mark.parametrize("on", [True, False])
+def test_releases_structure_names_the_evidence_page_when_recorded(
+    tmp_path: Path, on: bool
+) -> None:
+    tail = "\n[ci.checks]\nrelease-evidence = true\n" if on else ""
+    root = _config_root(tmp_path, "python-tool", tail)
+    rendered = {a.key: a.content for a in DOCS.artifacts(KilnConfig.load(root), root)}
+    text = " ".join(rendered["docs/releases/_structure.md"].split())
+    for phrase in (
+        "`release-<n>/security.md`",
+        "task release:evidence",
+        "A second stands",
+    ):
+        assert (phrase in text) is on

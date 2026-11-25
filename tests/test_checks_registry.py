@@ -28,6 +28,7 @@ def test_every_check_is_named_by_its_module() -> None:
         "docs-structure",
         "docs-generate",
         "docs-site",
+        "release-evidence",
     )
 
 
@@ -79,6 +80,7 @@ def test_quality_checks_run_by_default(repo) -> None:
         "nx-version",
         "docs-structure",
         "docs-site",
+        "release-evidence",
     ]
     assert run_check("rn-forge-deps", root)
     assert [f for f in checks.run(root) if f.code.startswith("deps.")]

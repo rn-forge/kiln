@@ -786,3 +786,15 @@ def test_rebased_board_passes_doctor(tmp_path: Path) -> None:
         f for f in check_site(tmp_path) if f.path == str(index) and "link" in f.code
     ]
     assert findings == []
+
+
+def test_release_page_may_link_its_security_evidence(tmp_path: Path) -> None:
+    shipped = RELEASE.replace(
+        "in progress |",
+        "shipped |\n| **Finish Date** | 2026-02-02 |",
+    )
+    row = "| **Security Evidence** | [security.md](security.md) |\n"
+    after = {**VALID, R: shipped + row}
+    assert codes(tmp_path / "a", after) == []
+    before = {**VALID, R: RELEASE.replace("| **Status**", row + "| **Status**")}
+    assert codes(tmp_path / "b", before) == ["docs.work-key-order"]
